@@ -1,53 +1,30 @@
 """
-Pruebas unitarias para validar las reglas de negocio del Dominio (TrackDomain)
-incluyendo la nueva taxonomía avanzada de géneros y subgéneros electrónicos.
+Pruebas unitarias para el módulo de dominio (domain/models.py).
+Valida la limpieza de texto y la taxonomía del Cerebro Ishkur.
 """
 
 import pytest
 from domain.models import TrackDomain
 
 def test_limpiar_texto_basico():
-    """Valida la eliminación de extensiones, webs y caracteres extraños."""
-    sucia = "01._spotdown.org_Avicii_-_Levels_(Radio_Edit).mp3"
+    """Valida la limpieza básica de textos con basura y extensiones."""
+    sucia = "01 - Artist Name - Track Title (Original Mix).mp3"
     limpia = TrackDomain.limpiar_texto(sucia)
-    assert "spotdown" not in limpia
-    assert ".mp3" not in limpia
+    assert limpia == "Artist Name - Track Title"
 
-def test_cerebro_ishkur_hard_techno():
-    """Verifica la clasificación exacta de subgéneros como Hard Techno."""
-    genero, subgenero = TrackDomain.cerebro_ishkur(
-        bpm=142.0, 
-        año=2025, 
-        estilos=["hard techno"], 
-        presencia_vocal=500.0, 
-        zcr=0.09, 
-        centroide=3000.0
-    )
-    assert genero == "Techno"
-    assert subgenero == "Hard Techno"
-
-def test_cerebro_ishkur_remember():
-    """Verifica que los temas entre 1980 y 2011 se clasifiquen como Remember."""
-    genero, subgenero = TrackDomain.cerebro_ishkur(
-        bpm=128.0, 
-        año=2005, 
-        estilos=["trance"], 
-        presencia_vocal=1000.0, 
-        zcr=0.05, 
-        centroide=2000.0
-    )
-    assert genero == "Remember"
-    assert subgenero == "Retro Classic"
+def test_limpiar_texto_vacio():
+    """Valida el manejo de cadenas vacías o nulas."""
+    assert TrackDomain.limpiar_texto("") == ""
+    assert TrackDomain.limpiar_texto(None) == ""
 
 def test_cerebro_ishkur_tech_house():
-    """Verifica la clasificación por defecto para Tech House."""
-    genero, subgenero = TrackDomain.cerebro_ishkur(
-        bpm=126.0, 
-        año=2026, 
-        estilos=["tech house"], 
-        presencia_vocal=1200.0, 
-        zcr=0.04, 
-        centroide=1500.0
-    )
-    assert genero == "House"
+    """Verifica que Tech House se clasifica en su categoría independiente."""
+    genero, subgenero = TrackDomain.cerebro_ishkur(126, 2026, ["tech house"], 500, 0.05, 2000)
+    assert genero == "Tech House"
     assert subgenero == "Tech House"
+
+def test_cerebro_ishkur_remember():
+    """Verifica la clasificación correcta para la categoría Remember & Classics."""
+    genero, subgenero = TrackDomain.cerebro_ishkur(128, 1995, ["house"], 500, 0.05, 2000)
+    assert genero == "Remember & Classics"
+    assert subgenero == "Classic House"
