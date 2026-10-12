@@ -1,7 +1,7 @@
 """
 Módulo de Interfaz Gráfica (UI): Diseñado con CustomTkinter para ofrecer 
 una experiencia moderna, intuitiva y en modo oscuro estilo profesional de DJ,
-incorporando tooltips basados en seguimiento de coordenadas del ratón.
+incorporando un sistema de ayuda interactiva por barra de estado en tiempo real.
 """
 
 import os
@@ -20,92 +20,12 @@ ctk.set_default_color_theme("blue")
 
 logging.basicConfig(filename='CleanDJmix_crash.log', level=logging.ERROR, format='%(asctime)s - [CleanDJmix Error] - %(message)s')
 
-class CTkToolTip:
-    """
-    Motor avanzado de tooltips basado en coordenadas globales del ratón (hover global),
-    garantizando que la tarjeta flotante aparezca siempre de forma fiable.
-    """
-    _active_tooltip = None
-
-    def __init__(self, widget, text):
-        self.widget = widget
-        self.text = text
-        self.tipwindow = None
-        self.hovered = False
-        
-        self.widget.bind("<Enter>", self.on_enter, add="+")
-        self.widget.bind("<Leave>", self.on_leave, add="+")
-        self.widget.bind("<ButtonPress>", self.hide_tip, add="+")
-
-    def on_enter(self, event=None):
-        self.hovered = True
-        # Iniciar verificación de posición del ratón tras 400ms de permanencia
-        self.widget.after(400, self.check_show)
-
-    def check_show(self):
-        if self.hovered and not self.tipwindow:
-            try:
-                # Comprobar que el widget sigue existiendo y visible
-                if not self.widget.winfo_exists(): 
-                    return
-                
-                # Cerrar cualquier otro tooltip activo en pantalla
-                if CTkToolTip._active_tooltip and CTkToolTip._active_tooltip != self:
-                    CTkToolTip._active_tooltip.hide_tip()
-
-                x = self.widget.winfo_rootx() + 20
-                y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6
-                
-                self.tipwindow = tw = ctk.CTkToplevel(self.widget)
-                tw.wm_overrideredirect(True)
-                tw.wm_geometry(f"+{x}+{y}")
-                tw.attributes("-topmost", True)
-                
-                card = ctk.CTkFrame(
-                    tw, 
-                    fg_color="#1f232a", 
-                    corner_radius=8, 
-                    border_width=1, 
-                    border_color="#00AEEF"
-                )
-                card.pack(fill="both", expand=True)
-                
-                label = ctk.CTkLabel(
-                    card, 
-                    text=self.text, 
-                    text_color="#FFFFFF", 
-                    font=("Helvetica", 11, "bold"), 
-                    justify="left",
-                    padx=12, 
-                    pady=8
-                )
-                label.pack()
-                CTkToolTip._active_tooltip = self
-            except Exception:
-                pass
-
-    def on_leave(self, event=None):
-        self.hovered = False
-        self.hide_tip()
-
-    def hide_tip(self, event=None):
-        if CTkToolTip._active_tooltip == self:
-            CTkToolTip._active_tooltip = None
-        tw = self.tipwindow
-        self.tipwindow = None
-        if tw:
-            try:
-                tw.destroy()
-            except Exception:
-                pass
-
-
 class CleanDJmixApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
         self.title("CleanDJmix PRO - Arquitectura Hexagonal & Taxonomía Avanzada")
-        self.geometry("1100x750")
+        self.geometry("1100x780")
         self.resizable(False, False)
         
         self.safe_mode_var = ctk.BooleanVar(value=True)
@@ -122,7 +42,7 @@ class CleanDJmixApp(ctk.CTk):
 
         # Contenedor Principal con Pestañas (Tabs)
         self.tabview = ctk.CTkTabview(self, fg_color="#181818", segmented_button_selected_color="#00AEEF", segmented_button_unselected_color="#242424")
-        self.tabview.pack(fill="both", expand=True, padx=20, pady=20)
+        self.tabview.pack(fill="both", expand=True, padx=20, pady=(20, 5))
         
         self.tab_control = self.tabview.add("Control y Analisis")
         self.tab_destinos = self.tabview.add("Destinos y Taxonomia")
@@ -132,7 +52,21 @@ class CleanDJmixApp(ctk.CTk):
         self._construir_pestana_destinos()
         self._construir_pestana_logs()
         
-        self.log("CleanDJmix PRO Modern UI con Tooltips avanzados inicializado correctamente.\n", "info")
+        # Barra de Estado / Ayuda Dinámica inferior
+        status_frame = ctk.CTkFrame(self, fg_color="#141414", corner_radius=6, height=36)
+        status_frame.pack(fill="x", padx=20, pady=(0, 15))
+        status_frame.pack_propagate(False)
+        
+        ctk.CTkLabel(status_frame, text="AYUDA / INFO:", font=ctk.CTkFont(size=10, weight="bold"), text_color="#00AEEF").pack(side="left", padx=(15, 5))
+        self.lbl_status = ctk.CTkLabel(status_frame, text="Pasa el ratón por cualquier control para ver su descripción detallada.", font=ctk.CTkFont(size=11), text_color="#AAAAAA")
+        self.lbl_status.pack(side="left", padx=5)
+
+        self.log("CleanDJmix PRO Modern UI con Ayuda Dinámica inicializado correctamente.\n", "info")
+
+    def vincular_ayuda(self, widget, texto_ayuda):
+        """Vincula eventos de ratón para mostrar descripciones de ayuda en la barra inferior."""
+        widget.bind("<Enter>", lambda e: self.lbl_status.configure(text=texto_ayuda, text_color="#FFFFFF"), add="+")
+        widget.bind("<Leave>", lambda e: self.lbl_status.configure(text="Pasa el ratón por cualquier control para ver su descripción detallada.", text_color="#AAAAAA"), add="+")
 
     def _construir_pestana_control(self):
         """Construye la pestaña principal de ejecución y monitorización."""
@@ -144,19 +78,23 @@ class CleanDJmixApp(ctk.CTk):
         # Selector de Carpeta Origen
         src_frame = ctk.CTkFrame(self.tab_control, fg_color="#242424", corner_radius=8)
         src_frame.pack(fill="x", pady=10, ipady=5)
-        ctk.CTkLabel(src_frame, text="CARPETA ORIGEN", font=ctk.CTkFont(size=11, weight="bold"), text_color="#888888").pack(side="left", padx=15)
+        lbl_origen = ctk.CTkLabel(src_frame, text="CARPETA ORIGEN", font=ctk.CTkFont(size=11, weight="bold"), text_color="#888888")
+        lbl_origen.pack(side="left", padx=15)
+        self.vincular_ayuda(lbl_origen, "Directorio raíz en tu disco que contiene las pistas de música a clasificar.")
         
         self.entry_ruta = ctk.CTkEntry(src_frame, width=600, height=35, fg_color="#1e1e1e", text_color="#FFFFFF", font=("Courier", 12))
         self.entry_ruta.insert(0, "/Users/admin/Music/mi musica/")
         self.entry_ruta.pack(side="left", padx=10, expand=True, fill="x")
+        self.vincular_ayuda(self.entry_ruta, "Ruta actual seleccionada para la biblioteca de origen.")
         
         btn_browse = ctk.CTkButton(src_frame, text="Explorar", command=self.seleccionar_ruta, fg_color="#333333", hover_color="#444444", width=90, height=35)
         btn_browse.pack(side="right", padx=15)
-        CTkToolTip(btn_browse, "Selecciona la carpeta raíz de tu biblioteca musical\npara iniciar la clasificación automática.")
+        self.vincular_ayuda(btn_browse, "Haz clic para abrir el explorador de archivos y seleccionar la carpeta de música.")
 
         # Pantalla LCD / Visualizador de Estado
         lcd = ctk.CTkFrame(self.tab_control, fg_color="#111111", corner_radius=10)
         lcd.pack(fill="x", pady=15, ipady=10)
+        self.vincular_ayuda(lcd, "Panel LCD en tiempo real con el estado de la pista actual, metadatos y análisis.")
         
         self.lbl_file = ctk.CTkLabel(lcd, text="ARCHIVO: ESPERANDO PISTA...", font=("Menlo", 11), text_color="#666666")
         self.lbl_file.pack(pady=(15, 2))
@@ -169,35 +107,35 @@ class CleanDJmixApp(ctk.CTk):
         # Checkbox de Modo Seguro
         safe_cb = ctk.CTkCheckBox(self.tab_control, text="Modo Seguro (Simulación: No modifica ficheros físicos en disco)", variable=self.safe_mode_var, text_color="#AAAAAA", fg_color="#00AEEF")
         safe_cb.pack(pady=(0, 10), anchor="w")
-        CTkToolTip(safe_cb, "Ejecuta una simulación completa en consola\nsin mover ni alterar tus archivos originales en disco.")
+        self.vincular_ayuda(safe_cb, "Activa el modo simulación: analiza y muestra resultados en consola sin mover ni alterar tus archivos originales.")
 
         # Barra de Progreso
         self.progreso = ctk.CTkProgressBar(self.tab_control, progress_color="#00AEEF", fg_color="#242424", height=8)
         self.progreso.pack(fill="x", pady=(0, 20))
         self.progreso.set(0)
 
-        # Botones de Acción Operativa con Tarjetas Tooltips
+        # Botones de Acción Operativa con Ayuda Dinámica
         btn_frame = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         btn_frame.pack(fill="x", pady=5)
         
         btn_std = ctk.CTkButton(btn_frame, text="Analisis Estandar", command=lambda: self.iniciar_hilo("normal"), fg_color="#00AEEF", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42)
         btn_std.pack(side="left", expand=True, fill="x", padx=(0, 5))
-        CTkToolTip(btn_std, "Analiza etiquetas ID3, consulta metadatos en Discogs\ny clasifica los tracks según el Cerebro Ishkur.")
+        self.vincular_ayuda(btn_std, "Procesa etiquetas ID3, consulta metadatos en Discogs y clasifica los tracks según el Cerebro Ishkur.")
 
         btn_resc = ctk.CTkButton(btn_frame, text="Rescate Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42)
         btn_resc.pack(side="left", expand=True, fill="x", padx=5)
-        CTkToolTip(btn_resc, "Identifica automáticamente pistas huérfanas o sin nombre\nutilizando el motor de reconocimiento online de Shazam.")
+        self.vincular_ayuda(btn_resc, "Identifica automáticamente pistas huérfanas o sin nombre utilizando el motor online de Shazam.")
 
         btn_acu = ctk.CTkButton(btn_frame, text="Analisis Acustico", command=lambda: self.iniciar_hilo("acustico"), fg_color="#242424", text_color="#FFAA00", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42)
         btn_acu.pack(side="left", expand=True, fill="x", padx=(5, 0))
-        CTkToolTip(btn_acu, "Extrae métricas puras de audio (BPM exacto, energía,\ncentroide espectral y groove) mediante Librosa.")
+        self.vincular_ayuda(btn_acu, "Extrae métricas puras de audio (BPM exacto, energía, centroide espectral y groove) mediante Librosa.")
 
     def _construir_pestana_destinos(self):
         """Construye el panel avanzado para configurar carpetas y rutas por género y subgénero."""
         ctk.CTkLabel(self.tab_destinos, text="Configuracion Avanzada de Destinos y Taxonomia", font=ctk.CTkFont(size=16, weight="bold"), text_color="#FFFFFF").pack(pady=10)
         ctk.CTkLabel(self.tab_destinos, text="Personaliza el nombre de las carpetas de salida y las rutas de disco para cada género y subgénero.", font=ctk.CTkFont(size=11), text_color="#888888").pack(pady=(0, 10))
 
-        scroll = ctk.CTkScrollableFrame(self.tab_destinos, fg_color="#1e1e1e", height=480)
+        scroll = ctk.CTkScrollableFrame(self.tab_destinos, fg_color="#1e1e1e", height=440)
         scroll.pack(fill="both", expand=True, padx=5, pady=5)
 
         self.widgets_destinos = {}
@@ -206,7 +144,9 @@ class CleanDJmixApp(ctk.CTk):
             g_frame = ctk.CTkFrame(scroll, fg_color="#242424", corner_radius=6)
             g_frame.pack(fill="x", pady=5, padx=5, ipady=5)
             
-            ctk.CTkLabel(g_frame, text=f"Genero Madre: {genero}", font=ctk.CTkFont(size=13, weight="bold"), text_color="#00AEEF").pack(anchor="w", padx=10, pady=5)
+            lbl_GM = ctk.CTkLabel(g_frame, text=f"Genero Madre: {genero}", font=ctk.CTkFont(size=13, weight="bold"), text_color="#00AEEF")
+            lbl_GM.pack(anchor="w", padx=10, pady=5)
+            self.vincular_ayuda(lbl_GM, f"Categoría principal de música electrónica: {genero}.")
             
             sub_container = ctk.CTkFrame(g_frame, fg_color="transparent")
             sub_container.pack(fill="x", padx=15, pady=2)
@@ -218,16 +158,16 @@ class CleanDJmixApp(ctk.CTk):
                 
                 lbl_sub = ctk.CTkLabel(s_frame, text=sub, font=ctk.CTkFont(size=11), text_color="#CCCCCC", width=140, anchor="w")
                 lbl_sub.pack(side="left", padx=10)
-                CTkToolTip(lbl_sub, f"Subgénero perteneciente a la línea editorial de {genero}.")
+                self.vincular_ayuda(lbl_sub, f"Subgénero específico: {sub} (perteneciente a {genero}).")
                 
                 e_carp = ctk.CTkEntry(s_frame, width=140, height=28, fg_color="#242424", text_color="#FFFFFF")
                 e_carp.insert(0, sub)
                 e_carp.pack(side="left", padx=5)
-                CTkToolTip(e_carp, "Nombre personalizado para la carpeta física resultante.")
+                self.vincular_ayuda(e_carp, "Nombre de la carpeta física que se creará para clasificar este subgénero.")
                 
                 e_ruta = ctk.CTkEntry(s_frame, width=280, height=28, fg_color="#242424", text_color="#FFFFFF", placeholder_text="Ruta opcional (por defecto origen)")
                 e_ruta.pack(side="left", padx=5, expand=True, fill="x")
-                CTkToolTip(e_ruta, "Ruta absoluta de destino opcional (ej: pendrive USB o disco externo).")
+                self.vincular_ayuda(e_ruta, "Ruta absoluta opcional de destino (ej: pendrive USB, disco externo o ruta de DJ).")
                 
                 def elegir_path(entry=e_ruta):
                     d = filedialog.askdirectory()
@@ -237,13 +177,15 @@ class CleanDJmixApp(ctk.CTk):
                 
                 btn_d = ctk.CTkButton(s_frame, text="Dir", command=elegir_path, width=32, height=28, fg_color="#333333")
                 btn_d.pack(side="right", padx=10)
-                CTkToolTip(btn_d, "Explora tu equipo para asignar una ruta de exportación directa.")
+                self.vincular_ayuda(btn_d, "Explora y selecciona una unidad de disco o carpeta externa de exportación.")
                 
                 self.widgets_destinos[genero][sub] = {"carpeta": e_carp, "ruta": e_ruta}
 
     def _construir_pestana_logs(self):
         """Construye la pestaña de consola con diseño estilizado."""
-        ctk.CTkLabel(self.tab_logs, text="Registro de Ejecucion en Tiempo Real", font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFFFFF").pack(pady=10, anchor="w", padx=5)
+        lbl_consola_title = ctk.CTkLabel(self.tab_logs, text="Registro de Ejecucion en Tiempo Real", font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFFFFF")
+        lbl_consola_title.pack(pady=10, anchor="w", padx=5)
+        self.vincular_ayuda(lbl_consola_title, "Monitor de eventos, progreso y resultados de clasificación en vivo.")
         
         self.consola = ctk.CTkTextbox(self.tab_logs, fg_color="#111111", text_color="#00AEEF", font=("Menlo", 11), corner_radius=8)
         self.consola.pack(fill="both", expand=True, padx=5, pady=5)
