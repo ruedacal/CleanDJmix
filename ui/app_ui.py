@@ -1,6 +1,6 @@
 """
-Módulo de Infraestructura / UI: CleanDJmix PRO con Auditoría Profesional Completa
-(Bailabilidad, Mood/Estado de ánimo, Pausa/Cancelación de procesos en hilos y soporte Serato).
+Módulo de Interfaz Gráfica (UI): CleanDJmix PRO con integración de logotipo corporativo,
+auditoría profesional, controles de pausa/cancelación y soporte para Serato DJ.
 """
 
 import os
@@ -11,6 +11,7 @@ import traceback
 import logging
 import customtkinter as ctk
 from tkinter import filedialog, ttk
+from PIL import Image
 from domain.models import TrackDomain, TAXONOMIA_ELECTRONICA
 from infrastructure.adapters import AudioAdapter
 
@@ -83,7 +84,7 @@ class CleanDJmixApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
-        self.title("CleanDJmix PRO - Auditoría Integral, Bailabilidad, Mood y Control Serato")
+        self.title("CleanDJmix PRO - Suite Profesional para DJs")
         
         try:
             self.state("-zoomed")
@@ -95,6 +96,16 @@ class CleanDJmixApp(ctk.CTk):
 
         self.resizable(True, True)
         
+        # Cargar Logo corporativo si está disponible en assets
+        self.logo_image = None
+        try:
+            logo_path = "assets/icon_32x32.png"
+            if os.path.exists(logo_path):
+                pil_img = Image.open(logo_path)
+                self.logo_image = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=(32, 32))
+        except Exception:
+            pass
+
         self.safe_mode_var = ctk.BooleanVar(value=True)
         self.cancel_flag = False 
         self.pause_flag = False 
@@ -137,13 +148,23 @@ class CleanDJmixApp(ctk.CTk):
         self.lbl_status = ctk.CTkLabel(status_frame, text="Pasa el ratón por cualquier control para ver su descripción detallada.", font=ctk.CTkFont(size=11), text_color="#AAAAAA")
         self.lbl_status.pack(side="left", padx=5)
 
-        self.log("CleanDJmix PRO con Mood (Estado de Ánimo) inicializado correctamente.\n", "info")
+        self.log("CleanDJmix PRO con Logotipo Corporativo e integración Serato inicializado correctamente.\n", "info")
 
     def _construir_pestana_control(self):
         header = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         header.pack(fill="x", pady=(0, 10))
-        ctk.CTkLabel(header, text="CleanDJmix PRO - Auditoría Integral DJ", font=ctk.CTkFont(family="Helvetica", size=24, weight="bold"), text_color="#FFFFFF").pack(side="left")
-        ctk.CTkLabel(header, text="SERATO DJ SUITE v4.4", font=ctk.CTkFont(family="Helvetica", size=11, weight="bold"), text_color="#00AEEF").pack(side="right")
+        
+        # Cabecera con Logo Corporativo[cite: 2] y Título
+        title_container = ctk.CTkFrame(header, fg_color="transparent")
+        title_container.pack(side="left")
+        
+        if self.logo_image:
+            lbl_logo = ctk.CTkLabel(title_container, image=self.logo_image, text="")
+            lbl_logo.pack(side="left", padx=(0, 10))
+            
+        ctk.CTkLabel(title_container, text="CleanDJmix PRO - Auditoría Integral DJ", font=ctk.CTkFont(family="Helvetica", size=24, weight="bold"), text_color="#FFFFFF").pack(side="left")
+        
+        ctk.CTkLabel(header, text="SERATO DJ SUITE v4.5", font=ctk.CTkFont(family="Helvetica", size=11, weight="bold"), text_color="#00AEEF").pack(side="right")
 
         main_pane = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         main_pane.pack(fill="x", pady=5)
@@ -419,7 +440,6 @@ class CleanDJmixApp(ctk.CTk):
                 duracion_str = "03:45"
                 tonalidad = "8B" if bpm > 125 else "4A"
                 
-                # Cálculo analítico del Mood (estado de ánimo)
                 if bpm > 135 and energia > 60:
                     mood = "Eufórico / Hype"
                 elif bpm < 122 and energia < 40:
