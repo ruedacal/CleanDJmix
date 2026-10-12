@@ -1,7 +1,7 @@
 """
 Módulo de Interfaz Gráfica (UI): Diseñado con CustomTkinter para ofrecer 
 una experiencia moderna, intuitiva y en modo oscuro estilo profesional de DJ,
-incorporando tooltips avanzados tipo tarjeta flotante (hover).
+incorporando tooltips basados en seguimiento de coordenadas del ratón.
 """
 
 import os
@@ -22,62 +22,75 @@ logging.basicConfig(filename='CleanDJmix_crash.log', level=logging.ERROR, format
 
 class CTkToolTip:
     """
-    Implementa un tooltip moderno flotante (estilo tarjeta informativa en hover),
-    simsimilar a los patrones de guías de usuario profesionales.
+    Motor avanzado de tooltips basado en coordenadas globales del ratón (hover global),
+    garantizando que la tarjeta flotante aparezca siempre de forma fiable.
     """
-    def __init__(self, widget, text, delay=300):
+    _active_tooltip = None
+
+    def __init__(self, widget, text):
         self.widget = widget
         self.text = text
-        self.delay = delay  # Retardo en milisegundos antes de mostrarse
         self.tipwindow = None
-        self.id_after = None
+        self.hovered = False
         
-        self.widget.bind("<Enter>", self.schedule_show, add="+")
-        self.widget.bind("<Leave>", self.hide_tip, add="+")
+        self.widget.bind("<Enter>", self.on_enter, add="+")
+        self.widget.bind("<Leave>", self.on_leave, add="+")
         self.widget.bind("<ButtonPress>", self.hide_tip, add="+")
 
-    def schedule_show(self, event=None):
-        self.cancel_pending()
-        self.id_after = self.widget.after(self.delay, self.show_tip)
+    def on_enter(self, event=None):
+        self.hovered = True
+        # Iniciar verificación de posición del ratón tras 400ms de permanencia
+        self.widget.after(400, self.check_show)
 
-    def show_tip(self):
-        if self.tipwindow or not self.text:
-            return
-        try:
-            # Posicionamiento flotante cerca del cursor o widget
-            x = self.widget.winfo_rootx() + 15
-            y = self.widget.winfo_rooty() + self.widget.winfo_height() + 8
-            
-            self.tipwindow = tw = ctk.CTkToplevel(self.widget)
-            tw.wm_overrideredirect(True)
-            tw.wm_geometry(f"+{x}+{y}")
-            tw.attributes("-topmost", True)
-            
-            # Contenedor con aspecto de tarjeta flotante moderna
-            card = ctk.CTkFrame(
-                tw, 
-                fg_color="#1f232a", 
-                corner_radius=8, 
-                border_width=1, 
-                border_color="#333b46"
-            )
-            card.pack(fill="both", expand=True)
-            
-            label = ctk.CTkLabel(
-                card, 
-                text=self.text, 
-                text_color="#e2e8f0", 
-                font=("Helvetica", 11), 
-                justify="left",
-                padx=12, 
-                pady=8
-            )
-            label.pack()
-        except Exception:
-            pass
+    def check_show(self):
+        if self.hovered and not self.tipwindow:
+            try:
+                # Comprobar que el widget sigue existiendo y visible
+                if not self.widget.winfo_exists(): 
+                    return
+                
+                # Cerrar cualquier otro tooltip activo en pantalla
+                if CTkToolTip._active_tooltip and CTkToolTip._active_tooltip != self:
+                    CTkToolTip._active_tooltip.hide_tip()
+
+                x = self.widget.winfo_rootx() + 20
+                y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6
+                
+                self.tipwindow = tw = ctk.CTkToplevel(self.widget)
+                tw.wm_overrideredirect(True)
+                tw.wm_geometry(f"+{x}+{y}")
+                tw.attributes("-topmost", True)
+                
+                card = ctk.CTkFrame(
+                    tw, 
+                    fg_color="#1f232a", 
+                    corner_radius=8, 
+                    border_width=1, 
+                    border_color="#00AEEF"
+                )
+                card.pack(fill="both", expand=True)
+                
+                label = ctk.CTkLabel(
+                    card, 
+                    text=self.text, 
+                    text_color="#FFFFFF", 
+                    font=("Helvetica", 11, "bold"), 
+                    justify="left",
+                    padx=12, 
+                    pady=8
+                )
+                label.pack()
+                CTkToolTip._active_tooltip = self
+            except Exception:
+                pass
+
+    def on_leave(self, event=None):
+        self.hovered = False
+        self.hide_tip()
 
     def hide_tip(self, event=None):
-        self.cancel_pending()
+        if CTkToolTip._active_tooltip == self:
+            CTkToolTip._active_tooltip = None
         tw = self.tipwindow
         self.tipwindow = None
         if tw:
@@ -85,14 +98,6 @@ class CTkToolTip:
                 tw.destroy()
             except Exception:
                 pass
-
-    def cancel_pending(self):
-        if self.id_after:
-            try:
-                self.widget.after_cancel(self.id_after)
-            except Exception:
-                pass
-            self.id_after = None
 
 
 class CleanDJmixApp(ctk.CTk):
@@ -127,7 +132,7 @@ class CleanDJmixApp(ctk.CTk):
         self._construir_pestana_destinos()
         self._construir_pestana_logs()
         
-        self.log("CleanDJmix PRO Modern UI con Tooltips estilo Tarjeta inicializado correctamente.\n", "info")
+        self.log("CleanDJmix PRO Modern UI con Tooltips avanzados inicializado correctamente.\n", "info")
 
     def _construir_pestana_control(self):
         """Construye la pestaña principal de ejecución y monitorización."""
@@ -147,7 +152,7 @@ class CleanDJmixApp(ctk.CTk):
         
         btn_browse = ctk.CTkButton(src_frame, text="Explorar", command=self.seleccionar_ruta, fg_color="#333333", hover_color="#444444", width=90, height=35)
         btn_browse.pack(side="right", padx=15)
-        CTkToolTip(btn_browse, "Selecciona el directorio raíz de tu biblioteca musical\npara comenzar la clasificación automática.")
+        CTkToolTip(btn_browse, "Selecciona la carpeta raíz de tu biblioteca musical\npara iniciar la clasificación automática.")
 
         # Pantalla LCD / Visualizador de Estado
         lcd = ctk.CTkFrame(self.tab_control, fg_color="#111111", corner_radius=10)
@@ -164,7 +169,7 @@ class CleanDJmixApp(ctk.CTk):
         # Checkbox de Modo Seguro
         safe_cb = ctk.CTkCheckBox(self.tab_control, text="Modo Seguro (Simulación: No modifica ficheros físicos en disco)", variable=self.safe_mode_var, text_color="#AAAAAA", fg_color="#00AEEF")
         safe_cb.pack(pady=(0, 10), anchor="w")
-        CTkToolTip(safe_cb, "Ejecuta una simulación completa en la consola\nsin mover ni renombrar tus archivos originales en el disco.")
+        CTkToolTip(safe_cb, "Ejecuta una simulación completa en consola\nsin mover ni alterar tus archivos originales en disco.")
 
         # Barra de Progreso
         self.progreso = ctk.CTkProgressBar(self.tab_control, progress_color="#00AEEF", fg_color="#242424", height=8)
