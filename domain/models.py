@@ -1,17 +1,22 @@
 """
-Módulo de Dominio: Contiene las reglas de negocio puras, taxonomía avanzada 
-de géneros/subgéneros de música electrónica y el clasificador Ishkur.
+Módulo de Dominio: Taxonomía definitiva de 10 macro-categorías de música electrónica
+(con Tech House independiente, Vocales y Remember).
 """
 
 import re
 
-# Taxonomía profesional de géneros y subgéneros electrónicos
+# Taxonomía profesional definitiva ajustada para DJs
 TAXONOMIA_ELECTRONICA = {
     "Techno": ["Hard Techno", "Melodic Techno", "Industrial Techno", "Acid Techno", "Minimal Techno"],
-    "House": ["Deep House", "Tech House", "Afro House", "Progressive House", "Funky House"],
+    "Tech House": ["Tech House", "Minimal Tech", "Bass House"],
+    "House": ["Deep House", "Afro House", "Progressive House", "Funky House"],
     "Trance": ["Psy-Trance", "Uplifting Trance", "Hard Trance", "Progressive Trance"],
-    "Cantaditas": ["Makina", "Eurodance", "Happy Hardcore", "Bakalao", "Vocal Trance"],
-    "Remember": ["Classic House", "Classic Trance", "Retro Techno", "Classic Makina"]
+    "Vocales (Cantaditas)": ["Vocal Trance", "Dance Pop", "Makina Vocal", "Club Anthems"],
+    "Remember & Classics": ["Classic House", "Classic Trance", "Bakalao 90s", "Retro Makina", "Classic Techno"],
+    "Hard Dance & Hardcore": ["Hardstyle", "Rawstyle", "Hardcore", "Frenchcore"],
+    "Drum & Bass": ["Neurofunk", "Liquid DnB", "Jump Up", "Jungle"],
+    "Tech & Progressive": ["Progressive House", "Organic House", "Melodic House"],
+    "Ambient & Downtempo": ["Chillout", "Lo-Fi", "Ambient", "Trip Hop"]
 }
 
 class TrackDomain:
@@ -35,44 +40,43 @@ class TrackDomain:
     def cerebro_ishkur(bpm: float, año: int, estilos: list, presencia_vocal: float, zcr: float, centroide: float) -> tuple:
         """
         Clasifica la pista devolviendo una tupla (GeneroPrincipal, Subgenero)
-        basado en la taxonomía electrónica y métricas acústicas.
+        según la taxonomía definitiva.
         """
-        estilos_str = " " .join(estilos).lower()
+        estilos_str = " ".join(estilos).lower()
         
-        # 1. Detección de Subgéneros Específicos por Etiquetas
+        # 1. Etiquetas explícitas
+        if "tech house" in estilos_str:
+            return "Tech House", "Tech House"
         if "hard techno" in estilos_str or "schranz" in estilos_str or "industrial" in estilos_str:
             return "Techno", "Hard Techno"
         if "melodic techno" in estilos_str:
             return "Techno", "Melodic Techno"
         if "acid" in estilos_str:
             return "Techno", "Acid Techno"
-        if "tech house" in estilos_str:
-            return "House", "Tech House"
         if "deep house" in estilos_str:
             return "House", "Deep House"
         if "afro house" in estilos_str:
             return "House", "Afro House"
         if "psy-trance" in estilos_str or "psytrance" in estilos_str:
             return "Trance", "Psy-Trance"
-        if "uplifting" in estilos_str:
-            return "Trance", "Uplifting Trance"
-        if "eurodance" in estilos_str or "makina" in estilos_str or "happy hardcore" in estilos_str:
-            return "Cantaditas", "Makina / Eurodance"
+        if "vocal" in estilos_str or presencia_vocal > 2500:
+            return "Vocales (Cantaditas)", "Vocal Trance"
+        if "hardstyle" in estilos_str or "rawstyle" in estilos_str:
+            return "Hard Dance & Hardcore", "Hardstyle"
             
-        # 2. Filtro Histórico Remember
+        # 2. Filtro Histórico Remember (1980 - 2011)
         if 1980 < año < 2011: 
-            return "Remember", "Retro Classic"
+            return "Remember & Classics", "Classic House"
             
-        # 3. Clasificación por umbrales acústicos y géneros base
-        if "trance" in estilos_str or (bpm >= 135 and centroide > 2500 and presencia_vocal < 2000):
-            return "Trance", "Progressive Trance"
-        if "house" in estilos_str and "tech" not in estilos_str:
+        # 3. Umbrales acústicos y BPMs
+        if bpm >= 150:
+            return "Hard Dance & Hardcore", "Hardcore"
+        if bpm >= 135 and centroide > 2500:
+            return "Trance", "Uplifting Trance"
+        if "house" in estilos_str:
             return "House", "Deep House"
-        if "techno" in estilos_str or (bpm > 138 and zcr > 0.08):
+        if bpm > 130:
             return "Techno", "Minimal Techno"
         
         # 4. Fallback por defecto
-        if bpm > 128:
-            return "Techno", "Melodic Techno"
-        else:
-            return "House", "Tech House"
+        return "Tech House", "Tech House"
