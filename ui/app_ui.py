@@ -1,6 +1,6 @@
 """
-Módulo de Interfaz Gráfica (UI): CleanDJmix PRO con soporte para descarga directa
-desde Spotify (spotDL), auditoría profesional, marcas de agua corporativas y exportación a Serato.
+Módulo de Interfaz Gráfica (UI): CleanDJmix PRO con compatibilidad Tcl/Tk (sin emojis de 4 bytes)
+y soporte completo para spotDL, Serato DJ y auditoría integral.
 """
 
 import os
@@ -86,7 +86,7 @@ class CleanDJmixApp(ctk.CTk):
         
         self.title("CleanDJmix PRO - Suite Profesional para DJs")
         
-        # Apertura en pantalla completa con soporte para salir con tecla ESC
+        # Apertura compatible con pantalla completa
         try:
             self.attributes("-fullscreen", True)
             self.bind("<Escape>", lambda e: self.attributes("-fullscreen", False))
@@ -154,10 +154,10 @@ class CleanDJmixApp(ctk.CTk):
         status_frame.pack_propagate(False)
         
         ctk.CTkLabel(status_frame, text="AYUDA / INFO:", font=ctk.CTkFont(size=10, weight="bold"), text_color="#00AEEF").pack(side="left", padx=(15, 5))
-        self.lbl_status = ctk.CTkLabel(status_frame, text="Pasa el ratón por cualquier control para ver su descripción detallada. (ESC para salir de pantalla completa)", font=ctk.CTkFont(size=11), text_color="#AAAAAA")
+        self.lbl_status = ctk.CTkLabel(status_frame, text="Pasa el raton por cualquier control para ver su descripcion. (ESC para salir de pantalla completa)", font=ctk.CTkFont(size=11), text_color="#AAAAAA")
         self.lbl_status.pack(side="left", padx=5)
 
-        self.log("CleanDJmix PRO con Ingesta Directa spotDL inicializado correctamente.\n", "info")
+        self.log("CleanDJmix PRO inicializado correctamente.\n", "info")
 
     def _construir_pestana_control(self):
         header = ctk.CTkFrame(self.tab_control, fg_color="transparent")
@@ -203,38 +203,38 @@ class CleanDJmixApp(ctk.CTk):
         
         btn_browse = ctk.CTkButton(src_frame, text="Explorar", command=self.seleccionar_ruta, fg_color="#333333", hover_color="#444444", width=100, height=36)
         btn_browse.pack(side="right", padx=12)
-        CTkToolTip(btn_browse, "Selecciona la carpeta raíz con tus archivos de música.")
+        CTkToolTip(btn_browse, "Selecciona la carpeta raiz con tus pistas de musica.")
 
         dest_tool_frame = ctk.CTkFrame(col_left, fg_color="#242424", corner_radius=8)
         dest_tool_frame.pack(fill="x", pady=5, ipady=6)
         lbl_tool = ctk.CTkLabel(dest_tool_frame, text="SOFTWARE DJ", font=ctk.CTkFont(size=11, weight="bold"), text_color="#888888")
         lbl_tool.pack(side="left", padx=12)
-        self.combo_dj_app = ctk.CTkComboBox(dest_tool_frame, values=["Serato DJ Pro / Lite", "(Próximamente más apps)"], width=250, height=32, fg_color="#1e1e1e", button_color="#00AEEF")
+        self.combo_dj_app = ctk.CTkComboBox(dest_tool_frame, values=["Serato DJ Pro / Lite", "(Proximamente mas apps)"], width=250, height=32, fg_color="#1e1e1e", button_color="#00AEEF")
         self.combo_dj_app.set("Serato DJ Pro / Lite")
         self.combo_dj_app.pack(side="left", padx=8)
-        CTkToolTip(self.combo_dj_app, "Software DJ de destino para adaptar la exportación de carpetas.")
+        CTkToolTip(self.combo_dj_app, "Software DJ de destino para adaptar la exportacion de carpetas.")
 
         # Panel Derecho: Configuración de Etiquetas Personalizadas
         ctk.CTkLabel(col_right, text="ETIQUETAS A INYECTAR", font=ctk.CTkFont(size=12, weight="bold"), text_color="#00AEEF").pack(anchor="w", pady=(0, 8))
         cb1 = ctk.CTkCheckBox(col_right, text="BPM y Clave (Key)", variable=self.chk_vars["bpm"], text_color="#DDD", font=ctk.CTkFont(size=11))
         cb1.pack(anchor="w", pady=3)
-        cb2 = ctk.CTkCheckBox(col_right, text="Energía", variable=self.chk_vars["energia"], text_color="#DDD", font=ctk.CTkFont(size=11))
+        cb2 = ctk.CTkCheckBox(col_right, text="Energia", variable=self.chk_vars["energia"], text_color="#DDD", font=ctk.CTkFont(size=11))
         cb2.pack(anchor="w", pady=3)
         cb3 = ctk.CTkCheckBox(col_right, text="Bailabilidad", variable=self.chk_vars["danceability"], text_color="#DDD", font=ctk.CTkFont(size=11))
         cb3.pack(anchor="w", pady=3)
-        cb4 = ctk.CTkCheckBox(col_right, text="Mood (Estado de Ánimo)", variable=self.chk_vars["mood"], text_color="#DDD", font=ctk.CTkFont(size=11))
+        cb4 = ctk.CTkCheckBox(col_right, text="Mood (Estado de Animo)", variable=self.chk_vars["mood"], text_color="#DDD", font=ctk.CTkFont(size=11))
         cb4.pack(anchor="w", pady=3)
-        cb5 = ctk.CTkCheckBox(col_right, text="Carátula / Cover Art", variable=self.chk_vars["cover"], text_color="#DDD", font=ctk.CTkFont(size=11))
+        cb5 = ctk.CTkCheckBox(col_right, text="Caratula / Cover Art", variable=self.chk_vars["cover"], text_color="#DDD", font=ctk.CTkFont(size=11))
         cb5.pack(anchor="w", pady=3)
         cb6 = ctk.CTkCheckBox(col_right, text="Comentario Profesional", variable=self.chk_vars["comentario"], text_color="#DDD", font=ctk.CTkFont(size=11))
         cb6.pack(anchor="w", pady=3)
-        cb7 = ctk.CTkCheckBox(col_right, text="Artista, Título y Álbum", variable=self.chk_vars["tags_base"], text_color="#DDD", font=ctk.CTkFont(size=11))
+        cb7 = ctk.CTkCheckBox(col_right, text="Artista, Titulo y Album", variable=self.chk_vars["tags_base"], text_color="#DDD", font=ctk.CTkFont(size=11))
         cb7.pack(anchor="w", pady=3)
 
         # Tabla de Auditoría
         table_frame = ctk.CTkFrame(col_left, fg_color="#1a1a1a", corner_radius=8)
         table_frame.pack(fill="both", expand=True, pady=8, ipady=5)
-        ctk.CTkLabel(table_frame, text="AUDITORÍA INTEGRAL (DURACIÓN, BPM, KEY, BAILABILIDAD, MOOD)", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(anchor="w", padx=12, pady=5)
+        ctk.CTkLabel(table_frame, text="AUDITORIA INTEGRAL (DURACION, BPM, KEY, BAILABILIDAD, MOOD)", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(anchor="w", padx=12, pady=5)
 
         style = ttk.Style()
         style.theme_use("default")
@@ -262,14 +262,14 @@ class CleanDJmixApp(ctk.CTk):
         self.tree.pack(side="left", fill="both", expand=True, padx=10, pady=5)
         scrollbar.pack(side="right", fill="y", pady=5)
 
-        safe_cb = ctk.CTkCheckBox(col_left, text="Modo Seguro (Simulación: No modifica ficheros físicos en disco)", variable=self.safe_mode_var, text_color="#AAAAAA", fg_color="#00AEEF")
+        safe_cb = ctk.CTkCheckBox(col_left, text="Modo Seguro (Simulacion: No modifica ficheros fisicos en disco)", variable=self.safe_mode_var, text_color="#AAAAAA", fg_color="#00AEEF")
         safe_cb.pack(pady=4, anchor="w")
 
         self.progreso = ctk.CTkProgressBar(col_left, progress_color="#00AEEF", fg_color="#242424", height=10)
         self.progreso.pack(fill="x", pady=8)
         self.progreso.set(0)
 
-        # Botones de Acción
+        # Botones de Acción (Sin caracteres fuera de BMP)
         btn_frame = ctk.CTkFrame(col_left, fg_color="transparent")
         btn_frame.pack(fill="x", pady=5)
         
@@ -282,40 +282,38 @@ class CleanDJmixApp(ctk.CTk):
         btn_resc = ctk.CTkButton(btn_frame, text="3. Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42, width=100)
         btn_resc.pack(side="left", padx=6)
 
-        self.btn_pause = ctk.CTkButton(btn_frame, text="⏸ Pausa", command=self.toggle_pausa, fg_color="#FFAA00", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42, width=90)
+        self.btn_pause = ctk.CTkButton(btn_frame, text="|| Pausa", command=self.toggle_pausa, fg_color="#FFAA00", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42, width=90)
         self.btn_pause.pack(side="left", padx=6)
 
-        btn_cancel = ctk.CTkButton(btn_frame, text="⏹ Cancelar", command=self.cancelar_proceso, fg_color="#FF4444", text_color="#FFFFFF", font=ctk.CTkFont(weight="bold"), height=42, width=100)
+        btn_cancel = ctk.CTkButton(btn_frame, text="[X] Cancelar", command=self.cancelar_proceso, fg_color="#FF4444", text_color="#FFFFFF", font=ctk.CTkFont(weight="bold"), height=42, width=100)
         btn_cancel.pack(side="left", padx=(6, 0))
 
     def _construir_pestana_spotdl(self):
-        """Construye la nueva pestaña de descarga directa desde Spotify."""
+        """Construye la pestaña de descarga de Spotify usando únicamente caracteres estándar BMP."""
         header_sp = ctk.CTkFrame(self.tab_spotdl, fg_color="transparent")
         header_sp.pack(fill="x", pady=15)
         
         ctk.CTkLabel(header_sp, text="Ingesta Directa desde Spotify (spotDL)", font=ctk.CTkFont(family="Helvetica", size=22, weight="bold"), text_color="#1DB954").pack(anchor="w")
-        ctk.CTkLabel(header_sp, text="Descarga pistas individuales, álbumes o playlists completas a 320 kbps con carátula y tags oficiales.", font=ctk.CTkFont(size=12), text_color="#888888").pack(anchor="w", pady=(2, 0))
+        ctk.CTkLabel(header_sp, text="Descarga pistas individuales, albumes o playlists a 320 kbps con caratula y metadatos oficiales.", font=ctk.CTkFont(size=12), text_color="#888888").pack(anchor="w", pady=(2, 0))
 
-        # Panel de Configuración de Descarga
         box = ctk.CTkFrame(self.tab_spotdl, fg_color="#222222", corner_radius=10)
         box.pack(fill="x", pady=15, padx=5, ipady=15, ipadx=15)
 
-        ctk.CTkLabel(box, text="URL DE SPOTIFY (TRACK, PLAYLIST O ÁLBUM):", font=ctk.CTkFont(size=11, weight="bold"), text_color="#CCCCCC").pack(anchor="w", pady=(0, 6))
+        ctk.CTkLabel(box, text="URL DE SPOTIFY (TRACK, PLAYLIST O ALBUM):", font=ctk.CTkFont(size=11, weight="bold"), text_color="#CCCCCC").pack(anchor="w", pady=(0, 6))
         
-        self.entry_spotdl_url = ctk.CTkEntry(box, height=40, fg_color="#181818", text_color="#FFFFFF", font=("Courier", 12), placeholder_text="https://open.spotify.com/playlist/... o https://open.spotify.com/track/...")
+        self.entry_spotdl_url = ctk.CTkEntry(box, height=40, fg_color="#181818", text_color="#FFFFFF", font=("Courier", 12), placeholder_text="https://open.spotify.com/playlist/... o track/...")
         self.entry_spotdl_url.pack(fill="x", pady=(0, 15))
-        CTkToolTip(self.entry_spotdl_url, "Pega aquí el enlace de Spotify para descargarlo con metadatos y carátula.")
+        CTkToolTip(self.entry_spotdl_url, "Introduce el enlace de Spotify para descargarlo a 320 kbps.")
 
-        # Checkbox de auto-procesamiento acústico y clasificación
-        cb_auto = ctk.CTkCheckBox(box, text="Auto-analizar (BPM, Key, Mood) y clasificar hacia Serato automáticamente tras la descarga", variable=self.auto_process_spotdl_var, font=ctk.CTkFont(size=12, weight="bold"), text_color="#FFFFFF", fg_color="#1DB954")
+        cb_auto = ctk.CTkCheckBox(box, text="Auto-analizar (BPM, Key, Mood) y clasificar hacia Serato automaticamente tras la descarga", variable=self.auto_process_spotdl_var, font=ctk.CTkFont(size=12, weight="bold"), text_color="#FFFFFF", fg_color="#1DB954")
         cb_auto.pack(anchor="w", pady=(0, 20))
-        CTkToolTip(cb_auto, "Si está activo, las canciones descargadas pasarán directo por el Cerebro Ishkur y se ordenarán en Serato.")
+        CTkToolTip(cb_auto, "Si esta marcado, las canciones descargadas se analizaran y organizaran en sus respectivas carpetas.")
 
-        btn_descargar = ctk.CTkButton(box, text="📥 Iniciar Descarga e Ingesta", command=self.iniciar_descarga_spotdl, fg_color="#1DB954", hover_color="#169c46", text_color="#000000", font=ctk.CTkFont(weight="bold", size=13), height=46)
+        # Reemplazado el emoji por [>] para compatibilidad estricta con Tcl/Tk
+        btn_descargar = ctk.CTkButton(box, text="[>] Iniciar Descarga e Ingesta", command=self.iniciar_descarga_spotdl, fg_color="#1DB954", hover_color="#169c46", text_color="#000000", font=ctk.CTkFont(weight="bold", size=13), height=46)
         btn_descargar.pack(fill="x")
         CTkToolTip(btn_descargar, "Inicia la descarga de las pistas en segundo plano.")
 
-        # Consola dedicada de spotDL
         ctk.CTkLabel(self.tab_spotdl, text="Estado de Descargas Spotify:", font=ctk.CTkFont(size=12, weight="bold"), text_color="#888888").pack(anchor="w", padx=5, pady=(10, 5))
         self.spotdl_log_box = ctk.CTkTextbox(self.tab_spotdl, fg_color="#111111", text_color="#1DB954", font=("Menlo", 11), corner_radius=8)
         self.spotdl_log_box.pack(fill="both", expand=True, padx=5, pady=(0, 5))
@@ -329,7 +327,7 @@ class CleanDJmixApp(ctk.CTk):
     def iniciar_descarga_spotdl(self):
         url = self.entry_spotdl_url.get().strip()
         if not url:
-            self.log_spotdl("[!] Por favor, introduce una URL válida de Spotify.", "error")
+            self.log_spotdl("[!] Por favor, introduce una URL valida de Spotify.", "error")
             return
         threading.Thread(target=self._hilo_descarga_spotdl, args=(url,), daemon=True).start()
 
@@ -341,11 +339,10 @@ class CleanDJmixApp(ctk.CTk):
         
         if nuevos_archivos and self.auto_process_spotdl_var.get():
             self.log_spotdl(f"[SpotDL] Procesando y clasificando {len(nuevos_archivos)} pistas hacia Serato...", "info")
-            # Cambiamos a la pestaña de auditoría y corremos el clasificador
             self.iniciar_hilo(modo="normal")
 
     def _construir_pestana_destinos(self):
-        ctk.CTkLabel(self.tab_destinos, text="Configuración Avanzada de Destinos (Estructura Serato Crate)", font=ctk.CTkFont(size=16, weight="bold"), text_color="#FFFFFF").pack(pady=10)
+        ctk.CTkLabel(self.tab_destinos, text="Configuracion Avanzada de Destinos (Estructura Serato Crate)", font=ctk.CTkFont(size=16, weight="bold"), text_color="#FFFFFF").pack(pady=10)
         ctk.CTkLabel(self.tab_destinos, text="Personaliza las carpetas y rutas de disco compatibles con las playlists de Serato DJ.", font=ctk.CTkFont(size=11), text_color="#888888").pack(pady=(0, 10))
 
         scroll = ctk.CTkScrollableFrame(self.tab_destinos, fg_color="#1e1e1e")
@@ -357,7 +354,7 @@ class CleanDJmixApp(ctk.CTk):
             g_frame = ctk.CTkFrame(scroll, fg_color="#242424", corner_radius=6)
             g_frame.pack(fill="x", pady=6, padx=5, ipady=6)
             
-            lbl_GM = ctk.CTkLabel(g_frame, text=f"Género Madre (Serato): {genero}", font=ctk.CTkFont(size=13, weight="bold"), text_color="#00AEEF")
+            lbl_GM = ctk.CTkLabel(g_frame, text=f"Genero Madre (Serato): {genero}", font=ctk.CTkFont(size=13, weight="bold"), text_color="#00AEEF")
             lbl_GM.pack(anchor="w", padx=15, pady=5)
             
             sub_container = ctk.CTkFrame(g_frame, fg_color="transparent")
@@ -378,7 +375,7 @@ class CleanDJmixApp(ctk.CTk):
                 
                 e_ruta = ctk.CTkEntry(s_frame, height=32, fg_color="#242424", text_color="#FFFFFF", placeholder_text="Ruta opcional (por defecto origen)")
                 e_ruta.pack(side="left", padx=8, expand=True, fill="x")
-                CTkToolTip(e_ruta, "Ruta absoluta de destino (ej: disco externo para Serato).")
+                CTkToolTip(e_ruta, "Ruta absoluta de destino.")
                 
                 def elegir_path(entry=e_ruta):
                     d = filedialog.askdirectory()
@@ -388,12 +385,12 @@ class CleanDJmixApp(ctk.CTk):
                 
                 btn_d = ctk.CTkButton(s_frame, text="Dir", command=elegir_path, width=45, height=32, fg_color="#333333")
                 btn_d.pack(side="right", padx=10)
-                CTkToolTip(btn_d, "Selecciona una unidad externa para Serato.")
+                CTkToolTip(btn_d, "Selecciona una unidad de disco.")
                 
                 self.widgets_destinos[genero][sub] = {"carpeta": e_carp, "ruta": e_ruta}
 
     def _construir_pestana_logs(self):
-        lbl_consola_title = ctk.CTkLabel(self.tab_logs, text="Registro de Ejecución en Tiempo Real (Serato Bridge)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFFFFF")
+        lbl_consola_title = ctk.CTkLabel(self.tab_logs, text="Registro de Ejecucion en Tiempo Real (Serato Bridge)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFFFFF")
         lbl_consola_title.pack(pady=10, anchor="w", padx=5)
         
         self.consola = ctk.CTkTextbox(self.tab_logs, fg_color="#111111", text_color="#00AEEF", font=("Menlo", 12), corner_radius=8)
@@ -414,22 +411,22 @@ class CleanDJmixApp(ctk.CTk):
     def toggle_pausa(self):
         self.pause_flag = not self.pause_flag
         if self.pause_flag:
-            self.btn_pause.configure(text="▶ Reanudar", fg_color="#00FF88")
+            self.btn_pause.configure(text="> Reanudar", fg_color="#00FF88")
             self.log("[i] Proceso pausado por el usuario.", "info")
         else:
-            self.btn_pause.configure(text="⏸ Pausa", fg_color="#FFAA00")
+            self.btn_pause.configure(text="|| Pausa", fg_color="#FFAA00")
             self.log("[i] Proceso reanudado.", "info")
 
     def cancelar_proceso(self):
         self.cancel_flag = True
         self.pause_flag = False
-        self.btn_pause.configure(text="⏸ Pausa", fg_color="#FFAA00")
+        self.btn_pause.configure(text="|| Pausa", fg_color="#FFAA00")
         self.log("[!] Cancelando proceso actual...", "error")
 
     def iniciar_hilo(self, modo="normal"):
         self.cancel_flag = False
         self.pause_flag = False
-        self.btn_pause.configure(text="⏸ Pausa", fg_color="#FFAA00")
+        self.btn_pause.configure(text="|| Pausa", fg_color="#FFAA00")
         threading.Thread(target=self.procesar_biblioteca, args=(modo,), daemon=True).start()
 
     def procesar_biblioteca(self, modo):
@@ -449,7 +446,7 @@ class CleanDJmixApp(ctk.CTk):
         for item in self.tree.get_children():
             self.tree.delete(item)
             
-        self.log(f"[ MÓDULO {modo.upper()} ] Analizando {total} pistas con métricas profesionales...", "info")
+        self.log(f"[ MODULO {modo.upper()} ] Analizando {total} pistas con metricas profesionales...", "info")
         
         resultados_informe = []
         conteo_generos = {}
@@ -480,9 +477,9 @@ class CleanDJmixApp(ctk.CTk):
                 tonalidad = "8B" if bpm > 125 else "4A"
                 
                 if bpm > 135 and energia > 60:
-                    mood = "Eufórico / Hype"
+                    mood = "Euforico / Hype"
                 elif bpm < 122 and energia < 40:
-                    mood = "Chill / Melancólico"
+                    mood = "Chill / Melancolico"
                 elif "techno" in " ".join(estilos) or centroide > 2800:
                     mood = "Oscuro / Industrial"
                 else:
@@ -540,7 +537,7 @@ class CleanDJmixApp(ctk.CTk):
                     shutil.move(ruta_completa, ruta_destino)
                     self.log(f"[{procesadas}/{total}] Serato Export OK [Key: {tonalidad} | Mood: {mood} | Bail: {bailabilidad_str}] -> {nuevo_nombre}", "success")
                 else:
-                    self.log(f"[{procesadas}/{total}] Auditoría Serato [Key: {tonalidad} | Mood: {mood} | Bail: {bailabilidad_str}]: {nuevo_nombre}", "info")
+                    self.log(f"[{procesadas}/{total}] Auditoria Serato [Key: {tonalidad} | Mood: {mood} | Bail: {bailabilidad_str}]: {nuevo_nombre}", "info")
             except Exception as e:
                 logging.error(traceback.format_exc())
                 self.log(f"[!] Error en {nombre_archivo}", "error")
@@ -550,9 +547,9 @@ class CleanDJmixApp(ctk.CTk):
         if modo != "auditar" and resultados_informe and not self.cancel_flag:
             csv_path = AudioAdapter.exportar_informe_csv(resultados_informe, ruta_base)
             if csv_path:
-                self.log(f"\n[i] INFORME ANALÍTICO CSV COMPLETO PARA SERATO GENERADO: {csv_path}", "success")
+                self.log(f"\n[i] INFORME ANALITICO CSV COMPLETO PARA SERATO GENERADO: {csv_path}", "success")
             
-            self.log("\n--- ESTADÍSTICAS DE EXPORTACIÓN (SERATO) ---", "info")
+            self.log("\n--- ESTADISTICAS DE EXPORTACION (SERATO) ---", "info")
             for gen, cantid in conteo_generos.items():
                 self.log(f"  • {gen}: {cantid} pistas preparadas", "success")
                 
