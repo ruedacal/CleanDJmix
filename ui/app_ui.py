@@ -1,6 +1,6 @@
 """
-Módulo de Interfaz Gráfica (UI): CleanDJmix PRO con diseño visual avanzado 
-(Logotipo principal grande con descripción, badge de Serato DJ a la derecha y marca de agua central).
+Módulo de Interfaz Gráfica (UI): CleanDJmix PRO con pantalla completa real 
+y renderizado robusto de logotipos corporativos.
 """
 
 import os
@@ -11,7 +11,7 @@ import traceback
 import logging
 import customtkinter as ctk
 from tkinter import filedialog, ttk
-from PIL import Image, ImageEnhance
+from PIL import Image
 from domain.models import TrackDomain, TAXONOMIA_ELECTRONICA
 from infrastructure.adapters import AudioAdapter
 
@@ -86,30 +86,36 @@ class CleanDJmixApp(ctk.CTk):
         
         self.title("CleanDJmix PRO - Suite Profesional para DJs")
         
+        # Apertura a pantalla completa real (Compatible con macOS y Windows/Linux)
         try:
-            self.state("-zoomed")
+            self.attributes("-fullscreen", True)
+            # Vincular la tecla ESC para poder salir del modo pantalla completa si el usuario lo desea
+            self.bind("<Escape>", lambda e: self.attributes("-fullscreen", False))
         except Exception:
             try:
-                self.attributes("-zoomed", True)
+                self.state("-zoomed")
             except Exception:
                 self.geometry("1400x900")
 
         self.resizable(True, True)
         
-        # Cargar imágenes corporativas (Logo grande izquierdo y logo pequeño Serato/Derecha)
+        # Carga segura de imágenes corporativas
         self.logo_img_header = None
         self.logo_img_small = None
         try:
-            logo_path = "assets/logo_grande.png"
-            if not os.path.exists(logo_path):
-                logo_path = "assets/icon_32x32.png"
-                
-            if os.path.exists(logo_path):
-                pil_img = Image.open(logo_path)
-                self.logo_img_header = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=(54, 54))
+            logo_paths = ["assets/logo_grande.png", "assets/AppIcon.appiconset/icon_512x512.png"]
+            selected_path = None
+            for p in logo_paths:
+                if os.path.exists(p):
+                    selected_path = p
+                    break
+            
+            if selected_path:
+                pil_img = Image.open(selected_path)
+                self.logo_img_header = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=(50, 50))
                 self.logo_img_small = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=(24, 24))
-        except Exception:
-            pass
+        except Exception as e:
+            print("Error cargando logo:", e)
 
         self.safe_mode_var = ctk.BooleanVar(value=True)
         self.cancel_flag = False 
@@ -135,7 +141,7 @@ class CleanDJmixApp(ctk.CTk):
             }
 
         self.tabview = ctk.CTkTabview(self, fg_color="#181818", segmented_button_selected_color="#00AEEF", segmented_button_unselected_color="#242424")
-        self.tabview.pack(fill="both", expand=True, padx=25, pady=(20, 10))
+        self.tabview.pack(fill="both", expand=True, padx=30, pady=(20, 10))
         
         self.tab_control = self.tabview.add("Control y Auditoria")
         self.tab_destinos = self.tabview.add("Destinos y Taxonomia")
@@ -145,21 +151,21 @@ class CleanDJmixApp(ctk.CTk):
         self._construir_pestana_destinos()
         self._construir_pestana_logs()
         
-        status_frame = ctk.CTkFrame(self, fg_color="#141414", corner_radius=6, height=36)
-        status_frame.pack(fill="x", padx=25, pady=(0, 15))
+        status_frame = ctk.CTkFrame(self, fg_color="#141414", corner_radius=6, height=38)
+        status_frame.pack(fill="x", padx=30, pady=(0, 20))
         status_frame.pack_propagate(False)
         
         ctk.CTkLabel(status_frame, text="AYUDA / INFO:", font=ctk.CTkFont(size=10, weight="bold"), text_color="#00AEEF").pack(side="left", padx=(15, 5))
-        self.lbl_status = ctk.CTkLabel(status_frame, text="Pasa el ratón por cualquier control para ver su descripción detallada.", font=ctk.CTkFont(size=11), text_color="#AAAAAA")
+        self.lbl_status = ctk.CTkLabel(status_frame, text="Pasa el ratón por cualquier control para ver su descripción detallada. (Presiona ESC para salir de pantalla completa)", font=ctk.CTkFont(size=11), text_color="#AAAAAA")
         self.lbl_status.pack(side="left", padx=5)
 
-        self.log("CleanDJmix PRO con diseño corporativo avanzado inicializado correctamente.\n", "info")
+        self.log("CleanDJmix PRO inicializado en pantalla completa con logotipos corporativos.\n", "info")
 
     def _construir_pestana_control(self):
         header = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         header.pack(fill="x", pady=(0, 10))
         
-        # Izquierda: Logotipo principal grande con título y descripción debajo
+        # Izquierda: Logo corporativo grande + Títulos
         left_header = ctk.CTkFrame(header, fg_color="transparent")
         left_header.pack(side="left")
         
@@ -170,34 +176,29 @@ class CleanDJmixApp(ctk.CTk):
         titles_frame = ctk.CTkFrame(left_header, fg_color="transparent")
         titles_frame.pack(side="left", anchor="w")
         
-        ctk.CTkLabel(titles_frame, text="CleanDJmix PRO", font=ctk.CTkFont(family="Helvetica", size=22, weight="bold"), text_color="#FFFFFF").pack(anchor="w")
-        ctk.CTkLabel(titles_frame, text="Advanced Library Management & Serato Workflow Suite", font=ctk.CTkFont(family="Helvetica", size=10), text_color="#888888").pack(anchor="w")
+        ctk.CTkLabel(titles_frame, text="CleanDJmix PRO", font=ctk.CTkFont(family="Helvetica", size=24, weight="bold"), text_color="#FFFFFF").pack(anchor="w")
+        ctk.CTkLabel(titles_frame, text="Advanced Library Management & Serato Workflow Suite", font=ctk.CTkFont(family="Helvetica", size=11), text_color="#888888").pack(anchor="w")
 
         # Derecha: Versión pequeña del logo + Badge de Serato DJ
         right_header = ctk.CTkFrame(header, fg_color="transparent")
         right_header.pack(side="right", anchor="e")
         
         serato_badge = ctk.CTkFrame(right_header, fg_color="#242424", corner_radius=6)
-        serato_badge.pack(side="right", padx=5, ipady=4, ipadx=8)
+        serato_badge.pack(side="right", padx=5, ipady=4, ipadx=10)
         
         if self.logo_img_small:
             ctk.CTkLabel(serato_badge, image=self.logo_img_small, text="").pack(side="left", padx=(4, 6))
             
-        ctk.CTkLabel(serato_badge, text="SERATO DJ READY", font=ctk.CTkFont(family="Helvetica", size=10, weight="bold"), text_color="#00AEEF").pack(side="left", padx=(0, 4))
+        ctk.CTkLabel(serato_badge, text="SERATO DJ READY", font=ctk.CTkFont(family="Helvetica", size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=(0, 4))
 
-        # Contenedor Principal (Liquid Pane con Marca de Agua / Watermark leve)
-        main_container = ctk.CTkFrame(self.tab_control, fg_color="#181818", corner_radius=10)
-        main_container.pack(fill="both", expand=True, pady=5)
-
-        # Usamos un frame interior para organizar columnas
-        main_pane = ctk.CTkFrame(main_container, fg_color="transparent")
-        main_pane.pack(fill="both", expand=True, padx=10, pady=10)
+        main_pane = ctk.CTkFrame(self.tab_control, fg_color="transparent")
+        main_pane.pack(fill="both", expand=True, pady=5)
         
         col_left = ctk.CTkFrame(main_pane, fg_color="transparent")
         col_left.pack(side="left", fill="both", expand=True, padx=(0, 10))
         
         col_right = ctk.CTkFrame(main_pane, fg_color="#222222", corner_radius=8)
-        col_right.pack(side="right", fill="y", padx=(10, 0), ipadx=10, ipady=10)
+        col_right.pack(side="right", fill="y", padx=(10, 0), ipadx=12, ipady=12)
 
         # Selector de Carpeta Origen
         src_frame = ctk.CTkFrame(col_left, fg_color="#242424", corner_radius=8)
@@ -206,12 +207,12 @@ class CleanDJmixApp(ctk.CTk):
         lbl_origen = ctk.CTkLabel(src_frame, text="ORIGEN", font=ctk.CTkFont(size=11, weight="bold"), text_color="#888888")
         lbl_origen.pack(side="left", padx=12)
         
-        self.entry_ruta = ctk.CTkEntry(src_frame, height=34, fg_color="#1e1e1e", text_color="#FFFFFF", font=("Courier", 11))
+        self.entry_ruta = ctk.CTkEntry(src_frame, height=36, fg_color="#1e1e1e", text_color="#FFFFFF", font=("Courier", 11))
         self.entry_ruta.insert(0, "/Users/admin/Music/mi musica/")
         self.entry_ruta.pack(side="left", padx=8, expand=True, fill="x")
         CTkToolTip(self.entry_ruta, "Ruta actual seleccionada de la biblioteca musical de origen.")
         
-        btn_browse = ctk.CTkButton(src_frame, text="Explorar", command=self.seleccionar_ruta, fg_color="#333333", hover_color="#444444", width=90, height=34)
+        btn_browse = ctk.CTkButton(src_frame, text="Explorar", command=self.seleccionar_ruta, fg_color="#333333", hover_color="#444444", width=100, height=36)
         btn_browse.pack(side="right", padx=12)
         CTkToolTip(btn_browse, "Haz clic para seleccionar la carpeta raíz con tu música.")
 
@@ -221,7 +222,7 @@ class CleanDJmixApp(ctk.CTk):
         lbl_tool = ctk.CTkLabel(dest_tool_frame, text="SOFTWARE DJ", font=ctk.CTkFont(size=11, weight="bold"), text_color="#888888")
         lbl_tool.pack(side="left", padx=12)
         
-        self.combo_dj_app = ctk.CTkComboBox(dest_tool_frame, values=["Serato DJ Pro / Lite", "(Próximamente más apps)"], width=240, height=30, fg_color="#1e1e1e", button_color="#00AEEF")
+        self.combo_dj_app = ctk.CTkComboBox(dest_tool_frame, values=["Serato DJ Pro / Lite", "(Próximamente más apps)"], width=250, height=32, fg_color="#1e1e1e", button_color="#00AEEF")
         self.combo_dj_app.set("Serato DJ Pro / Lite")
         self.combo_dj_app.pack(side="left", padx=8)
         CTkToolTip(self.combo_dj_app, "Software DJ de destino para adaptar la exportación.")
@@ -230,31 +231,31 @@ class CleanDJmixApp(ctk.CTk):
         ctk.CTkLabel(col_right, text="ETIQUETAS A INYECTAR", font=ctk.CTkFont(size=12, weight="bold"), text_color="#00AEEF").pack(anchor="w", pady=(0, 8))
         
         cb1 = ctk.CTkCheckBox(col_right, text="BPM y Clave (Key)", variable=self.chk_vars["bpm"], text_color="#DDD", font=ctk.CTkFont(size=11))
-        cb1.pack(anchor="w", pady=2)
+        cb1.pack(anchor="w", pady=3)
         CTkToolTip(cb1, "Inyecta BPM exacto y tonalidad musical.")
 
         cb2 = ctk.CTkCheckBox(col_right, text="Energía", variable=self.chk_vars["energia"], text_color="#DDD", font=ctk.CTkFont(size=11))
-        cb2.pack(anchor="w", pady=2)
+        cb2.pack(anchor="w", pady=3)
         CTkToolTip(cb2, "Añade métricas calculadas de energía.")
 
         cb3 = ctk.CTkCheckBox(col_right, text="Bailabilidad", variable=self.chk_vars["danceability"], text_color="#DDD", font=ctk.CTkFont(size=11))
-        cb3.pack(anchor="w", pady=2)
+        cb3.pack(anchor="w", pady=3)
         CTkToolTip(cb3, "Inyecta el índice de bailabilidad.")
 
         cb4 = ctk.CTkCheckBox(col_right, text="Mood (Estado de Ánimo)", variable=self.chk_vars["mood"], text_color="#DDD", font=ctk.CTkFont(size=11))
-        cb4.pack(anchor="w", pady=2)
+        cb4.pack(anchor="w", pady=3)
         CTkToolTip(cb4, "Inyecta el estado de ánimo (ej: Eufórico, Oscuro, Chill).")
 
         cb5 = ctk.CTkCheckBox(col_right, text="Carátula / Cover Art", variable=self.chk_vars["cover"], text_color="#DDD", font=ctk.CTkFont(size=11))
-        cb5.pack(anchor="w", pady=2)
+        cb5.pack(anchor="w", pady=3)
         CTkToolTip(cb5, "Inyecta o actualiza la imagen de carátula.")
 
         cb6 = ctk.CTkCheckBox(col_right, text="Comentario Profesional", variable=self.chk_vars["comentario"], text_color="#DDD", font=ctk.CTkFont(size=11))
-        cb6.pack(anchor="w", pady=2)
+        cb6.pack(anchor="w", pady=3)
         CTkToolTip(cb6, "Añade notas de mezcla y estilo.")
 
         cb7 = ctk.CTkCheckBox(col_right, text="Artista, Título y Álbum", variable=self.chk_vars["tags_base"], text_color="#DDD", font=ctk.CTkFont(size=11))
-        cb7.pack(anchor="w", pady=2)
+        cb7.pack(anchor="w", pady=3)
         CTkToolTip(cb7, "Normaliza los tags oficiales de ID3.")
 
         # Tabla de Auditoría Rápida con columna MOOD
@@ -265,12 +266,12 @@ class CleanDJmixApp(ctk.CTk):
 
         style = ttk.Style()
         style.theme_use("default")
-        style.configure("Treeview", background="#111111", foreground="#FFFFFF", fieldbackground="#111111", rowheight=24, font=("Menlo", 10))
+        style.configure("Treeview", background="#111111", foreground="#FFFFFF", fieldbackground="#111111", rowheight=26, font=("Menlo", 10))
         style.configure("Treeview.Heading", background="#242424", foreground="#00AEEF", font=("Helvetica", 10, "bold"))
         style.map("Treeview", background=[('selected', '#00AEEF')])
 
         columns = ("archivo", "artista", "titulo", "duracion", "bpm", "key", "mood", "bailabilidad", "estado")
-        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=8)
+        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=12)
         
         self.tree.heading("archivo", text="Fichero")
         self.tree.heading("artista", text="Artista")
@@ -282,15 +283,15 @@ class CleanDJmixApp(ctk.CTk):
         self.tree.heading("bailabilidad", text="Bailabilidad")
         self.tree.heading("estado", text="Taxonomía")
         
-        self.tree.column("archivo", width=140, anchor="w")
-        self.tree.column("artista", width=100, anchor="w")
-        self.tree.column("titulo", width=120, anchor="w")
-        self.tree.column("duracion", width=60, anchor="center")
-        self.tree.column("bpm", width=50, anchor="center")
-        self.tree.column("key", width=50, anchor="center")
-        self.tree.column("mood", width=80, anchor="center")
-        self.tree.column("bailabilidad", width=75, anchor="center")
-        self.tree.column("estado", width=120, anchor="center")
+        self.tree.column("archivo", width=180, anchor="w")
+        self.tree.column("artista", width=130, anchor="w")
+        self.tree.column("titulo", width=150, anchor="w")
+        self.tree.column("duracion", width=70, anchor="center")
+        self.tree.column("bpm", width=60, anchor="center")
+        self.tree.column("key", width=60, anchor="center")
+        self.tree.column("mood", width=100, anchor="center")
+        self.tree.column("bailabilidad", width=90, anchor="center")
+        self.tree.column("estado", width=150, anchor="center")
         
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
@@ -299,35 +300,35 @@ class CleanDJmixApp(ctk.CTk):
         scrollbar.pack(side="right", fill="y", pady=5)
 
         safe_cb = ctk.CTkCheckBox(col_left, text="Modo Seguro (Simulación: No modifica ficheros físicos en disco)", variable=self.safe_mode_var, text_color="#AAAAAA", fg_color="#00AEEF")
-        safe_cb.pack(pady=3, anchor="w")
+        safe_cb.pack(pady=4, anchor="w")
         CTkToolTip(safe_cb, "Simula todo el proceso sin alterar archivos reales en el disco.")
 
-        self.progreso = ctk.CTkProgressBar(col_left, progress_color="#00AEEF", fg_color="#242424", height=8)
-        self.progreso.pack(fill="x", pady=6)
+        self.progreso = ctk.CTkProgressBar(col_left, progress_color="#00AEEF", fg_color="#242424", height=10)
+        self.progreso.pack(fill="x", pady=8)
         self.progreso.set(0)
 
         # Botones de Acción Operativa + Controles de Pausa y Cancelación
         btn_frame = ctk.CTkFrame(col_left, fg_color="transparent")
         btn_frame.pack(fill="x", pady=5)
         
-        btn_audit = ctk.CTkButton(btn_frame, text="1. Auditar", command=lambda: self.iniciar_hilo("auditar"), fg_color="#333333", text_color="#00AEEF", font=ctk.CTkFont(weight="bold"), height=38, width=95)
-        btn_audit.pack(side="left", padx=(0, 4))
+        btn_audit = ctk.CTkButton(btn_frame, text="1. Auditar", command=lambda: self.iniciar_hilo("auditar"), fg_color="#333333", text_color="#00AEEF", font=ctk.CTkFont(weight="bold"), height=42, width=110)
+        btn_audit.pack(side="left", padx=(0, 6))
         CTkToolTip(btn_audit, "Escanea la biblioteca mostrando duración, key, mood y bailabilidad.")
 
-        btn_std = ctk.CTkButton(btn_frame, text="2. Inyectar y Organizar", command=lambda: self.iniciar_hilo("normal"), fg_color="#00AEEF", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=38)
-        btn_std.pack(side="left", expand=True, fill="x", padx=4)
+        btn_std = ctk.CTkButton(btn_frame, text="2. Inyectar y Organizar", command=lambda: self.iniciar_hilo("normal"), fg_color="#00AEEF", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42)
+        btn_std.pack(side="left", expand=True, fill="x", padx=6)
         CTkToolTip(btn_std, "Inyecta etiquetas personalizadas y organiza para Serato.")
 
-        btn_resc = ctk.CTkButton(btn_frame, text="3. Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=38, width=85)
-        btn_resc.pack(side="left", padx=4)
+        btn_resc = ctk.CTkButton(btn_frame, text="3. Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42, width=100)
+        btn_resc.pack(side="left", padx=6)
         CTkToolTip(btn_resc, "Rescate online de pistas huérfanas.")
 
-        self.btn_pause = ctk.CTkButton(btn_frame, text="⏸ Pausa", command=self.toggle_pausa, fg_color="#FFAA00", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=38, width=80)
-        self.btn_pause.pack(side="left", padx=4)
+        self.btn_pause = ctk.CTkButton(btn_frame, text="⏸ Pausa", command=self.toggle_pausa, fg_color="#FFAA00", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42, width=90)
+        self.btn_pause.pack(side="left", padx=6)
         CTkToolTip(self.btn_pause, "Pausa o reanuda temporalmente el proceso en curso.")
 
-        btn_cancel = ctk.CTkButton(btn_frame, text="⏹ Cancelar", command=self.cancelar_proceso, fg_color="#FF4444", text_color="#FFFFFF", font=ctk.CTkFont(weight="bold"), height=38, width=85)
-        btn_cancel.pack(side="left", padx=(4, 0))
+        btn_cancel = ctk.CTkButton(btn_frame, text="⏹ Cancelar", command=self.cancelar_proceso, fg_color="#FF4444", text_color="#FFFFFF", font=ctk.CTkFont(weight="bold"), height=42, width=100)
+        btn_cancel.pack(side="left", padx=(6, 0))
         CTkToolTip(btn_cancel, "Detiene de forma segura la ejecución actual.")
 
     def _construir_pestana_destinos(self):

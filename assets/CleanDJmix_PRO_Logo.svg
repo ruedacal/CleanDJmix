@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <!-- App Icon Background with macOS squircle shape -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  
+  <!-- Embedded High-Res Raster Asset for CleanDJmix PRO -->
+  <image href="icon_1024x1024.png" width="1024" height="1024"/>
+  
+  <!-- App Metadata Overlay / Vector Guidelines -->
+  <text x="512" y="900" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle">CleanDJmix PRO</text>
+  <text x="512" y="960" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="normal" fill="#94a3b8" text-anchor="middle">by Victor Rueda</text>
+</svg>
