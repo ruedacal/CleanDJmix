@@ -5,3 +5,12 @@ dist/
 .env
 CleanDJmix_crash.log
 .cleandjmix_session.json
+env/
+.cache/
+env/
+.cache/
+__pycache__/
+*.pyc
+*.DS_Store
+assets_extracted/
+CleanDJmix_PRO_Assets.zip

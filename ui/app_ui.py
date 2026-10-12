@@ -13,7 +13,7 @@ import customtkinter as ctk
 from tkinter import filedialog, ttk
 from PIL import Image
 from domain.models import TrackDomain, TAXONOMIA_ELECTRONICA
-from infrastructure.adapters import AudioAdapter, SpotDLAdapter
+from infrastructure.adapters import AudioAdapter, SpotifyDownloaderAdapter
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -108,12 +108,12 @@ class CleanDJmixApp(ctk.CTk):
             pass
 
         self.safe_mode_var = ctk.BooleanVar(value=True)
-        self.auto_process_spotdl_var = ctk.BooleanVar(value=True)
+        self.auto_process_spotify_dl_var = ctk.BooleanVar(value=True)
         self.cancel_flag = False 
         self.pause_flag = False 
         
         # Almacenamiento de pistas de Spotify escaneadas
-        self.spotdl_songs_data = [] 
+        self.spotify_dl_songs_data = [] 
         
         self.chk_vars = {
             "bpm": ctk.BooleanVar(value=True),
@@ -138,12 +138,12 @@ class CleanDJmixApp(ctk.CTk):
         self.tabview.pack(fill="both", expand=True, padx=30, pady=(20, 10))
         
         self.tab_control = self.tabview.add("Control y Auditoria")
-        self.tab_spotdl = self.tabview.add("Descarga Spotify (spotDL)")
+        self.tab_spotify_dl = self.tabview.add("Descargador Spotify")
         self.tab_destinos = self.tabview.add("Destinos y Taxonomia")
         self.tab_logs = self.tabview.add("Consola y Logs")
         
         self._construir_pestana_control()
-        self._construir_pestana_spotdl()
+        self._construir_pestana_spotify_dl()
         self._construir_pestana_destinos()
         self._construir_pestana_logs()
         
@@ -274,16 +274,16 @@ class CleanDJmixApp(ctk.CTk):
         btn_cancel = ctk.CTkButton(btn_frame, text="[X] Cancelar", command=self.cancelar_proceso, fg_color="#FF4444", text_color="#FFFFFF", font=ctk.CTkFont(weight="bold"), height=42, width=100)
         btn_cancel.pack(side="left", padx=(6, 0))
 
-    def _construir_pestana_spotdl(self):
+    def _construir_pestana_spotify_dl(self):
         """Pestaña spotDL con selección individual de pistas por checks (Carátula, Título, Artista, Álbum, Duración)."""
-        header_sp = ctk.CTkFrame(self.tab_spotdl, fg_color="transparent")
+        header_sp = ctk.CTkFrame(self.tab_spotify_dl, fg_color="transparent")
         header_sp.pack(fill="x", pady=10)
         
         ctk.CTkLabel(header_sp, text="Ingesta Directa desde Spotify (spotDL)", font=ctk.CTkFont(family="Helvetica", size=22, weight="bold"), text_color="#1DB954").pack(anchor="w")
         ctk.CTkLabel(header_sp, text="Escanea playlists o tracks, selecciona que canciones descargar y organizalas directamente a Serato.", font=ctk.CTkFont(size=12), text_color="#888888").pack(anchor="w", pady=(2, 0))
 
         # Panel Superior de Búsqueda
-        box_search = ctk.CTkFrame(self.tab_spotdl, fg_color="#222222", corner_radius=8)
+        box_search = ctk.CTkFrame(self.tab_spotify_dl, fg_color="#222222", corner_radius=8)
         box_search.pack(fill="x", pady=10, padx=5, ipady=10, ipadx=10)
 
         ctk.CTkLabel(box_search, text="URL DE SPOTIFY (PLAYLIST, ALBUM O TRACK):", font=ctk.CTkFont(size=11, weight="bold"), text_color="#CCCCCC").pack(anchor="w", pady=(0, 4))
@@ -291,15 +291,15 @@ class CleanDJmixApp(ctk.CTk):
         url_input_frame = ctk.CTkFrame(box_search, fg_color="transparent")
         url_input_frame.pack(fill="x")
 
-        self.entry_spotdl_url = ctk.CTkEntry(url_input_frame, height=38, fg_color="#181818", text_color="#FFFFFF", font=("Courier", 11), placeholder_text="https://open.spotify.com/playlist/... o track/...")
-        self.entry_spotdl_url.pack(side="left", expand=True, fill="x", padx=(0, 10))
+        self.entry_spotify_dl_url = ctk.CTkEntry(url_input_frame, height=38, fg_color="#181818", text_color="#FFFFFF", font=("Courier", 11), placeholder_text="https://open.spotify.com/playlist/... o track/...")
+        self.entry_spotify_dl_url.pack(side="left", expand=True, fill="x", padx=(0, 10))
 
-        self.btn_scan = ctk.CTkButton(url_input_frame, text="1. Cargar Lista", command=self.iniciar_escaneo_spotdl, fg_color="#333333", text_color="#1DB954", font=ctk.CTkFont(weight="bold"), height=38, width=140)
+        self.btn_scan = ctk.CTkButton(url_input_frame, text="1. Cargar Lista", command=self.iniciar_escaneo_spotify_dl, fg_color="#333333", text_color="#1DB954", font=ctk.CTkFont(weight="bold"), height=38, width=140)
         self.btn_scan.pack(side="right")
         CTkToolTip(self.btn_scan, "Busca los metadatos y muestra el listado con checks antes de descargar.")
 
         # Barra de Selección Rápida y Acciones
-        action_bar = ctk.CTkFrame(self.tab_spotdl, fg_color="transparent")
+        action_bar = ctk.CTkFrame(self.tab_spotify_dl, fg_color="transparent")
         action_bar.pack(fill="x", padx=5, pady=5)
 
         self.lbl_conteo_sel = ctk.CTkLabel(action_bar, text="Pistas encontradas: 0 | Seleccionadas: 0", font=ctk.CTkFont(size=12, weight="bold"), text_color="#FFFFFF")
@@ -311,15 +311,15 @@ class CleanDJmixApp(ctk.CTk):
         btn_unselect_all = ctk.CTkButton(action_bar, text="Desmarcar Todas", command=lambda: self._set_all_checks(False), fg_color="#2b2b2b", width=120, height=30)
         btn_unselect_all.pack(side="left", padx=6)
 
-        cb_auto = ctk.CTkCheckBox(action_bar, text="Auto-clasificar a Serato tras descarga", variable=self.auto_process_spotdl_var, font=ctk.CTkFont(size=11), text_color="#DDD", fg_color="#1DB954")
+        cb_auto = ctk.CTkCheckBox(action_bar, text="Auto-clasificar a Serato tras descarga", variable=self.auto_process_spotify_dl_var, font=ctk.CTkFont(size=11), text_color="#DDD", fg_color="#1DB954")
         cb_auto.pack(side="right", padx=10)
 
         # Contenedor Desplazable con el Listado de Canciones y Checks
-        self.spotdl_scroll_list = ctk.CTkScrollableFrame(self.tab_spotdl, fg_color="#161616", corner_radius=8, height=260)
-        self.spotdl_scroll_list.pack(fill="both", expand=True, padx=5, pady=5)
+        self.spotify_dl_scroll_list = ctk.CTkScrollableFrame(self.tab_spotify_dl, fg_color="#161616", corner_radius=8, height=260)
+        self.spotify_dl_scroll_list.pack(fill="both", expand=True, padx=5, pady=5)
 
         # Encabezado de la lista
-        list_header = ctk.CTkFrame(self.spotdl_scroll_list, fg_color="#202020", corner_radius=4, height=30)
+        list_header = ctk.CTkFrame(self.spotify_dl_scroll_list, fg_color="#202020", corner_radius=4, height=30)
         list_header.pack(fill="x", pady=(0, 5), ipady=3)
         ctk.CTkLabel(list_header, text="SEL", width=50, font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
         ctk.CTkLabel(list_header, text="TITULO", width=220, anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
@@ -328,46 +328,46 @@ class CleanDJmixApp(ctk.CTk):
         ctk.CTkLabel(list_header, text="DURACION", width=80, anchor="center", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
 
         # Botón para descargar únicamente las seleccionadas
-        self.btn_descargar_sel = ctk.CTkButton(self.tab_spotdl, text="[>] 2. Descargar Canciones Seleccionadas", command=self.iniciar_descarga_seleccionadas, fg_color="#1DB954", hover_color="#169c46", text_color="#000000", font=ctk.CTkFont(weight="bold", size=13), height=42)
+        self.btn_descargar_sel = ctk.CTkButton(self.tab_spotify_dl, text="[>] 2. Descargar Canciones Seleccionadas", command=self.iniciar_descarga_seleccionadas, fg_color="#1DB954", hover_color="#169c46", text_color="#000000", font=ctk.CTkFont(weight="bold", size=13), height=42)
         self.btn_descargar_sel.pack(fill="x", padx=5, pady=8)
 
         # Registro de estado
-        self.spotdl_log_box = ctk.CTkTextbox(self.tab_spotdl, fg_color="#111111", text_color="#1DB954", font=("Menlo", 11), corner_radius=8, height=80)
-        self.spotdl_log_box.pack(fill="x", padx=5, pady=(0, 5))
+        self.spotify_dl_log_box = ctk.CTkTextbox(self.tab_spotify_dl, fg_color="#111111", text_color="#1DB954", font=("Menlo", 11), corner_radius=8, height=80)
+        self.spotify_dl_log_box.pack(fill="x", padx=5, pady=(0, 5))
 
-    def log_spotdl(self, mensaje, tag="info"):
-        if hasattr(self, 'spotdl_log_box'):
-            self.spotdl_log_box.insert("end", mensaje + "\n")
-            self.spotdl_log_box.see("end")
+    def log_spotify_dl(self, mensaje, tag="info"):
+        if hasattr(self, 'spotify_dl_log_box'):
+            self.spotify_dl_log_box.insert("end", mensaje + "\n")
+            self.spotify_dl_log_box.see("end")
         self.log(mensaje, tag)
 
-    def iniciar_escaneo_spotdl(self):
-        url = self.entry_spotdl_url.get().strip()
+    def iniciar_escaneo_spotify_dl(self):
+        url = self.entry_spotify_dl_url.get().strip()
         if not url:
-            self.log_spotdl("[!] Introduce una URL valida de Spotify.", "error")
+            self.log_spotify_dl("[!] Introduce una URL valida de Spotify.", "error")
             return
         self.btn_scan.configure(state="disabled", text="Buscando...")
-        threading.Thread(target=self._hilo_escanear_spotdl, args=(url,), daemon=True).start()
+        threading.Thread(target=self._hilo_escanear_spotify_dl, args=(url,), daemon=True).start()
 
-    def _hilo_escanear_spotdl(self, url):
-        self.log_spotdl(f"[SpotDL] Obteniendo lista de canciones para: {url}...", "info")
-        canciones = SpotDLAdapter.escanear_lista(url, callback_log=self.log_spotdl)
+    def _hilo_escanear_spotify_dl(self, url):
+        self.log_spotify_dl(f"[Spotify] Obteniendo lista de canciones para: {url}...", "info")
+        canciones = SpotifyDownloaderAdapter.escanear_lista(url, callback_log=self.log_spotify_dl)
         self.btn_scan.configure(state="normal", text="1. Cargar Lista")
         
         # Limpiar filas anteriores
-        for w in self.spotdl_scroll_list.winfo_children()[1:]:
+        for w in self.spotify_dl_scroll_list.winfo_children()[1:]:
             w.destroy()
             
-        self.spotdl_songs_data = []
+        self.spotify_dl_songs_data = []
         
         for item in canciones:
             var_chk = ctk.BooleanVar(value=True)
-            self.spotdl_songs_data.append({
+            self.spotify_dl_songs_data.append({
                 "data": item,
                 "var": var_chk
             })
             
-            row = ctk.CTkFrame(self.spotdl_scroll_list, fg_color="#1c1c1c", corner_radius=4)
+            row = ctk.CTkFrame(self.spotify_dl_scroll_list, fg_color="#1c1c1c", corner_radius=4)
             row.pack(fill="x", pady=2, ipady=2)
             
             chk = ctk.CTkCheckBox(row, text="", variable=var_chk, width=40, command=self._actualizar_contador_sel, fg_color="#1DB954")
@@ -379,22 +379,22 @@ class CleanDJmixApp(ctk.CTk):
             ctk.CTkLabel(row, text=item["duracion"], width=80, anchor="center", font=ctk.CTkFont(size=11), text_color="#00AEEF").pack(side="left", padx=5)
 
         self._actualizar_contador_sel()
-        self.log_spotdl(f"[SpotDL] Se han listado {len(canciones)} pistas para seleccion.", "success")
+        self.log_spotify_dl(f"[Spotify] Se han listado {len(canciones)} pistas para seleccion.", "success")
 
     def _actualizar_contador_sel(self):
-        total = len(self.spotdl_songs_data)
-        sel = sum(1 for item in self.spotdl_songs_data if item["var"].get())
+        total = len(self.spotify_dl_songs_data)
+        sel = sum(1 for item in self.spotify_dl_songs_data if item["var"].get())
         self.lbl_conteo_sel.configure(text=f"Pistas encontradas: {total} | Seleccionadas: {sel}")
 
     def _set_all_checks(self, valor: bool):
-        for item in self.spotdl_songs_data:
+        for item in self.spotify_dl_songs_data:
             item["var"].set(valor)
         self._actualizar_contador_sel()
 
     def iniciar_descarga_seleccionadas(self):
-        seleccionadas = [item["data"]["song_obj"] for item in self.spotdl_songs_data if item["var"].get()]
+        seleccionadas = [item["data"]["song_obj"] for item in self.spotify_dl_songs_data if item["var"].get()]
         if not seleccionadas:
-            self.log_spotdl("[!] No hay ninguna cancion seleccionada para descargar.", "error")
+            self.log_spotify_dl("[!] No hay ninguna cancion seleccionada para descargar.", "error")
             return
         threading.Thread(target=self._hilo_descarga_seleccionadas, args=(seleccionadas,), daemon=True).start()
 
@@ -402,16 +402,16 @@ class CleanDJmixApp(ctk.CTk):
         directorio_destino = self.entry_ruta.get().strip()
         self.btn_descargar_sel.configure(state="disabled", text="Descargando...")
         
-        nuevos_archivos = SpotDLAdapter.descargar_canciones_seleccionadas(
+        nuevos_archivos = SpotifyDownloaderAdapter.descargar_canciones_seleccionadas(
             songs_to_download, 
             directorio_destino, 
-            callback_log=self.log_spotdl
+            callback_log=self.log_spotify_dl
         )
         
         self.btn_descargar_sel.configure(state="normal", text="[>] 2. Descargar Canciones Seleccionadas")
         
-        if nuevos_archivos and self.auto_process_spotdl_var.get():
-            self.log_spotdl(f"[SpotDL] Analizando y organizando {len(nuevos_archivos)} pistas en Serato...", "info")
+        if nuevos_archivos and self.auto_process_spotify_dl_var.get():
+            self.log_spotify_dl(f"[Spotify] Analizando y organizando {len(nuevos_archivos)} pistas en Serato...", "info")
             self.iniciar_hilo(modo="normal")
 
     def _construir_pestana_destinos(self):

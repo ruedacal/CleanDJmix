@@ -1,6 +1,6 @@
 """
 Módulo de Infraestructura: Adaptadores para mutagen, Shazam, Discogs, 
-Librosa, exportación CSV y spotDL con saneamiento de URLs internacionales.
+Librosa, exportación CSV y descarga directa de audio con Spotify API + yt-dlp.
 """
 
 import os
@@ -11,6 +11,7 @@ import logging
 import requests
 from mutagen.easyid3 import EasyID3
 from mutagen import File as MutagenFile
+from mutagen.id3 import ID3, APIC, ID3NoHeaderError
 from shazamio import Shazam
 import librosa
 import numpy as np
@@ -18,12 +19,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-if os.getenv("SPOTIPY_CLIENT_ID"):
-    os.environ["SPOTIPY_CLIENT_ID"] = os.getenv("SPOTIPY_CLIENT_ID")
-if os.getenv("SPOTIPY_CLIENT_SECRET"):
-    os.environ["SPOTIPY_CLIENT_SECRET"] = os.getenv("SPOTIPY_CLIENT_SECRET")
-if os.getenv("SPOTIPY_REDIRECT_URI"):
-    os.environ["SPOTIPY_REDIRECT_URI"] = os.getenv("SPOTIPY_REDIRECT_URI")
+SPOTIPY_CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
+SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
+SPOTIPY_REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI", "https://127.0.0.1:8888/callback")
+
+if SPOTIPY_CLIENT_ID:
+    os.environ["SPOTIPY_CLIENT_ID"] = SPOTIPY_CLIENT_ID
+if SPOTIPY_CLIENT_SECRET:
+    os.environ["SPOTIPY_CLIENT_SECRET"] = SPOTIPY_CLIENT_SECRET
+if SPOTIPY_REDIRECT_URI:
+    os.environ["SPOTIPY_REDIRECT_URI"] = SPOTIPY_REDIRECT_URI
 
 
 class AudioAdapter:
@@ -68,22 +73,16 @@ class AudioAdapter:
         try:
             y, sr = librosa.load(ruta_completa, duration=30)
             y_trimmed, _ = librosa.effects.trim(y, top_db=20)
-            
             tempo, beats = librosa.beat.beat_track(y=y_trimmed, sr=sr)
             bpm = float(tempo[0]) if isinstance(tempo, np.ndarray) else float(tempo)
-            
             rms = librosa.feature.rms(y=y_trimmed)
             energia = int(np.mean(rms) * 1000)
-            
             onset_env = librosa.onset.onset_strength(y=y_trimmed, sr=sr)
             groove = int(np.std(onset_env) * 100)
-            
             mfcc = librosa.feature.mfcc(y=y_trimmed, sr=sr, n_mfcc=13)
             presencia_vocal = float(np.mean(mfcc))
-            
             zcr = float(np.mean(librosa.feature.zero_crossing_rate(y_trimmed)))
             centroide = float(np.mean(librosa.feature.spectral_centroid(y=y_trimmed, sr=sr)))
-            
             return bpm, energia, groove, presencia_vocal, zcr, centroide
         except Exception:
             return 128.0, 50, 20, 1000.0, 0.05, 1500.0
@@ -111,9 +110,7 @@ class AudioAdapter:
         nombre_limpio = f"{artista} - {titulo}.mp3"
         if artista == "VRC_MISSING" or titulo == "VRC_MISSING":
             nombre_limpio = f"VRC_Unidentified_Track_{int(bpm)}BPM.mp3"
-        
         nombre_limpio = "".join(c for c in nombre_limpio if c.isalnum() or c in (' ', '-', '_', '.')).strip()
-        
         if not modo_seguro:
             try:
                 audio = MutagenFile(ruta_completa, easy=True)
@@ -140,105 +137,244 @@ class AudioAdapter:
             return None
 
 
-class SpotDLAdapter:
-    """Adaptador spotDL con pre-escaneo y compatibilidad universal de URLs de Spotify."""
+class SpotifyDownloaderAdapter:
+    """Motor de consulta y descarga directa de audio mediante Spotify API y yt-dlp."""
 
     @staticmethod
     def _limpiar_url(url: str) -> str:
         url = url.strip()
-        # Si se pegaron múltiples URLs concatenadas, tomar la primera
         if "https://" in url:
             partes = [p for p in url.split("https://") if p]
             url = "https://" + partes[0]
-        
-        # Eliminar query params (?si=...)
         url = url.split("?")[0]
-        
-        # Eliminar prefijos de localización como /intl-es/, /intl-de/, etc.
         url = re.sub(r'open\.spotify\.com/intl-[a-zA-Z-]+/', 'open.spotify.com/', url)
         return url
 
     @staticmethod
-    def obtener_instancia(directorio_salida: str = None):
-        from spotdl import Spotdl
-        cid = os.getenv("SPOTIPY_CLIENT_ID")
-        csec = os.getenv("SPOTIPY_CLIENT_SECRET")
-        
-        downloader_settings = None
-        if directorio_salida:
-            downloader_settings = {
-                "output": os.path.join(directorio_salida, "{artist} - {title}.{output-ext}"),
-                "format": "mp3",
-                "bitrate": "320k"
-            }
-
-        return Spotdl(
-            client_id=cid,
-            client_secret=csec,
-            downloader_settings=downloader_settings
-        )
+    def _obtener_cliente_spotify():
+        try:
+            import spotipy
+            from spotipy.oauth2 import SpotifyClientCredentials
+            cid = os.getenv("SPOTIPY_CLIENT_ID")
+            csec = os.getenv("SPOTIPY_CLIENT_SECRET")
+            if cid and csec:
+                auth_mgr = SpotifyClientCredentials(client_id=cid, client_secret=csec)
+                return spotipy.Spotify(auth_manager=auth_mgr)
+        except Exception as e:
+            logging.error(f"[Spotify Client Error] {e}")
+        return None
 
     @staticmethod
     def escanear_lista(spotify_url: str, callback_log=None) -> list:
         try:
-            from spotdl import Spotdl
-            url_limpia = SpotDLAdapter._limpiar_url(spotify_url)
-            cid = os.getenv("SPOTIPY_CLIENT_ID")
-            csec = os.getenv("SPOTIPY_CLIENT_SECRET")
+            url_limpia = SpotifyDownloaderAdapter._limpiar_url(spotify_url)
+            sp = SpotifyDownloaderAdapter._obtener_cliente_spotify()
 
-            spotdl_inst = Spotdl(client_id=cid, client_secret=csec)
-            
+            if not sp:
+                if callback_log:
+                    callback_log("[Spotify] Falta configurar credenciales en .env", "error")
+                return []
+
             if callback_log:
-                callback_log(f"[SpotDL] Buscando catálogo para: {url_limpia}...")
-            
-            songs = spotdl_inst.search([url_limpia])
+                callback_log(f"[Spotify] Analizando catálogo: {url_limpia}...")
+
             lista_info = []
-            for s in songs:
-                dur_seg = int(getattr(s, 'duration', 0) or 0)
-                dur_str = f"{dur_seg // 60:02d}:{dur_seg % 60:02d}"
-                nombre = getattr(s, 'name', None) or 'Desconocido'
-                artista = getattr(s, 'artist', None) or 'Desconocido'
-                album = getattr(s, 'album_name', None) or 'Single / Desconocido'
-                cover = getattr(s, 'cover_url', None) or ''
+
+            # 1. PLAYLIST
+            if "/playlist/" in url_limpia:
+                p_id = url_limpia.split("/playlist/")[1].split("/")[0]
+                res = sp.playlist_items(p_id)
+                items = res.get("items", [])
+                while res.get("next") and len(items) < 300:
+                    res = sp.next(res)
+                    items.extend(res.get("items", []))
+
+                for item in items:
+                    t = item.get("track")
+                    if not t or not t.get("name"):
+                        continue
+                    art = ", ".join([a.get("name", "") for a in t.get("artists", [])])
+                    alb = t.get("album", {}).get("name", "Single")
+                    dur_seg = int(t.get("duration_ms", 0) / 1000)
+                    imgs = t.get("album", {}).get("images", [])
+                    c_url = imgs[0].get("url") if imgs else ""
+                    
+                    datos = {
+                        "titulo": t.get("name"),
+                        "artista": art,
+                        "album": alb,
+                        "duracion": f"{dur_seg // 60:02d}:{dur_seg % 60:02d}",
+                        "cover_url": c_url,
+                        "year": (t.get("album", {}).get("release_date") or "2026")[:4]
+                    }
+                    lista_info.append({**datos, "song_obj": datos})
+
+            # 2. ARTISTA (Usando artist_albums para evitar el 403 Forbidden de top-tracks)
+            elif "/artist/" in url_limpia:
+                a_id = url_limpia.split("/artist/")[1].split("/")[0]
+                albums_res = sp.artist_albums(a_id, album_type='album,single', limit=10)
+                items_albums = albums_res.get("items", [])
                 
-                lista_info.append({
-                    "song_obj": s,
-                    "titulo": nombre,
-                    "artista": artista,
-                    "album": album,
-                    "duracion": dur_str,
-                    "cover_url": cover
-                })
+                track_ids_vistos = set()
+                for alb in items_albums:
+                    alb_id = alb.get("id")
+                    alb_name = alb.get("name", "Album")
+                    c_url = alb.get("images", [{}])[0].get("url", "")
+                    year = (alb.get("release_date") or "2026")[:4]
+                    
+                    alb_tracks = sp.album_tracks(alb_id)
+                    for t in alb_tracks.get("items", []):
+                        t_id = t.get("id")
+                        if not t_id or t_id in track_ids_vistos:
+                            continue
+                        track_ids_vistos.add(t_id)
+                        
+                        art = ", ".join([a.get("name", "") for a in t.get("artists", [])])
+                        dur_seg = int(t.get("duration_ms", 0) / 1000)
+                        datos = {
+                            "titulo": t.get("name"),
+                            "artista": art,
+                            "album": alb_name,
+                            "duracion": f"{dur_seg // 60:02d}:{dur_seg % 60:02d}",
+                            "cover_url": c_url,
+                            "year": year
+                        }
+                        lista_info.append({**datos, "song_obj": datos})
+                        if len(lista_info) >= 50:
+                            break
+                    if len(lista_info) >= 50:
+                        break
+
+            # 3. ÁLBUM
+            elif "/album/" in url_limpia:
+                alb_id = url_limpia.split("/album/")[1].split("/")[0]
+                alb_obj = sp.album(alb_id)
+                alb_name = alb_obj.get("name", "Album")
+                imgs = alb_obj.get("images", [])
+                c_url = imgs[0].get("url") if imgs else ""
+                year = (alb_obj.get("release_date") or "2026")[:4]
+
+                for t in alb_obj.get("tracks", {}).get("items", []):
+                    art = ", ".join([a.get("name", "") for a in t.get("artists", [])])
+                    dur_seg = int(t.get("duration_ms", 0) / 1000)
+                    datos = {
+                        "titulo": t.get("name"),
+                        "artista": art,
+                        "album": alb_name,
+                        "duracion": f"{dur_seg // 60:02d}:{dur_seg % 60:02d}",
+                        "cover_url": c_url,
+                        "year": year
+                    }
+                    lista_info.append({**datos, "song_obj": datos})
+
+            # 4. TRACK INDIVIDUAL
+            elif "/track/" in url_limpia:
+                tr_id = url_limpia.split("/track/")[1].split("/")[0]
+                t = sp.track(tr_id)
+                art = ", ".join([a.get("name", "") for a in t.get("artists", [])])
+                alb = t.get("album", {}).get("name", "Single")
+                dur_seg = int(t.get("duration_ms", 0) / 1000)
+                imgs = t.get("album", {}).get("images", [])
+                c_url = imgs[0].get("url") if imgs else ""
+                
+                datos = {
+                    "titulo": t.get("name"),
+                    "artista": art,
+                    "album": alb,
+                    "duracion": f"{dur_seg // 60:02d}:{dur_seg % 60:02d}",
+                    "cover_url": c_url,
+                    "year": (t.get("album", {}).get("release_date") or "2026")[:4]
+                }
+                lista_info.append({**datos, "song_obj": datos})
+
+            if callback_log:
+                callback_log(f"[Spotify] {len(lista_info)} pista(s) disponibles para selección.", "success")
+
             return lista_info
         except Exception as e:
             if callback_log:
-                callback_log(f"[SpotDL] Error al escanear: {str(e)}", "error")
+                callback_log(f"[Spotify Error] {str(e)}", "error")
             return []
 
     @staticmethod
     def descargar_canciones_seleccionadas(songs_list: list, directorio_salida: str, callback_log=None) -> list:
+        """Descarga de alta calidad vía yt-dlp a MP3 320k con inyección de carátula."""
+        import yt_dlp
         os.makedirs(directorio_salida, exist_ok=True)
-        archivos_antes = set(os.listdir(directorio_salida))
+        archivos_generados = []
 
-        try:
-            spotdl_inst = SpotDLAdapter.obtener_instancia(directorio_salida)
+        for idx, item in enumerate(songs_list, start=1):
+            datos = item if isinstance(item, dict) else getattr(item, "__dict__", {})
+            artista = datos.get("artista", "Desconocido")
+            titulo = datos.get("titulo", "Pista")
+            album = datos.get("album", "Single")
+            año = datos.get("year", "2026")
+            cover_url = datos.get("cover_url", "")
+
+            nombre_base = f"{artista} - {titulo}"
+            nombre_base = "".join(c for c in nombre_base if c.isalnum() or c in (' ', '-', '_', '.')).strip()
+            archivo_final = os.path.join(directorio_salida, f"{nombre_base}.mp3")
+
+            query = f"ytsearch1:{artista} - {titulo} audio"
             if callback_log:
-                callback_log(f"[SpotDL] Iniciando descarga de {len(songs_list)} pista(s) seleccionada(s)...")
+                callback_log(f"[{idx}/{len(songs_list)}] Descargando 320kbps: {artista} - {titulo}...")
 
-            spotdl_inst.download_songs(songs_list)
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': os.path.join(directorio_salida, f"{nombre_base}.%(ext)s"),
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '320',
+                }],
+                'quiet': True,
+                'no_warnings': True,
+            }
 
-            archivos_despues = set(os.listdir(directorio_salida))
-            nuevos = [
-                os.path.join(directorio_salida, f)
-                for f in (archivos_despues - archivos_antes)
-                if f.lower().endswith(".mp3")
-            ]
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([query])
 
-            if callback_log:
-                callback_log(f"[SpotDL] Descarga completada: {len(nuevos)} archivo(s) generado(s).", "success")
+                if os.path.exists(archivo_final):
+                    try:
+                        audio = EasyID3(archivo_final)
+                    except ID3NoHeaderError:
+                        audio = EasyID3()
+                        audio.save(archivo_final)
 
-            return nuevos
-        except Exception as e:
-            if callback_log:
-                callback_log(f"[SpotDL] Error en la descarga: {str(e)}", "error")
-            return []
+                    audio['artist'] = [artista]
+                    audio['title'] = [titulo]
+                    audio['album'] = [album]
+                    audio['date'] = [str(año)]
+                    audio.save(archivo_final)
+
+                    if cover_url:
+                        try:
+                            resp = requests.get(cover_url, timeout=7)
+                            if resp.status_code == 200:
+                                tags = ID3(archivo_final)
+                                tags.delall("APIC")
+                                tags.add(APIC(
+                                    encoding=3,
+                                    mime='image/jpeg',
+                                    type=3,
+                                    desc='Cover',
+                                    data=resp.content
+                                ))
+                                tags.save(archivo_final, v2_version=3)
+                        except Exception:
+                            pass
+
+                    archivos_generados.append(archivo_final)
+            except Exception as e:
+                if callback_log:
+                    callback_log(f"[Descarga] Error en {titulo}: {e}", "error")
+
+        if callback_log:
+            callback_log(f"[Descarga] Completadas {len(archivos_generados)} pista(s) en 320kbps con portada.", "success")
+
+        return archivos_generados
+
+# Alias retrocompatibles
+SpotifyAdapter = SpotifyDownloaderAdapter
+SpotDLAdapter = SpotifyDownloaderAdapter
