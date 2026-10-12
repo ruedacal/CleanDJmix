@@ -1,190 +1,174 @@
+"""
+Módulo de Interfaz Gráfica (UI): Diseñado con CustomTkinter para ofrecer 
+una experiencia moderna, intuitiva y en modo oscuro estilo profesional de DJ.
+"""
+
 import os
 import shutil
 import threading
-import time
 import traceback
 import logging
-import tkinter as tk
-from tkinter import filedialog, scrolledtext, ttk
-from domain.models import TrackDomain
-from infrastructure.adapters import AudioAdapter, CARPETAS_DESTINO, DEV_CONTACT
+import customtkinter as ctk
+from tkinter import filedialog
+from domain.models import TrackDomain, TAXONOMIA_ELECTRONICA
+from infrastructure.adapters import AudioAdapter
+
+# Configuración global de CustomTkinter
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")
 
 logging.basicConfig(filename='CleanDJmix_crash.log', level=logging.ERROR, format='%(asctime)s - [CleanDJmix Error] - %(message)s')
 
-class CleanDJmixApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("CleanDJmix PRO by Victor Rueda (Hexagonal)")
-        self.root.geometry("1024x900")
-        self.root.resizable(False, False)
-        self.root.configure(bg="#181818")
+class CleanDJmixApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
         
-        self.safe_mode_var = tk.BooleanVar(value=True)
+        self.title("CleanDJmix PRO - Arquitectura Hexagonal & Taxonomía Avanzada")
+        self.geometry("1100=750" if False else "1100-750".replace("-", "x"))
+        self.resizable(False, False)
+        
+        self.safe_mode_var = ctk.BooleanVar(value=True)
         self.cancel_flag = False 
         
-        # Mapeo personalizado de destinos por género (Género -> {carpeta, ruta})
-        self.destinos_personalizados = {
-            "Techno": {"carpeta": "Techno", "ruta": ""},
-            "Tech House": {"carpeta": "Tech House", "ruta": ""},
-            "Remember": {"carpeta": "Remember", "ruta": ""},
-            "Cantaditas": {"carpeta": "Cantaditas", "ruta": ""},
-            "Trance": {"carpeta": "Trance", "ruta": ""},
-            "House": {"carpeta": "House", "ruta": ""}
-        }
+        # Estructura de destinos personalizados por género y subgénero
+        self.destinos_personalizados = {}
+        for genero, subgeneros in TAXONOMIA_ELECTRONICA.items():
+            self.destinos_personalizados[genero] = {
+                "carpeta": genero,
+                "ruta": "",
+                "subgeneros": {sub: {"carpeta": sub, "ruta": ""} for sub in subgeneros}
+            }
+
+        # Contenedor Principal con Pestañas (Tabs)
+        self.tabview = ctk.CTkTabview(self, fg_color="#181818", segmented_button_selected_color="#00AEEF", segmented_button_unselected_color="#242424")
+        self.tabview.pack(fill="both", expand=True, padx=20, pady=20)
         
-        main_container = tk.Frame(root, bg="#181818")
-        main_container.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        self.tab_control = self.tabview.add("⚡ Control y Análisis")
+        self.tab_destinos = self.tabview.add("📂 Destinos y Taxonomía")
+        self.tab_logs = self.tabview.add("💻 Consola y Logs")
         
-        header_frame = tk.Frame(main_container, bg="#181818")
-        header_frame.pack(fill=tk.X, pady=(0, 10))
-        tk.Label(header_frame, text="CleanDJmix PRO", font=("Helvetica Neue", 28, "bold"), bg="#181818", fg="#FFFFFF").pack(side=tk.LEFT)
+        self._construir_pestana_control()
+        self._construir_pestana_destinos()
+        self._construir_pestana_logs()
         
-        badge_frame = tk.Frame(header_frame, bg="#181818")
-        badge_frame.pack(side=tk.RIGHT)
-        tk.Label(badge_frame, text="POR VICTOR RUEDA", font=("Helvetica Neue", 10, "bold"), bg="#242424", fg="#00AEEF").pack(side=tk.TOP, fill=tk.X, pady=(0,2), ipady=2)
-        tk.Label(badge_frame, text="v2.3 CUSTOM DESTINATIONS", font=("Helvetica Neue", 9, "bold"), bg="#181818", fg="#666666").pack(side=tk.BOTTOM)
+        self.log("CleanDJmix PRO Modern UI inicializado correctamente.\n", "info")
+
+    def _construir_pestana_control(self):
+        """Construye la pestaña principal de ejecución y monitorización."""
+        # Header / Branding
+        header = ctk.CTkFrame(self.tab_control, fg_color="transparent")
+        header.pack(fill="x", pady=(0, 15))
+        ctk.CTkLabel(header, text="CleanDJmix PRO", font=ctk.CTkFont(family="Helvetica", size=26, weight="bold"), text_color="#FFFFFF").pack(side="left")
+        ctk.CTkLabel(header, text="MODERN DJ SUITE v3.0", font=ctk.CTkFont(family="Helvetica", size=11, weight="bold"), text_color="#00AEEF").pack(side="right")
+
+        # Selector de Carpeta Origen
+        src_frame = ctk.CTkFrame(self.tab_control, fg_color="#242424", corner_radius=8)
+        src_frame.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(src_frame, text="CARPETA ORIGEN", font=ctk.CTkFont(size=11, weight="bold"), text_color="#888888").pack(side="left", padx=15)
         
-        # Panel de Ruta de Origen
-        ruta_frame = tk.Frame(main_container, bg="#242424", bd=0, relief="flat")
-        ruta_frame.pack(fill=tk.X, pady=8)
-        tk.Label(ruta_frame, text="CARPETA ORIGEN", font=("Helvetica Neue", 10, "bold"), bg="#242424", fg="#888888").pack(side=tk.LEFT, padx=15, pady=12)
-        
-        self.entry_ruta = tk.Entry(ruta_frame, bg="#1e1e1e", fg="#FFFFFF", font=("Courier", 12), insertbackground="white", relief="flat", highlightthickness=1, highlightbackground="#333333")
+        self.entry_ruta = ctk.CTkEntry(src_frame, width=600, height=35, fg_color="#1e1e1e", text_color="#FFFFFF", font=("Courier", 12))
         self.entry_ruta.insert(0, "/Users/admin/Music/mi musica/")
-        self.entry_ruta.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10, ipady=5)
+        self.entry_ruta.pack(side="left", padx=10, expand=True, fill="x")
         
-        self.btn_ruta = tk.Label(ruta_frame, text=" EXPLORAR ", bg="#333333", fg="#FFFFFF", font=("Helvetica Neue", 10, "bold"), cursor="hand2")
-        self.btn_ruta.pack(side=tk.RIGHT, padx=15, ipadx=10, ipady=5)
-        self.btn_ruta.bind("<Button-1>", lambda e: self.seleccionar_ruta())
+        btn_browse = ctk.CTkButton(src_frame, text="Explorar", command=self.seleccionar_ruta, fg_color="#333333", hover_color="#444444", width=90, height=35)
+        btn_browse.pack(side="right", padx=15)
 
-        # Botón para abrir el selector de destinos personalizados
-        config_destinos_frame = tk.Frame(main_container, bg="#181818")
-        config_destinos_frame.pack(fill=tk.X, pady=5)
-        self.btn_config_destinos = tk.Label(config_destinos_frame, text="⚙️ [ CONFIGURAR CARPETAS Y RUTAS DE DESTINO POR GÉNERO ]", bg="#242424", fg="#00AEEF", font=("Helvetica Neue", 10, "bold"), cursor="hand2")
-        self.btn_config_destinos.pack(fill=tk.X, ipady=8, ipadx=10)
-        self.btn_config_destinos.bind("<Button-1>", lambda e: self.abrir_ventana_destinos())
+        # Pantalla LCD / Visualizador de Estado
+        lcd = ctk.CTkFrame(self.tab_control, fg_color="#111111", corner_radius=10)
+        lcd.pack(fill="x", pady=15, ipady=10)
         
-        # Pantalla LCD / Estadísticas
-        self.lcd_frame = tk.Frame(main_container, bg="#111111", bd=0, relief="flat")
-        self.lcd_frame.pack(fill=tk.X, pady=10)
-        
-        self.lbl_file = tk.Label(self.lcd_frame, text="ARCHIVO: ESPERANDO PISTA...", font=("Menlo", 11), bg="#111111", fg="#666666")
-        self.lbl_file.pack(pady=(15, 0), fill=tk.X)
-        self.lbl_id3 = tk.Label(self.lcd_frame, text="ETIQUETA ID3: EN ESPERA", font=("Menlo", 14, "bold"), bg="#111111", fg="#FFFFFF")
-        self.lbl_id3.pack(pady=(5, 5), fill=tk.X)
-        self.lbl_wave = tk.Label(self.lcd_frame, text="ılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılı", font=("Arial", 16), bg="#111111", fg="#333333")
-        self.lbl_wave.pack(pady=2)
-        self.lbl_stats = tk.Label(self.lcd_frame, text="BPM: 000.00  |  AÑO: 0000  |  GÉNERO: PENDIENTE", font=("Courier", 14, "bold"), bg="#111111", fg="#00AEEF")
-        self.lbl_stats.pack(pady=(5, 15), fill=tk.X)
-        
-        safe_mode_cb = tk.Checkbutton(main_container, text="MODO SEGURO (Simulación: No modifica archivos físicos)", 
-                                      variable=self.safe_mode_var, bg="#181818", fg="#AAAAAA", selectcolor="#242424", 
-                                      activebackground="#181818", activeforeground="#FFFFFF", font=("Helvetica Neue", 10))
-        safe_mode_cb.pack(pady=(0, 8))
-        
-        style = ttk.Style()
-        style.theme_use('default')
-        style.configure("TProgressbar", thickness=6, background="#00AEEF", troughcolor="#242424", borderwidth=0)
-        self.progreso = ttk.Progressbar(main_container, orient="horizontal", mode="determinate", style="TProgressbar")
-        self.progreso.pack(fill=tk.X, pady=(0, 10))
-        
-        botones_frame = tk.Frame(main_container, bg="#181818")
-        botones_frame.pack(fill=tk.X, pady=5)
-        
-        self.btn_iniciar = tk.Label(botones_frame, text="[ ANÁLISIS ESTÁNDAR ]", bg="#00AEEF", fg="#000000", font=("Helvetica Neue", 10, "bold"), cursor="hand2")
-        self.btn_iniciar.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=10, padx=(0, 3))
-        self.btn_iniciar.bind("<Button-1>", lambda e: self.iniciar_hilo(modo="normal"))
-        
-        self.btn_rescue = tk.Label(botones_frame, text="[ RESCATE SHAZAM ]", bg="#242424", fg="#00AEEF", font=("Helvetica Neue", 10, "bold"), cursor="hand2")
-        self.btn_rescue.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=10, padx=(3, 3))
-        self.btn_rescue.bind("<Button-1>", lambda e: self.iniciar_hilo(modo="rescate"))
+        self.lbl_file = ctk.CTkLabel(lcd, text="ARCHIVO: ESPERANDO PISTA...", font=("Menlo", 11), text_color="#666666")
+        self.lbl_file.pack(pady=(15, 2))
+        self.lbl_id3 = ctk.CTkLabel(lcd, text="ETIQUETA ID3: EN ESPERA", font=("Menlo", 14, "bold"), text_color="#FFFFFF")
+        self.lbl_id3.pack(pady=2)
+        ctk.CTkLabel(lcd, text="ılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılı", font=("Arial", 16), text_color="#333333").pack(pady=2)
+        self.lbl_stats = ctk.CTkLabel(lcd, text="BPM: 000.00  |  GÉNERO: PENDIENTE  |  SUBGÉNERO: PENDIENTE", font=("Courier", 13, "bold"), text_color="#00AEEF")
+        self.lbl_stats.pack(pady=(2, 15))
 
-        self.btn_acustico = tk.Label(botones_frame, text="[ ANÁLISIS ACÚSTICO ]", bg="#242424", fg="#FFAA00", font=("Helvetica Neue", 10, "bold"), cursor="hand2")
-        self.btn_acustico.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=10, padx=(3, 3))
-        self.btn_acustico.bind("<Button-1>", lambda e: self.iniciar_hilo(modo="acustico"))
-        
-        self.consola = scrolledtext.ScrolledText(main_container, bg="#111111", fg="#AAAAAA", font=("Menlo", 10), bd=0, relief="flat", highlightthickness=0)
-        self.consola.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
-        
-        self.consola.tag_config("info", foreground="#00AEEF")
-        self.consola.tag_config("error", foreground="#FF3333")
-        self.consola.tag_config("success", foreground="#FFFFFF")
-        self.consola.tag_config("tag", foreground="#AAAAAA")
-        self.consola.tag_config("simulacro", foreground="#FF00FF")
-        self.consola.tag_config("warning", foreground="#FFAA00")
-        
-        self.log("CleanDJmix PRO (Módulo de Destinos Personalizados) listo.\n", "info")
-        self._keep_alive()
+        # Checkbox de Modo Seguro
+        safe_cb = ctk.CTkCheckBox(self.tab_control, text="Modo Seguro (Simulación: No modifica ficheros físicos en disco)", variable=self.safe_mode_var, text_color="#AAAAAA", fg_color="#00AEEF")
+        safe_cb.pack(pady=(0, 10), anchor="w")
 
-    def _keep_alive(self):
-        self.root.update_idletasks()
-        self.root.after(50, self._keep_alive)
+        # Barra de Progreso
+        self.progreso = ctk.CTkProgressBar(self.tab_control, progress_color="#00AEEF", fg_color="#242424", height=8)
+        self.progreso.pack(fill="x", pady=(0, 20))
+        self.progreso.set(0)
+
+        # Botones de Acción Operativa
+        btn_frame = ctk.CTkFrame(self.tab_control, fg_color="transparent")
+        btn_frame.pack(fill="x", pady=5)
+        
+        ctk.CTkButton(btn_frame, text="▶ Análisis Estándar", command=lambda: self.iniciar_hilo("normal"), fg_color="#00AEEF", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=(0, 5))
+        ctk.CTkButton(btn_frame, text="🔍 Rescate Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=5)
+        ctk.CTkButton(btn_frame, text="🎧 Análisis Acústico", command=lambda: self.iniciar_hilo("acustico"), fg_color="#242424", text_color="#FFAA00", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=(5, 0))
+
+    def _construir_pestana_destinos(self):
+        """Construye el panel avanzado para configurar carpetas y rutas por género y subgénero."""
+        ctk.CTkLabel(self.tab_destinos, text="Configuración Avanzada de Destinos y Taxonomía", font=ctk.CTkFont(size=16, weight="bold"), text_color="#FFFFFF").pack(pady=10)
+        ctk.CTkLabel(self.tab_destinos, text="Personaliza el nombre de las carpetas de salida y las rutas de disco para cada género y subgénero.", font=ctk.CTkFont(size=11), text_color="#888888").pack(pady=(0, 10))
+
+        # Scrollable Frame para albergar todos los géneros y subgéneros
+        scroll = ctk.CTkScrollableFrame(self.tab_destinos, fg_color="#1e1e1e", height=480)
+        scroll.pack(fill="both", expand=True, padx=5, pady=5)
+
+        self.widgets_destinos = {}
+
+        for genero, data in self.destinos_personalizados.items():
+            g_frame = ctk.CTkFrame(scroll, fg_color="#242424", corner_radius=6)
+            g_frame.pack(fill="x", pady=5, padx=5, ipady=5)
+            
+            ctk.CTkLabel(g_frame, text=f"📁 {genero}", font=ctk.CTkFont(size=13, weight="bold"), text_color="#00AEEF").pack(anchor="w", padx=10, pady=5)
+            
+            sub_container = ctk.CTkFrame(g_frame, fg_color="transparent")
+            sub_container.pack(fill="x", padx=15, pady=2)
+            
+            self.widgets_destinos[genero] = {}
+            for sub in TAXONOMIA_ELECTRONICA[genero]:
+                s_frame = ctk.CTkFrame(sub_container, fg_color="#181818", corner_radius=4)
+                s_frame.pack(fill="x", pady=3, ipady=3)
+                
+                ctk.CTkLabel(s_frame, text=sub, font=ctk.CTkFont(size=11), text_color="#CCCCCC", width=140, anchor="w").pack(side="left", padx=10)
+                
+                e_carp = ctk.CTkEntry(s_frame, width=140, height=28, fg_color="#242424", text_color="#FFFFFF")
+                e_carp.insert(0, sub)
+                e_carp.pack(side="left", padx=5)
+                
+                e_ruta = ctk.CTkEntry(s_frame, width=280, height=28, fg_color="#242424", text_color="#FFFFFF", placeholder_text="Ruta opcional (por defecto origen)")
+                e_ruta.pack(side="left", padx=5, expand=True, fill="x")
+                
+                def elegir_path(entry=e_ruta):
+                    d = filedialog.askdirectory()
+                    if d:
+                        entry.delete(0, "end")
+                        entry.insert(0, d)
+                
+                ctk.CTkButton(s_frame, text="📁", command=elegir_path, width=32, height=28, fg_color="#333333").pack(side="right", padx=10)
+                
+                self.widgets_destinos[genero][sub] = {"carpeta": e_carp, "ruta": e_ruta}
+
+    def _construir_pestana_logs(self):
+        """Construye la pestaña de consola con diseño estilizado."""
+        ctk.CTkLabel(self.tab_logs, text="Registro de Ejecución en Tiempo Real", font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFFFFF").pack(pady=10, anchor="w", padx=5)
+        
+        self.consola = ctk.CTkTextbox(self.tab_logs, fg_color="#111111", text_color="#00AEEF", font=("Menlo", 11), corner_radius=8)
+        self.consola.pack(fill="both", expand=True, padx=5, pady=5)
 
     def log(self, mensaje, tag="info"):
-        self.consola.insert(tk.END, mensaje + "\n", tag)
-        self.consola.see(tk.END)
-        
+        if hasattr(self, 'consola'):
+            self.consola.insert("end", mensaje + "\n")
+            self.consola.see("end")
+        print(f"[{tag.upper()}] {mensaje}")
+
     def seleccionar_ruta(self):
         ruta = filedialog.askdirectory()
         if ruta:
-            self.entry_ruta.delete(0, tk.END)
+            self.entry_ruta.delete(0, "end")
             self.entry_ruta.insert(0, ruta)
-
-    def abrir_ventana_destinos(self):
-        """Abre una ventana flotante para configurar nombres de carpeta y rutas destino por género."""
-        ventana = tk.Toplevel(self.root)
-        ventana.title("Configuración de Destinos Personalizados")
-        ventana.geometry("650x450")
-        ventana.configure(bg="#181818")
-        ventana.transient(self.root)
-        ventana.grab_set()
-
-        tk.Label(ventana, text="Personaliza carpetas y rutas de destino por género", font=("Helvetica Neue", 13, "bold"), bg="#181818", fg="#FFFFFF").pack(pady=15)
-
-        frame_list = tk.Frame(ventana, bg="#181818")
-        frame_list.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-
-        entries = {}
-        row = 0
-        for genero, data in self.destinos_personalizados.items():
-            tk.Label(frame_list, text=f"Género: {genero}", font=("Helvetica Neue", 11, "bold"), bg="#181818", fg="#00AEEF", width=15, anchor="w").grid(row=row, column=0, sticky="w", pady=5)
-            
-            tk.Label(frame_list, text="Carpeta:", bg="#181818", fg="#AAAAAA").grid(row=row, column=1, sticky="w")
-            e_carp = tk.Entry(frame_list, bg="#242424", fg="#FFFFFF", insertbackground="white", width=15)
-            e_carp.insert(0, data["carpeta"])
-            e_carp.grid(row=row, column=2, padx=5)
-
-            tk.Label(frame_list, text="Ruta:", bg="#181818", fg="#AAAAAA").grid(row=row, column=3, sticky="w")
-            e_ruta = tk.Entry(frame_list, bg="#242424", fg="#FFFFFF", insertbackground="white", width=25)
-            e_ruta.insert(0, data["ruta"])
-            e_ruta.grid(row=row, column=4, padx=5)
-
-            def elegir_dir(entry=e_ruta):
-                d = filedialog.askdirectory()
-                if d:
-                    entry.delete(0, tk.END)
-                    entry.insert(0, d)
-
-            btn_dir = tk.Button(frame_list, text="📁", command=elegir_dir, bg="#333333", fg="#FFFFFF", relief="flat")
-            btn_dir.grid(row=row, column=5)
-
-            entries[genero] = (e_carp, e_ruta)
-            row += 1
-
-        def guardar():
-            for g, (ec, er) in entries.items():
-                self.destinos_personalizados[g]["carpeta"] = ec.get().strip() or g
-                self.destinos_personalizados[g]["ruta"] = er.get().strip()
-            self.log("[i] Configuración de destinos personalizados guardada.", "info")
-            ventana.destroy()
-
-        btn_guardar = tk.Button(ventana, text="GUARDAR CONFIGURACIÓN", command=guardar, bg="#00AEEF", fg="#000000", font=("Helvetica Neue", 11, "bold"), relief="flat", padx=20, pady=10)
-        btn_guardar.pack(pady=20)
 
     def iniciar_hilo(self, modo="normal"):
         self.cancel_flag = False
         threading.Thread(target=self.procesar_biblioteca, args=(modo,), daemon=True).start()
-        
+
     def procesar_biblioteca(self, modo):
         ruta_base = self.entry_ruta.get()
         archivos_mp3 = []
@@ -194,7 +178,7 @@ class CleanDJmixApp:
             for file in files:
                 if not file.lower().endswith('.mp3'): continue
                 if modo == "rescate":
-                    if re.search(r'^\s*-\s*\.mp3', file) or "VRC_Unidentified" in file or "VRC_MISSING" in file or "Revision_Manual" in root_dir:
+                    if re.search(r'^\s*-\s*\.mp3', file) or "VRC_Unidentified" in file or "VRC_MISSING" in file:
                         archivos_mp3.append(os.path.join(root_dir, file))
                 else:
                     archivos_mp3.append(os.path.join(root_dir, file))
@@ -204,8 +188,7 @@ class CleanDJmixApp:
             self.log("[!] No se encontraron archivos MP3.", "error")
             return
             
-        self.progreso["maximum"] = total
-        self.log(f"[ MÓDULO {modo.upper()} ] Procesando {total} pistas con destinos personalizados...", "info")
+        self.log(f"[ MÓDULO {modo.upper()} ] Procesando {total} pistas...", "info")
         
         procesadas = 0
         for ruta_completa in archivos_mp3:
@@ -215,7 +198,7 @@ class CleanDJmixApp:
             
             try:
                 if modo == "acustico":
-                    bpm, energia, groove, _, _, _ = AudioAdapter.analizar_acustica(ruta_completa)
+                    bpm, energia, _, _, _, _ = AudioAdapter.analizar_acustica(ruta_completa)
                     self.log(f"[{procesadas}/{total}] Acústica OK: {nombre_archivo} -> BPM: {bpm} | Energía: {energia}%", "success")
                     continue
 
@@ -227,27 +210,26 @@ class CleanDJmixApp:
                 bpm, energia, groove, presencia_vocal, zcr, centroide = AudioAdapter.analizar_acustica(ruta_completa)
                 
                 nuevo_nombre = AudioAdapter.actualizar_fichero(ruta_completa, art_oficial, tit_oficial, año, bpm, is_safe_mode)
-                categoria = TrackDomain.cerebro_ishkur(bpm, año, estilos, presencia_vocal, zcr, centroide)
+                genero, subgenero = TrackDomain.cerebro_ishkur(bpm, año, estilos, presencia_vocal, zcr, centroide)
                 
-                # Obtener configuración personalizada de destino para el género detectado
-                config_dest = self.destinos_personalizados.get(categoria, {"carpeta": categoria, "ruta": ""})
-                nombre_carpeta_destino = config_dest["carpeta"]
-                ruta_custom_base = config_dest["ruta"]
+                # Obtener mapeo personalizado de destino
+                sub_config = self.widgets_destinos.get(genero, {}).get(subgenero, {"carpeta": None, "ruta": None})
+                nombre_carpeta = sub_config["carpeta"].get().strip() if sub_config["carpeta"] else subgenero
+                ruta_custom = sub_config["ruta"].get().strip() if sub_config["ruta"] else ""
                 
-                # Si hay ruta personalizada, usarla; si no, usar la ruta base de origen
-                base_salida = ruta_custom_base if ruta_custom_base else ruta_base
-                ruta_destino = os.path.join(base_salida, nombre_carpeta_destino, nuevo_nombre)
+                base_salida = ruta_custom if ruta_custom else ruta_base
+                ruta_destino = os.path.join(base_salida, nombre_carpeta, nuevo_nombre)
                 
                 if not is_safe_mode and ruta_completa != ruta_destino:
                     os.makedirs(os.path.dirname(ruta_destino), exist_ok=True)
                     shutil.move(ruta_completa, ruta_destino)
-                    self.log(f"[{procesadas}/{total}] Movido a [{nombre_carpeta_destino}]: {nuevo_nombre}", "success")
+                    self.log(f"[{procesadas}/{total}] Movido a [{genero} -> {nombre_carpeta}]: {nuevo_nombre}", "success")
                 else:
-                    self.log(f"[{procesadas}/{total}] Simulacro en [{nombre_carpeta_destino}]: {nuevo_nombre}", "simulacro")
+                    self.log(f"[{procesadas}/{total}] Simulacro en [{genero} -> {nombre_carpeta}]: {nuevo_nombre}", "info")
             except Exception as e:
                 logging.error(traceback.format_exc())
                 self.log(f"[!] Error en {nombre_archivo}", "error")
                 
-            self.progreso.configure(value=procesadas)
+            self.progreso.set(procesadas / total)
             
         self.log("\n[!!!] PROCESO FINALIZADO.", "success")
