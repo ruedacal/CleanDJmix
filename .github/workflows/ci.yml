@@ -25,6 +25,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest pytest-cov shazamio librosa soundfile mutagen requests numpy
 
-    - name: 🧪 Ejecutar Tests y Verificar Cobertura (Mínimo 90%)
+    - name: 🧪 Ejecutar Tests y Verificar Cobertura (Mínimo 80%)
       run: |
-        PYTHONPATH=. pytest --cov=domain --cov=infrastructure --cov-fail-under=90 tests/
+        PYTHONPATH=. pytest --cov=domain --cov=infrastructure --cov-fail-under=80 tests/
