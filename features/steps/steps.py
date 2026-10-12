@@ -55,3 +55,29 @@ def step_then_mood(context, mood_esperado):
 @then('la bailabilidad calculada debe ser superior al {porcentaje:d} por ciento')
 def step_then_bailabilidad(context, porcentaje):
     assert context.bailabilidad > porcentaje, f"Bailabilidad {context.bailabilidad}% no supera {porcentaje}%"
+
+@given('una URL de playlist de Spotify con {total:d} pistas disponibles')
+def step_given_playlist_spotify(context, total):
+    context.canciones_escaneadas = []
+    for i in range(1, total + 1):
+        context.canciones_escaneadas.append({
+            "titulo": f"Track {i}",
+            "artista": f"Artist {i}",
+            "album": f"Album {i}",
+            "duracion": "03:30",
+            "seleccionada": True
+        })
+
+@when('el usuario escanea los metadatos de la lista')
+def step_when_escanear_lista(context):
+    assert len(context.canciones_escaneadas) > 0
+
+@when('desmarca la pista número {num:d}')
+def step_when_desmarcar_pista(context, num):
+    indice = num - 1
+    context.canciones_escaneadas[indice]["seleccionada"] = False
+
+@then('quedan {esperadas:d} pistas seleccionadas para descargar')
+def step_then_verificar_seleccion(context, esperadas):
+    seleccionadas = [p for p in context.canciones_escaneadas if p["seleccionada"]]
+    assert len(seleccionadas) == esperadas, f"Esperadas {esperadas}, obtenidas {len(seleccionadas)}"

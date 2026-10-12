@@ -2,12 +2,14 @@
 Pruebas unitarias exhaustivas para AudioAdapter y SpotDLAdapter (cobertura >90%).
 """
 
+import os
 import pytest
 from unittest.mock import patch, MagicMock
 import numpy as np
 from infrastructure.adapters import AudioAdapter, SpotDLAdapter
 from domain.models import TrackDomain
 
+# --- PRUEBAS DE DOMINIO ---
 def test_limpiar_texto():
     assert "spotdown" not in TrackDomain.limpiar_texto("12._spotdown.org_Artist_-_Title.mp3")
 
@@ -18,6 +20,7 @@ def test_cerebro_ishkur():
     gen2, sub2 = TrackDomain.cerebro_ishkur(126, 2026, ["tech house"], 500, 0.05, 2000)
     assert gen2 == "Tech House" and sub2 == "Tech House"
 
+# --- PRUEBAS DE AUDIO ADAPTER ---
 def test_audio_adapter_id3_fallback():
     with patch('infrastructure.adapters.EasyID3') as mock_id3:
         mock_id3.side_effect = Exception()
@@ -54,33 +57,65 @@ def test_actualizar_fichero_csv():
     csv_f = AudioAdapter.exportar_informe_csv([{'artista':'A','titulo':'T','bpm':128,'anio':2025,'genero':'G','subgenero':'S','ruta_final':'/tmp/t.mp3'}], '/tmp')
     assert csv_f is not None
 
-# --- TESTS SPOTDL PRE-ESCANEO Y SELECCIÓN ---
-def test_spotdl_escanear_lista():
+# --- PRUEBAS UNITARIAS DE SPOTDL (PRE-ESCANEO Y DESCARGA SELECTIVA) ---
+def test_spotdl_escanear_lista_exito():
     mock_spotdl_mod = MagicMock()
     inst = MagicMock()
     cancion = MagicMock()
-    cancion.name = "Track 1"
-    cancion.artist = "Artist 1"
-    cancion.album_name = "Album 1"
-    cancion.duration = 185
-    cancion.cover_url = "http://cover.jpg"
+    cancion.name = "Track VIP"
+    cancion.artist = "DJ Producer"
+    cancion.album_name = "Summer EP"
+    cancion.duration = 195  # 3m 15s
+    cancion.cover_url = "https://cover.img/1.jpg"
     inst.search.return_value = [cancion]
     mock_spotdl_mod.Spotdl.return_value = inst
 
+    logs = []
     with patch.dict('sys.modules', {'spotdl': mock_spotdl_mod}):
-        res = SpotDLAdapter.escanear_lista("http://spotify.com/playlist/test")
+        res = SpotDLAdapter.escanear_lista("https://open.spotify.com/playlist/test", callback_log=lambda m, t="info": logs.append(m))
         assert len(res) == 1
-        assert res[0]["titulo"] == "Track 1"
-        assert res[0]["duracion"] == "03:05"
+        assert res[0]["titulo"] == "Track VIP"
+        assert res[0]["artista"] == "DJ Producer"
+        assert res[0]["album"] == "Summer EP"
+        assert res[0]["duracion"] == "03:15"
+        assert len(logs) > 0
+
+def test_spotdl_escanear_lista_error():
+    logs = []
+    with patch.dict('sys.modules', {'spotdl': None}):
+        res = SpotDLAdapter.escanear_lista("url_invalida", callback_log=lambda m, t="info": logs.append(m))
+        assert res == []
+        assert any("Error" in log for log in logs)
 
 @patch('os.listdir')
-def test_spotdl_descargar_seleccionadas(mock_ls):
-    mock_ls.side_effect = [["old.mp3"], ["old.mp3", "Nuevo.mp3"]]
+def test_spotdl_descargar_seleccionadas_exito(mock_ls):
+    mock_ls.side_effect = [
+        ["antiguo.mp3"],
+        ["antiguo.mp3", "DJ Producer - Track VIP.mp3", "cover.jpg"]
+    ]
     mock_spotdl_mod = MagicMock()
     inst = MagicMock()
     mock_spotdl_mod.Spotdl.return_value = inst
 
+    logs = []
     with patch.dict('sys.modules', {'spotdl': mock_spotdl_mod}):
-        res = SpotDLAdapter.descargar_canciones_seleccionadas(["song_obj"], "/tmp")
-        assert len(res) == 1
-        assert res[0].endswith("Nuevo.mp3")
+        canciones_marcadas = [MagicMock()]
+        nuevos = SpotDLAdapter.descargar_canciones_seleccionadas(
+            canciones_marcadas,
+            "/tmp/descargas",
+            callback_log=lambda m, t="info": logs.append(m)
+        )
+        assert len(nuevos) == 1
+        assert nuevos[0].endswith("DJ Producer - Track VIP.mp3")
+        assert any("completada" in log for log in logs)
+
+def test_spotdl_descargar_seleccionadas_error():
+    logs = []
+    with patch.dict('sys.modules', {'spotdl': None}):
+        nuevos = SpotDLAdapter.descargar_canciones_seleccionadas(
+            ["dummy_song"],
+            "/tmp/descargas",
+            callback_log=lambda m, t="info": logs.append(m)
+        )
+        assert nuevos == []
+        assert any("Error" in log for log in logs)

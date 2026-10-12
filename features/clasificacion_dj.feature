@@ -16,3 +16,9 @@ Característica: Gestión y clasificación inteligente de biblioteca musical par
     Cuando la herramienta realiza el análisis acústico y de auditoría
     Entonces el Mood detectado debe ser "Eufórico / Hype"
     Y la bailabilidad calculada debe ser superior al 50 por ciento
+
+  Escenario: Pre-escaneo y selección de canciones de una playlist de Spotify
+    Dada una URL de playlist de Spotify con 3 pistas disponibles
+    Cuando el usuario escanea los metadatos de la lista
+    Y desmarca la pista número 2
+    Entonces quedan 2 pistas seleccionadas para descargar
