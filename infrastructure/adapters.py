@@ -1,7 +1,7 @@
 """
 Módulo de Infraestructura: Adaptadores para mutagen, Shazam, Discogs, 
-Librosa, exportación CSV, descarga directa de audio con Spotify API + yt-dlp
-e inyección estricta de carátulas ID3v2.3.
+Librosa, exportación CSV, descarga directa de audio con Spotify API + yt-dlp,
+inyección estricta de carátulas ID3v2.3 y soporte de preescucha preview_url.
 """
 
 import os
@@ -92,9 +92,8 @@ class AudioAdapter:
 
     @staticmethod
     def obtener_perfil_onda(ruta_completa: str, num_puntos: int = 120) -> list:
-        """Extrae la envolvente de amplitud normalizada para dibujar el waveform."""
         try:
-            y, _ = librosa.load(ruta_completa, sr=11025, mono=True, duration=180)
+            y, _ = librosa.load(ruta_completa, sr=11025, mono=True, duration=60)
             bloque = max(1, len(y) // num_puntos)
             puntos = []
             for i in range(num_puntos):
@@ -103,7 +102,7 @@ class AudioAdapter:
             max_v = max(puntos) if puntos and max(puntos) > 0 else 1.0
             return [p / max_v for p in puntos]
         except Exception:
-            return [0.2 + 0.6 * np.sin(i / 5.0) ** 2 for i in range(num_puntos)]
+            return [0.1 + 0.6 * (np.sin(i / 5.0) ** 2) for i in range(num_puntos)]
 
     @staticmethod
     def rescate_shazam(ruta_completa: str) -> tuple:
@@ -128,9 +127,7 @@ class AudioAdapter:
         nombre_limpio = f"{artista} - {titulo}.mp3"
         if artista == "VRC_MISSING" or titulo == "VRC_MISSING":
             nombre_limpio = f"VRC_Unidentified_Track_{int(bpm)}BPM.mp3"
-        
         nombre_limpio = "".join(c for c in nombre_limpio if c.isalnum() or c in (' ', '-', '_', '.')).strip()
-        
         if not modo_seguro:
             try:
                 audio = MutagenFile(ruta_completa, easy=True)
@@ -158,7 +155,7 @@ class AudioAdapter:
 
 
 class SpotifyDownloaderAdapter:
-    """Motor de consulta y descarga directa de audio con carátula e ID3 nativo."""
+    """Motor oficial Spotify API + yt-dlp."""
 
     @staticmethod
     def _limpiar_url(url: str) -> str:
@@ -225,6 +222,7 @@ class SpotifyDownloaderAdapter:
                         "album": alb,
                         "duracion": f"{dur_seg // 60:02d}:{dur_seg % 60:02d}",
                         "cover_url": c_url,
+                        "preview_url": t.get("preview_url") or "",
                         "year": (t.get("album", {}).get("release_date") or "2026")[:4]
                     }
                     lista_info.append({**datos, "song_obj": datos})
@@ -248,7 +246,6 @@ class SpotifyDownloaderAdapter:
                         if not t_id or t_id in track_ids_vistos:
                             continue
                         track_ids_vistos.add(t_id)
-                        
                         art = ", ".join([a.get("name", "") for a in t.get("artists", [])])
                         dur_seg = int(t.get("duration_ms", 0) / 1000)
                         datos = {
@@ -257,6 +254,7 @@ class SpotifyDownloaderAdapter:
                             "album": alb_name,
                             "duracion": f"{dur_seg // 60:02d}:{dur_seg % 60:02d}",
                             "cover_url": c_url,
+                            "preview_url": t.get("preview_url") or "",
                             "year": year
                         }
                         lista_info.append({**datos, "song_obj": datos})
@@ -283,6 +281,7 @@ class SpotifyDownloaderAdapter:
                         "album": alb_name,
                         "duracion": f"{dur_seg // 60:02d}:{dur_seg % 60:02d}",
                         "cover_url": c_url,
+                        "preview_url": t.get("preview_url") or "",
                         "year": year
                     }
                     lista_info.append({**datos, "song_obj": datos})
@@ -303,12 +302,13 @@ class SpotifyDownloaderAdapter:
                     "album": alb,
                     "duracion": f"{dur_seg // 60:02d}:{dur_seg % 60:02d}",
                     "cover_url": c_url,
+                    "preview_url": t.get("preview_url") or "",
                     "year": (t.get("album", {}).get("release_date") or "2026")[:4]
                 }
                 lista_info.append({**datos, "song_obj": datos})
 
             if callback_log:
-                callback_log(f"[Spotify] {len(lista_info)} pista(s) disponibles para selección.", "success")
+                callback_log(f"[Spotify] {len(lista_info)} pista(s) encontradas.", "success")
 
             return lista_info
         except Exception as e:
@@ -318,7 +318,6 @@ class SpotifyDownloaderAdapter:
 
     @staticmethod
     def descargar_canciones_seleccionadas(songs_list: list, directorio_salida: str, callback_log=None) -> list:
-        """Descarga vía yt-dlp con inyección forzada de metadatos e imagen JPEG compatible."""
         import yt_dlp
         os.makedirs(directorio_salida, exist_ok=True)
         archivos_generados = []
@@ -356,18 +355,15 @@ class SpotifyDownloaderAdapter:
                     ydl.download([query])
 
                 if os.path.exists(archivo_final):
-                    # Inyección de Tags con mutagen ID3 estándar
                     try:
                         id3 = ID3(archivo_final)
                     except ID3NoHeaderError:
                         id3 = ID3()
 
-                    # Inyectar carátula binaria JPEG
                     if cover_url:
                         try:
                             resp = requests.get(cover_url, timeout=7)
                             if resp.status_code == 200:
-                                # Normalizar imagen a JPEG estándar
                                 img = Image.open(io.BytesIO(resp.content)).convert('RGB')
                                 img_buffer = io.BytesIO()
                                 img.save(img_buffer, format='JPEG', quality=95)
@@ -381,13 +377,11 @@ class SpotifyDownloaderAdapter:
                                     desc='Cover',
                                     data=jpeg_data
                                 ))
-                        except Exception as ex_cov:
-                            if callback_log:
-                                callback_log(f"[Carátula Error] {ex_cov}")
+                        except Exception:
+                            pass
 
                     id3.save(archivo_final, v2_version=3)
 
-                    # EasyID3 para títulos y artista
                     try:
                         easy = EasyID3(archivo_final)
                         easy['artist'] = [artista]
@@ -402,9 +396,6 @@ class SpotifyDownloaderAdapter:
             except Exception as e:
                 if callback_log:
                     callback_log(f"[Descarga] Error en {titulo}: {e}", "error")
-
-        if callback_log:
-            callback_log(f"[Descarga] Completadas {len(archivos_generados)} pista(s).", "success")
 
         return archivos_generados
 

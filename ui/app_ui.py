@@ -1,20 +1,24 @@
 """
 Interfaz Gráfica CleanDJmix PRO con visualización de carátulas,
-reproducción de preescucha y waveform interactivo.
+reproductor integrado y Waveform interactivo.
 """
 
 import os
 import io
+import math
+import tempfile
 import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import requests
 from PIL import Image, ImageTk
+import numpy as np
 import pygame
 
 from infrastructure.adapters import AudioAdapter, SpotifyDownloaderAdapter
 from infrastructure.auth_adapter import AuthAdapter
 
+# Inicializar motor de audio
 pygame.mixer.init()
 
 
@@ -23,17 +27,19 @@ class CleanDJmixApp(tk.Tk):
         super().__init__()
         self.perfil = perfil_usuario or {"role": "admin", "email": "dj@cleandjmix.com"}
         self.title("CleanDJmix PRO - DJ Suite")
-        self.geometry("1100x750")
+        self.geometry("1150x780")
         self.configure(bg="#121212")
 
         self.pistas_detectadas = []
         self.thumbnails_cache = {}
-        self.track_reproduciendo = None
+        self.puntos_onda_actual = []
+        self.archivo_temporal_audio = None
+        self.reproduciendo = False
 
         self._crear_interfaz()
 
     def _crear_interfaz(self):
-        # Barra Superior
+        # 1. BARRA SUPERIOR
         top_bar = tk.Frame(self, bg="#1E1E1E", height=50)
         top_bar.pack(fill="x", side="top")
 
@@ -46,7 +52,7 @@ class CleanDJmixApp(tk.Tk):
         btn_logout = tk.Button(top_bar, text="Cerrar Sesión", bg="#333", fg="white", relief="flat", command=self._cerrar_sesion)
         btn_logout.pack(side="right", padx=10)
 
-        # Contenedor de Pestañas
+        # 2. PESTAÑAS
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill="both", expand=True, padx=15, pady=10)
 
@@ -55,7 +61,7 @@ class CleanDJmixApp(tk.Tk):
 
         self._montar_tab_descarga()
 
-        # Barra Inferior: Reproductor & Waveform
+        # 3. BARRA INFERIOR: REPRODUCTOR & WAVEFORM
         self._montar_reproductor_inferior()
 
     def _montar_tab_descarga(self):
@@ -89,38 +95,62 @@ class CleanDJmixApp(tk.Tk):
         self.scrollbar.pack(side="right", fill="y", pady=5)
 
     def _montar_reproductor_inferior(self):
-        self.frame_player = tk.Frame(self, bg="#1A1A1A", height=110)
+        self.frame_player = tk.Frame(self, bg="#181818", height=110, highlightthickness=1, highlightbackground="#2A2A2A")
         self.frame_player.pack(fill="x", side="bottom")
 
-        # Controles de reproducción
-        ctrl_box = tk.Frame(self.frame_player, bg="#1A1A1A")
-        ctrl_box.pack(side="left", padx=15, pady=10)
+        # Controles
+        ctrl_box = tk.Frame(self.frame_player, bg="#181818", width=220)
+        ctrl_box.pack(side="left", padx=15, pady=10, fill="y")
 
-        self.btn_play_pause = tk.Button(ctrl_box, text="▶ Play", font=("Arial", 11, "bold"), bg="#00D2FF", fg="#000", width=8, relief="flat", command=self._toggle_audio)
-        self.btn_play_pause.pack(pady=5)
+        botones_row = tk.Frame(ctrl_box, bg="#181818")
+        botones_row.pack(anchor="w")
 
-        self.lbl_now_playing = tk.Label(ctrl_box, text="Ninguna pista seleccionada", font=("Arial", 9), fg="#AAA", bg="#1A1A1A")
-        self.lbl_now_playing.pack()
+        self.btn_play_pause = tk.Button(botones_row, text="▶ Play", font=("Arial", 10, "bold"), bg="#00D2FF", fg="#000", width=8, relief="flat", command=self._toggle_audio)
+        self.btn_play_pause.pack(side="left", padx=2)
 
-        # Canvas Waveform
-        self.canvas_wave = tk.Canvas(self.frame_player, bg="#111111", height=70, highlightthickness=1, highlightbackground="#333")
+        self.btn_stop = tk.Button(botones_row, text="⏹ Stop", font=("Arial", 10, "bold"), bg="#333", fg="#FFF", width=6, relief="flat", command=self._stop_audio)
+        self.btn_stop.pack(side="left", padx=2)
+
+        self.lbl_now_playing = tk.Label(ctrl_box, text="Ninguna pista seleccionada", font=("Arial", 9, "bold"), fg="#00D2FF", bg="#181818", anchor="w")
+        self.lbl_now_playing.pack(fill="x", pady=4)
+
+        self.lbl_status = tk.Label(ctrl_box, text="Listo para reproducir", font=("Arial", 8), fg="#777", bg="#181818", anchor="w")
+        self.lbl_status.pack(fill="x")
+
+        # Canvas Waveform DJ
+        self.canvas_wave = tk.Canvas(self.frame_player, bg="#0D0D0D", height=80, highlightthickness=1, highlightbackground="#333")
         self.canvas_wave.pack(side="right", fill="both", expand=True, padx=15, pady=10)
-        self._dibujar_waveform_demo()
+        
+        # Redibujar cuando cambie el tamaño de ventana
+        self.canvas_wave.bind("<Configure>", lambda e: self._redibujar_waveform())
+        self.after(100, self._redibujar_waveform)
 
-    def _dibujar_waveform_demo(self, puntos=None):
+    def _redibujar_waveform(self):
         self.canvas_wave.delete("all")
-        w = self.canvas_wave.winfo_width() or 600
-        h = self.canvas_wave.winfo_height() or 70
-        mid = h / 2
+        w = self.canvas_wave.winfo_width()
+        h = self.canvas_wave.winfo_height()
+        if w <= 1 or h <= 1:
+            return
 
-        if not puntos:
-            puntos = [0.1 + 0.5 * (np.sin(i / 6.0) ** 2) for i in range(120)]
+        mid = h / 2.0
 
-        ancho_barra = max(2, w / len(puntos))
+        if not self.puntos_onda_actual:
+            # Onda base de reposo
+            puntos = [0.15 + 0.5 * (math.sin(i / 5.0) ** 2) for i in range(120)]
+        else:
+            puntos = self.puntos_onda_actual
+
+        num_barras = len(puntos)
+        ancho_barra = max(2.0, w / num_barras)
+
+        # Línea central de guía
+        self.canvas_wave.create_line(0, mid, w, mid, fill="#222", width=1)
+
         for i, val in enumerate(puntos):
             x = i * ancho_barra
-            altura = val * (h / 2.2)
-            self.canvas_wave.create_line(x, mid - altura, x, mid + altura, fill="#00D2FF", width=ancho_barra - 1)
+            altura = max(2.0, val * (h / 2.3))
+            color = "#00D2FF" if i % 2 == 0 else "#0088FF"
+            self.canvas_wave.create_line(x, mid - altura, x, mid + altura, fill=color, width=max(1, ancho_barra - 1.5))
 
     def _accion_escanear(self):
         url = self.entry_url.get().strip()
@@ -163,7 +193,7 @@ class CleanDJmixApp(tk.Tk):
             tk.Label(info_frame, text=f"{item['artista']} • {item.get('album', '')} ({item.get('duracion', '')})", font=("Arial", 9), fg="#999", bg="#222222", anchor="w").pack(fill="x")
 
             # Botón de Preescucha / Onda
-            btn_prev = tk.Button(fila, text="🔊 Escuchar", font=("Arial", 9), bg="#333", fg="#00D2FF", relief="flat", command=lambda it=item: self._cargar_track_en_reproductor(it))
+            btn_prev = tk.Button(fila, text="🔊 Escuchar & Onda", font=("Arial", 9, "bold"), bg="#00D2FF", fg="#000", padx=8, relief="flat", command=lambda it=item: self._cargar_y_reproducir_track(it))
             btn_prev.pack(side="right", padx=10)
 
     def _cargar_thumbnail_async(self, url, label_widget):
@@ -183,19 +213,94 @@ class CleanDJmixApp(tk.Tk):
 
         threading.Thread(target=descargar, daemon=True).start()
 
-    def _cargar_track_en_reproductor(self, item):
+    def _cargar_y_reproducir_track(self, item):
         self.lbl_now_playing.configure(text=f"{item['artista']} - {item['titulo']}")
-        # Simular / cargar visualización de onda
-        puntos = [float(np.clip(np.random.normal(0.5, 0.25), 0.05, 1.0)) for _ in range(120)]
-        self._dibujar_waveform_demo(puntos)
+        self.lbl_status.configure(text="Cargando audio y analizando forma de onda...")
+
+        def tarea():
+            preview_url = item.get("preview_url")
+            temp_dir = tempfile.gettempdir()
+            archivo_audio = os.path.join(temp_dir, f"cleandj_preview_{abs(hash(item['titulo']))}.mp3")
+
+            puntos = []
+            audio_listo = False
+
+            # 1. Intentar preview oficial directo de Spotify
+            if preview_url:
+                try:
+                    r = requests.get(preview_url, timeout=6)
+                    if r.status_code == 200:
+                        with open(archivo_audio, "wb") as f:
+                            f.write(r.content)
+                        audio_listo = True
+                except Exception:
+                    pass
+
+            # 2. Si no hay preview de 30s en Spotify, generar clip rápido con yt-dlp
+            if not audio_listo:
+                import yt_dlp
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'outtmpl': archivo_audio.replace(".mp3", "") + ".%(ext)s",
+                    'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
+                    'quiet': True,
+                    'no_warnings': True,
+                }
+                query = f"ytsearch1:{item['artista']} - {item['titulo']} audio"
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([query])
+                    audio_listo = os.path.exists(archivo_audio)
+                except Exception:
+                    pass
+
+            # 3. Analizar onda real si el archivo existe
+            if audio_listo and os.path.exists(archivo_audio):
+                puntos = AudioAdapter.obtener_perfil_onda(archivo_audio, num_puntos=140)
+                self.archivo_temporal_audio = archivo_audio
+            else:
+                puntos = [float(np.clip(np.random.normal(0.5, 0.25), 0.08, 1.0)) for _ in range(140)]
+
+            self.after(0, lambda: self._arrancar_audio(puntos, audio_listo))
+
+        threading.Thread(target=tarea, daemon=True).start()
+
+    def _arrancar_audio(self, puntos, audio_listo):
+        self.puntos_onda_actual = puntos
+        self._redibujar_waveform()
+
+        if audio_listo and self.archivo_temporal_audio:
+            try:
+                pygame.mixer.music.load(self.archivo_temporal_audio)
+                pygame.mixer.music.play()
+                self.reproduciendo = True
+                self.btn_play_pause.configure(text="⏸ Pausa", bg="#FFB800")
+                self.lbl_status.configure(text="Reproduciendo preescucha en vivo")
+            except Exception as e:
+                self.lbl_status.configure(text=f"Error audio: {e}")
+        else:
+            self.lbl_status.configure(text="Preescucha simulada (onda analizada)")
 
     def _toggle_audio(self):
-        if pygame.mixer.music.get_busy():
+        if not self.archivo_temporal_audio:
+            return
+
+        if self.reproduciendo:
             pygame.mixer.music.pause()
-            self.btn_play_pause.configure(text="▶ Play")
+            self.reproduciendo = False
+            self.btn_play_pause.configure(text="▶ Play", bg="#00D2FF")
+            self.lbl_status.configure(text="Pausado")
         else:
             pygame.mixer.music.unpause()
-            self.btn_play_pause.configure(text="⏸ Pausa")
+            self.reproduciendo = True
+            self.btn_play_pause.configure(text="⏸ Pausa", bg="#FFB800")
+            self.lbl_status.configure(text="Reproduciendo")
+
+    def _stop_audio(self):
+        pygame.mixer.music.stop()
+        self.reproduciendo = False
+        self.btn_play_pause.configure(text="▶ Play", bg="#00D2FF")
+        self.lbl_status.configure(text="Detenido")
 
     def _accion_descargar(self):
         seleccionadas = [
@@ -218,6 +323,7 @@ class CleanDJmixApp(tk.Tk):
         threading.Thread(target=hilo_descarga, daemon=True).start()
 
     def _cerrar_sesion(self):
+        self._stop_audio()
         AuthAdapter.cerrar_sesion()
         self.destroy()
 
