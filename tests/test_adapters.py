@@ -1,6 +1,6 @@
 """
-Pruebas unitarias completas para la capa de Infraestructura y Dominio,
-diseñadas para superar el 80% de cobertura de código.
+Pruebas unitarias completas para la infraestructura y el dominio,
+adaptadas a la taxonomía de géneros y subgéneros electrónicos.
 """
 
 import pytest
@@ -9,7 +9,7 @@ import numpy as np
 from infrastructure.adapters import AudioAdapter
 from domain.models import TrackDomain
 
-# --- TESTS DE DOMINIO (domain/models.py) ---
+# --- TESTS DE DOMINIO Y CASOS BORDE ---
 def test_limpiar_texto_completo():
     """Valida la limpieza profunda de cadenas de texto y URLs."""
     sucio = "https://www.example.com 02._spotdown.org_Test_Artist_-_Test_Title_(Remix)[Extended].mp3"
@@ -19,23 +19,29 @@ def test_limpiar_texto_completo():
     assert ".mp3" not in limpio
 
 def test_cerebro_ishkur_casos_borde():
-    """Prueba diferentes combinaciones y umbrales del cerebro clasificador de Ishkur."""
-    # Caso Remember por año
-    assert TrackDomain.cerebro_ishkur(128, 1995, [], 100, 0.05, 1000) == "Remember"
+    """Prueba diferentes combinaciones y umbrales del cerebro clasificador devueltos en tupla."""
+    # Caso Remember por año (devuelve tupla)
+    gen, sub = TrackDomain.cerebro_ishkur(128, 1995, [], 100, 0.05, 1000)
+    assert gen == "Remember"
+    assert sub == "Retro Classic"
     
     # Caso Cantaditas por estilo explícito
-    assert TrackDomain.cerebro_ishkur(135, 2024, ["eurodance"], 100, 0.05, 1000) == "Cantaditas"
+    gen, sub = TrackDomain.cerebro_ishkur(135, 2024, ["eurodance"], 100, 0.05, 1000)
+    assert gen == "Cantaditas"
     
     # Caso Trance por estilo explícito
-    assert TrackDomain.cerebro_ishkur(140, 2024, ["trance"], 100, 0.05, 1000) == "Trance"
+    gen, sub = TrackDomain.cerebro_ishkur(140, 2024, ["trance"], 100, 0.05, 1000)
+    assert gen == "Trance"
     
     # Caso House clásico
-    assert TrackDomain.cerebro_ishkur(120, 2024, ["house"], 1000, 0.02, 1000) == "House"
+    gen, sub = TrackDomain.cerebro_ishkur(120, 2024, ["house"], 1000, 0.02, 1000)
+    assert gen == "House"
     
-    # Caso Fallback por BPM alto y ZCR
-    assert TrackDomain.cerebro_ishkur(140, 2024, [], 500, 0.09, 1500) == "Techno"
+    # Caso Fallback por BPM alto
+    gen, sub = TrackDomain.cerebro_ishkur(140, 2024, [], 500, 0.09, 1500)
+    assert gen == "Techno"
 
-# --- TESTS DE INFRAESTRUCTURA (infrastructure/adapters.py) ---
+# --- TESTS DE INFRAESTRUCTURA ---
 def test_obtener_metadatos_id3_recopilatorio():
     """Valida la detección de álbumes recopilatorios."""
     with patch('infrastructure.adapters.EasyID3') as mock_easyid3:
@@ -102,7 +108,7 @@ def test_buscar_discogs_fallo(mock_get):
 def test_analizar_acustica(mock_cent, mock_zcr, mock_mfcc, mock_onset, mock_rms, mock_beat, mock_trim, mock_load):
     """Simula el análisis acústico completo de Librosa incluyendo el recorte de silencio."""
     mock_load.return_value = (np.zeros(100), 44100)
-    mock_trim.return_value = (np.zeros(80), [10, 80]) # Silencio inicial simulado > 40ms
+    mock_trim.return_value = (np.zeros(80), [10, 80])
     mock_beat.return_value = (130.0, np.array([10, 20]))
     mock_rms.return_value = np.array([[0.1]])
     mock_onset.return_value = np.array([0.5])
@@ -119,7 +125,6 @@ def test_analizar_acustica(mock_cent, mock_zcr, mock_mfcc, mock_onset, mock_rms,
 def test_rescate_shazam(mock_shazam_cls):
     """Simula la respuesta asíncrona de Shazam para el rescate acústico."""
     mock_instance = MagicMock()
-    # Mock de corrutina para recognize_song
     async def mock_recognize(ruta):
         return {
             'track': {
@@ -134,19 +139,9 @@ def test_rescate_shazam(mock_shazam_cls):
     assert art == "ShazamArtist"
     assert tit == "ShazamTitle"
 
-def test_actualizar_fichero_seguro():
-    """Valida el modo seguro de actualización de nombres."""
-    nombre = AudioAdapter.actualizar_fichero("/ruta/falsa.mp3", "Art", "Tit", 2025, 128, modo_seguro=True)
-    assert nombre == "Art - Tit.mp3"
-
-def test_actualizar_fichero_desconocido_seguro():
-    """Valida el nombramiento para pistas no identificadas en modo seguro."""
-    nombre = AudioAdapter.actualizar_fichero("/ruta/falsa.mp3", "VRC_MISSING", "VRC_MISSING", 2025, 125, modo_seguro=True)
-    assert "VRC_Unidentified_Track_125BPM.mp3" in nombre
-
 @patch('infrastructure.adapters.Shazam')
 def test_rescate_shazam_fallo(mock_shazam_cls):
-    """Valida que si Shazam falla o no reconoce la pista, devuelva VRC_MISSING."""
+    """Valida que si Shazam falla, devuelva VRC_MISSING."""
     mock_instance = MagicMock()
     async def mock_recognize_error(ruta):
         raise Exception("Error de conexión Shazam")
@@ -174,3 +169,13 @@ def test_actualizar_fichero_crear_tags(mock_mutagen_file, mock_easyid3):
         modo_seguro=False
     )
     assert nombre == "NuevoArtista - NuevoTitulo.mp3"
+
+def test_actualizar_fichero_seguro():
+    """Valida el modo seguro de actualización de nombres."""
+    nombre = AudioAdapter.actualizar_fichero("/ruta/falsa.mp3", "Art", "Tit", 2025, 128, modo_seguro=True)
+    assert nombre == "Art - Tit.mp3"
+
+def test_actualizar_fichero_desconocido_seguro():
+    """Valida el nombramiento para pistas no identificadas en modo seguro."""
+    nombre = AudioAdapter.actualizar_fichero("/ruta/falsa.mp3", "VRC_MISSING", "VRC_MISSING", 2025, 125, modo_seguro=True)
+    assert "VRC_Unidentified_Track_125BPM.mp3" in nombre
