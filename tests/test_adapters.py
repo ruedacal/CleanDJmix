@@ -1,88 +1,71 @@
 """
 Pruebas unitarias exhaustivas para infraestructura y dominio,
-diseñadas para alcanzar más del 90% de cobertura de código.
+incluyendo cobertura completa para AudioAdapter y SpotDLAdapter.
 """
 
+import os
 import pytest
 from unittest.mock import patch, MagicMock
 import numpy as np
-from infrastructure.adapters import AudioAdapter
+from infrastructure.adapters import AudioAdapter, SpotDLAdapter
 from domain.models import TrackDomain
 
 # --- DOMINIO Y CASOS BORDE ---
 def test_limpiar_texto_avanzado():
-    """Valida la limpieza profunda de cadenas con múltiples patrones basura."""
     sucia = "12._spotdown.org_Test-Artist_-_Test-Title_(Remix)[Extended](Original Mix).mp3"
     limpia = TrackDomain.limpiar_texto(sucia)
     assert "spotdown" not in limpia
     assert ".mp3" not in limpia
 
 def test_cerebro_ishkur_cobertura_total():
-    """Verifica todas las ramas del clasificador Ishkur para maximizar cobertura."""
-    # Hard Techno
     gen, sub = TrackDomain.cerebro_ishkur(145, 2026, ["hard techno"], 500, 0.09, 3000)
     assert gen == "Techno" and sub == "Hard Techno"
 
-    # Melodic Techno
     gen, sub = TrackDomain.cerebro_ishkur(126, 2026, ["melodic techno"], 500, 0.05, 2000)
     assert gen == "Techno" and sub == "Melodic Techno"
 
-    # Acid Techno
     gen, sub = TrackDomain.cerebro_ishkur(130, 2026, ["acid"], 500, 0.05, 2000)
     assert gen == "Techno" and sub == "Acid Techno"
 
-    # Tech House (Independiente)
     gen, sub = TrackDomain.cerebro_ishkur(126, 2026, ["tech house"], 500, 0.05, 2000)
     assert gen == "Tech House" and sub == "Tech House"
 
-    # Deep House
     gen, sub = TrackDomain.cerebro_ishkur(122, 2026, ["deep house"], 500, 0.05, 2000)
     assert gen == "House" and sub == "Deep House"
 
-    # Afro House
     gen, sub = TrackDomain.cerebro_ishkur(120, 2026, ["afro house"], 500, 0.05, 2000)
     assert gen == "House" and sub == "Afro House"
 
-    # Psy-Trance
     gen, sub = TrackDomain.cerebro_ishkur(142, 2026, ["psy-trance"], 500, 0.05, 2000)
     assert gen == "Trance" and sub == "Psy-Trance"
 
-    # Vocales / Cantaditas
     gen, sub = TrackDomain.cerebro_ishkur(130, 2026, ["vocal"], 3000, 0.05, 2000)
     assert gen == "Vocales (Cantaditas)" and sub == "Vocal Trance"
 
-    # Hardstyle
     gen, sub = TrackDomain.cerebro_ishkur(150, 2026, ["hardstyle"], 500, 0.05, 2000)
     assert gen == "Hard Dance & Hardcore" and sub == "Hardstyle"
 
-    # Remember histórico
     gen, sub = TrackDomain.cerebro_ishkur(128, 1995, [], 500, 0.05, 2000)
     assert gen == "Remember & Classics" and sub == "Classic House"
 
-    # Hardcore BPM alto
     gen, sub = TrackDomain.cerebro_ishkur(160, 2026, [], 500, 0.05, 2000)
     assert gen == "Hard Dance & Hardcore" and sub == "Hardcore"
 
-    # Uplifting Trance
     gen, sub = TrackDomain.cerebro_ishkur(138, 2026, [], 500, 0.05, 3000)
     assert gen == "Trance" and sub == "Uplifting Trance"
 
-    # House genérico
     gen, sub = TrackDomain.cerebro_ishkur(122, 2026, ["house"], 500, 0.05, 1500)
     assert gen == "House" and sub == "Deep House"
 
-    # Techno BPM alto
     gen, sub = TrackDomain.cerebro_ishkur(134, 2026, [], 500, 0.05, 1500)
     assert gen == "Techno" and sub == "Minimal Techno"
 
-    # Fallback
     gen, sub = TrackDomain.cerebro_ishkur(110, 2026, [], 500, 0.05, 1000)
     assert gen == "Tech House" and sub == "Tech House"
 
 
 # --- INFRAESTRUCTURA Y ADAPTADORES ---
 def test_obtener_metadatos_id3_fallback():
-    """Valida los fallbacks de extracción de metadatos cuando no hay tags."""
     with patch('infrastructure.adapters.EasyID3') as mock_easyid3:
         mock_easyid3.side_effect = Exception("No tags")
         
@@ -97,7 +80,6 @@ def test_obtener_metadatos_id3_fallback():
 
 @patch('infrastructure.adapters.requests.get')
 def test_buscar_discogs_exito_y_fallo(mock_get):
-    """Valida la respuesta correcta e incorrecta de Discogs."""
     mock_resp = MagicMock()
     mock_resp.status_code = 200
     mock_resp.json.return_value = {
@@ -125,7 +107,6 @@ def test_buscar_discogs_exito_y_fallo(mock_get):
 @patch('infrastructure.adapters.librosa.feature.zero_crossing_rate')
 @patch('infrastructure.adapters.librosa.feature.spectral_centroid')
 def test_analizar_acustica_completa(mock_cent, mock_zcr, mock_mfcc, mock_onset, mock_rms, mock_beat, mock_trim, mock_load):
-    """Valida el análisis acústico completo y el manejo de excepciones de Librosa."""
     mock_load.return_value = (np.zeros(100), 44100)
     mock_trim.return_value = (np.zeros(80), [10, 80])
     mock_beat.return_value = (128.0, np.array([10]))
@@ -144,7 +125,6 @@ def test_analizar_acustica_completa(mock_cent, mock_zcr, mock_mfcc, mock_onset, 
 
 @patch('infrastructure.adapters.Shazam')
 def test_rescate_shazam_completo(mock_shazam_cls):
-    """Valida el rescate con Shazam y su gestión de excepciones."""
     mock_inst = MagicMock()
     async def mock_ok(ruta):
         return {'track': {'subtitle': 'ShzArt', 'title': 'ShzTit'}}
@@ -163,7 +143,6 @@ def test_rescate_shazam_completo(mock_shazam_cls):
 @patch('infrastructure.adapters.MutagenFile')
 @patch('infrastructure.adapters.EasyID3')
 def test_actualizar_fichero_y_csv(mock_easyid3, mock_mutagen_file):
-    """Valida la actualización de etiquetas físicas y la exportación del informe CSV."""
     mock_easyid3.side_effect = Exception("No tags")
     
     nombre = AudioAdapter.actualizar_fichero("/ruta/test.mp3", "ArtNew", "TitNew", 2025, 130, modo_seguro=True)
@@ -179,3 +158,54 @@ def test_actualizar_fichero_y_csv(mock_easyid3, mock_mutagen_file):
     }]
     csv_out = AudioAdapter.exportar_informe_csv(resultados, "/tmp")
     assert csv_out is not None
+
+
+# --- TESTS PARA SPOTDL ADAPTER ---
+@patch('os.listdir')
+def test_spotdl_adapter_exito(mock_listdir):
+    mock_listdir.side_effect = [
+        ["antiguo.mp3"],
+        ["antiguo.mp3", "Nuevo - Track.mp3", "extra.txt"]
+    ]
+
+    mock_spotdl_mod = MagicMock()
+    mock_instance = MagicMock()
+    mock_instance.search.return_value = ["cancion_mock"]
+    mock_spotdl_mod.Spotdl.return_value = mock_instance
+
+    with patch.dict('sys.modules', {'spotdl': mock_spotdl_mod}):
+        logs = []
+        resultado = SpotDLAdapter.descargar_url(
+            "https://open.spotify.com/track/123",
+            "/tmp/descargas",
+            callback_log=lambda m, t="info": logs.append(m)
+        )
+        assert len(resultado) == 1
+        assert resultado[0].endswith("Nuevo - Track.mp3")
+
+@patch('os.listdir')
+def test_spotdl_adapter_sin_resultados(mock_listdir):
+    mock_listdir.return_value = []
+    mock_spotdl_mod = MagicMock()
+    mock_instance = MagicMock()
+    mock_instance.search.return_value = []
+    mock_spotdl_mod.Spotdl.return_value = mock_instance
+
+    with patch.dict('sys.modules', {'spotdl': mock_spotdl_mod}):
+        logs = []
+        resultado = SpotDLAdapter.descargar_url(
+            "https://open.spotify.com/track/404",
+            "/tmp/descargas",
+            callback_log=lambda m, t="info": logs.append(m)
+        )
+        assert resultado == []
+
+def test_spotdl_adapter_error():
+    logs = []
+    with patch.dict('sys.modules', {'spotdl': None}):
+        resultado = SpotDLAdapter.descargar_url(
+            "url_invalida",
+            "/tmp/descargas",
+            callback_log=lambda m, t="info": logs.append(m)
+        )
+        assert resultado == []

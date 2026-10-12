@@ -1,7 +1,7 @@
 """
 Módulo de Infraestructura: Adaptadores para la lectura de tags ID3 (mutagen),
 reconocimiento de audio (Shazam), peticiones de metadatos (Discogs), 
-análisis acústico (librosa) y exportación de informes de biblioteca (CSV).
+análisis acústico (librosa), exportación de informes CSV y descarga desde Spotify (spotDL).
 """
 
 import os
@@ -29,7 +29,6 @@ class AudioAdapter:
             titulo = audio.get('title', ['VRC_MISSING'])[0]
             return artista, titulo
         except Exception:
-            # Fallback por nombre de archivo
             if " - " in nombre_archivo:
                 partes = nombre_archivo.replace('.mp3', '').split(' - ', 1)
                 return partes[0].strip(), partes[1].strip()
@@ -39,7 +38,7 @@ class AudioAdapter:
 
     @staticmethod
     def buscar_discogs(artista: str, titulo: str) -> tuple:
-        """Consulta simulada o real a la API de Discogs para enriquecer metadatos."""
+        """Consulta a la API de Discogs para enriquecer metadatos."""
         try:
             url = f"https://api.discogs.com/database/search?q={artista} - {titulo}&type=release"
             headers = {'User-Agent': 'CleanDJmixPRO/3.0'}
@@ -87,7 +86,7 @@ class AudioAdapter:
 
     @staticmethod
     def rescate_shazam(ruta_completa: str) -> tuple:
-        """Utiliza ShazamIO para identificar pistas huérfanas o desconocidas."""
+        """Utiliza ShazamIO para identificar pistas desconocidas."""
         async def _shazam_coro():
             shazam = Shazam()
             out = await shazam.recognize_song(ruta_completa)
@@ -127,7 +126,7 @@ class AudioAdapter:
 
     @staticmethod
     def exportar_informe_csv(resultados: list, ruta_destino: str):
-        """Exporta un informe analítico detallado en formato CSV de la sesión de clasificación."""
+        """Exporta un informe analítico detallado en formato CSV."""
         archivo_csv = os.path.join(ruta_destino, "cleandjmix_report.csv")
         try:
             with open(archivo_csv, mode='w', newline='', encoding='utf-8') as f:
@@ -138,3 +137,60 @@ class AudioAdapter:
             return archivo_csv
         except Exception:
             return None
+
+
+class SpotDLAdapter:
+    """Adaptador de infraestructura para interactuar con spotDL y descargar pistas de Spotify."""
+
+    @staticmethod
+    def descargar_url(spotify_url: str, directorio_salida: str, callback_log=None) -> list:
+        """
+        Descarga una canción, lista de reproducción o álbum desde una URL de Spotify.
+        Devuelve una lista con las rutas completas de los archivos MP3 descargados.
+        """
+        os.makedirs(directorio_salida, exist_ok=True)
+        archivos_antes = set(os.listdir(directorio_salida))
+
+        try:
+            from spotdl import Spotdl
+            # Inicialización con configuración estándar optimizada
+            spotdl_instance = Spotdl(
+                client_id=None,
+                client_secret=None,
+                downloader_settings={
+                    "output": os.path.join(directorio_salida, "{artist} - {title}.{output-ext}"),
+                    "format": "mp3",
+                    "bitrate": "320k"
+                }
+            )
+
+            if callback_log:
+                callback_log(f"[SpotDL] Buscando metadatos para: {spotify_url}...")
+
+            songs = spotdl_instance.search([spotify_url])
+            if not songs:
+                if callback_log:
+                    callback_log("[SpotDL] No se encontraron canciones para descargar.", "error")
+                return []
+
+            if callback_log:
+                callback_log(f"[SpotDL] Descargando {len(songs)} pista(s)...")
+
+            spotdl_instance.download_songs(songs)
+
+            archivos_despues = set(os.listdir(directorio_salida))
+            nuevos = [
+                os.path.join(directorio_salida, f)
+                for f in (archivos_despues - archivos_antes)
+                if f.lower().endswith(".mp3")
+            ]
+
+            if callback_log:
+                callback_log(f"[SpotDL] Descarga completada: {len(nuevos)} archivo(s) nuevo(s).", "success")
+
+            return nuevos
+
+        except Exception as e:
+            if callback_log:
+                callback_log(f"[SpotDL] Error durante la descarga: {str(e)}", "error")
+            return []
