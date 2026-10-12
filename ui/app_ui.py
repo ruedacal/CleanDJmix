@@ -24,7 +24,7 @@ class CleanDJmixApp(ctk.CTk):
         super().__init__()
         
         self.title("CleanDJmix PRO - Arquitectura Hexagonal & Taxonomía Avanzada")
-        self.geometry("1100=750" if False else "1100-750".replace("-", "x"))
+        self.geometry("1100x750")
         self.resizable(False, False)
         
         self.safe_mode_var = ctk.BooleanVar(value=True)
@@ -43,9 +43,9 @@ class CleanDJmixApp(ctk.CTk):
         self.tabview = ctk.CTkTabview(self, fg_color="#181818", segmented_button_selected_color="#00AEEF", segmented_button_unselected_color="#242424")
         self.tabview.pack(fill="both", expand=True, padx=20, pady=20)
         
-        self.tab_control = self.tabview.add("⚡ Control y Análisis")
-        self.tab_destinos = self.tabview.add("📂 Destinos y Taxonomía")
-        self.tab_logs = self.tabview.add("💻 Consola y Logs")
+        self.tab_control = self.tabview.add("Control y Analisis")
+        self.tab_destinos = self.tabview.add("Destinos y Taxonomia")
+        self.tab_logs = self.tabview.add("Consola y Logs")
         
         self._construir_pestana_control()
         self._construir_pestana_destinos()
@@ -55,7 +55,6 @@ class CleanDJmixApp(ctk.CTk):
 
     def _construir_pestana_control(self):
         """Construye la pestaña principal de ejecución y monitorización."""
-        # Header / Branding
         header = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         header.pack(fill="x", pady=(0, 15))
         ctk.CTkLabel(header, text="CleanDJmix PRO", font=ctk.CTkFont(family="Helvetica", size=26, weight="bold"), text_color="#FFFFFF").pack(side="left")
@@ -81,8 +80,8 @@ class CleanDJmixApp(ctk.CTk):
         self.lbl_file.pack(pady=(15, 2))
         self.lbl_id3 = ctk.CTkLabel(lcd, text="ETIQUETA ID3: EN ESPERA", font=("Menlo", 14, "bold"), text_color="#FFFFFF")
         self.lbl_id3.pack(pady=2)
-        ctk.CTkLabel(lcd, text="ılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılıılı", font=("Arial", 16), text_color="#333333").pack(pady=2)
-        self.lbl_stats = ctk.CTkLabel(lcd, text="BPM: 000.00  |  GÉNERO: PENDIENTE  |  SUBGÉNERO: PENDIENTE", font=("Courier", 13, "bold"), text_color="#00AEEF")
+        ctk.CTkLabel(lcd, text="--------------------------------------------------", font=("Arial", 14), text_color="#333333").pack(pady=2)
+        self.lbl_stats = ctk.CTkLabel(lcd, text="BPM: 000.00  |  GENERO: PENDIENTE  |  SUBGENERO: PENDIENTE", font=("Courier", 13, "bold"), text_color="#00AEEF")
         self.lbl_stats.pack(pady=(2, 15))
 
         # Checkbox de Modo Seguro
@@ -98,16 +97,15 @@ class CleanDJmixApp(ctk.CTk):
         btn_frame = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         btn_frame.pack(fill="x", pady=5)
         
-        ctk.CTkButton(btn_frame, text="▶ Análisis Estándar", command=lambda: self.iniciar_hilo("normal"), fg_color="#00AEEF", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=(0, 5))
-        ctk.CTkButton(btn_frame, text="🔍 Rescate Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=5)
-        ctk.CTkButton(btn_frame, text="🎧 Análisis Acústico", command=lambda: self.iniciar_hilo("acustico"), fg_color="#242424", text_color="#FFAA00", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=(5, 0))
+        ctk.CTkButton(btn_frame, text="Analisis Estandar", command=lambda: self.iniciar_hilo("normal"), fg_color="#00AEEF", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=(0, 5))
+        ctk.CTkButton(btn_frame, text="Rescate Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=5)
+        ctk.CTkButton(btn_frame, text="Analisis Acustico", command=lambda: self.iniciar_hilo("acustico"), fg_color="#242424", text_color="#FFAA00", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=(5, 0))
 
     def _construir_pestana_destinos(self):
         """Construye el panel avanzado para configurar carpetas y rutas por género y subgénero."""
-        ctk.CTkLabel(self.tab_destinos, text="Configuración Avanzada de Destinos y Taxonomía", font=ctk.CTkFont(size=16, weight="bold"), text_color="#FFFFFF").pack(pady=10)
+        ctk.CTkLabel(self.tab_destinos, text="Configuracion Avanzada de Destinos y Taxonomia", font=ctk.CTkFont(size=16, weight="bold"), text_color="#FFFFFF").pack(pady=10)
         ctk.CTkLabel(self.tab_destinos, text="Personaliza el nombre de las carpetas de salida y las rutas de disco para cada género y subgénero.", font=ctk.CTkFont(size=11), text_color="#888888").pack(pady=(0, 10))
 
-        # Scrollable Frame para albergar todos los géneros y subgéneros
         scroll = ctk.CTkScrollableFrame(self.tab_destinos, fg_color="#1e1e1e", height=480)
         scroll.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -117,7 +115,7 @@ class CleanDJmixApp(ctk.CTk):
             g_frame = ctk.CTkFrame(scroll, fg_color="#242424", corner_radius=6)
             g_frame.pack(fill="x", pady=5, padx=5, ipady=5)
             
-            ctk.CTkLabel(g_frame, text=f"📁 {genero}", font=ctk.CTkFont(size=13, weight="bold"), text_color="#00AEEF").pack(anchor="w", padx=10, pady=5)
+            ctk.CTkLabel(g_frame, text=f"Genero Madre: {genero}", font=ctk.CTkFont(size=13, weight="bold"), text_color="#00AEEF").pack(anchor="w", padx=10, pady=5)
             
             sub_container = ctk.CTkFrame(g_frame, fg_color="transparent")
             sub_container.pack(fill="x", padx=15, pady=2)
@@ -142,13 +140,13 @@ class CleanDJmixApp(ctk.CTk):
                         entry.delete(0, "end")
                         entry.insert(0, d)
                 
-                ctk.CTkButton(s_frame, text="📁", command=elegir_path, width=32, height=28, fg_color="#333333").pack(side="right", padx=10)
+                ctk.CTkButton(s_frame, text="Dir", command=elegir_path, width=32, height=28, fg_color="#333333").pack(side="right", padx=10)
                 
                 self.widgets_destinos[genero][sub] = {"carpeta": e_carp, "ruta": e_ruta}
 
     def _construir_pestana_logs(self):
         """Construye la pestaña de consola con diseño estilizado."""
-        ctk.CTkLabel(self.tab_logs, text="Registro de Ejecución en Tiempo Real", font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFFFFF").pack(pady=10, anchor="w", padx=5)
+        ctk.CTkLabel(self.tab_logs, text="Registro de Ejecucion en Tiempo Real", font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFFFFF").pack(pady=10, anchor="w", padx=5)
         
         self.consola = ctk.CTkTextbox(self.tab_logs, fg_color="#111111", text_color="#00AEEF", font=("Menlo", 11), corner_radius=8)
         self.consola.pack(fill="both", expand=True, padx=5, pady=5)
@@ -188,7 +186,7 @@ class CleanDJmixApp(ctk.CTk):
             self.log("[!] No se encontraron archivos MP3.", "error")
             return
             
-        self.log(f"[ MÓDULO {modo.upper()} ] Procesando {total} pistas...", "info")
+        self.log(f"[ MODULO {modo.upper()} ] Procesando {total} pistas...", "info")
         
         procesadas = 0
         for ruta_completa in archivos_mp3:
@@ -199,7 +197,7 @@ class CleanDJmixApp(ctk.CTk):
             try:
                 if modo == "acustico":
                     bpm, energia, _, _, _, _ = AudioAdapter.analizar_acustica(ruta_completa)
-                    self.log(f"[{procesadas}/{total}] Acústica OK: {nombre_archivo} -> BPM: {bpm} | Energía: {energia}%", "success")
+                    self.log(f"[{procesadas}/{total}] Acustica OK: {nombre_archivo} -> BPM: {bpm} | Energia: {energia}%", "success")
                     continue
 
                 artista, titulo = AudioAdapter.obtener_metadatos_id3(ruta_completa, nombre_archivo)
@@ -212,7 +210,6 @@ class CleanDJmixApp(ctk.CTk):
                 nuevo_nombre = AudioAdapter.actualizar_fichero(ruta_completa, art_oficial, tit_oficial, año, bpm, is_safe_mode)
                 genero, subgenero = TrackDomain.cerebro_ishkur(bpm, año, estilos, presencia_vocal, zcr, centroide)
                 
-                # Obtener mapeo personalizado de destino
                 sub_config = self.widgets_destinos.get(genero, {}).get(subgenero, {"carpeta": None, "ruta": None})
                 nombre_carpeta = sub_config["carpeta"].get().strip() if sub_config["carpeta"] else subgenero
                 ruta_custom = sub_config["ruta"].get().strip() if sub_config["ruta"] else ""
