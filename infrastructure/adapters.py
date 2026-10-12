@@ -1,9 +1,10 @@
 """
 Módulo de Infraestructura: Adaptadores para mutagen, Shazam, Discogs, 
-Librosa, exportación CSV y spotDL desacoplado con pre-escaneo selectivo.
+Librosa, exportación CSV y spotDL con saneamiento de URLs internacionales.
 """
 
 import os
+import re
 import asyncio
 import csv
 import logging
@@ -13,6 +14,17 @@ from mutagen import File as MutagenFile
 from shazamio import Shazam
 import librosa
 import numpy as np
+from dotenv import load_dotenv
+
+load_dotenv()
+
+if os.getenv("SPOTIPY_CLIENT_ID"):
+    os.environ["SPOTIPY_CLIENT_ID"] = os.getenv("SPOTIPY_CLIENT_ID")
+if os.getenv("SPOTIPY_CLIENT_SECRET"):
+    os.environ["SPOTIPY_CLIENT_SECRET"] = os.getenv("SPOTIPY_CLIENT_SECRET")
+if os.getenv("SPOTIPY_REDIRECT_URI"):
+    os.environ["SPOTIPY_REDIRECT_URI"] = os.getenv("SPOTIPY_REDIRECT_URI")
+
 
 class AudioAdapter:
     @staticmethod
@@ -129,31 +141,57 @@ class AudioAdapter:
 
 
 class SpotDLAdapter:
-    """Adaptador spotDL con pre-escaneo de metadatos y descarga selectiva."""
+    """Adaptador spotDL con pre-escaneo y compatibilidad universal de URLs de Spotify."""
 
     @staticmethod
-    def obtener_instancia(directorio_salida: str):
+    def _limpiar_url(url: str) -> str:
+        url = url.strip()
+        # Si se pegaron múltiples URLs concatenadas, tomar la primera
+        if "https://" in url:
+            partes = [p for p in url.split("https://") if p]
+            url = "https://" + partes[0]
+        
+        # Eliminar query params (?si=...)
+        url = url.split("?")[0]
+        
+        # Eliminar prefijos de localización como /intl-es/, /intl-de/, etc.
+        url = re.sub(r'open\.spotify\.com/intl-[a-zA-Z-]+/', 'open.spotify.com/', url)
+        return url
+
+    @staticmethod
+    def obtener_instancia(directorio_salida: str = None):
         from spotdl import Spotdl
-        return Spotdl(
-            client_id=None,
-            client_secret=None,
-            downloader_settings={
+        cid = os.getenv("SPOTIPY_CLIENT_ID")
+        csec = os.getenv("SPOTIPY_CLIENT_SECRET")
+        
+        downloader_settings = None
+        if directorio_salida:
+            downloader_settings = {
                 "output": os.path.join(directorio_salida, "{artist} - {title}.{output-ext}"),
                 "format": "mp3",
                 "bitrate": "320k"
             }
+
+        return Spotdl(
+            client_id=cid,
+            client_secret=csec,
+            downloader_settings=downloader_settings
         )
 
     @staticmethod
     def escanear_lista(spotify_url: str, callback_log=None) -> list:
-        """Obtiene las canciones de la URL de Spotify sin descargarlas."""
         try:
             from spotdl import Spotdl
-            spotdl_inst = Spotdl(client_id=None, client_secret=None)
-            if callback_log:
-                callback_log(f"[SpotDL] Buscando canciones y metadatos para: {spotify_url}...")
+            url_limpia = SpotDLAdapter._limpiar_url(spotify_url)
+            cid = os.getenv("SPOTIPY_CLIENT_ID")
+            csec = os.getenv("SPOTIPY_CLIENT_SECRET")
+
+            spotdl_inst = Spotdl(client_id=cid, client_secret=csec)
             
-            songs = spotdl_inst.search([spotify_url])
+            if callback_log:
+                callback_log(f"[SpotDL] Buscando catálogo para: {url_limpia}...")
+            
+            songs = spotdl_inst.search([url_limpia])
             lista_info = []
             for s in songs:
                 dur_seg = int(getattr(s, 'duration', 0) or 0)
@@ -179,7 +217,6 @@ class SpotDLAdapter:
 
     @staticmethod
     def descargar_canciones_seleccionadas(songs_list: list, directorio_salida: str, callback_log=None) -> list:
-        """Descarga únicamente los objetos de canciones pasados en songs_list."""
         os.makedirs(directorio_salida, exist_ok=True)
         archivos_antes = set(os.listdir(directorio_salida))
 

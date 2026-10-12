@@ -4,3 +4,4 @@ dist/
 *.spec
 .env
 CleanDJmix_crash.log
+.cleandjmix_session.json
