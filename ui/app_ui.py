@@ -1,6 +1,7 @@
 """
 Módulo de Interfaz Gráfica (UI): Diseñado con CustomTkinter para ofrecer 
-una experiencia moderna, intuitiva y en modo oscuro estilo profesional de DJ.
+una experiencia moderna, intuitiva y en modo oscuro estilo profesional de DJ,
+incorporando tooltips informativos en tiempo real.
 """
 
 import os
@@ -18,6 +19,34 @@ ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
 logging.basicConfig(filename='CleanDJmix_crash.log', level=logging.ERROR, format='%(asctime)s - [CleanDJmix Error] - %(message)s')
+
+class CTkToolTip:
+    """Clase auxiliar para mostrar tooltips informativos flotantes al pasar el ratón."""
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        self.widget.bind("<Enter>", self.show_tip)
+        self.widget.bind("<Leave>", self.hide_tip)
+
+    def show_tip(self, event=None):
+        if self.tipwindow or not self.text:
+            return
+        x = self.widget.winfo_rootx() + 20
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
+        self.tipwindow = tw = ctk.CTkToplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        
+        label = ctk.CTkLabel(tw, text=self.text, fg_color="#242424", text_color="#00AEEF", corner_radius=4, font=("Helvetica", 10, "bold"), padx=8, pady=4)
+        label.pack()
+
+    def hide_tip(self, event=None):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
+
 
 class CleanDJmixApp(ctk.CTk):
     def __init__(self):
@@ -51,7 +80,7 @@ class CleanDJmixApp(ctk.CTk):
         self._construir_pestana_destinos()
         self._construir_pestana_logs()
         
-        self.log("CleanDJmix PRO Modern UI inicializado correctamente.\n", "info")
+        self.log("CleanDJmix PRO Modern UI con Tooltips inicializado correctamente.\n", "info")
 
     def _construir_pestana_control(self):
         """Construye la pestaña principal de ejecución y monitorización."""
@@ -71,6 +100,7 @@ class CleanDJmixApp(ctk.CTk):
         
         btn_browse = ctk.CTkButton(src_frame, text="Explorar", command=self.seleccionar_ruta, fg_color="#333333", hover_color="#444444", width=90, height=35)
         btn_browse.pack(side="right", padx=15)
+        CTkToolTip(btn_browse, "Selecciona la carpeta raíz de tu biblioteca musical a clasificar")
 
         # Pantalla LCD / Visualizador de Estado
         lcd = ctk.CTkFrame(self.tab_control, fg_color="#111111", corner_radius=10)
@@ -87,19 +117,28 @@ class CleanDJmixApp(ctk.CTk):
         # Checkbox de Modo Seguro
         safe_cb = ctk.CTkCheckBox(self.tab_control, text="Modo Seguro (Simulación: No modifica ficheros físicos en disco)", variable=self.safe_mode_var, text_color="#AAAAAA", fg_color="#00AEEF")
         safe_cb.pack(pady=(0, 10), anchor="w")
+        CTkToolTip(safe_cb, "Si está activo, simula el proceso en consola sin mover ni renombrar archivos reales")
 
         # Barra de Progreso
         self.progreso = ctk.CTkProgressBar(self.tab_control, progress_color="#00AEEF", fg_color="#242424", height=8)
         self.progreso.pack(fill="x", pady=(0, 20))
         self.progreso.set(0)
 
-        # Botones de Acción Operativa
+        # Botones de Acción Operativa con Tooltips Informativos
         btn_frame = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         btn_frame.pack(fill="x", pady=5)
         
-        ctk.CTkButton(btn_frame, text="Analisis Estandar", command=lambda: self.iniciar_hilo("normal"), fg_color="#00AEEF", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=(0, 5))
-        ctk.CTkButton(btn_frame, text="Rescate Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=5)
-        ctk.CTkButton(btn_frame, text="Analisis Acustico", command=lambda: self.iniciar_hilo("acustico"), fg_color="#242424", text_color="#FFAA00", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42).pack(side="left", expand=True, fill="x", padx=(5, 0))
+        btn_std = ctk.CTkButton(btn_frame, text="Analisis Estandar", command=lambda: self.iniciar_hilo("normal"), fg_color="#00AEEF", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42)
+        btn_std.pack(side="left", expand=True, fill="x", padx=(0, 5))
+        CTkToolTip(btn_std, "Procesa metadatos ID3, consulta Discogs y clasifica por el Cerebro Ishkur")
+
+        btn_resc = ctk.CTkButton(btn_frame, text="Rescate Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42)
+        btn_resc.pack(side="left", expand=True, fill="x", padx=5)
+        CTkToolTip(btn_resc, "Identifica pistas desconocidas o sin nombre mediante el reconocimiento online de Shazam")
+
+        btn_acu = ctk.CTkButton(btn_frame, text="Analisis Acustico", command=lambda: self.iniciar_hilo("acustico"), fg_color="#242424", text_color="#FFAA00", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42)
+        btn_acu.pack(side="left", expand=True, fill="x", padx=(5, 0))
+        CTkToolTip(btn_acu, "Analiza métricas puras de audio (BPM, energía, centroide espectral y groove) con Librosa")
 
     def _construir_pestana_destinos(self):
         """Construye el panel avanzado para configurar carpetas y rutas por género y subgénero."""
@@ -130,9 +169,11 @@ class CleanDJmixApp(ctk.CTk):
                 e_carp = ctk.CTkEntry(s_frame, width=140, height=28, fg_color="#242424", text_color="#FFFFFF")
                 e_carp.insert(0, sub)
                 e_carp.pack(side="left", padx=5)
+                CTkToolTip(e_carp, "Nombre personalizado para la carpeta de este subgénero")
                 
                 e_ruta = ctk.CTkEntry(s_frame, width=280, height=28, fg_color="#242424", text_color="#FFFFFF", placeholder_text="Ruta opcional (por defecto origen)")
                 e_ruta.pack(side="left", padx=5, expand=True, fill="x")
+                CTkToolTip(e_ruta, "Ruta absoluta opcional en disco o USB para guardar este subgénero")
                 
                 def elegir_path(entry=e_ruta):
                     d = filedialog.askdirectory()
@@ -140,7 +181,9 @@ class CleanDJmixApp(ctk.CTk):
                         entry.delete(0, "end")
                         entry.insert(0, d)
                 
-                ctk.CTkButton(s_frame, text="Dir", command=elegir_path, width=32, height=28, fg_color="#333333").pack(side="right", padx=10)
+                btn_d = ctk.CTkButton(s_frame, text="Dir", command=elegir_path, width=32, height=28, fg_color="#333333")
+                btn_d.pack(side="right", padx=10)
+                CTkToolTip(btn_d, "Selecciona una carpeta o disco de destino externo")
                 
                 self.widgets_destinos[genero][sub] = {"carpeta": e_carp, "ruta": e_ruta}
 
@@ -222,7 +265,7 @@ class CleanDJmixApp(ctk.CTk):
                     shutil.move(ruta_completa, ruta_destino)
                     self.log(f"[{procesadas}/{total}] Movido a [{genero} -> {nombre_carpeta}]: {nuevo_nombre}", "success")
                 else:
-                    self.log(f"[{procesadas}/{total}] Simulacro en [{genero} -> {nombre_carpeta}]: {nuevo_nombre}", "info")
+                    self.log(f"[ {procesadas}/{total} ] Simulacro en [{genero} -> {nombre_carpeta}]: {nuevo_nombre}", "info")
             except Exception as e:
                 logging.error(traceback.format_exc())
                 self.log(f"[!] Error en {nombre_archivo}", "error")
