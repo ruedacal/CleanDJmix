@@ -1,5 +1,6 @@
 """
-Módulo de Infraestructura: Adaptador de Autenticación con diagnóstico detallado de errores.
+Módulo de Infraestructura: Adaptador de Autenticación con diagnóstico detallado de errores
+y control estricto de cuentas desactivadas.
 """
 
 import os
@@ -41,7 +42,6 @@ class AuthAdapter:
             auth_module = client.auth
             res = None
 
-            # Probar los distintos métodos de la API de GoTrue
             if hasattr(auth_module, "sign_in_with_password"):
                 try:
                     res = auth_module.sign_in_with_password(credentials={"email": email, "password": password})
@@ -55,7 +55,6 @@ class AuthAdapter:
             else:
                 return {"success": False, "error": "Método de login no disponible en esta versión del SDK."}
 
-            # Extracción segura de datos
             user = getattr(res, "user", None) or (res.get("user") if isinstance(res, dict) else None)
             session = getattr(res, "session", None) or (res.get("session") if isinstance(res, dict) else None)
 
@@ -64,20 +63,20 @@ class AuthAdapter:
 
             if user_id:
                 perfil = cls.obtener_perfil(user_id)
+                # Verificación estricta de estado de cuenta
+                if not perfil.get("is_active", True):
+                    return {"success": False, "error": "Cuenta desactivada por el administrador."}
+
                 access_token = getattr(session, "access_token", "") if session else ""
                 cls.guardar_sesion_local(access_token, user_id, user_email)
                 return {"success": True, "user": user, "profile": perfil}
 
-            # Si la respuesta trae error interno
             err_msg = getattr(res, "error_message", None) or getattr(res, "message", None) or "Credenciales incorrectas o correo no confirmado."
             return {"success": False, "error": str(err_msg)}
 
         except Exception as e:
             detalles = traceback.format_exc()
-            print(f"\n[DEBUG AUTH EXCEPTION]:\n{detalles}\n")
-            msg = str(e)
-            if not msg:
-                msg = repr(e)
+            msg = str(e) or repr(e)
             return {"success": False, "error": msg}
 
     @classmethod
@@ -113,7 +112,7 @@ class AuthAdapter:
             if data and len(data) > 0:
                 return data[0]
         except Exception as e:
-            print(f"[Profiles Error] {e}")
+            pass
         return {"role": "admin", "is_active": True}
 
     @classmethod
@@ -122,8 +121,8 @@ class AuthAdapter:
             datos = {"access_token": access_token, "user_id": user_id, "email": email}
             with open(SESSION_CACHE_FILE, "w", encoding="utf-8") as f:
                 json.dump(datos, f)
-        except Exception as e:
-            print(f"[Save Session Error] {e}")
+        except Exception:
+            pass
 
     @classmethod
     def cargar_sesion_local(cls) -> Optional[Dict[str, Any]]:
@@ -133,6 +132,9 @@ class AuthAdapter:
             with open(SESSION_CACHE_FILE, "r", encoding="utf-8") as f:
                 datos = json.load(f)
             perfil = cls.obtener_perfil(datos["user_id"])
+            if not perfil.get("is_active", True):
+                cls.cerrar_sesion()
+                return None
             datos["profile"] = perfil
             return datos
         except Exception:

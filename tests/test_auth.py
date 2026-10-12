@@ -33,10 +33,11 @@ def test_login_cuenta_desactivada():
     mock_client = MagicMock()
     mock_res = MagicMock()
     mock_res.user.id = "user-123"
+    mock_res.user.email = "test@dj.com"
     mock_client.auth.sign_in_with_password.return_value = mock_res
     
     with patch.object(AuthAdapter, 'get_client', return_value=mock_client), \
-         patch.object(AuthAdapter, 'obtener_perfil', return_value={"is_active": False}):
+         patch.object(AuthAdapter, 'obtener_perfil', return_value={"is_active": False, "role": "user"}):
         
         res = AuthAdapter.login_con_email("test@dj.com", "pass123")
         assert res["success"] is False
@@ -75,6 +76,10 @@ def test_sesion_local(tmp_path):
             sesion = AuthAdapter.cargar_sesion_local()
             assert sesion is not None
             assert sesion["user_id"] == "uid"
+            
+        with patch.object(AuthAdapter, 'obtener_perfil', return_value={"is_active": False}):
+            sesion_bloqueada = AuthAdapter.cargar_sesion_local()
+            assert sesion_bloqueada is None
             
         AuthAdapter.cerrar_sesion()
         assert not os.path.exists(str(archivo_sesion))
