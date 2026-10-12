@@ -158,13 +158,18 @@ class SpotDLAdapter:
             for s in songs:
                 dur_seg = int(getattr(s, 'duration', 0) or 0)
                 dur_str = f"{dur_seg // 60:02d}:{dur_seg % 60:02d}"
+                nombre = getattr(s, 'name', None) or 'Desconocido'
+                artista = getattr(s, 'artist', None) or 'Desconocido'
+                album = getattr(s, 'album_name', None) or 'Single / Desconocido'
+                cover = getattr(s, 'cover_url', None) or ''
+                
                 lista_info.append({
                     "song_obj": s,
-                    "titulo": getattr(s, 'name', 'Desconocido'),
-                    "artista": getattr(s, 'artist', 'Desconocido'),
-                    "album": getattr(s, 'album_name', 'Single / Desconocido'),
+                    "titulo": nombre,
+                    "artista": artista,
+                    "album": album,
                     "duracion": dur_str,
-                    "cover_url": getattr(s, 'cover_url', '')
+                    "cover_url": cover
                 })
             return lista_info
         except Exception as e:
