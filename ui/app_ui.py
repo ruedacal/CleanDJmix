@@ -1,7 +1,7 @@
 """
 Módulo de Interfaz Gráfica (UI): Diseñado con CustomTkinter para ofrecer 
 una experiencia moderna, intuitiva y en modo oscuro estilo profesional de DJ,
-incorporando un sistema de ayuda interactiva por barra de estado en tiempo real.
+incorporando generación de informes CSV y estadísticas de sesión.
 """
 
 import os
@@ -31,7 +31,6 @@ class CleanDJmixApp(ctk.CTk):
         self.safe_mode_var = ctk.BooleanVar(value=True)
         self.cancel_flag = False 
         
-        # Estructura de destinos personalizados por género y subgénero
         self.destinos_personalizados = {}
         for genero, subgeneros in TAXONOMIA_ELECTRONICA.items():
             self.destinos_personalizados[genero] = {
@@ -40,7 +39,6 @@ class CleanDJmixApp(ctk.CTk):
                 "subgeneros": {sub: {"carpeta": sub, "ruta": ""} for sub in subgeneros}
             }
 
-        # Contenedor Principal con Pestañas (Tabs)
         self.tabview = ctk.CTkTabview(self, fg_color="#181818", segmented_button_selected_color="#00AEEF", segmented_button_unselected_color="#242424")
         self.tabview.pack(fill="both", expand=True, padx=20, pady=(20, 5))
         
@@ -52,7 +50,6 @@ class CleanDJmixApp(ctk.CTk):
         self._construir_pestana_destinos()
         self._construir_pestana_logs()
         
-        # Barra de Estado / Ayuda Dinámica inferior
         status_frame = ctk.CTkFrame(self, fg_color="#141414", corner_radius=6, height=36)
         status_frame.pack(fill="x", padx=20, pady=(0, 15))
         status_frame.pack_propagate(False)
@@ -61,21 +58,18 @@ class CleanDJmixApp(ctk.CTk):
         self.lbl_status = ctk.CTkLabel(status_frame, text="Pasa el ratón por cualquier control para ver su descripción detallada.", font=ctk.CTkFont(size=11), text_color="#AAAAAA")
         self.lbl_status.pack(side="left", padx=5)
 
-        self.log("CleanDJmix PRO Modern UI con Ayuda Dinámica inicializado correctamente.\n", "info")
+        self.log("CleanDJmix PRO con Reporte Analítico CSV inicializado correctamente.\n", "info")
 
     def vincular_ayuda(self, widget, texto_ayuda):
-        """Vincula eventos de ratón para mostrar descripciones de ayuda en la barra inferior."""
         widget.bind("<Enter>", lambda e: self.lbl_status.configure(text=texto_ayuda, text_color="#FFFFFF"), add="+")
         widget.bind("<Leave>", lambda e: self.lbl_status.configure(text="Pasa el ratón por cualquier control para ver su descripción detallada.", text_color="#AAAAAA"), add="+")
 
     def _construir_pestana_control(self):
-        """Construye la pestaña principal de ejecución y monitorización."""
         header = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         header.pack(fill="x", pady=(0, 15))
         ctk.CTkLabel(header, text="CleanDJmix PRO", font=ctk.CTkFont(family="Helvetica", size=26, weight="bold"), text_color="#FFFFFF").pack(side="left")
-        ctk.CTkLabel(header, text="MODERN DJ SUITE v3.0", font=ctk.CTkFont(family="Helvetica", size=11, weight="bold"), text_color="#00AEEF").pack(side="right")
+        ctk.CTkLabel(header, text="MODERN DJ SUITE v3.1", font=ctk.CTkFont(family="Helvetica", size=11, weight="bold"), text_color="#00AEEF").pack(side="right")
 
-        # Selector de Carpeta Origen
         src_frame = ctk.CTkFrame(self.tab_control, fg_color="#242424", corner_radius=8)
         src_frame.pack(fill="x", pady=10, ipady=5)
         lbl_origen = ctk.CTkLabel(src_frame, text="CARPETA ORIGEN", font=ctk.CTkFont(size=11, weight="bold"), text_color="#888888")
@@ -91,7 +85,6 @@ class CleanDJmixApp(ctk.CTk):
         btn_browse.pack(side="right", padx=15)
         self.vincular_ayuda(btn_browse, "Haz clic para abrir el explorador de archivos y seleccionar la carpeta de música.")
 
-        # Pantalla LCD / Visualizador de Estado
         lcd = ctk.CTkFrame(self.tab_control, fg_color="#111111", corner_radius=10)
         lcd.pack(fill="x", pady=15, ipady=10)
         self.vincular_ayuda(lcd, "Panel LCD en tiempo real con el estado de la pista actual, metadatos y análisis.")
@@ -104,34 +97,30 @@ class CleanDJmixApp(ctk.CTk):
         self.lbl_stats = ctk.CTkLabel(lcd, text="BPM: 000.00  |  GENERO: PENDIENTE  |  SUBGENERO: PENDIENTE", font=("Courier", 13, "bold"), text_color="#00AEEF")
         self.lbl_stats.pack(pady=(2, 15))
 
-        # Checkbox de Modo Seguro
         safe_cb = ctk.CTkCheckBox(self.tab_control, text="Modo Seguro (Simulación: No modifica ficheros físicos en disco)", variable=self.safe_mode_var, text_color="#AAAAAA", fg_color="#00AEEF")
         safe_cb.pack(pady=(0, 10), anchor="w")
-        self.vincular_ayuda(safe_cb, "Activa el modo simulación: analiza y muestra resultados en consola sin mover ni alterar tus archivos originales.")
+        self.vincular_ayuda(safe_cb, "Activa el modo simulación: analiza y muestra resultados sin mover ni alterar tus archivos originales.")
 
-        # Barra de Progreso
         self.progreso = ctk.CTkProgressBar(self.tab_control, progress_color="#00AEEF", fg_color="#242424", height=8)
         self.progreso.pack(fill="x", pady=(0, 20))
         self.progreso.set(0)
 
-        # Botones de Acción Operativa con Ayuda Dinámica
         btn_frame = ctk.CTkFrame(self.tab_control, fg_color="transparent")
         btn_frame.pack(fill="x", pady=5)
         
         btn_std = ctk.CTkButton(btn_frame, text="Analisis Estandar", command=lambda: self.iniciar_hilo("normal"), fg_color="#00AEEF", text_color="#000000", font=ctk.CTkFont(weight="bold"), height=42)
         btn_std.pack(side="left", expand=True, fill="x", padx=(0, 5))
-        self.vincular_ayuda(btn_std, "Procesa etiquetas ID3, consulta metadatos en Discogs y clasifica los tracks según el Cerebro Ishkur.")
+        self.vincular_ayuda(btn_std, "Procesa etiquetas ID3, consulta Discogs, clasifica por Ishkur y genera informe CSV.")
 
         btn_resc = ctk.CTkButton(btn_frame, text="Rescate Shazam", command=lambda: self.iniciar_hilo("rescate"), fg_color="#242424", text_color="#00AEEF", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42)
         btn_resc.pack(side="left", expand=True, fill="x", padx=5)
-        self.vincular_ayuda(btn_resc, "Identifica automáticamente pistas huérfanas o sin nombre utilizando el motor online de Shazam.")
+        self.vincular_ayuda(btn_resc, "Identifica automáticamente pistas huérfanas utilizando el motor de Shazam.")
 
         btn_acu = ctk.CTkButton(btn_frame, text="Analisis Acustico", command=lambda: self.iniciar_hilo("acustico"), fg_color="#242424", text_color="#FFAA00", hover_color="#333333", font=ctk.CTkFont(weight="bold"), height=42)
         btn_acu.pack(side="left", expand=True, fill="x", padx=(5, 0))
-        self.vincular_ayuda(btn_acu, "Extrae métricas puras de audio (BPM exacto, energía, centroide espectral y groove) mediante Librosa.")
+        self.vincular_ayuda(btn_acu, "Extrae métricas puras de audio (BPM, energía, centroide espectral y groove) con Librosa.")
 
     def _construir_pestana_destinos(self):
-        """Construye el panel avanzado para configurar carpetas y rutas por género y subgénero."""
         ctk.CTkLabel(self.tab_destinos, text="Configuracion Avanzada de Destinos y Taxonomia", font=ctk.CTkFont(size=16, weight="bold"), text_color="#FFFFFF").pack(pady=10)
         ctk.CTkLabel(self.tab_destinos, text="Personaliza el nombre de las carpetas de salida y las rutas de disco para cada género y subgénero.", font=ctk.CTkFont(size=11), text_color="#888888").pack(pady=(0, 10))
 
@@ -167,7 +156,7 @@ class CleanDJmixApp(ctk.CTk):
                 
                 e_ruta = ctk.CTkEntry(s_frame, width=280, height=28, fg_color="#242424", text_color="#FFFFFF", placeholder_text="Ruta opcional (por defecto origen)")
                 e_ruta.pack(side="left", padx=5, expand=True, fill="x")
-                self.vincular_ayuda(e_ruta, "Ruta absoluta opcional de destino (ej: pendrive USB, disco externo o ruta de DJ).")
+                self.vincular_ayuda(e_ruta, "Ruta absoluta opcional de destino (ej: pendrive USB, disco externo).")
                 
                 def elegir_path(entry=e_ruta):
                     d = filedialog.askdirectory()
@@ -182,7 +171,6 @@ class CleanDJmixApp(ctk.CTk):
                 self.widgets_destinos[genero][sub] = {"carpeta": e_carp, "ruta": e_ruta}
 
     def _construir_pestana_logs(self):
-        """Construye la pestaña de consola con diseño estilizado."""
         lbl_consola_title = ctk.CTkLabel(self.tab_logs, text="Registro de Ejecucion en Tiempo Real", font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFFFFF")
         lbl_consola_title.pack(pady=10, anchor="w", padx=5)
         self.vincular_ayuda(lbl_consola_title, "Monitor de eventos, progreso y resultados de clasificación en vivo.")
@@ -227,7 +215,10 @@ class CleanDJmixApp(ctk.CTk):
             
         self.log(f"[ MODULO {modo.upper()} ] Procesando {total} pistas...", "info")
         
+        resultados_informe = []
+        conteo_generos = {}
         procesadas = 0
+        
         for ruta_completa in archivos_mp3:
             if self.cancel_flag: break
             procesadas += 1
@@ -256,6 +247,17 @@ class CleanDJmixApp(ctk.CTk):
                 base_salida = ruta_custom if ruta_custom else ruta_base
                 ruta_destino = os.path.join(base_salida, nombre_carpeta, nuevo_nombre)
                 
+                conteo_generos[genero] = conteo_generos.get(genero, 0) + 1
+                resultados_informe.append({
+                    "artista": art_oficial,
+                    "titulo": tit_oficial,
+                    "bpm": bpm,
+                    "anio": año,
+                    "genero": genero,
+                    "subgenero": subgenero,
+                    "ruta_final": ruta_destino
+                })
+                
                 if not is_safe_mode and ruta_completa != ruta_destino:
                     os.makedirs(os.path.dirname(ruta_destino), exist_ok=True)
                     shutil.move(ruta_completa, ruta_destino)
@@ -268,4 +270,14 @@ class CleanDJmixApp(ctk.CTk):
                 
             self.progreso.set(procesadas / total)
             
+        # Generar informe CSV si se procesaron pistas con éxito
+        if resultados_informe:
+            csv_path = AudioAdapter.exportar_informe_csv(resultados_informe, ruta_base)
+            if csv_path:
+                self.log(f"\n[i] INFORME ANALITICO CSV GENERADO: {csv_path}", "success")
+            
+            self.log("\n--- ESTADÍSTICAS DE LA SESIÓN ---", "info")
+            for gen, cantid in conteo_generos.items():
+                self.log(f"  • {gen}: {cantid} pistas clasificadas", "success")
+                
         self.log("\n[!!!] PROCESO FINALIZADO.", "success")
