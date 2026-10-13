@@ -1,6 +1,7 @@
 from application.analysis_service import AudioAnalysisService
 from application.taxonomy_service import TaxonomyService
 from application.spotify_download_service import SpotifyDownloadService
+from application.deck_player_service import DeckPlayerService, DeckState
 from application.audio_player import MacAudioPlayer
 from application.stream_service import AudioStreamService
 import os
@@ -122,6 +123,7 @@ class CleanDJmixApp(ctk.CTk):
 
         self.safe_mode_var = ctk.BooleanVar(value=True)
         self.auto_process_spotify_dl_var = ctk.BooleanVar(value=True)
+        self.deck_player_service = DeckPlayerService()
         self.cancel_flag = False 
         self.pause_flag = False 
         
@@ -721,14 +723,28 @@ class CleanDJmixApp(ctk.CTk):
                 pass
         threading.Thread(target=worker, daemon=True).start()
 
+    def _actualizar_ui_deck_state(self, state: DeckState):
+        def _update():
+            if state == DeckState.PLAYING:
+                self.btn_dock_play.configure(text="PAUSE", fg_color="#FFAA00")
+            elif state == DeckState.LOADING:
+                self.btn_dock_play.configure(text="CARGANDO...", fg_color="#333333")
+            else:
+                self.btn_dock_play.configure(text="PLAY", fg_color="#00AEEF")
+        self.after(0, _update)
+
     def _cargar_a_deck_dj(self, item):
-        self._current_deck_item = item
         self.dock_titulo.configure(text=str(item.get("titulo", ""))[:28])
         self.dock_artista.configure(text=str(item.get("artista", ""))[:28])
         if item.get("cover_url"):
             self._cargar_cover_async(item.get("cover_url"), self.dock_cover)
         self._dibujar_onda_dock()
-        self._toggle_dock_play(forzar_play=True)
+        self.deck_player_service.cargar_pista(
+            item=item,
+            on_state_change=self._actualizar_ui_deck_state,
+            on_log=self.log_spotify_dl,
+            auto_play=True
+        )
 
     def _dibujar_onda_dock(self):
         self.dock_wave_canvas.delete("all")
@@ -748,45 +764,11 @@ class CleanDJmixApp(ctk.CTk):
             self.dock_wave_canvas.create_line(i * bw + 1, mid - alt, i * bw + 1, mid + alt, fill=color, width=max(1, bw - 1.5))
 
     def _toggle_dock_play(self, forzar_play=False):
-        if not hasattr(self, "_player"):
-            self._player = MacAudioPlayer()
-            self._stream_service = AudioStreamService()
-
-        item = getattr(self, "_current_deck_item", None)
-        if not item:
-            self.log_spotify_dl("[!] Selecciona primero un track pulsando Cargar.")
-            return
-
-        # Pausar si está reproduciendo
-        if self._player.is_playing and not forzar_play:
-            self._player.pause()
-            self.btn_dock_play.configure(text="PLAY", fg_color="#00AEEF")
-            return
-
-        # Reanudar si ya hay pista cargada pero en pausa
-        if not self._player.is_playing and not forzar_play and self._player.current_file:
-            self._player.resume()
-            self.btn_dock_play.configure(text="PAUSE", fg_color="#FFAA00")
-            return
-
-        # Detener anterior y preparar nueva reproducción
-        self._player.stop()
-        self.btn_dock_play.configure(text="CARGANDO...", fg_color="#333333")
-
-        def worker():
-            file_path = self._stream_service.obtener_audio_track(item)
-            def on_ready():
-                if file_path and self._player.play(file_path):
-                    self.btn_dock_play.configure(text="PAUSE", fg_color="#FFAA00")
-                    self.log_spotify_dl(f"▶ Reproduciendo en Deck: {item.get('artista', '')} - {item.get('titulo', '')}", "success")
-                else:
-                    self.btn_dock_play.configure(text="PLAY", fg_color="#00AEEF")
-                    self.log_spotify_dl("[!] No se pudo obtener el stream de audio para este track.", "error")
-            self.after(0, on_ready)
-
-        threading.Thread(target=worker, daemon=True).start()
+        self.deck_player_service.play_o_pausar(
+            forzar_play=forzar_play,
+            on_state_change=self._actualizar_ui_deck_state,
+            on_log=self.log_spotify_dl
+        )
 
     def _stop_dock_play(self):
-        if hasattr(self, "_player"):
-            self._player.stop()
-        self.btn_dock_play.configure(text="PLAY", fg_color="#00AEEF")
+        self.deck_player_service.detener(on_state_change=self._actualizar_ui_deck_state)
