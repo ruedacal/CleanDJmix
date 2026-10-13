@@ -1,5 +1,6 @@
 from application.analysis_service import AudioAnalysisService
 from application.taxonomy_service import TaxonomyService
+from application.spotify_download_service import SpotifyDownloadService
 from application.audio_player import MacAudioPlayer
 from application.stream_service import AudioStreamService
 import os
@@ -388,8 +389,8 @@ class CleanDJmixApp(ctk.CTk):
         threading.Thread(target=self._hilo_escanear_spotify_dl, args=(url,), daemon=True).start()
 
     def _hilo_escanear_spotify_dl(self, url):
-        self.log_spotify_dl(f"[Spotify] Obteniendo lista de canciones para: {url}...", "info")
-        canciones = SpotifyDownloaderAdapter.escanear_lista(url, callback_log=self.log_spotify_dl)
+        service = SpotifyDownloadService()
+        canciones = service.escanear_enlace(url, callback_log=self.log_spotify_dl)
         
         def pintar_gui():
             self.btn_scan.configure(state="normal", text="1. Cargar Lista")
@@ -454,17 +455,20 @@ class CleanDJmixApp(ctk.CTk):
         directorio_destino = self.entry_ruta.get().strip()
         self.btn_descargar_sel.configure(state="disabled", text="Descargando...")
         
-        nuevos_archivos = SpotifyDownloaderAdapter.descargar_canciones_seleccionadas(
-            songs_to_download, 
-            directorio_destino, 
-            callback_log=self.log_spotify_dl
+        tax_srv = TaxonomyService()
+        cfg_dest = self.obtener_configuracion_destinos()
+        service = SpotifyDownloadService(taxonomy_service=tax_srv)
+
+        nuevos_archivos = service.descargar_seleccion(
+            canciones=songs_to_download,
+            directorio_destino=directorio_destino,
+            callback_log=self.log_spotify_dl,
+            auto_clasificar=self.auto_process_spotify_dl_var.get(),
+            config_destinos=cfg_dest,
+            modo_seguro=self.safe_mode_var.get()
         )
         
         self.btn_descargar_sel.configure(state="normal", text="[>] 2. Descargar Canciones Seleccionadas")
-        
-        if nuevos_archivos and self.auto_process_spotify_dl_var.get():
-            self.log_spotify_dl(f"[Spotify] Analizando y organizando {len(nuevos_archivos)} pistas en Serato...", "info")
-            self.iniciar_hilo(modo="normal")
 
     def _construir_pestana_destinos(self):
         ctk.CTkLabel(self.tab_destinos, text="Configuracion Avanzada de Destinos (Estructura Serato Crate)", font=ctk.CTkFont(size=16, weight="bold"), text_color="#FFFFFF").pack(pady=10)
