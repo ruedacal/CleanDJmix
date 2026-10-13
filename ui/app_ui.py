@@ -1,3 +1,14 @@
+from application.analysis_service import AudioAnalysisService
+from application.audio_player import MacAudioPlayer
+from application.stream_service import AudioStreamService
+import os
+import math
+import tempfile
+import tkinter as tk
+import pygame
+import io
+import requests
+from PIL import Image, ImageTk
 """
 Módulo de Interfaz Gráfica (UI): CleanDJmix PRO con selección interactiva 
 por checks para spotDL (Carátula, Título, Artista, Álbum, Duración) y exportación a Serato.
@@ -275,14 +286,14 @@ class CleanDJmixApp(ctk.CTk):
         btn_cancel.pack(side="left", padx=(6, 0))
 
     def _construir_pestana_spotify_dl(self):
-        """Pestaña spotDL con selección individual de pistas por checks (Carátula, Título, Artista, Álbum, Duración)."""
+        """Pestaña spotDL con selección individual de pistas y Deck DJ de preescucha."""
         header_sp = ctk.CTkFrame(self.tab_spotify_dl, fg_color="transparent")
         header_sp.pack(fill="x", pady=10)
         
         ctk.CTkLabel(header_sp, text="Ingesta Directa desde Spotify (spotDL)", font=ctk.CTkFont(family="Helvetica", size=22, weight="bold"), text_color="#1DB954").pack(anchor="w")
         ctk.CTkLabel(header_sp, text="Escanea playlists o tracks, selecciona que canciones descargar y organizalas directamente a Serato.", font=ctk.CTkFont(size=12), text_color="#888888").pack(anchor="w", pady=(2, 0))
 
-        # Panel Superior de Búsqueda
+        # Panel Superior de Busqueda
         box_search = ctk.CTkFrame(self.tab_spotify_dl, fg_color="#222222", corner_radius=8)
         box_search.pack(fill="x", pady=10, padx=5, ipady=10, ipadx=10)
 
@@ -298,7 +309,7 @@ class CleanDJmixApp(ctk.CTk):
         self.btn_scan.pack(side="right")
         CTkToolTip(self.btn_scan, "Busca los metadatos y muestra el listado con checks antes de descargar.")
 
-        # Barra de Selección Rápida y Acciones
+        # Barra de Seleccion Rapida y Acciones
         action_bar = ctk.CTkFrame(self.tab_spotify_dl, fg_color="transparent")
         action_bar.pack(fill="x", padx=5, pady=5)
 
@@ -315,24 +326,50 @@ class CleanDJmixApp(ctk.CTk):
         cb_auto.pack(side="right", padx=10)
 
         # Contenedor Desplazable con el Listado de Canciones y Checks
-        self.spotify_dl_scroll_list = ctk.CTkScrollableFrame(self.tab_spotify_dl, fg_color="#161616", corner_radius=8, height=260)
+        self.spotify_dl_scroll_list = ctk.CTkScrollableFrame(self.tab_spotify_dl, fg_color="#161616", corner_radius=8, height=230)
         self.spotify_dl_scroll_list.pack(fill="both", expand=True, padx=5, pady=5)
 
         # Encabezado de la lista
         list_header = ctk.CTkFrame(self.spotify_dl_scroll_list, fg_color="#202020", corner_radius=4, height=30)
         list_header.pack(fill="x", pady=(0, 5), ipady=3)
-        ctk.CTkLabel(list_header, text="SEL", width=50, font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
-        ctk.CTkLabel(list_header, text="TITULO", width=220, anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
-        ctk.CTkLabel(list_header, text="ARTISTA", width=180, anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
-        ctk.CTkLabel(list_header, text="ALBUM", width=180, anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
+        ctk.CTkLabel(list_header, text="SEL", width=45, font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
+        ctk.CTkLabel(list_header, text="COVER", width=45, font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
+        ctk.CTkLabel(list_header, text="TITULO", width=250, anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
+        ctk.CTkLabel(list_header, text="ARTISTA", width=200, anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
         ctk.CTkLabel(list_header, text="DURACION", width=80, anchor="center", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="left", padx=5)
+        ctk.CTkLabel(list_header, text="PREVIEW", width=80, anchor="center", font=ctk.CTkFont(size=11, weight="bold"), text_color="#00AEEF").pack(side="right", padx=10)
 
-        # Botón para descargar únicamente las seleccionadas
-        self.btn_descargar_sel = ctk.CTkButton(self.tab_spotify_dl, text="[>] 2. Descargar Canciones Seleccionadas", command=self.iniciar_descarga_seleccionadas, fg_color="#1DB954", hover_color="#169c46", text_color="#000000", font=ctk.CTkFont(weight="bold", size=13), height=42)
-        self.btn_descargar_sel.pack(fill="x", padx=5, pady=8)
+        # --- PANEL DOCK DE PREESCUCHA DJ ---
+        self.dock_player = ctk.CTkFrame(self.tab_spotify_dl, fg_color="#151515", corner_radius=8, height=54)
+        self.dock_player.pack(fill="x", padx=5, pady=(2, 6))
+
+        self.dock_cover = ctk.CTkLabel(self.dock_player, text="DJ", width=42, height=42, fg_color="#242424", corner_radius=4, font=ctk.CTkFont(size=11, weight="bold"))
+        self.dock_cover.pack(side="left", padx=8, pady=6)
+
+        dock_meta = ctk.CTkFrame(self.dock_player, fg_color="transparent", width=200)
+        dock_meta.pack(side="left", fill="y", padx=4, pady=6)
+        dock_meta.pack_propagate(False)
+
+        self.dock_titulo = ctk.CTkLabel(dock_meta, text="Selecciona un track...", font=ctk.CTkFont(size=11, weight="bold"), text_color="#FFFFFF", anchor="w")
+        self.dock_titulo.pack(fill="x")
+        self.dock_artista = ctk.CTkLabel(dock_meta, text="CleanDJmix Deck", font=ctk.CTkFont(size=10), text_color="#888888", anchor="w")
+        self.dock_artista.pack(fill="x")
+
+        self.btn_dock_play = ctk.CTkButton(self.dock_player, text="PLAY", width=75, height=34, fg_color="#00AEEF", hover_color="#0090c7", text_color="#000000", font=ctk.CTkFont(size=11, weight="bold"), command=self._toggle_dock_play)
+        self.btn_dock_play.pack(side="right", padx=8, pady=10)
+
+        self.btn_dock_stop = ctk.CTkButton(self.dock_player, text="CUE", width=60, height=34, fg_color="#282828", hover_color="#353535", text_color="#FFFFFF", font=ctk.CTkFont(size=11, weight="bold"), command=self._stop_dock_play)
+        self.btn_dock_stop.pack(side="right", padx=4, pady=10)
+
+        self.dock_wave_canvas = tk.Canvas(self.dock_player, bg="#0d0d0d", height=36, bd=0, highlightthickness=1, highlightbackground="#222222")
+        self.dock_wave_canvas.pack(side="left", fill="both", expand=True, padx=8, pady=8)
+
+        # Boton para descargar unicamente las seleccionadas
+        self.btn_descargar_sel = ctk.CTkButton(self.tab_spotify_dl, text="[>] 2. Descargar Canciones Seleccionadas", command=self.iniciar_descarga_seleccionadas, fg_color="#1DB954", hover_color="#169c46", text_color="#000000", font=ctk.CTkFont(weight="bold", size=13), height=40)
+        self.btn_descargar_sel.pack(fill="x", padx=5, pady=6)
 
         # Registro de estado
-        self.spotify_dl_log_box = ctk.CTkTextbox(self.tab_spotify_dl, fg_color="#111111", text_color="#1DB954", font=("Menlo", 11), corner_radius=8, height=80)
+        self.spotify_dl_log_box = ctk.CTkTextbox(self.tab_spotify_dl, fg_color="#111111", text_color="#1DB954", font=("Menlo", 11), corner_radius=8, height=75)
         self.spotify_dl_log_box.pack(fill="x", padx=5, pady=(0, 5))
 
     def log_spotify_dl(self, mensaje, tag="info"):
@@ -352,34 +389,48 @@ class CleanDJmixApp(ctk.CTk):
     def _hilo_escanear_spotify_dl(self, url):
         self.log_spotify_dl(f"[Spotify] Obteniendo lista de canciones para: {url}...", "info")
         canciones = SpotifyDownloaderAdapter.escanear_lista(url, callback_log=self.log_spotify_dl)
-        self.btn_scan.configure(state="normal", text="1. Cargar Lista")
         
-        # Limpiar filas anteriores
-        for w in self.spotify_dl_scroll_list.winfo_children()[1:]:
-            w.destroy()
-            
-        self.spotify_dl_songs_data = []
-        
-        for item in canciones:
-            var_chk = ctk.BooleanVar(value=True)
-            self.spotify_dl_songs_data.append({
-                "data": item,
-                "var": var_chk
-            })
-            
-            row = ctk.CTkFrame(self.spotify_dl_scroll_list, fg_color="#1c1c1c", corner_radius=4)
-            row.pack(fill="x", pady=2, ipady=2)
-            
-            chk = ctk.CTkCheckBox(row, text="", variable=var_chk, width=40, command=self._actualizar_contador_sel, fg_color="#1DB954")
-            chk.pack(side="left", padx=10)
-            
-            ctk.CTkLabel(row, text=item["titulo"][:32], width=220, anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color="#FFFFFF").pack(side="left", padx=5)
-            ctk.CTkLabel(row, text=item["artista"][:26], width=180, anchor="w", font=ctk.CTkFont(size=11), text_color="#CCCCCC").pack(side="left", padx=5)
-            ctk.CTkLabel(row, text=item["album"][:26], width=180, anchor="w", font=ctk.CTkFont(size=11), text_color="#888888").pack(side="left", padx=5)
-            ctk.CTkLabel(row, text=item["duracion"], width=80, anchor="center", font=ctk.CTkFont(size=11), text_color="#00AEEF").pack(side="left", padx=5)
+        def pintar_gui():
+            self.btn_scan.configure(state="normal", text="1. Cargar Lista")
+            for w in self.spotify_dl_scroll_list.winfo_children()[1:]:
+                w.destroy()
 
-        self._actualizar_contador_sel()
-        self.log_spotify_dl(f"[Spotify] Se han listado {len(canciones)} pistas para seleccion.", "success")
+            self.spotify_dl_songs_data = []
+
+            for item in canciones:
+                var_chk = ctk.BooleanVar(value=True)
+                self.spotify_dl_songs_data.append({
+                    "data": item,
+                    "var": var_chk
+                })
+
+                row = ctk.CTkFrame(self.spotify_dl_scroll_list, fg_color="#181818", corner_radius=4, height=42)
+                row.pack(fill="x", pady=2, padx=4)
+
+                # 1. Check
+                chk = ctk.CTkCheckBox(row, text="", variable=var_chk, width=36, command=self._actualizar_contador_sel, fg_color="#1DB954")
+                chk.pack(side="left", padx=6)
+
+                # 2. Cover Box
+                lbl_cover = ctk.CTkLabel(row, text="DJ", width=36, height=36, fg_color="#242424", corner_radius=3, font=ctk.CTkFont(size=10, weight="bold"))
+                lbl_cover.pack(side="left", padx=4)
+                if item.get("cover_url"):
+                    self._cargar_cover_async(item.get("cover_url"), lbl_cover)
+
+                # 3. Textos
+                ctk.CTkLabel(row, text=str(item.get("titulo", ""))[:32], width=250, anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color="#FFFFFF").pack(side="left", padx=6)
+                ctk.CTkLabel(row, text=str(item.get("artista", ""))[:26], width=200, anchor="w", font=ctk.CTkFont(size=11), text_color="#AAAAAA").pack(side="left", padx=6)
+                ctk.CTkLabel(row, text=str(item.get("duracion", "00:00")), width=80, anchor="center", font=ctk.CTkFont(size=11), text_color="#00AEEF").pack(side="left", padx=4)
+
+                # 4. Boton Cargar a Deck
+                btn_load = ctk.CTkButton(row, text="Cargar", width=70, height=28, fg_color="#262626", hover_color="#333333", text_color="#00AEEF", font=ctk.CTkFont(size=11, weight="bold"))
+                btn_load.pack(side="right", padx=10)
+                btn_load.configure(command=lambda it=item: self._cargar_a_deck_dj(it))
+
+            self._actualizar_contador_sel()
+            self.log_spotify_dl(f"[Spotify] Se han listado {len(canciones)} pistas para seleccion.", "success")
+
+        self.after(0, pintar_gui)
 
     def _actualizar_contador_sel(self):
         total = len(self.spotify_dl_songs_data)
@@ -507,6 +558,36 @@ class CleanDJmixApp(ctk.CTk):
             
         self.log(f"[ MODULO {modo.upper()} ] Analizando {total} pistas con metricas profesionales...", "info")
         
+        if modo == "auditar":
+            service = AudioAnalysisService(max_workers=4)
+            def on_progress(done, total_files, filename):
+                frac = done / total_files
+                self.after(0, lambda: self.progreso.set(frac))
+
+            self.log("[Audit Service] Ejecutando analisis paralelo con ProcessPoolExecutor...", "info")
+            resultados = service.escanear_directorio(
+                directorio_raiz=ruta_base,
+                callback_progreso=on_progress
+            )
+
+            for r in resultados:
+                vals = (
+                    r.get("nombre_archivo", ""),
+                    r.get("artista", ""),
+                    r.get("titulo", ""),
+                    r.get("duracion", "0:00"),
+                    r.get("bpm", 0.0),
+                    r.get("key", ""),
+                    "Pendiente",
+                    "Pendiente",
+                    "Auditado (OK)"
+                )
+                self.tree.insert("", "end", values=vals)
+
+            self.progreso.set(1.0)
+            self.log(f"[Audit Service] Auditoria completada con exito: {len(resultados)} tracks procesados.", "success")
+            return
+
         resultados_informe = []
         conteo_generos = {}
         procesadas = 0
@@ -594,3 +675,95 @@ class CleanDJmixApp(ctk.CTk):
                 self.log(f"  * {gen}: {cantid} pistas preparadas", "success")
                 
         self.log("\n[!!!] PROCESO FINALIZADO.", "success")
+
+    def _cargar_cover_async(self, url, widget):
+        if not url:
+            return
+        if not hasattr(self, "_thumbnails_cache"):
+            self._thumbnails_cache = {}
+        if url in self._thumbnails_cache:
+            widget.configure(image=self._thumbnails_cache[url], text="")
+            return
+        def worker():
+            try:
+                import io, requests
+                from PIL import Image
+                r = requests.get(url, timeout=3)
+                if r.status_code == 200:
+                    img = Image.open(io.BytesIO(r.content)).resize((36, 36))
+                    ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(36, 36))
+                    self._thumbnails_cache[url] = ctk_img
+                    self.after(0, lambda: widget.configure(image=ctk_img, text=""))
+            except Exception:
+                pass
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _cargar_a_deck_dj(self, item):
+        self._current_deck_item = item
+        self.dock_titulo.configure(text=str(item.get("titulo", ""))[:28])
+        self.dock_artista.configure(text=str(item.get("artista", ""))[:28])
+        if item.get("cover_url"):
+            self._cargar_cover_async(item.get("cover_url"), self.dock_cover)
+        self._dibujar_onda_dock()
+        self._toggle_dock_play(forzar_play=True)
+
+    def _dibujar_onda_dock(self):
+        self.dock_wave_canvas.delete("all")
+        w = self.dock_wave_canvas.winfo_width()
+        if w < 100:
+            w = 420
+        h = 36
+        mid = h / 2.0
+        num_bars = 85
+        bw = w / num_bars
+        for i in range(num_bars):
+            val = 0.2 + 0.55 * (math.sin(i / 5.5) ** 2)
+            if 18 <= i <= 34 or 55 <= i <= 72:
+                val = min(0.95, val * 1.5)
+            alt = val * (mid * 0.9)
+            color = "#FF3333" if val > 0.7 else ("#FFAA00" if val > 0.45 else "#00E5FF")
+            self.dock_wave_canvas.create_line(i * bw + 1, mid - alt, i * bw + 1, mid + alt, fill=color, width=max(1, bw - 1.5))
+
+    def _toggle_dock_play(self, forzar_play=False):
+        if not hasattr(self, "_player"):
+            self._player = MacAudioPlayer()
+            self._stream_service = AudioStreamService()
+
+        item = getattr(self, "_current_deck_item", None)
+        if not item:
+            self.log_spotify_dl("[!] Selecciona primero un track pulsando Cargar.")
+            return
+
+        # Pausar si está reproduciendo
+        if self._player.is_playing and not forzar_play:
+            self._player.pause()
+            self.btn_dock_play.configure(text="PLAY", fg_color="#00AEEF")
+            return
+
+        # Reanudar si ya hay pista cargada pero en pausa
+        if not self._player.is_playing and not forzar_play and self._player.current_file:
+            self._player.resume()
+            self.btn_dock_play.configure(text="PAUSE", fg_color="#FFAA00")
+            return
+
+        # Detener anterior y preparar nueva reproducción
+        self._player.stop()
+        self.btn_dock_play.configure(text="CARGANDO...", fg_color="#333333")
+
+        def worker():
+            file_path = self._stream_service.obtener_audio_track(item)
+            def on_ready():
+                if file_path and self._player.play(file_path):
+                    self.btn_dock_play.configure(text="PAUSE", fg_color="#FFAA00")
+                    self.log_spotify_dl(f"▶ Reproduciendo en Deck: {item.get('artista', '')} - {item.get('titulo', '')}", "success")
+                else:
+                    self.btn_dock_play.configure(text="PLAY", fg_color="#00AEEF")
+                    self.log_spotify_dl("[!] No se pudo obtener el stream de audio para este track.", "error")
+            self.after(0, on_ready)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _stop_dock_play(self):
+        if hasattr(self, "_player"):
+            self._player.stop()
+        self.btn_dock_play.configure(text="PLAY", fg_color="#00AEEF")
