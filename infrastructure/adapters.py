@@ -88,6 +88,21 @@ class AudioAdapter:
             return 128.0, 50, 20, 1000.0, 0.05, 1500.0
 
     @staticmethod
+    def obtener_perfil_onda(ruta_completa: str, num_puntos: int = 90) -> list:
+        """Calcula la envolvente de amplitudes normalizada para la visualización de onda."""
+        try:
+            y, _ = librosa.load(ruta_completa, sr=11025, mono=True, duration=60)
+            bloque = max(1, len(y) // num_puntos)
+            puntos = []
+            for i in range(num_puntos):
+                sub = y[i * bloque:(i + 1) * bloque]
+                puntos.append(float(np.max(np.abs(sub))) if len(sub) > 0 else 0.0)
+            max_v = max(puntos) if puntos and max(puntos) > 0 else 1.0
+            return [p / max_v for p in puntos]
+        except Exception:
+            return [float(np.clip(0.2 + 0.6 * (np.sin(i / 5.0) ** 2), 0.1, 1.0)) for i in range(num_puntos)]
+
+    @staticmethod
     def rescate_shazam(ruta_completa: str) -> tuple:
         async def _shazam_coro():
             shazam = Shazam()
@@ -209,7 +224,7 @@ class SpotifyDownloaderAdapter:
                     }
                     lista_info.append({**datos, "song_obj": datos})
 
-            # 2. ARTISTA (Usando artist_albums para evitar el 403 Forbidden de top-tracks)
+            # 2. ARTISTA
             elif "/artist/" in url_limpia:
                 a_id = url_limpia.split("/artist/")[1].split("/")[0]
                 albums_res = sp.artist_albums(a_id, album_type='album,single', limit=10)
@@ -298,7 +313,6 @@ class SpotifyDownloaderAdapter:
 
     @staticmethod
     def descargar_canciones_seleccionadas(songs_list: list, directorio_salida: str, callback_log=None) -> list:
-        """Descarga de alta calidad vía yt-dlp a MP3 320k con inyección de carátula."""
         import yt_dlp
         os.makedirs(directorio_salida, exist_ok=True)
         archivos_generados = []
@@ -375,6 +389,5 @@ class SpotifyDownloaderAdapter:
 
         return archivos_generados
 
-# Alias retrocompatibles
 SpotifyAdapter = SpotifyDownloaderAdapter
 SpotDLAdapter = SpotifyDownloaderAdapter
