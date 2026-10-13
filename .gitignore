@@ -20,3 +20,10 @@ env_python37/
 __pycache__/
 *.pyc
 .pytest_cache/
+.env
+cache_preview/
+__pycache__/
+*.pyc
+env/
+env_python37/
+test_*.py
