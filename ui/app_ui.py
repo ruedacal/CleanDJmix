@@ -684,7 +684,7 @@ class CleanDJmixApp(ctk.CTk):
                 if not is_safe_mode and res_tax.get("estado") == "OK":
                     self.log(f"[{procesadas}/{total}] Serato Export OK [Key: {tonalidad} | Mood: {mood}] -> {nuevo_nombre}", "success")
                 else:
-                    self.log(f"[{procesadas}/{total}] Auditoria Serato [Key: {tonalidad} | Mood: {mood}]: {nuevo_nombre} ({res_tax.get("estado", "OK")})", "info")
+                    self.log(f"[{procesadas}/{total}] Auditoria Serato [Key: {tonalidad} | Mood: {mood}]: {nuevo_nombre} ({res_tax.get('estado', 'OK')})", "info")
             except Exception as e:
                 logging.error(traceback.format_exc())
                 self.log(f"[!] Error en {nombre_archivo}", "error")
