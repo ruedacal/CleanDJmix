@@ -1,4 +1,5 @@
 from application.analysis_service import AudioAnalysisService
+from application.taxonomy_service import TaxonomyService
 from application.audio_player import MacAudioPlayer
 from application.stream_service import AudioStreamService
 import os
@@ -501,6 +502,16 @@ class CleanDJmixApp(ctk.CTk):
                 ctk.CTkButton(s_frame, text="Dir", command=elegir_path, width=45, height=32, fg_color="#333333").pack(side="right", padx=10)
                 self.widgets_destinos[genero][sub] = {"carpeta": e_carp, "ruta": e_ruta}
 
+    def obtener_configuracion_destinos(self) -> dict:
+        config = {}
+        for genero, sub_dict in getattr(self, "widgets_destinos", {}).items():
+            config[genero] = {}
+            for sub, widgets in sub_dict.items():
+                carpeta = widgets["carpeta"].get().strip() if "carpeta" in widgets else sub
+                ruta = widgets["ruta"].get().strip() if "ruta" in widgets else ""
+                config[genero][sub] = {"carpeta": carpeta, "ruta": ruta}
+        return config
+
     def _construir_pestana_logs(self):
         ctk.CTkLabel(self.tab_logs, text="Registro de Ejecucion en Tiempo Real (Serato Bridge)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFFFFF").pack(pady=10, anchor="w", padx=5)
         self.consola = ctk.CTkTextbox(self.tab_logs, fg_color="#111111", text_color="#00AEEF", font=("Menlo", 12), corner_radius=8)
@@ -592,6 +603,8 @@ class CleanDJmixApp(ctk.CTk):
         conteo_generos = {}
         procesadas = 0
         is_safe_mode = self.safe_mode_var.get()
+        taxonomy_service = TaxonomyService()
+        config_destinos = self.obtener_configuracion_destinos()
 
         for ruta_completa in archivos_mp3:
             if self.cancel_flag: 
@@ -637,15 +650,23 @@ class CleanDJmixApp(ctk.CTk):
                 if modo == "rescate" and (artista == "VRC_MISSING" or titulo == "VRC_MISSING"):
                     art_oficial, tit_oficial = AudioAdapter.rescate_shazam(ruta_completa)
 
-                nuevo_nombre = AudioAdapter.actualizar_fichero(ruta_completa, art_oficial, tit_oficial, año, bpm, is_safe_mode)
+                res_tax = taxonomy_service.organizar_pista(
+                    ruta_origen=ruta_completa,
+                    artista=art_oficial,
+                    titulo=tit_oficial,
+                    bpm=int(round(bpm)),
+                    año=int(año) if str(año).isdigit() else 2026,
+                    genero=genero,
+                    subgenero=subgenero,
+                    ruta_base=ruta_base,
+                    modo_seguro=is_safe_mode,
+                    config_destinos=config_destinos,
+                    mover_archivo=True
+                )
                 
-                sub_config = self.widgets_destinos.get(genero, {}).get(subgenero, {"carpeta": None, "ruta": None})
-                nombre_carpeta = sub_config["carpeta"].get().strip() if sub_config["carpeta"] else subgenero
-                ruta_custom = sub_config["ruta"].get().strip() if sub_config["ruta"] else ""
-                
-                base_salida = ruta_custom if ruta_custom else ruta_base
-                ruta_destino = os.path.join(base_salida, nombre_carpeta, nuevo_nombre)
-                
+                ruta_destino = res_tax.get("ruta_destino", ruta_completa)
+                nuevo_nombre = os.path.basename(ruta_destino)
+
                 conteo_generos[genero] = conteo_generos.get(genero, 0) + 1
                 resultados_informe.append({
                     "artista": art_oficial, "titulo": tit_oficial, "duracion": duracion_str,
@@ -653,13 +674,11 @@ class CleanDJmixApp(ctk.CTk):
                     "energia": energia, "anio": año, "genero": genero, "subgenero": subgenero,
                     "ruta_final": ruta_destino
                 })
-                
-                if not is_safe_mode and ruta_completa != ruta_destino:
-                    os.makedirs(os.path.dirname(ruta_destino), exist_ok=True)
-                    shutil.move(ruta_completa, ruta_destino)
+
+                if not is_safe_mode and res_tax.get("estado") == "OK":
                     self.log(f"[{procesadas}/{total}] Serato Export OK [Key: {tonalidad} | Mood: {mood}] -> {nuevo_nombre}", "success")
                 else:
-                    self.log(f"[{procesadas}/{total}] Auditoria Serato [Key: {tonalidad} | Mood: {mood}]: {nuevo_nombre}", "info")
+                    self.log(f"[{procesadas}/{total}] Auditoria Serato [Key: {tonalidad} | Mood: {mood}]: {nuevo_nombre} ({res_tax.get("estado", "OK")})", "info")
             except Exception as e:
                 logging.error(traceback.format_exc())
                 self.log(f"[!] Error en {nombre_archivo}", "error")
