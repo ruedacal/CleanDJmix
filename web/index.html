@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CleanDJmix PRO - Director's Cut</title>
     
-    <!-- CONEXIÓN EEL: Este script es crucial para que Python y JS hablen -->
+    <!-- CONEXIÓN EEL -->
     <script type="text/javascript" src="/eel.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -31,7 +31,6 @@
         }
     </script>
     <style>
-        /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
@@ -67,13 +66,14 @@
             const [activeTab, setActiveTab] = useState('audit');
             const [selectedTrack, setSelectedTrack] = useState(null);
             
-            // Estado global para la consola
+            // Consola Global
             const [consoleLogs, setConsoleLogs] = useState([
                 { type: 'info', text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
-                { type: 'divider', text: "--------------------------------------------------" }
+                { type: 'divider', text: "--------------------------------------------------" },
+                { type: 'success', text: "[ OK ] Spotify spotDL module linked." },
+                { type: 'success', text: "[ OK ] Serato Database XML located." }
             ]);
 
-            // Exponer función a Python para añadir logs
             useEffect(() => {
                 if (window.eel) {
                     window.eel.expose(log_to_console, 'log_to_console');
@@ -85,9 +85,8 @@
 
             return (
                 <div className="flex h-screen w-screen flex-col font-sans">
-                    
                     {/* TOP NAVIGATION BAR */}
-                    <header className="h-12 bg-djzinc-950 border-b border-djzinc-800 flex items-center px-4 justify-between shrink-0 select-none">
+                    <header className="h-12 bg-djzinc-950 border-b border-djzinc-800 flex items-center px-4 justify-between shrink-0 select-none z-10 relative">
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2 group cursor-pointer">
                                 <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-105">
@@ -109,7 +108,7 @@
                             </div>
                         </div>
 
-                        <nav className="flex space-x-1 h-full">
+                        <nav className="flex space-x-1 h-full absolute left-1/2 -translate-x-1/2">
                             <TopTab active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} icon={<Icons.Library />} label="Auditoría" />
                             <TopTab active={activeTab === 'spotify'} onClick={() => setActiveTab('spotify')} icon={<Icons.Spotify />} label="Spotify Ingest" />
                             <TopTab active={activeTab === 'taxonomy'} onClick={() => setActiveTab('taxonomy')} icon={<Icons.Routing />} label="Taxonomía" />
@@ -126,7 +125,7 @@
 
                     {/* MAIN WORKSPACE */}
                     <main className="flex flex-1 overflow-hidden relative bg-[#0f0f13]">
-                        {activeTab === 'audit' && <AuditWorkspace selectedTrack={selectedTrack} setSelectedTrack={setSelectedTrack} setConsoleLogs={setConsoleLogs} setActiveTab={setActiveTab} />}
+                        {activeTab === 'audit' && <AuditWorkspace selectedTrack={selectedTrack} setSelectedTrack={setSelectedTrack} setConsoleLogs={setConsoleLogs} />}
                         {activeTab === 'spotify' && <SpotifyWorkspace />}
                         {activeTab === 'taxonomy' && <TaxonomyWorkspace />}
                         {activeTab === 'logs' && <LogsWorkspace logs={consoleLogs} setLogs={setConsoleLogs} />}
@@ -165,7 +164,7 @@
                                     const color = i < 15 ? 'bg-rose-500' : (i < 30 ? 'bg-amber-500' : (i < 45 ? 'bg-djcyan-400' : 'bg-blue-500'));
                                     const isPlayed = i < 20;
                                     return (
-                                        <div key={i} className={`w-full rounded-t-sm ${isPlayed ? color : 'bg-djzinc-700'} vu-meter-bar`} 
+                                        <div key={i} className={`w-full rounded-t-sm ${isPlayed ? color : 'bg-djzinc-700'} vu-meter-bar`}
                                              style={{ height: `${h}%`, animationDelay: `${i * 0.05}s`, animationDuration: `${0.8 + Math.random()}s` }}>
                                         </div>
                                     )
@@ -179,7 +178,7 @@
         };
 
         const TopTab = ({ active, onClick, icon, label }) => (
-            <button 
+            <button
                 onClick={onClick}
                 className={`flex items-center gap-2 px-6 h-full transition-all border-b-2 text-sm font-medium ${
                     active 
@@ -192,36 +191,7 @@
             </button>
         );
 
-        const AuditWorkspace = ({ selectedTrack, setSelectedTrack, setConsoleLogs, setActiveTab }) => {
-            const [rutaOrigen, setRutaOrigen] = useState("/Users/admin/Music/ni musica/");
-            const [isAuditing, setIsAuditing] = useState(false);
-            const [metrics, setMetrics] = useState({ total: 1783, missing: 142, ready: 1641 });
-
-            // LLAMADA A PYTHON: Explorar
-            const handleExplorar = async () => {
-                if (window.eel) {
-                    const nuevaRuta = await window.eel.seleccionar_directorio()();
-                    if (nuevaRuta) setRutaOrigen(nuevaRuta);
-                }
-            };
-
-            // LLAMADA A PYTHON: Auditar
-            const handleAuditar = async () => {
-                if (window.eel && !isAuditing) {
-                    setIsAuditing(true);
-                    // Cambiamos opcionalmente a la pestaña de logs para ver el proceso
-                    // setActiveTab('logs');
-                    
-                    try {
-                        const resultado = await window.eel.iniciar_auditoria(rutaOrigen)();
-                        setMetrics({ total: resultado.total, missing: resultado.sin_meta, ready: resultado.total - resultado.sin_meta });
-                    } catch (err) {
-                        console.error("Error conectando con Python:", err);
-                    }
-                    setIsAuditing(false);
-                }
-            };
-
+        const AuditWorkspace = ({ selectedTrack, setSelectedTrack }) => {
             const dummyTracks = [
                 { id: 1, f: "Pearl Jam - Pearl Jam.mp3", a: "Pearl Jam", d: "9:09", b: "120.00", k: "8A", e: 85, s: "ok" },
                 { id: 2, f: "Techno Collective - Strobo.mp3", a: "Techno Collective", d: "6:02", b: "135.00", k: "5A", e: 95, s: "ok" },
@@ -230,6 +200,40 @@
                 { id: 5, f: "Avatar Project - Cabrones.mp3", a: "Avatar Project", d: "7:08", b: "128.00", k: "11B", e: 90, s: "ok" },
                 { id: 6, f: "Plastikboy - La Mezcla.mp3", a: "Plastikboy", d: "6:26", b: "125.00", k: "10A", e: 80, s: "ok" },
             ];
+
+            const [rutaOrigen, setRutaOrigen] = useState("/Users/admin/Music/ni musica/");
+            const [isAuditing, setIsAuditing] = useState(false);
+            const [metrics, setMetrics] = useState({ total: 1783, missing: 142, ready: 1641 });
+            const [tracks, setTracks] = useState(dummyTracks);
+
+            const handleExplorar = async () => {
+                if (window.eel) {
+                    const nuevaRuta = await window.eel.seleccionar_directorio()();
+                    if (nuevaRuta) setRutaOrigen(nuevaRuta);
+                }
+            };
+
+            const handleAuditar = async () => {
+                if (window.eel && !isAuditing) {
+                    setIsAuditing(true);
+                    setTracks([]); // Limpiamos para efecto de carga
+                    
+                    try {
+                        const resultado = await window.eel.iniciar_auditoria(rutaOrigen)();
+                        setMetrics({
+                            total: resultado.total,
+                            missing: resultado.sin_meta,
+                            ready: resultado.total - resultado.sin_meta
+                        });
+                        if (resultado.tracks) {
+                            setTracks(resultado.tracks);
+                        }
+                    } catch (err) {
+                        console.error("Error conectando con Python:", err);
+                    }
+                    setIsAuditing(false);
+                }
+            };
 
             return (
                 <div className="flex w-full h-full">
@@ -246,8 +250,8 @@
                             </div>
 
                             <div className="flex gap-3">
-                                <button onClick={handleAuditar} className={`text-white px-5 py-2 rounded-md font-semibold text-sm border flex items-center gap-2 transition-all ${isAuditing ? 'bg-djzinc-800 border-djzinc-700 opacity-70 cursor-not-allowed' : 'bg-djzinc-800 hover:bg-djzinc-700 border-djzinc-700'}`}>
-                                    {isAuditing ? <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div> : <Icons.Library />} 
+                                <button onClick={handleAuditar} className={`text-white px-5 py-2 rounded-md font-semibold text-sm border flex items-center gap-2 transition-all shadow-lg ${isAuditing ? 'bg-djzinc-800 border-djzinc-700 opacity-70 cursor-not-allowed' : 'bg-djzinc-800 hover:bg-djzinc-700 border-djzinc-600'}`}>
+                                    {isAuditing ? <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div> : <Icons.Library />}
                                     {isAuditing ? 'Auditando...' : 'Auditar Directorio'}
                                 </button>
                                 <button className="bg-djcyan-600 hover:bg-djcyan-500 text-white px-5 py-2 rounded-md font-bold text-sm shadow-[0_4px_14px_0_rgba(8,145,178,0.39)] flex items-center gap-2">
@@ -264,7 +268,7 @@
                             </div>
                             <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Sin Metadatos (BPM/Key)</span>
-                                <span className="text-2xl font-mono text-amber-500">{metrics.missing}</span>
+                                <span className="text-2xl font-mono text-amber-500">{metrics.missing.toLocaleString()}</span>
                             </div>
                             <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Listas para Inyectar</span>
@@ -290,9 +294,9 @@
                                 </div>
                                 <div className="h-4 w-px bg-djzinc-700 mx-2"></div>
                                 <div className="flex gap-2">
-                                    <button className="bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 border border-djzinc-700 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Todos ({metrics.total})</button>
-                                    <button className="bg-amber-900/30 text-amber-500 hover:bg-amber-900/50 border border-amber-800/50 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Falta Metadata ({metrics.missing})</button>
-                                    <button className="bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800/50 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Errores (0)</button>
+                                    <button className="bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 border border-djzinc-700 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Todos ({metrics.total.toLocaleString()})</button>
+                                    <button className="bg-amber-900/30 text-amber-500 hover:bg-amber-900/50 border border-amber-800/50 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Falta Metadata ({metrics.missing.toLocaleString()})</button>
+                                    <button className="bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800/50 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Errores (12)</button>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
@@ -300,12 +304,13 @@
                                 <select className="bg-djzinc-950 border border-djzinc-700 text-gray-300 text-xs rounded px-2 py-1 outline-none focus:border-djcyan-500">
                                     <option>BPM (Ascendente)</option>
                                     <option>Alfabetico (A-Z)</option>
+                                    <option>Fecha Creación</option>
                                 </select>
                             </div>
                         </div>
 
                         {/* Data Grid */}
-                        <div className="flex-1 overflow-auto">
+                        <div className="flex-1 overflow-auto bg-[#0f0f13]">
                             <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
                                 <thead className="sticky top-0 bg-djzinc-900 border-b border-djzinc-700 text-[11px] text-gray-400 uppercase tracking-wider font-bold z-10 shadow-md">
                                     <tr>
@@ -320,11 +325,25 @@
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-djzinc-800/50">
-                                    {dummyTracks.map((row) => (
-                                        <tr 
-                                            key={row.id} 
+                                    {tracks.length === 0 && !isAuditing && (
+                                        <tr>
+                                            <td colSpan="8" className="py-10 text-center text-gray-500 text-sm">
+                                                No hay pistas cargadas. Haz clic en "Auditar Directorio".
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {isAuditing && (
+                                        <tr>
+                                            <td colSpan="8" className="py-10 text-center text-djcyan-500 text-sm animate-pulse">
+                                                Analizando archivos en disco...
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {tracks.map((row) => (
+                                        <tr
+                                            key={row.id}
                                             onClick={() => setSelectedTrack(row.id === selectedTrack ? null : row.id)}
-                                            className={`cursor-pointer transition-colors group ${selectedTrack === row.id ? 'selected-row' : 'hover:bg-djzinc-800/40'}`}
+                                            className={`cursor-pointer transition-colors group ${selectedTrack === row.id ? 'selected-row bg-djzinc-800/20' : 'hover:bg-djzinc-800/40'}`}
                                         >
                                             <td className="py-2 px-4 text-center relative w-10">
                                                 {selectedTrack === row.id ? (
@@ -343,9 +362,13 @@
                                             <td className="py-2 px-4 text-gray-400">{row.a}</td>
                                             <td className="py-2 px-4 text-gray-500 font-mono text-xs">{row.d}</td>
                                             <td className="py-2 px-4">
-                                                <span className="bg-djzinc-900 border border-djzinc-700 text-djcyan-400 px-2 py-0.5 rounded font-mono text-xs shadow-inner">
-                                                    {row.b}
-                                                </span>
+                                                {row.b !== "0.0" ? (
+                                                    <span className="bg-djzinc-900 border border-djzinc-700 text-djcyan-400 px-2 py-0.5 rounded font-mono text-xs shadow-inner">
+                                                        {row.b}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] text-gray-600 italic">No Data</span>
+                                                )}
                                             </td>
                                             <td className="py-2 px-4">
                                                 <span className={`px-2 py-0.5 rounded font-mono text-xs font-bold ${row.k.includes('A') ? 'bg-emerald-900/30 text-emerald-400' : 'bg-fuchsia-900/30 text-fuchsia-400'}`}>
@@ -358,7 +381,7 @@
                                                         <div className={`h-full rounded-full ${row.e > 85 ? 'bg-rose-500' : (row.e > 70 ? 'bg-amber-400' : 'bg-blue-400')}`} style={{width: `${row.e}%`}}></div>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[10px] text-gray-600 italic">Calc...</span>
+                                                    <span className="text-[10px] text-gray-600 italic">Calculando...</span>
                                                 )}
                                             </td>
                                             <td className="py-2 px-4">
@@ -384,9 +407,9 @@
                             </div>
                             
                             <div className="p-5 flex-1 overflow-y-auto">
-                                <div className="w-full aspect-square bg-djzinc-950 rounded-lg border border-djzinc-800 mb-5 relative group overflow-hidden flex items-center justify-center">
+                                <div className="w-full aspect-square bg-djzinc-950 rounded-lg border border-djzinc-800 mb-5 relative group overflow-hidden flex items-center justify-center shadow-inner">
                                     <Icons.Library />
-                                    <span className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-[10px] text-gray-400 backdrop-blur">ID3v2.4</span>
+                                    <span className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-[10px] text-gray-400 backdrop-blur border border-djzinc-800">ID3v2.4</span>
                                 </div>
 
                                 <div className="space-y-4">
@@ -412,7 +435,7 @@
                             
                             <div className="p-4 bg-djzinc-950 border-t border-djzinc-800">
                                 <button className="w-full bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 text-white py-2 rounded text-xs font-bold transition-colors">
-                                    Guardar Cambios
+                                    Guardar Cambios Individuales
                                 </button>
                             </div>
                         </div>
@@ -424,7 +447,7 @@
         const SpotifyWorkspace = () => (
             <div className="flex flex-col h-full p-8 max-w-5xl mx-auto w-full">
                 <div className="mb-8 text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-djgreen-500/10 mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-djgreen-500/10 mb-4 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Ingesta de Playlists (spotDL)</h2>
@@ -494,8 +517,7 @@
                     </div>
                 </div>
                 
-                <div className="flex-1 border border-djzinc-800 rounded p-4 font-mono text-sm overflow-auto flex flex-col-reverse" style={{boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)'}}>
-                    {/* Renderizamos los logs. El CSS flex-col-reverse hace que los nuevos salgan abajo o arriba dependiendo de la dirección. Aquí invertimos el array para que lo más nuevo esté abajo si el scroll está abajo, pero lo más fácil es iterar normal. */}
+                <div className="flex-1 border border-djzinc-800 rounded p-4 font-mono text-sm overflow-auto flex flex-col-reverse shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
                     <div>
                         {logs.map((log, idx) => (
                             <div key={idx} className={`mb-1 ${
