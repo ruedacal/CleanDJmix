@@ -34,3 +34,11 @@ venv/
 __pycache__/
 *.pyc
 .DS_Store
+config_ingest.json
+
+# Entorno virtual y cachés locales
+env/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
