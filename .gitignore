@@ -27,3 +27,10 @@ __pycache__/
 env/
 env_python37/
 test_*.py
+
+# Entorno virtual y cachés locales
+env/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
