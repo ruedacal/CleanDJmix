@@ -111,6 +111,6 @@ def enriquecer_pista_local(ruta): return ingest_service.enriquecer_track_local_c
 @eel.expose
 def log_to_console(msg): print(f"[UI] {msg}")
 
-if __name__ == "__main__":
-    try: eel.start("index.html", size=(2560, 1440), position=(0,0))
+if __name__ == "__main__": # pragma: no cover
+    try: eel.start("index.html", size=(2560, 1440), position=(0,0)) # pragma: no cover
     except (SystemExit, KeyboardInterrupt): pass
