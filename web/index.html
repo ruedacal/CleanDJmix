@@ -31,6 +31,17 @@
         }
     </script>
     <style>
+    @keyframes miniEq {
+        0%, 100% { transform: scaleY(0.3); }
+        50% { transform: scaleY(1.0); }
+    }
+    .logo-bar {
+        transform-origin: bottom;
+        animation-name: miniEq;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+    }
+
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
@@ -105,6 +116,28 @@
                                     </svg>
                                 </div>
                                 <span className="font-bold text-sm tracking-widest text-white">CLEANDJ<span className="font-light text-djcyan-400">MIX</span></span>
+<div className="flex items-end h-[14px] ml-[7px] mb-[2px] gap-[2px] shrink-0 opacity-90">
+                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "66%", animationDuration: "0.63s", animationDelay: "0.95s"}} ></div>
+                                    <div className="w-[2px] bg-djcyan-500 rounded-t-[1px] logo-bar" style={{height: "63%", animationDuration: "1.29s", animationDelay: "0.31s"}} ></div>
+                                    <div className="w-[2px] bg-djcyan-500 rounded-t-[1px] logo-bar" style={{height: "56%", animationDuration: "1.04s", animationDelay: "0.77s"}} ></div>
+                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "60%", animationDuration: "1.27s", animationDelay: "0.59s"}} ></div>
+                                    <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "71%", animationDuration: "1.25s", animationDelay: "1.29s"}} ></div>
+                                    <div className="w-[2px] bg-gray-300 rounded-t-[1px] logo-bar" style={{height: "95%", animationDuration: "0.96s", animationDelay: "0.27s"}} ></div>
+                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "71%", animationDuration: "1.14s", animationDelay: "0.75s"}} ></div>
+                                    <div className="w-[2px] bg-gray-300 rounded-t-[1px] logo-bar" style={{height: "63%", animationDuration: "1.3s", animationDelay: "0.64s"}} ></div>
+                                    <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "32%", animationDuration: "1.14s", animationDelay: "0.91s"}} ></div>
+                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "37%", animationDuration: "0.72s", animationDelay: "0.98s"}} ></div>
+                                    <div className="w-[2px] bg-gray-300 rounded-t-[1px] logo-bar" style={{height: "34%", animationDuration: "1.09s", animationDelay: "1.37s"}} ></div>
+                                    <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "39%", animationDuration: "1.21s", animationDelay: "0.45s"}} ></div>
+                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "86%", animationDuration: "0.61s", animationDelay: "0.19s"}} ></div>
+                                    <div className="w-[2px] bg-gray-300 rounded-t-[1px] logo-bar" style={{height: "86%", animationDuration: "0.89s", animationDelay: "0.98s"}} ></div>
+                                    <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "92%", animationDuration: "1.11s", animationDelay: "0.27s"}} ></div>
+                                    <div className="w-[2px] bg-djcyan-500 rounded-t-[1px] logo-bar" style={{height: "43%", animationDuration: "0.96s", animationDelay: "0.64s"}} ></div>
+                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "72%", animationDuration: "1.24s", animationDelay: "0.52s"}} ></div>
+                                    <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "38%", animationDuration: "0.76s", animationDelay: "0.65s"}} ></div>
+                                    <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "64%", animationDuration: "0.66s", animationDelay: "0.58s"}} ></div>
+                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "78%", animationDuration: "1.28s", animationDelay: "0.05s"}} ></div>
+                                </div>
                             </div>
                         </div>
 
@@ -543,6 +576,17 @@
 
 <!-- INYECCIÓN: Motor de Audio, CUE, Inspector y Vúmetro Animado -->
 <style>
+    @keyframes miniEq {
+        0%, 100% { transform: scaleY(0.3); }
+        50% { transform: scaleY(1.0); }
+    }
+    .logo-bar {
+        transform-origin: bottom;
+        animation-name: miniEq;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+    }
+
     @keyframes equalize {
         0%, 100% { transform: scaleY(0.3); }
         50% { transform: scaleY(1.0); }
