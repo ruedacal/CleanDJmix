@@ -135,14 +135,14 @@
                     <footer className="h-20 glass-panel flex items-center justify-between px-6 shrink-0 z-50">
                         <div className="flex items-center gap-4 w-1/3">
                             <div className="w-14 h-14 bg-djzinc-800 rounded-md border border-djzinc-700 overflow-hidden relative group cursor-pointer">
-                                <img src="https://placehold.co/100x100/18181b/22d3ee?text=MB" alt="Cover" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                <img id="player-cover" src="https://placehold.co/100x100/18181b/22d3ee?text=CleanDJ" alt="Cover" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                             </div>
                             <div className="flex flex-col justify-center">
-                                <span className="text-sm font-bold text-white leading-tight">Point of Life (Original Mix)</span>
-                                <span className="text-xs text-djcyan-400 font-medium">Marco Bailey</span>
+                                <span id="player-title" className="text-sm font-bold text-white leading-tight">Esperando pista...</span>
+                                <span id="player-artist" className="text-xs text-djcyan-400 font-medium">CleanDJmix PRO</span>
                                 <div className="flex gap-2 mt-1">
-                                    <span className="text-[10px] font-mono bg-djzinc-800 px-1.5 rounded text-gray-400">132.0 BPM</span>
-                                    <span className="text-[10px] font-mono bg-djzinc-800 px-1.5 rounded text-gray-400">8A</span>
+                                    <span id="player-bpm" className="text-[10px] font-mono bg-djzinc-800 px-1.5 rounded text-gray-400">-- BPM</span>
+                                    <span id="player-key" className="text-[10px] font-mono bg-djzinc-800 px-1.5 rounded text-gray-400">--</span>
                                 </div>
                             </div>
                         </div>
@@ -150,7 +150,7 @@
                         <div className="flex flex-col items-center justify-center w-1/3">
                             <div className="flex items-center gap-4">
                                 <button className="w-10 h-10 rounded bg-djzinc-800 hover:bg-djzinc-700 flex items-center justify-center border-b-2 border-djzinc-950 active:border-b-0 active:translate-y-[2px] transition-all text-xs font-bold text-gray-400">CUE</button>
-                                <button className="w-12 h-12 rounded bg-djcyan-600 hover:bg-djcyan-500 flex items-center justify-center border-b-2 border-djcyan-800 active:border-b-0 active:translate-y-[2px] transition-all text-white shadow-[0_0_15px_rgba(8,145,178,0.4)]">
+                                <button id="global-play-btn" className="w-12 h-12 rounded bg-djcyan-600 hover:bg-djcyan-500 flex items-center justify-center border-b-2 border-djcyan-800 active:border-b-0 active:translate-y-[2px] transition-all text-white shadow-[0_0_15px_rgba(8,145,178,0.4)]">
                                     <Icons.Play />
                                 </button>
                                 <button className="w-10 h-10 rounded bg-djzinc-800 hover:bg-djzinc-700 flex items-center justify-center border-b-2 border-djzinc-950 active:border-b-0 active:translate-y-[2px] transition-all text-xs font-bold text-gray-400">SYNC</button>
@@ -201,15 +201,15 @@
                 { id: 6, f: "Plastikboy - La Mezcla.mp3", a: "Plastikboy", d: "6:26", b: "125.00", k: "10A", e: 80, s: "ok" },
             ];
 
-            const [rutaOrigen, setRutaOrigen] = useState("/Users/admin/Music/ni musica/");
+            const [rutaOrigen, setRutaOrigen] = useState("");
             const [isAuditing, setIsAuditing] = useState(false);
-            const [metrics, setMetrics] = useState({ total: 1783, missing: 142, ready: 1641 });
-            const [tracks, setTracks] = useState(dummyTracks);
+            const [metrics, setMetrics] = useState({ total: 0, missing: 0, ready: 0 });
+            const [tracks, setTracks] = useState([]);
 
             const handleExplorar = async () => {
                 if (window.eel) {
                     const nuevaRuta = await window.eel.seleccionar_directorio()();
-                    if (nuevaRuta) setRutaOrigen(nuevaRuta);
+                    if (nuevaRuta) { setRutaOrigen(nuevaRuta); setIsAuditing(true); setTracks([]); window.eel.iniciar_auditoria(nuevaRuta)().then(r => { setMetrics({total: r.total, missing: r.sin_meta, ready: r.total - r.sin_meta}); setTracks(r.tracks); setIsAuditing(false); }).catch(() => setIsAuditing(false)); }
                 }
             };
 
@@ -264,15 +264,15 @@
                         <div className="grid grid-cols-4 gap-px bg-djzinc-800 border-b border-djzinc-800 shrink-0">
                             <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Pistas</span>
-                                <span className="text-2xl font-mono text-white">{metrics.total.toLocaleString()}</span>
+                                <span className="text-2xl font-mono text-white">{(metrics.total || 0).toLocaleString()}</span>
                             </div>
                             <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Sin Metadatos (BPM/Key)</span>
-                                <span className="text-2xl font-mono text-amber-500">{metrics.missing.toLocaleString()}</span>
+                                <span className="text-2xl font-mono text-amber-500">{(metrics.missing || 0).toLocaleString()}</span>
                             </div>
                             <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Listas para Inyectar</span>
-                                <span className="text-2xl font-mono text-djgreen-400">{metrics.ready.toLocaleString()}</span>
+                                <span className="text-2xl font-mono text-djgreen-400">{(metrics.ready || 0).toLocaleString()}</span>
                             </div>
                             <div className="bg-djzinc-950 p-4 flex items-center justify-between">
                                 <div className="flex flex-col">
@@ -294,8 +294,8 @@
                                 </div>
                                 <div className="h-4 w-px bg-djzinc-700 mx-2"></div>
                                 <div className="flex gap-2">
-                                    <button className="bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 border border-djzinc-700 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Todos ({metrics.total.toLocaleString()})</button>
-                                    <button className="bg-amber-900/30 text-amber-500 hover:bg-amber-900/50 border border-amber-800/50 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Falta Metadata ({metrics.missing.toLocaleString()})</button>
+                                    <button className="bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 border border-djzinc-700 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Todos ({(metrics.total || 0).toLocaleString()})</button>
+                                    <button className="bg-amber-900/30 text-amber-500 hover:bg-amber-900/50 border border-amber-800/50 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Falta Metadata ({(metrics.missing || 0).toLocaleString()})</button>
                                     <button className="bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800/50 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Errores (12)</button>
                                 </div>
                             </div>
@@ -328,7 +328,7 @@
                                     {tracks.length === 0 && !isAuditing && (
                                         <tr>
                                             <td colSpan="8" className="py-10 text-center text-gray-500 text-sm">
-                                                No hay pistas cargadas. Haz clic en "Auditar Directorio".
+                                                No hay pistas cargadas. Haz clic en "Auditar Directorio" o selecciona tu carpeta.
                                             </td>
                                         </tr>
                                     )}
@@ -343,7 +343,7 @@
                                         <tr
                                             key={row.id}
                                             onClick={() => setSelectedTrack(row.id === selectedTrack ? null : row.id)}
-                                            className={`cursor-pointer transition-colors group ${selectedTrack === row.id ? 'selected-row bg-djzinc-800/20' : 'hover:bg-djzinc-800/40'}`}
+                                            className={`group hover:bg-djzinc-800/50 transition-colors cursor-pointer ${selectedTrack === row.id ? 'bg-djzinc-800/80' : ''}`}
                                         >
                                             <td className="py-2 px-4 text-center relative w-10">
                                                 {selectedTrack === row.id ? (
@@ -355,41 +355,38 @@
                                                     <Icons.Play />
                                                 </button>
                                             </td>
-                                            <td className="py-2 px-4">
-                                                <div className="font-medium text-gray-200">{row.f.replace('.mp3', '')}</div>
-                                                <div className="text-[10px] text-gray-500 font-mono">{row.f}</div>
+                                            <td className="py-2 px-4 flex items-center gap-3">
+                                                <img src={`http://localhost:8000/cover?path=${encodeURIComponent(row.path || '')}`} className="w-10 h-10 rounded bg-djzinc-800 object-cover shrink-0" alt="cover" />
+                                                <div className="flex flex-col text-left">
+                                                    <div className="font-medium text-gray-200 truncate w-64" title={row.t || row.titulo || row.f}>{row.t || row.titulo || row.f || 'Desconocido'}</div>
+                                                    <div className="text-[10px] text-gray-500 font-mono truncate w-64" title={row.f}>{row.f || ''}</div>
+                                                </div>
                                             </td>
-                                            <td className="py-2 px-4 text-gray-400">{row.a}</td>
-                                            <td className="py-2 px-4 text-gray-500 font-mono text-xs">{row.d}</td>
+                                            <td className="py-2 px-4 text-gray-400">{row.a || row.artist || row.artista || 'Desconocido'}</td>
+                                            <td className="py-2 px-4 text-gray-400 font-mono text-xs">{row.duration || row.duracion || '0:00'}</td>
                                             <td className="py-2 px-4">
-                                                {row.b !== "0.0" ? (
-                                                    <span className="bg-djzinc-900 border border-djzinc-700 text-djcyan-400 px-2 py-0.5 rounded font-mono text-xs shadow-inner">
-                                                        {row.b}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[10px] text-gray-600 italic">No Data</span>
-                                                )}
+                                                <span className="bg-djzinc-800 text-gray-300 px-2 py-1 rounded text-xs font-mono">{row.b || row.bpm || '--'}</span>
                                             </td>
                                             <td className="py-2 px-4">
-                                                <span className={`px-2 py-0.5 rounded font-mono text-xs font-bold ${row.k.includes('A') ? 'bg-emerald-900/30 text-emerald-400' : 'bg-fuchsia-900/30 text-fuchsia-400'}`}>
-                                                    {row.k}
+                                                <span className={`px-2 py-1 rounded text-xs font-mono font-bold ${(row.k || row.key) ? 'bg-djcyan-900/30 text-djcyan-400' : 'bg-djzinc-800 text-gray-500'}`}>
+                                                    {row.k || row.key || '--'}
                                                 </span>
                                             </td>
-                                            <td className="py-2 px-4">
-                                                {row.e ? (
-                                                    <div className="w-full bg-djzinc-800 rounded-full h-1.5 flex items-center overflow-hidden border border-djzinc-700">
-                                                        <div className={`h-full rounded-full ${row.e > 85 ? 'bg-rose-500' : (row.e > 70 ? 'bg-amber-400' : 'bg-blue-400')}`} style={{width: `${row.e}%`}}></div>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-[10px] text-gray-600 italic">Calculando...</span>
-                                                )}
+                                            <td className="py-2 px-4 w-32">
+                                                <div className="flex gap-0.5 items-end h-4">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <div key={i} className={`w-1.5 rounded-t-sm ${i < (row.e || row.energy || 0) / 20 ? 'bg-djgreen-500' : 'bg-djzinc-700'}`} style={{ height: `${Math.max(20, (i + 1) * 20)}%` }}></div>
+                                                    ))}
+                                                </div>
                                             </td>
                                             <td className="py-2 px-4">
-                                                <div className="flex items-center gap-1.5">
-                                                    {row.s === 'ok' && <><Icons.Check /><span className="text-xs text-djgreen-500">Ready</span></>}
-                                                    {row.s === 'pending' && <><span className="w-2 h-2 rounded-full bg-djcyan-500 animate-pulse"></span><span className="text-xs text-djcyan-400">Processing</span></>}
-                                                    {row.s === 'error' && <><Icons.Warning /><span className="text-xs text-amber-500">Missing Meta</span></>}
-                                                </div>
+                                                {(row.s === 'Ready' || row.status === 'Ready') ? (
+                                                    <span className="flex items-center gap-1 text-djgreen-500 text-xs font-medium"><Icons.Check /> Ready</span>
+                                                ) : (row.s === 'Missing Meta' || row.status === 'Missing Meta') ? (
+                                                    <span className="flex items-center gap-1 text-amber-500 text-xs font-medium"><Icons.Warning /> Meta</span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 text-gray-500 text-xs font-medium">{row.s || row.status || 'Pending'}</span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -541,5 +538,69 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
+</body>
+</html>
+
+<!-- INYECCIÓN: Motor de Audio Robusto con Soporte de Carátulas -->
+<style>
+    .vu-paused .vu-meter-bar { animation-play-state: paused !important; height: 12% !important; background-color: #3f3f46 !important; }
+</style>
+<script>
+    document.body.classList.add('vu-paused'); 
+    let pistaActual = null;
+    let estaReproduciendo = false;
+
+    function controlarReproduccion(estado, nombreArchivo = null) {
+        const btnPlay = document.getElementById('global-play-btn');
+        if (estado) {
+            window.eel.reproducir_pista_mac(nombreArchivo)();
+            pistaActual = nombreArchivo;
+            estaReproduciendo = true;
+            document.body.classList.remove('vu-paused');
+            if(btnPlay) btnPlay.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+        } else {
+            window.eel.detener_audio_mac()();
+            estaReproduciendo = false;
+            document.body.classList.add('vu-paused');
+            if(btnPlay) btnPlay.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+        }
+    }
+
+    document.addEventListener('click', (e) => {
+        // Interceptar el botón del reproductor inferior mediante ID inmutable
+        const btnFooter = e.target.closest('#global-play-btn');
+        if (btnFooter && window.eel && pistaActual) {
+            controlarReproduccion(!estaReproduciendo, pistaActual);
+            return;
+        }
+
+        // Interceptar filas de la tabla
+        const tr = e.target.closest('tr');
+        if (tr && window.eel) {
+            const filenameDiv = tr.querySelector('.font-mono');
+            if (filenameDiv) {
+                const nombreArchivo = filenameDiv.innerText.trim();
+                
+                if (pistaActual === nombreArchivo && estaReproduciendo) {
+                    controlarReproduccion(false);
+                } else {
+                    const tds = tr.querySelectorAll('td');
+                    const tituloEl = tr.querySelector('.font-medium');
+                    const rowImg = tr.querySelector('img');
+                    
+                    document.getElementById('player-title').innerText = tituloEl ? tituloEl.innerText : nombreArchivo;
+                    document.getElementById('player-artist').innerText = tds[2] ? tds[2].innerText : 'Desconocido';
+                    document.getElementById('player-bpm').innerText = (tds[3] ? tds[3].innerText : '--') + ' BPM';
+                    document.getElementById('player-key').innerText = tds[4] ? tds[4].innerText : '--';
+                    
+                    // Clonar la carátula de la tabla al reproductor inferior
+                    if(rowImg) document.getElementById('player-cover').src = rowImg.src;
+                    
+                    controlarReproduccion(true, nombreArchivo);
+                }
+            }
+        }
+    });
+</script>
 </body>
 </html>
