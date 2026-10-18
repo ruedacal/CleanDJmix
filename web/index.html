@@ -496,7 +496,7 @@
             const [playingTrackId, setPlayingTrackId] = React.useState(null);
             const [isPaused, setIsPaused] = React.useState(true);
 
-            const ICON_PLAY = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+                        const ICON_PLAY = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
             const ICON_PAUSE = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
 
             React.useEffect(() => {
@@ -504,53 +504,69 @@
                     window.djAudioPlayer = new Audio();
                     window.djAudioPlayer.crossOrigin = "anonymous";
                 }
-
                 const player = window.djAudioPlayer;
 
-                const onEnded = () => {
+                // Única fuente de la verdad: los eventos reales del motor de audio actualizan tanto la lista (React) como la barra inferior (DOM)
+                const syncPlayState = () => {
+                    setIsPaused(false);
+                    document.body.classList.remove('vu-paused');
+                    const playBtn = document.getElementById('global-play-btn');
+                    if (playBtn) playBtn.innerHTML = ICON_PAUSE;
+                };
+
+                const syncPauseState = () => {
                     setIsPaused(true);
                     document.body.classList.add('vu-paused');
                     const playBtn = document.getElementById('global-play-btn');
                     if (playBtn) playBtn.innerHTML = ICON_PLAY;
                 };
-                player.addEventListener('ended', onEnded);
 
-                // Delegación global de eventos para que los botones inferiores Play/Pause y CUE funcionen siempre
-                const handleGlobalClicks = (e) => {
+                const syncEndedState = () => {
+                    setIsPaused(true);
+                    document.body.classList.add('vu-paused');
+                    const playBtn = document.getElementById('global-play-btn');
+                    if (playBtn) playBtn.innerHTML = ICON_PLAY;
+                };
+
+                player.addEventListener('play', syncPlayState);
+                player.addEventListener('pause', syncPauseState);
+                player.addEventListener('ended', syncEndedState);
+
+                // Interceptar en fase CAPTURE para anular cualquier listener viejo de la barra inferior que cause conflicto
+                const handleDeckCapture = (e) => {
                     const playBtn = e.target.closest('#global-play-btn');
                     const btnEl = e.target.closest('button');
+                    const isCue = btnEl && btnEl.innerText.trim().toUpperCase() === 'CUE';
 
-                    if (playBtn) {
+                    if (playBtn && player.src) {
                         e.preventDefault();
-                        if (!player.src) return;
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
                         if (player.paused) {
                             player.play();
-                            setIsPaused(false);
-                            document.body.classList.remove('vu-paused');
-                            playBtn.innerHTML = ICON_PAUSE;
+                            setStatusText(`[REPRODUCIENDO] Pre-escucha activa.`);
                         } else {
                             player.pause();
-                            setIsPaused(true);
-                            document.body.classList.add('vu-paused');
-                            playBtn.innerHTML = ICON_PLAY;
+                            setStatusText(`[PAUSADO] Pre-escucha en pausa.`);
                         }
-                    } else if (btnEl && btnEl.innerText.trim().toUpperCase() === 'CUE') {
+                    } else if (isCue && player.src) {
                         e.preventDefault();
-                        if (!player.src) return;
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
                         player.pause();
                         player.currentTime = 0;
-                        setIsPaused(true);
-                        document.body.classList.add('vu-paused');
-                        const gPlay = document.getElementById('global-play-btn');
-                        if (gPlay) gPlay.innerHTML = ICON_PLAY;
-                        setStatusText('[CUE] Reproductor en punto de inicio (0:00).');
+                        setStatusText('[CUE] Pista rebobinada al punto de inicio (0:00).');
                     }
                 };
 
-                document.addEventListener('click', handleGlobalClicks);
+                // Usamos capture: true para adelantarnos a cualquier evento heredado del DOM
+                document.addEventListener('click', handleDeckCapture, true);
+
                 return () => {
-                    player.removeEventListener('ended', onEnded);
-                    document.removeEventListener('click', handleGlobalClicks);
+                    player.removeEventListener('play', syncPlayState);
+                    player.removeEventListener('pause', syncPauseState);
+                    player.removeEventListener('ended', syncEndedState);
+                    document.removeEventListener('click', handleDeckCapture, true);
                 };
             }, []);
 
@@ -857,43 +873,7 @@
         root.render(<App />);
     </script>
 
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const playPauseBtn = document.getElementById('global-play-btn');
-        const cueBtn = document.getElementById('global-cue-btn');
-        
-        window.toggleGlobalPlay = () => {
-            if (window.djAudioPlayer && window.djAudioPlayer.src) {
-                if (window.djAudioPlayer.paused) {
-                    window.djAudioPlayer.play();
-                    document.body.classList.remove('vu-paused');
-                    if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
-                } else {
-                    window.djAudioPlayer.pause();
-                    document.body.classList.add('vu-paused');
-                    if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-                }
-            }
-        };
 
-        window.globalCue = () => {
-            if (window.djAudioPlayer && window.djAudioPlayer.src) {
-                window.djAudioPlayer.pause();
-                window.djAudioPlayer.currentTime = 0;
-                document.body.classList.add('vu-paused');
-                if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-            }
-        };
-
-        if (playPauseBtn) playPauseBtn.addEventListener('click', window.toggleGlobalPlay);
-        if (cueBtn) cueBtn.addEventListener('click', window.globalCue);
-        
-        // Alternativa de binding por texto si faltan IDs
-        document.querySelectorAll('button').forEach(btn => {
-            if (btn.innerText.trim() === 'CUE') btn.addEventListener('click', window.globalCue);
-        });
-    });
-</script>
 </body>
 
 </html>
@@ -1015,43 +995,7 @@
     });
 </script>
 
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const playPauseBtn = document.getElementById('global-play-btn');
-        const cueBtn = document.getElementById('global-cue-btn');
-        
-        window.toggleGlobalPlay = () => {
-            if (window.djAudioPlayer && window.djAudioPlayer.src) {
-                if (window.djAudioPlayer.paused) {
-                    window.djAudioPlayer.play();
-                    document.body.classList.remove('vu-paused');
-                    if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
-                } else {
-                    window.djAudioPlayer.pause();
-                    document.body.classList.add('vu-paused');
-                    if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-                }
-            }
-        };
 
-        window.globalCue = () => {
-            if (window.djAudioPlayer && window.djAudioPlayer.src) {
-                window.djAudioPlayer.pause();
-                window.djAudioPlayer.currentTime = 0;
-                document.body.classList.add('vu-paused');
-                if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-            }
-        };
-
-        if (playPauseBtn) playPauseBtn.addEventListener('click', window.toggleGlobalPlay);
-        if (cueBtn) cueBtn.addEventListener('click', window.globalCue);
-        
-        // Alternativa de binding por texto si faltan IDs
-        document.querySelectorAll('button').forEach(btn => {
-            if (btn.innerText.trim() === 'CUE') btn.addEventListener('click', window.globalCue);
-        });
-    });
-</script>
 </body>
 
 </html>
