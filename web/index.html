@@ -149,7 +149,7 @@
 
                         <div className="flex flex-col items-center justify-center w-1/3">
                             <div className="flex items-center gap-4">
-                                <button className="w-10 h-10 rounded bg-djzinc-800 hover:bg-djzinc-700 flex items-center justify-center border-b-2 border-djzinc-950 active:border-b-0 active:translate-y-[2px] transition-all text-xs font-bold text-gray-400">CUE</button>
+                                <button id="global-cue-btn" className="w-10 h-10 rounded bg-djzinc-800 hover:bg-djzinc-700 flex items-center justify-center border-b-2 border-djzinc-950 active:border-b-0 active:translate-y-[2px] transition-all text-xs font-bold text-gray-400">CUE</button>
                                 <button id="global-play-btn" className="w-12 h-12 rounded bg-djcyan-600 hover:bg-djcyan-500 flex items-center justify-center border-b-2 border-djcyan-800 active:border-b-0 active:translate-y-[2px] transition-all text-white shadow-[0_0_15px_rgba(8,145,178,0.4)]">
                                     <Icons.Play />
                                 </button>
@@ -162,7 +162,7 @@
                                 {[...Array(60)].map((_, i) => {
                                     const h = Math.max(10, Math.random() * 100);
                                     const color = i < 15 ? 'bg-rose-500' : (i < 30 ? 'bg-amber-500' : (i < 45 ? 'bg-djcyan-400' : 'bg-blue-500'));
-                                    const isPlayed = i < 20;
+                                    const isPlayed = true;
                                     return (
                                         <div key={i} className={`w-full rounded-t-sm ${isPlayed ? color : 'bg-djzinc-700'} vu-meter-bar`}
                                              style={{ height: `${h}%`, animationDelay: `${i * 0.05}s`, animationDuration: `${0.8 + Math.random()}s` }}>
@@ -541,9 +541,23 @@
 </body>
 </html>
 
-<!-- INYECCIÓN: Motor de Audio Robusto con Soporte de Carátulas -->
+<!-- INYECCIÓN: Motor de Audio, CUE, Inspector y Vúmetro Animado -->
 <style>
-    .vu-paused .vu-meter-bar { animation-play-state: paused !important; height: 12% !important; background-color: #3f3f46 !important; }
+    @keyframes equalize {
+        0%, 100% { transform: scaleY(0.3); }
+        50% { transform: scaleY(1.0); }
+    }
+    .vu-meter-bar {
+        transform-origin: bottom;
+        animation-name: equalize;
+        animation-iteration-count: infinite;
+    }
+    .vu-paused .vu-meter-bar {
+        animation-play-state: paused !important;
+        transform: scaleY(0.1) !important;
+        background-color: #3f3f46 !important;
+        transition: transform 0.3s ease, background-color 0.3s ease;
+    }
 </style>
 <script>
     document.body.classList.add('vu-paused'); 
@@ -567,14 +581,20 @@
     }
 
     document.addEventListener('click', (e) => {
-        // Interceptar el botón del reproductor inferior mediante ID inmutable
+        const btnCue = e.target.closest('#global-cue-btn');
+        if (btnCue && window.eel && pistaActual) {
+            window.eel.detener_audio_mac()();
+            setTimeout(() => window.eel.reproducir_pista_mac(pistaActual)(), 50);
+            if (!estaReproduciendo) controlarReproduccion(true, pistaActual);
+            return;
+        }
+
         const btnFooter = e.target.closest('#global-play-btn');
         if (btnFooter && window.eel && pistaActual) {
             controlarReproduccion(!estaReproduciendo, pistaActual);
             return;
         }
 
-        // Interceptar filas de la tabla
         const tr = e.target.closest('tr');
         if (tr && window.eel) {
             const filenameDiv = tr.querySelector('.font-mono');
@@ -590,12 +610,36 @@
                     
                     document.getElementById('player-title').innerText = tituloEl ? tituloEl.innerText : nombreArchivo;
                     document.getElementById('player-artist').innerText = tds[2] ? tds[2].innerText : 'Desconocido';
-                    document.getElementById('player-bpm').innerText = (tds[3] ? tds[3].innerText : '--') + ' BPM';
-                    document.getElementById('player-key').innerText = tds[4] ? tds[4].innerText : '--';
+                    document.getElementById('player-bpm').innerText = (tds[4] ? tds[4].innerText : '--') + ' BPM';
+                    document.getElementById('player-key').innerText = tds[5] ? tds[5].innerText : '--';
                     
-                    // Clonar la carátula de la tabla al reproductor inferior
-                    if(rowImg) document.getElementById('player-cover').src = rowImg.src;
-                    
+                    if(rowImg) {
+                        const imgSrc = rowImg.src;
+                        document.getElementById('player-cover').src = imgSrc;
+                        
+                        // LÓGICA CSS PERFECTA PARA EL INSPECTOR
+                        const inspectorBadges = Array.from(document.querySelectorAll('div, span')).filter(el => el.textContent.trim() === 'ID3v2.4');
+                        if(inspectorBadges.length > 0) {
+                            const badge = inspectorBadges[0];
+                            // Encontramos el recuadro negro que envuelve al badge
+                            const coverContainer = badge.closest('.relative') || badge.parentElement;
+                            
+                            // Ocultamos el icono cuadriculado central
+                            const svgIcon = coverContainer.querySelector('svg');
+                            if (svgIcon) svgIcon.style.display = 'none';
+
+                            // Pintamos la imagen como fondo CSS. Esto garantiza que respete el tamaño, 
+                            // los bordes redondeados y NUNCA tape a la etiqueta ID3v2.4.
+                            coverContainer.style.backgroundImage = `url("${imgSrc}")`;
+                            coverContainer.style.backgroundSize = 'cover';
+                            coverContainer.style.backgroundPosition = 'center';
+                            coverContainer.style.backgroundRepeat = 'no-repeat';
+                            
+                            // Eliminamos cualquier imagen residual de intentos anteriores
+                            const viejaImg = document.getElementById('dynamic-inspector-cover');
+                            if (viejaImg) viejaImg.remove();
+                        }
+                    }
                     controlarReproduccion(true, nombreArchivo);
                 }
             }
