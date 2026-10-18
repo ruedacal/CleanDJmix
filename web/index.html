@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="icon" href="data:,">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CleanDJmix PRO - Director's Cut</title>
@@ -61,6 +62,16 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
+
+        // Helper global para saneamiento de carátulas
+        function getValidCover(c) {
+            if (!c) return "https://placehold.co/120x120/18181b/22d3ee?text=CleanDJ";
+            if (typeof c === 'string' && (c.startsWith("http://") || c.startsWith("https://"))) {
+                return c;
+            }
+            return "https://i.scdn.co/image/" + c;
+        }
+
 
         const Icons = {
             Library: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
@@ -474,31 +485,305 @@
             );
         };
 
-        const SpotifyWorkspace = () => (
-            <div className="flex flex-col h-full p-8 max-w-5xl mx-auto w-full">
-                <div className="mb-8 text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-djgreen-500/10 mb-4 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+       const SpotifyWorkspace = () => {
+            const [url, setUrl] = React.useState('https://open.spotify.com/intl-es/artist/23zJj2W0TQ0SvF4Fwo7mZK');
+            const [statusText, setStatusText] = React.useState('Listo para analizar enlaces de Spotify (Tracks, Álbumes o Artistas).');
+            const [isAnalyzing, setIsAnalyzing] = React.useState(false);
+            const [isDownloading, setIsDownloading] = React.useState(false);
+            const [tracks, setTracks] = React.useState([]);
+            const [selectedTrackIds, setSelectedTrackIds] = React.useState(new Set());
+            const [selectedFormat, setSelectedFormat] = React.useState('flac');
+            const [playingTrackId, setPlayingTrackId] = React.useState(null);
+            const [isPaused, setIsPaused] = React.useState(true);
+
+            const ICON_PLAY = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+            const ICON_PAUSE = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+
+            React.useEffect(() => {
+                if (!window.djAudioPlayer) {
+                    window.djAudioPlayer = new Audio();
+                    window.djAudioPlayer.crossOrigin = "anonymous";
+                }
+
+                const player = window.djAudioPlayer;
+
+                const onEnded = () => {
+                    setIsPaused(true);
+                    document.body.classList.add('vu-paused');
+                    const playBtn = document.getElementById('global-play-btn');
+                    if (playBtn) playBtn.innerHTML = ICON_PLAY;
+                };
+                player.addEventListener('ended', onEnded);
+
+                // Delegación global de eventos para que los botones inferiores Play/Pause y CUE funcionen siempre
+                const handleGlobalClicks = (e) => {
+                    const playBtn = e.target.closest('#global-play-btn');
+                    const btnEl = e.target.closest('button');
+
+                    if (playBtn) {
+                        e.preventDefault();
+                        if (!player.src) return;
+                        if (player.paused) {
+                            player.play();
+                            setIsPaused(false);
+                            document.body.classList.remove('vu-paused');
+                            playBtn.innerHTML = ICON_PAUSE;
+                        } else {
+                            player.pause();
+                            setIsPaused(true);
+                            document.body.classList.add('vu-paused');
+                            playBtn.innerHTML = ICON_PLAY;
+                        }
+                    } else if (btnEl && btnEl.innerText.trim().toUpperCase() === 'CUE') {
+                        e.preventDefault();
+                        if (!player.src) return;
+                        player.pause();
+                        player.currentTime = 0;
+                        setIsPaused(true);
+                        document.body.classList.add('vu-paused');
+                        const gPlay = document.getElementById('global-play-btn');
+                        if (gPlay) gPlay.innerHTML = ICON_PLAY;
+                        setStatusText('[CUE] Reproductor en punto de inicio (0:00).');
+                    }
+                };
+
+                document.addEventListener('click', handleGlobalClicks);
+                return () => {
+                    player.removeEventListener('ended', onEnded);
+                    document.removeEventListener('click', handleGlobalClicks);
+                };
+            }, []);
+
+            const handleAnalizar = async () => {
+                if (!url.trim()) return alert("Introduce una URL válida.");
+                setIsAnalyzing(true);
+                setStatusText("[ANALIZANDO] Extrayendo metadatos y portadas HD...");
+                setTracks([]);
+                setSelectedTrackIds(new Set());
+
+                if (window.eel && window.eel.analizar_catalogo_spotify) {
+                    try {
+                        const res = await window.eel.analizar_catalogo_spotify(url)();
+                        if (res && res.tracks) {
+                            setTracks(res.tracks);
+                            setSelectedTrackIds(new Set(res.tracks.map(t => t.id)));
+                            setStatusText(`[ÉXITO] Catálogo cargado: ${res.tracks.length} pistas listas para pre-escucha instantánea.`);
+                        }
+                    } catch (e) {
+                        setStatusText(`[ERROR] Fallo al analizar catálogo: ${e}`);
+                    }
+                } else {
+                    setStatusText("[ERROR] Backend no responde.");
+                }
+                setIsAnalyzing(false);
+            };
+
+            const handlePreescucha = async (t) => {
+                const player = window.djAudioPlayer || (window.djAudioPlayer = new Audio());
+                const playBtn = document.getElementById('global-play-btn');
+
+                // Si pulsamos sobre la misma pista que ya está cargada, alternamos Play/Pause al instante
+                if (playingTrackId === t.id && player.src) {
+                    if (player.paused) {
+                        player.play();
+                        setIsPaused(false);
+                        document.body.classList.remove('vu-paused');
+                        if (playBtn) playBtn.innerHTML = ICON_PAUSE;
+                        setStatusText(`[REPRODUCIENDO] ${t.artist} - ${t.title}`);
+                    } else {
+                        player.pause();
+                        setIsPaused(true);
+                        document.body.classList.add('vu-paused');
+                        if (playBtn) playBtn.innerHTML = ICON_PLAY;
+                        setStatusText(`[PAUSADO] ${t.artist} - ${t.title}`);
+                    }
+                    return;
+                }
+
+                // Actualizar el deck inferior inmediatamente
+                const titleEl = document.getElementById('player-title');
+                const artistEl = document.getElementById('player-artist');
+                const bpmEl = document.getElementById('player-bpm');
+                const keyEl = document.getElementById('player-key');
+                const coverEl = document.getElementById('player-cover');
+
+                if (titleEl) titleEl.innerText = t.title;
+                if (artistEl) artistEl.innerText = t.artist;
+                if (bpmEl) bpmEl.innerText = `${t.bpm || '--'} BPM`;
+                if (keyEl) keyEl.innerText = t.key || '--';
+                if (coverEl && t.cover) coverEl.src = t.cover;
+
+                player.pause();
+                setPlayingTrackId(t.id);
+
+                // Si la pista ya trae su preview_url directo desde el análisis, reproduce en <100ms sin ir al backend
+                if (t.preview_url) {
+                    player.src = t.preview_url;
+                    player.currentTime = 0;
+                    player.play();
+                    setIsPaused(false);
+                    document.body.classList.remove('vu-paused');
+                    if (playBtn) playBtn.innerHTML = ICON_PAUSE;
+                    setStatusText(`[REPRODUCIENDO EN VIVO] ${t.artist} - ${t.title}`);
+                    return;
+                }
+
+                setStatusText(`[PRE-ESCUCHA] Cargando stream: ${t.artist} - ${t.title}...`);
+                if (window.eel && window.eel.resolver_stream_preescucha) {
+                    const res = await window.eel.resolver_stream_preescucha(t.title, t.artist)();
+                    if (res && res.stream_url) {
+                        player.src = res.stream_url;
+                        player.currentTime = 0;
+                        player.play();
+                        setIsPaused(false);
+                        document.body.classList.remove('vu-paused');
+                        if (playBtn) playBtn.innerHTML = ICON_PAUSE;
+                        setStatusText(`[REPRODUCIENDO EN VIVO] ${t.artist} - ${t.title}`);
+                    } else {
+                        setStatusText("[ERROR] Stream no disponible para esta pista.");
+                    }
+                }
+            };
+
+            const toggleSelectTrack = (id) => {
+                const next = new Set(selectedTrackIds);
+                if (next.has(id)) next.delete(id); else next.add(id);
+                setSelectedTrackIds(next);
+            };
+
+            const toggleSelectAll = () => {
+                if (selectedTrackIds.size === tracks.length) setSelectedTrackIds(new Set());
+                else setSelectedTrackIds(new Set(tracks.map(t => t.id)));
+            };
+
+            const handleDescargar = (tracksSubset) => {
+                if (!tracksSubset || tracksSubset.length === 0) return alert("Selecciona al menos una pista.");
+                setIsDownloading(true);
+                setStatusText(`[DESCARGANDO] Iniciando lote de ${tracksSubset.length} pista(s) en .${selectedFormat.toUpperCase()}...`);
+                if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
+                    window.eel.descargar_pistas_spotify_seleccionadas(tracksSubset, selectedFormat)();
+                }
+            };
+
+            return (
+                <div className="flex-1 flex flex-col h-full min-w-0 bg-[#0f0f13] overflow-hidden">
+                    <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex flex-wrap gap-4 items-center justify-between shrink-0">
+                        <div className="flex-1 flex gap-3 max-w-2xl min-w-[320px]">
+                            <div className="flex-1 bg-djzinc-900 rounded-md border border-djzinc-700 flex focus-within:border-djcyan-500 overflow-hidden">
+                                <span className="bg-djzinc-800 px-3 py-1.5 text-xs text-djcyan-400 font-mono border-r border-djzinc-700 flex items-center">SPOTIFY</span>
+                                <input 
+                                    type="text" 
+                                    value={url}
+                                    onChange={(e) => setUrl(e.target.value)}
+                                    placeholder="URL de Álbum, Artista o Playlist..." 
+                                    className="flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono" 
+                                />
+                            </div>
+                            <button 
+                                onClick={handleAnalizar}
+                                disabled={isAnalyzing}
+                                className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-5 py-1.5 text-xs font-bold text-white transition-colors cursor-pointer disabled:opacity-50"
+                            >
+                                {isAnalyzing ? 'Analizando...' : 'Analizar Enlace'}
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 bg-djzinc-900 border border-djzinc-800 rounded px-3 py-1">
+                                <span className="text-[10px] text-gray-400 uppercase font-mono font-bold">Formato:</span>
+                                <select 
+                                    value={selectedFormat} 
+                                    onChange={(e) => setSelectedFormat(e.target.value)}
+                                    className="bg-transparent text-xs text-djcyan-400 font-bold outline-none cursor-pointer"
+                                >
+                                    <option value="flac" className="bg-djzinc-900 text-white">FLAC (Lossless)</option>
+                                    <option value="wav" className="bg-djzinc-900 text-white">WAV (Master)</option>
+                                    <option value="mp3" className="bg-djzinc-900 text-white">MP3 (320k)</option>
+                                    <option value="aiff" className="bg-djzinc-900 text-white">AIFF (Apple Lossless)</option>
+                                </select>
+                            </div>
+
+                            <button 
+                                onClick={() => handleDescargar(tracks.filter(t => selectedTrackIds.has(t.id)))}
+                                disabled={isDownloading || selectedTrackIds.size === 0}
+                                className="bg-djcyan-600 hover:bg-djcyan-500 text-white px-4 py-2 rounded-md font-bold text-xs shadow-[0_4px_14px_0_rgba(8,145,178,0.39)] transition-all cursor-pointer disabled:opacity-50"
+                            >
+                                Descargar Seleccionadas ({selectedTrackIds.size})
+                            </button>
+
+                            <button 
+                                onClick={() => handleDescargar(tracks)}
+                                disabled={isDownloading || tracks.length === 0}
+                                className="bg-djgreen-600 hover:bg-djgreen-500 text-black px-4 py-2 rounded-md font-bold text-xs shadow-[0_4px_14px_0_rgba(34,197,94,0.39)] transition-all cursor-pointer disabled:opacity-50"
+                            >
+                                Descargar Todo ({tracks.length})
+                            </button>
+                        </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Ingesta de Playlists (spotDL)</h2>
-                    <p className="text-gray-400 text-sm">Descarga audio de alta calidad e inyéctalo directamente en tus Crates de Serato.</p>
-                </div>
-                
-                <div className="flex gap-2 max-w-3xl mx-auto w-full mb-8 relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+
+                    <div className="px-4 py-2 bg-djzinc-900/60 border-b border-djzinc-800 flex items-center justify-between text-xs font-mono text-djcyan-400">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></span>
+                            <span>{statusText}</span>
+                        </div>
+                        <span className="text-gray-500">{tracks.length} Pistas detectadas</span>
                     </div>
-                    <input type="text" placeholder="Pega el enlace de Spotify (Playlist, Álbum o Track)..." className="flex-1 bg-djzinc-900 border-2 border-djzinc-700 rounded-lg pl-12 pr-4 py-4 text-lg text-white focus:outline-none focus:border-djgreen-500 focus:bg-djzinc-800 transition-all font-mono placeholder:font-sans placeholder:text-gray-600 shadow-inner" />
-                    <button className="bg-djgreen-600 hover:bg-djgreen-500 text-black px-8 py-4 rounded-lg font-bold text-lg shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all active:scale-95">
-                        Analizar
-                    </button>
+
+                    <div className="flex-1 overflow-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+                            <thead className="sticky top-0 bg-djzinc-900 border-b border-djzinc-700 text-[11px] text-gray-400 uppercase tracking-wider font-bold z-10 shadow-md">
+                                <tr>
+                                    <th className="py-3 px-4 w-10 text-center"><input type="checkbox" checked={tracks.length > 0 && selectedTrackIds.size === tracks.length} onChange={toggleSelectAll} className="rounded accent-djcyan-500 cursor-pointer" /></th>
+                                    <th className="py-3 px-4 w-12 text-center">Play</th>
+                                    <th className="py-3 px-4">Título / Álbum</th>
+                                    <th className="py-3 px-4">Artista</th>
+                                    <th className="py-3 px-4 w-20">Duración</th>
+                                    <th className="py-3 px-4 w-24">BPM Est.</th>
+                                    <th className="py-3 px-4 w-24">Key Est.</th>
+                                    <th className="py-3 px-4 w-32 text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-djzinc-800/50">
+                                {tracks.length === 0 && !isAnalyzing && (
+                                    <tr><td colSpan="8" className="py-16 text-center text-gray-500 text-sm">Pega una URL de Spotify arriba y haz clic en "Analizar Enlace".</td></tr>
+                                )}
+                                {tracks.map((t) => {
+                                    const isChecked = selectedTrackIds.has(t.id);
+                                    const isCurrentPlaying = playingTrackId === t.id && !isPaused;
+                                    return (
+                                        <tr key={t.id} className={`hover:bg-djzinc-800/50 transition-colors ${isChecked ? 'bg-djzinc-900/40' : ''}`}>
+                                            <td className="py-2 px-4 text-center"><input type="checkbox" checked={isChecked} onChange={() => toggleSelectTrack(t.id)} className="rounded accent-djcyan-500 cursor-pointer" /></td>
+                                            <td className="py-2 px-4 text-center">
+                                                <button 
+                                                    onClick={() => handlePreescucha(t)} 
+                                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-colors cursor-pointer ${isCurrentPlaying ? 'bg-djcyan-500 text-black font-bold' : 'bg-djzinc-800 hover:bg-djcyan-500 hover:text-black text-gray-300'}`}
+                                                >
+                                                    {isCurrentPlaying ? '❚❚' : '▶'}
+                                                </button>
+                                            </td>
+                                            <td className="py-2 px-4 flex items-center gap-3">
+                                                <img src={t.cover} className="w-9 h-9 rounded bg-djzinc-800 object-cover shrink-0 border border-djzinc-700" alt="cover" />
+                                                <div className="flex flex-col text-left">
+                                                    <span className="font-medium text-gray-200 truncate w-72">{t.title}</span>
+                                                    <span className="text-[10px] text-gray-500 font-mono truncate w-72">{t.album}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-2 px-4 text-gray-300">{t.artist}</td>
+                                            <td className="py-2 px-4 text-gray-400 font-mono text-xs">{t.duration}</td>
+                                            <td className="py-2 px-4"><span className="bg-djzinc-800 text-gray-300 px-2 py-1 rounded text-xs font-mono">{t.bpm}</span></td>
+                                            <td className="py-2 px-4"><span className="px-2 py-1 rounded text-xs font-mono font-bold bg-djcyan-900/30 text-djcyan-400">{t.key}</span></td>
+                                            <td className="py-2 px-4 text-center">
+                                                <button onClick={() => handleDescargar([t])} disabled={isDownloading} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 text-xs px-3 py-1 rounded font-medium text-white cursor-pointer">Descargar .{selectedFormat}</button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div className="flex-1 border-2 border-dashed border-djzinc-800 rounded-xl flex flex-col items-center justify-center text-djzinc-600 bg-djzinc-900/30">
-                    <p className="font-medium mb-2">Esperando URL...</p>
-                    <p className="text-xs">Los archivos descargados pasarán automáticamente por la auditoría.</p>
-                </div>
-            </div>
-        );
+            );
+        };
 
         const TaxonomyWorkspace = () => (
             <div className="flex flex-col h-full p-6 w-full">
@@ -571,7 +856,46 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const playPauseBtn = document.getElementById('global-play-btn');
+        const cueBtn = document.getElementById('global-cue-btn');
+        
+        window.toggleGlobalPlay = () => {
+            if (window.djAudioPlayer && window.djAudioPlayer.src) {
+                if (window.djAudioPlayer.paused) {
+                    window.djAudioPlayer.play();
+                    document.body.classList.remove('vu-paused');
+                    if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+                } else {
+                    window.djAudioPlayer.pause();
+                    document.body.classList.add('vu-paused');
+                    if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+                }
+            }
+        };
+
+        window.globalCue = () => {
+            if (window.djAudioPlayer && window.djAudioPlayer.src) {
+                window.djAudioPlayer.pause();
+                window.djAudioPlayer.currentTime = 0;
+                document.body.classList.add('vu-paused');
+                if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+            }
+        };
+
+        if (playPauseBtn) playPauseBtn.addEventListener('click', window.toggleGlobalPlay);
+        if (cueBtn) cueBtn.addEventListener('click', window.globalCue);
+        
+        // Alternativa de binding por texto si faltan IDs
+        document.querySelectorAll('button').forEach(btn => {
+            if (btn.innerText.trim() === 'CUE') btn.addEventListener('click', window.globalCue);
+        });
+    });
+</script>
 </body>
+
 </html>
 
 <!-- INYECCIÓN: Motor de Audio, CUE, Inspector y Vúmetro Animado -->
@@ -690,5 +1014,44 @@
         }
     });
 </script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const playPauseBtn = document.getElementById('global-play-btn');
+        const cueBtn = document.getElementById('global-cue-btn');
+        
+        window.toggleGlobalPlay = () => {
+            if (window.djAudioPlayer && window.djAudioPlayer.src) {
+                if (window.djAudioPlayer.paused) {
+                    window.djAudioPlayer.play();
+                    document.body.classList.remove('vu-paused');
+                    if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+                } else {
+                    window.djAudioPlayer.pause();
+                    document.body.classList.add('vu-paused');
+                    if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+                }
+            }
+        };
+
+        window.globalCue = () => {
+            if (window.djAudioPlayer && window.djAudioPlayer.src) {
+                window.djAudioPlayer.pause();
+                window.djAudioPlayer.currentTime = 0;
+                document.body.classList.add('vu-paused');
+                if (playPauseBtn) playPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+            }
+        };
+
+        if (playPauseBtn) playPauseBtn.addEventListener('click', window.toggleGlobalPlay);
+        if (cueBtn) cueBtn.addEventListener('click', window.globalCue);
+        
+        // Alternativa de binding por texto si faltan IDs
+        document.querySelectorAll('button').forEach(btn => {
+            if (btn.innerText.trim() === 'CUE') btn.addEventListener('click', window.globalCue);
+        });
+    });
+</script>
 </body>
+
 </html>
