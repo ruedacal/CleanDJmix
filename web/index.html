@@ -13,7 +13,7 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -23,7 +23,7 @@
                         mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        djzinc: { 950: '#09090b', 900: '#18181b', 800: '#27272a', 700: '#3f3f46' },
+                        djzinc: { 950: '#09090b', 900: '#121216', 850: '#18181f', 800: '#202028', 750: '#2a2a35', 700: '#32323f', 600: '#484858' },
                         djcyan: { 400: '#22d3ee', 500: '#06b6d4', 600: '#0891b2' },
                         djgreen: { 400: '#4ade80', 500: '#22c55e' }
                     }
@@ -32,38 +32,63 @@
         }
     </script>
     <style>
-    @keyframes miniEq {
-        0%, 100% { transform: scaleY(0.3); }
-        50% { transform: scaleY(1.0); }
-    }
-    .logo-bar {
-        transform-origin: bottom;
-        animation-name: miniEq;
-        animation-timing-function: ease-in-out;
-        animation-iteration-count: infinite;
-    }
-
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        ::-webkit-scrollbar-thumb { background: #32323f; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #484858; }
         
-        .glass-panel { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(63, 63, 70, 0.5); }
-        .selected-row { background: linear-gradient(90deg, rgba(8,145,178,0.15) 0%, rgba(24,24,27,0) 100%); border-left: 3px solid #06b6d4; }
-        .slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .glass-panel { background: rgba(18, 18, 22, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(63, 63, 70, 0.4); }
+        .slide-in-right { animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        
-        @keyframes pulse-bar { 0%, 100% { height: 20%; } 50% { height: 100%; } }
-        .vu-meter-bar { animation: pulse-bar 1.2s infinite ease-in-out; }
+
+        /* Animación mini EQ del Logo */
+        @keyframes miniEq {
+            0%, 100% { transform: scaleY(0.3); }
+            50% { transform: scaleY(1.0); }
+        }
+        .logo-bar {
+            transform-origin: bottom;
+            animation-name: miniEq;
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
+        }
+
+        /* Animación Vúmetro Master Deck Footer */
+        @keyframes equalize {
+            0%, 100% { transform: scaleY(0.2); }
+            50% { transform: scaleY(1.0); }
+        }
+        .vu-meter-bar {
+            transform-origin: bottom;
+            animation-name: equalize;
+            animation-iteration-count: infinite;
+        }
+        .vu-paused .vu-meter-bar {
+            animation-play-state: paused !important;
+            transform: scaleY(0.1) !important;
+            background-color: #27272a !important;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
     </style>
 </head>
-<body class="bg-djzinc-950 text-gray-300 h-screen w-screen overflow-hidden antialiased selection:bg-djcyan-500 selection:text-white">
+<body class="bg-djzinc-950 text-gray-300 h-screen w-screen overflow-hidden antialiased selection:bg-djcyan-500 selection:text-white font-sans">
     <div id="root" class="h-full w-full"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
-        // Helper global para saneamiento de carátulas
+        // Paleta oficial de pads RGB de Numark NV2
+        const NV2_COLORS = [
+            { id: 1, name: "Kick / Intro", color: "#ef4444", text: "text-red-400", border: "border-red-500/50", bg: "bg-red-500/10", time: "00:00.215" },
+            { id: 2, name: "Hi-Hats In", color: "#f97316", text: "text-orange-400", border: "border-orange-500/50", bg: "bg-orange-500/10", time: "00:15.110" },
+            { id: 3, name: "Bassline", color: "#eab308", text: "text-yellow-400", border: "border-yellow-500/50", bg: "bg-yellow-500/10", time: "00:30.005" },
+            { id: 4, name: "Main Break", color: "#22c55e", text: "text-green-400", border: "border-green-500/50", bg: "bg-green-500/10", time: "01:00.120" },
+            { id: 5, name: "Drop 1 (Climax)", color: "#06b6d4", text: "text-cyan-400", border: "border-cyan-500/50", bg: "bg-cyan-500/10", time: "01:30.240" },
+            { id: 6, name: "Mid Break", color: "#3b82f6", text: "text-blue-400", border: "border-blue-500/50", bg: "bg-blue-500/10", time: "02:30.400" },
+            { id: 7, name: "Drop 2 (Re-Kick)", color: "#a855f7", text: "text-purple-400", border: "border-purple-500/50", bg: "bg-purple-500/10", time: "03:00.510" },
+            { id: 8, name: "Outro Mix Point", color: "#ec4899", text: "text-pink-400", border: "border-pink-500/50", bg: "bg-pink-500/10", time: "04:15.000" }
+        ];
+
         function getValidCover(c) {
             if (!c) return "https://placehold.co/120x120/18181b/22d3ee?text=CleanDJ";
             if (typeof c === 'string' && (c.startsWith("http://") || c.startsWith("https://"))) {
@@ -72,28 +97,239 @@
             return "https://i.scdn.co/image/" + c;
         }
 
-
         const Icons = {
-            Library: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
-            Spotify: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
-            Routing: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>,
-            Terminal: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>,
-            Play: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
-            Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
-            Warning: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
-            Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Library: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
+            Spotify: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
+            Routing: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>,
+            Terminal: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>,
+            Play: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
+            Pause: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>,
+            Sliders: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>,
+            Gear: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
         };
 
+        // Tooltip Flotante Educativo (i)
+        // Componente Tooltip Educativo Flotante Inteligente (Auto-alineado a la izquierda)
+        // Componente Tooltip Flotante desacoplado del overflow
+        // Componente Tooltip con posicionamiento fijo absoluto al viewport
+        const InfoTip = ({ text, title }) => {
+            const [coords, setCoords] = useState(null);
+            const btnRef = useRef(null);
+
+            const handleEnter = () => {
+                if (!btnRef.current) return;
+                const rect = btnRef.current.getBoundingClientRect();
+                setCoords({
+                    top: rect.top + rect.height / 2,
+                    right: window.innerWidth - rect.left + 12
+                });
+            };
+
+            const handleLeave = () => setCoords(null);
+
+            return (
+                <span className="inline-flex items-center ml-1.5 align-middle">
+                    <button 
+                        ref={btnRef}
+                        type="button"
+                        onMouseEnter={handleEnter}
+                        onMouseLeave={handleLeave}
+                        onClick={(e) => { e.stopPropagation(); coords ? handleLeave() : handleEnter(); }}
+                        className="w-3.5 h-3.5 rounded-full bg-djzinc-800 hover:bg-djcyan-500 hover:text-black border border-djzinc-600 flex items-center justify-center text-[9px] font-mono font-bold text-gray-400 transition-colors cursor-help select-none shrink-0"
+                    >
+                        i
+                    </button>
+
+                    {coords && ReactDOM.createPortal(
+                        <div 
+                            style={{ 
+                                position: 'fixed', 
+                                top: `${coords.top}px`, 
+                                right: `${coords.right}px`, 
+                                transform: 'translateY(-50%)',
+                                zIndex: 999999
+                            }}
+                            className="w-72 bg-djzinc-900 border border-djzinc-700 rounded-lg p-3 text-xs text-gray-200 shadow-[0_12px_36px_rgba(0,0,0,0.95),0_0_15px_rgba(6,182,212,0.2)] pointer-events-none select-none"
+                        >
+                            {/* Flecha apuntadora hacia el botón (i) */}
+                            <div className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-djzinc-900 border-t border-r border-djzinc-700 rotate-45"></div>
+
+                            {title && (
+                                <div className="text-[11px] font-bold text-djcyan-400 mb-1 uppercase tracking-wider flex items-center gap-1.5 border-b border-djzinc-800 pb-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span>
+                                    {title}
+                                </div>
+                            )}
+                            <div className="text-[11px] leading-relaxed text-gray-300 font-sans break-words whitespace-normal">
+                                {text}
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+                </span>
+            );
+        };
+
+        // Visualizador de Onda Rekordbox Style con Marcadores Numark NV2
+        const RekordboxWaveform = ({ cues = NV2_COLORS, duration = "06:12" }) => {
+            const totalBars = 90;
+            return (
+                <div className="flex flex-col gap-1 w-full bg-djzinc-950 p-2.5 rounded-lg border border-djzinc-800">
+                    <div className="flex justify-between items-center text-[10px] font-mono text-gray-500 px-0.5">
+                        <span className="text-djcyan-400 font-semibold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 animate-pulse"></span>
+                            3-BAND SPECTRUM
+                        </span>
+                        <span>{duration}</span>
+                    </div>
+
+                    <div className="relative h-20 w-full bg-black/60 rounded overflow-hidden flex items-center px-1 border border-djzinc-850">
+                        <div className="w-full h-full flex items-center justify-between gap-[1px]">
+                            {[...Array(totalBars)].map((_, i) => {
+                                const heightPct = Math.max(15, Math.sin(i * 0.15) * 45 + Math.random() * 40);
+                                const isDrop = (i > 30 && i < 45) || (i > 65 && i < 78);
+                                const isBreak = (i >= 20 && i <= 30) || (i >= 55 && i <= 65);
+                                
+                                let barBg = "bg-gradient-to-t from-blue-600 via-amber-500 to-cyan-300";
+                                if (isBreak) barBg = "bg-gradient-to-t from-blue-900 via-amber-600/60 to-cyan-400/40 opacity-70";
+                                if (isDrop) barBg = "bg-gradient-to-t from-blue-500 via-yellow-400 to-white shadow-[0_0_4px_rgba(6,182,212,0.5)]";
+
+                                return (
+                                    <div 
+                                        key={i} 
+                                        className={`w-full rounded-sm ${barBg} transition-all duration-150`}
+                                        style={{ height: `${heightPct}%` }}
+                                    ></div>
+                                );
+                            })}
+                        </div>
+
+                        {cues.map((cue, idx) => {
+                            const leftPos = Math.min(96, Math.max(3, (idx * 12.8) + 4));
+                            return (
+                                <div 
+                                    key={cue.id} 
+                                    className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none group"
+                                    style={{ left: `${leftPos}%` }}
+                                >
+                                    <div 
+                                        className="w-4 h-4 rounded-sm flex items-center justify-center text-[9px] font-mono font-bold text-black shadow-lg"
+                                        style={{ backgroundColor: cue.color }}
+                                    >
+                                        {cue.id}
+                                    </div>
+                                    <div 
+                                        className="w-[1.5px] h-full shadow-[0_0_6px_currentColor]"
+                                        style={{ backgroundColor: cue.color, color: cue.color }}
+                                    ></div>
+                                </div>
+                            );
+                        })}
+
+                        <div className="absolute top-0 bottom-0 left-[28%] w-[2px] bg-white shadow-[0_0_8px_white] z-20"></div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[9px] font-mono text-gray-500 pt-1">
+                        <span>0:00</span>
+                        <div className="flex gap-2">
+                            <span className="text-blue-400 font-semibold">Low (Sub/Kick)</span>
+                            <span className="text-amber-400 font-semibold">Mid (Vocal/Lead)</span>
+                            <span className="text-cyan-300 font-semibold">Hi (Hats/Cymbals)</span>
+                        </div>
+                        <span>FIN</span>
+                    </div>
+                </div>
+            );
+        };
+
+        // Modal de Configuración de Lote (Batch Audio Wizard)
+        const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
+            if (!isOpen) return null;
+
+            const [options, setOptions] = useState({
+                fftLossless: true,
+                bpmKey: true,
+                energyDance: true,
+                moodDetect: true,
+                trimSilences: true,
+                beatgrid: true,
+                hotCues8: true,
+                djComments: true
+            });
+
+            const toggleOpt = (key) => setOptions(prev => ({ ...prev, [key]: !prev[key] }));
+
+            return (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-djzinc-900 border border-djzinc-700 w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-4 border-b border-djzinc-800 flex justify-between items-center bg-djzinc-950">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 rounded bg-djcyan-500/10 text-djcyan-400 border border-djcyan-500/30">
+                                    <Icons.Sliders />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-sm text-white">Configuración del Motor de Auditoría y DSP</h3>
+                                    <p className="text-[11px] text-gray-400">Selecciona qué procesamientos aplicar a todo el catálogo antes de exportar a Serato.</p>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="text-gray-400 hover:text-white text-lg font-bold p-1">✕</button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto space-y-4 font-sans">
+                            <div className="grid grid-cols-2 gap-3">
+                                <BatchOptionCard active={options.fftLossless} onClick={() => toggleOpt('fftLossless')} title="Inspección FFT Lossless Real" desc="Calcula la FFT para certificar rango dinámico >20kHz o detectar falso FLAC." info="Examina el buffer espectral. Si hay corte abrupto a 16kHz o 20kHz marca la pista como Falso Lossless." />
+                                <BatchOptionCard active={options.bpmKey} onClick={() => toggleOpt('bpmKey')} title="Detección BPM & Key Camelot" desc="Extrae el tempo decimal exacto y la clave armónica estándar." info="Calcula el tempo con precisión de 2 decimales y mapea armónicos a la rueda Camelot (8A, 11B)." />
+                                <BatchOptionCard active={options.energyDance} onClick={() => toggleOpt('energyDance')} title="Nivel de Energía & Danceability" desc="Calcula el punch de graves (1-100) y la regularidad del ritmo." info="Mide la densidad RMS de bajas frecuencias para la energía y la varianza de pulso para danceability." />
+                                <BatchOptionCard active={options.moodDetect} onClick={() => toggleOpt('moodDetect')} title="Clasificación de Mood (Atmósfera)" desc="Asigna estados DJ: Dark Techno, Peak Time, Hypnotic..." info="Aplica filtros de brillo espectral y densidad armónica para categorizar el tono anímico." />
+                                <BatchOptionCard active={options.trimSilences} onClick={() => toggleOpt('trimSilences')} title="Recorte de Silencios (Zero-Crossing)" desc="Elimina silencios muertos iniciales y finales a -60dBfs." info="Corta el archivo justo en el cruce por cero de amplitud para evitar ruidos de chasquido." />
+                                <BatchOptionCard active={options.beatgrid} onClick={() => toggleOpt('beatgrid')} title="Anclaje de Grid al Beat 1.0.0" desc="Garantiza que el primer kick caiga en el compás exacto." info="Evita que la pista entre a contratiempo o desacompasada al mezclar en reproductores DJ." />
+                                <BatchOptionCard active={options.hotCues8} onClick={() => toggleOpt('hotCues8')} title="Generación de 8 Hot Cues NV2" desc="Crea los 8 puntos estándar de sesión respetando frases de 32 beats." info="Genera los 8 marcadores estándar de cabina (Kick, Hats, Bass, Drop 1, Drop 2, Outro) para Serato." />
+                                <BatchOptionCard active={options.djComments} onClick={() => toggleOpt('djComments')} title="Comentarios Tácticos de Cabina" desc="Genera consejo DJ: 'Inicio de sesión, mucho drum, curva variable'." info="Resume la táctica de mezcla en el frame de comentario para verlo en la pantalla de la controladora." />
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center">
+                            <span className="text-xs text-gray-400 font-mono">Los cambios se previsualizarán en la tabla antes de inyectar.</span>
+                            <div className="flex gap-2">
+                                <button onClick={onClose} className="px-4 py-2 text-xs font-semibold rounded bg-djzinc-800 hover:bg-djzinc-700 text-gray-300">Cancelar</button>
+                                <button onClick={() => { onRunBatch(options); onClose(); }} className="px-5 py-2 text-xs font-bold rounded bg-djcyan-600 hover:bg-djcyan-500 text-white shadow-lg shadow-djcyan-500/20">Ejecutar Auditoría Masiva</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const BatchOptionCard = ({ active, onClick, title, desc, info }) => (
+            <div 
+                onClick={onClick} 
+                className={`p-3 rounded-lg border transition-all cursor-pointer flex gap-3 items-start select-none ${
+                    active ? 'bg-djcyan-950/20 border-djcyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.15)]' : 'bg-djzinc-850/60 border-djzinc-750 opacity-60 hover:opacity-100'
+                }`}
+            >
+                <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 ${active ? 'bg-djcyan-500 border-djcyan-400 text-black' : 'border-djzinc-600'}`}>
+                    {active && <span className="text-[10px] font-bold">✓</span>}
+                </div>
+                <div className="flex-1">
+                    <div className="flex items-center text-xs font-bold text-white mb-0.5">
+                        <span>{title}</span>
+                        <InfoTip title={title} text={info} />
+                    </div>
+                    <div className="text-[11px] text-gray-400 leading-tight">{desc}</div>
+                </div>
+            </div>
+        );
+
+        // APLICACIÓN PRINCIPAL
         const App = () => {
             const [activeTab, setActiveTab] = useState('audit');
-            const [selectedTrack, setSelectedTrack] = useState(null);
-            
-            // Consola Global
+            const [selectedTrack, setSelectedTrack] = useState(1);
             const [consoleLogs, setConsoleLogs] = useState([
-                { type: 'info', text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
+                { type: 'info', text: "> CleanDJmix PRO v2.4 - Audio Core & Serato Bridge Online" },
                 { type: 'divider', text: "--------------------------------------------------" },
-                { type: 'success', text: "[ OK ] Spotify spotDL module linked." },
-                { type: 'success', text: "[ OK ] Serato Database XML located." }
+                { type: 'success', text: "[ OK ] Serato Database XML located." },
+                { type: 'success', text: "[ OK ] DSP Engine (FFT / Lossless / Zero-Crossing) initialized." }
             ]);
 
             useEffect(() => {
@@ -106,9 +342,9 @@
             }, []);
 
             return (
-                <div className="flex h-screen w-screen flex-col font-sans">
+                <div className="flex h-screen w-screen flex-col font-sans select-none overflow-hidden bg-djzinc-950">
                     {/* TOP NAVIGATION BAR */}
-                    <header className="h-12 bg-djzinc-950 border-b border-djzinc-800 flex items-center px-4 justify-between shrink-0 select-none z-10 relative">
+                    <header className="h-12 bg-djzinc-950 border-b border-djzinc-800 flex items-center px-4 justify-between shrink-0 z-10 relative">
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2 group cursor-pointer">
                                 <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-105">
@@ -127,7 +363,8 @@
                                     </svg>
                                 </div>
                                 <span className="font-bold text-sm tracking-widest text-white">CLEANDJ<span className="font-light text-djcyan-400">MIX</span></span>
-<div className="flex items-end h-[14px] ml-[7px] mb-[2px] gap-[2px] shrink-0 opacity-90">
+                                {/* EQ animado del Logo */}
+                                <div className="flex items-end h-[14px] ml-[7px] mb-[2px] gap-[2px] shrink-0 opacity-90">
                                     <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "66%", animationDuration: "0.63s", animationDelay: "0.95s"}} ></div>
                                     <div className="w-[2px] bg-djcyan-500 rounded-t-[1px] logo-bar" style={{height: "63%", animationDuration: "1.29s", animationDelay: "0.31s"}} ></div>
                                     <div className="w-[2px] bg-djcyan-500 rounded-t-[1px] logo-bar" style={{height: "56%", animationDuration: "1.04s", animationDelay: "0.77s"}} ></div>
@@ -140,27 +377,31 @@
                                     <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "37%", animationDuration: "0.72s", animationDelay: "0.98s"}} ></div>
                                     <div className="w-[2px] bg-gray-300 rounded-t-[1px] logo-bar" style={{height: "34%", animationDuration: "1.09s", animationDelay: "1.37s"}} ></div>
                                     <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "39%", animationDuration: "1.21s", animationDelay: "0.45s"}} ></div>
-                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "86%", animationDuration: "0.61s", animationDelay: "0.19s"}} ></div>
-                                    <div className="w-[2px] bg-gray-300 rounded-t-[1px] logo-bar" style={{height: "86%", animationDuration: "0.89s", animationDelay: "0.98s"}} ></div>
-                                    <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "92%", animationDuration: "1.11s", animationDelay: "0.27s"}} ></div>
-                                    <div className="w-[2px] bg-djcyan-500 rounded-t-[1px] logo-bar" style={{height: "43%", animationDuration: "0.96s", animationDelay: "0.64s"}} ></div>
-                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "72%", animationDuration: "1.24s", animationDelay: "0.52s"}} ></div>
-                                    <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "38%", animationDuration: "0.76s", animationDelay: "0.65s"}} ></div>
-                                    <div className="w-[2px] bg-white rounded-t-[1px] logo-bar" style={{height: "64%", animationDuration: "0.66s", animationDelay: "0.58s"}} ></div>
-                                    <div className="w-[2px] bg-djcyan-400 rounded-t-[1px] logo-bar" style={{height: "78%", animationDuration: "1.28s", animationDelay: "0.05s"}} ></div>
                                 </div>
                             </div>
                         </div>
 
+                        {/* PESTAÑAS SUPERIORES */}
+                        {/* PESTAÑAS SUPERIORES */}
                         <nav className="flex space-x-1 h-full absolute left-1/2 -translate-x-1/2">
                             <TopTab active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} icon={<Icons.Library />} label="Auditoría" />
-                            <TopTab active={activeTab === 'spotify'} onClick={() => setActiveTab('spotify')} icon={<Icons.Spotify />} label="Spotify Ingest" />
+                            <button
+                                onClick={() => setActiveTab('spotify')}
+                                className={`flex items-center gap-2 px-6 h-full transition-all border-b-2 text-sm font-medium ${
+                                    activeTab === 'spotify' ? 'border-djcyan-400 text-white bg-djzinc-900/50' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-djzinc-900/30'
+                                }`}
+                            >
+                                <span className={activeTab === 'spotify' ? 'text-djcyan-400' : ''}><Icons.Spotify /></span>
+                                <span>Spotify Ingest</span>
+                                <span className="text-gray-500 bg-djzinc-850 p-1 rounded border border-djzinc-750 ml-0.5" title="Módulo bloqueado/restringido">
+                                    <Icons.Lock />
+                                </span>
+                            </button>
                             <TopTab active={activeTab === 'taxonomy'} onClick={() => setActiveTab('taxonomy')} icon={<Icons.Routing />} label="Taxonomía" />
                             <TopTab active={activeTab === 'logs'} onClick={() => setActiveTab('logs')} icon={<Icons.Terminal />} label="Consola" />
                         </nav>
 
                         <div className="flex items-center gap-3">
-                            
                             <div className="flex items-center gap-2 bg-djzinc-900 px-3 py-1.5 rounded-md border border-djzinc-800">
                                 <div className="w-2 h-2 rounded-full bg-djgreen-500 shadow-[0_0_5px_#22c55e]"></div>
                                 <span className="text-xs font-mono text-gray-400">Serato Link Active</span>
@@ -168,51 +409,53 @@
                         </div>
                     </header>
 
-                    {/* MAIN WORKSPACE */}
-                    <main className="flex flex-1 overflow-hidden relative bg-[#0f0f13]">
-                        {activeTab === 'audit' && <AuditWorkspace selectedTrack={selectedTrack} setSelectedTrack={setSelectedTrack} setConsoleLogs={setConsoleLogs} />}
+                    {/* MAIN WORKSPACES */}
+                    <main className="flex flex-1 overflow-hidden relative bg-[#0d0d11]">
+                        {activeTab === 'audit' && <AuditWorkspace selectedTrack={selectedTrack} setSelectedTrack={setSelectedTrack} />}
                         {activeTab === 'spotify' && <SpotifyWorkspace />}
                         {activeTab === 'taxonomy' && <TaxonomyWorkspace />}
                         {activeTab === 'logs' && <LogsWorkspace logs={consoleLogs} setLogs={setConsoleLogs} />}
                     </main>
 
-                    {/* GLOBAL DECK PLAYER */}
-                    <footer className="h-20 glass-panel flex items-center justify-between px-6 shrink-0 z-50">
+                    {/* GLOBAL DECK PLAYER (FOOTER) */}
+                    <footer className="h-20 glass-panel flex items-center justify-between px-6 shrink-0 z-50 select-none">
                         <div className="flex items-center gap-4 w-1/3">
-                            <div className="w-14 h-14 bg-djzinc-800 rounded-md border border-djzinc-700 overflow-hidden relative group cursor-pointer">
-                                <img id="player-cover" src="https://placehold.co/100x100/18181b/22d3ee?text=CleanDJ" alt="Cover" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-14 h-14 bg-djzinc-800 rounded-md border border-djzinc-700 overflow-hidden relative group cursor-pointer shrink-0">
+                                <img id="player-cover" src="https://placehold.co/100x100/18181b/22d3ee?text=CleanDJ" alt="Cover" className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            <div className="flex flex-col justify-center">
-                                <span id="player-title" className="text-sm font-bold text-white leading-tight">Esperando pista...</span>
-                                <span id="player-artist" className="text-xs text-djcyan-400 font-medium">CleanDJmix PRO</span>
+                            <div className="flex flex-col justify-center min-w-0">
+                                <span id="player-title" className="text-sm font-bold text-white leading-tight truncate">Esperando pista...</span>
+                                <span id="player-artist" className="text-xs text-djcyan-400 font-medium truncate">CleanDJmix PRO</span>
                                 <div className="flex gap-2 mt-1">
-                                    <span id="player-bpm" className="text-[10px] font-mono bg-djzinc-800 px-1.5 rounded text-gray-400">-- BPM</span>
-                                    <span id="player-key" className="text-[10px] font-mono bg-djzinc-800 px-1.5 rounded text-gray-400">--</span>
+                                    <span id="player-bpm" className="text-[10px] font-mono bg-djzinc-800 px-1.5 rounded text-gray-300">-- BPM</span>
+                                    <span id="player-key" className="text-[10px] font-mono bg-djzinc-800 px-1.5 rounded text-gray-300">--</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="flex flex-col items-center justify-center w-1/3">
                             <div className="flex items-center gap-4">
-                                <button id="global-cue-btn" className="w-10 h-10 rounded bg-djzinc-800 hover:bg-djzinc-700 flex items-center justify-center border-b-2 border-djzinc-950 active:border-b-0 active:translate-y-[2px] transition-all text-xs font-bold text-gray-400">CUE</button>
-                                <button id="global-play-btn" className="w-12 h-12 rounded bg-djcyan-600 hover:bg-djcyan-500 flex items-center justify-center border-b-2 border-djcyan-800 active:border-b-0 active:translate-y-[2px] transition-all text-white shadow-[0_0_15px_rgba(8,145,178,0.4)]">
+                                <button id="global-cue-btn" className="w-10 h-10 rounded bg-djzinc-800 hover:bg-djzinc-750 flex items-center justify-center border-b-2 border-djzinc-950 active:border-b-0 active:translate-y-[2px] transition-all text-xs font-bold text-gray-400 cursor-pointer">CUE</button>
+                                <button id="global-play-btn" className="w-12 h-12 rounded bg-djcyan-600 hover:bg-djcyan-500 flex items-center justify-center border-b-2 border-djcyan-800 active:border-b-0 active:translate-y-[2px] transition-all text-white shadow-[0_0_15px_rgba(8,145,178,0.4)] cursor-pointer">
                                     <Icons.Play />
                                 </button>
-                                <button className="w-10 h-10 rounded bg-djzinc-800 hover:bg-djzinc-700 flex items-center justify-center border-b-2 border-djzinc-950 active:border-b-0 active:translate-y-[2px] transition-all text-xs font-bold text-gray-400">SYNC</button>
+                                <button className="w-10 h-10 rounded bg-djzinc-800 hover:bg-djzinc-750 flex items-center justify-center border-b-2 border-djzinc-950 active:border-b-0 active:translate-y-[2px] transition-all text-xs font-bold text-gray-400 cursor-pointer">SYNC</button>
                             </div>
                         </div>
 
+                        {/* VÚMETRO ANIMADO MULTICOLOR CON CABEZAL BLANCO */}
                         <div className="w-1/3 flex justify-end items-center h-full py-2">
-                            <div className="w-full max-w-md h-full bg-djzinc-950/50 rounded border border-djzinc-800/50 relative overflow-hidden flex items-end justify-between px-1 gap-[1px]">
+                            <div className="w-full max-w-md h-full bg-djzinc-950/60 rounded border border-djzinc-800/60 relative overflow-hidden flex items-end justify-between px-1 gap-[1px]">
                                 {[...Array(60)].map((_, i) => {
-                                    const h = Math.max(10, Math.random() * 100);
+                                    const h = Math.max(12, Math.random() * 100);
                                     const color = i < 15 ? 'bg-rose-500' : (i < 30 ? 'bg-amber-500' : (i < 45 ? 'bg-djcyan-400' : 'bg-blue-500'));
-                                    const isPlayed = true;
                                     return (
-                                        <div key={i} className={`w-full rounded-t-sm ${isPlayed ? color : 'bg-djzinc-700'} vu-meter-bar`}
-                                             style={{ height: `${h}%`, animationDelay: `${i * 0.05}s`, animationDuration: `${0.8 + Math.random()}s` }}>
-                                        </div>
-                                    )
+                                        <div 
+                                            key={i} 
+                                            className={`w-full rounded-t-sm ${color} vu-meter-bar`}
+                                            style={{ height: `${h}%`, animationDelay: `${i * 0.04}s`, animationDuration: `${0.7 + Math.random()}s` }}
+                                        ></div>
+                                    );
                                 })}
                                 <div className="absolute top-0 bottom-0 left-1/3 w-[2px] bg-white shadow-[0_0_8px_white] z-10"></div>
                             </div>
@@ -226,9 +469,7 @@
             <button
                 onClick={onClick}
                 className={`flex items-center gap-2 px-6 h-full transition-all border-b-2 text-sm font-medium ${
-                    active 
-                    ? 'border-djcyan-400 text-white bg-djzinc-900/50' 
-                    : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-djzinc-900/30'
+                    active ? 'border-djcyan-400 text-white bg-djzinc-900/50' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-djzinc-900/30'
                 }`}
             >
                 <span className={active ? 'text-djcyan-400' : ''}>{icon}</span>
@@ -236,263 +477,21 @@
             </button>
         );
 
-        const AuditWorkspace = ({ selectedTrack, setSelectedTrack }) => {
-            const dummyTracks = [
-                { id: 1, f: "Pearl Jam - Pearl Jam.mp3", a: "Pearl Jam", d: "9:09", b: "120.00", k: "8A", e: 85, s: "ok" },
-                { id: 2, f: "Techno Collective - Strobo.mp3", a: "Techno Collective", d: "6:02", b: "135.00", k: "5A", e: 95, s: "ok" },
-                { id: 3, f: "Fentanyl Fantasy - Overdose.mp3", a: "Fentanyl Fantasy", d: "5:20", b: "140.00", k: "2B", e: null, s: "pending" },
-                { id: 4, f: "David Bowie - DJ.mp3", a: "David Bowie", d: "7:02", b: "115.00", k: "9A", e: 60, s: "error" },
-                { id: 5, f: "Avatar Project - Cabrones.mp3", a: "Avatar Project", d: "7:08", b: "128.00", k: "11B", e: 90, s: "ok" },
-                { id: 6, f: "Plastikboy - La Mezcla.mp3", a: "Plastikboy", d: "6:26", b: "125.00", k: "10A", e: 80, s: "ok" },
-            ];
-
-            const [rutaOrigen, setRutaOrigen] = useState("");
-            const [isAuditing, setIsAuditing] = useState(false);
-            const [metrics, setMetrics] = useState({ total: 0, missing: 0, ready: 0 });
+        // PESTAÑA: SPOTIFY INGEST COMPLETA CON PLAYER, CHECKS Y DESCARGAS
+        const SpotifyWorkspace = () => {
+            const [destFolder, setDestFolder] = useState('/Users/admin/Music/mi musica');
+            const [downloadProgress, setDownloadProgress] = useState(0);
+            const [url, setUrl] = useState('https://open.spotify.com/intl-es/artist/23zJj2W0TQ0SvF4Fwo7mZK');
+            const [statusText, setStatusText] = useState('Listo para analizar enlaces de Spotify.');
+            const [isAnalyzing, setIsAnalyzing] = useState(false);
+            const [isDownloading, setIsDownloading] = useState(false);
             const [tracks, setTracks] = useState([]);
+            const [selectedTrackIds, setSelectedTrackIds] = useState(new Set());
+            const [selectedFormat, setSelectedFormat] = useState('flac');
+            const [playingTrackId, setPlayingTrackId] = useState(null);
+            const [isPaused, setIsPaused] = useState(true);
 
-            const handleExplorar = async () => {
-                if (window.eel) {
-                    const nuevaRuta = await window.eel.seleccionar_directorio()();
-                    if (nuevaRuta) { setRutaOrigen(nuevaRuta); setIsAuditing(true); setTracks([]); window.eel.iniciar_auditoria(nuevaRuta)().then(r => { setMetrics({total: r.total, missing: r.sin_meta, ready: r.total - r.sin_meta}); setTracks(r.tracks); setIsAuditing(false); }).catch(() => setIsAuditing(false)); }
-                }
-            };
-
-            const handleAuditar = async () => {
-                if (window.eel && !isAuditing) {
-                    setIsAuditing(true);
-                    setTracks([]); // Limpiamos para efecto de carga
-                    
-                    try {
-                        const resultado = await window.eel.iniciar_auditoria(rutaOrigen)();
-                        setMetrics({
-                            total: resultado.total,
-                            missing: resultado.sin_meta,
-                            ready: resultado.total - resultado.sin_meta
-                        });
-                        if (resultado.tracks) {
-                            setTracks(resultado.tracks);
-                        }
-                    } catch (err) {
-                        console.error("Error conectando con Python:", err);
-                    }
-                    setIsAuditing(false);
-                }
-            };
-
-            return (
-                <div className="flex w-full h-full">
-                    {/* Main Table Area */}
-                    <div className="flex-1 flex flex-col min-w-0">
-                        {/* Action Bar (Top) */}
-                        <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center shrink-0">
-                            <div className="flex gap-4 items-center w-1/2">
-                                <div className="flex-1 max-w-md bg-djzinc-900 rounded-md border border-djzinc-700 flex focus-within:border-djcyan-500 transition-colors overflow-hidden">
-                                    <span className="bg-djzinc-800 px-3 py-1.5 text-xs text-gray-400 font-mono border-r border-djzinc-700 flex items-center">ORIGEN</span>
-                                    <input type="text" value={rutaOrigen} onChange={(e) => setRutaOrigen(e.target.value)} className="flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono" />
-                                </div>
-                                <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-4 py-1.5 text-xs font-bold text-gray-300 transition-colors">Explorar</button>
-                            </div>
-
-                            <div className="flex gap-3">
-                                <button onClick={handleAuditar} className={`text-white px-5 py-2 rounded-md font-semibold text-sm border flex items-center gap-2 transition-all shadow-lg ${isAuditing ? 'bg-djzinc-800 border-djzinc-700 opacity-70 cursor-not-allowed' : 'bg-djzinc-800 hover:bg-djzinc-700 border-djzinc-600'}`}>
-                                    {isAuditing ? <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div> : <Icons.Library />}
-                                    {isAuditing ? 'Auditando...' : 'Auditar Directorio'}
-                                </button>
-                                <button className="bg-djcyan-600 hover:bg-djcyan-500 text-white px-5 py-2 rounded-md font-bold text-sm shadow-[0_4px_14px_0_rgba(8,145,178,0.39)] flex items-center gap-2">
-                                    Inyectar a Serato
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Metric Dashboard */}
-                        <div className="grid grid-cols-4 gap-px bg-djzinc-800 border-b border-djzinc-800 shrink-0">
-                            <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
-                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Pistas</span>
-                                <span className="text-2xl font-mono text-white">{(metrics.total || 0).toLocaleString()}</span>
-                            </div>
-                            <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
-                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Sin Metadatos (BPM/Key)</span>
-                                <span className="text-2xl font-mono text-amber-500">{(metrics.missing || 0).toLocaleString()}</span>
-                            </div>
-                            <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
-                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Listas para Inyectar</span>
-                                <span className="text-2xl font-mono text-djgreen-400">{(metrics.ready || 0).toLocaleString()}</span>
-                            </div>
-                            <div className="bg-djzinc-950 p-4 flex items-center justify-between">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Modo Seguro</span>
-                                    <span className="text-sm font-medium text-gray-300">Simulación ON</span>
-                                </div>
-                                <div className="w-10 h-5 bg-djcyan-600 rounded-full relative cursor-pointer shadow-[0_0_10px_rgba(8,145,178,0.4)]">
-                                    <div className="w-4 h-4 bg-white rounded-full absolute right-0.5 top-0.5"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* ADVANCED SEARCH & FILTERS BAR */}
-                        <div className="px-4 py-2 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between shrink-0">
-                            <div className="flex items-center gap-2 flex-1">
-                                <div className="relative w-64">
-                                    <svg className="absolute left-2.5 top-2 text-gray-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                    <input type="text" placeholder="Buscar por track, artista o clave..." className="w-full bg-djzinc-950 border border-djzinc-700 rounded-full pl-8 pr-3 py-1.5 text-xs text-gray-300 focus:border-djcyan-500 focus:outline-none transition-colors" />
-                                </div>
-                                <div className="h-4 w-px bg-djzinc-700 mx-2"></div>
-                                <div className="flex gap-2">
-                                    <button className="bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 border border-djzinc-700 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Todos ({(metrics.total || 0).toLocaleString()})</button>
-                                    <button className="bg-amber-900/30 text-amber-500 hover:bg-amber-900/50 border border-amber-800/50 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Falta Metadata ({(metrics.missing || 0).toLocaleString()})</button>
-                                    <button className="bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800/50 px-3 py-1 rounded-full text-[10px] font-medium transition-colors">Errores ({metrics.errors || 0})</button>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                            
-                                <span className="text-[10px] text-gray-500 font-mono">Orden:</span>
-                                <select className="bg-djzinc-950 border border-djzinc-700 text-gray-300 text-xs rounded px-2 py-1 outline-none focus:border-djcyan-500">
-                                    <option>BPM (Ascendente)</option>
-                                    <option>Alfabetico (A-Z)</option>
-                                    <option>Fecha Creación</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Data Grid */}
-                        <div className="flex-1 overflow-auto bg-[#0f0f13]">
-                            <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
-                                <thead className="sticky top-0 bg-djzinc-900 border-b border-djzinc-700 text-[11px] text-gray-400 uppercase tracking-wider font-bold z-10 shadow-md">
-                                    <tr>
-                                        <th className="py-3 px-4 w-10"></th>
-                                        <th className="py-3 px-4">Archivo / Título</th>
-                                        <th className="py-3 px-4">Artista</th>
-                                        <th className="py-3 px-4 w-20">Time</th>
-                                        <th className="py-3 px-4 w-24">BPM</th>
-                                        <th className="py-3 px-4 w-24">Key</th>
-                                        <th className="py-3 px-4 w-32">Energy</th>
-                                        <th className="py-3 px-4 w-32">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-djzinc-800/50">
-                                    {tracks.length === 0 && !isAuditing && (
-                                        <tr>
-                                            <td colSpan="8" className="py-10 text-center text-gray-500 text-sm">
-                                                No hay pistas cargadas. Haz clic en "Auditar Directorio" o selecciona tu carpeta.
-                                            </td>
-                                        </tr>
-                                    )}
-                                    {isAuditing && (
-                                        <tr>
-                                            <td colSpan="8" className="py-10 text-center text-djcyan-500 text-sm animate-pulse">
-                                                Analizando archivos en disco...
-                                            </td>
-                                        </tr>
-                                    )}
-                                    {tracks.map((row) => (
-                                        <tr
-                                            key={row.id}
-                                            onClick={() => setSelectedTrack(row.id === selectedTrack ? null : row.id)}
-                                            className={`group hover:bg-djzinc-800/50 transition-colors cursor-pointer ${selectedTrack === row.id ? 'bg-djzinc-800/80' : ''}`}
-                                        >
-                                            <td className="py-2 px-4 text-center relative w-10">
-                                                {selectedTrack === row.id ? (
-                                                    <span className="text-djcyan-400 animate-pulse flex justify-center"><Icons.Play /></span>
-                                                ) : (
-                                                    <span className="text-djzinc-600 text-xs group-hover:hidden">{row.id}</span>
-                                                )}
-                                                <button className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-300 hover:text-white ${selectedTrack === row.id ? 'hidden' : 'hidden group-hover:block'}`}>
-                                                    <Icons.Play />
-                                                </button>
-                                            </td>
-                                            <td className="py-2 px-4 flex items-center gap-3">
-                                                <img src={`http://localhost:8000/cover?path=${encodeURIComponent(row.path || '')}`} className="w-10 h-10 rounded bg-djzinc-800 object-cover shrink-0" alt="cover" />
-                                                <div className="flex flex-col text-left">
-                                                    <div className="font-medium text-gray-200 truncate w-64" title={row.t || row.titulo || row.f}>{row.t || row.titulo || row.f || 'Desconocido'}</div>
-                                                    <div className="text-[10px] text-gray-500 font-mono truncate w-64" title={row.f}>{row.f || ''}</div>
-                                                </div>
-                                            </td>
-                                            <td className="py-2 px-4 text-gray-400">{row.a || row.artist || row.artista || 'Desconocido'}</td>
-                                            <td className="py-2 px-4 text-gray-400 font-mono text-xs">{row.duration || row.duracion || '0:00'}</td>
-                                            <td className="py-2 px-4">
-                                                <span className="bg-djzinc-800 text-gray-300 px-2 py-1 rounded text-xs font-mono">{row.b || row.bpm || '--'}</span>
-                                            </td>
-                                            <td className="py-2 px-4">
-                                                <span className={`px-2 py-1 rounded text-xs font-mono font-bold ${(row.k || row.key) ? 'bg-djcyan-900/30 text-djcyan-400' : 'bg-djzinc-800 text-gray-500'}`}>
-                                                    {row.k || row.key || '--'}
-                                                </span>
-                                            </td>
-                                            <td className="py-2 px-4 w-32">
-                                                <div className="flex gap-0.5 items-end h-4">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <div key={i} className={`w-1.5 rounded-t-sm ${i < (row.e || row.energy || 0) / 20 ? 'bg-djgreen-500' : 'bg-djzinc-700'}`} style={{ height: `${Math.max(20, (i + 1) * 20)}%` }}></div>
-                                                    ))}
-                                                </div>
-                                            </td>
-                                            <td className="py-2 px-4">
-                                                {(row.s === 'Ready' || row.status === 'Ready') ? (
-                                                    <span className="flex items-center gap-1 text-djgreen-500 text-xs font-medium"><Icons.Check /> Ready</span>
-                                                ) : (row.s === 'Missing Meta' || row.status === 'Missing Meta') ? (
-                                                    <span className="flex items-center gap-1 text-amber-500 text-xs font-medium"><Icons.Warning /> Meta</span>
-                                                ) : (
-                                                    <span className="flex items-center gap-1 text-gray-500 text-xs font-medium">{row.s || row.status || 'Pending'}</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* INSPECTOR PANEL (Right Sidebar) */}
-                    {selectedTrack && (
-                        <div className="w-80 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right shadow-2xl z-20">
-                            <div className="p-4 border-b border-djzinc-800 flex justify-between items-center bg-djzinc-950">
-                                <h3 className="font-bold text-sm tracking-wide flex items-center gap-2"><Icons.Settings /> INSPECTOR</h3>
-                                <button onClick={() => setSelectedTrack(null)} className="text-gray-500 hover:text-white">✕</button>
-                            </div>
-                            
-                            <div className="p-5 flex-1 overflow-y-auto">
-                                <div className="w-full aspect-square bg-djzinc-950 rounded-lg border border-djzinc-800 mb-5 relative group overflow-hidden flex items-center justify-center shadow-inner">
-                                    <Icons.Library />
-                                    <span className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-[10px] text-gray-400 backdrop-blur border border-djzinc-800">ID3v2.4</span>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <h4 className="text-[10px] font-bold uppercase text-gray-500 mb-2 border-b border-djzinc-800 pb-1">Etiquetas a Inyectar</h4>
-                                        <div className="space-y-2 mt-2">
-                                            {['BPM / Clave (Key)', 'Energy Level', 'Danceability', 'Mood', 'Cover Art'].map(tag => (
-                                                <label key={tag} className="flex items-center gap-3 p-1.5 hover:bg-djzinc-800 rounded cursor-pointer transition-colors group">
-                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${tag !== 'Cover Art' ? 'bg-djcyan-600 border-djcyan-500' : 'border-djzinc-600 bg-djzinc-950'}`}>
-                                                        {tag !== 'Cover Art' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>}
-                                                    </div>
-                                                    <span className="text-xs text-gray-300 group-hover:text-white font-medium">{tag}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-[10px] font-bold uppercase text-gray-500 mb-2 border-b border-djzinc-800 pb-1">Comentario Personalizado</h4>
-                                        <textarea className="w-full bg-djzinc-950 border border-djzinc-700 rounded p-2 text-xs text-gray-300 focus:border-djcyan-500 focus:outline-none resize-none" rows="3" defaultValue="CleanDJmix PRO: Analyzed & Optimized. Energy: High."></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="p-4 bg-djzinc-950 border-t border-djzinc-800">
-                                <button className="w-full bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 text-white py-2 rounded text-xs font-bold transition-colors">
-                                    Guardar Cambios Individuales
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-       const SpotifyWorkspace = () => {
-
-            const [destFolder, setDestFolder] = React.useState('/Users/admin/Music/mi musica');
-            const [downloadProgress, setDownloadProgress] = React.useState(0);
-
-            React.useEffect(() => {
+            useEffect(() => {
                 window.actualizar_estado_descarga = (pct, msg) => {
                     setDownloadProgress(pct);
                     setStatusText(msg);
@@ -501,7 +500,6 @@
                     setIsDownloading(false);
                     setDownloadProgress(100);
                     setStatusText(mensaje);
-                    // Ocultar la barra de progreso a los 4 segundos si se desea
                     setTimeout(() => setDownloadProgress(0), 4000);
                 };
 
@@ -511,101 +509,66 @@
                 }
             }, []);
 
-            const handleElegirCarpeta = async () => {
-                if (window.eel && window.eel.seleccionar_directorio_descarga) {
-                    const res = await window.eel.seleccionar_directorio_descarga()();
-                    if (res && res.status === 'ok' && res.path) {
-                        setDestFolder(res.path);
-                        if (typeof setStatusText === 'function') {
-                            setStatusText(`[DESTINO] Carpeta actualizada: ${res.path}`);
-                        }
-                    }
-                }
-            };
-
-            const [url, setUrl] = React.useState('https://open.spotify.com/intl-es/artist/23zJj2W0TQ0SvF4Fwo7mZK');
-            const [statusText, setStatusText] = React.useState('Listo para analizar enlaces de Spotify (Tracks, Álbumes o Artistas).');
-            const [isAnalyzing, setIsAnalyzing] = React.useState(false);
-            const [isDownloading, setIsDownloading] = React.useState(false);
-            const [tracks, setTracks] = React.useState([]);
-            const [selectedTrackIds, setSelectedTrackIds] = React.useState(new Set());
-            const [selectedFormat, setSelectedFormat] = React.useState('flac');
-            const [playingTrackId, setPlayingTrackId] = React.useState(null);
-            const [isPaused, setIsPaused] = React.useState(true);
-
-                        const ICON_PLAY = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-            const ICON_PAUSE = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
-
-            React.useEffect(() => {
+            // Audio Deck Global Sync
+            useEffect(() => {
                 if (!window.djAudioPlayer) {
                     window.djAudioPlayer = new Audio();
                     window.djAudioPlayer.crossOrigin = "anonymous";
                 }
                 const player = window.djAudioPlayer;
 
-                // Única fuente de la verdad: los eventos reales del motor de audio actualizan tanto la lista (React) como la barra inferior (DOM)
                 const syncPlayState = () => {
                     setIsPaused(false);
                     document.body.classList.remove('vu-paused');
                     const playBtn = document.getElementById('global-play-btn');
-                    if (playBtn) playBtn.innerHTML = ICON_PAUSE;
+                    if (playBtn) playBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
                 };
 
                 const syncPauseState = () => {
                     setIsPaused(true);
                     document.body.classList.add('vu-paused');
                     const playBtn = document.getElementById('global-play-btn');
-                    if (playBtn) playBtn.innerHTML = ICON_PLAY;
-                };
-
-                const syncEndedState = () => {
-                    setIsPaused(true);
-                    document.body.classList.add('vu-paused');
-                    const playBtn = document.getElementById('global-play-btn');
-                    if (playBtn) playBtn.innerHTML = ICON_PLAY;
+                    if (playBtn) playBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
                 };
 
                 player.addEventListener('play', syncPlayState);
                 player.addEventListener('pause', syncPauseState);
-                player.addEventListener('ended', syncEndedState);
+                player.addEventListener('ended', syncPauseState);
 
-                // Interceptar en fase CAPTURE para anular cualquier listener viejo de la barra inferior que cause conflicto
                 const handleDeckCapture = (e) => {
                     const playBtn = e.target.closest('#global-play-btn');
-                    const btnEl = e.target.closest('button');
-                    const isCue = btnEl && btnEl.innerText.trim().toUpperCase() === 'CUE';
+                    const isCue = e.target.closest('#global-cue-btn');
 
                     if (playBtn && player.src) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        if (player.paused) {
-                            player.play();
-                            setStatusText(`[REPRODUCIENDO] Pre-escucha activa.`);
-                        } else {
-                            player.pause();
-                            setStatusText(`[PAUSADO] Pre-escucha en pausa.`);
-                        }
+                        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+                        if (player.paused) player.play(); else player.pause();
                     } else if (isCue && player.src) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
+                        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
                         player.pause();
                         player.currentTime = 0;
-                        setStatusText('[CUE] Pista rebobinada al punto de inicio (0:00).');
+                        setStatusText('[CUE] Pista rebobinada al inicio.');
                     }
                 };
 
-                // Usamos capture: true para adelantarnos a cualquier evento heredado del DOM
                 document.addEventListener('click', handleDeckCapture, true);
 
                 return () => {
                     player.removeEventListener('play', syncPlayState);
                     player.removeEventListener('pause', syncPauseState);
-                    player.removeEventListener('ended', syncEndedState);
+                    player.removeEventListener('ended', syncPauseState);
                     document.removeEventListener('click', handleDeckCapture, true);
                 };
             }, []);
+
+            const handleElegirCarpeta = async () => {
+                if (window.eel && window.eel.seleccionar_directorio_descarga) {
+                    const res = await window.eel.seleccionar_directorio_descarga()();
+                    if (res && res.status === 'ok' && res.path) {
+                        setDestFolder(res.path);
+                        setStatusText(`[DESTINO] Carpeta actualizada: ${res.path}`);
+                    }
+                }
+            };
 
             const handleAnalizar = async () => {
                 if (!url.trim()) return alert("Introduce una URL válida.");
@@ -620,13 +583,11 @@
                         if (res && res.tracks) {
                             setTracks(res.tracks);
                             setSelectedTrackIds(new Set(res.tracks.map(t => t.id)));
-                            setStatusText(`[ÉXITO] Catálogo cargado: ${res.tracks.length} pistas listas para pre-escucha instantánea.`);
+                            setStatusText(`[ÉXITO] Catálogo cargado: ${res.tracks.length} pistas detectadas.`);
                         }
                     } catch (e) {
                         setStatusText(`[ERROR] Fallo al analizar catálogo: ${e}`);
                     }
-                } else {
-                    setStatusText("[ERROR] Backend no responde.");
                 }
                 setIsAnalyzing(false);
             };
@@ -635,25 +596,12 @@
                 const player = window.djAudioPlayer || (window.djAudioPlayer = new Audio());
                 const playBtn = document.getElementById('global-play-btn');
 
-                // Si pulsamos sobre la misma pista que ya está cargada, alternamos Play/Pause al instante
                 if (playingTrackId === t.id && player.src) {
-                    if (player.paused) {
-                        player.play();
-                        setIsPaused(false);
-                        document.body.classList.remove('vu-paused');
-                        if (playBtn) playBtn.innerHTML = ICON_PAUSE;
-                        setStatusText(`[REPRODUCIENDO] ${t.artist} - ${t.title}`);
-                    } else {
-                        player.pause();
-                        setIsPaused(true);
-                        document.body.classList.add('vu-paused');
-                        if (playBtn) playBtn.innerHTML = ICON_PLAY;
-                        setStatusText(`[PAUSADO] ${t.artist} - ${t.title}`);
-                    }
+                    if (player.paused) player.play(); else player.pause();
                     return;
                 }
 
-                // Actualizar el deck inferior inmediatamente
+                // Actualizar Footer
                 const titleEl = document.getElementById('player-title');
                 const artistEl = document.getElementById('player-artist');
                 const bpmEl = document.getElementById('player-bpm');
@@ -664,36 +612,27 @@
                 if (artistEl) artistEl.innerText = t.artist;
                 if (bpmEl) bpmEl.innerText = `${t.bpm || '--'} BPM`;
                 if (keyEl) keyEl.innerText = t.key || '--';
-                if (coverEl && t.cover) coverEl.src = t.cover;
+                if (coverEl && t.cover) coverEl.src = getValidCover(t.cover);
 
                 player.pause();
                 setPlayingTrackId(t.id);
 
-                // Si la pista ya trae su preview_url directo desde el análisis, reproduce en <100ms sin ir al backend
                 if (t.preview_url) {
                     player.src = t.preview_url;
                     player.currentTime = 0;
                     player.play();
-                    setIsPaused(false);
-                    document.body.classList.remove('vu-paused');
-                    if (playBtn) playBtn.innerHTML = ICON_PAUSE;
-                    setStatusText(`[REPRODUCIENDO EN VIVO] ${t.artist} - ${t.title}`);
+                    setStatusText(`[REPRODUCIENDO] ${t.artist} - ${t.title}`);
                     return;
                 }
 
-                setStatusText(`[PRE-ESCUCHA] Cargando stream: ${t.artist} - ${t.title}...`);
+                setStatusText(`[PRE-ESCUCHA] Cargando stream de audio...`);
                 if (window.eel && window.eel.resolver_stream_preescucha) {
                     const res = await window.eel.resolver_stream_preescucha(t.title, t.artist)();
                     if (res && res.stream_url) {
                         player.src = res.stream_url;
                         player.currentTime = 0;
                         player.play();
-                        setIsPaused(false);
-                        document.body.classList.remove('vu-paused');
-                        if (playBtn) playBtn.innerHTML = ICON_PAUSE;
                         setStatusText(`[REPRODUCIENDO EN VIVO] ${t.artist} - ${t.title}`);
-                    } else {
-                        setStatusText("[ERROR] Stream no disponible para esta pista.");
                     }
                 }
             };
@@ -712,30 +651,31 @@
             const handleDescargar = (tracksSubset) => {
                 if (!tracksSubset || tracksSubset.length === 0) return alert("Selecciona al menos una pista.");
                 setIsDownloading(true);
+                setDownloadProgress(5);
                 setStatusText(`[DESCARGANDO] Iniciando lote de ${tracksSubset.length} pista(s) en .${selectedFormat.toUpperCase()}...`);
                 if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
-                    window.eel.descargar_pistas_spotify_seleccionadas(tracksSubset, selectedFormat)();
+                    window.eel.descargar_pistas_spotify_seleccionadas(tracksSubset, selectedFormat, destFolder)();
                 }
             };
 
             return (
                 <div className="flex-1 flex flex-col h-full min-w-0 bg-[#0f0f13] overflow-hidden">
+                    {/* Barra de Búsqueda Spotify */}
                     <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex flex-wrap gap-4 items-center justify-between shrink-0">
                         <div className="flex-1 flex gap-3 max-w-2xl min-w-[320px]">
                             <div className="flex-1 bg-djzinc-900 rounded-md border border-djzinc-700 flex focus-within:border-djcyan-500 overflow-hidden">
                                 <span className="bg-djzinc-800 px-3 py-1.5 text-xs text-djcyan-400 font-mono border-r border-djzinc-700 flex items-center">SPOTIFY</span>
                                 <input 
                                     type="text" 
-                                    value={url}
-                                    onChange={(e) => setUrl(e.target.value)}
+                                    value={url} 
+                                    onChange={(e) => setUrl(e.target.value)} 
                                     placeholder="URL de Álbum, Artista o Playlist..." 
                                     className="flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono" 
                                 />
                             </div>
-                            
                             <button 
-                                onClick={handleAnalizar}
-                                disabled={isAnalyzing}
+                                onClick={handleAnalizar} 
+                                disabled={isAnalyzing} 
                                 className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-5 py-1.5 text-xs font-bold text-white transition-colors cursor-pointer disabled:opacity-50"
                             >
                                 {isAnalyzing ? 'Analizando...' : 'Analizar Enlace'}
@@ -743,69 +683,63 @@
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                                <button 
-                                    onClick={handleElegirCarpeta}
-                                    className="bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-700 hover:border-djcyan-500 rounded px-3 py-1.5 text-xs text-gray-300 flex items-center gap-2 transition-colors cursor-pointer"
-                                    title="Cambiar carpeta de destino"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                                    <span className="truncate max-w-[150px] font-mono text-[11px] text-djcyan-400">{destFolder.split('/').pop() || 'Destino'}</span>
-                                </button>
-                            </div>
+                            <button 
+                                onClick={handleElegirCarpeta} 
+                                className="bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-700 hover:border-djcyan-500 rounded px-3 py-1.5 text-xs text-gray-300 flex items-center gap-2 transition-colors cursor-pointer"
+                                title="Cambiar carpeta de destino"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                                <span className="truncate max-w-[150px] font-mono text-[11px] text-djcyan-400">{destFolder.split('/').pop() || 'Destino'}</span>
+                            </button>
+
                             <div className="flex items-center gap-2 bg-djzinc-900 border border-djzinc-800 rounded px-3 py-1">
                                 <span className="text-[10px] text-gray-400 uppercase font-mono font-bold">Formato:</span>
                                 <select 
                                     value={selectedFormat} 
-                                    onChange={(e) => setSelectedFormat(e.target.value)}
+                                    onChange={(e) => setSelectedFormat(e.target.value)} 
                                     className="bg-transparent text-xs text-djcyan-400 font-bold outline-none cursor-pointer"
                                 >
                                     <option value="flac" className="bg-djzinc-900 text-white">FLAC Lossless (16-bit / 44.1k)</option>
                                     <option value="flac_hires" className="bg-djzinc-900 text-djcyan-300 font-bold">FLAC Hi-Res (24-bit / 48k)</option>
-                                    <option value="wav" className="bg-djzinc-900 text-white">WAV (Master)</option>
                                     <option value="mp3" className="bg-djzinc-900 text-white">MP3 (320k)</option>
-                                    <option value="aiff" className="bg-djzinc-900 text-white">AIFF (Apple Lossless)</option>
+                                    <option value="wav" className="bg-djzinc-900 text-white">WAV (Master)</option>
                                 </select>
                             </div>
 
                             <button 
-                                onClick={() => handleDescargar(tracks.filter(t => selectedTrackIds.has(t.id)))}
-                                disabled={isDownloading || selectedTrackIds.size === 0}
-                                className="bg-djcyan-600 hover:bg-djcyan-500 text-white px-4 py-2 rounded-md font-bold text-xs shadow-[0_4px_14px_0_rgba(8,145,178,0.39)] transition-all cursor-pointer disabled:opacity-50"
+                                onClick={() => handleDescargar(tracks.filter(t => selectedTrackIds.has(t.id)))} 
+                                disabled={isDownloading || selectedTrackIds.size === 0} 
+                                className="bg-djcyan-600 hover:bg-djcyan-500 text-white px-4 py-2 rounded-md font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
                             >
                                 Descargar Seleccionadas ({selectedTrackIds.size})
                             </button>
 
                             <button 
-                                onClick={() => handleDescargar(tracks)}
-                                disabled={isDownloading || tracks.length === 0}
-                                className="bg-djgreen-600 hover:bg-djgreen-500 text-black px-4 py-2 rounded-md font-bold text-xs shadow-[0_4px_14px_0_rgba(34,197,94,0.39)] transition-all cursor-pointer disabled:opacity-50"
+                                onClick={() => handleDescargar(tracks)} 
+                                disabled={isDownloading || tracks.length === 0} 
+                                className="bg-djgreen-600 hover:bg-djgreen-500 text-black px-4 py-2 rounded-md font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
                             >
                                 Descargar Todo ({tracks.length})
                             </button>
                         </div>
                     </div>
 
-                                        {/* Franja de Estado y Barra de Progreso Dinámica */}
+                    {/* FRANJA DE ESTADO Y BARRA DE PROGRESO */}
                     <div className="bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-2 shrink-0">
                         <div className="flex justify-between items-center text-xs font-mono">
-                            <span className="text-djcyan-400 font-semibold">{statusText || "Listo para analizar catálogo"}</span>
+                            <span className="text-djcyan-400 font-semibold">{statusText}</span>
                             {isDownloading && (
                                 <span className="text-gray-400 font-bold">{downloadProgress}%</span>
                             )}
                         </div>
-                        
                         {downloadProgress > 0 && (
                             <div className="w-full bg-djzinc-950 h-2 rounded-full overflow-hidden border border-djzinc-800 shadow-inner">
-                                <div 
-                                    className="bg-djcyan-500 h-full transition-all duration-300 ease-out shadow-lg shadow-djcyan-500/50" 
-                                    style={{ width: `${downloadProgress}%` }}
-                                ></div>
+                                <div className="bg-djcyan-500 h-full transition-all duration-300 ease-out shadow-lg shadow-djcyan-500/50" style={{ width: `${downloadProgress}%` }}></div>
                             </div>
                         )}
                     </div>
 
-
+                    {/* TABLA DE PISTAS SPOTIFY */}
                     <div className="flex-1 overflow-auto">
                         <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
                             <thead className="sticky top-0 bg-djzinc-900 border-b border-djzinc-700 text-[11px] text-gray-400 uppercase tracking-wider font-bold z-10 shadow-md">
@@ -828,29 +762,39 @@
                                     const isChecked = selectedTrackIds.has(t.id);
                                     const isCurrentPlaying = playingTrackId === t.id && !isPaused;
                                     return (
-                                        <tr key={t.id} className={`hover:bg-djzinc-800/50 transition-colors ${isChecked ? 'bg-djzinc-900/40' : ''}`}>
-                                            <td className="py-2 px-4 text-center"><input type="checkbox" checked={isChecked} onChange={() => toggleSelectTrack(t.id)} className="rounded accent-djcyan-500 cursor-pointer" /></td>
+                                        <tr key={t.id} className={`hover:bg-djzinc-850 transition-colors ${isChecked ? 'bg-djzinc-900/60' : ''}`}>
+                                            <td className="py-2 px-4 text-center">
+                                                <input type="checkbox" checked={isChecked} onChange={() => toggleSelectTrack(t.id)} className="rounded accent-djcyan-500 cursor-pointer" />
+                                            </td>
                                             <td className="py-2 px-4 text-center">
                                                 <button 
                                                     onClick={() => handlePreescucha(t)} 
-                                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-colors cursor-pointer ${isCurrentPlaying ? 'bg-djcyan-500 text-black font-bold' : 'bg-djzinc-800 hover:bg-djcyan-500 hover:text-black text-gray-300'}`}
+                                                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-colors cursor-pointer ${
+                                                        isCurrentPlaying ? 'bg-djcyan-500 text-black font-bold' : 'bg-djzinc-800 hover:bg-djcyan-500 hover:text-black text-gray-300'
+                                                    }`}
                                                 >
                                                     {isCurrentPlaying ? '❚❚' : '▶'}
                                                 </button>
                                             </td>
                                             <td className="py-2 px-4 flex items-center gap-3">
-                                                <img src={t.cover} className="w-9 h-9 rounded bg-djzinc-800 object-cover shrink-0 border border-djzinc-700" alt="cover" />
+                                                <img src={getValidCover(t.cover)} className="w-9 h-9 rounded bg-djzinc-800 object-cover shrink-0 border border-djzinc-700" alt="cover" />
                                                 <div className="flex flex-col text-left">
                                                     <span className="font-medium text-gray-200 truncate w-72">{t.title}</span>
                                                     <span className="text-[10px] text-gray-500 font-mono truncate w-72">{t.album}</span>
                                                 </div>
                                             </td>
                                             <td className="py-2 px-4 text-gray-300">{t.artist}</td>
-                                            <td className="py-2 px-4 text-gray-400 font-mono text-xs">{t.duration}</td>
-                                            <td className="py-2 px-4"><span className="bg-djzinc-800 text-gray-300 px-2 py-1 rounded text-xs font-mono">{t.bpm}</span></td>
-                                            <td className="py-2 px-4"><span className="px-2 py-1 rounded text-xs font-mono font-bold bg-djcyan-900/30 text-djcyan-400">{t.key}</span></td>
+                                            <td className="py-2 px-4 text-gray-400 font-mono text-xs">{t.duration || '0:00'}</td>
+                                            <td className="py-2 px-4"><span className="bg-djzinc-800 text-gray-300 px-2 py-1 rounded text-xs font-mono">{t.bpm || '--'}</span></td>
+                                            <td className="py-2 px-4"><span className="px-2 py-1 rounded text-xs font-mono font-bold bg-djcyan-900/30 text-djcyan-400">{t.key || '--'}</span></td>
                                             <td className="py-2 px-4 text-center">
-                                                <button onClick={() => handleDescargar([t])} disabled={isDownloading} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 text-xs px-3 py-1 rounded font-medium text-white cursor-pointer">Descargar .{selectedFormat}</button>
+                                                <button 
+                                                    onClick={() => handleDescargar([t])} 
+                                                    disabled={isDownloading} 
+                                                    className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 text-xs px-3 py-1 rounded font-medium text-white cursor-pointer disabled:opacity-50"
+                                                >
+                                                    Descargar .{selectedFormat}
+                                                </button>
                                             </td>
                                         </tr>
                                     );
@@ -862,8 +806,360 @@
             );
         };
 
+        // PESTAÑA: AUDITORÍA CON WAVEFORM, INSPECTOR LATERAL Y 8 CUES
+        const AuditWorkspace = ({ selectedTrack, setSelectedTrack }) => {
+            const [rutaOrigen, setRutaOrigen] = useState('/Users/admin/Music/mi musica');
+            const [isAuditing, setIsAuditing] = useState(false);
+            const [metrics, setMetrics] = useState({ total: 4, missing: 1, ready: 3, errors: 12 });
+            const [filtro, setFiltro] = useState('todos');
+            const [busqueda, setBusqueda] = useState('');
+            const [batchModalOpen, setBatchModalOpen] = useState(false);
+
+            const [tracks, setTracks] = useState([
+                { id: 1, f: "Pearl Jam - Alive (Techno Rework).flac", t: "Alive (Techno Rework)", a: "Pearl Jam", duration: "06:12", b: "132.00", k: "8A", e: 88, dance: 92, mood: "Peak Time Hypnotic", status: "Lossless (24-bit / 48kHz)" },
+                { id: 2, f: "Techno Collective - Strobo 2026.flac", t: "Strobo 2026", a: "Techno Collective", duration: "05:45", b: "135.00", k: "5A", e: 95, dance: 85, mood: "Dark Driving", status: "Lossless (16-bit / 44.1kHz)" },
+                { id: 3, f: "Fentanyl Fantasy - Overdose.mp3", t: "Overdose (Club Mix)", a: "Fentanyl Fantasy", duration: "05:20", b: "--", k: "--", e: 65, dance: 70, mood: "Raw Industrial", status: "Lossy (320 kbps)" },
+                { id: 4, f: "David Bowie - DJ (Remix Edit).flac", t: "DJ (Remix Edit)", a: "David Bowie", duration: "07:02", b: "115.00", k: "9A", e: 60, dance: 78, mood: "Melodic Drive", status: "Fake Lossless (16kHz Cutoff)" },
+            ]);
+
+            const currentTrack = tracks.find(t => t.id === selectedTrack) || tracks[0];
+
+            const handleExplorar = async () => {
+                if (window.eel && window.eel.seleccionar_directorio) {
+                    const nuevaRuta = await window.eel.seleccionar_directorio()();
+                    if (nuevaRuta) {
+                        setRutaOrigen(nuevaRuta);
+                        handleAuditar(nuevaRuta);
+                    }
+                }
+            };
+
+            const handleAuditar = async (pathOverride) => {
+                const target = pathOverride || rutaOrigen;
+                if (window.eel && window.eel.iniciar_auditoria && !isAuditing) {
+                    setIsAuditing(true);
+                    try {
+                        const res = await window.eel.iniciar_auditoria(target)();
+                        if (res) {
+                            setMetrics({
+                                total: res.total,
+                                missing: res.sin_meta,
+                                ready: res.ready,
+                                errors: 12
+                            });
+                            if (res.tracks) setTracks(res.tracks);
+                        }
+                    } catch (e) {
+                        console.error("Fallo de auditoría:", e);
+                    }
+                    setIsAuditing(false);
+                }
+            };
+
+            const tracksFiltrados = tracks.filter(t => {
+                const matchBusqueda = (t.t || '').toLowerCase().includes(busqueda.toLowerCase()) ||
+                                      (t.a || '').toLowerCase().includes(busqueda.toLowerCase()) ||
+                                      (t.f || '').toLowerCase().includes(busqueda.toLowerCase()) ||
+                                      (t.k || '').toLowerCase().includes(busqueda.toLowerCase());
+                if (!matchBusqueda) return false;
+
+                if (filtro === 'missing') return (t.b === '--' || t.k === '--');
+                if (filtro === 'error') return (t.status && t.status.includes('Fake'));
+                return true;
+            });
+
+            return (
+                <div className="flex w-full h-full">
+                    {/* Panel Central Data Grid */}
+                    <div className="flex-1 flex flex-col min-w-0">
+                        {/* Action Bar Superior */}
+                        <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center shrink-0">
+                            <div className="flex gap-4 items-center w-1/2">
+                                <div className="flex-1 max-w-md bg-djzinc-900 rounded-md border border-djzinc-700 flex focus-within:border-djcyan-500 transition-colors overflow-hidden">
+                                    <span className="bg-djzinc-800 px-3 py-1.5 text-xs text-gray-400 font-mono border-r border-djzinc-700 flex items-center">ORIGEN</span>
+                                    <input type="text" value={rutaOrigen} onChange={(e) => setRutaOrigen(e.target.value)} className="flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono" />
+                                </div>
+                                <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-4 py-1.5 text-xs font-bold text-gray-300 transition-colors cursor-pointer">Explorar</button>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => setBatchModalOpen(true)}
+                                    className="bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-4 py-2 rounded-md font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer"
+                                >
+                                    <Icons.Sliders /> Configurar Lote (Batch)
+                                </button>
+                                <button onClick={() => handleAuditar()} disabled={isAuditing} className={`text-white px-5 py-2 rounded-md font-semibold text-sm border flex items-center gap-2 transition-all shadow-lg cursor-pointer ${isAuditing ? 'bg-djzinc-800 border-djzinc-700 opacity-70' : 'bg-djzinc-800 hover:bg-djzinc-700 border-djzinc-600'}`}>
+                                    {isAuditing ? <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div> : <Icons.Library />}
+                                    {isAuditing ? 'Auditando...' : 'Auditar Directorio'}
+                                </button>
+                                <button className="bg-djcyan-600 hover:bg-djcyan-500 text-white px-5 py-2 rounded-md font-bold text-sm shadow-md flex items-center gap-2 cursor-pointer">
+                                    Inyectar a Serato
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Metric Dashboard */}
+                        <div className="grid grid-cols-4 gap-px bg-djzinc-800 border-b border-djzinc-800 shrink-0">
+                            <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Pistas</span>
+                                <span className="text-2xl font-mono text-white">{(metrics.total || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Falta Metadata (BPM/Key)</span>
+                                <span className="text-2xl font-mono text-amber-500">{(metrics.missing || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Listas para Inyectar</span>
+                                <span className="text-2xl font-mono text-djgreen-400">{(metrics.ready || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="bg-djzinc-950 p-4 flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Motor Lossless</span>
+                                    <span className="text-sm font-medium text-djcyan-400">Activo (FFT / Mutagen)</span>
+                                </div>
+                                <div className="w-10 h-5 bg-djcyan-600 rounded-full relative shadow-[0_0_10px_rgba(8,145,178,0.4)]">
+                                    <div className="w-4 h-4 bg-white rounded-full absolute right-0.5 top-0.5"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Búsqueda y Filtros */}
+                        <div className="px-4 py-2 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-2 flex-1">
+                                <div className="relative w-64">
+                                    <svg className="absolute left-2.5 top-2 text-gray-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por track, artista o clave..." className="w-full bg-djzinc-950 border border-djzinc-700 rounded-full pl-8 pr-3 py-1.5 text-xs text-gray-300 focus:border-djcyan-500 focus:outline-none transition-colors" />
+                                </div>
+                                <div className="h-4 w-px bg-djzinc-700 mx-2"></div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setFiltro('todos')} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${filtro === 'todos' ? 'bg-djcyan-600 text-white' : 'bg-djzinc-800 hover:bg-djzinc-700 text-gray-300'}`}>Todos ({(metrics.total || 0).toLocaleString()})</button>
+                                    <button onClick={() => setFiltro('missing')} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${filtro === 'missing' ? 'bg-amber-600 text-white' : 'bg-amber-900/30 text-amber-500 hover:bg-amber-900/50'}`}>Falta Metadata ({(metrics.missing || 0).toLocaleString()})</button>
+                                    <button onClick={() => setFiltro('error')} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${filtro === 'error' ? 'bg-red-600 text-white' : 'bg-red-900/30 text-red-400 hover:bg-red-900/50'}`}>Errores ({metrics.errors || 12})</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Data Grid */}
+                        <div className="flex-1 overflow-auto bg-[#0f0f13]">
+                            <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+                                <thead className="sticky top-0 bg-djzinc-900 border-b border-djzinc-700 text-[11px] text-gray-400 uppercase tracking-wider font-bold z-10 shadow-md">
+                                    <tr>
+                                        <th className="py-3 px-4 w-10">#</th>
+                                        <th className="py-3 px-4">Archivo / Título</th>
+                                        <th className="py-3 px-4">Artista</th>
+                                        <th className="py-3 px-4 w-20">Time</th>
+                                        <th className="py-3 px-4 w-24">BPM</th>
+                                        <th className="py-3 px-4 w-24">Key</th>
+                                        <th className="py-3 px-4 w-48">Calidad / Lossless</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-djzinc-800/50">
+                                    {tracksFiltrados.map((row) => (
+                                        <tr 
+                                            key={row.id} 
+                                            onClick={() => setSelectedTrack(row.id)} 
+                                            className={`hover:bg-djzinc-850 transition-colors cursor-pointer ${selectedTrack === row.id ? 'bg-djzinc-800 border-l-2 border-djcyan-500' : ''}`}
+                                        >
+                                            <td className="py-2.5 px-4 text-center text-djzinc-600 text-xs">{row.id}</td>
+                                            <td className="py-2.5 px-4 flex items-center gap-3">
+                                                <div className="flex flex-col text-left">
+                                                    <div className="font-medium text-gray-200 truncate w-72" title={row.t}>{row.t}</div>
+                                                    <div className="text-[10px] text-gray-500 font-mono truncate w-72" title={row.f}>{row.f}</div>
+                                                </div>
+                                            </td>
+                                            <td className="py-2.5 px-4 text-gray-400">{row.a}</td>
+                                            <td className="py-2.5 px-4 text-gray-400 font-mono text-xs">{row.duration}</td>
+                                            <td className="py-2.5 px-4"><span className="bg-djzinc-800 text-gray-300 px-2 py-1 rounded text-xs font-mono">{row.b}</span></td>
+                                            <td className="py-2.5 px-4"><span className="px-2 py-1 rounded text-xs font-mono font-bold bg-djcyan-900/30 text-djcyan-400">{row.k}</span></td>
+                                            <td className="py-2.5 px-4">
+                                                <span className={`px-2.5 py-1 rounded text-xs font-mono font-semibold ${
+                                                    row.status.includes('Fake') ? 'bg-red-950/60 text-red-400 border border-red-800/60' :
+                                                    row.status.includes('Lossless') ? 'bg-djgreen-900/30 text-djgreen-400 border border-djgreen-800/50' : 
+                                                    'bg-djzinc-800 text-amber-400 border border-djzinc-700'
+                                                }`}>
+                                                    {row.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* INSPECTOR LATERAL COMPLETO (WAVEFORM REKORDBOX & 8 PADS NUMARK NV2) */}
+                    <aside className="w-96 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-20 overflow-hidden shadow-2xl">
+                        <div className="p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <Icons.Gear />
+                                <span className="font-bold text-xs uppercase tracking-wider text-gray-200">Inspector DJ Granular</span>
+                            </div>
+                            <span className="text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded">Track #{currentTrack.id}</span>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            <div>
+                                <h4 className="font-bold text-sm text-white truncate" title={currentTrack.t}>{currentTrack.t}</h4>
+                                <p className="text-xs text-djcyan-400 truncate">{currentTrack.a}</p>
+                            </div>
+
+                            {/* Onda Rekordbox Tri-Banda */}
+                            <div>
+                                <div className="flex items-center mb-1">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Espectro & 8 Cues NV2</span>
+                                    <InfoTip title="Visualizador Tri-Banda" text="Onda de audio en 3 bandas de frecuencia (bajos en azul, medios en ámbar y agudos en cian) con las 8 posiciones de Hot Cues calibradas con la paleta de la controladora Numark NV2." />
+                                </div>
+                                <RekordboxWaveform duration={currentTrack.duration} />
+                            </div>
+
+                            {/* FFT & Trim DSP */}
+                            <div className="bg-djzinc-950 p-3 rounded-lg border border-djzinc-800 space-y-2.5">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-gray-400 font-semibold flex items-center">
+                                        Certificación FFT
+                                        <InfoTip title="Análisis FFT de Pérdida" text="Comprueba si el espectro rebasa los 20kHz reales o si es un MP3 inflado artificialmente a FLAC." />
+                                    </span>
+                                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${currentTrack.status.includes('Fake') ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-djgreen-950 text-djgreen-400 border border-djgreen-800'}`}>
+                                        {currentTrack.status.includes('Fake') ? 'CUTOFF 16kHz' : 'PASS 22.05kHz'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between pt-1 border-t border-djzinc-850">
+                                    <span className="text-xs text-gray-400 flex items-center">
+                                        Trim Silencio (Zero-Cross)
+                                        <InfoTip title="Recorte de Silencio" text="Elimina el silencio muerto en cabecera y cola cortando en paso por cero de amplitud (-60dBfs)." />
+                                    </span>
+                                    <button className="text-[10px] font-bold bg-djzinc-800 hover:bg-djzinc-700 text-gray-200 px-2 py-1 rounded border border-djzinc-700 cursor-pointer">Auto-Trim (-142ms)</button>
+                                </div>
+                                <div className="flex items-center justify-between pt-1 border-t border-djzinc-850">
+                                    <span className="text-xs text-gray-400 flex items-center">
+                                        Alinear Beatgrid 1.0.0
+                                        <InfoTip title="Beatgrid Downbeat" text="Fija el primer golpe de bombo real para que el sincro de Serato nunca quede a contratiempo." />
+                                    </span>
+                                    <button className="text-[10px] font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 px-2 py-1 rounded border border-djcyan-800/60 cursor-pointer">Anclar Beat 1</button>
+                                </div>
+                            </div>
+
+                            {/* BPM & Key */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800">
+                                    <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                                        <span>BPM Decimal</span>
+                                        <InfoTip title="BPM Exacto" text="Tempo con precisión de dos decimales para evitar desfases tras varias frases de mezcla." />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <input type="text" defaultValue={currentTrack.b} className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-mono font-bold text-white outline-none focus:border-djcyan-500" />
+                                        <button className="px-1.5 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 rounded border border-djzinc-700">/2</button>
+                                        <button className="px-1.5 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 rounded border border-djzinc-700">x2</button>
+                                    </div>
+                                </div>
+                                <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800">
+                                    <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                                        <span>Key (Camelot)</span>
+                                        <InfoTip title="Tono Armónico" text="Notación de la rueda Camelot para mezcla armónica compatible (+1/-1, mismo número A/B)." />
+                                    </div>
+                                    <select defaultValue={currentTrack.k} className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-mono font-bold text-djcyan-400 outline-none">
+                                        {['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B','7A','7B','8A','8B','9A','9B','10A','10B','11A','11B','12A','12B'].map(k => (
+                                            <option key={k} value={k}>{k}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Sliders Separados: Energía, Danceability y Mood */}
+                            <div className="bg-djzinc-950 p-3 rounded border border-djzinc-800 space-y-3">
+                                <div>
+                                    <div className="flex justify-between items-center text-[11px] text-gray-400 mb-1">
+                                        <span className="flex items-center">
+                                            Energy Level ({currentTrack.e || 80}%)
+                                            <InfoTip title="Nivel de Energía" text="Calculado según la pegada de graves y densidad espectral RMS (1-100). Indica la potencia en la pista." />
+                                        </span>
+                                    </div>
+                                    <input type="range" min="1" max="100" defaultValue={currentTrack.e || 80} className="w-full accent-djgreen-500 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer" />
+                                </div>
+                                <div>
+                                    <div className="flex justify-between items-center text-[11px] text-gray-400 mb-1">
+                                        <span className="flex items-center">
+                                            Danceability ({currentTrack.dance || 85}%)
+                                            <InfoTip title="Danceability" text="Mide la regularidad del ritmo y solidez del beat. Cuanto más alto, más fácil es bailar y mezclar en compás." />
+                                        </span>
+                                    </div>
+                                    <input type="range" min="1" max="100" defaultValue={currentTrack.dance || 85} className="w-full accent-djcyan-500 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer" />
+                                </div>
+                                <div>
+                                    <div className="flex justify-between items-center text-[11px] text-gray-400 mb-1">
+                                        <span className="flex items-center">
+                                            Mood (Atmósfera)
+                                            <InfoTip title="Mood DJ" text="Color sonoro predominante que ayuda a seleccionar la pista según la vibra de la sala." />
+                                        </span>
+                                    </div>
+                                    <select defaultValue={currentTrack.mood || "Peak Time Hypnotic"} className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs text-gray-200 outline-none">
+                                        <option>Peak Time Hypnotic</option>
+                                        <option>Dark Driving</option>
+                                        <option>Euphoric Melodic</option>
+                                        <option>Raw Industrial</option>
+                                        <option>Deep & Minimal</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* 8 Pads Numark NV2 */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide flex items-center">
+                                        8 Hot Cues (Pads Numark NV2)
+                                        <InfoTip title="Pads Numark NV2" text="Mapeo exacto de los 8 pads RGB de la controladora Numark NV2 con los 8 puntos estructurales estándar de sesión." />
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {NV2_COLORS.map(c => (
+                                        <div key={c.id} className={`p-2 rounded border flex flex-col justify-between ${c.bg} ${c.border} transition-transform hover:scale-[1.02]`}>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded text-black" style={{ backgroundColor: c.color }}>Pad {c.id}</span>
+                                                <span className="text-[9px] font-mono text-gray-400">{c.time}</span>
+                                            </div>
+                                            <span className={`text-[11px] font-semibold truncate mt-1 ${c.text}`}>{c.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Comentario Profesional Guía DJ */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide flex items-center">
+                                        Comentario Guía DJ
+                                        <InfoTip title="Comentario de Mezcla" text="Texto estratégico inyectado en el tag ID3 COMM visible en las pantallas de la mesa para recordar qué hacer con la pista." />
+                                    </span>
+                                </div>
+                                <textarea 
+                                    defaultValue="Inicio de sesión, mucho drum, curva variable, permite jugar"
+                                    rows="2"
+                                    className="w-full bg-djzinc-950 border border-djzinc-700 rounded p-2 text-xs text-gray-200 outline-none focus:border-djcyan-500 font-mono resize-none leading-relaxed"
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <div className="p-3 bg-djzinc-950 border-t border-djzinc-800">
+                            <button className="w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-white rounded font-bold text-xs shadow-md transition-all cursor-pointer">
+                                Aplicar Cambios a este Track
+                            </button>
+                        </div>
+                    </aside>
+
+                    {/* Modal Batch Auditor */}
+                    <BatchAuditorModal 
+                        isOpen={batchModalOpen} 
+                        onClose={() => setBatchModalOpen(false)}
+                        onRunBatch={(opts) => alert(`Lanzando auditoría en lote para: ${Object.keys(opts).filter(k => opts[k]).join(', ')}`)}
+                    />
+                </div>
+            );
+        };
+
+        // PESTAÑA: TAXONOMÍA Y RUTEO
         const TaxonomyWorkspace = () => (
-            <div className="flex flex-col h-full p-6 w-full">
+            <div className="flex flex-col h-full p-6 w-full overflow-auto">
                 <div className="mb-6 flex justify-between items-end border-b border-djzinc-800 pb-4">
                     <div>
                         <h2 className="text-xl font-bold text-white mb-1">Ruteo de Destinos (Serato Crates)</h2>
@@ -872,44 +1168,43 @@
                     <button className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 text-white px-4 py-2 rounded text-sm font-medium">Añadir Nueva Regla</button>
                 </div>
                 
-                <div className="flex-1 overflow-auto">
-                    <div className="bg-djzinc-900 border border-djzinc-700 rounded-xl mb-6 shadow-lg overflow-hidden">
-                        <div className="bg-gradient-to-r from-djzinc-800 to-djzinc-900 px-5 py-3 border-b border-djzinc-700 flex items-center gap-3">
-                            <div className="w-3 h-3 rounded-full bg-djcyan-500 shadow-[0_0_8px_#06b6d4]"></div>
-                            <h3 className="font-bold text-white tracking-wide">TECHNO <span className="font-normal text-gray-500 text-xs ml-2">(Raíz Serato)</span></h3>
-                        </div>
-                        <div className="p-2">
-                            {['Hard Techno', 'Melodic Techno', 'Peak Time'].map(sub => (
-                                <div key={sub} className="flex gap-4 items-center p-3 hover:bg-djzinc-800/50 rounded-lg group transition-colors">
-                                    <div className="w-6 h-6 border-l-2 border-b-2 border-djzinc-700 rounded-bl-lg ml-2 opacity-50"></div>
-                                    <div className="w-32 text-sm font-bold text-gray-300">{sub}</div>
-                                    <div className="flex-1 flex items-center gap-2">
-                                        <span className="text-xs text-gray-600 uppercase font-mono">➡ Ruta Fija:</span>
-                                        <input type="text" defaultValue={`/Music/Serato/Techno/${sub}/`} className="flex-1 bg-djzinc-950 border border-djzinc-800 rounded px-3 py-2 text-xs font-mono text-gray-400 focus:border-djcyan-500 outline-none transition-colors" />
-                                        <button className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded p-2 text-gray-400"><Icons.Routing /></button>
-                                    </div>
+                <div className="bg-djzinc-900 border border-djzinc-700 rounded-xl mb-6 shadow-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-djzinc-800 to-djzinc-900 px-5 py-3 border-b border-djzinc-700 flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-djcyan-500 shadow-[0_0_8px_#06b6d4]"></div>
+                        <h3 className="font-bold text-white tracking-wide">TECHNO <span className="font-normal text-gray-500 text-xs ml-2">(Raíz Serato)</span></h3>
+                    </div>
+                    <div className="p-2">
+                        {['Hard Techno', 'Melodic Techno', 'Peak Time'].map(sub => (
+                            <div key={sub} className="flex gap-4 items-center p-3 hover:bg-djzinc-800/50 rounded-lg group transition-colors">
+                                <div className="w-6 h-6 border-l-2 border-b-2 border-djzinc-700 rounded-bl-lg ml-2 opacity-50"></div>
+                                <div className="w-32 text-sm font-bold text-gray-300">{sub}</div>
+                                <div className="flex-1 flex items-center gap-2">
+                                    <span className="text-xs text-gray-600 uppercase font-mono">➡ Ruta Fija:</span>
+                                    <input type="text" defaultValue={`/Music/Serato/Techno/${sub}/`} className="flex-1 bg-djzinc-950 border border-djzinc-800 rounded px-3 py-2 text-xs font-mono text-gray-400 focus:border-djcyan-500 outline-none transition-colors" />
+                                    <button className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded p-2 text-gray-400"><Icons.Routing /></button>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
         );
 
+        // PESTAÑA: CONSOLA DEL SISTEMA
         const LogsWorkspace = ({ logs, setLogs }) => (
-            <div className="flex flex-col h-full p-6 w-full bg-black">
+            <div className="flex flex-col h-full p-6 w-full bg-black font-mono">
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
                         <Icons.Terminal />
-                        <h2 className="text-sm font-bold text-gray-400 font-mono tracking-widest uppercase">System Console</h2>
+                        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest">System Console</h2>
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={() => setLogs([])} className="text-xs text-djcyan-400 hover:text-white transition-colors font-mono">[ Clear ]</button>
-                        <button className="text-xs text-gray-500 hover:text-white transition-colors font-mono">[ Export .log ]</button>
+                        <button onClick={() => setLogs([])} className="text-xs text-djcyan-400 hover:text-white transition-colors">[ Clear ]</button>
+                        <button className="text-xs text-gray-500 hover:text-white transition-colors">[ Export .log ]</button>
                     </div>
                 </div>
                 
-                <div className="flex-1 border border-djzinc-800 rounded p-4 font-mono text-sm overflow-auto flex flex-col-reverse shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
+                <div className="flex-1 border border-djzinc-800 rounded p-4 text-xs overflow-auto flex flex-col-reverse shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
                     <div>
                         {logs.map((log, idx) => (
                             <div key={idx} className={`mb-1 ${
@@ -933,130 +1228,5 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
-
-
 </body>
-
-</html>
-
-<!-- INYECCIÓN: Motor de Audio, CUE, Inspector y Vúmetro Animado -->
-<style>
-    @keyframes miniEq {
-        0%, 100% { transform: scaleY(0.3); }
-        50% { transform: scaleY(1.0); }
-    }
-    .logo-bar {
-        transform-origin: bottom;
-        animation-name: miniEq;
-        animation-timing-function: ease-in-out;
-        animation-iteration-count: infinite;
-    }
-
-    @keyframes equalize {
-        0%, 100% { transform: scaleY(0.3); }
-        50% { transform: scaleY(1.0); }
-    }
-    .vu-meter-bar {
-        transform-origin: bottom;
-        animation-name: equalize;
-        animation-iteration-count: infinite;
-    }
-    .vu-paused .vu-meter-bar {
-        animation-play-state: paused !important;
-        transform: scaleY(0.1) !important;
-        background-color: #3f3f46 !important;
-        transition: transform 0.3s ease, background-color 0.3s ease;
-    }
-</style>
-<script>
-    document.body.classList.add('vu-paused'); 
-    let pistaActual = null;
-    let estaReproduciendo = false;
-
-    function controlarReproduccion(estado, nombreArchivo = null) {
-        const btnPlay = document.getElementById('global-play-btn');
-        if (estado) {
-            window.eel.reproducir_pista_mac(nombreArchivo)();
-            pistaActual = nombreArchivo;
-            estaReproduciendo = true;
-            document.body.classList.remove('vu-paused');
-            if(btnPlay) btnPlay.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
-        } else {
-            window.eel.detener_audio_mac()();
-            estaReproduciendo = false;
-            document.body.classList.add('vu-paused');
-            if(btnPlay) btnPlay.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-        }
-    }
-
-    document.addEventListener('click', (e) => {
-        const btnCue = e.target.closest('#global-cue-btn');
-        if (btnCue && window.eel && pistaActual) {
-            window.eel.detener_audio_mac()();
-            setTimeout(() => window.eel.reproducir_pista_mac(pistaActual)(), 50);
-            if (!estaReproduciendo) controlarReproduccion(true, pistaActual);
-            return;
-        }
-
-        const btnFooter = e.target.closest('#global-play-btn');
-        if (btnFooter && window.eel && pistaActual) {
-            controlarReproduccion(!estaReproduciendo, pistaActual);
-            return;
-        }
-
-        const tr = e.target.closest('tr');
-        if (tr && window.eel) {
-            const filenameDiv = tr.querySelector('.font-mono');
-            if (filenameDiv) {
-                const nombreArchivo = filenameDiv.innerText.trim();
-                
-                if (pistaActual === nombreArchivo && estaReproduciendo) {
-                    controlarReproduccion(false);
-                } else {
-                    const tds = tr.querySelectorAll('td');
-                    const tituloEl = tr.querySelector('.font-medium');
-                    const rowImg = tr.querySelector('img');
-                    
-                    document.getElementById('player-title').innerText = tituloEl ? tituloEl.innerText : nombreArchivo;
-                    document.getElementById('player-artist').innerText = tds[2] ? tds[2].innerText : 'Desconocido';
-                    document.getElementById('player-bpm').innerText = (tds[4] ? tds[4].innerText : '--') + ' BPM';
-                    document.getElementById('player-key').innerText = tds[5] ? tds[5].innerText : '--';
-                    
-                    if(rowImg) {
-                        const imgSrc = rowImg.src;
-                        document.getElementById('player-cover').src = imgSrc;
-                        
-                        // LÓGICA CSS PERFECTA PARA EL INSPECTOR
-                        const inspectorBadges = Array.from(document.querySelectorAll('div, span')).filter(el => el.textContent.trim() === 'ID3v2.4');
-                        if(inspectorBadges.length > 0) {
-                            const badge = inspectorBadges[0];
-                            // Encontramos el recuadro negro que envuelve al badge
-                            const coverContainer = badge.closest('.relative') || badge.parentElement;
-                            
-                            // Ocultamos el icono cuadriculado central
-                            const svgIcon = coverContainer.querySelector('svg');
-                            if (svgIcon) svgIcon.style.display = 'none';
-
-                            // Pintamos la imagen como fondo CSS. Esto garantiza que respete el tamaño, 
-                            // los bordes redondeados y NUNCA tape a la etiqueta ID3v2.4.
-                            coverContainer.style.backgroundImage = `url("${imgSrc}")`;
-                            coverContainer.style.backgroundSize = 'cover';
-                            coverContainer.style.backgroundPosition = 'center';
-                            coverContainer.style.backgroundRepeat = 'no-repeat';
-                            
-                            // Eliminamos cualquier imagen residual de intentos anteriores
-                            const viejaImg = document.getElementById('dynamic-inspector-cover');
-                            if (viejaImg) viejaImg.remove();
-                        }
-                    }
-                    controlarReproduccion(true, nombreArchivo);
-                }
-            }
-        }
-    });
-</script>
-
-
-</body>
-
 </html>
