@@ -99,7 +99,7 @@ class AudioProcessorService:
         secs = duration_sec % 60
         dur_str = f"{mins}:{secs:02d}" if duration_sec > 0 else "5:30"
         energy = min(98, max(45, int(60 + (bpm - 118.0) * 1.5)))
-
+    
         return {
             "title": title,
             "artist": artist,
@@ -110,3 +110,40 @@ class AudioProcessorService:
             "missing_meta": missing_meta,
             "format": ext.replace(".", "").upper()
         }
+    @staticmethod
+    def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None) -> bool:
+        """Inyecta metadatos DJ (BPM, Key Camelot, Artista, Título, Álbum) en archivos FLAC/MP3/AIFF válidos."""
+        if not os.path.exists(ruta) or os.path.getsize(ruta) < 4096:
+            return False
+
+        ext = os.path.splitext(ruta)[1].lower()
+        try:
+            if ext == ".flac":
+                # Verificar magic bytes reales antes de abrir con Mutagen
+                with open(ruta, "rb") as f_check:
+                    if f_check.read(4) != b"fLaC":
+                        print(f"[META ERROR] El archivo no tiene cabecera fLaC válida: {ruta}")
+                        return False
+
+                audio = FLAC(ruta)
+                audio["TITLE"] = str(meta_track.get("title", ""))
+                audio["ARTIST"] = str(meta_track.get("artist", ""))
+                audio["ALBUM"] = str(meta_track.get("album", "CleanDJmix PRO"))
+                audio["BPM"] = str(meta_track.get("bpm", ""))
+                audio["INITIALKEY"] = AudioProcessorService.normalizar_key(str(meta_track.get("key", "")))
+                if meta_track.get("isrc"):
+                    audio["ISRC"] = str(meta_track.get("isrc"))
+                audio.save()
+                return True
+            else:
+                m = MutagenFile(ruta, easy=True)
+                if m is not None:
+                    m["title"] = str(meta_track.get("title", ""))
+                    m["artist"] = str(meta_track.get("artist", ""))
+                    m["album"] = str(meta_track.get("album", "CleanDJmix PRO"))
+                    m["bpm"] = str(meta_track.get("bpm", ""))
+                    m.save()
+                    return True
+        except Exception as e:
+            print(f"[META WARN] Fallo escribiendo tags en {os.path.basename(ruta)}: {e}")
+        return False

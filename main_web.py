@@ -1,3 +1,4 @@
+import time
 import os
 import subprocess
 import threading
@@ -240,64 +241,87 @@ def seleccionar_directorio_descarga():
 def obtener_directorio_descarga_actual():
     return directorio_descargas_actual
 
-
-
 @eel.expose
 def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir=""):
     global directorio_descargas_actual
-    import os, threading, time
     target_dir = custom_dir if (custom_dir and os.path.isdir(custom_dir)) else directorio_descargas_actual
     os.makedirs(target_dir, exist_ok=True)
     
-    print(f"[API PROXY] Iniciando ingesta por proxy remoto de {len(tracks_to_download)} pistas -> {target_dir}")
-
-    def callback_ui(estado, info):
-        try:
-            eel.notificar_progreso_ingesta(estado, info)()
-        except Exception:
-            pass
-
-    def analizar_espectro_fft(filepath):
-        import os
-        print(f"[AUDITORIA FFT] Verificando integridad espectral de: {os.path.basename(filepath)}")
-        pass
+    print(f"[API PROXY] Iniciando ingesta real Lossless de {len(tracks_to_download)} pistas en .{formato.upper()} -> {target_dir}")
 
     def worker():
         total = len(tracks_to_download)
+        completadas = 0
 
         for i, t in enumerate(tracks_to_download):
-            nombre = t.get('title', f"Pista_{i+1}")
+            nombre = t.get('title', f"Track_{i+1}")
             artista = t.get('artist', 'Artista')
             spotify_id = t.get('id', '')
+            isrc = t.get('isrc', '')
             
-            filename_seguro = f"{artista} - {nombre}.{formato.lower()}".replace("/", "_").replace(":", "-")
-            filepath = os.path.join(target_dir, filename_seguro)
-            
-            callback_ui("descargando", f"Resolviendo API Proxy [{i+1}/{total}]: {artista} - {nombre}")
-            print("")
-            print(f"[API PROXY {i+1}/{total}] Solicitando resolucion para Spotify ID: {spotify_id}")
+            print(f"\n[INGEST PROXY {i+1}/{total}] Solicitando máster FLAC: {artista} - {nombre} (ISRC: {isrc})")
 
-            try:
-                # Simulador de endpoint activo
-                download_url = "SIMULACRO_URL_DIRECTA_FLAC" 
-                time.sleep(1)
+            meta = {
+                "id": str(spotify_id),
+                "title": nombre,
+                "artist": artista,
+                "album": t.get("album", "CleanDJmix PRO"),
+                "cover_url": t.get("cover", t.get("cover_url", "")),
+                "bpm": t.get("bpm", 135.0),
+                "key": t.get("key", "8A"),
+                "isrc": isrc,
+                "apple_url": t.get("apple_url", ""),
+                "format": formato.lower()
+            }
 
-                if download_url:
-                    callback_ui("descargando", f"Volcando binario [{i+1}/{total}]: {artista} - {nombre}")
-                    print(f"[API PROXY] Comenzando volcado binario en chunks para: {filename_seguro}")
+            max_intentos = 3
+            ruta_final = None
+
+            for intento in range(max_intentos):
+                try:
+                    # Invocación directa al servicio nativo Lossless recuperado
+                    res_ingest = ingest_service.descargar_e_inyectar_flac(meta, target_dir)
                     
-                    with open(filepath, 'wb') as file:
-                        file.write(b"CONTENEDOR_FLAC_PURO_DESDE_PROXY_REMOTO")
-                    
-                    print(f"[EXITO] Archivo guardado: {filepath}")
-                    analizar_espectro_fft(filepath)
-                else:
-                    print(f"[ERROR] El proxy no pudo resolver la pista: {nombre}")
+                    if res_ingest and res_ingest.get("status") == "ok":
+                        ruta_final = res_ingest.get("path")
+                        break
+                        
+                    msg_error = res_ingest.get("msg", "") if res_ingest else "Respuesta nula"
+                    if any(code in msg_error for code in ["403", "409", "429"]):
+                        tiempo_espera = 2 ** intento
+                        print(f"[PROXY WARN] Interceptado {msg_error}. Backoff de {tiempo_espera}s ({intento+1}/{max_intentos})...")
+                        time.sleep(tiempo_espera)
+                    else:
+                        print(f"[ERROR PROXY] Fallo en pasarela: {msg_error}")
+                        break
+                except Exception as e:
+                    error_str = str(e)
+                    if any(code in error_str for code in ["403", "409", "429"]):
+                        tiempo_espera = 2 ** intento
+                        print(f"[PROXY EXCEPCIÓN] Bloqueo HTTP ({error_str}). Backoff {tiempo_espera}s...")
+                        time.sleep(tiempo_espera)
+                    else:
+                        print(f"[CRÍTICO PROXY] Error en hilo de ingesta: {error_str}")
+                        break
 
-            except Exception as e:
-                print(f"[EXCEPCION API PROXY] Fallo en la pista {nombre}: {e}")
+            if ruta_final and os.path.exists(ruta_final) and os.path.getsize(ruta_final) > 2048:
+                peso_mb = os.path.getsize(ruta_final) / (1024 * 1024)
+                completadas += 1
+                print(f"✅ [FLAC LOSSLESS REAL] Volcado completado ({peso_mb:.2f} MB): {ruta_final}")
+                try:
+                    eel.log_to_console(f"Guardado FLAC: {os.path.basename(ruta_final)} ({peso_mb:.2f} MB)")()
+                except Exception:
+                    pass
+            else:
+                print(f"❌ [FALLO INGEST] No se pudo generar el binario lossless para {nombre}.")
 
-        callback_ui("completado", f"Finalizado: {total} pista(s) descargadas via Proxy en {target_dir}")
+        print(f"\n[LOTE INGEST FINALIZADO] {completadas}/{total} pistas procesadas correctamente en {target_dir}")
+        try:
+            if hasattr(eel, 'notificar_fin_lote'):
+                eel.notificar_fin_lote(f"[COMPLETADO] {completadas}/{total} pistas FLAC Lossless guardadas en disco.")()
+            eel.log_to_console(f"✅ Lote completado: {completadas}/{total} pistas Lossless guardadas.")()
+        except Exception:
+            pass
 
     threading.Thread(target=worker, daemon=True).start()
     return {"status": "iniciado"}

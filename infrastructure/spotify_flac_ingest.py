@@ -2,7 +2,8 @@ import os
 import re
 import time
 import json
-import hashlib
+import urllib.parse
+import subprocess
 import requests
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -13,25 +14,29 @@ CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config_i
 
 class SpotifyFlacIngestService:
     """
-    Motor nativo en Python puro para:
-    1. Extracción de metadatos oficiales, ISRC, BPM y Key Camelot desde Spotify API.
-    2. Resolución de streams FLAC sin pérdidas (16/24-bit) mediante ISRC Cross-Platform Matching.
-    3. Descarga por chunks y etiquetado Vorbis Comments + Cover Art HD.
+    Motor nativo para:
+    1. Extracción de metadatos oficiales, ISRC, BPM y Key Camelot.
+    2. Negociación directa con SuperFLAC (CSRF/XSRF + HTMX) usando Apple Music URLs.
+    3. Gestión resiliente de códigos 403/409/429, volcado por chunks, conversión multi-formato y etiquetado Pro.
     """
 
     def __init__(self):
         self.config = self._cargar_config()
         self.sp = self._inicializar_spotipy()
+        self.session = requests.Session()
+        self._csrf_token = "H23AezPwrrB3Eh1rQzNwaL4o0hqBEvCpmnIosJFu"
+        self._inicializar_sesion_superflac()
 
     def _cargar_config(self) -> dict:
         default_cfg = {
             "spotify_client_id": os.getenv("SPOTIPY_CLIENT_ID", ""),
             "spotify_client_secret": os.getenv("SPOTIPY_CLIENT_SECRET", ""),
-            "qobuz_app_id": os.getenv("QOBUZ_APP_ID", "950096963"),
-            "qobuz_app_secret": os.getenv("QOBUZ_APP_SECRET", ""),
-            "qobuz_user_auth_token": os.getenv("QOBUZ_AUTH_TOKEN", ""),
-            "custom_flac_gateway_url": os.getenv("FLAC_GATEWAY_URL", ""),
-            "download_dir": os.path.expanduser("~/Music/CleanDJmix_FLAC")
+            "superflac_cookie": os.getenv(
+                "SUPERFLAC_COOKIE",
+                "XSRF-TOKEN=eyJpdiI6IkxCYmVwYW10cHczSDkzZG5RMGdTT3c9PSIsInZhbHVlIjoiSTVWSit6TWI5MlR2S1hzak1JbklnZVBZbEh2Z205aGowVUVmOUZEV09ZaEZkYmxHMmNsWkFYL2M0LzhFRzV2T05wcllreEVPWm9CS3Y4TTBCWE5LMGVGY29reUpvY3BjaUt2U2tTUHN5OFFYZGM0eXRVd2VUY1BYaElwSVd2c0QiLCJtYWMiOiJlNWI2YTcwZDc4MTFlNDJjOTkxOTM2OTRiNGE1OGIyZmU4OTRhNjQ3ODkxYmM1MmIxMGQ1OTdlOGYwNGQxM2IyIiwidGFnIjoiIn0%3D; superflac-session=eyJpdiI6Imt5M1RRUy8rWFhGd0FBUHZCcWttOXc9PSIsInZhbHVlIjoiU3FiVHJOZjNzUDFjZGdBWkFqN1d1aFdzNUhEZ1Y3YmNUZmpyemVQVEM4SkJ0S01GZWo4THJNWFRHMndRNGdjdzB2OEdSVEc4Z2NUU2RYNjNZOExDeGZzdjMwNnZqSTVsVVBuQ0xrRlBwUElNeFkreDR1bHJRWFRTOFVsNExEV3giLCJtYWMiOiI4YTFhNGM3MzQ1ZTY4ZTc2ZGJkYTExZjE3ZTI5MWE0YTMyMTdlZTA1N2ZiOWVlNTAyM2I5Mjc5YjQ3ZjVlZWVkIiwidGFnIjoiIn0%3D"
+            ),
+            "superflac_token": os.getenv("SUPERFLAC_TOKEN", "H23AezPwrrB3Eh1rQzNwaL4o0hqBEvCpmnIosJFu"),
+            "download_dir": os.path.expanduser("~/Music/mi musica")
         }
         if os.path.exists(CONFIG_PATH):
             try:
@@ -42,15 +47,40 @@ class SpotifyFlacIngestService:
                 pass
         return default_cfg
 
-    def guardar_config(self, nueva_config: dict) -> dict:
-        self.config.update(nueva_config)
-        try:
-            with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-                json.dump(self.config, f, indent=4)
-        except Exception as e:
-            return {"status": "error", "msg": str(e)}
-        self.sp = self._inicializar_spotipy()
-        return {"status": "ok", "msg": "Configuración guardada correctamente"}
+    def _inicializar_sesion_superflac(self, force_refresh=False):
+        self.session.headers.update({
+            "accept": "*/*",
+            "accept-language": "es-ES,es;q=0.9,en-ES;q=0.8,en;q=0.7",
+            "origin": "https://superflac.com",
+            "referer": "https://superflac.com/search?source=all&type=all&query=https%3A%2F%2Fsuperflac.com%2F",
+            "sec-ch-ua": '"Google Chrome";v="155", "Chromium";v="155", "Not(A:Brand";v="24"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"macOS"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+        })
+
+        cookie_raw = self.config.get("superflac_cookie", "")
+        if cookie_raw and not force_refresh:
+            for item in cookie_raw.split(";"):
+                if "=" in item:
+                    k, v = item.strip().split("=", 1)
+                    self.session.cookies.set(k, v, domain="superflac.com")
+            self._csrf_token = self.config.get("superflac_token", self._csrf_token)
+
+        if force_refresh:
+            try:
+                print("[SUPERFLAC] Refrescando sesión y token CSRF desde superflac.com...")
+                r = self.session.get("https://superflac.com/", timeout=12)
+                if r.status_code == 200:
+                    m = re.search(r'name="_token"\s+value="([^"]+)"', r.text) or re.search(r'csrf-token"\s+content="([^"]+)"', r.text)
+                    if m:
+                        self._csrf_token = m.group(1)
+                        print(f"[SUPERFLAC] Nuevo _token sincronizado: {self._csrf_token[:12]}...")
+            except Exception as e:
+                print(f"[SUPERFLAC WARN] No se pudo refrescar sesión automáticamente: {e}")
 
     def _inicializar_spotipy(self):
         cid = self.config.get("spotify_client_id", "").strip()
@@ -64,269 +94,254 @@ class SpotifyFlacIngestService:
             print(f"[SpotifyFlacIngest] Error iniciando Spotipy: {e}")
             return None
 
-    def extraer_metadatos_spotify_url(self, spotify_url: str) -> list:
-        """
-        Acepta una URL de Track, Album o Playlist de Spotify y devuelve la lista
-        completa de pistas con ISRC, BPM, Key Camelot, Energía y Carátula HD.
-        """
-        if not self.sp:
-            return []
-
-        items_brutos = []
+    def _resolver_apple_music_url(self, artist: str, title: str, music_url_actual: str = "") -> str:
+        if music_url_actual and "music.apple.com" in music_url_actual:
+            return music_url_actual.split("&uo=")[0]
         try:
-            if "track/" in spotify_url or ":track:" in spotify_url:
-                t = self.sp.track(spotify_url)
-                items_brutos = [t]
-            elif "playlist/" in spotify_url or ":playlist:" in spotify_url:
-                results = self.sp.playlist_items(spotify_url, additional_types=("track",))
-                while results:
-                    for item in results.get("items", []):
-                        if item and item.get("track"):
-                            items_brutos.append(item["track"])
-                    results = self.sp.next(results) if results.get("next") else None
-            elif "album/" in spotify_url or ":album:" in spotify_url:
-                album_info = self.sp.album(spotify_url)
-                for t_simple in album_info.get("tracks", {}).get("items", []):
-                    full_t = self.sp.track(t_simple["id"])
-                    items_brutos.append(full_t)
+            q = urllib.parse.quote(f"{artist} {title}")
+            url = f"https://itunes.apple.com/search?term={q}&country=es&entity=song&limit=5"
+            r = requests.get(url, timeout=8)
+            if r.status_code == 200:
+                results = r.json().get("results", [])
+                if results:
+                    track_view = results[0].get("trackViewUrl", "")
+                    return track_view.split("&uo=")[0]
         except Exception as e:
-            print(f"[SpotifyFlacIngest] Error consultando URL de Spotify: {e}")
-            return []
-
-        # Obtener Audio Features en lotes de 100 para extraer BPM y Key Camelot
-        track_ids = [t["id"] for t in items_brutos if t and t.get("id")]
-        features_map = {}
-        for i in range(0, len(track_ids), 100):
-            lote = track_ids[i:i + 100]
-            try:
-                feats = self.sp.audio_features(lote)
-                if feats:
-                    for f in feats:
-                        if f and f.get("id"):
-                            features_map[f["id"]] = f
-            except Exception:
-                pass
-
-        tracks_procesados = []
-        for t in items_brutos:
-            if not t or not t.get("id"):
-                continue
-            tid = t["id"]
-            feat = features_map.get(tid, {})
-            bpm = round(float(feat.get("tempo", 124.0)), 2) if feat else 124.0
-            pitch = feat.get("key", 0) if feat else 0
-            mode = feat.get("mode", 0) if feat else 0
-            camelot_key = AudioProcessorService.spotify_key_to_camelot(pitch, mode)
-            energy = int(float(feat.get("energy", 0.8)) * 100) if feat else 80
-
-            album_obj = t.get("album", {})
-            images = album_obj.get("images", [])
-            cover_url = images[0]["url"] if images else ""
-            artists = ", ".join([a["name"] for a in t.get("artists", [])])
-            isrc = t.get("external_ids", {}).get("isrc", "")
-            duration_ms = t.get("duration_ms", 0)
-            mins = (duration_ms // 1000) // 60
-            secs = (duration_ms // 1000) % 60
-
-            tracks_procesados.append({
-                "spotify_id": tid,
-                "title": t.get("name", "Unknown"),
-                "artist": artists,
-                "album": album_obj.get("name", ""),
-                "isrc": isrc,
-                "bpm": bpm,
-                "key": camelot_key,
-                "energy": energy,
-                "duration": f"{mins}:{secs:02d}",
-                "cover_url": cover_url,
-                "format": "FLAC (Pending)",
-                "status": "Ready for Ingest"
-            })
-
-        return tracks_procesados
-
-    def enriquecer_track_local_con_spotify(self, ruta_archivo: str) -> dict:
-        """
-        Busca una pista local en Spotify por ISRC o por Artista + Título,
-        obtiene BPM, Key Camelot, Álbum, ISRC y Portada HD y los inyecta en el archivo local (FLAC o MP3).
-        """
-        info_local = AudioProcessorService.analizar_track_avanzado(ruta_archivo)
-        if not self.sp:
-            return {"status": "error", "msg": "Configura tus credenciales de Spotify API primero", "track": info_local}
-
-        query = f"isrc:{info_local['isrc']}" if info_local.get("isrc") else f"artist:{info_local['artist']} track:{info_local['title']}"
-        try:
-            res = self.sp.search(q=query, type="track", limit=1)
-            items = res.get("tracks", {}).get("items", [])
-            if not items and info_local.get("isrc"):
-                # Segundo intento por nombre limpio si el ISRC no devolvió coincidencia
-                query_fallback = f"{info_local['artist']} {info_local['title']}"
-                res = self.sp.search(q=query_fallback, type="track", limit=1)
-                items = res.get("tracks", {}).get("items", [])
-
-            if not items:
-                return {"status": "not_found", "msg": "No se encontró coincidencia en Spotify", "track": info_local}
-
-            t = items[0]
-            tid = t["id"]
-            feat_list = self.sp.audio_features([tid])
-            feat = feat_list[0] if feat_list and feat_list[0] else {}
-
-            bpm = round(float(feat.get("tempo", info_local["bpm"])), 2)
-            camelot_key = AudioProcessorService.spotify_key_to_camelot(feat.get("key", 0), feat.get("mode", 0)) if feat else info_local["key"]
-            album_obj = t.get("album", {})
-            images = album_obj.get("images", [])
-            cover_url = images[0]["url"] if images else None
-
-            nuevos_meta = {
-                "title": t.get("name", info_local["title"]),
-                "artist": ", ".join([a["name"] for a in t.get("artists", [])]),
-                "album": album_obj.get("name", info_local.get("album", "")),
-                "isrc": t.get("external_ids", {}).get("isrc", info_local.get("isrc", "")),
-                "bpm": bpm,
-                "key": camelot_key
-            }
-
-            exito = AudioProcessorService.escribir_metadatos_pro(ruta_archivo, nuevos_meta, cover_url=cover_url)
-            track_actualizado = AudioProcessorService.analizar_track_avanzado(ruta_archivo)
-            return {
-                "status": "ok" if exito else "error",
-                "msg": "Metadatos inyectados correctamente",
-                "track": track_actualizado
-            }
-        except Exception as e:
-            return {"status": "error", "msg": str(e), "track": info_local}
-
-    def _resolver_stream_qobuz_por_isrc(self, isrc: str, query_fallback: str) -> str:
-        """
-        Resuelve la URL directa del stream FLAC Lossless (format_id=6 / 16-bit 44.1kHz o 27 / 24-bit)
-        en Qobuz mediante Python puro (arquitectura qobuz-dl).
-        """
-        app_id = self.config.get("qobuz_app_id", "").strip()
-        app_secret = self.config.get("qobuz_app_secret", "").strip()
-        user_token = self.config.get("qobuz_user_auth_token", "").strip()
-
-        if not (app_id and app_secret and user_token):
-            return ""
-
-        headers = {
-            "X-App-Id": app_id,
-            "X-User-Auth-Token": user_token,
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
-        }
-
-        try:
-            q = isrc if isrc else query_fallback
-            r_search = requests.get(
-                "https://www.qobuz.com/api.json/0.2/track/search",
-                params={"query": q, "limit": 5},
-                headers=headers,
-                timeout=12
-            )
-            if r_search.status_code != 200:
-                return ""
-
-            tracks = r_search.json().get("tracks", {}).get("items", [])
-            if not tracks:
-                return ""
-
-            qobuz_track_id = str(tracks[0]["id"])
-            format_id = "6"  # 6 = FLAC Lossless 16-bit / 44.1kHz
-            unix_ts = str(time.time())
-
-            # Firma criptográfica MD5 requerida por el endpoint getFileUrl de Qobuz
-            raw_sig = f"trackgetFileUrlformat_id{format_id}intentstreamtrack_id{qobuz_track_id}{unix_ts}{app_secret}"
-            request_sig = hashlib.md5(raw_sig.encode("utf-8")).hexdigest()
-
-            r_url = requests.get(
-                "https://www.qobuz.com/api.json/0.2/track/getFileUrl",
-                params={
-                    "request_ts": unix_ts,
-                    "request_sig": request_sig,
-                    "track_id": qobuz_track_id,
-                    "format_id": format_id,
-                    "intent": "stream"
-                },
-                headers=headers,
-                timeout=12
-            )
-            if r_url.status_code == 200:
-                return r_url.json().get("url", "")
-        except Exception as e:
-            print(f"[SpotifyFlacIngest] Error en resolver Qobuz FLAC: {e}")
-
+            print(f"[SUPERFLAC WARN] Error resolviendo Apple Music URL: {e}")
         return ""
 
+    def _solicitar_descarga_superflac(self, music_url: str, quality: str = "FLAC_HIRES") -> tuple:
+        endpoint = "https://superflac.com/downloads?inline=1"
+        headers = {
+            "content-type": "application/x-www-form-urlencoded",
+            "hx-current-url": "https://superflac.com/search?source=all&type=all&query=https%3A%2F%2Fsuperflac.com%2F",
+            "hx-request": "true",
+            "hx-target": "dl-btn-0",
+            "priority": "u=1, i"
+        }
+        payload = {
+            "_token": self._csrf_token,
+            "music_url": music_url,
+            "resource_kind": "track",
+            "quality": quality
+        }
+
+        r = self.session.post(endpoint, headers=headers, data=payload, stream=True, timeout=60)
+        status = r.status_code
+
+        if status in (403, 409, 419, 429):
+            return None, status, f"HTTP {status} devuelto por SuperFLAC"
+        if status != 200:
+            return None, status, f"Error HTTP inesperado: {status}"
+
+        ctype = r.headers.get("content-type", "").lower()
+        if any(x in ctype for x in ["audio", "octet-stream", "flac"]):
+            return r, 200, "STREAM_DIRECTO"
+
+        body_text = r.text
+        hx_redirect = r.headers.get("HX-Redirect") or r.headers.get("hx-redirect") or r.headers.get("Location")
+        if hx_redirect:
+            dl_url = hx_redirect if hx_redirect.startswith("http") else f"https://superflac.com{hx_redirect}"
+            return dl_url, 200, "URL_EXTRAIDA"
+
+        pat_urls = [
+            r'href=["\'](https?://[^"\s>]+(?:download|flac|\.flac|\.m4a|\.mp3|\.wav)[^"\s>]*)["\']',
+            r'href=["\'](/downloads/[^"\s>]+)["\']',
+            r'url["\']?\s*:\s*["\'](https?://[^"\s>]+)["\']',
+            r'(https?://[^\s<>"]+(?:\.flac|/download[^\s<>"]*))'
+        ]
+        for pat in pat_urls:
+            m = re.search(pat, body_text, re.IGNORECASE)
+            if m:
+                found = m.group(1).replace("&amp;", "&")
+                dl_url = found if found.startswith("http") else f"https://superflac.com{found}"
+                return dl_url, 200, "URL_EXTRAIDA"
+
+        if body_text.startswith("fLaC"):
+            return r, 200, "STREAM_DIRECTO"
+
+        return None, 200, f"No se encontró enlace de descarga en la respuesta HTMX ({len(body_text)} bytes)"
+
+    def _resolver_stream_final(self, url_candidata: str, max_polls: int = 15) -> tuple:
+        url_actual = url_candidata
+        for intento in range(max_polls):
+            try:
+                # Si es el nodo final del CDN (/file?...), usamos cabeceras limpias estándar sin hx-request
+                is_cdn_file = "/file?" in url_actual or "expires=" in url_actual
+                hdrs = {} if is_cdn_file else {
+                    "hx-request": "true",
+                    "hx-current-url": "https://superflac.com/search?source=all&type=all&query=https%3A%2F%2Fsuperflac.com%2F",
+                    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+                }
+
+                r_dl = self.session.get(url_actual, headers=hdrs, stream=True, timeout=30, allow_redirects=True)
+                status = r_dl.status_code
+
+                if status == 429:
+                    r_dl.close()
+                    print(f"[SUPERFLAC WARN] Rate limit (429) detectado. Esperando 4s para reintentar...")
+                    time.sleep(4.0)
+                    continue
+
+                if status in (403, 409):
+                    r_dl.close()
+                    return None, f"HTTP {status} al consultar {url_actual}"
+
+                ctype = r_dl.headers.get("content-type", "").lower()
+                cdisp = r_dl.headers.get("content-disposition", "").lower()
+
+                # Si es el enlace final del CDN y responde 200, devolvemos el stream de audio inmediatamente
+                if is_cdn_file and status == 200:
+                    return r_dl, "OK"
+
+                if any(x in ctype for x in ["audio", "flac", "octet-stream"]) or "attachment" in cdisp:
+                    return r_dl, "OK"
+
+                body = r_dl.text
+                r_dl.close()
+
+                if body.startswith("fLaC"):
+                    return self.session.get(url_actual, headers=hdrs, stream=True, timeout=30), "OK"
+
+                print(f"[SUPERFLAC DEBUG] Intento {intento+1}/{max_polls} | Content-Type: {ctype} | Tamaño: {len(body)} bytes")
+
+                patrones_enlace = [
+                    r'href=["\'](https?://[^"\s>]+(?:file\?[^"\s>]+|\.flac|\.wav|\.mp3|\.m4a|download)[^"\s>]*)["\']',
+                    r'data-url=["\'](https?://[^"\s>]+)["\']',
+                    r'window\.location\.href\s*=\s*["\']([^"\']+)["\']',
+                    r'action=["\'](/downloads/[^"\']+)["\']'
+                ]
+                
+                enlace_encontrado = None
+                for pat in patrones_enlace:
+                    m = re.search(pat, body, re.IGNORECASE)
+                    if m:
+                        cand = m.group(1).replace("&amp;", "&")
+                        cand_full = cand if cand.startswith("http") else f"https://superflac.com{cand}"
+                        if cand_full != url_actual and "search" not in cand_full:
+                            enlace_encontrado = cand_full
+                            break
+
+                if enlace_encontrado:
+                    print(f"[SUPERFLAC] Siguiente nodo detectado: {enlace_encontrado}")
+                    url_actual = enlace_encontrado
+                    time.sleep(1.5)
+                    continue
+
+                time.sleep(2.0)
+
+            except Exception as e:
+                print(f"[SUPERFLAC POLL WARN] Excepción en intento {intento+1}: {e}")
+                time.sleep(2.0)
+
+        return None, "Tiempo de espera agotado esperando el binario final en SuperFLAC"
+
     def descargar_e_inyectar_flac(self, meta_track: dict, directorio_destino: str = None, progress_cb=None) -> dict:
-        """
-        Orquesta la descarga del archivo .flac real por chunks de 64KB,
-        verifica la cabecera 'fLaC' para garantizar que NO es un archivo con pérdida renombrado,
-        e inyecta los Vorbis Comments (BPM, Key Camelot, ISRC) + Carátula HD.
-        """
-        dest_folder = directorio_destino or self.config.get("download_dir", os.path.expanduser("~/Music/CleanDJmix_FLAC"))
+        dest_folder = directorio_destino or self.config.get("download_dir", os.path.expanduser("~/Music/mi musica"))
         os.makedirs(dest_folder, exist_ok=True)
 
         safe_artist = re.sub(r'[\\/*?:"<>|]', "", meta_track.get("artist", "Artist")).strip()
         safe_title = re.sub(r'[\\/*?:"<>|]', "", meta_track.get("title", "Track")).strip()
-        ruta_flac = os.path.join(dest_folder, f"{safe_artist} - {safe_title}.flac")
+        fmt = meta_track.get("format", "flac").lower()
 
-        isrc = meta_track.get("isrc", "")
-        stream_url = self._resolver_stream_qobuz_por_isrc(isrc, f"{safe_artist} {safe_title}")
+        quality_map = {
+            "flac_hires": ("FLAC_HIRES", "flac"),
+            "flac": ("FLAC_HIRES", "flac"),
+            "wav": ("FLAC_HIRES", "wav"),
+            "aiff": ("FLAC_HIRES", "aiff"),
+            "mp3": ("MP3_320", "mp3")
+        }
+        sf_quality, ext_final = quality_map.get(fmt, ("FLAC_HIRES", "flac"))
 
-        # Soporte para pasarela FLAC personalizada si el usuario configura un endpoint propio
-        if not stream_url and self.config.get("custom_flac_gateway_url"):
-            gw = self.config["custom_flac_gateway_url"].rstrip("/")
-            try:
-                r_gw = requests.get(f"{gw}/resolve", params={"isrc": isrc, "q": f"{safe_artist} - {safe_title}"}, timeout=15)
-                if r_gw.status_code == 200:
-                    stream_url = r_gw.json().get("flac_url", "")
-            except Exception:
-                pass
+        ruta_temp_flac = os.path.join(dest_folder, f"{safe_artist} - {safe_title}.flac")
+        ruta_final = os.path.join(dest_folder, f"{safe_artist} - {safe_title}.{ext_final}")
 
-        if not stream_url:
-            return {
-                "status": "error",
-                "msg": "Stream FLAC no disponible (Verifica tus tokens Lossless en Configuración)",
-                "path": ""
-            }
+        music_url = self._resolver_apple_music_url(
+            safe_artist,
+            safe_title,
+            meta_track.get("apple_url", "")
+        )
+        if not music_url:
+            return {"status": "error", "msg": "No se pudo resolver el music_url de Apple Music para SuperFLAC", "path": ""}
+
+        print(f"[SUPERFLAC] Solicitando {sf_quality} para URL: {music_url}")
+
+        res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=sf_quality)
+        if status_code in (403, 419):
+            self._inicializar_sesion_superflac(force_refresh=True)
+            res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=sf_quality)
+
+        if status_code in (403, 409, 429):
+            return {"status": "error", "msg": f"HTTP {status_code}: Conflicto o límite en pasarela SuperFLAC", "path": ""}
+
+        if not res_obj:
+            return {"status": "error", "msg": info_msg, "path": ""}
 
         try:
-            with requests.get(stream_url, stream=True, timeout=30) as r:
-                r.raise_for_status()
-                total = int(r.headers.get("content-length", 0))
-                descargado = 0
-                primer_chunk_verificado = False
+            if info_msg == "URL_EXTRAIDA" and isinstance(res_obj, str):
+                print(f"[SUPERFLAC] Resolviendo stream binario desde: {res_obj}...")
+                r_stream, err_stream = self._resolver_stream_final(res_obj)
+                if not r_stream:
+                    return {"status": "error", "msg": err_stream, "path": ""}
+                with r_stream:
+                    with open(ruta_temp_flac, "wb") as f:
+                        for chunk in r_stream.iter_content(chunk_size=65536):
+                            if chunk:
+                                f.write(chunk)
+            else:
+                with open(ruta_temp_flac, "wb") as f:
+                    for chunk in res_obj.iter_content(chunk_size=65536):
+                        if chunk:
+                            f.write(chunk)
 
-                with open(ruta_flac, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=65536):
-                        if not chunk:
-                            continue
-                        if not primer_chunk_verificado:
-                            # Verificación estricta de Magic Bytes 'fLaC' (0x66 0x4C 0x61 0x43)
-                            if not chunk.startswith(b"fLaC"):
-                                raise ValueError("El stream recibido no posee cabecera fLaC Lossless auténtica.")
-                            primer_chunk_verificado = True
+            if os.path.exists(ruta_temp_flac):
+                with open(ruta_temp_flac, "rb") as check_f:
+                    header_snippet = check_f.read(128)
+                    if not header_snippet.startswith(b"fLaC") and not header_snippet.startswith(b"ID3"):
+                        os.remove(ruta_temp_flac)
+                        return {
+                            "status": "error",
+                            "msg": f"Cabecera inválida (no es fLaC/ID3): {header_snippet[:60]}",
+                            "path": ""
+                        }
 
-                        f.write(chunk)
-                        descargado += len(chunk)
-                        if progress_cb and total > 0:
-                            progress_cb(int((descargado / total) * 100))
+            if not os.path.exists(ruta_temp_flac) or os.path.getsize(ruta_temp_flac) < 2048:
+                if os.path.exists(ruta_temp_flac):
+                    os.remove(ruta_temp_flac)
+                return {"status": "error", "msg": "El archivo devuelto está vacío o incompleto.", "path": ""}
 
-            # Escribir Vorbis Comments y portada oficial
-            AudioProcessorService.escribir_metadatos_pro(
-                ruta_flac,
-                meta_track,
-                cover_url=meta_track.get("cover_url")
-            )
+            if ext_final != "flac":
+                cmd_ff = ["ffmpeg", "-y", "-i", ruta_temp_flac]
+                if ext_final == "mp3":
+                    cmd_ff += ["-ab", "320k", "-map_metadata", "0", "-id3v2_version", "3", ruta_final]
+                elif ext_final == "aiff":
+                    cmd_ff += ["-c:a", "pcm_s16be", "-write_id3v2", "1", ruta_final]
+                else:
+                    cmd_ff += [ruta_final]
+                subprocess.run(cmd_ff, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if os.path.exists(ruta_final) and os.path.getsize(ruta_final) > 2048:
+                    os.remove(ruta_temp_flac)
+                else:
+                    ruta_final = ruta_temp_flac
+            else:
+                ruta_final = ruta_temp_flac
 
-            track_auditado = AudioProcessorService.analizar_track_avanzado(ruta_flac)
+            try:
+                if hasattr(AudioProcessorService, "escribir_metadatos_pro"):
+                    AudioProcessorService.escribir_metadatos_pro(
+                        ruta_final,
+                        meta_track,
+                        cover_url=meta_track.get("cover_url")
+                    )
+            except Exception as e_meta:
+                print(f"[META WARN] {e_meta}")
+
             return {
                 "status": "ok",
-                "msg": "FLAC Lossless descargado y etiquetado con éxito",
-                "path": ruta_flac,
-                "track": track_auditado
+                "msg": f"Descarga {sf_quality} completada",
+                "path": ruta_final
             }
         except Exception as e:
-            if os.path.exists(ruta_flac):
-                os.remove(ruta_flac)
+            if os.path.exists(ruta_temp_flac):
+                os.remove(ruta_temp_flac)
             return {"status": "error", "msg": str(e), "path": ""}
