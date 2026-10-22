@@ -162,11 +162,10 @@ class SpotifyFlacIngestService:
 
         return None, 200, f"No se encontró enlace de descarga en la respuesta HTMX ({len(body_text)} bytes)"
 
-    def _resolver_stream_final(self, url_candidata: str, max_polls: int = 15) -> tuple:
+    def _resolver_stream_final(self, url_candidata: str, max_polls: int = 20) -> tuple:
         url_actual = url_candidata
         for intento in range(max_polls):
             try:
-                # Si es el nodo final del CDN (/file?...), usamos cabeceras limpias estándar sin hx-request
                 is_cdn_file = "/file?" in url_actual or "expires=" in url_actual
                 hdrs = {} if is_cdn_file else {
                     "hx-request": "true",
@@ -179,26 +178,28 @@ class SpotifyFlacIngestService:
 
                 if status == 429:
                     r_dl.close()
-                    print(f"[SUPERFLAC WARN] Rate limit (429) detectado. Esperando 4s para reintentar...")
-                    time.sleep(4.0)
+                    print(f"[SUPERFLAC WARN] Rate limit (429). Esperando 5s...")
+                    time.sleep(5.0)
                     continue
 
                 if status in (403, 409):
                     r_dl.close()
-                    return None, f"HTTP {status} al consultar {url_actual}"
+                    return None, f"HTTP {status} en pasarela"
 
                 ctype = r_dl.headers.get("content-type", "").lower()
                 cdisp = r_dl.headers.get("content-disposition", "").lower()
 
-                # Si es el enlace final del CDN y responde 200, devolvemos el stream de audio inmediatamente
-                if is_cdn_file and status == 200:
-                    return r_dl, "OK"
-
-                if any(x in ctype for x in ["audio", "flac", "octet-stream"]) or "attachment" in cdisp:
+                # Si es el CDN y realmente entrega audio o binario, éxito inmediato
+                if is_cdn_file and status == 200 and not any(x in ctype for x in ["html", "json"]):
                     return r_dl, "OK"
 
                 body = r_dl.text
                 r_dl.close()
+
+                # Si el CDN devolvió HTML (como los 6423 bytes de error/rate limit), no sigas reintentando la misma URL rota
+                if is_cdn_file and "html" in ctype:
+                    print(f"[SUPERFLAC WARN] El CDN devolvió HTML de error/bloqueo ({len(body)} bytes). Abortando nodo actual.")
+                    return None, f"El servidor devolvió una página de bloqueo o límite al intentar descargar el fichero final."
 
                 if body.startswith("fLaC"):
                     return self.session.get(url_actual, headers=hdrs, stream=True, timeout=30), "OK"
@@ -225,14 +226,14 @@ class SpotifyFlacIngestService:
                 if enlace_encontrado:
                     print(f"[SUPERFLAC] Siguiente nodo detectado: {enlace_encontrado}")
                     url_actual = enlace_encontrado
-                    time.sleep(1.5)
+                    time.sleep(4)
                     continue
 
-                time.sleep(2.0)
+                time.sleep(4)
 
             except Exception as e:
-                print(f"[SUPERFLAC POLL WARN] Excepción en intento {intento+1}: {e}")
-                time.sleep(2.0)
+                print(f"[SUPERFLAC POLL WARN] Excepción: {e}")
+                time.sleep(4)
 
         return None, "Tiempo de espera agotado esperando el binario final en SuperFLAC"
 
