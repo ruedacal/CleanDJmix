@@ -162,7 +162,7 @@ class SpotifyFlacIngestService:
 
         return None, 200, f"No se encontró enlace de descarga en la respuesta HTMX ({len(body_text)} bytes)"
 
-    def _resolver_stream_final(self, url_candidata: str, max_polls: int = 20) -> tuple:
+    def _resolver_stream_final(self, url_candidata: str, max_polls: int = 25) -> tuple:
         url_actual = url_candidata
         for intento in range(max_polls):
             try:
@@ -178,8 +178,8 @@ class SpotifyFlacIngestService:
 
                 if status == 429:
                     r_dl.close()
-                    print(f"[SUPERFLAC WARN] Rate limit (429). Esperando 5s...")
-                    time.sleep(5.0)
+                    print(f"[SUPERFLAC WARN] Rate limit (429). Esperando 3s...")
+                    time.sleep(3.0)
                     continue
 
                 if status in (403, 409):
@@ -226,14 +226,14 @@ class SpotifyFlacIngestService:
                 if enlace_encontrado:
                     print(f"[SUPERFLAC] Siguiente nodo detectado: {enlace_encontrado}")
                     url_actual = enlace_encontrado
-                    time.sleep(4)
+                    time.sleep(3)
                     continue
 
-                time.sleep(4)
+                time.sleep(3)
 
             except Exception as e:
                 print(f"[SUPERFLAC POLL WARN] Excepción: {e}")
-                time.sleep(4)
+                time.sleep(3)
 
         return None, "Tiempo de espera agotado esperando el binario final en SuperFLAC"
 

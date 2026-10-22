@@ -8,6 +8,7 @@ import bottle
 from mutagen import File as MutagenFile
 from infrastructure.audio_processor import AudioProcessorService
 from infrastructure.spotify_flac_ingest import SpotifyFlacIngestService
+import os, numpy as np, soundfile as sf
 
 eel.init("web")
 
@@ -248,6 +249,26 @@ def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", c
     os.makedirs(target_dir, exist_ok=True)
     
     print(f"[API PROXY] Iniciando ingesta real Lossless de {len(tracks_to_download)} pistas en .{formato.upper()} -> {target_dir}")
+    
+    def analizar_espectro_fft(filepath, spotify_id):
+        
+        print(f"[AUDITORIA FFT] Analizando espectro de: {os.path.basename(filepath)}")
+        try:
+            fs = 44100
+            data, samplerate = sf.read(filepath, start=fs * 30, frames=fs * 10)
+            if len(data.shape) > 1: data = data.mean(axis=1)
+            yf, xf = np.fft.rfft(data), np.fft.rfftfreq(len(data), 1 / samplerate)
+            mag = np.where(np.abs(yf) > 0, np.abs(yf), 1e-10)
+            mag_db = 20 * np.log10(mag)
+            frecuencias_validas = xf[mag_db > (np.max(mag_db) - 80)]
+            cutoff_khz = (np.max(frecuencias_validas) if len(frecuencias_validas) > 0 else 0) / 1000.0 
+            estado = "True Lossless" if cutoff_khz >= 20.0 else "Falso FLAC"
+            perdida = 0 if estado == "True Lossless" else max(0, round((1.0 - (cutoff_khz / 22.05)) * 100, 1))
+            eel.notificar_resultado_auditoria({"id": spotify_id, "estado": estado, "corte": f"{cutoff_khz:.1f} kHz", "perdida": perdida})()
+        except Exception as e:
+            print(f"[ERROR DSP] {e}")
+            eel.notificar_resultado_auditoria({"id": spotify_id, "estado": "Error I/O", "corte": "N/A", "perdida": 0})()
+    
     def worker():
         total = len(tracks_to_download)
         completadas = 0
@@ -301,6 +322,7 @@ def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", c
                 completadas += 1
                 try:
                     eel.log_to_console(f"✅ Guardado: {os.path.basename(ruta_final)}")()
+                    analizar_espectro_fft(ruta_final, spotify_id)
                 except: pass
             else:
                 fallidas += 1
@@ -384,14 +406,15 @@ def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", c
                 peso_mb = os.path.getsize(ruta_final) / (1024 * 1024)
                 completadas += 1
                 print(f"✅ [FLAC LOSSLESS REAL] Volcado completado ({peso_mb:.2f} MB): {ruta_final}")
+                
                 try:
                     eel.log_to_console(f"Guardado FLAC: {os.path.basename(ruta_final)} ({peso_mb:.2f} MB)")()
                 except Exception:
                     pass
             else:
                 print(f"❌ [FALLO INGEST] No se pudo generar el binario lossless para {nombre}.")
+            print(f"\n[LOTE INGEST FINALIZADO] {completadas}/{total} pistas procesadas correctamente en {target_dir}")
 
-        print(f"\n[LOTE INGEST FINALIZADO] {completadas}/{total} pistas procesadas correctamente en {target_dir}")
         try:
             if hasattr(eel, 'notificar_fin_lote'):
                 eel.notificar_fin_lote(f"[COMPLETADO] {completadas}/{total} pistas FLAC Lossless guardadas en disco.")()
