@@ -10,6 +10,7 @@ from services.audio_service import AudioPlaybackService
 from services.audit_service import AuditService
 from services.media_service import MediaService
 from services.download_service import DownloadService
+from services.export_service import ExportService
 
 print("=" * 60)
 print("🚀 [BEATWAVE PRO] ARQUITECTURA MODULAR ACTIVA (Backend v2)")
@@ -25,6 +26,7 @@ audio_playback_svc = AudioPlaybackService()
 audit_svc = AuditService()
 media_svc = MediaService()
 download_svc = DownloadService()
+export_svc = ExportService()
 
 # Endpoint Bottle para carátulas en tiempo real
 @bottle.route('/cover')
@@ -61,7 +63,10 @@ def seleccionar_directorio():
 
 @eel.expose
 def iniciar_auditoria(ruta_directorio):
-    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
+    res = audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
+    if res.get("total", 0) > 0:
+        audio_playback_svc.establecer_directorio(ruta_directorio)
+    return res
 
 # Puente Eel - Spotify Ingest Service & Medios
 @eel.expose
@@ -132,3 +137,9 @@ if __name__ == "__main__":
         print("\n[CleanDJmix] Servidor detenido por el usuario.")
     except Exception as ex:
         print(f"[ERROR CRÍTICO] Error en tiempo de ejecución: {ex}")
+
+
+# Puente Eel - Exportación XLS / Respaldo
+@eel.expose
+def exportar_auditoria_xls(tracks):
+    return export_svc.exportar_tracks_xls(tracks)
