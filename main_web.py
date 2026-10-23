@@ -1,7 +1,5 @@
-import time
 import os
 import subprocess
-import threading
 import atexit
 import eel
 import bottle
@@ -12,10 +10,6 @@ from services.media_service import MediaService
 from services.download_service import DownloadService
 from services.export_service import ExportService
 
-print("=" * 60)
-print("🚀 [BEATWAVE PRO] BACKEND MODULAR V2 - PUENTE EEL ACTIVO")
-print("=" * 60)
-
 eel.init("web")
 
 audio_playback_svc = AudioPlaybackService()
@@ -24,7 +18,6 @@ media_svc = MediaService()
 download_svc = DownloadService()
 export_svc = ExportService()
 
-# Endpoint Bottle para carátulas en tiempo real
 @bottle.route('/cover')
 def get_cover():
     file_path = bottle.request.query.get('path', '')
@@ -32,39 +25,51 @@ def get_cover():
     if data and mime:
         bottle.response.content_type = mime
         return data
-    return bottle.redirect("https://placehold.co/100x100/18181b/22d3ee?text=CleanDJ")
+    return bottle.redirect("https://placehold.co/100x100/18181b/22d3ee?text=BeatWave")
 
 def _emitir_log_ui(mensaje: str):
-    print(f"[CleanDJmix PRO] {mensaje}")
+    print(f"[BeatWave PRO] {mensaje}")
     try:
         eel.log_to_console(mensaje)
     except Exception:
         pass
 
-# 1. Reproducción de Audio macOS
 @eel.expose
 def reproducir_pista_mac(nombre_archivo):
-    audio_playback_svc.reproducir_mac(nombre_archivo)
+    return audio_playback_svc.reproducir_mac(nombre_archivo)
 
 @eel.expose
 def detener_audio_mac():
-    audio_playback_svc.detener_mac()
+    return audio_playback_svc.detener_mac()
+
+@eel.expose
+def cue_audio_mac(nombre_archivo=""):
+    return audio_playback_svc.cue_mac(nombre_archivo)
 
 atexit.register(lambda: audio_playback_svc.detener_mac())
 
-# 2. Auditoría y Directorios
 @eel.expose
 def seleccionar_directorio():
     return audit_svc.seleccionar_directorio()
 
 @eel.expose
 def iniciar_auditoria(ruta_directorio):
-    res = audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
-    if res.get("total", 0) > 0:
-        audio_playback_svc.establecer_directorio(ruta_directorio)
-    return res
+    audio_playback_svc.establecer_directorio(ruta_directorio)
+    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
 
-# 3. Spotify, Mutagen e Ingesta de Medios
+@eel.expose
+def ejecutar_auditoria_lote(ruta_directorio, opts=None):
+    audio_playback_svc.establecer_directorio(ruta_directorio)
+    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
+
+@eel.expose
+def analizar_espectro_fft(filepath, spotify_id=None):
+    return audit_svc.analizar_espectro_fft(filepath, spotify_id)
+
+@eel.expose
+def exportar_auditoria_xls(tracks, destino_dir="/Users/admin/Music/mi musica"):
+    return export_svc.exportar_tracks_xls(tracks, destino_dir)
+
 @eel.expose
 def analizar_url_spotify(spotify_url):
     return media_svc.analizar_url_spotify(spotify_url)
@@ -87,13 +92,12 @@ def resolver_stream_preescucha(titulo, artista):
 
 @eel.expose
 def detener_preescucha():
-    return {"status": "detenido"}
+    return audio_playback_svc.detener_mac()
 
 @eel.expose
 def log_to_console(msg):
     print(f"[UI] {msg}")
 
-# 4. Descargas y Lotes Lossless
 @eel.expose
 def seleccionar_directorio_descarga():
     return download_svc.seleccionar_directorio_descarga()
@@ -105,11 +109,6 @@ def obtener_directorio_descarga_actual():
 @eel.expose
 def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir=""):
     return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audit_svc, eel)
-
-# 5. Exportación XLS / CSV
-@eel.expose
-def exportar_auditoria_xls(tracks):
-    return export_svc.exportar_tracks_xls(tracks)
 
 if __name__ == "__main__":
     try:
@@ -127,14 +126,11 @@ if __name__ == "__main__":
             size=(w, h),
             position=(0, 0),
             cmdline_args=[
-                "--start-fullscreen",
-                "--kiosk",
+                "--start-maximized",
                 "--no-first-run",
                 "--disable-default-apps"
             ],
             port=8000
         )
     except (SystemExit, KeyboardInterrupt):
-        print("\n[CleanDJmix] Servidor detenido por el usuario.")
-    except Exception as ex:
-        print(f"[ERROR CRÍTICO] Error en tiempo de ejecución: {ex}")
+        print("\n[BeatWave PRO] Servidor detenido.")

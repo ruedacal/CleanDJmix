@@ -3,73 +3,46 @@ import subprocess
 import threading
 import numpy as np
 import soundfile as sf
+import eel
 from infrastructure.audio_processor import AudioProcessorService
 
 class AuditService:
     def __init__(self):
-        self.directorio_actual = ""
+        self.directorio_actual = "/Users/admin/Music/mi musica"
         self._lock = threading.Lock()
 
     def seleccionar_directorio(self):
-        with self._lock:
-            try:
-                # Script optimizado para forzar foco inmediato en macOS sin latencia de WindowServer
-                ascript = '''
-                tell application "System Events"
-                    activate
-                    set folderPath to POSIX path of (choose folder with prompt "Selecciona tu carpeta de música DJ")
-                end tell
-                return folderPath
-                '''
-                proc = subprocess.run(["osascript", "-e", ascript], capture_output=True, text=True, timeout=60)
-                if proc.returncode == 0:
-                    res = proc.stdout.strip()
-                    if res and os.path.isdir(res):
-                        self.directorio_actual = res
-                        return res
-            except Exception as e:
-                print(f"[AUDIT] Diálogo cancelado o error: {e}")
+        if not self._lock.acquire(blocking=False):
             return ""
+        try:
+            # Desbloqueo instantáneo frente a Chrome Kiosk: sacar SystemUIServer a primer plano sin esperar a Finder
+            script = """
+            tell application "SystemUIServer"
+                activate
+                set chosenFolder to choose folder with prompt "Selecciona tu carpeta de música DJ:"
+                return POSIX path of chosenFolder
+            end tell
+            """
+            proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=60)
+            if proc.returncode == 0 and proc.stdout.strip():
+                ruta = proc.stdout.strip()
+                if os.path.isdir(ruta):
+                    self.directorio_actual = ruta
+                    return ruta
+        except Exception as e:
+            print(f"[EXPLORADOR ERROR] {e}")
+        finally:
+            self._lock.release()
+        return ""
 
-    def iniciar_auditoria(self, ruta_directorio, emitir_log_cb=None):
-        if not ruta_directorio or not os.path.exists(ruta_directorio):
-            return {"total": 0, "sin_meta": 0, "tracks": []}
-        
-        self.directorio_actual = ruta_directorio
-        if emitir_log_cb:
-            emitir_log_cb(f"Iniciando auditoría en: {ruta_directorio}")
-        
-        tracks_auditados = []
-        extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a")
-        idx = 1
-        sin_meta_count = 0
-
-        for root, _, files in os.walk(ruta_directorio):
-            for file in sorted(files):
-                if file.startswith(".") or not file.lower().endswith(extensiones):
-                    continue
-                full_path = os.path.join(root, file)
-                info = AudioProcessorService.analizar_track_avanzado(full_path)
-                if info.get("missing_meta", False):
-                    sin_meta_count += 1
-                
-                tracks_auditados.append({
-                    "id": idx, "f": str(file or ""), "path": str(full_path or ""),
-                    "t": str(info.get("title") or file or ""), "a": str(info.get("artist") or "Desconocido"),
-                    "b": float(info.get("bpm") or 124.0), "k": str(info.get("key") or "8A"),
-                    "e": int(info.get("energy") or 75), "duration": str(info.get("duration") or "5:00"),
-                    "format": str(info.get("format") or "FLAC"), "s": "Ready"
-                })
-                idx += 1
-                if len(tracks_auditados) >= 2500:
-                    break
-
-        return {"total": len(tracks_auditados), "sin_meta": sin_meta_count, "tracks": tracks_auditados}
-
-    def analizar_espectro_fft(self, filepath):
+    def analizar_espectro_fft(self, filepath, spotify_id=None):
+        print(f"[AUDITORIA FFT] Analizando espectro de: {os.path.basename(filepath)}")
         try:
             fs = 44100
-            data, samplerate = sf.read(filepath, start=fs * 30, frames=fs * 10)
+            info_sf = sf.info(filepath)
+            start_frame = min(fs * 30, max(0, int(info_sf.frames * 0.25)))
+            frames_to_read = min(fs * 10, max(4096, info_sf.frames - start_frame))
+            data, samplerate = sf.read(filepath, start=start_frame, frames=frames_to_read)
             if len(data.shape) > 1:
                 data = data.mean(axis=1)
             yf, xf = np.fft.rfft(data), np.fft.rfftfreq(len(data), 1 / samplerate)
@@ -79,6 +52,91 @@ class AuditService:
             cutoff_khz = (np.max(frecuencias_validas) if len(frecuencias_validas) > 0 else 0) / 1000.0
             estado = "True Lossless" if cutoff_khz >= 20.0 else "Falso FLAC"
             perdida = 0 if estado == "True Lossless" else max(0, round((1.0 - (cutoff_khz / 22.05)) * 100, 1))
-            return {"estado": estado, "corte": f"{cutoff_khz:.1f} kHz", "perdida": perdida}
+            resultado = {
+                "id": spotify_id,
+                "estado": estado,
+                "corte": f"{cutoff_khz:.1f} kHz",
+                "cutoff_khz": round(float(cutoff_khz), 1),
+                "perdida": perdida
+            }
+            if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
+                try:
+                    eel.notificar_resultado_auditoria(resultado)()
+                except Exception:
+                    pass
+            return resultado
         except Exception as e:
-            return {"estado": "Error I/O", "corte": "N/A", "perdida": 0}
+            print(f"[ERROR DSP] {e}")
+            err_res = {"id": spotify_id, "estado": "Error I/O", "corte": "N/A", "cutoff_khz": 22.0, "perdida": 0}
+            if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
+                try:
+                    eel.notificar_resultado_auditoria(err_res)()
+                except Exception:
+                    pass
+            return err_res
+
+    def iniciar_auditoria(self, ruta_directorio, emitir_log_cb=None):
+        if not ruta_directorio or not os.path.exists(ruta_directorio):
+            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
+
+        self.directorio_actual = ruta_directorio
+        if emitir_log_cb:
+            emitir_log_cb(f"Iniciando auditoría avanzada en: {ruta_directorio}")
+
+        tracks_auditados = []
+        extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a")
+        idx = 1
+        sin_meta_count = 0
+        fake_count = 0
+
+        for root, _, files in os.walk(ruta_directorio):
+            for file in sorted(files):
+                if file.startswith(".") or not file.lower().endswith(extensiones):
+                    continue
+                full_path = os.path.join(root, file)
+                info = AudioProcessorService.analizar_track_avanzado(full_path)
+                bpm_val = info.get("bpm")
+                key_val = info.get("key")
+                if info.get("missing_meta", False) or not bpm_val or not key_val:
+                    sin_meta_count += 1
+
+                status_str = str(info.get("status") or "Lossless OK")
+                if "Fake" in status_str or "Error" in status_str:
+                    fake_count += 1
+
+                tracks_auditados.append({
+                    "id": idx,
+                    "f": str(file),
+                    "filename": str(file),
+                    "path": str(full_path),
+                    "t": str(info.get("title") or os.path.splitext(file)[0]),
+                    "title": str(info.get("title") or os.path.splitext(file)[0]),
+                    "a": str(info.get("artist") or "Desconocido"),
+                    "artist": str(info.get("artist") or "Desconocido"),
+                    "b": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
+                    "bpm": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
+                    "k": str(key_val or "--"),
+                    "key": str(key_val or "--"),
+                    "e": int(info.get("energy") or 85),
+                    "dance": int(info.get("danceability") or 85),
+                    "mood": str(info.get("mood") or "Peak Time Hypnotic"),
+                    "duration": str(info.get("duration") or "05:30"),
+                    "format": str(info.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
+                    "status": status_str,
+                    "cutoff_khz": float(info.get("cutoff_khz") or 22.0),
+                    "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
+                    "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
+                    "comment": str(info.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b")
+                })
+                idx += 1
+                if len(tracks_auditados) >= 2500:
+                    break
+
+        total = len(tracks_auditados)
+        return {
+            "total": total,
+            "sin_meta": sin_meta_count,
+            "ready": max(0, total - sin_meta_count),
+            "errors": fake_count,
+            "tracks": tracks_auditados
+        }

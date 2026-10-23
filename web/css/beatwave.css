@@ -1,0 +1,29 @@
+/* --- BEATWAVE PRO: DEFINITIVE MOTION ENGINE --- */
+        
+        /* CHROMATIC BARS (Estrictamente Cian y Blanco) */
+        @keyframes chroma1 { 0%, 100% { fill: #22d3ee; } 50% { fill: #ffffff; } }
+        @keyframes chroma2 { 0%, 100% { fill: #ffffff; } 50% { fill: #22d3ee; } }
+        @keyframes chroma3 { 0%, 100% { fill: #22d3ee; } 50% { fill: #ffffff; } }
+        @keyframes chroma4 { 0%, 100% { fill: #ffffff; } 50% { fill: #22d3ee; } }
+        @keyframes chroma5 { 0%, 100% { fill: #22d3ee; } 50% { fill: #ffffff; } }
+
+        /* BALÍSTICA BARRAS */
+        @keyframes bounce1 { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(0.85); } }
+        @keyframes bounce2 { 0%, 100% { transform: scaleY(0.6); } 50% { transform: scaleY(1.0); } }
+        @keyframes bounce3 { 0%, 100% { transform: scaleY(0.9); } 50% { transform: scaleY(0.45); } }
+        @keyframes bounce4 { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(0.95); } }
+        @keyframes bounce5 { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(0.75); } }
+
+        .svg-bar { transform-box: fill-box; transform-origin: bottom; }
+        .b1-epic { animation: bounce1 0.85s infinite cubic-bezier(0.16,1,0.3,1), chroma1 2.4s infinite; }
+        .b2-epic { animation: bounce2 0.72s infinite cubic-bezier(0.16,1,0.3,1), chroma2 1.8s infinite; filter: drop-shadow(0 0 6px rgba(255,255,255,0.8)); }
+        .b3-epic { animation: bounce3 0.96s infinite cubic-bezier(0.16,1,0.3,1), chroma3 2.8s infinite; }
+        .b4-epic { animation: bounce4 0.65s infinite cubic-bezier(0.16,1,0.3,1), chroma4 1.2s infinite; filter: drop-shadow(0 0 8px rgba(6,182,212,0.6)); } /* Brillo Cian */
+        .b5-epic { animation: bounce5 0.88s infinite cubic-bezier(0.16,1,0.3,1), chroma5 2.6s infinite; }
+
+        /* SOUNDWAVE MORPH BASE STYLE */
+        .anim-soundwave {
+            color: #ffffff;
+            display: inline-block;
+            filter: url(#waveDistortion);
+        }

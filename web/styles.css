@@ -1,0 +1,13 @@
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #32323f; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #484858; }
+.glass-panel { background: rgba(18, 18, 22, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(63, 63, 70, 0.4); }
+.slide-in-right { animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes miniEq { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1.0); } }
+.logo-bar { transform-origin: bottom; animation: miniEq infinite ease-in-out; }
+@keyframes equalize { 0%, 100% { transform: scaleY(0.2); } 50% { transform: scaleY(1.0); } }
+.vu-meter-bar { transform-origin: bottom; animation: equalize infinite; }
+.vu-paused .vu-meter-bar { animation-play-state: paused !important; transform: scaleY(0.1) !important; background-color: #27272a !important; transition: transform 0.3s ease, background-color 0.3s ease; }
