@@ -1,0 +1,86 @@
+import sys
+import os
+from unittest.mock import patch, MagicMock
+import pytest
+
+# 1. MOCK DE EEL TRANSPARENTE
+mock_eel = MagicMock()
+def mock_expose(*args, **kwargs):
+    if len(args) == 1 and callable(args[0]):
+        return args[0]
+    return lambda f: f
+mock_eel.expose = mock_expose
+sys.modules['eel'] = mock_eel
+
+# 2. MOCK DE BOTTLE TRANSPARENTE
+mock_bottle = MagicMock()
+def mock_route(*args, **kwargs):
+    return lambda f: f
+mock_bottle.route = mock_route
+sys.modules['bottle'] = mock_bottle
+
+sys.modules['mutagen'] = MagicMock()
+sys.modules['infrastructure.audio_processor'] = MagicMock()
+sys.modules['infrastructure.spotify_flac_ingest'] = MagicMock()
+
+import main_web
+
+# --- REPRODUCTOR NATIVO ---
+@patch.object(main_web.audio_playback_svc, 'reproducir_mac')
+def test_reproducir_pista_mac_exito(mock_reproducir):
+    main_web.reproducir_pista_mac("track.flac")
+    mock_reproducir.assert_called_with("track.flac")
+
+@patch.object(main_web.audio_playback_svc, 'detener_mac')
+def test_detener_audio(mock_detener):
+    main_web.detener_audio_mac()
+    mock_detener.assert_called_once()
+
+# --- SELECCIÓN DE DIRECTORIO ---
+@patch.object(main_web.audit_svc, 'seleccionar_directorio', return_value="/Mock/Dir")
+def test_seleccionar_directorio_exito(mock_sel):
+    assert main_web.seleccionar_directorio() == "/Mock/Dir"
+
+# --- AUDITORÍA ---
+@patch.object(main_web.audit_svc, 'iniciar_auditoria', return_value={"total": 10, "tracks": []})
+def test_iniciar_auditoria_full(mock_audit):
+    res = main_web.iniciar_auditoria('/Mock')
+    assert res["total"] == 10
+
+def test_iniciar_auditoria_invalido():
+    assert main_web.iniciar_auditoria("")["total"] == 0
+
+# --- STREAM AUDIO Y CARÁTULAS ---
+@patch.object(main_web.media_svc, 'obtener_caratula_binaria', return_value=(b"img", "image/jpeg"))
+@patch('main_web.bottle.request')
+def test_get_cover_flac(mock_request, mock_media):
+    mock_request.query.get.return_value = "t.flac"
+    assert main_web.get_cover() == b"img"
+
+@patch.object(main_web.media_svc, 'obtener_caratula_binaria', return_value=(None, None))
+@patch('main_web.bottle.redirect', return_value="REDIRECT")
+@patch('main_web.bottle.request')
+def test_get_cover_fallback(mock_request, mock_redirect, mock_media):
+    mock_request.query.get.return_value = "unknown.flac"
+    assert main_web.get_cover() == "REDIRECT"
+
+# --- EXPORTACIÓN XLS ---
+@patch.object(main_web.export_svc, 'exportar_tracks_xls', return_value={"status": "ok", "path": "/Mock/file.csv"})
+def test_exportar_auditoria_xls(mock_export):
+    res = main_web.exportar_auditoria_xls([{"titulo": "Test"}])
+    assert res["status"] == "ok"
+
+# --- GUARDAR CAMBIOS TRACK ---
+def test_guardar_cambios_track_vacio():
+    res = main_web.guardar_cambios_track(None)
+    assert res["status"] == "error"
+
+# --- WRAPPERS ---
+@patch.object(main_web.media_svc, 'analizar_catalogo_spotify', return_value=[])
+def test_wrappers(mock_spotify):
+    main_web.analizar_url_spotify("url")
+    mock_spotify.assert_called_with("url")
+    main_web.analizar_catalogo_spotify("url")
+    main_web.log_to_console("Test")
+    res_enr = main_web.enriquecer_pista_local("path")
+    assert res_enr["status"] == "ok"

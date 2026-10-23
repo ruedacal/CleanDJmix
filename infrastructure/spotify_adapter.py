@@ -2,13 +2,13 @@ import os
 import urllib.parse
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Optional, Callable, Tuple
 
 class SpotifyDownloaderAdapter:
     """Adaptador de alto rendimiento para interactuar con la Web API de Spotify."""
 
     @classmethod
-    def _cargar_credenciales_env(cls) -> tuple[Optional[str], Optional[str]]:
+    def _cargar_credenciales_env(cls) -> Tuple[Optional[str], Optional[str]]:
         cid = os.getenv("SPOTIPY_CLIENT_ID") or os.getenv("SPOTIFY_CLIENT_ID")
         csec = os.getenv("SPOTIPY_CLIENT_SECRET") or os.getenv("SPOTIFY_CLIENT_SECRET")
         
@@ -32,6 +32,13 @@ class SpotifyDownloaderAdapter:
         return cid, csec
 
     @classmethod
+    def _obtener_cliente_spotify(cls) -> Optional[spotipy.Spotify]:
+        try:
+            return cls._get_client()
+        except Exception:
+            return None
+
+    @classmethod
     def _get_client(cls) -> spotipy.Spotify:
         client_id, client_secret = cls._cargar_credenciales_env()
         if not client_id or not client_secret:
@@ -41,7 +48,7 @@ class SpotifyDownloaderAdapter:
         return spotipy.Spotify(auth_manager=auth_manager)
 
     @classmethod
-    def _extraer_id_y_tipo(cls, url_or_uri: str) -> tuple[Optional[str], Optional[str]]:
+    def _extraer_id_y_tipo(cls, url_or_uri: str) -> Tuple[Optional[str], Optional[str]]:
         if not url_or_uri:
             return None, None
             
@@ -71,17 +78,16 @@ class SpotifyDownloaderAdapter:
 
     @classmethod
     def escanear_lista(cls, url: str, callback_log: Optional[Callable[[str, str], None]] = None) -> List[Dict[str, Any]]:
+        sp = cls._obtener_cliente_spotify()
+        if sp is None:
+            if callback_log:
+                callback_log("Error de credenciales Spotify: no se pudo obtener cliente", "error")
+            return []
+
         tipo, spotify_id = cls._extraer_id_y_tipo(url)
         if not tipo or not spotify_id:
             if callback_log:
                 callback_log(f"Formato de URL no válido: {url}", "error")
-            return []
-
-        try:
-            sp = cls._get_client()
-        except Exception as e:
-            if callback_log:
-                callback_log(f"Error de credenciales Spotify: {e}", "error")
             return []
 
         resultados: List[Dict[str, Any]] = []
@@ -133,19 +139,47 @@ class SpotifyDownloaderAdapter:
 
             elif tipo == "playlist":
                 res = sp.playlist_items(spotify_id, limit=50)
-                for item in res.get("items", []):
-                    t = item.get("track")
-                    if not t or not t.get("id"):
-                        continue
+                while res:
+                    for item in res.get("items", []):
+                        t = item.get("track")
+                        if not t:
+                            continue
+                        art = t["artists"][0]["name"] if t.get("artists") else "Desconocido"
+                        alb = t.get("album", {})
+                        cover = alb["images"][0]["url"] if alb.get("images") else ""
+                        dur_ms = t.get("duration_ms", 0)
+                        resultados.append({
+                            "artista": art,
+                            "titulo": t.get("name", "Sin título"),
+                            "album": alb.get("name", "Playlist Track"),
+                            "year": (alb.get("release_date") or "2024")[:4],
+                            "cover_url": cover,
+                            "preview_url": t.get("preview_url") or "",
+                            "duracion_ms": dur_ms,
+                            "duracion": cls._ms_a_min_seg(dur_ms)
+                        })
+                    if res.get("next") and hasattr(sp, "next"):
+                        try:
+                            res = sp.next(res)
+                        except Exception:
+                            res = None
+                    else:
+                        res = None
+
+            elif tipo == "album":
+                alb = sp.album(spotify_id)
+                alb_nom = alb.get("name", "Album")
+                cover = alb["images"][0]["url"] if alb.get("images") else ""
+                year = (alb.get("release_date") or "2024")[:4]
+                tracks = alb.get("tracks", {}).get("items", [])
+                for t in tracks:
                     art = t["artists"][0]["name"] if t.get("artists") else "Desconocido"
-                    alb = t.get("album", {})
-                    cover = alb["images"][0]["url"] if alb.get("images") else ""
                     dur_ms = t.get("duration_ms", 0)
                     resultados.append({
                         "artista": art,
                         "titulo": t.get("name", "Sin título"),
-                        "album": alb.get("name", "Playlist Track"),
-                        "year": (alb.get("release_date") or "2024")[:4],
+                        "album": alb_nom,
+                        "year": year,
                         "cover_url": cover,
                         "preview_url": t.get("preview_url") or "",
                         "duracion_ms": dur_ms,

@@ -1,49 +1,34 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and logs
+*.log
+.coverage
+.cache/
+.pytest_cache/
+cache_preview/
+
+# Environments and Secrets
+.env
+env/
+env_python37/
+venv/
+.cleandjmix_session.json
+config_ingest.json
+
+# Builds and packaging
 build/
 dist/
 *.spec
-.env
-CleanDJmix_crash.log
-.cleandjmix_session.json
-env/
-.cache/
-env/
-.cache/
-__pycache__/
-*.pyc
-*.DS_Store
 assets_extracted/
 CleanDJmix_PRO_Assets.zip
-env/
-env_python37/
-.cache/
-__pycache__/
-*.pyc
-.pytest_cache/
-.env
-cache_preview/
-__pycache__/
-*.pyc
-env/
-env_python37/
-test_*.py
 
-# Entorno virtual y cachés locales
-env/
-venv/
-__pycache__/
-*.pyc
+# macOS metadata
 .DS_Store
-config_ingest.json
-
-# Entorno virtual y cachés locales
-env/
-venv/
-__pycache__/
-*.pyc
-.DS_Store
-
-.cache
 *.command
-.coverage
-.DS_Store
+
+# Scratch and manual tests
+/test_*.py
+scripts/manual_tests/

@@ -21,14 +21,28 @@ export_svc = ExportService()
 @bottle.route('/cover')
 def get_cover():
     file_path = bottle.request.query.get('path', '')
-    data, mime = media_svc.obtener_caratula_binaria(file_path)
+    real_path = audio_playback_svc._resolver_ruta(file_path) if file_path else ''
+    target = real_path if real_path else file_path
+    data, mime = media_svc.obtener_caratula_binaria(target)
     if data and mime:
         bottle.response.content_type = mime
         return data
-    return bottle.redirect("https://placehold.co/100x100/18181b/22d3ee?text=BeatWave")
+    return bottle.redirect("https://placehold.co/100x100/18181b/22d3ee?text=CleanDJ")
+
+@bottle.route('/stream_audio')
+def stream_audio():
+    file_path = bottle.request.query.get('path', '')
+    if file_path:
+        real_path = audio_playback_svc._resolver_ruta(file_path)
+        if real_path and os.path.exists(real_path) and os.path.isfile(real_path):
+            dir_name = os.path.dirname(real_path)
+            file_name = os.path.basename(real_path)
+            return bottle.static_file(file_name, root=dir_name, mimetype='auto')
+    bottle.response.status = 404
+    return "Audio file not found"
 
 def _emitir_log_ui(mensaje: str):
-    print(f"[BeatWave PRO] {mensaje}")
+    print(f"[CleanDJmix PRO] {mensaje}")
     try:
         eel.log_to_console(mensaje)
     except Exception:
@@ -71,16 +85,35 @@ def exportar_auditoria_xls(tracks, destino_dir="/Users/admin/Music/mi musica"):
     return export_svc.exportar_tracks_xls(tracks, destino_dir)
 
 @eel.expose
+def guardar_cambios_track(track):
+    if not track or not isinstance(track, dict):
+        return {"status": "error", "msg": "Datos inválidos"}
+    path = track.get("path")
+    if not path or not os.path.exists(path):
+        real_path = audio_playback_svc._resolver_ruta(track.get("f", "") or track.get("filename", ""))
+        if real_path and os.path.exists(real_path):
+            path = real_path
+        else:
+            return {"status": "error", "msg": "Archivo no encontrado en disco"}
+    try:
+        from infrastructure.audio_processor import AudioProcessorService
+        ok = AudioProcessorService.escribir_metadatos_pro(path, track)
+        return {"status": "ok" if ok else "error"}
+    except Exception as e:
+        print(f"[ERROR GUARDAR TRACK] {e}")
+        return {"status": "error", "msg": str(e)}
+
+@eel.expose
 def analizar_url_spotify(spotify_url):
-    return media_svc.analizar_url_spotify(spotify_url)
+    return media_svc.analizar_catalogo_spotify(spotify_url)
 
 @eel.expose
 def descargar_track_spotify_flac(meta, dest=None):
-    return media_svc.descargar_track_spotify_flac(meta, dest)
+    return download_svc.ejecutar_lote_descarga([meta], "flac", dest or "", audit_svc, eel)
 
 @eel.expose
 def enriquecer_pista_local(ruta):
-    return media_svc.enriquecer_pista_local(ruta)
+    return {"status": "ok", "ruta": ruta}
 
 @eel.expose
 def analizar_catalogo_spotify(spotify_url):
@@ -133,4 +166,4 @@ if __name__ == "__main__":
             port=8000
         )
     except (SystemExit, KeyboardInterrupt):
-        print("\n[BeatWave PRO] Servidor detenido.")
+        print("\n[CleanDJmix PRO] Servidor detenido.")
