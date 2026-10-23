@@ -32,83 +32,58 @@
         }
     </script>
     <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #32323f; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #484858; }
-        .glass-panel { background: rgba(14, 14, 18, 0.94); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(63, 63, 70, 0.4); }
-        .slide-in-right { animation: slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes quantumSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* --- BEATWAVE PRO: CSS/SVG HYBRID MOTION ENGINE --- */
+        
+        /* 1. TEXT LASER SWEEP (V1) */
+        @keyframes txtShimmerFlow {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
         }
-        @keyframes corePulse {
-            0%, 100% { transform: scale(1); opacity: 0.85; filter: drop-shadow(0 0 4px rgba(6,182,212,0.6)); }
-            50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 12px rgba(34,211,238,0.9)); }
+        .anim-shimmer-v1 {
+            background: linear-gradient(90deg, #ffffff 0%, #22d3ee 30%, #ffffff 50%, #ef4444 75%, #ffffff 100%);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            display: inline-block;
+            animation: txtShimmerFlow 3.5s linear infinite;
         }
-        @keyframes wavePulse {
-            0%, 100% { transform: scaleY(0.4); }
-            50% { transform: scaleY(1.0); }
-        }
-        .anim-quantum { animation: quantumSpin 12s linear infinite; }
-        .anim-core { animation: corePulse 2.4s ease-in-out infinite; }
-        .anim-bar-1 { animation: wavePulse 0.6s ease-in-out infinite alternate; }
-        .anim-bar-2 { animation: wavePulse 0.4s ease-in-out infinite alternate; animation-delay: 0.15s; }
-        .anim-bar-3 { animation: wavePulse 0.5s ease-in-out infinite alternate; animation-delay: 0.3s; }
 
-        @keyframes vinylSpinClockwise {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @keyframes vinylSpinCounter {
-            0% { transform: rotate(360deg); }
-            100% { transform: rotate(0deg); }
-        }
-        @keyframes laserGlow {
-            0%, 100% { filter: drop-shadow(0 0 3px #06b6d4); }
-            50% { filter: drop-shadow(0 0 10px #22d3ee); }
-        }
-        .anim-vinyl-cw { animation: vinylSpinClockwise 8s linear infinite; }
-        .anim-vinyl-ccw { animation: vinylSpinCounter 14s linear infinite; }
-        .anim-laser { animation: laserGlow 2s ease-in-out infinite; }
+        /* 2. CHROMA BARS (Mutación de color por barra) */
+        @keyframes chroma1 { 0%, 100% { fill: #0891b2; } 33% { fill: #22d3ee; } 66% { fill: #3b82f6; } }
+        @keyframes chroma2 { 0%, 100% { fill: #ffffff; } 50% { fill: #cffafe; } }
+        @keyframes chroma3 { 0%, 100% { fill: #22d3ee; } 50% { fill: #06b6d4; } }
+        @keyframes chroma4 { 0%, 100% { fill: #ef4444; } 50% { fill: #f87171; } }
+        @keyframes chroma5 { 0%, 100% { fill: #0891b2; } 50% { fill: #3b82f6; } }
 
-        @keyframes prismPulse { 0%, 100% { opacity: 0.6; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.04); } }
-        @keyframes orbitCW { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes orbitCCW { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-        .anim-prism { animation: prismPulse 2.5s ease-in-out infinite; }
-        .anim-orbit-cw { animation: orbitCW 10s linear infinite; }
-        .anim-orbit-ccw { animation: orbitCCW 15s linear infinite; }
+        /* 3. BALÍSTICA BARRAS (Usando transform scaleY desde bottom) */
+        @keyframes bounce1 { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(0.85); } }
+        @keyframes bounce2 { 0%, 100% { transform: scaleY(0.6); } 50% { transform: scaleY(1.0); } }
+        @keyframes bounce3 { 0%, 100% { transform: scaleY(0.9); } 50% { transform: scaleY(0.45); } }
+        @keyframes bounce4 { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(0.95); } }
+        @keyframes bounce5 { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(0.75); } }
 
-        @keyframes sineShift {
-            0% { stroke-dashoffset: 0; }
-            100% { stroke-dashoffset: -48; }
+        .svg-bar {
+            transform-box: fill-box;
+            transform-origin: bottom;
+            animation-iteration-count: infinite;
+            animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
         }
-        @keyframes stereoPhaseA {
-            0%, 100% { transform: translateY(0px) scaleY(1); opacity: 0.85; }
-            50% { transform: translateY(-2px) scaleY(1.3); opacity: 1; }
-        }
-        @keyframes stereoPhaseB {
-            0%, 100% { transform: translateY(0px) scaleY(1.2); opacity: 0.7; }
-            50% { transform: translateY(2px) scaleY(0.7); opacity: 0.95; }
-        }
-        @keyframes beatBar1 { 0%, 100% { height: 6px; } 50% { height: 18px; } }
-        @keyframes beatBar2 { 0%, 100% { height: 14px; } 50% { height: 26px; } }
-        @keyframes beatBar3 { 0%, 100% { height: 20px; } 50% { height: 10px; } }
-        @keyframes beatBar4 { 0%, 100% { height: 10px; } 50% { height: 24px; } }
-        @keyframes beatBar5 { 0%, 100% { height: 4px; } 50% { height: 14px; } }
-        @keyframes ringSpinSlow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .b1-anim { animation: bounce1 0.85s infinite, chroma1 2.4s infinite; }
+        .b2-anim { animation: bounce2 0.72s infinite, chroma2 1.8s infinite; filter: drop-shadow(0 0 4px #22d3ee); }
+        .b3-anim { animation: bounce3 0.96s infinite, chroma3 2.8s infinite; }
+        .b4-anim { animation: bounce4 0.65s infinite, chroma4 1.2s infinite; filter: drop-shadow(0 0 6px #ef4444); }
+        .b5-anim { animation: bounce5 0.88s infinite, chroma5 2.6s infinite; }
 
-        .anim-sine-flow { stroke-dasharray: 12 6; animation: sineShift 1.4s linear infinite; }
-        .anim-stereo-a { animation: stereoPhaseA 1.6s ease-in-out infinite; }
-        .anim-stereo-b { animation: stereoPhaseB 1.6s ease-in-out infinite; }
-        .anim-bar-k1 { animation: beatBar1 0.45s ease-in-out infinite alternate; }
-        .anim-bar-k2 { animation: beatBar2 0.38s ease-in-out infinite alternate; }
-        .anim-bar-k3 { animation: beatBar3 0.52s ease-in-out infinite alternate; }
-        .anim-bar-k4 { animation: beatBar4 0.42s ease-in-out infinite alternate; }
-        .anim-bar-k5 { animation: beatBar5 0.48s ease-in-out infinite alternate; }
-        .anim-ring-orbit { animation: ringSpinSlow 6s linear infinite; }
+        /* 4. HALO CAJA ISOTIPO */
+        @keyframes boxHaloChroma {
+            0%, 100% { box-shadow: 0 0 16px rgba(6,182,212,0.35), inset 0 0 10px rgba(6,182,212,0.2); border-color: rgba(6,182,212,0.6); }
+            50% { box-shadow: 0 0 26px rgba(239,68,68,0.55), inset 0 0 16px rgba(34,211,238,0.35); border-color: rgba(239,68,68,0.85); }
+        }
+        .anim-box-halo { animation: boxHaloChroma 2.6s ease-in-out infinite; }
     </style>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800;900&family=Righteous&family=Syne:wght@800;900&display=swap" rel="stylesheet">
@@ -1185,126 +1160,42 @@
                 <div className="flex flex-col h-screen w-screen bg-djzinc-950 text-gray-300 overflow-hidden font-sans select-none">
                     <header className="h-14 border-b border-djzinc-800 bg-djzinc-950/90 backdrop-blur px-4 flex items-center justify-between shrink-0 z-30">
                         <div className="flex items-center gap-3">
-                            <div onClick={() => setBrandMotion(prev => prev === 5 ? 1 : prev + 1)} className="flex items-center gap-3.5 select-none cursor-pointer group" title="Haz clic para alternar entre las 5 variantes de animación">
+                            <div className="flex items-center gap-3.5 select-none">
                                 
-                                {/* ISOTIPO CON BARRAS SMIL MULTICROMÁTICAS */}
+                                {/* ISOTIPO CON BARRAS CSS-ANIMADAS MULTICROMÁTICAS */}
                                 <div className="w-11 h-11 rounded-xl bg-[#08080e] border flex items-center justify-center relative overflow-hidden shrink-0 anim-box-halo">
                                     <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
-                                        <defs>
-                                            <filter id="coreGlow" x="-30%" y="-30%" width="160%" height="160%">
-                                                <feGaussianBlur stdDeviation="1.8" result="blur" />
-                                                <feMerge>
-                                                    <feMergeNode in="blur" />
-                                                    <feMergeNode in="SourceGraphic" />
-                                                </feMerge>
-                                            </filter>
-                                            <filter id="redPeakGlow" x="-30%" y="-30%" width="160%" height="160%">
-                                                <feGaussianBlur stdDeviation="2" result="blur" />
-                                                <feMerge>
-                                                    <feMergeNode in="blur" />
-                                                    <feMergeNode in="SourceGraphic" />
-                                                </feMerge>
-                                            </filter>
-                                        </defs>
-
-                                        {/* Barra 1 */}
-                                        <rect x="2.5" width="3" rx="1.5" height="14" fill="#06b6d4" y="14">
-                                            <animate attributeName="height" values="8;24;10;22;8" dur="0.85s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
-                                            <animate attributeName="y" values="24;8;22;10;24" dur="0.85s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
-                                            <animate attributeName="fill" values="#0891b2;#22d3ee;#3b82f6;#0891b2" dur="2.4s" repeatCount="indefinite" />
-                                        </rect>
-
-                                        {/* Barra 2 (Núcleo Blanco) */}
-                                        <rect x="8" width="3.5" rx="1.75" height="22" fill="#ffffff" filter="url(#coreGlow)" y="10">
-                                            <animate attributeName="height" values="16;30;12;28;16" dur="0.72s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
-                                            <animate attributeName="y" values="16;2;20;4;16" dur="0.72s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
-                                            <animate attributeName="fill" values="#ffffff;#cffafe;#ffffff;#a5f3fc;#ffffff" dur="1.8s" repeatCount="indefinite" />
-                                        </rect>
-
-                                        {/* Barra 3 */}
-                                        <rect x="14" width="3" rx="1.5" height="24" fill="#22d3ee" y="8">
-                                            <animate attributeName="height" values="24;10;27;14;24" dur="0.96s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
-                                            <animate attributeName="y" values="8;22;5;18;8" dur="0.96s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
-                                            <animate attributeName="fill" values="#22d3ee;#06b6d4;#3b82f6;#22d3ee" dur="2.8s" repeatCount="indefinite" />
-                                        </rect>
-
+                                        {/* Barra 1 (Cian a Azul) */}
+                                        <rect className="svg-bar b1-anim" x="2.5" y="6" width="3" rx="1.5" height="22" fill="#0891b2" />
+                                        {/* Barra 2 (Núcleo Blanco Brillante) */}
+                                        <rect className="svg-bar b2-anim" x="8" y="2" width="3.5" rx="1.75" height="28" fill="#ffffff" />
+                                        {/* Barra 3 (Cian Eléctrico) */}
+                                        <rect className="svg-bar b3-anim" x="14" y="4" width="3" rx="1.5" height="26" fill="#22d3ee" />
                                         {/* Barra 4 (ROJO ANALÓGICO CLIP PEAK #ef4444) */}
-                                        <rect x="19.5" width="3.5" rx="1.75" height="20" fill="#ef4444" filter="url(#redPeakGlow)" y="12">
-                                            <animate attributeName="height" values="10;29;8;30;10" dur="0.65s" repeatCount="indefinite" calcMode="spline" keySplines="0.1 0.9 0.2 1; 0.1 0.9 0.2 1; 0.1 0.9 0.2 1; 0.1 0.9 0.2 1" />
-                                            <animate attributeName="y" values="22;3;24;2;22" dur="0.65s" repeatCount="indefinite" calcMode="spline" keySplines="0.1 0.9 0.2 1; 0.1 0.9 0.2 1; 0.1 0.9 0.2 1; 0.1 0.9 0.2 1" />
-                                            <animate attributeName="fill" values="#ef4444;#f87171;#dc2626;#ef4444" dur="1.2s" repeatCount="indefinite" />
-                                        </rect>
-
-                                        {/* Barra 5 */}
-                                        <rect x="25.5" width="3" rx="1.5" height="14" fill="#0891b2" y="18">
-                                            <animate attributeName="height" values="6;22;8;18;6" dur="0.88s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
-                                            <animate attributeName="y" values="26;10;24;14;26" dur="0.88s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
-                                            <animate attributeName="fill" values="#0891b2;#3b82f6;#06b6d4;#0891b2" dur="2.6s" repeatCount="indefinite" />
-                                        </rect>
+                                        <rect className="svg-bar b4-anim" x="19.5" y="2" width="3.5" rx="1.75" height="28" fill="#ef4444" />
+                                        {/* Barra 5 (Azul Cobalto) */}
+                                        <rect className="svg-bar b5-anim" x="25.5" y="8" width="3" rx="1.5" height="20" fill="#0891b2" />
                                     </svg>
                                 </div>
 
-                                {/* RÓTULO BEATWAVE CON LAS 5 VARIANTES CINÉTICAS */}
+                                {/* RÓTULO BEATWAVE: LASER SWEEP (V1) */}
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2 leading-none">
-                                        
-                                        {/* V1: Laser Sweep */}
-                                        {brandMotion === 1 && (
-                                            <span className="text-xl tracking-wider uppercase font-black anim-shimmer" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
-                                                BEATWAVE
-                                            </span>
-                                        )}
+                                        <span className="text-xl tracking-wider uppercase font-black anim-shimmer-v1" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
+                                            BEATWAVE
+                                        </span>
 
-                                        {/* V2: Kick Pulse */}
-                                        {brandMotion === 2 && (
-                                            <span className="text-xl tracking-wider uppercase font-black anim-kick" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
-                                                <span className="text-white">BEAT</span><span className="text-djcyan-400">WAVE</span>
-                                            </span>
-                                        )}
-
-                                        {/* V3: Analog VU Strobe */}
-                                        {brandMotion === 3 && (
-                                            <span className="text-xl tracking-wider uppercase font-black anim-strobe" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
-                                                <span className="text-white">BEAT</span><span className="text-djcyan-400">WAVE</span>
-                                            </span>
-                                        )}
-
-                                        {/* V4: Glitch Wave */}
-                                        {brandMotion === 4 && (
-                                            <span className="text-xl tracking-wider uppercase font-black anim-glitch" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
-                                                <span className="text-white">BEAT</span><span className="text-djcyan-400">WAVE</span>
-                                            </span>
-                                        )}
-
-                                        {/* V5: Frequency Waveform */}
-                                        {brandMotion === 5 && (
-                                            <span className="text-xl tracking-wider uppercase font-black anim-sweep" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
-                                                <span className="text-white">BEAT</span><span className="text-red-400">WAVE</span>
-                                            </span>
-                                        )}
-
-                                        {/* Badge PRO */}
-                                        <span className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-wider border shadow-md ${
-                                            brandMotion === 4 || brandMotion === 5
-                                                ? 'bg-red-950/90 text-red-300 border-red-500/80 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
-                                                : 'bg-djcyan-950/90 text-djcyan-300 border-djcyan-500/80 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
-                                        }`}>
+                                        {/* Badge PRO Neón */}
+                                        <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-wider border bg-djcyan-950/90 text-djcyan-300 border-djcyan-500/80 shadow-[0_0_10px_rgba(6,182,212,0.4)]">
                                             PRO
                                         </span>
                                     </div>
 
-                                    {/* Claim con indicador de la versión activa */}
+                                    {/* Claim con pulso analógico */}
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="text-[9px] uppercase tracking-[0.28em] font-mono font-bold flex items-center gap-1.5 text-gray-300">
                                             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
                                             PRECISION AUDIO INTELLIGENCE
-                                        </span>
-                                        <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-djzinc-850 text-djcyan-400 border border-djzinc-700">
-                                            {brandMotion === 1 && "V1: LASER SWEEP"}
-                                            {brandMotion === 2 && "V2: KICK PULSE"}
-                                            {brandMotion === 3 && "V3: VU STROBE"}
-                                            {brandMotion === 4 && "V4: GLITCH WAVE"}
-                                            {brandMotion === 5 && "V5: FREQ SWEEP"}
                                         </span>
                                     </div>
                                 </div>
