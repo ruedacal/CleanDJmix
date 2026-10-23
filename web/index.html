@@ -565,12 +565,7 @@
             const [batchStatusMsg, setBatchStatusMsg] = useState('');
             const [saveFeedback, setSaveFeedback] = useState('');
 
-            const [tracks, setTracks] = useState([
-                { id: 1, f: "Marco Bailey - Jungle Laps.flac", t: "Jungle Laps", a: "Marco Bailey", duration: "06:12", b: "134.00", k: "8A", e: 88, dance: 92, mood: "Peak Time Hypnotic", status: "Lossless OK", cutoff_khz: 22.0, trim_start_ms: 1938.8, first_downbeat_ms: 2417.2, comment: "Intro limpia 32b • Drop 01:15 • Outro 64b" },
-                { id: 2, f: "Mau P - Horny Tiger.mp3", t: "Horny Tiger", a: "Mau P", duration: "05:45", b: "128.00", k: "5A", e: 95, dance: 85, mood: "Dark Driving", status: "Lossy 320", cutoff_khz: 20.2, trim_start_ms: 23.9, first_downbeat_ms: 1774.3, comment: "Kick pegado • Mucho groove • Drop contundente" },
-                { id: 3, f: "Frostbite - Frozen Heart.wav", t: "Frozen Heart", a: "Frostbite", duration: "05:20", b: "--", k: "--", e: 65, dance: 70, mood: "Raw Industrial", status: "Lossless OK", cutoff_khz: 22.0, trim_start_ms: 0.0, first_downbeat_ms: 1200.0, comment: "Falta analizado de clave • Curva variable" },
-                { id: 4, f: "David Bowie - DJ (Remix Edit).flac", t: "DJ (Remix Edit)", a: "David Bowie", duration: "07:02", b: "115.00", k: "9A", e: 60, dance: 78, mood: "Melodic Drive", status: "Fake Lossless (16kHz Cutoff)", cutoff_khz: 16.0, trim_start_ms: 320.0, first_downbeat_ms: 2100.0, comment: "Transcodificado falso • Recortado a 16kHz" }
-            ]);
+            const [tracks, setTracks] = useState([]);
 
             const currentTrack = tracks.find(t => t.id === selectedTrack) || tracks[0] || {};
 
@@ -825,20 +820,7 @@
             const [isDownloading, setIsDownloading] = useState(false);
             const [selectedId, setSelectedId] = useState("10");
 
-            const [tracks, setTracks] = useState([
-                { id: "1", title: "From My Mind (Extrawelt Remix)", album: "From My Mind - EP", artist: "Marco Bailey", duration: "5:50", bpm: "134.00", key: "8A", energy: 90, danceability: 88, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/91/92/7d/91927d35-376d-4952-f673-810a9cf112a5/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "2", title: "Frostbite", album: "Trail Titans - Single", artist: "Marco Bailey", duration: "5:02", bpm: "136.00", key: "11A", energy: 93, danceability: 85, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/a4/09/b8/a409b8e2-b918-028f-7f94-6d91da5c093a/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "3", title: "Don't You Want Me", album: "A-Sides, Vol. 3", artist: "Marco Bailey", duration: "7:06", bpm: "132.00", key: "4A", energy: 87, danceability: 89, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/f4/bf/f0/f4bff07b-ebbc-6e79-5134-8c83c27419e7/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "4", title: "From My Mind", album: "From My Mind - EP", artist: "Marco Bailey", duration: "5:07", bpm: "135.00", key: "6B", energy: 89, danceability: 87, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/91/92/7d/91927d35-376d-4952-f673-810a9cf112a5/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "5", title: "Horny Tiger", album: "Believe In Me", artist: "Marco Bailey", duration: "5:53", bpm: "130.00", key: "9A", energy: 95, danceability: 92, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/65/59/09/65590924-42b7-87bb-77f6-ea33fa6935ba/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "6", title: "Jungle Laps", album: "Bedrock 11", artist: "Marco Bailey", duration: "6:15", bpm: "133.00", key: "2A", energy: 91, danceability: 90, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/5a/04/b8/5a04b868-b7d1-e6e1-95fe-4f18b3df9bb5/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "7", title: "Rathouse", album: "Pure Intec 2 (Mixed by Carl Cox & Jon Rundell)", artist: "Marco Bailey & The Filterheadz", duration: "4:34", bpm: "135.00", key: "1A", energy: 94, danceability: 86, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/d9/ef/e2/d9efe20d-773a-f111-923f-e17f53995f57/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "8", title: "Whispering Leaves", album: "Bedrock 14 (Compiled by John Digweed)", artist: "Marco Bailey", duration: "7:12", bpm: "138.00", key: "5B", energy: 96, danceability: 84, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/c6/3f/8a/c63f8a0e-26f5-ef85-2c8e-a20b79fa9a15/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "9", title: "Red Tape (John Digweed & Nick Muir vs. ...", album: "Versus", artist: "John Digweed, Nick Muir & Marco Bailey", duration: "6:34", bpm: "131.00", key: "10A", energy: 88, danceability: 89, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/64/07/28/640728c0-8457-36ff-6138-0414f526317b/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "10", title: "Don't Tease Me (feat. Marco Bailey, Darr...", album: "International Techno, Vol. 2 (feat. Marco Bailey...", artist: "Misstress Barbara, Carl Cox & Jon Rundell", duration: "7:17", bpm: "137.00", key: "7A", energy: 95, danceability: 91, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/95/92/aa/9592aa15-7773-455a-aa55-8ecda87405be/source/300x300bb.jpg", preview_url: "", selected: true },
-                { id: "11", title: "Short Black (feat. Marco Bailey, Darren E...", album: "International Techno, Vol. 2 (feat. Marco Bailey...", artist: "Carl Cox & Jon Rundell", duration: "5:42", bpm: "134.00", key: "3B", energy: 92, danceability: 87, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/95/92/aa/9592aa15-7773-455a-aa55-8ecda87405be/source/300x300bb.jpg", preview_url: "", selected: false },
-                { id: "12", title: "I Like to See You Again (feat. Marco Baile...", album: "International Techno, Vol. 2 (feat. Marco Bailey...", artist: "Carl Cox & Jon Rundell", duration: "3:32", bpm: "136.00", key: "12A", energy: 94, danceability: 88, cover: "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/95/92/aa/9592aa15-7773-455a-aa55-8ecda87405be/source/300x300bb.jpg", preview_url: "", selected: false }
-            ]);
+            const [tracks, setTracks] = useState([]);
 
             useEffect(() => {
                 if (window.eel && typeof window.eel.expose === 'function') {
@@ -959,7 +941,7 @@
                             <div className="flex justify-between items-center text-xs font-mono">
                                 <span className="text-djcyan-400 font-semibold flex items-center gap-1.5 truncate">
                                     <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></span>
-                                    <span className="bg-djcyan-500 text-black font-bold px-1.5 py-0.2 rounded text-[11px]">{downloadingMsg || `[DESCARGANDO] Iniciando lote de ${selectedCount || 1} pista(s) en .${selectedFormat.toUpperCase()}...`}</span>
+                                    <span className="bg-djcyan-500 text-black font-bold px-1.5 py-0.2 rounded text-[11px]">{downloadingMsg || `[LISTO] Introduce un enlace de Spotify o pulsa Analizar Enlace. Iniciando lote de ${selectedCount || 1} pista(s) en .${selectedFormat.toUpperCase()}...`}</span>
                                 </span>
                                 <span className="text-gray-500 text-[11px] font-bold">{tracks.length} Pistas detectadas</span>
                             </div>
