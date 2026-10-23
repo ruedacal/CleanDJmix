@@ -6,13 +6,23 @@ import atexit
 import eel
 import bottle
 
-from services.audio_service import AudioService
+from services.audio_service import AudioPlaybackService
+from services.audit_service import AuditService
 from services.media_service import MediaService
 from services.download_service import DownloadService
 
+print("=" * 60)
+print("🚀 [BEATWAVE PRO] ARQUITECTURA MODULAR ACTIVA (Backend v2)")
+print("📂 Servicios cargados: services/audio_service.py")
+print("📂 Servicios cargados: services/audit_service.py")
+print("📂 Servicios cargados: services/media_service.py")
+print("📂 Servicios cargados: services/download_service.py")
+print("=" * 60)
+
 eel.init("web")
 
-audio_svc = AudioService()
+audio_playback_svc = AudioPlaybackService()
+audit_svc = AuditService()
 media_svc = MediaService()
 download_svc = DownloadService()
 
@@ -33,26 +43,39 @@ def _emitir_log_ui(mensaje: str):
     except Exception:
         pass
 
-# Puente Eel - Audio y Reproducción macOS
+# Puente Eel - Reproducción macOS
 @eel.expose
 def reproducir_pista_mac(nombre_archivo):
-    audio_svc.reproducir_mac(nombre_archivo)
+    audio_playback_svc.reproducir_mac(nombre_archivo)
 
 @eel.expose
 def detener_audio_mac():
-    audio_svc.detener_mac()
+    audio_playback_svc.detener_mac()
 
-atexit.register(lambda: audio_svc.detener_mac())
+atexit.register(lambda: audio_playback_svc.detener_mac())
 
+# Puente Eel - Auditoría y Directorios
 @eel.expose
 def seleccionar_directorio():
-    return audio_svc.seleccionar_directorio()
+    return audit_svc.seleccionar_directorio()
 
 @eel.expose
 def iniciar_auditoria(ruta_directorio):
-    return audio_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
+    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
 
-# Puente Eel - Spotify / Medios / Streaming
+# Puente Eel - Spotify Ingest Service & Medios
+@eel.expose
+def analizar_url_spotify(spotify_url):
+    return media_svc.analizar_url_spotify(spotify_url)
+
+@eel.expose
+def descargar_track_spotify_flac(meta, dest=None):
+    return media_svc.descargar_track_spotify_flac(meta, dest)
+
+@eel.expose
+def enriquecer_pista_local(ruta):
+    return media_svc.enriquecer_pista_local(ruta)
+
 @eel.expose
 def analizar_catalogo_spotify(spotify_url):
     return media_svc.analizar_catalogo_spotify(spotify_url)
@@ -69,7 +92,7 @@ def detener_preescucha():
 def log_to_console(msg):
     print(f"[UI] {msg}")
 
-# Puente Eel - Descargas y Ingesta FLAC
+# Puente Eel - Descargas y Lotes Lossless
 @eel.expose
 def seleccionar_directorio_descarga():
     return download_svc.seleccionar_directorio_descarga()
@@ -80,7 +103,7 @@ def obtener_directorio_descarga_actual():
 
 @eel.expose
 def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir=""):
-    return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audio_svc, eel)
+    return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audit_svc, eel)
 
 if __name__ == "__main__":
     try:
