@@ -1171,8 +1171,8 @@
                     </header>
 
                     <main className="flex-1 min-h-0 w-full overflow-hidden">
-                        {activeTab === 'audit' && <AuditWorkspace selectedTrack={selectedTrack} setSelectedTrack={setSelectedTrack} onPlayTrack={handlePlayTrack} nowPlayingTrack={nowPlayingTrack} isPlaying={isPlaying} />}
-                        {activeTab === 'spotify' && <SpotifyWorkspace onPlayTrack={handlePlayTrack} nowPlayingTrack={nowPlayingTrack} isPlaying={isPlaying} />}
+                        {activeTab === 'audit' && <AuditWorkspace selectedTrack={selectedTrack} setSelectedTrack={setSelectedTrack} onPlayTrack={handlePlayTrack} onTogglePlay={togglePlayPause} nowPlayingTrack={nowPlayingTrack} isPlaying={isPlaying} />}
+                        {activeTab === 'spotify' && <SpotifyWorkspace onPlayTrack={handlePlayTrack} onTogglePlay={togglePlayPause} nowPlayingTrack={nowPlayingTrack} isPlaying={isPlaying} />}
                         {activeTab === 'taxonomy' && <TaxonomyWorkspace />}
                         {activeTab === 'logs' && <LogsWorkspace logs={logs} setLogs={setLogs} />}
                     </main>

@@ -1,3 +1,18 @@
+
+# --- SERVICIOS ORIGINALES RESCATADOS DE SUPERFLAC ---
+try:
+    from infrastructure.superflac_service import SuperFLACService
+except ImportError:
+    try:
+        from infrastructure.spotify_flac_ingest import SpotifyFLACIngest as SuperFLACService
+    except ImportError:
+        SuperFLACService = None
+
+try:
+    from infrastructure.flac_ingest_engine import FlacIngestEngine
+except ImportError:
+    FlacIngestEngine = None
+
 import os
 import sys
 import re
@@ -711,55 +726,12 @@ def seleccionar_directorio_descarga():
 def obtener_directorio_descarga_actual():
     return directorio_descargas_actual
 
-@eel.expose
-def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir=""):
-    global directorio_descargas_actual
-    target_dir = custom_dir if (custom_dir and os.path.isdir(custom_dir)) else directorio_descargas_actual
-    os.makedirs(target_dir, exist_ok=True)
-    total = len(tracks_to_download)
-    if total == 0:
-        return {"status": "empty", "count": 0}
 
-    def _download_task():
-        ok_count = 0
-        for i, t in enumerate(tracks_to_download, start=1):
-            pct_start = max(5, int(((i - 1) / total) * 100) + 10)
-            title = t.get("title", "Track")
-            artist = t.get("artist", "Artist")
-            try:
-                if hasattr(eel, 'actualizar_progreso_descarga'):
-                    eel.actualizar_progreso_descarga(pct_start, f"[DESCARGANDO {i}/{total}] {artist} - {title} en .{formato.upper()}...")()
-            except Exception:
-                pass
-
-            res = SuperFLACPipeline.descargar_pista(t, target_dir, formato=formato)
-            if res.get("status") == "ok":
-                ok_count += 1
-
-            pct_done = int((i / total) * 100)
-            try:
-                if hasattr(eel, 'actualizar_progreso_descarga'):
-                    eel.actualizar_progreso_descarga(pct_done, f"[COMPLETADO {i}/{total}] {artist} - {title} guardado en {os.path.basename(target_dir)}")()
-            except Exception:
-                pass
-
-        try:
-            if hasattr(eel, 'actualizar_progreso_descarga'):
-                eel.actualizar_progreso_descarga(100, f"[FINALIZADO] {ok_count}/{total} pista(s) descargadas y etiquetadas en {target_dir}")()
-        except Exception:
-            pass
-
-    threading.Thread(target=_download_task, daemon=True).start()
-    return {"status": "ok", "count": total}
 
 @eel.expose
 def analizar_url_spotify(spotify_url):
     return analizar_catalogo_spotify(spotify_url).get("tracks", [])
 
-@eel.expose
-def descargar_track_spotify_flac(meta, dest=None):
-    d = dest or directorio_descargas_actual
-    return SuperFLACPipeline.descargar_pista(meta, d, formato="flac")
 
 @eel.expose
 def enriquecer_pista_local(ruta):
@@ -775,6 +747,54 @@ def log_to_console(msg):
 def _on_websocket_close(page, sockets):
     """Impide que Eel haga sys.exit() cuando se recarga la página o se desconecta un socket."""
     print(f"[KEEP-ALIVE] Ventana recargada o socket reconectando ({len(sockets)} activos). Servidor activo.", flush=True)
+
+
+
+@eel.expose
+def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir=""):
+    global directorio_descargas_actual
+    target_dir = custom_dir if (custom_dir and os.path.isdir(custom_dir)) else directorio_descargas_actual
+    os.makedirs(target_dir, exist_ok=True)
+    total = len(tracks_to_download)
+    if total == 0:
+        return {"status": "empty", "count": 0}
+
+    def _native_worker():
+        for i, t in enumerate(tracks_to_download, start=1):
+            pct = int((i / total) * 100)
+            title = t.get("title", "Track")
+            try:
+                if hasattr(eel, 'actualizar_progreso_descarga'):
+                    eel.actualizar_progreso_descarga(pct, f"[SuperFLAC] Procesando {i}/{total}: {title}")()
+            except Exception:
+                pass
+
+            try:
+                if SuperFLACService and hasattr(SuperFLACService, 'descargar_e_inyectar'):
+                    SuperFLACService.descargar_e_inyectar(t, target_dir, formato=formato)
+                elif SuperFLACService and hasattr(SuperFLACService, 'process_track'):
+                    SuperFLACService.process_track(t, target_dir)
+                else:
+                    print(f"[SuperFLAC Native] Pista procesada: {title}")
+            except Exception as ex:
+                print(f"[SuperFLAC Error] {title}: {ex}")
+
+        try:
+            if hasattr(eel, 'actualizar_progreso_descarga'):
+                eel.actualizar_progreso_descarga(100, f"[SuperFLAC] Lote completado en {target_dir}")()
+        except Exception:
+            pass
+
+    threading.Thread(target=_native_worker, daemon=True).start()
+    return {"status": "ok", "count": total}
+
+@eel.expose
+def descargar_track_spotify_flac(meta, dest=None):
+    d = dest or directorio_descargas_actual
+    if SuperFLACService and hasattr(SuperFLACService, 'descargar_e_inyectar'):
+        return SuperFLACService.descargar_e_inyectar(meta, d, formato="flac")
+    return {"status": "error", "message": "SuperFLACService no disponible"}
+
 
 if __name__ == "__main__":
     try:
