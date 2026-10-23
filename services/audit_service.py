@@ -54,12 +54,30 @@ class AuditService:
             cutoff_khz = (np.max(frecuencias_validas) if len(frecuencias_validas) > 0 else 0) / 1000.0
             estado = "True Lossless" if cutoff_khz >= 20.0 else "Falso FLAC"
             perdida = 0 if estado == "True Lossless" else max(0, round((1.0 - (cutoff_khz / 22.05)) * 100, 1))
+
+            # Reducir magnitudes a un submuestreo de 64 bandas para visualizador UI
+            bins_count = 64
+            max_idx = min(len(mag_db), int(len(mag_db) * (24000.0 / (samplerate / 2.0)))) if samplerate > 0 else len(mag_db)
+            chunk_size = max(1, max_idx // bins_count)
+            spectrum_points = []
+            max_db_val = float(np.max(mag_db))
+            for i in range(bins_count):
+                chunk = mag_db[i * chunk_size : (i + 1) * chunk_size]
+                if len(chunk) > 0:
+                    val = float(np.mean(chunk))
+                    norm = max(0.0, min(1.0, (val - (max_db_val - 80)) / 80.0))
+                    spectrum_points.append(round(norm, 3))
+                else:
+                    spectrum_points.append(0.0)
+
             resultado = {
                 "id": spotify_id,
                 "estado": estado,
                 "corte": f"{cutoff_khz:.1f} kHz",
                 "cutoff_khz": round(float(cutoff_khz), 1),
-                "perdida": perdida
+                "perdida": perdida,
+                "spectrum": spectrum_points,
+                "samplerate": samplerate
             }
             if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
                 try:
@@ -69,7 +87,7 @@ class AuditService:
             return resultado
         except Exception as e:
             print(f"[ERROR DSP] {e}")
-            err_res = {"id": spotify_id, "estado": "Error I/O", "corte": "N/A", "cutoff_khz": 22.0, "perdida": 0}
+            err_res = {"id": spotify_id, "estado": "Error I/O", "corte": "N/A", "cutoff_khz": 22.0, "perdida": 0, "spectrum": []}
             if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
                 try:
                     eel.notificar_resultado_auditoria(err_res)()
