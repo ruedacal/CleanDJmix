@@ -67,6 +67,10 @@ def seleccionar_directorio():
     return audit_svc.seleccionar_directorio()
 
 @eel.expose
+def listar_subcarpetas_sistema(ruta_base=""):
+    return audit_svc.listar_subcarpetas_sistema(ruta_base)
+
+@eel.expose
 def cargar_metadatos_directorio(ruta_directorio):
     audio_playback_svc.establecer_directorio(ruta_directorio)
     return audit_svc.cargar_metadatos_directorio(ruta_directorio)

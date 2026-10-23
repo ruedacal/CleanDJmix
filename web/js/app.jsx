@@ -467,14 +467,6 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
         </div>
     );
 };
-                        <div className="w-3.5 h-3 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow" style={{ backgroundColor: cue.color }}>{cue.id}</div>
-                        <div className="w-[1px] h-full opacity-50" style={{ backgroundColor: cue.color }}></div>
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
 
 
 // Modal de configuración por lotes para Auditoría
@@ -578,6 +570,13 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
     const [fftAnalysisData, setFftAnalysisData] = useState(null);
     const [isAnalyzingFft, setIsAnalyzingFft] = useState(false);
 
+    // Navegador de Carpetas Integrado (Cero popups de permisos del SO)
+    const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState('');
+    const [fsParentPath, setFsParentPath] = useState('');
+    const [fsFolders, setFsFolders] = useState([]);
+    const [fsLoading, setFsLoading] = useState(false);
+
     const currentTrack = tracks.find(t => t.id === selectedTrack) || tracks[0] || {};
 
     useEffect(() => {
@@ -594,14 +593,56 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
         setTracks(prev => prev.map(t => t.id === currentTrack.id ? { ...t, [field]: val } : t));
     };
 
-    const handleExplorar = async () => {
-        if (window.eel && window.eel.seleccionar_directorio) {
-            const nuevaRuta = await window.eel.seleccionar_directorio()();
-            if (nuevaRuta) {
-                setRutaOrigen(nuevaRuta);
-                await handleCargarDirectorio(nuevaRuta);
+    const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
+        setFsBrowserOpen(true);
+        setFsLoading(true);
+        const startPath = initialPath || rutaOrigen || "";
+        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+            try {
+                const res = await window.eel.listar_subcarpetas_sistema(startPath)();
+                if (res) {
+                    setFsCurrentPath(res.current || "");
+                    setFsParentPath(res.parent || "");
+                    setFsFolders(res.folders || []);
+                }
+            } catch (err) {
+                console.error("Error al listar carpetas:", err);
+            } finally {
+                setFsLoading(false);
+            }
+        } else {
+            setFsLoading(false);
+        }
+    };
+
+    const handleNavegarACarpeta = async (targetPath) => {
+        setFsLoading(true);
+        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+            try {
+                const res = await window.eel.listar_subcarpetas_sistema(targetPath)();
+                if (res) {
+                    setFsCurrentPath(res.current || "");
+                    setFsParentPath(res.parent || "");
+                    setFsFolders(res.folders || []);
+                }
+            } catch (err) {
+                console.error("Error navegando:", err);
+            } finally {
+                setFsLoading(false);
             }
         }
+    };
+
+    const handleSeleccionarCarpetaUI = async (targetPath) => {
+        const finalPath = targetPath || fsCurrentPath;
+        setRutaOrigen(finalPath);
+        setFsBrowserOpen(false);
+        await handleCargarDirectorio(finalPath);
+    };
+
+    const handleExplorar = async () => {
+        // En lugar de popup nativo intrusivo, abre el navegador de carpetas web integrado
+        handleAbrirNavegadorCarpetas(rutaOrigen);
     };
 
     const handleCargarDirectorio = async (pathOverride) => {
@@ -1163,6 +1204,74 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                     </div>
                 </div>
             )}
+
+            {/* Modal Navegador de Carpetas Web Integrado (Zero Popups SO) */}
+            {fsBrowserOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans">
+                    <div className="bg-[#0c0c12] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+                        <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-djcyan-400 font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2">
+                                    <Icons.Library /> Seleccionar Carpeta de Música
+                                </span>
+                            </div>
+                            <button onClick={() => setFsBrowserOpen(false)} className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs">✕</button>
+                        </div>
+
+                        <div className="px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono">
+                            <span className="text-gray-400">Ruta:</span>
+                            <span className="text-djcyan-400 font-semibold truncate flex-1">{fsCurrentPath || "Cargando..."}</span>
+                            {fsParentPath && fsParentPath !== fsCurrentPath && (
+                                <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded text-[11px] border border-djzinc-700 cursor-pointer">
+                                    ▲ Subir Nivel
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-3 space-y-1 bg-[#07070a]">
+                            {fsLoading ? (
+                                <div className="py-12 text-center text-gray-400 text-xs font-mono flex flex-col items-center gap-2">
+                                    <div className="w-6 h-6 border-2 border-djcyan-400 border-t-transparent rounded-full animate-spin"></div>
+                                    <span>Explorando carpetas...</span>
+                                </div>
+                            ) : fsFolders.length === 0 ? (
+                                <div className="py-12 text-center text-gray-500 text-xs font-mono">
+                                    No hay subcarpetas en este directorio.
+                                </div>
+                            ) : (
+                                fsFolders.map((f, idx) => (
+                                    <div 
+                                        key={idx} 
+                                        onClick={() => handleNavegarACarpeta(f.path)}
+                                        className="p-2.5 rounded-lg bg-djzinc-900/60 hover:bg-djcyan-950/40 border border-djzinc-800/80 hover:border-djcyan-500/50 flex items-center justify-between cursor-pointer group transition-all"
+                                    >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <span className="text-amber-400 text-base">📁</span>
+                                            <span className="text-xs text-gray-200 group-hover:text-white font-medium truncate">{f.name}</span>
+                                        </div>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleSeleccionarCarpetaUI(f.path); }}
+                                            className="px-3 py-1 bg-djzinc-800 hover:bg-djcyan-600 hover:text-black text-gray-300 text-[10px] font-mono font-bold rounded border border-djzinc-700 cursor-pointer transition-colors"
+                                        >
+                                            Seleccionar
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="p-3 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center">
+                            <span className="text-[11px] font-mono text-gray-500">{fsFolders.length} carpetas disponibles</span>
+                            <div className="flex gap-2">
+                                <button onClick={() => setFsBrowserOpen(false)} className="px-4 py-1.5 bg-djzinc-800 text-gray-300 rounded text-xs">Cancelar</button>
+                                <button onClick={() => handleSeleccionarCarpetaUI(fsCurrentPath)} className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded shadow">
+                                    Cargar Esta Carpeta
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1320,6 +1429,26 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {/* Botón de Descarga Seleccionadas en la Barra Superior */}
+                        <button 
+                            onClick={() => {
+                                const seleccionadas = tracks.filter(t => t.selected);
+                                if (seleccionadas.length === 0) {
+                                    alert("Por favor marca al menos una casilla de la tabla para descargar.");
+                                    return;
+                                }
+                                lanzarDescargaReal(seleccionadas);
+                            }}
+                            disabled={isDownloading || tracks.length === 0}
+                            className={`px-3.5 py-1.5 rounded text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${
+                                selectedCount > 0 
+                                    ? 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-[0_0_12px_rgba(6,182,212,0.4)]' 
+                                    : 'bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-700'
+                            }`}
+                        >
+                            <span>⬇ Descargar Seleccionadas ({selectedCount})</span>
+                        </button>
+
                         <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
                             <span>Destino:</span>
                             <span className="text-gray-200 truncate max-w-[140px]" title={destDir}>{destDir.split('/').pop() || destDir}</span>

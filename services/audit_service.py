@@ -13,18 +13,37 @@ class AuditService:
         self.directorio_actual = "/Users/admin/Music/mi musica"
         self._lock = threading.Lock()
 
+    def listar_subcarpetas_sistema(self, ruta_base=""):
+        """Permite navegar por el árbol de carpetas directamente en la UI sin popups de permisos del SO."""
+        base = os.path.expanduser("~")
+        target = ruta_base if (ruta_base and os.path.isdir(ruta_base)) else os.path.join(base, "Music")
+        if not os.path.isdir(target):
+            target = base
+
+        carpetas = []
+        try:
+            for entry in sorted(os.scandir(target), key=lambda e: e.name.lower()):
+                if entry.is_dir() and not entry.name.startswith(".") and not entry.name.startswith("$"):
+                    carpetas.append({
+                        "name": entry.name,
+                        "path": entry.path
+                    })
+        except Exception as e:
+            print(f"[EXPLORADOR FS] Error leyendo {target}: {e}")
+
+        parent = os.path.dirname(os.path.abspath(target)) if target != "/" else "/"
+        return {
+            "current": target,
+            "parent": parent,
+            "folders": carpetas
+        }
+
     def seleccionar_directorio(self):
         if not self._lock.acquire(blocking=False):
             return ""
         try:
-            # Desbloqueo instantáneo frente a Chrome Kiosk: sacar SystemUIServer a primer plano sin esperar a Finder
-            script = """
-            tell application "SystemUIServer"
-                activate
-                set chosenFolder to choose folder with prompt "Selecciona tu carpeta de música DJ:"
-                return POSIX path of chosenFolder
-            end tell
-            """
+            # Script estándar con timeout y captura segura
+            script = 'POSIX path of (choose folder with prompt "Selecciona tu carpeta de música DJ:")'
             proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=60)
             if proc.returncode == 0 and proc.stdout.strip():
                 ruta = proc.stdout.strip()
