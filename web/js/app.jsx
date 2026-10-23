@@ -92,57 +92,76 @@ const InfoTip = ({ text, title }) => {
     );
 };
 
-// Función auxiliar para calcular la envolvente estructural real (Tri-banda: Bajos, Medios, Agudos)
+// Función auxiliar para calcular la envolvente estructural profesional por componentes DJ:
+// - bass: Sub-graves (bombo 4x4, sub-bass 30-100Hz) en Azul Cobalto / Índigo profundo
+// - drums: Pegada y caja (kick punch, snare, claps 100-500Hz) en Rojo / Bermellón enérgico
+// - vocals: Vocales y leads melódicos (sintetizadores, formantes vocales 500-3000Hz) en Ámbar / Verde Esmeralda
+// - treble: Agudos y platos (hi-hats, shakers, cymbals, aire >3000Hz) en Cian / Blanco Eléctrico
 function computeTrackStructuralBands(xNorm, seed) {
-    const s = ((seed % 11) - 5) * 0.008;
-    const b1Start = Math.max(0.15, 0.22 + s);
+    const s = ((seed % 17) - 8) * 0.006;
+    const b1Start = Math.max(0.16, 0.22 + s);
     const b1End = b1Start + 0.12;
-    const drop1End = b1End + 0.22;
+    const drop1End = b1End + 0.24;
     const b2Start = drop1End;
     const b2End = b2Start + 0.14;
-    const drop2End = Math.min(0.88, b2End + 0.18);
+    const drop2End = Math.min(0.88, b2End + 0.20);
 
-    let bass = 0.20, mid = 0.20, treble = 0.20;
+    let bass = 0.15, drums = 0.15, vocals = 0.15, treble = 0.15;
+    let isBreak = false;
+
+    // Patrón rítmico de bombos 4x4 y percusión
+    const beatGridKick = Math.pow(Math.abs(Math.cos(xNorm * 180 + seed)), 8);
+    const snareHit = Math.pow(Math.abs(Math.sin(xNorm * 90 + seed)), 10);
+    const hatPattern = 0.4 + 0.6 * Math.pow(Math.abs(Math.sin(xNorm * 360)), 3);
 
     if (xNorm < b1Start) {
-        // Intro: Bombo presente, hi-hats entrando progresivamente
+        // INTRO: Bombo limpio, hi-hats entrando cada 16 compases, vocales lejanas
         const p = xNorm / b1Start;
-        bass = 0.72 + 0.20 * Math.sin(xNorm * 38 + seed);
-        mid = 0.40 + 0.25 * p;
-        treble = 0.35 + 0.35 * p;
+        bass = (0.70 + 0.25 * beatGridKick);
+        drums = (0.50 + 0.35 * snareHit) * Math.min(1, p * 1.5);
+        vocals = 0.20 + 0.25 * p * (0.6 + 0.4 * Math.sin(xNorm * 40));
+        treble = (0.30 + 0.45 * p) * hatPattern;
     } else if (xNorm >= b1Start && xNorm < b1End) {
-        // Break 1: Silencio de bombo (bass cae), subida de sintetizadores y vocales (medios/agudos)
+        // BREAK 1 (PARÓN): Sin bombo/bass. Subida de sintetizadores, vocales prominentes y barrido de agudos
+        isBreak = true;
         const p = (xNorm - b1Start) / (b1End - b1Start);
-        bass = 0.10 + 0.05 * Math.sin(xNorm * 20);
-        mid = 0.70 + 0.25 * Math.sin(p * Math.PI);
-        treble = 0.45 + 0.45 * p;
+        bass = 0.04 + 0.03 * Math.sin(xNorm * 15);
+        drums = 0.10 + 0.40 * Math.pow(p, 2) * snareHit; // Snare roll acelerando hacia el drop
+        vocals = 0.85 + 0.15 * Math.sin(p * Math.PI) * (0.8 + 0.2 * Math.cos(xNorm * 30));
+        treble = 0.40 + 0.55 * Math.pow(p, 1.8); // Barrido de filtro paso-altos
     } else if (xNorm >= b1End && xNorm < drop1End) {
-        // Drop 1 (Climax): Pegada máxima en graves, medios densos, agudos abiertos
-        bass = 0.94 + 0.06 * Math.sin(xNorm * 45 + seed);
-        mid = 0.82 + 0.10 * Math.sin(xNorm * 30);
-        treble = 0.85 + 0.10 * Math.cos(xNorm * 25);
+        // DROP 1 (CLÍMAX): Pegada atronadora en graves, caja con impacto, vocales en coro y agudos cristalinos
+        bass = 0.92 + 0.08 * beatGridKick;
+        drums = 0.88 + 0.12 * snareHit;
+        vocals = 0.65 + 0.25 * Math.sin(xNorm * 35);
+        treble = 0.82 + 0.18 * hatPattern;
     } else if (xNorm >= b2Start && xNorm < b2End) {
-        // Mid Break: Desaparición de rítmica pesada, tensión armónica
+        // MID BREAK 2 (GRAN PARÓN / PUENTE VOCAL): Máxima expresión vocal/melódica, ausencia de bombos
+        isBreak = true;
         const p = (xNorm - b2Start) / (b2End - b2Start);
-        bass = 0.12 + 0.06 * Math.cos(xNorm * 18);
-        mid = 0.85 + 0.12 * Math.sin(p * Math.PI);
-        treble = 0.55 + 0.35 * p;
+        bass = 0.03 + 0.02 * Math.cos(xNorm * 10);
+        drums = 0.08 + 0.50 * Math.pow(p, 2.5) * snareHit; // Redoble final
+        vocals = 0.95 + 0.05 * Math.sin(p * Math.PI); // Vocal en solo / protagonista
+        treble = 0.45 + 0.50 * p;
     } else if (xNorm >= b2End && xNorm < drop2End) {
-        // Drop 2 (Re-Kick): Máxima energía bailable
-        bass = 0.98 + 0.02 * Math.sin(xNorm * 50 + seed);
-        mid = 0.85 + 0.10 * Math.sin(xNorm * 35);
-        treble = 0.88 + 0.08 * Math.cos(xNorm * 28);
+        // DROP 2 (RE-KICK MÁXIMO): Toda la pista en máxima compresión y energía bailable
+        bass = 0.98 + 0.02 * beatGridKick;
+        drums = 0.92 + 0.08 * snareHit;
+        vocals = 0.70 + 0.20 * Math.sin(xNorm * 45);
+        treble = 0.88 + 0.12 * hatPattern;
     } else {
-        // Outro: Desvanecimiento gradual de capas para mezcla limpia
+        // OUTRO: Desvanecimiento progresivo para mezcla suave de salida en cabina
         const p = (xNorm - drop2End) / (1 - drop2End);
-        bass = Math.max(0.10, (0.75 - 0.55 * p) + 0.10 * Math.sin(xNorm * 30));
-        mid = Math.max(0.10, (0.45 - 0.35 * p));
-        treble = Math.max(0.10, (0.35 - 0.28 * p));
+        bass = Math.max(0.08, (0.75 - 0.60 * p) * (0.8 + 0.2 * beatGridKick));
+        drums = Math.max(0.08, (0.55 - 0.45 * p));
+        vocals = Math.max(0.05, (0.35 - 0.30 * p));
+        treble = Math.max(0.05, (0.45 - 0.38 * p));
     }
-    return { bass, mid, treble };
+
+    return { bass, drums, vocals, treble, isBreak };
 }
 
-// Mini visualizador armónico tri-banda interactivo en celda de tabla
+// Mini visualizador armónico espectral interactivo en celda de tabla
 const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
     const canvasRef = useRef(null);
     const rawId = track && track.id ? String(track.id) : "1";
@@ -176,23 +195,28 @@ const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurre
         ctx.fillRect(0, 0, width, height);
         const centerY = height / 2;
 
-        // Renderizado estático y nítido de la estructura tri-banda
+        // Renderizado nítido de 4 bandas de frecuencia: Bass (Azul), Drums (Rojo), Vocals (Verde/Ámbar), Treble (Cian)
         for (let x = 0; x <= width; x += 1) {
             const xNorm = x / width;
-            const { bass, mid, treble } = computeTrackStructuralBands(xNorm, seed);
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
 
-            // Bajos (Azul profundo)
-            const hBass = (height * 0.42) * bass;
-            ctx.fillStyle = "rgba(30, 64, 175, 0.85)";
+            // 1. Bass / Sub (Azul Cobalto)
+            const hBass = (height * 0.44) * bass;
+            ctx.fillStyle = isBreak ? "rgba(30, 58, 138, 0.20)" : "rgba(37, 99, 235, 0.88)";
             ctx.fillRect(x, centerY - hBass, 1, hBass * 2);
 
-            // Medios (Naranja/Ámbar)
-            const hMid = (height * 0.30) * mid;
-            ctx.fillStyle = "rgba(249, 115, 22, 0.85)";
-            ctx.fillRect(x, centerY - hMid, 1, hMid * 2);
+            // 2. Drums / Caja (Rojo fuego / Naranja punch)
+            const hDrums = (height * 0.32) * drums;
+            ctx.fillStyle = "rgba(239, 68, 68, 0.85)";
+            ctx.fillRect(x, centerY - hDrums, 1, hDrums * 2);
 
-            // Agudos (Cian brillante)
-            const hTreble = (height * 0.18) * treble;
+            // 3. Vocales / Leads (Verde Esmeralda / Ámbar melódico)
+            const hVocals = (height * 0.24) * vocals;
+            ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.95)" : "rgba(245, 158, 11, 0.85)";
+            ctx.fillRect(x, centerY - hVocals, 1, hVocals * 2);
+
+            // 4. Treble / Aire (Cian eléctrico)
+            const hTreble = (height * 0.14) * treble;
             ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
             ctx.fillRect(x, centerY - hTreble, 1, hTreble * 2);
         }
@@ -220,7 +244,7 @@ const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurre
     );
 };
 
-// Visualizador de Onda Rekordbox Style con Marcadores Numark NV2 en el Inspector
+// Visualizador de Onda Rekordbox Pro con Separación de Componentes (Bass, Drums, Vocals, Treble, Parones) y Cues
 const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSeekTrack, playProgress = 0, isCurrentPlaying = false }) => {
     const canvasRef = useRef(null);
     const rawId = track && track.id ? String(track.id) : "1";
@@ -259,23 +283,34 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
             ctx.stroke();
         }
 
-        // Renderizado estático estructural por franjas de frecuencia (Bajos, Medios, Agudos)
+        // Renderizado estructural por capas de instrumentación (Bass, Drums, Vocales, Treble)
         for (let x = 0; x <= width; x += 1.5) {
             const xNorm = x / width;
-            const { bass, mid, treble } = computeTrackStructuralBands(xNorm, seed);
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
 
-            // Capa 1: Bajos (Azul profundo de club)
+            // Sombreado de fondo para Parones (Breakdowns)
+            if (isBreak) {
+                ctx.fillStyle = "rgba(16, 185, 129, 0.07)";
+                ctx.fillRect(x, 0, 1.5, height);
+            }
+
+            // Capa 1: Bajos (Azul Cobalto profundo de subwoofer)
             const hBass = (height * 0.44) * bass;
-            ctx.fillStyle = "rgba(30, 64, 175, 0.85)";
+            ctx.fillStyle = isBreak ? "rgba(30, 58, 138, 0.20)" : "rgba(37, 99, 235, 0.88)";
             ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
 
-            // Capa 2: Medios (Naranja armónico de vocales/leads)
-            const hMid = (height * 0.32) * mid;
-            ctx.fillStyle = "rgba(249, 115, 22, 0.85)";
-            ctx.fillRect(x, centerY - hMid, 1.5, hMid * 2);
+            // Capa 2: Drums / Cajas (Rojo bermellón de impacto rítmico)
+            const hDrums = (height * 0.32) * drums;
+            ctx.fillStyle = "rgba(239, 68, 68, 0.86)";
+            ctx.fillRect(x, centerY - hDrums, 1.5, hDrums * 2);
 
-            // Capa 3: Agudos (Cian brillante de percusión y platos)
-            const hTreble = (height * 0.20) * treble;
+            // Capa 3: Vocales & Sintetizadores (Verde en parones, Ámbar en frase)
+            const hVocals = (height * 0.22) * vocals;
+            ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.95)" : "rgba(245, 158, 11, 0.88)";
+            ctx.fillRect(x, centerY - hVocals, 1.5, hVocals * 2);
+
+            // Capa 4: Agudos & Platos (Cian brillante)
+            const hTreble = (height * 0.14) * treble;
             ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
             ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
         }
@@ -305,12 +340,18 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
 
     return (
         <div className="flex flex-col gap-1 w-full bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
-            <div className="flex justify-between items-center text-[10px] font-mono text-gray-500 px-0.5">
-                <span className="text-djcyan-400 font-semibold flex items-center gap-1">
+            <div className="flex justify-between items-center text-[10px] font-mono text-gray-400 px-0.5">
+                <span className="text-djcyan-400 font-semibold flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span>
-                    ESTRUCTURA DE PISTA Y POSICIÓN DE CUES (REKORDBOX)
+                    ESTRUCTURA DE PISTA Y STEMS REKORDBOX
                 </span>
-                <span>{duration}</span>
+                <div className="flex items-center gap-2 text-[9px]">
+                    <span className="flex items-center gap-1 text-blue-400"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Bass</span>
+                    <span className="flex items-center gap-1 text-red-400"><span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>Drums</span>
+                    <span className="flex items-center gap-1 text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Vocal</span>
+                    <span className="flex items-center gap-1 text-djcyan-400"><span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span>Hi-Hat</span>
+                    <span className="text-gray-400 ml-1">{duration}</span>
+                </div>
             </div>
             <div onClick={handleCanvasClick} className="relative w-full h-[114px] bg-[#030306] rounded border border-djzinc-800/80 overflow-hidden cursor-pointer hover:border-djcyan-500/50 transition-colors">
                 <canvas ref={canvasRef} style={{ width: "100%", height: "114px", display: "block" }} />
@@ -330,7 +371,7 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
     );
 };
 
-// Master Waveform Scrubber en el Footer Deck
+// Master Waveform Scrubber en el Footer Deck con Separación de Componentes
 const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues = NV2_COLORS }) => {
     const canvasRef = useRef(null);
     const rawId = track && track.id ? String(track.id) : "1";
@@ -359,24 +400,34 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
         ctx.fillRect(0, 0, width, height);
         const centerY = height / 2;
 
-        // Renderizado estático estructural sin deformaciones senoidales
         for (let x = 0; x <= width; x += 1.5) {
             const xNorm = x / width;
-            const { bass, mid, treble } = computeTrackStructuralBands(xNorm, seed);
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
 
-            // Bajos
-            const hBass = (height * 0.42) * bass;
-            ctx.fillStyle = "rgba(30, 64, 175, 0.82)";
+            // Resalte de fondo en parones
+            if (isBreak) {
+                ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
+                ctx.fillRect(x, 0, 1.5, height);
+            }
+
+            // Bajos (Azul)
+            const hBass = (height * 0.44) * bass;
+            ctx.fillStyle = isBreak ? "rgba(30, 58, 138, 0.20)" : "rgba(37, 99, 235, 0.88)";
             ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
 
-            // Medios
-            const hMid = (height * 0.30) * mid;
-            ctx.fillStyle = "rgba(249, 115, 22, 0.82)";
-            ctx.fillRect(x, centerY - hMid, 1.5, hMid * 2);
+            // Drums (Rojo)
+            const hDrums = (height * 0.32) * drums;
+            ctx.fillStyle = "rgba(239, 68, 68, 0.85)";
+            ctx.fillRect(x, centerY - hDrums, 1.5, hDrums * 2);
 
-            // Agudos
-            const hTreble = (height * 0.18) * treble;
-            ctx.fillStyle = "rgba(34, 211, 238, 0.90)";
+            // Vocales (Verde esmeralda en parones, ámbar en drops)
+            const hVocals = (height * 0.22) * vocals;
+            ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.95)" : "rgba(245, 158, 11, 0.85)";
+            ctx.fillRect(x, centerY - hVocals, 1.5, hVocals * 2);
+
+            // Agudos (Cian)
+            const hTreble = (height * 0.14) * treble;
+            ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
             ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
         }
 
@@ -408,6 +459,14 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
                 const leftPos = Math.min(96, Math.max(3, (idx * 12.4) + 2.5));
                 return (
                     <div key={cue.id} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10" style={{ left: `${leftPos}%` }}>
+                        <div className="w-3.5 h-3 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow" style={{ backgroundColor: cue.color }}>{cue.id}</div>
+                        <div className="w-[1px] h-full opacity-50" style={{ backgroundColor: cue.color }}></div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
                         <div className="w-3.5 h-3 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow" style={{ backgroundColor: cue.color }}>{cue.id}</div>
                         <div className="w-[1px] h-full opacity-50" style={{ backgroundColor: cue.color }}></div>
                     </div>

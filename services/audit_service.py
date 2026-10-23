@@ -104,7 +104,7 @@ class AuditService:
             emitir_log_cb(f"Iniciando auditoría avanzada en: {ruta_directorio}")
 
         tracks_auditados = []
-        extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a")
+        extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
         idx = 1
         sin_meta_count = 0
         fake_count = 0
@@ -150,7 +150,7 @@ class AuditService:
                     "comment": str(info.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b")
                 })
                 idx += 1
-                if len(tracks_auditados) >= 2500:
+                if len(tracks_auditados) >= 50000:
                     break
 
         total = len(tracks_auditados)
@@ -170,7 +170,7 @@ class AuditService:
 
         self.directorio_actual = ruta_directorio
         tracks_cargados = []
-        extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a")
+        extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
         idx = 1
         sin_meta_count = 0
 
@@ -268,7 +268,7 @@ class AuditService:
                     "comment": ""
                 })
                 idx += 1
-                if len(tracks_cargados) >= 2500:
+                if len(tracks_cargados) >= 50000:
                     break
 
         total = len(tracks_cargados)
