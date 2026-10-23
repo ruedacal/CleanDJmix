@@ -4,6 +4,8 @@ import threading
 import numpy as np
 import soundfile as sf
 import eel
+from mutagen import File as MutagenFile
+from mutagen.flac import FLAC
 from infrastructure.audio_processor import AudioProcessorService
 
 class AuditService:
@@ -97,7 +99,8 @@ class AuditService:
                 info = AudioProcessorService.analizar_track_avanzado(full_path)
                 bpm_val = info.get("bpm")
                 key_val = info.get("key")
-                if info.get("missing_meta", False) or not bpm_val or not key_val:
+                is_missing = bool(info.get("missing_meta", False) or not bpm_val or not key_val or str(bpm_val) == "--" or str(key_val) == "--")
+                if is_missing:
                     sin_meta_count += 1
 
                 status_str = str(info.get("status") or "Lossless OK")
@@ -133,10 +136,129 @@ class AuditService:
                     break
 
         total = len(tracks_auditados)
+        ready_count = max(0, total - sin_meta_count)
         return {
             "total": total,
             "sin_meta": sin_meta_count,
-            "ready": max(0, total - sin_meta_count),
+            "ready": ready_count,
             "errors": fake_count,
             "tracks": tracks_auditados
+        }
+
+    def cargar_metadatos_directorio(self, ruta_directorio):
+        """Lee únicamente los metadatos existentes de los archivos sin ejecutar procesos pesados."""
+        if not ruta_directorio or not os.path.exists(ruta_directorio):
+            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
+
+        self.directorio_actual = ruta_directorio
+        tracks_cargados = []
+        extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a")
+        idx = 1
+        sin_meta_count = 0
+
+        for root, _, files in os.walk(ruta_directorio):
+            for file in sorted(files):
+                if file.startswith(".") or not file.lower().endswith(extensiones):
+                    continue
+                full_path = os.path.join(root, file)
+                filename = os.path.basename(full_path)
+                ext = os.path.splitext(filename)[1].lower()
+                artist_fb, title_fb = AudioProcessorService._parsear_nombre(filename)
+
+                title = ""
+                artist = ""
+                bpm_str = "--"
+                key_str = "--"
+                dur_str = "00:00"
+
+                try:
+                    if ext == ".flac":
+                        try:
+                            f = FLAC(full_path)
+                            title = f.get("TITLE", [""])[0]
+                            artist = f.get("ARTIST", [""])[0]
+                            raw_k = f.get("INITIALKEY", f.get("KEY", [""]))[0]
+                            if raw_k:
+                                key_str = AudioProcessorService.normalizar_key(raw_k)
+                            bpm_val = f.get("BPM", [""])[0]
+                            if bpm_val:
+                                try:
+                                    bpm_str = f"{float(str(bpm_val).replace(',', '.')):.2f}"
+                                except Exception:
+                                    pass
+                            if f.info and f.info.length:
+                                m = int(f.info.length) // 60
+                                s = int(f.info.length) % 60
+                                dur_str = f"{m}:{s:02d}"
+                        except Exception:
+                            m = MutagenFile(full_path, easy=True)
+                            if m:
+                                title = str(m.get("title", [""])[0])
+                                artist = str(m.get("artist", [""])[0])
+                                if m.info and hasattr(m.info, "length"):
+                                    dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
+                    else:
+                        m = MutagenFile(full_path, easy=True)
+                        if m:
+                            title = str(m.get("title", [""])[0])
+                            artist = str(m.get("artist", [""])[0])
+                            raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
+                            if raw_bpm:
+                                try:
+                                    bpm_str = f"{float(raw_bpm):.2f}"
+                                except Exception:
+                                    pass
+                            raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
+                            if raw_key:
+                                key_str = AudioProcessorService.normalizar_key(raw_key)
+                            if m.info and hasattr(m.info, "length"):
+                                dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
+                except Exception:
+                    pass
+
+                if not title:
+                    title = title_fb
+                if not artist:
+                    artist = artist_fb
+
+                missing = (bpm_str == "--" or key_str == "--")
+                if missing:
+                    sin_meta_count += 1
+
+                tracks_cargados.append({
+                    "id": idx,
+                    "f": str(file),
+                    "filename": str(file),
+                    "path": str(full_path),
+                    "t": str(title),
+                    "title": str(title),
+                    "a": str(artist),
+                    "artist": str(artist),
+                    "b": bpm_str,
+                    "bpm": bpm_str,
+                    "k": key_str,
+                    "key": key_str,
+                    "e": 0,
+                    "dance": 0,
+                    "mood": "Pendiente Auditoría",
+                    "duration": dur_str,
+                    "format": ext.replace(".", "").upper(),
+                    "status": "Cargado (Sin auditar)",
+                    "cutoff_khz": 0.0,
+                    "trim_start_ms": 0.0,
+                    "first_downbeat_ms": 0.0,
+                    "comment": ""
+                })
+                idx += 1
+                if len(tracks_cargados) >= 2500:
+                    break
+
+        total = len(tracks_cargados)
+        ready_count = max(0, total - sin_meta_count)
+        return {
+            "total": total,
+            "sin_meta": sin_meta_count,
+            "ready": ready_count,
+            "errors": 0,
+            "tracks": tracks_cargados
         }

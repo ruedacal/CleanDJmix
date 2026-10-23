@@ -92,11 +92,61 @@ const InfoTip = ({ text, title }) => {
     );
 };
 
+// Función auxiliar para calcular la envolvente estructural real (Tri-banda: Bajos, Medios, Agudos)
+function computeTrackStructuralBands(xNorm, seed) {
+    const s = ((seed % 11) - 5) * 0.008;
+    const b1Start = Math.max(0.15, 0.22 + s);
+    const b1End = b1Start + 0.12;
+    const drop1End = b1End + 0.22;
+    const b2Start = drop1End;
+    const b2End = b2Start + 0.14;
+    const drop2End = Math.min(0.88, b2End + 0.18);
+
+    let bass = 0.20, mid = 0.20, treble = 0.20;
+
+    if (xNorm < b1Start) {
+        // Intro: Bombo presente, hi-hats entrando progresivamente
+        const p = xNorm / b1Start;
+        bass = 0.72 + 0.20 * Math.sin(xNorm * 38 + seed);
+        mid = 0.40 + 0.25 * p;
+        treble = 0.35 + 0.35 * p;
+    } else if (xNorm >= b1Start && xNorm < b1End) {
+        // Break 1: Silencio de bombo (bass cae), subida de sintetizadores y vocales (medios/agudos)
+        const p = (xNorm - b1Start) / (b1End - b1Start);
+        bass = 0.10 + 0.05 * Math.sin(xNorm * 20);
+        mid = 0.70 + 0.25 * Math.sin(p * Math.PI);
+        treble = 0.45 + 0.45 * p;
+    } else if (xNorm >= b1End && xNorm < drop1End) {
+        // Drop 1 (Climax): Pegada máxima en graves, medios densos, agudos abiertos
+        bass = 0.94 + 0.06 * Math.sin(xNorm * 45 + seed);
+        mid = 0.82 + 0.10 * Math.sin(xNorm * 30);
+        treble = 0.85 + 0.10 * Math.cos(xNorm * 25);
+    } else if (xNorm >= b2Start && xNorm < b2End) {
+        // Mid Break: Desaparición de rítmica pesada, tensión armónica
+        const p = (xNorm - b2Start) / (b2End - b2Start);
+        bass = 0.12 + 0.06 * Math.cos(xNorm * 18);
+        mid = 0.85 + 0.12 * Math.sin(p * Math.PI);
+        treble = 0.55 + 0.35 * p;
+    } else if (xNorm >= b2End && xNorm < drop2End) {
+        // Drop 2 (Re-Kick): Máxima energía bailable
+        bass = 0.98 + 0.02 * Math.sin(xNorm * 50 + seed);
+        mid = 0.85 + 0.10 * Math.sin(xNorm * 35);
+        treble = 0.88 + 0.08 * Math.cos(xNorm * 28);
+    } else {
+        // Outro: Desvanecimiento gradual de capas para mezcla limpia
+        const p = (xNorm - drop2End) / (1 - drop2End);
+        bass = Math.max(0.10, (0.75 - 0.55 * p) + 0.10 * Math.sin(xNorm * 30));
+        mid = Math.max(0.10, (0.45 - 0.35 * p));
+        treble = Math.max(0.10, (0.35 - 0.28 * p));
+    }
+    return { bass, mid, treble };
+}
+
 // Mini visualizador armónico tri-banda interactivo en celda de tabla
 const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
     const canvasRef = useRef(null);
     const rawId = track && track.id ? String(track.id) : "1";
-    const seed = rawId.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
 
     const handleClickScrub = (e) => {
         e.stopPropagation();
@@ -114,7 +164,7 @@ const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurre
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         const dpr = window.devicePixelRatio || 1;
         const width = 112;
         const height = 28;
@@ -126,61 +176,28 @@ const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurre
         ctx.fillRect(0, 0, width, height);
         const centerY = height / 2;
 
-        const getBandEnergy = (xNorm) => {
-            const breakStart = 0.38 + ((seed % 7) * 0.01);
-            const breakEnd = breakStart + 0.16;
-            let bass = 0.28, mid = 0.22, treble = 0.25;
-            if (xNorm > 0.11 && xNorm < breakStart) { bass = 0.94; mid = 0.72; treble = 0.68; }
-            else if (xNorm >= breakStart && xNorm <= breakEnd) { bass = 0.12; mid = 0.88; treble = 0.48; }
-            else if (xNorm > breakEnd && xNorm < 0.86) { bass = 0.98; mid = 0.82; treble = 0.85; }
-            else if (xNorm >= 0.86) { bass = 0.35; mid = 0.18; treble = 0.28; }
-            return { bass, mid, treble };
-        };
+        // Renderizado estático y nítido de la estructura tri-banda
+        for (let x = 0; x <= width; x += 1) {
+            const xNorm = x / width;
+            const { bass, mid, treble } = computeTrackStructuralBands(xNorm, seed);
 
-        // Bajos (Azul saturado)
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(30, 64, 175, 0.78)";
-        for (let x = 0; x <= width; x += 2) {
-            const { bass } = getBandEnergy(x / width);
-            const kickPound = (Math.sin(x * 0.45 + seed) > 0.25) ? 1.18 : 0.78;
-            const yH = (height * 0.38) * bass * kickPound;
-            if (x === 0) ctx.moveTo(x, centerY - yH);
-            else ctx.lineTo(x, centerY - yH);
-        }
-        for (let x = width; x >= 0; x -= 2) {
-            const { bass } = getBandEnergy(x / width);
-            const kickPound = (Math.sin(x * 0.45 + seed) > 0.25) ? 1.18 : 0.78;
-            const yH = (height * 0.38) * bass * kickPound;
-            ctx.lineTo(x, centerY + yH);
-        }
-        ctx.closePath();
-        ctx.fill();
+            // Bajos (Azul profundo)
+            const hBass = (height * 0.42) * bass;
+            ctx.fillStyle = "rgba(30, 64, 175, 0.85)";
+            ctx.fillRect(x, centerY - hBass, 1, hBass * 2);
 
-        // Medios (Ámbar / Naranja)
-        ctx.beginPath();
-        ctx.strokeStyle = "#f97316";
-        ctx.lineWidth = 1.2;
-        for (let x = 0; x <= width; x += 2) {
-            const { mid } = getBandEnergy(x / width);
-            const yMid = centerY - Math.sin(x * 0.19 + seed * 2) * (height * 0.34) * mid;
-            if (x === 0) ctx.moveTo(x, yMid);
-            else ctx.lineTo(x, yMid);
-        }
-        ctx.stroke();
+            // Medios (Naranja/Ámbar)
+            const hMid = (height * 0.30) * mid;
+            ctx.fillStyle = "rgba(249, 115, 22, 0.85)";
+            ctx.fillRect(x, centerY - hMid, 1, hMid * 2);
 
-        // Agudos (Cian brillante)
-        ctx.beginPath();
-        ctx.strokeStyle = "#22d3ee";
-        ctx.lineWidth = 0.9;
-        for (let x = 0; x <= width; x += 1.5) {
-            const { treble } = getBandEnergy(x / width);
-            const yHi = centerY - Math.sin(x * 0.38 + seed * 3) * (height * 0.44) * treble;
-            if (x === 0) ctx.moveTo(x, yHi);
-            else ctx.lineTo(x, yHi);
+            // Agudos (Cian brillante)
+            const hTreble = (height * 0.18) * treble;
+            ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
+            ctx.fillRect(x, centerY - hTreble, 1, hTreble * 2);
         }
-        ctx.stroke();
 
-        // Cursor blanco de reproducción si es la pista actual
+        // Cursor playhead si se está reproduciendo
         if (isCurrentPlaying && playProgress > 0) {
             const px = width * Math.min(1, Math.max(0, playProgress));
             ctx.strokeStyle = "#ffffff";
@@ -194,7 +211,7 @@ const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurre
 
     return (
         <div onClick={handleClickScrub} className="w-28 h-7 bg-[#040407] rounded border border-djzinc-800 relative overflow-hidden group cursor-pointer hover:border-djcyan-400 transition-colors flex items-center justify-center">
-            <canvas ref={canvasRef} style={{ width: '112px', height: '28px', display: 'block' }} />
+            <canvas ref={canvasRef} style={{ width: "112px", height: "28px", display: "block" }} />
             <span className="absolute bottom-0.5 right-1 text-[8px] font-mono text-gray-400 opacity-60 group-hover:opacity-100">{duration}</span>
             {isCurrentPlaying && (
                 <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></div>
@@ -204,10 +221,10 @@ const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurre
 };
 
 // Visualizador de Onda Rekordbox Style con Marcadores Numark NV2 en el Inspector
-const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSeekTrack }) => {
+const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSeekTrack, playProgress = 0, isCurrentPlaying = false }) => {
     const canvasRef = useRef(null);
     const rawId = track && track.id ? String(track.id) : "1";
-    const seed = rawId.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
 
     const handleCanvasClick = (e) => {
         if (!canvasRef.current || !onSeekTrack) return;
@@ -219,8 +236,7 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let animationId;
+        const ctx = canvas.getContext("2d");
         const dpr = window.devicePixelRatio || 1;
         const width = canvas.parentElement.clientWidth || 340;
         const height = 114;
@@ -228,87 +244,76 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
         canvas.height = height * dpr;
         ctx.scale(dpr, dpr);
 
-        let phase = 0;
+        ctx.fillStyle = "#030306";
+        ctx.fillRect(0, 0, width, height);
+        const centerY = height / 2;
 
-        const render = () => {
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = "#050508";
-            ctx.fillRect(0, 0, width, height);
-            const centerY = height / 2;
-            const breakStart = 0.39 + ((seed % 6) * 0.01);
-            const breakEnd = breakStart + 0.16;
-
-            const getProfile = (xNorm) => {
-                let b = 0.28, m = 0.20, t = 0.22;
-                if (xNorm > 0.10 && xNorm < breakStart) { b = 0.98; m = 0.68; t = 0.72; }
-                else if (xNorm >= breakStart && xNorm <= breakEnd) { b = 0.14; m = 0.92; t = 0.38; }
-                else if (xNorm > breakEnd && xNorm < 0.84) { b = 0.95; m = 0.85; t = 0.88; }
-                else if (xNorm >= 0.84) { b = 0.32; m = 0.15; t = 0.20; }
-                return { b, m, t };
-            };
-
-            // Bajos
+        // Cuadrícula de compases de fondo (32 compases)
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+        ctx.lineWidth = 1;
+        for (let b = 0; b <= 32; b++) {
+            const bx = (b / 32) * width;
             ctx.beginPath();
-            ctx.fillStyle = "rgba(30, 64, 175, 0.75)";
-            for (let x = 0; x <= width; x += 3) {
-                const { b } = getProfile(x / width);
-                const kickBeat = (Math.sin(x * 0.15 + phase * 0.03 + seed) > 0.4) ? 1.15 : 0.85;
-                const yH = (height * 0.40) * b * kickBeat;
-                if (x === 0) ctx.moveTo(x, centerY - yH);
-                else ctx.lineTo(x, centerY - yH);
-            }
-            for (let x = width; x >= 0; x -= 3) {
-                const { b } = getProfile(x / width);
-                const kickBeat = (Math.sin(x * 0.15 + phase * 0.03 + seed) > 0.4) ? 1.15 : 0.85;
-                const yH = (height * 0.40) * b * kickBeat;
-                ctx.lineTo(x, centerY + yH);
-            }
-            ctx.closePath();
-            ctx.fill();
-
-            // Medios
-            ctx.beginPath();
-            ctx.strokeStyle = "#f97316";
-            ctx.lineWidth = 1.4;
-            for (let x = 0; x <= width; x += 2.5) {
-                const { m } = getProfile(x / width);
-                const y = centerY + Math.sin(x * 0.06 + phase * 0.03 + seed) * (height * 0.32) * m;
-                if (x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
+            ctx.moveTo(bx, 0);
+            ctx.lineTo(bx, height);
             ctx.stroke();
+        }
 
-            // Agudos
+        // Renderizado estático estructural por franjas de frecuencia (Bajos, Medios, Agudos)
+        for (let x = 0; x <= width; x += 1.5) {
+            const xNorm = x / width;
+            const { bass, mid, treble } = computeTrackStructuralBands(xNorm, seed);
+
+            // Capa 1: Bajos (Azul profundo de club)
+            const hBass = (height * 0.44) * bass;
+            ctx.fillStyle = "rgba(30, 64, 175, 0.85)";
+            ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
+
+            // Capa 2: Medios (Naranja armónico de vocales/leads)
+            const hMid = (height * 0.32) * mid;
+            ctx.fillStyle = "rgba(249, 115, 22, 0.85)";
+            ctx.fillRect(x, centerY - hMid, 1.5, hMid * 2);
+
+            // Capa 3: Agudos (Cian brillante de percusión y platos)
+            const hTreble = (height * 0.20) * treble;
+            ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
+            ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
+        }
+
+        // Línea central de referencia cero
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
+
+        // Cursor blanco de posición de reproducción
+        if (playProgress > 0) {
+            const px = width * Math.min(1, Math.max(0, playProgress));
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.shadowColor = "#ffffff";
+            ctx.shadowBlur = 6;
             ctx.beginPath();
-            ctx.strokeStyle = "#22d3ee";
-            ctx.lineWidth = 1.1;
-            for (let x = 0; x <= width; x += 2) {
-                const { t } = getProfile(x / width);
-                const yHi = centerY - Math.sin(x * 0.12 + phase * 0.06 + seed) * (height * 0.44) * t;
-                if (x === 0) ctx.moveTo(x, yHi);
-                else ctx.lineTo(x, yHi);
-            }
+            ctx.moveTo(px, 0);
+            ctx.lineTo(px, height);
             ctx.stroke();
-
-            phase += 1;
-            animationId = requestAnimationFrame(render);
-        };
-
-        render();
-        return () => cancelAnimationFrame(animationId);
-    }, [track, seed]);
+            ctx.shadowBlur = 0;
+        }
+    }, [track, seed, playProgress, isCurrentPlaying]);
 
     return (
         <div className="flex flex-col gap-1 w-full bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
             <div className="flex justify-between items-center text-[10px] font-mono text-gray-500 px-0.5">
                 <span className="text-djcyan-400 font-semibold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span>
-                    TRI-BAND FREQUENCY SPECTRUM
+                    ESTRUCTURA DE PISTA Y POSICIÓN DE CUES (REKORDBOX)
                 </span>
                 <span>{duration}</span>
             </div>
             <div onClick={handleCanvasClick} className="relative w-full h-[114px] bg-[#030306] rounded border border-djzinc-800/80 overflow-hidden cursor-pointer hover:border-djcyan-500/50 transition-colors">
-                <canvas ref={canvasRef} style={{ width: '100%', height: '114px', display: 'block' }} />
+                <canvas ref={canvasRef} style={{ width: "100%", height: "114px", display: "block" }} />
                 {cues.map((c, idx) => {
                     const leftPos = Math.min(94, Math.max(4, (idx * 12.2) + 3));
                     return (
@@ -326,10 +331,10 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
 };
 
 // Master Waveform Scrubber en el Footer Deck
-const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0.22, onSeek, cues = NV2_COLORS }) => {
+const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues = NV2_COLORS }) => {
     const canvasRef = useRef(null);
     const rawId = track && track.id ? String(track.id) : "1";
-    const seed = rawId.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
 
     const handleScrub = (e) => {
         if (!canvasRef.current || !onSeek) return;
@@ -342,8 +347,7 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0.22, onSeek, c
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let animationId;
+        const ctx = canvas.getContext("2d");
         const dpr = window.devicePixelRatio || 1;
         const width = canvas.parentElement.clientWidth || 640;
         const height = 42;
@@ -351,86 +355,55 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0.22, onSeek, c
         canvas.height = height * dpr;
         ctx.scale(dpr, dpr);
 
-        let phase = 0;
+        ctx.fillStyle = "#060609";
+        ctx.fillRect(0, 0, width, height);
+        const centerY = height / 2;
 
-        const render = () => {
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = "#060609";
-            ctx.fillRect(0, 0, width, height);
-            const centerY = height / 2;
-
-            const getProfile = (xNorm) => {
-                let b = 0.25, m = 0.20, t = 0.20;
-                if (xNorm > 0.12 && xNorm < 0.40) { b = 0.95; m = 0.70; t = 0.75; }
-                else if (xNorm >= 0.40 && xNorm <= 0.55) { b = 0.15; m = 0.90; t = 0.40; }
-                else if (xNorm > 0.55 && xNorm < 0.85) { b = 1.00; m = 0.85; t = 0.85; }
-                else if (xNorm >= 0.85) { b = 0.35; m = 0.20; t = 0.25; }
-                return { b, m, t };
-            };
+        // Renderizado estático estructural sin deformaciones senoidales
+        for (let x = 0; x <= width; x += 1.5) {
+            const xNorm = x / width;
+            const { bass, mid, treble } = computeTrackStructuralBands(xNorm, seed);
 
             // Bajos
-            ctx.beginPath();
-            ctx.fillStyle = "rgba(30, 64, 175, 0.68)";
-            for (let x = 0; x <= width; x += 4) {
-                const { b } = getProfile(x / width);
-                const kickBeat = (isPlaying && Math.sin(x * 0.10 + phase * 0.04 + seed) > 0.3) ? 1.15 : 0.85;
-                const yH = (height * 0.40) * b * kickBeat;
-                if (x === 0) ctx.moveTo(x, centerY - yH);
-                else ctx.lineTo(x, centerY - yH);
-            }
-            for (let x = width; x >= 0; x -= 4) {
-                const { b } = getProfile(x / width);
-                const kickBeat = (isPlaying && Math.sin(x * 0.10 + phase * 0.04 + seed) > 0.3) ? 1.15 : 0.85;
-                const yH = (height * 0.40) * b * kickBeat;
-                ctx.lineTo(x, centerY + yH);
-            }
-            ctx.closePath();
-            ctx.fill();
+            const hBass = (height * 0.42) * bass;
+            ctx.fillStyle = "rgba(30, 64, 175, 0.82)";
+            ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
 
             // Medios
-            ctx.beginPath();
-            ctx.strokeStyle = "#f97316";
-            ctx.lineWidth = 1.2;
-            for (let x = 0; x <= width; x += 3) {
-                const { m } = getProfile(x / width);
-                const yMid = centerY - Math.sin(x * 0.05 + phase * 0.03 + seed) * (height * 0.32) * m;
-                if (x === 0) ctx.moveTo(x, yMid);
-                else ctx.lineTo(x, yMid);
-            }
-            ctx.stroke();
+            const hMid = (height * 0.30) * mid;
+            ctx.fillStyle = "rgba(249, 115, 22, 0.82)";
+            ctx.fillRect(x, centerY - hMid, 1.5, hMid * 2);
 
             // Agudos
-            ctx.beginPath();
-            ctx.strokeStyle = "#22d3ee";
-            ctx.lineWidth = 1.0;
-            for (let x = 0; x <= width; x += 2.5) {
-                const { t } = getProfile(x / width);
-                const yHi = centerY - Math.sin(x * 0.10 + phase * 0.05 + seed) * (height * 0.44) * t;
-                if (x === 0) ctx.moveTo(x, yHi);
-                else ctx.lineTo(x, yHi);
-            }
-            ctx.stroke();
+            const hTreble = (height * 0.18) * treble;
+            ctx.fillStyle = "rgba(34, 211, 238, 0.90)";
+            ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
+        }
 
-            // Línea blanca Playhead / Scrubber
-            const px = width * Math.min(1, Math.max(0, playProgress));
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 1.8;
-            ctx.beginPath();
-            ctx.moveTo(px, 0);
-            ctx.lineTo(px, height);
-            ctx.stroke();
+        // Línea central
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
 
-            if (isPlaying) phase += 1;
-            animationId = requestAnimationFrame(render);
-        };
-
-        render();
-        return () => cancelAnimationFrame(animationId);
-    }, [track, isPlaying, playProgress, seed]);
+        // Línea blanca Playhead / Scrubber sincronizada con playProgress
+        const px = width * Math.min(1, Math.max(0, playProgress));
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = "#ffffff";
+        ctx.shadowBlur = 4;
+        ctx.beginPath();
+        ctx.moveTo(px, 0);
+        ctx.lineTo(px, height);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+    }, [track, playProgress, seed]);
 
     return (
         <div onClick={handleScrub} className="flex-1 h-11 bg-[#060609] rounded-lg border border-djzinc-800/90 relative overflow-hidden group cursor-pointer hover:border-djcyan-500/70 transition-colors shadow-inner flex items-center mx-6">
-            <canvas ref={canvasRef} style={{ width: '100%', height: '42px', display: 'block' }} />
+            <canvas ref={canvasRef} style={{ width: "100%", height: "42px", display: "block" }} />
             {cues.map((cue, idx) => {
                 const leftPos = Math.min(96, Math.max(3, (idx * 12.4) + 2.5));
                 return (
@@ -443,6 +416,7 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0.22, onSeek, c
         </div>
     );
 };
+
 
 // Modal de configuración por lotes para Auditoría
 const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
@@ -529,9 +503,10 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
 
 // Espacio de Trabajo: Auditoría & DSP
 const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayingTrack, isPlaying, onTogglePlay, playProgress = 0 }) => {
-    const [rutaOrigen, setRutaOrigen] = useState('/Users/admin/Music/mi musica');
+    const [rutaOrigen, setRutaOrigen] = useState('');
     const [isAuditing, setIsAuditing] = useState(false);
-    const [metrics, setMetrics] = useState({ total: 4, missing: 1, ready: 3, errors: 1 });
+    const [isLoadingDir, setIsLoadingDir] = useState(false);
+    const [metrics, setMetrics] = useState({ total: 0, missing: 0, ready: 0, errors: 0 });
     const [filtro, setFiltro] = useState('todos');
     const [busqueda, setBusqueda] = useState('');
     const [batchModalOpen, setBatchModalOpen] = useState(false);
@@ -562,13 +537,46 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
             const nuevaRuta = await window.eel.seleccionar_directorio()();
             if (nuevaRuta) {
                 setRutaOrigen(nuevaRuta);
-                handleAuditar(nuevaRuta);
+                await handleCargarDirectorio(nuevaRuta);
+            }
+        }
+    };
+
+    const handleCargarDirectorio = async (pathOverride) => {
+        const target = pathOverride || rutaOrigen;
+        if (!target) return;
+        if (window.eel && window.eel.cargar_metadatos_directorio && !isLoadingDir) {
+            setIsLoadingDir(true);
+            setBatchStatusMsg(`Leyendo metadatos de archivos en ${target}...`);
+            try {
+                const res = await window.eel.cargar_metadatos_directorio(target)();
+                if (res && Array.isArray(res.tracks)) {
+                    setTracks(res.tracks);
+                    if (res.tracks.length > 0) {
+                        setSelectedTrack(res.tracks[0].id);
+                    }
+                    setMetrics({
+                        total: res.total || 0,
+                        missing: res.sin_meta || 0,
+                        ready: res.ready !== undefined ? res.ready : Math.max(0, (res.total || 0) - (res.sin_meta || 0)),
+                        errors: res.errors || 0
+                    });
+                }
+            } catch (e) {
+                console.error("Fallo carga metadatos de directorio:", e);
+            } finally {
+                setIsLoadingDir(false);
+                setBatchStatusMsg('');
             }
         }
     };
 
     const handleAuditar = async (pathOverride) => {
         const target = pathOverride || rutaOrigen;
+        if (!target) {
+            alert("Por favor selecciona o explora una carpeta primero.");
+            return;
+        }
         if (window.eel && window.eel.iniciar_auditoria && !isAuditing) {
             setIsAuditing(true);
             setBatchStatusMsg(`Auditando biblioteca en ${target}...`);
@@ -579,9 +587,9 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                     setTracks(res.tracks);
                     setSelectedTrack(res.tracks[0].id);
                     setMetrics({
-                        total: res.total,
-                        missing: res.sin_meta,
-                        ready: res.ready !== undefined ? res.ready : (res.total - res.sin_meta),
+                        total: res.total || 0,
+                        missing: res.sin_meta || 0,
+                        ready: res.ready !== undefined ? res.ready : Math.max(0, (res.total || 0) - (res.sin_meta || 0)),
                         errors: res.errors !== undefined ? res.errors : res.tracks.filter(x => String(x.status).includes('Fake')).length
                     });
                 }
@@ -589,7 +597,7 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                 console.error("Fallo auditoría:", e);
             } finally {
                 setBatchProgress(100);
-                setTimeout(() => { setIsAuditing(false); setBatchProgress(0); }, 400);
+                setTimeout(() => { setIsAuditing(false); setBatchProgress(0); setBatchStatusMsg(''); }, 400);
             }
         }
     };
@@ -801,8 +809,17 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                             <h4 className="font-bold text-sm text-djcyan-400 truncate" title={currentTrack.t || currentTrack.title}>{currentTrack.t || currentTrack.title || 'Selecciona un track'}</h4>
                             <p className="text-xs text-gray-400 truncate" title={currentTrack.a || currentTrack.artist}>{currentTrack.a || currentTrack.artist || '--'}</p>
                         </div>
-                        <button onClick={() => onPlayTrack && onPlayTrack(currentTrack, 0, true)} className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0">
-                            {nowPlayingTrack && String(nowPlayingTrack.id) === String(currentTrack.id) && isPlaying ? '❚❚ PAUSE' : '▶ PLAY'}
+                        <button 
+                            onClick={() => {
+                                if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f)) {
+                                    onTogglePlay && onTogglePlay();
+                                } else {
+                                    onPlayTrack && onPlayTrack(currentTrack, 0, true);
+                                }
+                            }} 
+                            className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0 transition-colors"
+                        >
+                            {nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) && isPlaying ? '❚❚ PAUSE' : '▶ PLAY'}
                         </button>
                     </div>
 
@@ -1185,9 +1202,12 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                             <p className="text-xs text-gray-400 truncate">{currentTrack.artist || '--'}</p>
                         </div>
                         <button onClick={(e) => handlePlayPreview(currentTrack, e)} className="px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0">
-                            {nowPlayingTrack && String(nowPlayingTrack.id) === String(currentTrack.id) && isPlaying ? '❚❚ PAUSE' : '▶ PRE-ESCUCHA'}
+                            {nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.title === currentTrack.title) && isPlaying ? '❚❚ PAUSE' : '▶ PRE-ESCUCHA'}
                         </button>
                     </div>
+
+                    {/* Waveform Rekordbox Estructural en Spotify Ingest */}
+                    <RekordboxWaveform track={currentTrack} duration={currentTrack.duration || "03:30"} onSeekTrack={(trk, pct) => handlePlayPreview(trk)} />
 
                     <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                         <div className="bg-[#050508] p-2.5 rounded border border-djzinc-800">
@@ -1283,19 +1303,7 @@ const LogsWorkspace = ({ logs, setLogs }) => (
 const App = () => {
     const [activeTab, setActiveTab] = useState('audit');
     const [selectedTrack, setSelectedTrack] = useState(1);
-    const [nowPlayingTrack, setNowPlayingTrack] = useState({
-        id: "1",
-        t: "Selecciona una pista para reproducir",
-        title: "Selecciona una pista para reproducir",
-        a: "CleanDJmix PRO",
-        artist: "CleanDJmix PRO",
-        b: "--",
-        bpm: "--",
-        k: "--",
-        key: "--",
-        duration: "--:--",
-        cover: DEFAULT_VINYL_SVG
-    });
+    const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playProgress, setPlayProgress] = useState(0);
     const audioRef = useRef(null);
@@ -1339,8 +1347,10 @@ const App = () => {
 
     const handlePlayTrack = (track, seekPct = 0, autoPlay = true) => {
         if (!track) return;
-        setNowPlayingTrack(track);
-        window.__bwCurrentTrack = track;
+        const resolvedCover = track.cover || (track.path ? `/cover?path=${encodeURIComponent(track.path)}` : (track.f ? `/cover?path=${encodeURIComponent(track.f)}` : null));
+        const trackWithCover = { ...track, cover: resolvedCover };
+        setNowPlayingTrack(trackWithCover);
+        window.__bwCurrentTrack = trackWithCover;
 
         if (autoPlay) {
             const audio = audioRef.current;

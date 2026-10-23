@@ -67,6 +67,11 @@ def seleccionar_directorio():
     return audit_svc.seleccionar_directorio()
 
 @eel.expose
+def cargar_metadatos_directorio(ruta_directorio):
+    audio_playback_svc.establecer_directorio(ruta_directorio)
+    return audit_svc.cargar_metadatos_directorio(ruta_directorio)
+
+@eel.expose
 def iniciar_auditoria(ruta_directorio):
     audio_playback_svc.establecer_directorio(ruta_directorio)
     return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
