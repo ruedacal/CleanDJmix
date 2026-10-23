@@ -1104,7 +1104,7 @@
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('audit');
-            const [brandProposal, setBrandProposal] = useState(1);
+            
              // , setFontPreset] = useState(1);
             const [waveMode, setWaveMode] = useState(1); // 1: Quantum Spectrum, 2: Cyber C-Glyph, 3: Vinyl Frequency Matrix
             const [selectedTrack, setSelectedTrack] = useState(1);
@@ -1183,112 +1183,76 @@
                 <div className="flex flex-col h-screen w-screen bg-djzinc-950 text-gray-300 overflow-hidden font-sans select-none">
                     <header className="h-14 border-b border-djzinc-800 bg-djzinc-950/90 backdrop-blur px-4 flex items-center justify-between shrink-0 z-30">
                         <div className="flex items-center gap-3">
-                            <div onClick={() => setBrandProposal(prev => prev === 5 ? 1 : prev + 1)} className="flex items-center gap-3.5 select-none cursor-pointer group" title="Haz clic para alternar entre las 5 propuestas de identidad">
+                            <div className="flex items-center gap-3.5 select-none">
                                 
-                                {/* CAJA DEL ISOTIPO SVG VECTORIAL PURO (Siempre visible) */}
-                                <div className="w-11 h-11 rounded-xl bg-[#09090f] border border-djcyan-500/60 flex items-center justify-center relative overflow-hidden shrink-0 shadow-[0_0_18px_rgba(6,182,212,0.35)] group-hover:border-djcyan-400 group-hover:shadow-[0_0_24px_rgba(34,211,238,0.55)] transition-all">
-                                    
-                                    {/* PROPUESTA 1: Quantum Transient Core */}
-                                    {brandProposal === 1 && (
-                                        <svg className="w-7 h-7 anim-glow" viewBox="0 0 32 32" fill="none">
-                                            <rect className="eq-bar eq-b1" x="3" y="10" width="3" height="18" rx="1.5" fill="#06b6d4" />
-                                            <rect className="eq-bar eq-b2" x="8.5" y="4" width="3.5" height="24" rx="1.75" fill="#ffffff" filter="drop-shadow(0 0 4px #22d3ee)" />
-                                            <rect className="eq-bar eq-b3" x="14.5" y="6" width="3" height="22" rx="1.5" fill="#22d3ee" />
-                                            <rect className="eq-bar eq-b4" x="20" y="5" width="3.5" height="23" rx="1.75" fill="#6366f1" />
-                                            <rect className="eq-bar eq-b5" x="26" y="11" width="3" height="17" rx="1.5" fill="#0891b2" />
-                                        </svg>
-                                    )}
+                                {/* ISOTIPO: Barras con animación nativa SMIL garantizada en Chromium */}
+                                <div className="w-11 h-11 rounded-xl bg-[#08080e] border border-djcyan-500/60 flex items-center justify-center relative overflow-hidden shrink-0 anim-box-halo">
+                                    <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
+                                        <defs>
+                                            <linearGradient id="coreGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stopColor="#22d3ee" />
+                                                <stop offset="100%" stopColor="#0891b2" />
+                                            </linearGradient>
+                                            <filter id="whiteBloom" x="-50%" y="-50%" width="200%" height="200%">
+                                                <feGaussianBlur stdDeviation="1.5" result="blur" />
+                                                <feMerge>
+                                                    <feMergeNode in="blur" />
+                                                    <feMergeNode in="SourceGraphic" />
+                                                </feMerge>
+                                            </filter>
+                                        </defs>
 
-                                    {/* PROPUESTA 2: Cyber Kinetic Phase */}
-                                    {brandProposal === 2 && (
-                                        <svg className="w-8 h-8" viewBox="0 0 40 24" fill="none">
-                                            <path d="M0 12 C 6 2, 14 2, 20 12 C 26 22, 34 22, 40 12" stroke="#22d3ee" strokeWidth="2.8" strokeLinecap="round" className="anim-sine-wave" />
-                                            <path d="M0 12 C 6 22, 14 22, 20 12 C 26 2, 34 2, 40 12" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round" opacity="0.7" className="anim-sine-wave" />
-                                        </svg>
-                                    )}
+                                        {/* Barra 1 (Cian oscuro) */}
+                                        <rect x="2.5" width="3" rx="1.5" fill="#0891b2" y="14" height="14">
+                                            <animate attributeName="height" values="8;22;12;20;8" dur="0.9s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                            <animate attributeName="y" values="20;6;16;8;20" dur="0.9s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                        </rect>
 
-                                    {/* PROPUESTA 3: Techno Grid 4/4 Pulse */}
-                                    {brandProposal === 3 && (
-                                        <svg className="w-7 h-7" viewBox="0 0 32 32" fill="none">
-                                            <g className="eq-bar eq-b2">
-                                                <rect x="5" y="5" width="4" height="4" rx="1" fill="#22d3ee" />
-                                                <rect x="5" y="11" width="4" height="4" rx="1" fill="#06b6d4" />
-                                                <rect x="5" y="17" width="4" height="4" rx="1" fill="#0e7490" />
-                                                <rect x="5" y="23" width="4" height="4" rx="1" fill="#155e75" />
-                                            </g>
-                                            <g className="eq-bar eq-b1">
-                                                <rect x="11" y="2" width="4" height="4" rx="1" fill="#ffffff" />
-                                                <rect x="11" y="8" width="4" height="4" rx="1" fill="#22d3ee" />
-                                                <rect x="11" y="14" width="4" height="4" rx="1" fill="#06b6d4" />
-                                                <rect x="11" y="20" width="4" height="4" rx="1" fill="#0e7490" />
-                                                <rect x="11" y="26" width="4" height="4" rx="1" fill="#155e75" />
-                                            </g>
-                                            <g className="eq-bar eq-b3">
-                                                <rect x="17" y="5" width="4" height="4" rx="1" fill="#818cf8" />
-                                                <rect x="17" y="11" width="4" height="4" rx="1" fill="#6366f1" />
-                                                <rect x="17" y="17" width="4" height="4" rx="1" fill="#4f46e5" />
-                                                <rect x="17" y="23" width="4" height="4" rx="1" fill="#3730a3" />
-                                            </g>
-                                            <g className="eq-bar eq-b4">
-                                                <rect x="23" y="11" width="4" height="4" rx="1" fill="#06b6d4" />
-                                                <rect x="23" y="17" width="4" height="4" rx="1" fill="#0891b2" />
-                                                <rect x="23" y="23" width="4" height="4" rx="1" fill="#155e75" />
-                                            </g>
-                                        </svg>
-                                    )}
+                                        {/* Barra 2 (Núcleo blanco de alta luminosidad) */}
+                                        <rect x="8" width="3.5" rx="1.75" fill="#ffffff" filter="url(#whiteBloom)" y="8" height="20">
+                                            <animate attributeName="height" values="16;26;10;27;16" dur="0.75s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                            <animate attributeName="y" values="12;2;18;1;12" dur="0.75s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                        </rect>
 
-                                    {/* PROPUESTA 4: Orbital Harmonic Matrix */}
-                                    {brandProposal === 4 && (
-                                        <div className="relative w-7 h-7 flex items-center justify-center">
-                                            <svg className="absolute w-7 h-7 anim-orbit-cw text-djcyan-400" viewBox="0 0 36 36" fill="none">
-                                                <ellipse cx="18" cy="18" rx="15" ry="7" stroke="currentColor" strokeWidth="2" strokeDasharray="12 6" />
-                                            </svg>
-                                            <svg className="absolute w-7 h-7 anim-orbit-ccw text-indigo-400 opacity-80" viewBox="0 0 36 36" fill="none">
-                                                <ellipse cx="18" cy="18" rx="7" ry="15" stroke="currentColor" strokeWidth="1.8" strokeDasharray="10 5" />
-                                            </svg>
-                                            <div className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_12px_#22d3ee] z-10 animate-ping"></div>
-                                        </div>
-                                    )}
+                                        {/* Barra 3 (Cian eléctrico 22d3ee) */}
+                                        <rect x="14" width="3" rx="1.5" fill="#22d3ee" y="6" height="22">
+                                            <animate attributeName="height" values="22;10;25;8;22" dur="1.05s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                            <animate attributeName="y" values="6;18;3;20;6" dur="1.05s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                        </rect>
 
-                                    {/* PROPUESTA 5: Audio Laser Vortex */}
-                                    {brandProposal === 5 && (
-                                        <svg className="w-7 h-7 anim-orbit-cw" viewBox="0 0 36 36" fill="none">
-                                            <circle cx="18" cy="18" r="14" stroke="#06b6d4" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round" />
-                                            <circle cx="18" cy="18" r="9" stroke="#818cf8" strokeWidth="2.5" strokeDasharray="15 30" strokeLinecap="round" />
-                                            <circle cx="18" cy="18" r="4" fill="#ffffff" filter="drop-shadow(0 0 6px #22d3ee)" />
-                                        </svg>
-                                    )}
+                                        {/* Barra 4 (Ultravioleta / Azul) */}
+                                        <rect x="19.5" width="3.5" rx="1.75" fill="#6366f1" y="10" height="18">
+                                            <animate attributeName="height" values="12;24;14;25;12" dur="0.82s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                            <animate attributeName="y" values="16;4;14;3;16" dur="0.82s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                        </rect>
+
+                                        {/* Barra 5 (Cian 06b6d4) */}
+                                        <rect x="25.5" width="3" rx="1.5" fill="#06b6d4" y="16" height="12">
+                                            <animate attributeName="height" values="6;18;8;16;6" dur="0.95s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                            <animate attributeName="y" values="22;10;20;12;22" dur="0.95s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                                        </rect>
+                                    </svg>
                                 </div>
 
-                                {/* TEXTOS DE MARCA CON COLORES RECUPERADOS */}
+                                {/* TEXTOS DE MARCA CON COLORES RECUPERADOS Y ANIMACIÓN */}
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2 leading-none">
-                                        {/* BEATWAVE con tipografía Syne 900 y contraste cromático */}
-                                        <span className={`text-xl tracking-wider uppercase font-black ${brandProposal === 3 ? 'anim-laser-text' : ''}`} style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
-                                            <span className="text-white">BEAT</span><span className="text-djcyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">WAVE</span>
+                                        <span className="text-xl tracking-wider uppercase font-black anim-text-glow" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
+                                            <span className="text-white">BEAT</span><span className="text-djcyan-400">WAVE</span>
                                         </span>
-                                        
-                                        {/* Badge PRO */}
-                                        <span className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-wider border shadow-md ${
-                                            brandProposal === 5 
-                                                ? 'bg-emerald-950 text-emerald-300 border-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-                                                : 'bg-djcyan-950/90 text-djcyan-300 border-djcyan-500/80 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
-                                        }`}>
+                                        <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-wider border bg-djcyan-950/90 text-djcyan-300 border-djcyan-500/80 shadow-[0_0_10px_rgba(6,182,212,0.4)]">
                                             PRO
                                         </span>
                                     </div>
 
-                                    {/* CLAIM CON CONTRASTE Y INDICADOR DE PROPUESTA */}
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="text-[9px] uppercase tracking-[0.28em] font-mono font-bold flex items-center gap-1.5 text-gray-300">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 animate-pulse"></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 animate-ping"></span>
                                             PRECISION AUDIO INTELLIGENCE
-                                        </span>
-                                        <span className="text-[8px] font-mono px-1 rounded bg-djzinc-800 text-djcyan-400 border border-djzinc-700">
-                                            P{brandProposal}/5
                                         </span>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
 
