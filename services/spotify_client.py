@@ -1,11 +1,9 @@
-# services/spotify_client.py
 import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
 class SpotifyService:
     def __init__(self):
-        # Inicialización del cliente Spotipy con credenciales de entorno
         self.client_id = os.getenv("SPOTIPY_CLIENT_ID")
         self.client_secret = os.getenv("SPOTIPY_CLIENT_SECRET")
         self.redirect_uri = os.getenv("SPOTIPY_REDIRECT_URI", "http://localhost:8888/callback")
@@ -23,7 +21,6 @@ class SpotifyService:
         return None
 
     def search_track(self, sp, query: str):
-        """Busca una pista en Spotify y devuelve metadatos normalizados."""
         try:
             results = sp.search(q=query, type='track', limit=1)
             items = results.get('tracks', {}).get('items', [])
