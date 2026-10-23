@@ -1104,6 +1104,7 @@
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('audit');
+            const [brandMotion, setBrandMotion] = useState(1);
             
             
              // , setFontPreset] = useState(1);
@@ -1184,110 +1185,129 @@
                 <div className="flex flex-col h-screen w-screen bg-djzinc-950 text-gray-300 overflow-hidden font-sans select-none">
                     <header className="h-14 border-b border-djzinc-800 bg-djzinc-950/90 backdrop-blur px-4 flex items-center justify-between shrink-0 z-30">
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center select-none anim-master-aura">
+                            <div onClick={() => setBrandMotion(prev => prev === 5 ? 1 : prev + 1)} className="flex items-center gap-3.5 select-none cursor-pointer group" title="Haz clic para alternar entre las 5 variantes de animación">
                                 
-                                <svg width="420" height="46" viewBox="0 0 420 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <defs>
-                                        <!-- Filtro Bloom de alta intensidad -->
-                                        <filter id="coreGlow" x="-30%" y="-30%" width="160%" height="160%">
-                                            <feGaussianBlur stdDeviation="1.8" result="blur" />
-                                            <feMerge>
-                                                <feMergeNode in="blur" />
-                                                <feMergeNode in="SourceGraphic" />
-                                            </feMerge>
-                                        </filter>
+                                {/* ISOTIPO CON BARRAS SMIL MULTICROMÁTICAS */}
+                                <div className="w-11 h-11 rounded-xl bg-[#08080e] border flex items-center justify-center relative overflow-hidden shrink-0 anim-box-halo">
+                                    <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
+                                        <defs>
+                                            <filter id="coreGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                                <feGaussianBlur stdDeviation="1.8" result="blur" />
+                                                <feMerge>
+                                                    <feMergeNode in="blur" />
+                                                    <feMergeNode in="SourceGraphic" />
+                                                </feMerge>
+                                            </filter>
+                                            <filter id="redPeakGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                                <feGaussianBlur stdDeviation="2" result="blur" />
+                                                <feMerge>
+                                                    <feMergeNode in="blur" />
+                                                    <feMergeNode in="SourceGraphic" />
+                                                </feMerge>
+                                            </filter>
+                                        </defs>
 
-                                        <!-- Haz Láser en movimiento que recorre las letras BEATWAVE -->
-                                        <linearGradient id="laserTextFlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" stop-color="#ffffff">
-                                                <animate attributeName="stop-color" values="#ffffff;#22d3ee;#ef4444;#ffffff" dur="4s" repeatCount="indefinite" />
-                                            </stop>
-                                            <stop offset="35%" stop-color="#22d3ee">
-                                                <animate attributeName="stop-color" values="#22d3ee;#ffffff;#22d3ee;#ef4444" dur="4s" repeatCount="indefinite" />
-                                            </stop>
-                                            <stop offset="70%" stop-color="#06b6d4">
-                                                <animate attributeName="stop-color" values="#06b6d4;#ef4444;#ffffff;#22d3ee" dur="4s" repeatCount="indefinite" />
-                                            </stop>
-                                            <stop offset="100%" stop-color="#ffffff">
-                                                <animate attributeName="stop-color" values="#ffffff;#22d3ee;#ef4444;#ffffff" dur="4s" repeatCount="indefinite" />
-                                            </stop>
-                                            <animateTransform attributeName="gradientTransform" type="translate" from="-1 0" to="1 0" dur="2.5s" repeatCount="indefinite" />
-                                        </linearGradient>
-                                    </defs>
-
-                                    <!-- ================= CAJA ISOTIPO ================= -->
-                                    <g transform="translate(2, 2)">
-                                        <!-- Marco del Isotipo con respiración de color -->
-                                        <rect width="42" height="42" rx="12" fill="#08080f" stroke="#06b6d4" stroke-width="1.5">
-                                            <animate attributeName="stroke" values="#06b6d4;#22d3ee;#ef4444;#06b6d4" dur="3s" repeatCount="indefinite" />
-                                        </rect>
-
-                                        <!-- BARRA 1 (Cian a Azul Eléctrico) -->
-                                        <rect x="5" y="16" width="3.5" rx="1.75" height="14" fill="#06b6d4">
+                                        {/* Barra 1 */}
+                                        <rect x="2.5" width="3" rx="1.5" height="14" fill="#06b6d4" y="14">
                                             <animate attributeName="height" values="8;24;10;22;8" dur="0.85s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
                                             <animate attributeName="y" values="24;8;22;10;24" dur="0.85s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
                                             <animate attributeName="fill" values="#0891b2;#22d3ee;#3b82f6;#0891b2" dur="2.4s" repeatCount="indefinite" />
                                         </rect>
 
-                                        <!-- BARRA 2 (Núcleo Blanco saturado que muta a Cian puro) -->
-                                        <rect x="11.5" y="10" width="4" rx="2" height="22" fill="#ffffff" filter="url(#coreGlow)">
+                                        {/* Barra 2 (Núcleo Blanco) */}
+                                        <rect x="8" width="3.5" rx="1.75" height="22" fill="#ffffff" filter="url(#coreGlow)" y="10">
                                             <animate attributeName="height" values="16;30;12;28;16" dur="0.72s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
                                             <animate attributeName="y" values="16;2;20;4;16" dur="0.72s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
                                             <animate attributeName="fill" values="#ffffff;#cffafe;#ffffff;#a5f3fc;#ffffff" dur="1.8s" repeatCount="indefinite" />
                                         </rect>
 
-                                        <!-- BARRA 3 (Cian Eléctrico que muta a Azul) -->
-                                        <rect x="18.5" y="8" width="3.5" rx="1.75" height="24" fill="#22d3ee">
+                                        {/* Barra 3 */}
+                                        <rect x="14" width="3" rx="1.5" height="24" fill="#22d3ee" y="8">
                                             <animate attributeName="height" values="24;10;27;14;24" dur="0.96s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
                                             <animate attributeName="y" values="8;22;5;18;8" dur="0.96s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
                                             <animate attributeName="fill" values="#22d3ee;#06b6d4;#3b82f6;#22d3ee" dur="2.8s" repeatCount="indefinite" />
                                         </rect>
 
-                                        <!-- BARRA 4 (ROJO ANALÓGICO CLIP PEAK que muta a Rojo Fuego) -->
-                                        <rect x="25" y="12" width="4" rx="2" height="20" fill="#ef4444" filter="url(#coreGlow)">
+                                        {/* Barra 4 (ROJO ANALÓGICO CLIP PEAK #ef4444) */}
+                                        <rect x="19.5" width="3.5" rx="1.75" height="20" fill="#ef4444" filter="url(#redPeakGlow)" y="12">
                                             <animate attributeName="height" values="10;29;8;30;10" dur="0.65s" repeatCount="indefinite" calcMode="spline" keySplines="0.1 0.9 0.2 1; 0.1 0.9 0.2 1; 0.1 0.9 0.2 1; 0.1 0.9 0.2 1" />
                                             <animate attributeName="y" values="22;3;24;2;22" dur="0.65s" repeatCount="indefinite" calcMode="spline" keySplines="0.1 0.9 0.2 1; 0.1 0.9 0.2 1; 0.1 0.9 0.2 1; 0.1 0.9 0.2 1" />
                                             <animate attributeName="fill" values="#ef4444;#f87171;#dc2626;#ef4444" dur="1.2s" repeatCount="indefinite" />
                                         </rect>
 
-                                        <!-- BARRA 5 (Cian Secundario a Azul Cobalto) -->
-                                        <rect x="32" y="18" width="3.5" rx="1.75" height="14" fill="#0891b2">
+                                        {/* Barra 5 */}
+                                        <rect x="25.5" width="3" rx="1.5" height="14" fill="#0891b2" y="18">
                                             <animate attributeName="height" values="6;22;8;18;6" dur="0.88s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
                                             <animate attributeName="y" values="26;10;24;14;26" dur="0.88s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1; 0.16 1 0.3 1" />
                                             <animate attributeName="fill" values="#0891b2;#3b82f6;#06b6d4;#0891b2" dur="2.6s" repeatCount="indefinite" />
                                         </rect>
-                                    </g>
+                                    </svg>
+                                </div>
 
-                                    <!-- ================= TIPOGRAFÍA BEATWAVE ================= -->
-                                    <g transform="translate(56, 26)">
-                                        <!-- Texto con relleno de gradiente láser animado nativo -->
-                                        <text font-family="'Syne', sans-serif" font-weight="900" font-size="22" letter-spacing="1.5" fill="url(#laserTextFlow)">
-                                            BEATWAVE
-                                        </text>
+                                {/* RÓTULO BEATWAVE CON LAS 5 VARIANTES CINÉTICAS */}
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2 leading-none">
+                                        
+                                        {/* V1: Laser Sweep */}
+                                        {brandMotion === 1 && (
+                                            <span className="text-xl tracking-wider uppercase font-black anim-shimmer" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
+                                                BEATWAVE
+                                            </span>
+                                        )}
 
-                                        <!-- Badge PRO -->
-                                        <g transform="translate(142, -17)">
-                                            <rect width="36" height="18" rx="5" fill="#083344" stroke="#06b6d4" stroke-width="1.2">
-                                                <animate attributeName="stroke" values="#06b6d4;#ef4444;#22d3ee;#06b6d4" dur="2s" repeatCount="indefinite" />
-                                            </rect>
-                                            <text x="18" y="13" font-family="'Space Mono', monospace" font-size="9.5" font-weight="900" fill="#22d3ee" text-anchor="middle">
-                                                PRO
-                                                <animate attributeName="fill" values="#22d3ee;#ffffff;#ef4444;#22d3ee" dur="2s" repeatCount="indefinite" />
-                                            </text>
-                                        </g>
-                                    </g>
+                                        {/* V2: Kick Pulse */}
+                                        {brandMotion === 2 && (
+                                            <span className="text-xl tracking-wider uppercase font-black anim-kick" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
+                                                <span className="text-white">BEAT</span><span className="text-djcyan-400">WAVE</span>
+                                            </span>
+                                        )}
 
-                                    <!-- ================= CLAIM ================= -->
-                                    <g transform="translate(57, 41)">
-                                        <circle cx="3" cy="-3.5" r="2.5" fill="#ef4444">
-                                            <animate attributeName="r" values="2;3.5;2" dur="1s" repeatCount="indefinite" />
-                                            <animate attributeName="fill" values="#ef4444;#22d3ee;#ef4444" dur="1s" repeatCount="indefinite" />
-                                        </circle>
-                                        <text x="12" y="0" font-family="'Space Mono', monospace" font-size="8.5" font-weight="700" letter-spacing="2.6" fill="#a1a1aa">
+                                        {/* V3: Analog VU Strobe */}
+                                        {brandMotion === 3 && (
+                                            <span className="text-xl tracking-wider uppercase font-black anim-strobe" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
+                                                <span className="text-white">BEAT</span><span className="text-djcyan-400">WAVE</span>
+                                            </span>
+                                        )}
+
+                                        {/* V4: Glitch Wave */}
+                                        {brandMotion === 4 && (
+                                            <span className="text-xl tracking-wider uppercase font-black anim-glitch" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
+                                                <span className="text-white">BEAT</span><span className="text-djcyan-400">WAVE</span>
+                                            </span>
+                                        )}
+
+                                        {/* V5: Frequency Waveform */}
+                                        {brandMotion === 5 && (
+                                            <span className="text-xl tracking-wider uppercase font-black anim-sweep" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
+                                                <span className="text-white">BEAT</span><span className="text-red-400">WAVE</span>
+                                            </span>
+                                        )}
+
+                                        {/* Badge PRO */}
+                                        <span className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-wider border shadow-md ${
+                                            brandMotion === 4 || brandMotion === 5
+                                                ? 'bg-red-950/90 text-red-300 border-red-500/80 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+                                                : 'bg-djcyan-950/90 text-djcyan-300 border-djcyan-500/80 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                        }`}>
+                                            PRO
+                                        </span>
+                                    </div>
+
+                                    {/* Claim con indicador de la versión activa */}
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[9px] uppercase tracking-[0.28em] font-mono font-bold flex items-center gap-1.5 text-gray-300">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
                                             PRECISION AUDIO INTELLIGENCE
-                                        </text>
-                                    </g>
-                                </svg>
+                                        </span>
+                                        <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-djzinc-850 text-djcyan-400 border border-djzinc-700">
+                                            {brandMotion === 1 && "V1: LASER SWEEP"}
+                                            {brandMotion === 2 && "V2: KICK PULSE"}
+                                            {brandMotion === 3 && "V3: VU STROBE"}
+                                            {brandMotion === 4 && "V4: GLITCH WAVE"}
+                                            {brandMotion === 5 && "V5: FREQ SWEEP"}
+                                        </span>
+                                    </div>
+                                </div>
 
                             </div>
                         </div>
