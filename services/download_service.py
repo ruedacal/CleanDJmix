@@ -11,8 +11,14 @@ class DownloadService:
 
     def seleccionar_directorio_descarga(self):
         try:
-            cmd = """osascript -e 'POSIX path of (choose folder with prompt "Selecciona la carpeta de destino para las descargas DJ:")'"""
-            res = subprocess.check_output(cmd, shell=True, text=True).strip()
+            script = '''
+            tell application "Finder"
+                activate
+                set chosenFolder to choose folder with prompt "Selecciona la carpeta de destino para las descargas DJ:"
+                return POSIX path of chosenFolder
+            end tell
+            '''
+            res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=60).stdout.strip()
             if res and os.path.isdir(res):
                 self.directorio_descargas = res
                 return {"status": "ok", "path": self.directorio_descargas}

@@ -13,11 +13,7 @@ from services.download_service import DownloadService
 from services.export_service import ExportService
 
 print("=" * 60)
-print("🚀 [BEATWAVE PRO] ARQUITECTURA MODULAR ACTIVA (Backend v2)")
-print("📂 Servicios cargados: services/audio_service.py")
-print("📂 Servicios cargados: services/audit_service.py")
-print("📂 Servicios cargados: services/media_service.py")
-print("📂 Servicios cargados: services/download_service.py")
+print("🚀 [BEATWAVE PRO] BACKEND MODULAR V2 - PUENTE EEL ACTIVO")
 print("=" * 60)
 
 eel.init("web")
@@ -45,7 +41,7 @@ def _emitir_log_ui(mensaje: str):
     except Exception:
         pass
 
-# Puente Eel - Reproducción macOS
+# 1. Reproducción de Audio macOS
 @eel.expose
 def reproducir_pista_mac(nombre_archivo):
     audio_playback_svc.reproducir_mac(nombre_archivo)
@@ -56,7 +52,7 @@ def detener_audio_mac():
 
 atexit.register(lambda: audio_playback_svc.detener_mac())
 
-# Puente Eel - Auditoría y Directorios
+# 2. Auditoría y Directorios
 @eel.expose
 def seleccionar_directorio():
     return audit_svc.seleccionar_directorio()
@@ -68,7 +64,7 @@ def iniciar_auditoria(ruta_directorio):
         audio_playback_svc.establecer_directorio(ruta_directorio)
     return res
 
-# Puente Eel - Spotify Ingest Service & Medios
+# 3. Spotify, Mutagen e Ingesta de Medios
 @eel.expose
 def analizar_url_spotify(spotify_url):
     return media_svc.analizar_url_spotify(spotify_url)
@@ -97,7 +93,7 @@ def detener_preescucha():
 def log_to_console(msg):
     print(f"[UI] {msg}")
 
-# Puente Eel - Descargas y Lotes Lossless
+# 4. Descargas y Lotes Lossless
 @eel.expose
 def seleccionar_directorio_descarga():
     return download_svc.seleccionar_directorio_descarga()
@@ -109,6 +105,11 @@ def obtener_directorio_descarga_actual():
 @eel.expose
 def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir=""):
     return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audit_svc, eel)
+
+# 5. Exportación XLS / CSV
+@eel.expose
+def exportar_auditoria_xls(tracks):
+    return export_svc.exportar_tracks_xls(tracks)
 
 if __name__ == "__main__":
     try:
@@ -137,9 +138,3 @@ if __name__ == "__main__":
         print("\n[CleanDJmix] Servidor detenido por el usuario.")
     except Exception as ex:
         print(f"[ERROR CRÍTICO] Error en tiempo de ejecución: {ex}")
-
-
-# Puente Eel - Exportación XLS / Respaldo
-@eel.expose
-def exportar_auditoria_xls(tracks):
-    return export_svc.exportar_tracks_xls(tracks)

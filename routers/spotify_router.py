@@ -1,4 +1,3 @@
-# routers/spotify_router.py
 from flask import Blueprint, jsonify, request
 from services.spotify_client import SpotifyService
 
@@ -13,7 +12,6 @@ def search_spotify_track():
     if not query:
         return jsonify({"error": "Parámetro 'query' requerido"}), 400
         
-    # Instancia de cliente temporal para pruebas de ingesta
     sp = spotify_service.get_client()
     if not sp:
         return jsonify({"error": "Credenciales de Spotify no configuradas o token inválido"}), 401
