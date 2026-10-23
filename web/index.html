@@ -32,57 +32,78 @@
         }
     </script>
     <style>
-        /* --- BEATWAVE PRO: CSS/SVG HYBRID MOTION ENGINE --- */
+        /* --- BEATWAVE PRO: HYPER-MOTION ENGINE --- */
         
-        /* 1. TEXT LASER SWEEP (V1) */
-        @keyframes txtShimmerFlow {
-            0% { background-position: -200% center; }
-            100% { background-position: 200% center; }
-        }
-        .anim-shimmer-v1 {
-            background: linear-gradient(90deg, #ffffff 0%, #22d3ee 30%, #ffffff 50%, #ef4444 75%, #ffffff 100%);
-            background-size: 200% auto;
-            color: transparent;
-            -webkit-background-clip: text;
-            background-clip: text;
-            display: inline-block;
-            animation: txtShimmerFlow 3.5s linear infinite;
-        }
-
-        /* 2. CHROMA BARS (Mutación de color por barra) */
-        @keyframes chroma1 { 0%, 100% { fill: #0891b2; } 33% { fill: #22d3ee; } 66% { fill: #3b82f6; } }
+        /* CHROMATIC BARS (Mutación forzada sin bloqueos inline) */
+        @keyframes chroma1 { 0%, 100% { fill: #0891b2; } 50% { fill: #3b82f6; } }
         @keyframes chroma2 { 0%, 100% { fill: #ffffff; } 50% { fill: #cffafe; } }
-        @keyframes chroma3 { 0%, 100% { fill: #22d3ee; } 50% { fill: #06b6d4; } }
-        @keyframes chroma4 { 0%, 100% { fill: #ef4444; } 50% { fill: #f87171; } }
-        @keyframes chroma5 { 0%, 100% { fill: #0891b2; } 50% { fill: #3b82f6; } }
+        @keyframes chroma3 { 0%, 100% { fill: #22d3ee; } 50% { fill: #0891b2; } }
+        @keyframes chroma4 { 0%, 100% { fill: #ef4444; } 50% { fill: #f97316; } } /* Rojo a Naranja Pico */
+        @keyframes chroma5 { 0%, 100% { fill: #06b6d4; } 50% { fill: #1d4ed8; } }
 
-        /* 3. BALÍSTICA BARRAS (Usando transform scaleY desde bottom) */
         @keyframes bounce1 { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(0.85); } }
         @keyframes bounce2 { 0%, 100% { transform: scaleY(0.6); } 50% { transform: scaleY(1.0); } }
         @keyframes bounce3 { 0%, 100% { transform: scaleY(0.9); } 50% { transform: scaleY(0.45); } }
         @keyframes bounce4 { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(0.95); } }
         @keyframes bounce5 { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(0.75); } }
 
-        .svg-bar {
-            transform-box: fill-box;
-            transform-origin: bottom;
-            animation-iteration-count: infinite;
-            animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        
-        .b1-anim { animation: bounce1 0.85s infinite, chroma1 2.4s infinite; }
-        .b2-anim { animation: bounce2 0.72s infinite, chroma2 1.8s infinite; filter: drop-shadow(0 0 4px #22d3ee); }
-        .b3-anim { animation: bounce3 0.96s infinite, chroma3 2.8s infinite; }
-        .b4-anim { animation: bounce4 0.65s infinite, chroma4 1.2s infinite; filter: drop-shadow(0 0 6px #ef4444); }
-        .b5-anim { animation: bounce5 0.88s infinite, chroma5 2.6s infinite; }
+        .svg-bar { transform-box: fill-box; transform-origin: bottom; }
+        .b1-epic { animation: bounce1 0.85s infinite cubic-bezier(0.16,1,0.3,1), chroma1 2.4s infinite; }
+        .b2-epic { animation: bounce2 0.72s infinite cubic-bezier(0.16,1,0.3,1), chroma2 1.8s infinite; filter: drop-shadow(0 0 6px rgba(255,255,255,0.8)); }
+        .b3-epic { animation: bounce3 0.96s infinite cubic-bezier(0.16,1,0.3,1), chroma3 2.8s infinite; }
+        .b4-epic { animation: bounce4 0.65s infinite cubic-bezier(0.16,1,0.3,1), chroma4 1.2s infinite; filter: drop-shadow(0 0 8px rgba(239,68,68,0.8)); }
+        .b5-epic { animation: bounce5 0.88s infinite cubic-bezier(0.16,1,0.3,1), chroma5 2.6s infinite; }
 
-        /* 4. HALO CAJA ISOTIPO */
-        @keyframes boxHaloChroma {
-            0%, 100% { box-shadow: 0 0 16px rgba(6,182,212,0.35), inset 0 0 10px rgba(6,182,212,0.2); border-color: rgba(6,182,212,0.6); }
-            50% { box-shadow: 0 0 26px rgba(239,68,68,0.55), inset 0 0 16px rgba(34,211,238,0.35); border-color: rgba(239,68,68,0.85); }
+        /* V1: 3D ISOMETRIC BASS */
+        @keyframes text3DBounce {
+            0%, 100% { 
+                transform: scale(1) translate(0, 0); 
+                text-shadow: 1px 1px 0 #0891b2, 2px 2px 0 #0891b2, 3px 3px 0 #0e7490, 4px 4px 0 #0e7490; 
+            }
+            50% { 
+                transform: scale(1.02) translate(-2px, -2px); 
+                text-shadow: 1px 1px 0 #22d3ee, 2px 2px 0 #22d3ee, 3px 3px 0 #06b6d4, 4px 4px 0 #06b6d4, 5px 5px 0 #0891b2, 6px 6px 0 #0891b2, 7px 7px 0 #0e7490, 8px 8px 15px rgba(34,211,238,0.6); 
+            }
         }
-        .anim-box-halo { animation: boxHaloChroma 2.6s ease-in-out infinite; }
+        .anim-3d-bass { animation: text3DBounce 0.72s infinite cubic-bezier(0.16,1,0.3,1); color: #ffffff; display: inline-block; }
+
+        /* V2: SOUNDWAVE MORPH (Filtro SVG) */
+        .anim-soundwave {
+            color: #ffffff;
+            display: inline-block;
+            filter: url(#waveDistortion);
+            animation: textPulseGlow 0.72s infinite alternate;
+        }
+
+        /* V3: OSCILLOSCOPE WIREFRAME */
+        @keyframes wireframePulse {
+            0%, 100% { -webkit-text-stroke: 1px #22d3ee; filter: drop-shadow(0 0 2px #22d3ee); }
+            50% { -webkit-text-stroke: 1.5px #ef4444; filter: drop-shadow(0 0 12px #ef4444); }
+        }
+        .anim-wireframe {
+            color: transparent;
+            -webkit-text-stroke: 1px #22d3ee;
+            display: inline-block;
+            animation: wireframePulse 1.2s infinite ease-in-out;
+        }
+
+        /* V4: RGB SHATTER GLITCH */
+        @keyframes rgbShatter {
+            0%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); text-shadow: 0 0 0 transparent; }
+            10% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); text-shadow: -3px 0 #ef4444, 3px 0 #22d3ee; }
+            20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); text-shadow: 3px 0 #ef4444, -3px 0 #22d3ee; }
+            30%, 90% { clip-path: inset(0 0 0 0); transform: translate(0); text-shadow: 0 0 0 transparent; }
+        }
+        .anim-glitch-shatter { color: #ffffff; display: inline-block; animation: rgbShatter 2.5s infinite; }
+
+        /* V5: LIQUID PLASMA */
+        @keyframes plasmaGlow {
+            0%, 100% { color: #ffffff; text-shadow: 0 0 10px #22d3ee, 0 0 20px #22d3ee, 0 0 30px #0891b2; }
+            50% { color: #fecdd3; text-shadow: 0 0 15px #ef4444, 0 0 30px #ef4444, 0 0 45px #9f1239; }
+        }
+        .anim-plasma { display: inline-block; animation: plasmaGlow 2s infinite ease-in-out; }
     </style>
+
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1079,6 +1100,7 @@
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('audit');
+            const [epicMode, setEpicMode] = useState(1);
             const [brandMotion, setBrandMotion] = useState(1);
             
             
@@ -1159,43 +1181,77 @@
             return (
                 <div className="flex flex-col h-screen w-screen bg-djzinc-950 text-gray-300 overflow-hidden font-sans select-none">
                     <header className="h-14 border-b border-djzinc-800 bg-djzinc-950/90 backdrop-blur px-4 flex items-center justify-between shrink-0 z-30">
+                        
+                        {/* DEFINICIÓN DE FILTROS SVG INVISIBLES EN EL DOM PARA EL EFECTO SOUNDWAVE */}
+                        <svg width="0" height="0" className="absolute">
+                            <defs>
+                                <filter id="waveDistortion" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feTurbulence type="fractalNoise" baseFrequency="0 0.15" numOctaves="1" result="warp">
+                                        <animate attributeName="baseFrequency" values="0 0.05; 0 0.25; 0 0.05" dur="0.72s" repeatCount="indefinite" />
+                                    </feTurbulence>
+                                    <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="10" in="SourceGraphic" in2="warp">
+                                        <animate attributeName="scale" values="2; 15; 2" dur="0.72s" repeatCount="indefinite" />
+                                    </feDisplacementMap>
+                                </filter>
+                            </defs>
+                        </svg>
+
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-3.5 select-none">
+                            <div onClick={() => setEpicMode(prev => prev === 5 ? 1 : prev + 1)} className="flex items-center gap-4 select-none cursor-pointer group" title="Clic para alternar efectos increíbles">
                                 
-                                {/* ISOTIPO CON BARRAS CSS-ANIMADAS MULTICROMÁTICAS */}
-                                <div className="w-11 h-11 rounded-xl bg-[#08080e] border flex items-center justify-center relative overflow-hidden shrink-0 anim-box-halo">
+                                {/* ISOTIPO CON MUTACIÓN DE COLOR FORZADA Y ROJO DE PICO */}
+                                <div className="w-11 h-11 rounded-xl bg-[#08080e] border border-djcyan-500/50 flex items-center justify-center relative overflow-hidden shrink-0 shadow-[0_0_18px_rgba(6,182,212,0.35)]">
                                     <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
-                                        {/* Barra 1 (Cian a Azul) */}
-                                        <rect className="svg-bar b1-anim" x="2.5" y="6" width="3" rx="1.5" height="22" fill="#0891b2" />
-                                        {/* Barra 2 (Núcleo Blanco Brillante) */}
-                                        <rect className="svg-bar b2-anim" x="8" y="2" width="3.5" rx="1.75" height="28" fill="#ffffff" />
-                                        {/* Barra 3 (Cian Eléctrico) */}
-                                        <rect className="svg-bar b3-anim" x="14" y="4" width="3" rx="1.5" height="26" fill="#22d3ee" />
-                                        {/* Barra 4 (ROJO ANALÓGICO CLIP PEAK #ef4444) */}
-                                        <rect className="svg-bar b4-anim" x="19.5" y="2" width="3.5" rx="1.75" height="28" fill="#ef4444" />
-                                        {/* Barra 5 (Azul Cobalto) */}
-                                        <rect className="svg-bar b5-anim" x="25.5" y="8" width="3" rx="1.5" height="20" fill="#0891b2" />
+                                        {/* Nótese: NO hay atributo 'fill'. Se controla 100% por CSS para que mute de color */}
+                                        <rect className="svg-bar b1-epic" x="2.5" y="6" width="3" rx="1.5" height="22" />
+                                        <rect className="svg-bar b2-epic" x="8" y="2" width="3.5" rx="1.75" height="28" />
+                                        <rect className="svg-bar b3-epic" x="14" y="4" width="3" rx="1.5" height="26" />
+                                        <rect className="svg-bar b4-epic" x="19.5" y="2" width="3.5" rx="1.75" height="28" />
+                                        <rect className="svg-bar b5-epic" x="25.5" y="8" width="3" rx="1.5" height="20" />
                                     </svg>
                                 </div>
 
-                                {/* RÓTULO BEATWAVE: LASER SWEEP (V1) */}
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2 leading-none">
-                                        <span className="text-xl tracking-wider uppercase font-black anim-shimmer-v1" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "0.06em" }}>
-                                            BEATWAVE
-                                        </span>
+                                {/* RÓTULO BEATWAVE CON LOS 5 MODOS ÉPICOS */}
+                                <div className="flex flex-col pt-1">
+                                    <div className="flex items-center gap-3 leading-none h-6">
+                                        
+                                        {/* V1: 3D Isometric */}
+                                        {epicMode === 1 && <span className="text-[22px] tracking-wider uppercase font-black anim-3d-bass" style={{ fontFamily: "'Syne', sans-serif" }}>BEATWAVE</span>}
+                                        
+                                        {/* V2: Soundwave Morph (El texto se vuelve onda de audio) */}
+                                        {epicMode === 2 && <span className="text-[22px] tracking-wider uppercase font-black anim-soundwave" style={{ fontFamily: "'Syne', sans-serif" }}>BEAT<span className="text-djcyan-400">WAVE</span></span>}
 
-                                        {/* Badge PRO Neón */}
-                                        <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-wider border bg-djcyan-950/90 text-djcyan-300 border-djcyan-500/80 shadow-[0_0_10px_rgba(6,182,212,0.4)]">
+                                        {/* V3: Oscilloscope Wireframe */}
+                                        {epicMode === 3 && <span className="text-[22px] tracking-wider uppercase font-black anim-wireframe" style={{ fontFamily: "'Syne', sans-serif" }}>BEATWAVE</span>}
+
+                                        {/* V4: RGB Shatter Glitch */}
+                                        {epicMode === 4 && <span className="text-[22px] tracking-wider uppercase font-black anim-glitch-shatter" style={{ fontFamily: "'Syne', sans-serif" }}>BEATWAVE</span>}
+
+                                        {/* V5: Liquid Plasma */}
+                                        {epicMode === 5 && <span className="text-[22px] tracking-wider uppercase font-black anim-plasma" style={{ fontFamily: "'Syne', sans-serif" }}>BEATWAVE</span>}
+
+                                        {/* Badge PRO */}
+                                        <span className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-wider border shadow-md ml-1 ${
+                                            epicMode === 4 || epicMode === 5
+                                                ? 'bg-red-950/90 text-red-300 border-red-500/80 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+                                                : 'bg-djcyan-950/90 text-djcyan-300 border-djcyan-500/80 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                        }`}>
                                             PRO
                                         </span>
                                     </div>
 
-                                    {/* Claim con pulso analógico */}
-                                    <div className="flex items-center gap-2 mt-1">
+                                    {/* Claim con indicador de modo */}
+                                    <div className="flex items-center gap-2 mt-2">
                                         <span className="text-[9px] uppercase tracking-[0.28em] font-mono font-bold flex items-center gap-1.5 text-gray-300">
                                             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
-                                            PRECISION AUDIO INTELLIGENCE
+                                            PRECISION AUDIO
+                                        </span>
+                                        <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-djzinc-850 text-djcyan-400 border border-djzinc-700 font-bold tracking-widest">
+                                            {epicMode === 1 && "M1: 3D EXTRUSION"}
+                                            {epicMode === 2 && "M2: SOUNDWAVE MORPH"}
+                                            {epicMode === 3 && "M3: OSCILLOSCOPE"}
+                                            {epicMode === 4 && "M4: RGB SHATTER"}
+                                            {epicMode === 5 && "M5: LIQUID PLASMA"}
                                         </span>
                                     </div>
                                 </div>
