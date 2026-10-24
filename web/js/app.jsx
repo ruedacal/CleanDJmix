@@ -802,12 +802,17 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
         setBatchStatusMsg(`Inyectando tags ID3v2.4 y marcas Serato en ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
         try {
             if (window.eel && window.eel.guardar_cambios_track) {
-                await window.eel.guardar_cambios_track(currentTrack)();
+                const res = await window.eel.guardar_cambios_track(currentTrack)();
+                if (res && res.status === 'ok') {
+                    setBatchProgress(100);
+                    setBatchStatusMsg("✓ Inyección completada y guardada en disco.");
+                    setSaveFeedback('✓ Guardado en disco e inyectado');
+                    setTimeout(() => setSaveFeedback(''), 3000);
+                } else {
+                    setBatchStatusMsg(res?.msg || "Error al inyectar metadatos.");
+                    alert(res?.msg || "Error al inyectar metadatos.");
+                }
             }
-            setBatchProgress(100);
-            setBatchStatusMsg("✓ Inyección completada y guardada en disco.");
-            setSaveFeedback('✓ Guardado en disco e inyectado');
-            setTimeout(() => setSaveFeedback(''), 3000);
         } catch (err) {
             setBatchStatusMsg("Error al inyectar metadatos.");
         } finally {
@@ -816,6 +821,38 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                 setBatchProgress(0);
                 setBatchStatusMsg('');
             }, 800);
+        }
+    };
+
+    const handleInyectarSeratoLote = async () => {
+        if (!tracks || tracks.length === 0) {
+            alert("No hay pistas cargadas para inyectar.");
+            return;
+        }
+        setIsInjecting(true);
+        setBatchProgress(5);
+        setBatchStatusMsg(`Iniciando inyección profunda de metadatos en ${tracks.length} pistas...`);
+        try {
+            if (window.eel && window.eel.inyectar_lote_metadatos) {
+                const res = await window.eel.inyectar_lote_metadatos(tracks)();
+                setBatchProgress(100);
+                if (res && res.status === 'ok') {
+                    setBatchStatusMsg(`✓ Inyección completada: ${res.inyectados} pistas actualizadas con éxito.`);
+                    setSaveFeedback(`✓ ${res.inyectados} pistas inyectadas en Serato`);
+                    setTimeout(() => setSaveFeedback(''), 4000);
+                } else {
+                    setBatchStatusMsg("Error durante la inyección de lote.");
+                }
+            }
+        } catch (e) {
+            console.error("Error al inyectar lote:", e);
+            setBatchStatusMsg("Error al inyectar metadatos.");
+        } finally {
+            setTimeout(() => {
+                setIsInjecting(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 1000);
         }
     };
 
@@ -860,8 +897,13 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                         <button onClick={handleExportarXLS} className="bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-3.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
                             <Icons.Excel /> Exportar XLS
                         </button>
-                        <button onClick={handleGuardarTrack} className="bg-djcyan-600 hover:bg-djcyan-500 text-black px-4 py-2 rounded-md font-bold text-xs shadow-md cursor-pointer">
-                            Inyectar a Serato
+                        <button 
+                            onClick={handleInyectarSeratoLote} 
+                            disabled={isInjecting || tracks.length === 0}
+                            className="bg-djcyan-600 hover:bg-djcyan-500 disabled:opacity-50 text-black px-4 py-2 rounded-md font-bold text-xs shadow-md cursor-pointer transition-colors"
+                            title="Inyecta tags ID3v2.4 / Vorbis, BPM, Camelot Key, Comentario Táctico y Cues en todos los archivos cargados"
+                        >
+                            Inyectar a Serato ({tracks.length})
                         </button>
                     </div>
                 </div>
@@ -1136,16 +1178,26 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
             <BatchAuditorModal isOpen={batchModalOpen} onClose={() => setBatchModalOpen(false)} onRunBatch={async (opts) => {
                 setBatchModalOpen(false);
                 setIsAuditing(true);
+                setBatchProgress(5);
+                setBatchStatusMsg("Ejecutando procesamiento masivo de lote...");
                 try {
                     if (window.eel && window.eel.ejecutar_auditoria_lote) {
                         const res = await window.eel.ejecutar_auditoria_lote(rutaOrigen, opts)();
                         if (res && res.tracks) {
                             setTracks(res.tracks);
                             setMetrics({ total: res.total, missing: res.sin_meta, ready: res.ready, errors: res.errors || 0 });
+                            if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
+                                setBatchStatusMsg("Inyectando comentarios tácticos y tags en archivos físicos...");
+                                await window.eel.inyectar_lote_metadatos(res.tracks)();
+                            }
                         }
                     }
                 } finally {
-                    setIsAuditing(false);
+                    setTimeout(() => {
+                        setIsAuditing(false);
+                        setBatchProgress(0);
+                        setBatchStatusMsg('');
+                    }, 800);
                 }
             }} />
 

@@ -1,7 +1,12 @@
 import os
 import re
+import struct
+import base64
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC, FLACNoHeaderError
+from mutagen.id3 import ID3, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, ID3NoHeaderError
+from mutagen.aiff import AIFF
+from mutagen.mp4 import MP4
 
 CAMELOT_MAP = {
     "C": "8B", "Am": "8A", "G": "9B", "Em": "9A", "D": "10B", "Bm": "10A",
@@ -111,39 +116,212 @@ class AudioProcessorService:
             "format": ext.replace(".", "").upper()
         }
     @staticmethod
+    def generar_serato_markers2(duration_ms: int = 300000, bpm: float = 128.0, cues: list = None, downbeat_ms: int = 0) -> bytes:
+        """Construye el bloque binario base64 compatible con Serato Markers2 (Pads 1-8 Numark/Pioneer)."""
+        out = bytearray(b"\x01\x01")
+        # Color del track en Serato (Cian #06b6d4)
+        out.extend(b"COLOR\x00" + struct.pack(">I", 4) + b"\x00\x06\xb6\xd4")
+        # BPMLOCK: 0 (desbloqueado)
+        out.extend(b"BPMLOCK\x00" + struct.pack(">I", 1) + b"\x00")
+
+        # 8 Cues estándar Numark NV2 / Pioneer DJ
+        default_cues = [
+            {"id": 0, "pct": 0.00, "name": "Intro Mix Point", "rgb": (6, 182, 212)},
+            {"id": 1, "pct": 0.12, "name": "Buildup 16 Bars", "rgb": (168, 85, 247)},
+            {"id": 2, "pct": 0.24, "name": "Drop Main", "rgb": (239, 68, 68)},
+            {"id": 3, "pct": 0.40, "name": "Breakdown Vocal", "rgb": (245, 158, 11)},
+            {"id": 4, "pct": 0.55, "name": "Main Peak Time", "rgb": (234, 179, 8)},
+            {"id": 5, "pct": 0.70, "name": "Break 2 Rebuild", "rgb": (59, 130, 246)},
+            {"id": 6, "pct": 0.82, "name": "Final Drop Peak", "rgb": (34, 197, 94)},
+            {"id": 7, "pct": 0.90, "name": "Outro Mix Point", "rgb": (236, 72, 153)},
+        ]
+
+        active_cues = cues if cues and len(cues) > 0 else default_cues
+        for i, c in enumerate(active_cues[:8]):
+            cid = int(c.get("id", i))
+            if "pos_ms" in c:
+                pos_ms = int(c["pos_ms"])
+            elif "time" in c and ":" in str(c["time"]):
+                try:
+                    parts = str(c["time"]).split(":")
+                    m = int(parts[0])
+                    s = float(parts[1])
+                    pos_ms = int((m * 60 + s) * 1000)
+                except Exception:
+                    pos_ms = int(duration_ms * c.get("pct", i * 0.12))
+            else:
+                pct = float(c.get("pct", (i * 0.12) + (0.01 if i == 0 else 0.0)))
+                pos_ms = int(duration_ms * pct)
+                if i == 0 and downbeat_ms > 0:
+                    pos_ms = int(downbeat_ms)
+
+            cname = str(c.get("name", f"Cue {cid + 1}")).encode("utf-8") + b"\x00"
+            rgb = c.get("rgb") or (6, 182, 212)
+            if isinstance(rgb, str) and rgb.startswith("#"):
+                h = rgb.lstrip("#")
+                rgb = tuple(int(h[x:x+2], 16) for x in (0, 2, 4))
+
+            cdata = bytearray()
+            cdata.append(cid & 0xFF)
+            cdata.extend(struct.pack(">I", max(0, pos_ms)))
+            cdata.append(0x00)
+            cdata.extend(bytes([rgb[0], rgb[1], rgb[2]]))
+            cdata.extend(b"\x00\x00")
+            cdata.extend(cname)
+
+            out.extend(b"CUE\x00" + struct.pack(">I", len(cdata)) + cdata)
+
+        out.extend(b"\x00\x00")
+        return base64.b64encode(out)
+
+    @staticmethod
     def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None) -> bool:
-        """Inyecta metadatos DJ (BPM, Key Camelot, Artista, Título, Álbum) en archivos FLAC/MP3/AIFF válidos."""
-        if not os.path.exists(ruta) or os.path.getsize(ruta) < 4096:
+        """Inyecta metadatos profesionales para DJs (BPM exacto, Camelot TKEY, Comentario Táctico COMM,
+        Serato Markers2 Cues, ISRC, Género) en archivos FLAC, MP3, AIFF, M4A y WAV."""
+        if not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
             return False
 
         ext = os.path.splitext(ruta)[1].lower()
+        title = str(meta_track.get("title") or meta_track.get("t") or os.path.splitext(os.path.basename(ruta))[0])
+        artist = str(meta_track.get("artist") or meta_track.get("a") or "Desconocido")
+        album = str(meta_track.get("album") or "CleanDJmix PRO")
+        bpm_val = meta_track.get("bpm") or meta_track.get("b") or "128.00"
+        try:
+            bpm_float = float(str(bpm_val).replace(",", "."))
+            bpm_str = f"{bpm_float:.2f}"
+        except Exception:
+            bpm_str = str(bpm_val)
+            bpm_float = 128.0
+
+        raw_key = meta_track.get("key") or meta_track.get("k") or ""
+        key_camelot = AudioProcessorService.normalizar_key(raw_key) if raw_key else ""
+        comment = str(meta_track.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b")
+        genre = str(meta_track.get("genre") or meta_track.get("mood") or "Tech House / Techno")
+        isrc = str(meta_track.get("isrc") or "")
+
+        # Cálculo de duración en milisegundos para sincronización de Cues
+        dur_str = str(meta_track.get("duration") or "05:00")
+        dur_ms = 300000
+        if ":" in dur_str:
+            try:
+                parts = dur_str.split(":")
+                dur_ms = int((int(parts[0]) * 60 + float(parts[1])) * 1000)
+            except Exception:
+                pass
+
+        downbeat_ms = int(meta_track.get("first_downbeat_ms") or 0)
+        cues_list = meta_track.get("cues") or []
+
+        serato_b64 = AudioProcessorService.generar_serato_markers2(
+            duration_ms=dur_ms,
+            bpm=bpm_float,
+            cues=cues_list,
+            downbeat_ms=downbeat_ms
+        )
+
         try:
             if ext == ".flac":
-                # Verificar magic bytes reales antes de abrir con Mutagen
                 with open(ruta, "rb") as f_check:
                     if f_check.read(4) != b"fLaC":
-                        print(f"[META ERROR] El archivo no tiene cabecera fLaC válida: {ruta}")
+                        print(f"[META ERROR] Cabecera fLaC no válida en: {ruta}")
                         return False
 
                 audio = FLAC(ruta)
-                audio["TITLE"] = str(meta_track.get("title", ""))
-                audio["ARTIST"] = str(meta_track.get("artist", ""))
-                audio["ALBUM"] = str(meta_track.get("album", "CleanDJmix PRO"))
-                audio["BPM"] = str(meta_track.get("bpm", ""))
-                audio["INITIALKEY"] = AudioProcessorService.normalizar_key(str(meta_track.get("key", "")))
-                if meta_track.get("isrc"):
-                    audio["ISRC"] = str(meta_track.get("isrc"))
+                audio["TITLE"] = [title]
+                audio["ARTIST"] = [artist]
+                audio["ALBUM"] = [album]
+                audio["BPM"] = [bpm_str]
+                if key_camelot:
+                    audio["INITIALKEY"] = [key_camelot]
+                    audio["KEY"] = [key_camelot]
+                audio["COMMENT"] = [comment]
+                audio["DESCRIPTION"] = [comment]
+                audio["GENRE"] = [genre]
+                if isrc:
+                    audio["ISRC"] = [isrc]
+                audio["SERATO_MARKERS_V2"] = [serato_b64.decode("ascii")]
                 audio.save()
                 return True
+
+            elif ext == ".mp3":
+                try:
+                    id3 = ID3(ruta)
+                except ID3NoHeaderError:
+                    id3 = ID3()
+
+                id3.add(TIT2(encoding=3, text=[title]))
+                id3.add(TPE1(encoding=3, text=[artist]))
+                id3.add(TALB(encoding=3, text=[album]))
+                id3.add(TBPM(encoding=3, text=[bpm_str]))
+                if key_camelot:
+                    id3.add(TKEY(encoding=3, text=[key_camelot]))
+                id3.add(COMM(encoding=3, lang="eng", desc="", text=[comment]))
+                id3.add(TCON(encoding=3, text=[genre]))
+                if isrc:
+                    id3.add(TSRC(encoding=3, text=[isrc]))
+
+                # Inyección GEOB para Serato Markers2 (Cues oficiales)
+                id3.add(GEOB(
+                    encoding=0,
+                    mime="application/octet-stream",
+                    desc="Serato Markers2",
+                    data=serato_b64
+                ))
+                # Inyección GEOB para Serato Autotags
+                autotags_data = b"\x01\x01" + f"{bpm_str}\x000.000\x000.000\x00".encode("ascii")
+                id3.add(GEOB(
+                    encoding=0,
+                    mime="application/octet-stream",
+                    desc="Serato Autotags",
+                    data=autotags_data
+                ))
+
+                id3.save(ruta, v2_version=4)
+                return True
+
+            elif ext in (".aiff", ".aif"):
+                audio = AIFF(ruta)
+                if audio.tags is None:
+                    audio.add_tags()
+                tags = audio.tags
+                tags.add(TIT2(encoding=3, text=[title]))
+                tags.add(TPE1(encoding=3, text=[artist]))
+                tags.add(TALB(encoding=3, text=[album]))
+                tags.add(TBPM(encoding=3, text=[bpm_str]))
+                if key_camelot:
+                    tags.add(TKEY(encoding=3, text=[key_camelot]))
+                tags.add(COMM(encoding=3, lang="eng", desc="", text=[comment]))
+                tags.add(TCON(encoding=3, text=[genre]))
+                tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Markers2", data=serato_b64))
+                audio.save()
+                return True
+
+            elif ext in (".m4a", ".aac"):
+                audio = MP4(ruta)
+                audio["\xa9nam"] = [title]
+                audio["\xa9ART"] = [artist]
+                audio["\xa9alb"] = [album]
+                try:
+                    audio["tmpo"] = [int(bpm_float)]
+                except Exception:
+                    pass
+                audio["\xa9cmt"] = [comment]
+                audio["\xa9gen"] = [genre]
+                if key_camelot:
+                    audio["----:com.apple.iTunes:initialkey"] = [key_camelot.encode("utf-8")]
+                audio.save()
+                return True
+
             else:
                 m = MutagenFile(ruta, easy=True)
                 if m is not None:
-                    m["title"] = str(meta_track.get("title", ""))
-                    m["artist"] = str(meta_track.get("artist", ""))
-                    m["album"] = str(meta_track.get("album", "CleanDJmix PRO"))
-                    m["bpm"] = str(meta_track.get("bpm", ""))
+                    m["title"] = str(title)
+                    m["artist"] = str(artist)
+                    m["album"] = str(album)
+                    m["bpm"] = str(bpm_str)
                     m.save()
                     return True
         except Exception as e:
             print(f"[META WARN] Fallo escribiendo tags en {os.path.basename(ruta)}: {e}")
+            return False
         return False

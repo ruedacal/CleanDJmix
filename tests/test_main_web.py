@@ -19,10 +19,6 @@ def mock_route(*args, **kwargs):
 mock_bottle.route = mock_route
 sys.modules['bottle'] = mock_bottle
 
-sys.modules['mutagen'] = MagicMock()
-sys.modules['infrastructure.audio_processor'] = MagicMock()
-sys.modules['infrastructure.spotify_flac_ingest'] = MagicMock()
-
 import main_web
 
 # --- REPRODUCTOR NATIVO ---
@@ -70,10 +66,16 @@ def test_exportar_auditoria_xls(mock_export):
     res = main_web.exportar_auditoria_xls([{"titulo": "Test"}])
     assert res["status"] == "ok"
 
-# --- GUARDAR CAMBIOS TRACK ---
+# --- GUARDAR CAMBIOS TRACK & INYECCIÓN LOTE ---
 def test_guardar_cambios_track_vacio():
     res = main_web.guardar_cambios_track(None)
     assert res["status"] == "error"
+
+@patch.object(main_web.audit_svc, 'inyectar_lote_metadatos', return_value={"status": "ok", "inyectados": 5})
+def test_inyectar_lote_metadatos(mock_inyectar):
+    res = main_web.inyectar_lote_metadatos([{"title": "Track 1"}])
+    assert res["status"] == "ok"
+    assert res["inyectados"] == 5
 
 # --- WRAPPERS ---
 @patch.object(main_web.media_svc, 'analizar_catalogo_spotify', return_value=[])

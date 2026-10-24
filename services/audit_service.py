@@ -335,3 +335,46 @@ class AuditService:
             "errors": 0,
             "tracks": tracks_cargados
         }
+
+    def inyectar_lote_metadatos(self, tracks: list, progreso_cb=None) -> dict:
+        """Inyecta metadatos profesionales (BPM, Camelot TKEY, Serato Markers2, COMM) en lote."""
+        if not tracks or not isinstance(tracks, list):
+            return {"status": "error", "msg": "Lista de pistas vacía", "inyectados": 0}
+
+        total = len(tracks)
+        inyectados = 0
+        errores = 0
+
+        if progreso_cb:
+            progreso_cb(5, f"Iniciando inyección profunda de metadatos ({total} pistas)...")
+
+        for idx, t in enumerate(tracks, 1):
+            pct = int(5 + (idx / total) * 90)
+            target_path = t.get("path")
+            filename = t.get("filename") or t.get("f") or os.path.basename(target_path or "")
+            if progreso_cb:
+                progreso_cb(pct, f"Inyectando ID3v2.4 / Serato ({idx}/{total}): {filename}")
+
+            if not target_path or not os.path.exists(target_path):
+                real = self.directorio_actual and os.path.join(self.directorio_actual, filename)
+                if real and os.path.exists(real):
+                    target_path = real
+
+            if target_path and os.path.exists(target_path):
+                ok = AudioProcessorService.escribir_metadatos_pro(target_path, t)
+                if ok:
+                    inyectados += 1
+                else:
+                    errores += 1
+            else:
+                errores += 1
+
+        if progreso_cb:
+            progreso_cb(100, f"Inyección completada: {inyectados} pistas inyectadas con éxito.")
+
+        return {
+            "status": "ok",
+            "total": total,
+            "inyectados": inyectados,
+            "errores": errores
+        }

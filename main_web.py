@@ -101,6 +101,10 @@ def exportar_auditoria_xls(tracks, destino_dir="/Users/admin/Music/mi musica"):
     return export_svc.exportar_tracks_xls(tracks, destino_dir)
 
 @eel.expose
+def inyectar_lote_metadatos(tracks):
+    return audit_svc.inyectar_lote_metadatos(tracks, _emitir_progreso_batch)
+
+@eel.expose
 def guardar_cambios_track(track):
     if not track or not isinstance(track, dict):
         return {"status": "error", "msg": "Datos inválidos"}
