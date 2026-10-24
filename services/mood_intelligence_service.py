@@ -168,6 +168,77 @@ class MoodIntelligenceService:
         }
 
     @classmethod
+    def clasificar_fase_sesion_dj(
+        cls,
+        bpm: float,
+        key: str = "8A",
+        energy: int = 80,
+        danceability: int = 80,
+        genre: str = "",
+        filepath: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Algoritmo Psicoacústico de Posicionamiento en Sesión DJ.
+        Determina con rigor acústico y funcional el momento idóneo del set:
+        - Inicio (Warm-Up / Apertura): BPM contenido, groove hipnótico, energía 45-68%.
+        - Medio (Build-Up / Desarrollo): Energía 69-81%, ritmo firme, transiciones armónicas.
+        - A Tope de Caña (Peak Time / Clímax): Energía >= 82%, BPM alto, máxima pegada.
+        - Cierre (Anthem / Gran Final): Modo mayor épico (Camelot B) o BPM/intensidad extrema.
+        - Calma (Sunset / Afterhours): BPM < 118 o energía <= 45%, texturas orgánicas/melódicas.
+        """
+        bpm = float(bpm) if bpm and float(bpm) > 0 else 126.0
+        key = str(key or "8A").upper().strip()
+        is_major = key.endswith("B")
+        energy = int(energy) if energy else 80
+        danceability = int(danceability) if danceability else 80
+
+        # Evaluación de Fase y Vibe
+        if bpm < 118.0 or (energy <= 45 and danceability <= 65):
+            fase = "Calma (Sunset / After)"
+            fase_badge = "CALMA"
+            fase_color = "teal"
+            vibe = "Calma"
+            recomendacion = "Ideal para warmup inicial de apertura, sunset session o afterhours."
+            momento_set = "Apertura / After"
+        elif (bpm >= 138.0 and energy >= 80) or (is_major and energy >= 76 and bpm >= 126.0):
+            fase = "Cierre (Anthem / Gran Final)"
+            fase_badge = "CIERRE"
+            fase_color = "purple"
+            vibe = "Eufórico"
+            recomendacion = "Momento álgido de despedida o himno eufórico para el cierre del set."
+            momento_set = "Cierre"
+        elif energy >= 82 or bpm >= 133.0 or (energy >= 78 and danceability >= 85):
+            fase = "A Tope de Caña (Peak Time)"
+            fase_badge = "CAÑA"
+            fase_color = "red"
+            vibe = "A Tope de Caña"
+            recomendacion = "Clímax de pista completa (hora punta). Máxima contundencia y pegada de bombo."
+            momento_set = "Clímax"
+        elif energy >= 68:
+            fase = "Medio (Build-Up / Transición)"
+            fase_badge = "BUILD-UP"
+            fase_color = "amber"
+            vibe = "Agitado"
+            recomendacion = "Desarrollo y progresión de pista en la parte media de la sesión."
+            momento_set = "Medio"
+        else:
+            fase = "Inicio (Warm-Up / Apertura)"
+            fase_badge = "WARM-UP"
+            fase_color = "cyan"
+            vibe = "Groove Progresivo"
+            recomendacion = "Excelente para la primera hora. Fija el groove y calienta sin cansar el oído."
+            momento_set = "Inicio"
+
+        return {
+            "fase": fase,
+            "fase_badge": fase_badge,
+            "fase_color": fase_color,
+            "vibe": vibe,
+            "momento_set": momento_set,
+            "recomendacion": recomendacion
+        }
+
+    @classmethod
     def generar_comentario_tactico(
         cls,
         bpm: float,
@@ -179,10 +250,14 @@ class MoodIntelligenceService:
         first_downbeat_ms: float = 0,
         lang: str = "es"
     ) -> str:
-        """Genera un comentario táctico profesional de cabina DJ en español o inglés."""
+        """Genera un comentario táctico profesional de cabina DJ en español o inglés con recomendación de sesión."""
         key = str(key or "8A").upper().strip()
         rel = cls.CAMELOT_RELATIONS.get(key, {})
         bpm_str = f"{float(bpm):.1f}" if bpm else "128.0"
+
+        fase_data = cls.clasificar_fase_sesion_dj(bpm, key=key, energy=energy)
+        fase_badge = fase_data["fase_badge"]
+        fase_desc = fase_data["recomendacion"]
 
         # Consejos de mezcla armónica Camelot
         same_k = rel.get("same", key)
@@ -208,18 +283,18 @@ class MoodIntelligenceService:
         if lang.lower().startswith("en"):
             # Versión en Inglés
             comment = (
-                f"[{bpm_str} BPM | {key} | E{energy}%] {subtag or mood}. "
-                f"Harmonic Mix: {same_k} (Neutral) • {up_k}/{down_k} (Energy Shift) • {rel_k} (Relative Mode). "
+                f"[{fase_badge} | {bpm_str} BPM | {key} | E{energy}%] {subtag or mood}. "
+                f"Harmonic Mix: {same_k} (Neutral) • {up_k}/{down_k} (Energy Shift) • {rel_k} (Relative). "
                 f"Structure: Intro {intro_bars}b -> Drop Bar {drop_bar} -> Break Bar {break_bar} -> Outro {outro_bars}b. "
-                f"Tip: Ideal for in-phrase layering and long harmonic bass blends."
+                f"Set Role: {fase_desc}"
             )
         else:
             # Versión en Español
             comment = (
-                f"[{bpm_str} BPM | {key} | E{energy}%] {subtag or mood}. "
+                f"[{fase_badge} | {bpm_str} BPM | {key} | E{energy}%] {subtag or mood}. "
                 f"Mix Armónico: {same_k} (Neutral) • {up_k}/{down_k} (Cambio Energía) • {rel_k} (Modo Relativo). "
                 f"Estructura: Intro {intro_bars}b -> Drop c.{drop_bar} -> Break c.{break_bar} -> Outro {outro_bars}b. "
-                f"Consejo: Mezcla en frase con solapado largo de graves."
+                f"Ubicación DJ: {fase_desc}"
             )
 
         return comment

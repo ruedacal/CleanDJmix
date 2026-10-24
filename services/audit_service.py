@@ -522,23 +522,74 @@ class AuditService:
                     track_cover = resolved_c
                     AudioProcessorService.escribir_metadatos_pro(full_path, info, cover_url=resolved_c)
 
+            if not track_cover:
+                # Comprobar carátula local de carpeta
+                dir_p = os.path.dirname(full_path)
+                for c_name in ("cover.jpg", "folder.jpg", "front.jpg", "cover.png", "folder.png"):
+                    c_cand = os.path.join(dir_p, c_name)
+                    if os.path.exists(c_cand):
+                        track_cover = f"/cover?path={full_path}"
+                        break
+
+            # Clasificación de Fase en Sesión DJ
+            bpm_num = float(bpm_val) if bpm_val and str(bpm_val) != "--" else 126.0
+            key_clean = str(key_val or "8A")
+            e_num = int(info.get("energy") or 85)
+            dance_num = int(info.get("danceability") or info.get("dance") or 85)
+            from services.mood_intelligence_service import MoodIntelligenceService
+            fase_info = MoodIntelligenceService.clasificar_fase_sesion_dj(
+                bpm=bpm_num,
+                key=key_clean,
+                energy=e_num,
+                danceability=dance_num,
+                genre=str(info.get("genre") or "Tech House"),
+                filepath=full_path
+            )
+
+            title_str = str(info.get("title") or os.path.splitext(file)[0])
+            artist_str = str(info.get("artist") or "Desconocido")
+            has_title = bool(title_str and title_str.lower().strip() not in ("untitled", "desconocido", "unknown", "track", "pista"))
+            has_artist = bool(artist_str and artist_str.lower().strip() not in ("desconocido", "unknown", "various artists", "various", "artist"))
+            has_cover = bool(track_cover)
+
+            tactical_comment = str(info.get("comment") or "")
+            if not tactical_comment or "Intro" not in tactical_comment:
+                tactical_comment = MoodIntelligenceService.generar_comentario_tactico(
+                    bpm=bpm_num,
+                    key=key_clean,
+                    mood=fase_info.get("vibe", "Peak Time"),
+                    subtag=fase_info.get("fase", "Clímax"),
+                    energy=e_num,
+                    cues=info.get("cues") or [],
+                    first_downbeat_ms=float(info.get("first_downbeat_ms") or 0.0),
+                    lang="es"
+                )
+
             tracks_auditados.append({
                 "id": idx,
                 "f": str(file),
                 "filename": str(file),
                 "path": str(full_path),
-                "t": str(info.get("title") or os.path.splitext(file)[0]),
-                "title": str(info.get("title") or os.path.splitext(file)[0]),
-                "a": str(info.get("artist") or "Desconocido"),
-                "artist": str(info.get("artist") or "Desconocido"),
+                "t": title_str,
+                "title": title_str,
+                "a": artist_str,
+                "artist": artist_str,
                 "b": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
                 "bpm": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
                 "k": str(key_val or "--"),
                 "key": str(key_val or "--"),
-                "e": int(info.get("energy") or 85),
-                "dance": int(info.get("danceability") or info.get("dance") or 85),
-                "danceability": int(info.get("danceability") or info.get("dance") or 85),
-                "mood": str(info.get("mood") or "Peak Time"),
+                "e": e_num,
+                "dance": dance_num,
+                "danceability": dance_num,
+                "mood": str(info.get("mood") or fase_info.get("vibe", "Peak Time")),
+                "fase_dj": fase_info.get("fase", "Medio"),
+                "fase_badge": fase_info.get("fase_badge", "BUILD-UP"),
+                "fase_color": fase_info.get("fase_color", "amber"),
+                "vibe": fase_info.get("vibe", "Agitado"),
+                "recomendacion_dj": fase_info.get("recomendacion", ""),
+                "missing_title": not has_title,
+                "missing_artist": not has_artist,
+                "missing_cover": not has_cover,
                 "duration": str(info.get("duration") or "05:30"),
                 "cover": track_cover,
                 "format": str(diag.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
@@ -557,7 +608,7 @@ class AuditService:
                 "spectrum": spectrum_points,
                 "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
                 "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
-                "comment": str(info.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b"),
+                "comment": tactical_comment,
                 "genre": str(info.get("genre") or "Tech House"),
                 "subgenre": str(info.get("subgenre") or "Tech House"),
                 "cues": info.get("cues") or []
@@ -565,12 +616,24 @@ class AuditService:
 
         total = len(tracks_auditados)
         ready_count = max(0, total - sin_meta_count)
+        missing_title_count = sum(1 for t in tracks_auditados if t.get("missing_title"))
+        missing_artist_count = sum(1 for t in tracks_auditados if t.get("missing_artist"))
+        missing_cover_count = sum(1 for t in tracks_auditados if t.get("missing_cover"))
+
+        # Detección inicial de duplicados para el resumen
+        dup_summary = self.detectar_duplicados_biblioteca(tracks_auditados)
+        dup_count = dup_summary.get("total_duplicados", 0)
+
         if progreso_cb:
             progreso_cb(100, f"Auditoría finalizada: {total} pistas procesadas.")
 
         return {
             "total": total,
             "sin_meta": sin_meta_count,
+            "missing_title": missing_title_count,
+            "missing_artist": missing_artist_count,
+            "missing_cover": missing_cover_count,
+            "duplicates": dup_count,
             "ready": ready_count,
             "errors": fake_count,
             "tracks": tracks_auditados
@@ -749,6 +812,46 @@ class AuditService:
                 fmt=tech.get("format", ext.replace(".", "").upper())
             )
 
+            # Búsqueda rápida de carátula local
+            track_cover = ""
+            dir_p = os.path.dirname(full_path)
+            for c_name in ("cover.jpg", "folder.jpg", "front.jpg", "cover.png", "folder.png"):
+                c_cand = os.path.join(dir_p, c_name)
+                if os.path.exists(c_cand):
+                    track_cover = f"/cover?path={full_path}"
+                    break
+
+            # Estimación inicial de energía, danceability y fase DJ
+            if bpm_str != "--":
+                try:
+                    b_num = float(bpm_str)
+                    e_initial = min(98, max(45, int(60 + (b_num - 118.0) * 1.5)))
+                    dance_initial = min(98, max(50, int(92 - abs(b_num - 126.0) * 0.9)))
+                except Exception:
+                    b_num = 126.0
+                    e_initial = 80
+                    dance_initial = 80
+            else:
+                b_num = 126.0
+                e_initial = 75
+                dance_initial = 75
+
+            from services.mood_intelligence_service import MoodIntelligenceService
+            fase_init = MoodIntelligenceService.clasificar_fase_sesion_dj(
+                bpm=b_num,
+                key=key_str if key_str != "--" else "8A",
+                energy=e_initial,
+                danceability=dance_initial,
+                genre=genre_str,
+                filepath=full_path
+            )
+
+            has_title = bool(title and str(title).strip().lower() not in ("untitled", "desconocido", "unknown", "track", "pista"))
+            has_artist = bool(artist and str(artist).strip().lower() not in ("desconocido", "unknown", "various artists", "various", "artist"))
+            has_cover = bool(track_cover)
+
+            initial_comment = f"[{bpm_str} BPM | {key_str} | {fase_init['fase_badge']}] Intro 32b • Drop contundente • Outro 64b"
+
             tracks_cargados.append({
                 "id": idx,
                 "f": str(file),
@@ -762,9 +865,18 @@ class AuditService:
                 "bpm": bpm_str,
                 "k": key_str,
                 "key": key_str,
-                "e": 0,
-                "dance": 0,
-                "mood": "Pendiente Auditoría",
+                "e": e_initial,
+                "dance": dance_initial,
+                "danceability": dance_initial,
+                "mood": fase_init.get("vibe", "Build-Up"),
+                "fase_dj": fase_init.get("fase", "Medio"),
+                "fase_badge": fase_init.get("fase_badge", "BUILD-UP"),
+                "fase_color": fase_init.get("fase_color", "amber"),
+                "vibe": fase_init.get("vibe", "Agitado"),
+                "recomendacion_dj": fase_init.get("recomendacion", ""),
+                "missing_title": not has_title,
+                "missing_artist": not has_artist,
+                "missing_cover": not has_cover,
                 "genre": genre_str,
                 "subgenre": subgenre_str,
                 "duration": dur_str,
@@ -782,19 +894,30 @@ class AuditService:
                 "cutoff_khz": 0.0,
                 "trim_start_ms": trim_start_ms,
                 "first_downbeat_ms": first_downbeat_ms,
-                "comment": "",
-                "cover": "",
+                "comment": initial_comment,
+                "cover": track_cover,
                 "cues": cues_frase
             })
 
         total = len(tracks_cargados)
         ready_count = max(0, total - sin_meta_count)
+        missing_title_count = sum(1 for t in tracks_cargados if t.get("missing_title"))
+        missing_artist_count = sum(1 for t in tracks_cargados if t.get("missing_artist"))
+        missing_cover_count = sum(1 for t in tracks_cargados if t.get("missing_cover"))
+
+        dup_summary = self.detectar_duplicados_biblioteca(tracks_cargados)
+        dup_count = dup_summary.get("total_duplicados", 0)
+
         if progreso_cb:
             progreso_cb(100, f"Carga completada: {total} pistas listas.")
 
         return {
             "total": total,
             "sin_meta": sin_meta_count,
+            "missing_title": missing_title_count,
+            "missing_artist": missing_artist_count,
+            "missing_cover": missing_cover_count,
+            "duplicates": dup_count,
             "ready": ready_count,
             "errors": 0,
             "tracks": tracks_cargados
@@ -901,5 +1024,217 @@ class AuditService:
             "status": "ok",
             "total": total,
             "inyectados": inyectados,
+            "errores": errores
+        }
+
+    @staticmethod
+    def _normalizar_para_deduplicacion(texto: str) -> str:
+        """Normaliza cadenas de texto para agrupar tracks duplicados eliminando paréntesis, versiones y caracteres especiales."""
+        import re
+        if not texto:
+            return ""
+        s = str(texto).lower().strip()
+        # Eliminar sufijos entre paréntesis o corchetes como (Original Mix), [Extended Mix], etc.
+        s = re.sub(r'[\(\[\{].*?[\)\]\}]', '', s)
+        # Quitar palabras clave de versión
+        for w in ["original mix", "extended mix", "club mix", "remix", "edit", "radio edit", "dub mix", "vip mix"]:
+            s = s.replace(w, "")
+        # Quitar caracteres especiales y puntuación
+        s = re.sub(r'[^a-z0-9]', '', s)
+        return s
+
+    def calcular_puntuacion_calidad_track(self, track: dict) -> float:
+        """Calcula un índice técnico (0-100+) para dirimir con rigor acústico qué versión duplicada conservar."""
+        fmt = str(track.get("format") or "").upper()
+        if not fmt:
+            ext = os.path.splitext(track.get("path") or track.get("f") or "")[1].lower()
+            fmt = ext.replace(".", "").upper()
+
+        sr = float(track.get("sample_rate_khz") or 44.1)
+        bitrate = int(track.get("bitrate_kbps") or 0)
+        bit_depth = int(track.get("bit_depth") or 16)
+        cutoff = float(track.get("cutoff_khz") or 0.0)
+        es_fake = bool(track.get("es_fake", False)) or ("FAKE" in str(track.get("status") or "").upper())
+
+        score = 50.0
+
+        if fmt in ("FLAC", "WAV", "AIFF", "AIF", "ALAC"):
+            if es_fake:
+                # Transcode falso: penalizar fuertemente
+                score = 30.0 + min(20.0, cutoff)
+            else:
+                score = 90.0
+                if sr >= 88.2:
+                    score += 10.0  # Hi-Res Lossless 96k/192k
+                elif sr >= 48.0:
+                    score += 2.0
+                if bit_depth >= 24:
+                    score += 5.0
+                if cutoff >= 20.0:
+                    score += 5.0
+        elif fmt in ("MP3", "M4A", "AAC", "OGG"):
+            if bitrate >= 310 or cutoff >= 20.0:
+                score = 75.0
+            elif bitrate >= 240:
+                score = 65.0
+            elif bitrate >= 190 or cutoff >= 17.5:
+                score = 52.0
+            elif bitrate >= 120:
+                score = 35.0
+            else:
+                score = 20.0
+
+        # Tamaño en disco como desempate técnico fidedigno
+        p = track.get("path")
+        if p and os.path.exists(p):
+            try:
+                mb = os.path.getsize(p) / (1024 * 1024)
+                score += min(5.0, mb * 0.1)
+            except Exception:
+                pass
+
+        # Completitud de metadatos (BPM, Key, Cover)
+        if track.get("bpm") and str(track.get("bpm")) != "--":
+            score += 1.5
+        if track.get("key") and str(track.get("key")) != "--":
+            score += 1.5
+        if track.get("cover"):
+            score += 1.0
+
+        return round(score, 2)
+
+    def detectar_duplicados_biblioteca(self, tracks: list) -> dict:
+        """Agrupa y compara cara a cara duplicados de la biblioteca identificando la versión óptima a conservar."""
+        if not tracks or not isinstance(tracks, list):
+            return {"total_grupos": 0, "total_duplicados": 0, "espacio_recuperable_mb": 0.0, "grupos": []}
+
+        import collections
+        grupos_dict = collections.defaultdict(list)
+
+        for trk in tracks:
+            # Clave de agrupación primaria: artista normalizado + título normalizado
+            art_norm = self._normalizar_para_deduplicacion(trk.get("artist") or trk.get("a") or "")
+            tit_norm = self._normalizar_para_deduplicacion(trk.get("title") or trk.get("t") or "")
+
+            # Si faltan artista o título, extraer del nombre de archivo
+            if not art_norm or not tit_norm:
+                fname = os.path.splitext(os.path.basename(trk.get("path") or trk.get("f") or ""))[0]
+                fname_norm = self._normalizar_para_deduplicacion(fname)
+                clave = fname_norm if fname_norm else f"track_{trk.get('id')}"
+            else:
+                clave = f"{art_norm}__{tit_norm}"
+
+            grupos_dict[clave].append(trk)
+
+        grupos_resultado = []
+        total_duplicados_inferiores = 0
+        espacio_recuperable_bytes = 0
+
+        for clave, trks_en_grupo in grupos_dict.items():
+            if len(trks_en_grupo) < 2:
+                continue
+
+            # Evaluar calidad de cada track del grupo
+            trks_evaluados = []
+            for t in trks_en_grupo:
+                score = self.calcular_puntuacion_calidad_track(t)
+                path = t.get("path") or ""
+                size_bytes = 0
+                size_mb = 0.0
+                if path and os.path.exists(path):
+                    try:
+                        size_bytes = os.path.getsize(path)
+                        size_mb = round(size_bytes / (1024 * 1024), 2)
+                    except Exception:
+                        pass
+
+                t_copy = dict(t)
+                t_copy["quality_score"] = score
+                t_copy["size_mb"] = size_mb
+                t_copy["size_bytes"] = size_bytes
+                trks_evaluados.append(t_copy)
+
+            # Ordenar descendente por puntuación de calidad (primero el de mayor calidad)
+            trks_evaluados.sort(key=lambda x: (x["quality_score"], x["size_bytes"]), reverse=True)
+
+            # El primero es el ganador a conservar
+            winner = trks_evaluados[0]
+            winner["is_winner"] = True
+            winner["recommendation"] = "CONSERVAR (Mayor Calidad)"
+            winner["badge_recommendation"] = "★ MEJOR CALIDAD"
+            winner["badge_color"] = "green"
+            winner["delete_selected"] = False
+
+            # Los siguientes son inferiores recomendados para eliminación
+            for inf in trks_evaluados[1:]:
+                inf["is_winner"] = False
+                inf["recommendation"] = "ELIMINAR (Duplicado Inferior)"
+                inf["badge_recommendation"] = "🗑️ DUPLICADO INFERIOR"
+                inf["badge_color"] = "red"
+                inf["delete_selected"] = True
+                total_duplicados_inferiores += 1
+                espacio_recuperable_bytes += inf["size_bytes"]
+
+            grupos_resultado.append({
+                "clave": clave,
+                "display_name": f"{winner.get('artist') or 'Varios'} - {winner.get('title') or winner.get('filename')}",
+                "total_versiones": len(trks_evaluados),
+                "winner": winner,
+                "tracks": trks_evaluados
+            })
+
+        return {
+            "total_grupos": len(grupos_resultado),
+            "total_duplicados": total_duplicados_inferiores,
+            "espacio_recuperable_mb": round(espacio_recuperable_bytes / (1024 * 1024), 2),
+            "grupos": grupos_resultado
+        }
+
+    def eliminar_pistas_duplicadas(self, paths: list) -> dict:
+        """Elimina de forma segura del almacenamiento local las pistas duplicadas seleccionadas."""
+        if not paths or not isinstance(paths, list):
+            return {"status": "error", "msg": "Lista de rutas vacía", "eliminados": 0, "errores": []}
+
+        eliminados = 0
+        errores = []
+        paths_eliminados = []
+
+        for p in paths:
+            if not p:
+                continue
+            real_path = p
+            if not os.path.exists(real_path) and self.directorio_actual:
+                cand = os.path.join(self.directorio_actual, os.path.basename(p))
+                if os.path.exists(cand):
+                    real_path = cand
+
+            if not os.path.exists(real_path) or not os.path.isfile(real_path):
+                errores.append(f"Archivo no encontrado: {p}")
+                continue
+
+            try:
+                # Intentar mover a papelera de macOS para seguridad máxima
+                script = f'tell application "Finder" to delete POSIX file "{real_path}"'
+                res_proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=10)
+                if res_proc.returncode == 0:
+                    eliminados += 1
+                    paths_eliminados.append(real_path)
+                else:
+                    # Fallback a os.remove directo si AppleScript no tiene permisos Finder
+                    os.remove(real_path)
+                    eliminados += 1
+                    paths_eliminados.append(real_path)
+            except Exception as e:
+                try:
+                    os.remove(real_path)
+                    eliminados += 1
+                    paths_eliminados.append(real_path)
+                except Exception as del_err:
+                    errores.append(f"No se pudo eliminar {os.path.basename(real_path)}: {del_err}")
+
+        return {
+            "status": "ok" if eliminados > 0 or len(errores) == 0 else "error",
+            "eliminados": eliminados,
+            "paths_eliminados": paths_eliminados,
             "errores": errores
         }

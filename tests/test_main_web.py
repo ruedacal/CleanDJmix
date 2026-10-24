@@ -160,3 +160,14 @@ def test_regenerar_mood_y_comentario_invalido():
     res = main_web.regenerar_mood_y_comentario(None)
     assert res["status"] == "error"
 
+@patch.object(main_web.audit_svc, 'detectar_duplicados_biblioteca', return_value={"total_grupos": 1, "grupos": []})
+def test_detectar_duplicados_biblioteca_exposed(mock_dup):
+    res = main_web.detectar_duplicados_biblioteca([{"title": "Track"}])
+    assert res["total_grupos"] == 1
+
+@patch.object(main_web.audit_svc, 'eliminar_pistas_duplicadas', return_value={"status": "ok", "eliminados": 1})
+def test_eliminar_pistas_duplicadas_exposed(mock_del):
+    res = main_web.eliminar_pistas_duplicadas(["/mock/path.mp3"])
+    assert res["status"] == "ok"
+    assert res["eliminados"] == 1
+

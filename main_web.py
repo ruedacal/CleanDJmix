@@ -143,6 +143,17 @@ def inyectar_caratulas_lote(tracks):
     return audit_svc.inyectar_caratulas_lote(tracks, _emitir_progreso_batch)
 
 @eel.expose
+def detectar_duplicados_biblioteca(tracks=None):
+    if not tracks:
+        res_dir = audit_svc.cargar_metadatos_directorio(audit_svc.directorio_actual)
+        tracks = res_dir.get("tracks", [])
+    return audit_svc.detectar_duplicados_biblioteca(tracks)
+
+@eel.expose
+def eliminar_pistas_duplicadas(paths):
+    return audit_svc.eliminar_pistas_duplicadas(paths)
+
+@eel.expose
 def guardar_cambios_track(track):
     if not track or not isinstance(track, dict):
         return {"status": "error", "msg": "Datos inválidos"}
