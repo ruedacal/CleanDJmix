@@ -31,7 +31,9 @@ const Icons = {
     Gear: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
     Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
     Warning: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
-    Excel: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+    Excel: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>,
+    Radar: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle><line x1="12" y1="2" x2="12" y2="12"></line></svg>,
+    Mic: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
 };
 
 // Tooltip Flotante Educativo Desacoplado de Overflows mediante ReactDOM.createPortal
@@ -654,7 +656,8 @@ const HotCueEditorPanel = ({
     snapToGrid = true,
     onToggleSnap,
     playProgress = 0,
-    onGuardarTrack
+    onGuardarTrack,
+    onOpenStudio
 }) => {
     const activeCues = (cues && cues.length > 0) ? cues : NV2_COLORS;
     const currentCue = activeCues.find(c => (c.id || 1) === selectedCueId) || activeCues[0] || {};
@@ -774,6 +777,24 @@ const HotCueEditorPanel = ({
 
     return (
         <div className="flex flex-col gap-3 bg-djzinc-900/60 p-3 rounded-lg border border-djzinc-800">
+            {/* Botón de apertura a pantalla completa con Reproductor */}
+            {onOpenStudio && (
+                <button
+                    type="button"
+                    onClick={onOpenStudio}
+                    className="w-full py-2 px-3 bg-gradient-to-r from-blue-950 via-djzinc-900 to-indigo-950 hover:from-blue-900 hover:to-indigo-900 border border-djcyan-500/50 hover:border-djcyan-400 rounded-lg text-xs font-mono font-bold text-djcyan-300 flex items-center justify-between shadow-lg active:scale-[0.99] transition-all cursor-pointer group"
+                    title="Abrir estudio completo de Hot Cues a pantalla completa con reproductor y guardado por pista"
+                >
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm">🎛️</span>
+                        <span>ESTUDIO COMPLETO DE HOT CUES</span>
+                    </div>
+                    <span className="text-[10px] font-mono bg-djcyan-500/20 text-djcyan-300 px-2 py-0.5 rounded border border-djcyan-500/40 group-hover:bg-djcyan-500 group-hover:text-black transition-colors">
+                        ⛶ Pantalla Completa
+                    </span>
+                </button>
+            )}
+
             {/* Cabecera del Editor */}
             <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
                 <div className="flex items-center gap-2">
@@ -784,6 +805,16 @@ const HotCueEditorPanel = ({
                     <InfoTip title="Hot Cues & Beatgrid" text="Editor táctico de los 8 pads RGB sincronizados al Beatgrid Rekordbox/Serato. Arrastra los marcadores en la onda, escribe el tiempo exacto en milisegundos y asigna colores estándar." />
                 </div>
                 <div className="flex items-center gap-1.5">
+                    {onOpenStudio && (
+                        <button
+                            type="button"
+                            onClick={onOpenStudio}
+                            className="px-2 py-1 text-[9px] font-mono font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 rounded border border-djcyan-700/60 cursor-pointer shadow active:scale-95 transition-all"
+                            title="Abrir modal espacioso con reproductor y guardado por pista"
+                        >
+                            ⛶ Estudio
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={onAutoPhraseCues}
@@ -1062,6 +1093,612 @@ const HotCueEditorPanel = ({
                                 </button>
                             );
                         })}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Modal de Estudio Completo de Hot Cues & Beatgrid Rekordbox con Reproductor Dedicado y Guardado por Pista
+const HotCueStudioModal = ({
+    isOpen,
+    onClose,
+    track,
+    cues = NV2_COLORS,
+    duration = "05:00",
+    onUpdateCues,
+    selectedCueId = 1,
+    onSelectCue,
+    onPlayTrack,
+    nowPlayingTrack,
+    isPlaying = false,
+    onTogglePlay,
+    playProgress = 0,
+    onGuardarTrack,
+    saveFeedback = "",
+    onAutoPhraseCues
+}) => {
+    if (!isOpen || !track) return null;
+
+    const activeCues = (cues && cues.length > 0) ? cues : NV2_COLORS;
+    const currentCue = activeCues.find(c => (c.id || 1) === selectedCueId) || activeCues[0] || {};
+    const durMs = parseDurationMs(duration);
+    const bpm = (track && (track.bpm || track.b)) ? Math.max(30.0, parseFloat(track.bpm || track.b) || 128.0) : 128.0;
+    const beatMs = 60000.0 / bpm;
+    const barMs = beatMs * 4.0;
+    const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
+    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+
+    const [snapToGrid, setSnapToGrid] = useState(true);
+    const [showBeatgrid, setShowBeatgrid] = useState(true);
+    const [timeInputValue, setTimeInputValue] = useState(currentCue.time || "00:00.00");
+    const [nameInputValue, setNameInputValue] = useState(currentCue.name || "");
+    const [isSavingLocal, setIsSavingLocal] = useState(false);
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
+
+    useEffect(() => {
+        setTimeInputValue(currentCue.time || "00:00.00");
+        setNameInputValue(currentCue.name || currentCue.short_name || `Cue ${currentCue.id || 1}`);
+    }, [selectedCueId, currentCue.time, currentCue.name]);
+
+    const updateSingleCue = (updatedFields) => {
+        if (!onUpdateCues) return;
+        const targetId = currentCue.id || 1;
+        const newCues = activeCues.map((c, idx) => {
+            const cid = c.id !== undefined ? c.id : (idx + 1);
+            if (cid === targetId) {
+                return { ...c, ...updatedFields };
+            }
+            return c;
+        });
+        onUpdateCues(newCues);
+    };
+
+    const handleTimeInputChange = (e) => {
+        const val = e.target.value;
+        setTimeInputValue(val);
+        const ms = parseTimeToMs(val);
+        const newPct = durMs > 0 ? Math.max(0, Math.min(1, ms / durMs)) : 0;
+        const barNum = Math.max(1, Math.floor((ms - downbeatMs) / barMs) + 1);
+        updateSingleCue({
+            time: val,
+            pos_ms: Math.round(ms),
+            pct: newPct,
+            bar: barNum,
+            bar_str: `Bar ${barNum}`
+        });
+    };
+
+    const handleNudge = (deltaMs) => {
+        const curMs = currentCue.pos_ms !== undefined ? currentCue.pos_ms : parseTimeToMs(currentCue.time || "00:00.00");
+        const nextMs = Math.max(0, Math.min(durMs, curMs + deltaMs));
+        const newPct = durMs > 0 ? (nextMs / durMs) : 0;
+        const formattedTime = formatMsToTime(nextMs);
+        const barNum = Math.max(1, Math.floor((nextMs - downbeatMs) / barMs) + 1);
+        setTimeInputValue(formattedTime);
+        updateSingleCue({
+            pos_ms: Math.round(nextMs),
+            time: formattedTime,
+            pct: newPct,
+            bar: barNum,
+            bar_str: `Bar ${barNum}`
+        });
+    };
+
+    const handleSnapCurrentCue = () => {
+        const curMs = currentCue.pos_ms !== undefined ? currentCue.pos_ms : parseTimeToMs(currentCue.time || "00:00.00");
+        const beatOffset = Math.round((curMs - downbeatMs) / beatMs);
+        const snappedMs = Math.max(0, Math.min(durMs, downbeatMs + (beatOffset * beatMs)));
+        const newPct = durMs > 0 ? (snappedMs / durMs) : 0;
+        const formattedTime = formatMsToTime(snappedMs);
+        const barNum = Math.max(1, Math.floor((snappedMs - downbeatMs) / barMs) + 1);
+        setTimeInputValue(formattedTime);
+        updateSingleCue({
+            pos_ms: Math.round(snappedMs),
+            time: formattedTime,
+            pct: newPct,
+            bar: barNum,
+            bar_str: `Bar ${barNum}`
+        });
+    };
+
+    const handleSetToPlayhead = () => {
+        const playheadMs = Math.max(0, Math.min(durMs, playProgress * durMs));
+        let targetMs = playheadMs;
+        if (snapToGrid) {
+            const beatOffset = Math.round((playheadMs - downbeatMs) / beatMs);
+            targetMs = Math.max(0, Math.min(durMs, downbeatMs + (beatOffset * beatMs)));
+        }
+        const newPct = durMs > 0 ? (targetMs / durMs) : 0;
+        const formattedTime = formatMsToTime(targetMs);
+        const barNum = Math.max(1, Math.floor((targetMs - downbeatMs) / barMs) + 1);
+        setTimeInputValue(formattedTime);
+        updateSingleCue({
+            pos_ms: Math.round(targetMs),
+            time: formattedTime,
+            pct: newPct,
+            bar: barNum,
+            bar_str: `Bar ${barNum}`
+        });
+    };
+
+    const handleSaveTrackInternal = async () => {
+        setIsSavingLocal(true);
+        try {
+            if (onGuardarTrack) {
+                await onGuardarTrack();
+                setSaveSuccessMsg("✓ Guardado en disco con éxito");
+                setTimeout(() => setSaveSuccessMsg(""), 3500);
+            }
+        } finally {
+            setIsSavingLocal(false);
+        }
+    };
+
+    const handlePreviousCue = () => {
+        const currentIdx = activeCues.findIndex(c => (c.id || 1) === (currentCue.id || 1));
+        const prevIdx = currentIdx > 0 ? currentIdx - 1 : activeCues.length - 1;
+        const targetCue = activeCues[prevIdx];
+        if (targetCue && onSelectCue) {
+            onSelectCue(targetCue.id || (prevIdx + 1));
+            if (onPlayTrack) onPlayTrack(track, targetCue.pct !== undefined ? targetCue.pct : 0, true);
+        }
+    };
+
+    const handleNextCue = () => {
+        const currentIdx = activeCues.findIndex(c => (c.id || 1) === (currentCue.id || 1));
+        const nextIdx = currentIdx < activeCues.length - 1 ? currentIdx + 1 : 0;
+        const targetCue = activeCues[nextIdx];
+        if (targetCue && onSelectCue) {
+            onSelectCue(targetCue.id || (nextIdx + 1));
+            if (onPlayTrack) onPlayTrack(track, targetCue.pct !== undefined ? targetCue.pct : 0, true);
+        }
+    };
+
+    const isThisTrackPlaying = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(track.id) || nowPlayingTrack.path === track.path || nowPlayingTrack.f === track.f);
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn">
+            <div className="w-full max-w-6xl max-h-[95vh] bg-[#09090e] border border-djcyan-500/40 rounded-xl shadow-[0_0_50px_rgba(6,182,212,0.15)] flex flex-col overflow-hidden text-gray-200">
+                {/* Cabecera del Estudio */}
+                <div className="px-5 py-3.5 bg-djzinc-950 border-b border-djzinc-800 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <img 
+                            src={getValidCover(track.cover || (track.path ? `/cover?path=${encodeURIComponent(track.path)}` : null))} 
+                            alt="Cover" 
+                            className="w-12 h-12 rounded border border-djzinc-700 object-cover shrink-0 shadow"
+                        />
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-extrabold text-sm sm:text-base text-white truncate max-w-md" title={track.t || track.title}>
+                                    {track.t || track.title || 'Pista de Audio'}
+                                </h3>
+                                <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950 text-djcyan-400 border border-djcyan-800">
+                                    {track.format || 'FLAC'}
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-950 text-purple-300 border border-purple-800">
+                                    {track.k || track.key || '8A'}
+                                </span>
+                            </div>
+                            <p className="text-xs text-gray-400 truncate max-w-sm">
+                                {track.a || track.artist || '--'} • <span className="text-gray-500 font-mono">{track.album || '--'}</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {/* Estado y Guardado Pista por Pista */}
+                        {saveSuccessMsg ? (
+                            <span className="text-xs font-mono font-bold text-djgreen-400 bg-djgreen-950/80 px-3 py-1 rounded border border-djgreen-700 animate-pulse">
+                                {saveSuccessMsg}
+                            </span>
+                        ) : saveFeedback ? (
+                            <span className="text-xs font-mono font-bold text-djgreen-400 bg-djgreen-950/80 px-3 py-1 rounded border border-djgreen-700 animate-pulse">
+                                {saveFeedback}
+                            </span>
+                        ) : null}
+
+                        <button
+                            type="button"
+                            onClick={handleSaveTrackInternal}
+                            disabled={isSavingLocal}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-djgreen-950 hover:bg-djgreen-900 text-djgreen-400 hover:text-white border border-djgreen-700/80 rounded-lg font-mono font-bold text-xs cursor-pointer shadow-lg active:scale-95 transition-all"
+                            title="Guardar metadatos, tags y cues directamente en el archivo en disco"
+                        >
+                            <span>💾</span>
+                            <span>{isSavingLocal ? 'Guardando...' : 'Guardar Pista en Disco'}</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="w-8 h-8 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center font-bold text-sm border border-djzinc-750 transition-colors cursor-pointer"
+                            title="Cerrar estudio"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+
+                {/* Contenido del Estudio (Scrollable) */}
+                <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+                    {/* Reproductor de Audio y Deck de Transporte */}
+                    <div className="p-3 bg-djzinc-950/90 rounded-lg border border-djzinc-800 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (isThisTrackPlaying) {
+                                        onTogglePlay && onTogglePlay();
+                                    } else {
+                                        onPlayTrack && onPlayTrack(track, 0, true);
+                                    }
+                                }}
+                                className="px-4 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-black text-xs rounded-lg shadow-lg active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                                {isThisTrackPlaying ? '❚❚ PAUSAR' : '▶ REPRODUCIR'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handlePreviousCue}
+                                className="px-2.5 py-1.5 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 font-mono text-xs rounded border border-djzinc-750 cursor-pointer shadow transition-colors"
+                                title="Saltar al Cue anterior"
+                            >
+                                ⏮ Cue Anterior
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleNextCue}
+                                className="px-2.5 py-1.5 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 font-mono text-xs rounded border border-djzinc-750 cursor-pointer shadow transition-colors"
+                                title="Saltar al siguiente Cue"
+                            >
+                                Siguiente Cue ⏭
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-3 text-xs font-mono">
+                            <div className="bg-[#050508] px-3 py-1.5 rounded border border-djzinc-800 flex items-center gap-2">
+                                <span className="text-gray-400">Posición:</span>
+                                <span className="text-djcyan-400 font-bold">{formatMsToTime(playProgress * durMs)}</span>
+                                <span className="text-gray-600">/</span>
+                                <span className="text-gray-300">{duration}</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleSetToPlayhead}
+                                className="px-3 py-1.5 bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 border border-djcyan-700/60 rounded font-mono font-bold text-xs cursor-pointer shadow active:scale-95 transition-all"
+                                title="Fijar el cue seleccionado exactamente en la posición actual del playhead"
+                            >
+                                📍 Posicionar Pad {currentCue.id || 1} en Playhead
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Forma de Onda Expandida y Beatgrid */}
+                    <div>
+                        <RekordboxWaveform 
+                            track={track} 
+                            cues={activeCues} 
+                            duration={duration} 
+                            onSeekTrack={onPlayTrack}
+                            playProgress={isThisTrackPlaying ? playProgress : 0}
+                            isCurrentPlaying={isThisTrackPlaying}
+                            onUpdateCues={onUpdateCues}
+                            selectedCueId={selectedCueId}
+                            onSelectCue={onSelectCue}
+                            snapToGrid={snapToGrid}
+                            showBeatgrid={showBeatgrid}
+                            onToggleSnap={() => setSnapToGrid(prev => !prev)}
+                            onToggleGrid={() => setShowBeatgrid(prev => !prev)}
+                        />
+                    </div>
+
+                    {/* Códigos de Color de la Forma de Onda y Pads */}
+                    <div className="bg-[#05050a] p-3 rounded-lg border border-djzinc-800 space-y-2">
+                        <div className="flex justify-between items-center text-xs font-mono font-bold">
+                            <span className="text-gray-300 flex items-center gap-1.5">
+                                <span>🎨</span>
+                                <span>CÓDIGOS DE COLOR DE FORMA DE ONDA & BANDA ESPECTRAL</span>
+                            </span>
+                            <span className="text-[10px] text-gray-500">Pioneer DJ RGB Multi-Frequency Standard</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                            {WAVEFORM_COLOR_LEGEND.map(stem => (
+                                <div key={stem.name} className="flex items-center gap-2 p-2 rounded bg-djzinc-900/80 border border-djzinc-800" title={stem.desc}>
+                                    <span className="w-3.5 h-3.5 rounded-full shrink-0 shadow-md" style={{ backgroundColor: stem.color }}></span>
+                                    <div className="min-w-0">
+                                        <span className={`font-bold block truncate ${stem.text}`}>{stem.name}</span>
+                                        <span className="text-gray-400 text-[10px]">{stem.hex} • {stem.desc}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Matriz 8 Pads DJ Profesional */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center text-xs font-mono px-1">
+                            <span className="font-bold text-gray-300 uppercase">
+                                8 HOT CUES PERFORMANCE (Pioneer DJ / Numark NV2)
+                            </span>
+                            <span className="text-gray-400 text-[11px]">
+                                Clic en Pad para seleccionar y editar • Botón ▶ para pre-escucha instantánea
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                            {activeCues.map((c, idx) => {
+                                const cueId = c.id !== undefined ? c.id : (idx + 1);
+                                const isSelected = selectedCueId === cueId;
+                                const cuePct = c.pct !== undefined ? c.pct : ((idx * 0.12) + 0.02);
+
+                                return (
+                                    <div
+                                        key={cueId}
+                                        onClick={() => onSelectCue && onSelectCue(cueId)}
+                                        className={`p-3 rounded-xl border flex flex-col justify-between cursor-pointer transition-all select-none shadow-md ${
+                                            isSelected 
+                                                ? 'bg-djzinc-800 border-djcyan-400 ring-2 ring-djcyan-400/80 shadow-[0_0_15px_rgba(6,182,212,0.3)] scale-[1.02]' 
+                                                : `${c.bg || 'bg-djzinc-900'} ${c.border || 'border-djzinc-750'} hover:border-gray-500 hover:scale-[1.01]`
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <div className="flex items-center gap-1.5">
+                                                <span 
+                                                    className="text-[10px] font-mono font-black px-2 py-0.5 rounded text-black shadow"
+                                                    style={{ backgroundColor: c.color || '#ef4444' }}
+                                                >
+                                                    PAD {cueId}
+                                                </span>
+                                                <span className="text-[9px] font-mono font-semibold text-gray-400">
+                                                    {c.color || '#ef4444'}
+                                                </span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (onPlayTrack) onPlayTrack(track, cuePct, true);
+                                                }}
+                                                className="w-6 h-6 rounded-md bg-djzinc-950 hover:bg-djcyan-500 hover:text-black text-djcyan-400 flex items-center justify-center text-xs font-bold border border-djzinc-700 transition-colors shadow"
+                                                title={`Reproducir desde ${c.time || '00:00.0'}`}
+                                            >
+                                                ▶
+                                            </button>
+                                        </div>
+                                        <span className={`text-xs font-bold truncate ${c.text || 'text-gray-100'}`}>
+                                            {c.short_name || c.name || `Cue ${cueId}`}
+                                        </span>
+                                        <div className="flex justify-between items-center text-[10px] font-mono text-gray-400 mt-2 pt-1.5 border-t border-djzinc-800">
+                                            <span className="text-gray-200 font-bold">{c.time || '00:00.0'}</span>
+                                            <span className="text-gray-400">{c.bar_str || `Bar ${c.bar || ((idx * 16) + 1)}`}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Deck de Edición Detallada del Pad Seleccionado */}
+                    <div className="bg-djzinc-950 p-4 rounded-xl border border-djcyan-500/30 space-y-3">
+                        <div className="flex flex-wrap justify-between items-center border-b border-djzinc-850 pb-2.5 gap-2">
+                            <div className="flex items-center gap-2">
+                                <span 
+                                    className="px-2.5 py-1 rounded text-xs font-black font-mono text-black shadow-md" 
+                                    style={{ backgroundColor: currentCue.color || '#ef4444' }}
+                                >
+                                    PAD {currentCue.id || 1}
+                                </span>
+                                <span className="font-extrabold text-white text-sm">
+                                    Editando: <span className="text-djcyan-400">{currentCue.name || `Cue ${currentCue.id || 1}`}</span>
+                                </span>
+                                <span className="text-xs font-mono text-gray-400">
+                                    ({currentCue.color || '#ef4444'})
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleSetToPlayhead}
+                                    className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-200 text-xs font-mono rounded border border-djzinc-700 cursor-pointer shadow active:scale-95 transition-colors"
+                                    title="Mover este cue a la posición actual de reproducción"
+                                >
+                                    📍 Fijar en Playhead
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSnapCurrentCue}
+                                    className="px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-400 text-xs font-mono rounded border border-emerald-800 cursor-pointer shadow active:scale-95 transition-colors"
+                                    title="Alinear al beatgrid más próximo"
+                                >
+                                    🧲 Snap a Beat
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Entradas de Tiempo y Nombre */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <div className="flex justify-between items-center text-xs font-mono text-gray-400 mb-1">
+                                    <span className="font-semibold text-gray-300">TIEMPO EXACTO (mm:ss.ms)</span>
+                                    <span className="text-gray-400 font-mono">{currentCue.pos_ms || 0} ms</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <input
+                                        type="text"
+                                        value={timeInputValue}
+                                        onChange={handleTimeInputChange}
+                                        placeholder="00:00.00"
+                                        className="w-full bg-[#050508] border border-djzinc-700 focus:border-djcyan-400 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-djcyan-300 outline-none"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const cuePct = currentCue.pct !== undefined ? currentCue.pct : 0;
+                                            if (onPlayTrack) onPlayTrack(track, cuePct, true);
+                                        }}
+                                        className="px-3 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg cursor-pointer shadow shrink-0"
+                                        title="Audicionar este punto de cue"
+                                    >
+                                        ▶
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between items-center text-xs font-mono text-gray-400 mb-1">
+                                    <span className="font-semibold text-gray-300">NOMBRE DEL CUE / FRASE</span>
+                                    <span className="text-gray-400">{currentCue.bar_str || 'Bar 1'}</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={nameInputValue}
+                                    onChange={(e) => {
+                                        setNameInputValue(e.target.value);
+                                        updateSingleCue({ name: e.target.value, short_name: e.target.value });
+                                    }}
+                                    placeholder="Nombre táctico del cue..."
+                                    className="w-full bg-[#050508] border border-djzinc-700 focus:border-djcyan-400 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-200 outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Nudge y Presets */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-djzinc-850">
+                            <div className="flex items-center gap-1.5 text-xs font-mono">
+                                <span className="text-gray-400 mr-1">Micro-Ajuste:</span>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudge(-barMs)}
+                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                                    title="Retroceder 1 compás (4 beats)"
+                                >
+                                    ◀◀ -1 Compás
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudge(-beatMs)}
+                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                                    title="Retroceder 1 beat"
+                                >
+                                    ◀ -1 Beat
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudge(-10)}
+                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                                    title="Retroceder 10ms"
+                                >
+                                    -10ms
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudge(10)}
+                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                                    title="Avanzar 10ms"
+                                >
+                                    +10ms
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudge(beatMs)}
+                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                                    title="Avanzar 1 beat"
+                                >
+                                    +1 Beat ▶
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudge(barMs)}
+                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                                    title="Avanzar 1 compás (4 beats)"
+                                >
+                                    +1 Compás ▶▶
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-1 text-[10px] font-mono">
+                                <span className="text-gray-400 mr-1">Presets:</span>
+                                {['Kick', 'Hi-Hats', 'Bass', 'Break', 'Drop 1', 'Drop 2', 'Outro'].map(p => (
+                                    <button
+                                        key={p}
+                                        type="button"
+                                        onClick={() => {
+                                            setNameInputValue(p);
+                                            updateSingleCue({ name: p, short_name: p });
+                                        }}
+                                        className="px-1.5 py-0.5 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer transition-colors"
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Paleta de Color RGB con Códigos HEX */}
+                        <div className="pt-2 border-t border-djzinc-850">
+                            <div className="flex justify-between items-center text-xs font-mono text-gray-400 mb-1.5">
+                                <span className="font-semibold text-gray-300">ASIGNAR COLOR DE PAD (PIONEER DJ / NUMARK RGB)</span>
+                                <span>Actual: <span className="font-mono text-white font-bold">{currentCue.color || '#ef4444'}</span></span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {DJ_PAD_PALETTE.map(pal => {
+                                    const isCurrentColor = (currentCue.color || '#ef4444').toLowerCase() === pal.color.toLowerCase();
+                                    return (
+                                        <button
+                                            key={pal.color}
+                                            type="button"
+                                            onClick={() => {
+                                                updateSingleCue({
+                                                    color: pal.color,
+                                                    hex: pal.hex,
+                                                    rgb: pal.rgb,
+                                                    text: pal.text,
+                                                    border: pal.border,
+                                                    bg: pal.bg
+                                                });
+                                            }}
+                                            className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold flex items-center gap-2 border transition-all cursor-pointer ${
+                                                isCurrentColor 
+                                                    ? 'ring-2 ring-white border-white scale-105 shadow-md bg-djzinc-800' 
+                                                    : 'bg-djzinc-900 border-djzinc-750 hover:border-gray-500'
+                                            }`}
+                                            title={`${pal.name} • ${pal.hex}`}
+                                        >
+                                            <span className="w-3 h-3 rounded-full shadow" style={{ backgroundColor: pal.color }}></span>
+                                            <span className="text-gray-200">{pal.hex}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Pie del Estudio con Botón de Guardado Pista por Pista */}
+                <div className="px-5 py-3.5 bg-djzinc-950 border-t border-djzinc-800 flex items-center justify-between shrink-0">
+                    <span className="text-xs font-mono text-gray-400 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-djcyan-400"></span>
+                        Estudio sincronizado con Serato Markers2 & BeatGrid oficial.
+                    </span>
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 font-mono text-xs rounded-lg border border-djzinc-750 cursor-pointer transition-colors"
+                        >
+                            Cerrar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSaveTrackInternal}
+                            disabled={isSavingLocal}
+                            className="px-4 py-2 bg-djgreen-950 hover:bg-djgreen-900 text-djgreen-400 hover:text-white border border-djgreen-700/80 rounded-lg font-mono font-bold text-xs cursor-pointer shadow-lg active:scale-95 transition-all flex items-center gap-1.5"
+                        >
+                            <span>💾</span>
+                            <span>{isSavingLocal ? 'Guardando en Archivo...' : 'Guardar Pista en Fichero'}</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1491,6 +2128,7 @@ const AuditWorkspace = ({
     const [selectedCueId, setSelectedCueId] = useState(1);
     const [snapToGrid, setSnapToGrid] = useState(true);
     const [showBeatgrid, setShowBeatgrid] = useState(true);
+    const [cueStudioModalOpen, setCueStudioModalOpen] = useState(false);
 
     const currentTrack = tracks.find(t => t.id === selectedTrack) || tracks[0] || {};
 
@@ -2177,7 +2815,20 @@ const AuditWorkspace = ({
                                         <td className="py-2 px-1.5 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${String(row.status).includes('Fake') ? 'bg-red-950/80 text-red-400 border-red-800' : 'bg-djgreen-950/80 text-djgreen-400 border-djgreen-800'}`}>{row.cutoff_khz ? `${row.cutoff_khz}kHz` : 'PASS'}</span></td>
                                         <td className="py-2 px-1.5 text-center font-mono text-[10px] text-amber-300">{row.trim_start_ms > 0 ? `-${row.trim_start_ms}ms` : '0ms'}</td>
                                         <td className="py-2 px-1.5 text-center font-mono text-[10px] text-blue-300">{row.first_downbeat_ms ? `${row.first_downbeat_ms}ms` : '0ms'}</td>
-                                        <td className="py-2 px-1.5 text-center font-mono text-[10px] text-amber-400">8 NV2</td>
+                                        <td className="py-2 px-1.5 text-center">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedTrack(row.id);
+                                                    setCueStudioModalOpen(true);
+                                                }}
+                                                className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-pink-950/80 hover:bg-pink-900 text-pink-300 border border-pink-800/60 transition-all shadow active:scale-95 cursor-pointer"
+                                                title="Abrir Estudio de Hot Cues a pantalla completa con reproductor"
+                                            >
+                                                🎛️ 8 Cues
+                                            </button>
+                                        </td>
                                         <td className="py-2 px-1.5 text-center font-mono text-[10px] text-pink-300 font-bold">{row.e || 80}%</td>
                                         <td className="py-2 px-1.5 text-center font-mono text-[10px] text-indigo-300 font-bold">{row.dance || 85}%</td>
                                         <td className="py-2 px-2 text-center text-[9px] font-mono text-emerald-300">{row.mood || 'Peak Time'}</td>
@@ -2530,6 +3181,7 @@ const AuditWorkspace = ({
                         onToggleSnap={() => setSnapToGrid(prev => !prev)}
                         playProgress={isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) ? playProgress : 0}
                         onGuardarTrack={handleGuardarTrack}
+                        onOpenStudio={() => setCueStudioModalOpen(true)}
                     />
 
                     <div>
@@ -2801,6 +3453,28 @@ const AuditWorkspace = ({
                     onClose={() => setCamelotModalOpen(false)} 
                     currentKey={currentTrack.k || '8A'} 
                     onSelectKey={(newKey) => updateCurrentTrackField('k', newKey)} 
+                />
+            )}
+
+            {/* Modal de Estudio Completo de Hot Cues con Reproductor & Guardado por Pista */}
+            {cueStudioModalOpen && (
+                <HotCueStudioModal
+                    isOpen={cueStudioModalOpen}
+                    onClose={() => setCueStudioModalOpen(false)}
+                    track={currentTrack}
+                    cues={(currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS}
+                    duration={currentTrack.duration || "05:00"}
+                    onUpdateCues={(newCues) => updateCurrentTrackField('cues', newCues)}
+                    selectedCueId={selectedCueId}
+                    onSelectCue={setSelectedCueId}
+                    onPlayTrack={onPlayTrack}
+                    nowPlayingTrack={nowPlayingTrack}
+                    isPlaying={isPlaying}
+                    onTogglePlay={onTogglePlay}
+                    playProgress={playProgress}
+                    onGuardarTrack={handleGuardarTrack}
+                    saveFeedback={saveFeedback}
+                    onAutoPhraseCues={handleAutoPhraseCues}
                 />
             )}
         </div>
@@ -3701,6 +4375,506 @@ const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
     );
 };
 
+// Espacio de Trabajo: Shazam Audio Intelligence (Reconocimiento por Micrófono y Subida de Archivos)
+const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
+    const [isListening, setIsListening] = useState(false);
+    const [countdown, setCountdown] = useState(5);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [statusMsg, setStatusMsg] = useState("");
+    const [identifiedTrack, setIdentifiedTrack] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [previewPlaying, setPreviewPlaying] = useState(false);
+    const audioRef = useRef(new Audio());
+    const mediaRecorderRef = useRef(null);
+    const audioStreamRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const [dragOver, setDragOver] = useState(false);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        const handleEnded = () => setPreviewPlaying(false);
+        const handlePause = () => setPreviewPlaying(false);
+        audio.addEventListener("ended", handleEnded);
+        audio.addEventListener("pause", handlePause);
+        return () => {
+            audio.removeEventListener("ended", handleEnded);
+            audio.removeEventListener("pause", handlePause);
+            audio.pause();
+        };
+    }, []);
+
+    const togglePlayPreview = (url) => {
+        if (!url) return;
+        const audio = audioRef.current;
+        if (previewPlaying && audio.src === url) {
+            audio.pause();
+            setPreviewPlaying(false);
+        } else {
+            audio.src = url;
+            audio.play().then(() => setPreviewPlaying(true)).catch(e => console.error("Error reproduciendo preview:", e));
+        }
+    };
+
+    const startMicrophoneListening = async () => {
+        if (isListening || isAnalyzing) return;
+        setStatusMsg("Solicitando acceso al micrófono...");
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioStreamRef.current = stream;
+            setIsListening(true);
+            setCountdown(5);
+            setStatusMsg("Escuchando audio ambiental (5s)...");
+
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            const chunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) chunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                stream.getTracks().forEach(t => t.stop());
+                setIsListening(false);
+                setIsAnalyzing(true);
+                setStatusMsg("Consultando huella acústica en ShazamIO...");
+
+                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.onloadend = async () => {
+                    const base64Data = reader.result;
+                    try {
+                        if (window.eel && window.eel.identificar_audio_base64) {
+                            const res = await window.eel.identificar_audio_base64(base64Data)();
+                            handleRecognitionResponse(res);
+                        } else {
+                            setStatusMsg("Backend Shazam no disponible.");
+                            setIsAnalyzing(false);
+                        }
+                    } catch (err) {
+                        console.error("Error Shazam:", err);
+                        setStatusMsg("Error de comunicación con el motor Shazam.");
+                        setIsAnalyzing(false);
+                    }
+                };
+                reader.readAsDataURL(audioBlob);
+            };
+
+            mediaRecorder.start();
+
+            let timeLeft = 5;
+            const timer = setInterval(() => {
+                timeLeft -= 1;
+                setCountdown(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    if (mediaRecorder.state !== 'inactive') {
+                        mediaRecorder.stop();
+                    }
+                }
+            }, 1000);
+
+        } catch (err) {
+            console.error("Error acceso micrófono:", err);
+            setStatusMsg("No se pudo acceder al micrófono: " + (err.message || "Permiso denegado"));
+            setIsListening(false);
+        }
+    };
+
+    const handleFileSelect = (file) => {
+        if (!file) return;
+        setIsAnalyzing(true);
+        setStatusMsg(`Leyendo archivo "${file.name}"...`);
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64Data = reader.result;
+            setStatusMsg(`Generando huella acústica de "${file.name}" en ShazamIO...`);
+            try {
+                if (window.eel && window.eel.identificar_audio_base64) {
+                    const res = await window.eel.identificar_audio_base64(base64Data)();
+                    handleRecognitionResponse(res);
+                } else {
+                    setStatusMsg("Backend Shazam no disponible.");
+                    setIsAnalyzing(false);
+                }
+            } catch (err) {
+                console.error("Error en Shazam:", err);
+                setStatusMsg("Error al procesar el archivo en Shazam.");
+                setIsAnalyzing(false);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleRecognitionResponse = (res) => {
+        setIsAnalyzing(false);
+        if (res && res.status === 'ok') {
+            setStatusMsg(`✓ Identificado: "${res.title}" por ${res.artist}`);
+            setIdentifiedTrack(res);
+            setHistory(prev => [res, ...prev.filter(item => item.title !== res.title || item.artist !== res.artist)]);
+            if (res.preview_url) {
+                togglePlayPreview(res.preview_url);
+            }
+        } else {
+            setStatusMsg(res?.msg || "No se encontraron coincidencias para este fragmento de audio.");
+        }
+    };
+
+    const handleSendToAuditInternal = (trk) => {
+        if (!trk || !onSendToAudit) return;
+        const newTrackItem = {
+            id: Date.now(),
+            t: trk.title,
+            title: trk.title,
+            a: trk.artist,
+            artist: trk.artist,
+            album: trk.album || `${trk.title} - Single`,
+            genre: trk.genre || 'Electronic',
+            subgenre: 'Tech House',
+            year: trk.year || '',
+            b: '126.00',
+            bpm: '126.00',
+            k: '8A',
+            key: '8A',
+            duration: '03:30',
+            format: 'FLAC',
+            cover: trk.cover || '',
+            status: 'Pass 22.05kHz',
+            first_downbeat_ms: 250,
+            trim_start_ms: 25,
+            cues: NV2_COLORS
+        };
+        onSendToAudit(newTrackItem);
+    };
+
+    const handleSendToSpotifyInternal = (trk) => {
+        if (!trk || !onSendToSpotify) return;
+        onSendToSpotify(trk.spotify_query || `${trk.title} ${trk.artist}`);
+    };
+
+    const handleCopyToClipboard = (trk) => {
+        const text = `${trk.artist} - ${trk.title} [${trk.album || ''} ${trk.year || ''}]`;
+        navigator.clipboard.writeText(text);
+        alert(`Copiado al portapapeles:\n${text}`);
+    };
+
+    return (
+        <div className="flex flex-col h-full w-full bg-[#040407] overflow-y-auto p-4 sm:p-6 text-gray-200 space-y-6">
+            {/* Header del Radar Shazam */}
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-djzinc-800 pb-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 via-djcyan-500 to-indigo-500 p-0.5 shadow-lg shadow-djcyan-500/20 flex items-center justify-center">
+                        <div className="w-full h-full bg-[#08080d] rounded-[10px] flex items-center justify-center text-djcyan-400">
+                            <Icons.Radar />
+                        </div>
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-lg font-black text-white tracking-wide">
+                                RADAR ACÚSTICO SHAZAMIO
+                            </h2>
+                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold bg-blue-950 text-blue-400 border border-blue-800 rounded">
+                                Engine Oficial ShazamIO
+                            </span>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                            Identifica pistas desconocidas al instante escuchando con el micrófono o cargando archivos de audio.
+                        </p>
+                    </div>
+                </div>
+
+                {statusMsg && (
+                    <div className="px-3 py-1.5 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono flex items-center gap-2 shadow">
+                        <span className={`w-2 h-2 rounded-full ${isAnalyzing || isListening ? 'bg-djcyan-400 animate-pulse' : 'bg-djgreen-400'}`}></span>
+                        <span className="text-gray-300">{statusMsg}</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Dos Módulos de Entrada: Micrófono & Carga de Archivo */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Módulo 1: Micrófono en Directo */}
+                <div className="bg-[#09090f] p-5 rounded-2xl border border-djzinc-800 flex flex-col items-center text-center justify-between relative overflow-hidden shadow-lg group hover:border-djcyan-500/40 transition-all">
+                    <div className="space-y-1 mb-4">
+                        <span className="text-[10px] font-mono font-bold uppercase text-djcyan-400 tracking-wider">
+                            MODO A • CAPTURA AMBIENTAL
+                        </span>
+                        <h3 className="text-base font-bold text-white">Escucha en Directo por Micrófono</h3>
+                        <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                            Captura 5 segundos de música sonando en tus monitores o altavoces y consulta los servidores de Shazam.
+                        </p>
+                    </div>
+
+                    <div className="my-3 relative flex items-center justify-center">
+                        {isListening && (
+                            <div className="absolute w-36 h-36 rounded-full bg-djcyan-500/20 animate-ping pointer-events-none"></div>
+                        )}
+                        <button
+                            type="button"
+                            onClick={startMicrophoneListening}
+                            disabled={isListening || isAnalyzing}
+                            className={`w-28 h-28 rounded-full flex flex-col items-center justify-center transition-all cursor-pointer shadow-2xl relative z-10 ${
+                                isListening 
+                                    ? 'bg-gradient-to-tr from-red-600 to-pink-600 text-white scale-110 shadow-red-500/40' 
+                                    : 'bg-gradient-to-tr from-blue-600 to-djcyan-400 text-black hover:scale-105 shadow-djcyan-500/30'
+                            }`}
+                        >
+                            <Icons.Mic />
+                            <span className="text-xs font-mono font-black mt-1">
+                                {isListening ? `${countdown}s...` : 'ESCUCHAR'}
+                            </span>
+                        </button>
+                    </div>
+
+                    <div className="text-[11px] font-mono text-gray-400">
+                        {isListening ? (
+                            <span className="text-red-400 font-bold animate-pulse">● Grabando audio del micrófono...</span>
+                        ) : isAnalyzing ? (
+                            <span className="text-djcyan-400 font-bold">● Analizando huella acústica...</span>
+                        ) : (
+                            <span>Haz clic para iniciar la escucha de 5 segundos</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Módulo 2: Carga / Arrastre de Archivos */}
+                <div 
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        setDragOver(false);
+                        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                            handleFileSelect(e.dataTransfer.files[0]);
+                        }
+                    }}
+                    className={`bg-[#09090f] p-5 rounded-2xl border flex flex-col items-center text-center justify-between transition-all cursor-pointer shadow-lg ${
+                        dragOver ? 'border-djcyan-400 bg-djcyan-950/20 scale-[1.01]' : 'border-djzinc-800 hover:border-djcyan-500/40'
+                    }`}
+                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                >
+                    <div className="space-y-1 mb-4">
+                        <span className="text-[10px] font-mono font-bold uppercase text-purple-400 tracking-wider">
+                            MODO B • ANALIZADOR DE ARCHIVO
+                        </span>
+                        <h3 className="text-base font-bold text-white">Subir o Arrastrar Archivo de Audio</h3>
+                        <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                            Arrastra cualquier archivo local (.mp3, .flac, .wav, .m4a) para extraer su huella digital y metadatos.
+                        </p>
+                    </div>
+
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                                handleFileSelect(e.target.files[0]);
+                            }
+                        }} 
+                        accept="audio/*" 
+                        className="hidden" 
+                    />
+
+                    <div className="my-3 w-28 h-28 rounded-2xl border-2 border-dashed border-djzinc-700 hover:border-djcyan-400 flex flex-col items-center justify-center transition-colors bg-djzinc-950">
+                        <span className="text-3xl mb-1">📁</span>
+                        <span className="text-[10px] font-mono font-bold text-gray-300">ARRASTRAR AQUÍ</span>
+                    </div>
+
+                    <div className="text-[11px] font-mono text-gray-400">
+                        <span>Formatos: MP3, FLAC, WAV, M4A, OGG</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Resultado de Identificación Activa */}
+            {identifiedTrack && (
+                <div className="bg-gradient-to-r from-blue-950/40 via-djzinc-950 to-indigo-950/40 p-5 rounded-2xl border border-djcyan-500/40 shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-3">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]"></span>
+                            <span className="text-xs font-mono font-bold text-djcyan-400 uppercase tracking-wider">
+                                PISTA IDENTIFICADA POR SHAZAM
+                            </span>
+                        </div>
+                        {identifiedTrack.isrc && (
+                            <span className="text-[10px] font-mono text-gray-400 bg-djzinc-900 px-2 py-0.5 rounded border border-djzinc-750">
+                                ISRC: {identifiedTrack.isrc}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col md:flex-row items-center gap-6">
+                        <div className="relative group shrink-0">
+                            <img 
+                                src={getValidCover(identifiedTrack.cover)} 
+                                alt="Shazam Artwork" 
+                                className="w-40 h-40 rounded-xl object-cover border border-djzinc-700 shadow-2xl"
+                            />
+                            {identifiedTrack.preview_url && (
+                                <button
+                                    type="button"
+                                    onClick={() => togglePlayPreview(identifiedTrack.preview_url)}
+                                    className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-djcyan-500 text-black flex items-center justify-center shadow-xl opacity-90 hover:opacity-100 hover:scale-110 transition-all cursor-pointer font-bold"
+                                    title="Reproducir pre-escucha oficial"
+                                >
+                                    {previewPlaying ? '❚❚' : '▶'}
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-3">
+                            <div>
+                                <h1 className="text-2xl font-black text-white truncate" title={identifiedTrack.title}>
+                                    {identifiedTrack.title}
+                                </h1>
+                                <p className="text-base font-bold text-djcyan-400 truncate" title={identifiedTrack.artist}>
+                                    {identifiedTrack.artist}
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                                <div className="bg-[#050508] p-2 rounded border border-djzinc-800">
+                                    <span className="text-[9px] text-gray-500 block uppercase">Álbum</span>
+                                    <span className="text-gray-200 font-semibold truncate block" title={identifiedTrack.album}>
+                                        {identifiedTrack.album || '--'}
+                                    </span>
+                                </div>
+                                <div className="bg-[#050508] p-2 rounded border border-djzinc-800">
+                                    <span className="text-[9px] text-gray-500 block uppercase">Género</span>
+                                    <span className="text-emerald-400 font-semibold truncate block">
+                                        {identifiedTrack.genre || 'Electronic'}
+                                    </span>
+                                </div>
+                                <div className="bg-[#050508] p-2 rounded border border-djzinc-800">
+                                    <span className="text-[9px] text-gray-500 block uppercase">Lanzamiento</span>
+                                    <span className="text-gray-200 font-semibold truncate block">
+                                        {identifiedTrack.year || '--'}
+                                    </span>
+                                </div>
+                                <div className="bg-[#050508] p-2 rounded border border-djzinc-800">
+                                    <span className="text-[9px] text-gray-500 block uppercase">Sello / Label</span>
+                                    <span className="text-gray-300 font-semibold truncate block" title={identifiedTrack.label}>
+                                        {identifiedTrack.label || '--'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => handleSendToSpotifyInternal(identifiedTrack)}
+                                    className="px-3 py-1.5 bg-djgreen-950 hover:bg-djgreen-900 text-djgreen-400 border border-djgreen-700/80 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow active:scale-95 transition-all"
+                                    title="Descargar este track en FLAC a través de Spotify Ingest"
+                                >
+                                    <span>📥</span>
+                                    <span>Descargar en Spotify Ingest</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleSendToAuditInternal(identifiedTrack)}
+                                    className="px-3 py-1.5 bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 border border-djcyan-700/80 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow active:scale-95 transition-all"
+                                    title="Añadir esta pista a la tabla de Auditoría para análisis DSP y Beatgrid"
+                                >
+                                    <span>📋</span>
+                                    <span>Añadir a Auditoría DJ</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleCopyToClipboard(identifiedTrack)}
+                                    className="px-2.5 py-1.5 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 border border-djzinc-750 rounded-lg text-xs font-mono cursor-pointer transition-colors"
+                                    title="Copiar Artista - Título al portapapeles"
+                                >
+                                    📋 Copiar Texto
+                                </button>
+
+                                {identifiedTrack.shazam_url && (
+                                    <a
+                                        href={identifiedTrack.shazam_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-2.5 py-1.5 bg-blue-950 hover:bg-blue-900 text-blue-300 border border-blue-800 rounded-lg text-xs font-mono transition-colors"
+                                    >
+                                        🔗 Shazam Web
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Historial de Pistas Identificadas en la Sesión */}
+            {history.length > 0 && (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                        <h4 className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                            <span>🕒</span>
+                            <span>HISTORIAL DE PISTAS IDENTIFICADAS ({history.length})</span>
+                        </h4>
+                        <button
+                            type="button"
+                            onClick={() => setHistory([])}
+                            className="text-[10px] font-mono text-gray-500 hover:text-red-400 transition-colors cursor-pointer"
+                        >
+                            Limpiar Historial
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {history.map((trk, hIdx) => (
+                            <div 
+                                key={hIdx} 
+                                className="p-3 bg-[#07070b] rounded-xl border border-djzinc-850 flex items-center gap-3 hover:border-djcyan-500/30 transition-all group"
+                            >
+                                <img 
+                                    src={getValidCover(trk.cover)} 
+                                    alt="Cover" 
+                                    className="w-12 h-12 rounded-lg object-cover border border-djzinc-800 shrink-0 shadow"
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <h5 className="text-xs font-bold text-white truncate" title={trk.title}>
+                                        {trk.title}
+                                    </h5>
+                                    <p className="text-[11px] text-djcyan-400 truncate" title={trk.artist}>
+                                        {trk.artist}
+                                    </p>
+                                    <span className="text-[9px] font-mono text-gray-500">
+                                        {trk.genre || 'Electronic'} {trk.year ? `• ${trk.year}` : ''}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col gap-1 shrink-0">
+                                    {trk.preview_url && (
+                                        <button
+                                            type="button"
+                                            onClick={() => togglePlayPreview(trk.preview_url)}
+                                            className="w-7 h-7 rounded bg-djzinc-900 hover:bg-djcyan-500 hover:text-black text-djcyan-400 flex items-center justify-center text-xs font-bold border border-djzinc-750 transition-colors shadow"
+                                            title="Pre-escucha"
+                                        >
+                                            ▶
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSendToAuditInternal(trk)}
+                                        className="w-7 h-7 rounded bg-djzinc-900 hover:bg-djgreen-500 hover:text-black text-djgreen-400 flex items-center justify-center text-xs font-bold border border-djzinc-750 transition-colors shadow"
+                                        title="Añadir a Auditoría"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // Espacio de Trabajo: Consola de Sistema / Logs
 const LogsWorkspace = ({ logs, setLogs }) => (
     <div className="flex flex-col h-full p-6 w-full bg-black font-mono">
@@ -3948,7 +5122,7 @@ const App = () => {
                     </div>
                 </div>
 
-                {/* Pestañas de Navegación Exactas: Auditoría, Spotify Ingest, Taxonomía, Consola */}
+                {/* Pestañas de Navegación Exactas: Auditoría, Spotify Ingest, Radar Shazam, Taxonomía, Consola */}
                 <nav className="flex space-x-1.5 h-full absolute left-1/2 -translate-x-1/2 items-center">
                     <button 
                         onClick={() => setActiveTab('audit')} 
@@ -3969,6 +5143,16 @@ const App = () => {
                         }`}
                     >
                         <Icons.Spotify /> Spotify Ingest
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('shazam')} 
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                            activeTab === 'shazam' 
+                            ? 'bg-djcyan-500 text-black shadow-lg shadow-djcyan-500/20 font-bold' 
+                            : 'text-gray-400 hover:text-white hover:bg-djzinc-900'
+                        }`}
+                    >
+                        <Icons.Radar /> Radar Shazam
                     </button>
                     <button 
                         onClick={() => setActiveTab('taxonomy')} 
@@ -4021,6 +5205,19 @@ const App = () => {
                         nowPlayingTrack={nowPlayingTrack} 
                         isPlaying={isPlaying} 
                         onTogglePlay={togglePlayPause} 
+                    />
+                </div>
+                <div style={{ display: activeTab === 'shazam' ? 'flex' : 'none' }} className="w-full h-full">
+                    <ShazamWorkspace 
+                        onSendToSpotify={(query) => {
+                            setActiveTab('spotify');
+                        }}
+                        onSendToAudit={(trackData) => {
+                            setAuditTracks(prev => [trackData, ...prev]);
+                            setSelectedTrack(trackData.id);
+                            setActiveTab('audit');
+                        }}
+                        onNavigateTab={setActiveTab}
                     />
                 </div>
                 <div style={{ display: activeTab === 'taxonomy' ? 'flex' : 'none' }} className="w-full h-full">

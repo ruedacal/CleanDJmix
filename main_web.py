@@ -10,6 +10,7 @@ from services.media_service import MediaService
 from services.download_service import DownloadService
 from services.export_service import ExportService
 from application.taxonomy_service import TaxonomyService
+from services.shazam_service import ShazamRecognitionService
 
 eel.init("web")
 
@@ -19,6 +20,7 @@ media_svc = MediaService()
 download_svc = DownloadService()
 export_svc = ExportService()
 taxonomy_svc = TaxonomyService()
+shazam_svc = ShazamRecognitionService()
 
 @bottle.route('/cover')
 def get_cover():
@@ -169,6 +171,14 @@ def detener_preescucha():
 @eel.expose
 def log_to_console(msg):
     print(f"[UI] {msg}")
+
+@eel.expose
+def identificar_archivo_shazam(filepath):
+    return shazam_svc.reconocer_archivo(filepath)
+
+@eel.expose
+def identificar_audio_base64(b64_data):
+    return shazam_svc.reconocer_base64(b64_data)
 
 @eel.expose
 def seleccionar_directorio_descarga():
