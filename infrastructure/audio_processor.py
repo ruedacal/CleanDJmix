@@ -116,6 +116,8 @@ class AudioProcessorService:
         duration_sec = 0
         trim_start_ms = 0.0
         first_downbeat_ms = 0.0
+        danceability_val = 0
+        mood_val = ""
 
         # Intento de lectura específico para FLAC con fallback universal
         try:
@@ -131,6 +133,8 @@ class AudioProcessorService:
                     duration_sec = int(f.info.length) if f.info else 0
                     trim_raw = f.get("TRIM_START_MS", [""])[0]
                     down_raw = f.get("FIRST_DOWNBEAT_MS", [""])[0]
+                    dance_raw = f.get("DANCEABILITY", [""])[0]
+                    mood_raw = f.get("MOOD", [""])[0]
                     if trim_raw:
                         try:
                             trim_start_ms = float(trim_raw)
@@ -141,6 +145,13 @@ class AudioProcessorService:
                             first_downbeat_ms = float(down_raw)
                         except Exception:
                             pass
+                    if dance_raw:
+                        try:
+                            danceability_val = int(dance_raw)
+                        except Exception:
+                            pass
+                    if mood_raw:
+                        mood_val = str(mood_raw)
                 except (FLACNoHeaderError, Exception):
                     m = MutagenFile(ruta, easy=True)
                     if m and m.info:
@@ -152,10 +163,19 @@ class AudioProcessorService:
                     id3_tags = ID3(ruta)
                     t_frame = id3_tags.get("TXXX:TRIM_START_MS")
                     d_frame = id3_tags.get("TXXX:FIRST_DOWNBEAT_MS")
+                    dance_frame = id3_tags.get("TXXX:DANCEABILITY")
+                    mood_frame = id3_tags.get("TXXX:MOOD")
                     if t_frame and t_frame.text:
                         trim_start_ms = float(t_frame.text[0])
                     if d_frame and d_frame.text:
                         first_downbeat_ms = float(d_frame.text[0])
+                    if dance_frame and dance_frame.text:
+                        try:
+                            danceability_val = int(dance_frame.text[0])
+                        except Exception:
+                            pass
+                    if mood_frame and mood_frame.text:
+                        mood_val = str(mood_frame.text[0])
                 except Exception:
                     pass
 
@@ -199,6 +219,23 @@ class AudioProcessorService:
         secs = duration_sec % 60
         dur_str = f"{mins}:{secs:02d}" if duration_sec > 0 else "5:30"
         energy = min(98, max(45, int(60 + (bpm - 118.0) * 1.5)))
+
+        if danceability_val <= 0:
+            danceability_val = min(98, max(50, int(92 - abs(bpm - 126.0) * 0.9)))
+
+        if not mood_val:
+            if key.endswith("A") and energy >= 80:
+                mood_val = "Peak Time"
+            elif key.endswith("A") and bpm >= 134:
+                mood_val = "Dark"
+            elif key.endswith("B") and energy >= 70:
+                mood_val = "Euphoric"
+            elif key in ("8A", "9A", "5A", "6A"):
+                mood_val = "Hypnotic"
+            elif bpm >= 138:
+                mood_val = "Raw"
+            else:
+                mood_val = "Peak Time"
     
         return {
             "title": title,
@@ -206,6 +243,9 @@ class AudioProcessorService:
             "bpm": bpm,
             "key": key,
             "energy": energy,
+            "danceability": danceability_val,
+            "dance": danceability_val,
+            "mood": mood_val,
             "duration": dur_str,
             "missing_meta": missing_meta,
             "format": ext.replace(".", "").upper(),
@@ -308,6 +348,8 @@ class AudioProcessorService:
 
         downbeat_ms = int(float(meta_track.get("first_downbeat_ms") or 0))
         trim_ms = float(meta_track.get("trim_start_ms") or 0.0)
+        dance_val = int(meta_track.get("danceability") or meta_track.get("dance") or 85)
+        mood_val = str(meta_track.get("mood") or "Peak Time")
         cues_list = meta_track.get("cues") or []
 
         serato_b64 = AudioProcessorService.generar_serato_markers2(
@@ -337,6 +379,8 @@ class AudioProcessorService:
                 audio["GENRE"] = [genre]
                 if isrc:
                     audio["ISRC"] = [isrc]
+                audio["DANCEABILITY"] = [str(dance_val)]
+                audio["MOOD"] = [mood_val]
                 if trim_ms > 0:
                     audio["TRIM_START_MS"] = [f"{trim_ms:.1f}"]
                 if downbeat_ms > 0:
@@ -361,6 +405,9 @@ class AudioProcessorService:
                 id3.add(TCON(encoding=3, text=[genre]))
                 if isrc:
                     id3.add(TSRC(encoding=3, text=[isrc]))
+
+                id3.add(TXXX(encoding=3, desc="DANCEABILITY", text=[str(dance_val)]))
+                id3.add(TXXX(encoding=3, desc="MOOD", text=[mood_val]))
 
                 if trim_ms > 0:
                     id3.add(TXXX(encoding=3, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
@@ -399,6 +446,8 @@ class AudioProcessorService:
                     tags.add(TKEY(encoding=3, text=[key_camelot]))
                 tags.add(COMM(encoding=3, lang="eng", desc="", text=[comment]))
                 tags.add(TCON(encoding=3, text=[genre]))
+                tags.add(TXXX(encoding=3, desc="DANCEABILITY", text=[str(dance_val)]))
+                tags.add(TXXX(encoding=3, desc="MOOD", text=[mood_val]))
                 if trim_ms > 0:
                     tags.add(TXXX(encoding=3, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
                 if downbeat_ms > 0:
@@ -420,6 +469,8 @@ class AudioProcessorService:
                 audio["\xa9gen"] = [genre]
                 if key_camelot:
                     audio["----:com.apple.iTunes:initialkey"] = [key_camelot.encode("utf-8")]
+                audio["----:com.apple.iTunes:DANCEABILITY"] = [str(dance_val).encode("utf-8")]
+                audio["----:com.apple.iTunes:MOOD"] = [mood_val.encode("utf-8")]
                 if trim_ms > 0:
                     audio["----:com.apple.iTunes:TRIM_START_MS"] = [f"{trim_ms:.1f}".encode("utf-8")]
                 if downbeat_ms > 0:

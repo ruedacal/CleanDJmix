@@ -156,3 +156,57 @@ def test_audit_service_analizar_trim_downbeat(tmp_path):
     assert "trim_start_ms" in res
     assert "first_downbeat_ms" in res
     assert res["trim_start_ms"] >= 40.0
+
+def test_escribir_y_persistir_danceability_y_mood_mp3(tmp_path):
+    mp3_file = tmp_path / "test_dance_mood.mp3"
+    with open(str(mp3_file), "wb") as f:
+        f.write(b"\xff\xfb\x90\x64" * 1000)
+
+    meta = {
+        "title": "Strobo Hypnotic",
+        "artist": "Techno Collective",
+        "bpm": "132.00",
+        "key": "8A",
+        "danceability": 92,
+        "mood": "Peak Time",
+        "genre": "Techno (Peak Time / Driving)"
+    }
+
+    ok = AudioProcessorService.escribir_metadatos_pro(str(mp3_file), meta)
+    assert ok is True
+
+    from mutagen.id3 import ID3
+    id3 = ID3(str(mp3_file))
+    assert id3["TXXX:DANCEABILITY"].text == ["92"]
+    assert id3["TXXX:MOOD"].text == ["Peak Time"]
+    assert id3["TCON"].text == ["Techno (Peak Time / Driving)"]
+
+def test_analizar_track_avanzado_danceability_y_mood(tmp_path):
+    mp3_file = tmp_path / "test_track_calc.mp3"
+    with open(str(mp3_file), "wb") as f:
+        f.write(b"\xff\xfb\x90\x64" * 1000)
+
+    info = AudioProcessorService.analizar_track_avanzado(str(mp3_file))
+    assert "danceability" in info
+    assert "mood" in info
+    assert 50 <= info["danceability"] <= 100
+    assert info["mood"] in ("Peak Time", "Dark", "Euphoric", "Hypnotic", "Raw", "Melancholic")
+
+def test_iniciar_auditoria_con_opts_fft(tmp_path):
+    import soundfile as sf
+    import numpy as np
+
+    wav_file = tmp_path / "test_flac_ok.wav"
+    data = np.zeros(44100 * 2, dtype=np.float32)
+    # Sine burst
+    data[1000:20000] = np.sin(np.linspace(0, 100, 19000)) * 0.8
+    sf.write(str(wav_file), data, 44100, format="WAV")
+
+    audit_svc = AuditService()
+    res = audit_svc.iniciar_auditoria(str(tmp_path), opts={"fftLossless": True})
+    assert res["total"] >= 1
+    track = res["tracks"][0]
+    assert "cutoff_khz" in track
+    assert "status" in track
+    assert "dance" in track
+    assert "mood" in track

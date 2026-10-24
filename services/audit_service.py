@@ -132,7 +132,7 @@ class AuditService:
             "first_downbeat_ms": downbeat_ms
         }
 
-    def iniciar_auditoria(self, ruta_directorio, emitir_log_cb=None, progreso_cb=None):
+    def iniciar_auditoria(self, ruta_directorio, emitir_log_cb=None, progreso_cb=None, opts=None):
         if not ruta_directorio or not os.path.exists(ruta_directorio):
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
@@ -162,6 +162,8 @@ class AuditService:
         sin_meta_count = 0
         fake_count = 0
 
+        ejecutar_fft = bool(opts is None or (isinstance(opts, dict) and opts.get("fftLossless", True)))
+
         for idx, (root, file) in enumerate(archivos, 1):
             full_path = os.path.join(root, file)
             pct = int(5 + (idx / total_files) * 90)
@@ -176,9 +178,27 @@ class AuditService:
             if is_missing:
                 sin_meta_count += 1
 
-            status_str = str(info.get("status") or "Lossless OK")
-            if "Fake" in status_str or "Error" in status_str:
-                fake_count += 1
+            cutoff_khz = float(info.get("cutoff_khz") or 22.0)
+            perdida = 0
+            spectrum_points = []
+
+            if ejecutar_fft:
+                try:
+                    fft_res = self.analizar_espectro_fft(full_path)
+                    cutoff_khz = float(fft_res.get("cutoff_khz", 22.0))
+                    perdida = fft_res.get("perdida", 0)
+                    spectrum_points = fft_res.get("spectrum", [])
+                    if cutoff_khz < 20.0:
+                        status_str = f"Fake FLAC ({cutoff_khz:.1f}kHz)"
+                        fake_count += 1
+                    else:
+                        status_str = "True Lossless"
+                except Exception:
+                    status_str = str(info.get("status") or "Lossless OK")
+            else:
+                status_str = str(info.get("status") or "Lossless OK")
+                if "Fake" in status_str or "Error" in status_str:
+                    fake_count += 1
 
             tracks_auditados.append({
                 "id": idx,
@@ -194,12 +214,15 @@ class AuditService:
                 "k": str(key_val or "--"),
                 "key": str(key_val or "--"),
                 "e": int(info.get("energy") or 85),
-                "dance": int(info.get("danceability") or 85),
-                "mood": str(info.get("mood") or "Peak Time Hypnotic"),
+                "dance": int(info.get("danceability") or info.get("dance") or 85),
+                "danceability": int(info.get("danceability") or info.get("dance") or 85),
+                "mood": str(info.get("mood") or "Peak Time"),
                 "duration": str(info.get("duration") or "05:30"),
                 "format": str(info.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
                 "status": status_str,
-                "cutoff_khz": float(info.get("cutoff_khz") or 22.0),
+                "cutoff_khz": cutoff_khz,
+                "perdida": perdida,
+                "spectrum": spectrum_points,
                 "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
                 "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
                 "comment": str(info.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b")

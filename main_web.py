@@ -83,14 +83,14 @@ def cargar_metadatos_directorio(ruta_directorio):
     return audit_svc.cargar_metadatos_directorio(ruta_directorio, _emitir_progreso_batch)
 
 @eel.expose
-def iniciar_auditoria(ruta_directorio):
+def iniciar_auditoria(ruta_directorio, opts=None):
     audio_playback_svc.establecer_directorio(ruta_directorio)
-    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui, _emitir_progreso_batch)
+    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui, _emitir_progreso_batch, opts=opts)
 
 @eel.expose
 def ejecutar_auditoria_lote(ruta_directorio, opts=None):
     audio_playback_svc.establecer_directorio(ruta_directorio)
-    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui, _emitir_progreso_batch)
+    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui, _emitir_progreso_batch, opts=opts)
 
 @eel.expose
 def analizar_espectro_fft(filepath, spotify_id=None):

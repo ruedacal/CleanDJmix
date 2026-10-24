@@ -509,6 +509,168 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
     );
 };
 
+// Taxonomía Armónica Camelot ↔ Notación Clásica para Mezcla Armónica
+const CAMELOT_WHEEL_DATA = {
+    "1A": { classical: "G#m", name: "Sol# menor", rel: "1B", up: "2A", down: "12A", color: "#06b6d4" },
+    "1B": { classical: "B", name: "Si Mayor", rel: "1A", up: "2B", down: "12B", color: "#38bdf8" },
+    "2A": { classical: "D#m", name: "Re# menor", rel: "2B", up: "3A", down: "1A", color: "#0284c7" },
+    "2B": { classical: "F#", name: "Fa# Mayor", rel: "2A", up: "3B", down: "1B", color: "#0369a1" },
+    "3A": { classical: "A#m", name: "La# menor", rel: "3B", up: "4A", down: "2A", color: "#2563eb" },
+    "3B": { classical: "Db", name: "Re♭ Mayor", rel: "3A", up: "4B", down: "2B", color: "#1d4ed8" },
+    "4A": { classical: "Fm", name: "Fa menor", rel: "4B", up: "5A", down: "3A", color: "#4f46e5" },
+    "4B": { classical: "Ab", name: "La♭ Mayor", rel: "4A", up: "5B", down: "3B", color: "#4338ca" },
+    "5A": { classical: "Cm", name: "Do menor", rel: "5B", up: "6A", down: "4A", color: "#7c3aed" },
+    "5B": { classical: "Eb", name: "Mi♭ Mayor", rel: "5A", up: "6B", down: "4B", color: "#6d28d9" },
+    "6A": { classical: "Gm", name: "Sol menor", rel: "6B", up: "7A", down: "5A", color: "#9333ea" },
+    "6B": { classical: "Bb", name: "Si♭ Mayor", rel: "6A", up: "7B", down: "5B", color: "#7e22ce" },
+    "7A": { classical: "Dm", name: "Re menor", rel: "7B", up: "8A", down: "6A", color: "#c026d3" },
+    "7B": { classical: "F", name: "Fa Mayor", rel: "7A", up: "8B", down: "6B", color: "#a21caf" },
+    "8A": { classical: "Am", name: "La menor", rel: "8B", up: "9A", down: "7A", color: "#db2777" },
+    "8B": { classical: "C", name: "Do Mayor", rel: "8A", up: "9B", down: "7B", color: "#be185d" },
+    "9A": { classical: "Em", name: "Mi menor", rel: "9B", up: "10A", down: "8A", color: "#e11d48" },
+    "9B": { classical: "G", name: "Sol Mayor", rel: "9A", up: "10B", down: "8B", color: "#be123c" },
+    "10A": { classical: "Bm", name: "Si menor", rel: "10B", up: "11A", down: "9A", color: "#ea580c" },
+    "10B": { classical: "D", name: "Re Mayor", rel: "10A", up: "11B", down: "9B", color: "#c2410c" },
+    "11A": { classical: "F#m", name: "Fa# menor", rel: "11B", up: "12A", down: "10A", color: "#d97706" },
+    "11B": { classical: "A", name: "La Mayor", rel: "11A", up: "12B", down: "10B", color: "#b45309" },
+    "12A": { classical: "C#m", name: "Do# menor", rel: "12B", up: "1A", down: "11A", color: "#16a34a" },
+    "12B": { classical: "E", name: "Mi Mayor", rel: "12A", up: "1B", down: "11B", color: "#15803d" }
+};
+
+const DJ_GENRES_LIST = [
+    "Tech House",
+    "Techno (Peak Time / Driving)",
+    "Melodic Techno & Indie Dance",
+    "Trance (Uplifting / Psy)",
+    "Hard Techno",
+    "Deep House / House",
+    "Minimal / Deep Tech",
+    "Drum & Bass"
+];
+
+const DJ_MOODS_LIST = [
+    { id: "Peak Time", label: "🔥 Peak Time", desc: "Clímax de pista, alta pegada" },
+    { id: "Dark", label: "🌑 Dark", desc: "Oscuro, industrial, contundente" },
+    { id: "Euphoric", label: "✨ Euphoric", desc: "Melodías épicas, subidón emotivo" },
+    { id: "Hypnotic", label: "🌀 Hypnotic", desc: "Groove continuo y envolvente" },
+    { id: "Raw", label: "⚡ Raw", desc: "Seco, crudo y minimalista" },
+    { id: "Melancholic", label: "🌧 Melancholic", desc: "Atmosférico y profundo" }
+];
+
+// Modal de Rueda Armónica Camelot (Circle of Fifths para DJs)
+const CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
+    if (!isOpen) return null;
+    const currentData = CAMELOT_WHEEL_DATA[currentKey] || CAMELOT_WHEEL_DATA["8A"];
+    const compatibleKeys = [
+        { key: currentKey, desc: "Mismo tono (Mezcla armónica pura)", badge: "0", color: "bg-djcyan-500 text-black border-djcyan-400" },
+        { key: currentData.rel, desc: "Relativo menor/mayor (Cambio de color suave)", badge: "A ↔ B", color: "bg-emerald-500 text-black border-emerald-400" },
+        { key: currentData.up, desc: "Sube energía (+1 escala)", badge: "+1", color: "bg-amber-500 text-black border-amber-400" },
+        { key: currentData.down, desc: "Relaja energía (-1 escala)", badge: "-1", color: "bg-blue-500 text-white border-blue-400" }
+    ];
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-djzinc-950 border border-djzinc-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col">
+                <div className="px-6 py-4 border-b border-djzinc-800 flex items-center justify-between bg-djzinc-900/70">
+                    <div className="flex items-center gap-2.5">
+                        <span className="text-xl">🎡</span>
+                        <div>
+                            <h3 className="font-bold text-sm uppercase tracking-wider text-white">Rueda Armónica Camelot (Circle of Fifths)</h3>
+                            <p className="text-[11px] text-gray-400">Guía de compatibilidad para transiciones armónicas fluidas y mezclas sin disonancia</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs cursor-pointer">✕</button>
+                </div>
+
+                <div className="p-6 space-y-5">
+                    {/* Claves compatibles con la actual */}
+                    <div className="bg-djzinc-900/90 p-3.5 rounded-xl border border-djzinc-800">
+                        <span className="text-[11px] font-mono text-gray-400 uppercase tracking-wider block mb-2">
+                            Pistas Armónicamente Compatibles con <span className="text-djcyan-400 font-bold">{currentKey} ({currentData.classical} • {currentData.name})</span>:
+                        </span>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {compatibleKeys.map((c, i) => {
+                                const kInfo = CAMELOT_WHEEL_DATA[c.key] || {};
+                                return (
+                                    <div 
+                                        key={i}
+                                        onClick={() => { onSelectKey(c.key); onClose(); }}
+                                        className="p-2.5 rounded-lg bg-djzinc-950 border border-djzinc-750 hover:border-djcyan-400 cursor-pointer flex flex-col justify-between transition-colors shadow-sm"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-mono font-black text-sm text-white">{c.key}</span>
+                                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${c.color}`}>{c.badge}</span>
+                                        </div>
+                                        <span className="text-xs font-semibold text-gray-300 mt-1">{kInfo.classical}</span>
+                                        <span className="text-[10px] text-gray-500 truncate mt-0.5">{c.desc}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Matriz 24 Claves Camelot */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">Selector de 24 Tonos</span>
+                            <span className="text-[10px] text-gray-500 font-mono">Fila B: Mayores • Fila A: Menores</span>
+                        </div>
+
+                        {/* Fila B: Mayores */}
+                        <div className="grid grid-cols-6 sm:grid-cols-12 gap-1 mb-2">
+                            {Array.from({ length: 12 }, (_, i) => `${i + 1}B`).map(k => {
+                                const kInfo = CAMELOT_WHEEL_DATA[k];
+                                const isSelected = k === currentKey;
+                                return (
+                                    <button
+                                        key={k}
+                                        type="button"
+                                        onClick={() => { onSelectKey(k); onClose(); }}
+                                        className={`p-1.5 rounded flex flex-col items-center justify-center border transition-all cursor-pointer ${
+                                            isSelected 
+                                                ? 'bg-djcyan-500 text-black border-djcyan-300 shadow-[0_0_10px_rgba(34,211,238,0.6)] font-bold' 
+                                                : 'bg-djzinc-900 hover:bg-djzinc-800 text-gray-200 border-djzinc-800'
+                                        }`}
+                                    >
+                                        <span className="text-[11px] font-mono font-bold">{k}</span>
+                                        <span className={`text-[9px] font-mono ${isSelected ? 'text-black' : 'text-gray-400'}`}>{kInfo.classical}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Fila A: Menores */}
+                        <div className="grid grid-cols-6 sm:grid-cols-12 gap-1">
+                            {Array.from({ length: 12 }, (_, i) => `${i + 1}A`).map(k => {
+                                const kInfo = CAMELOT_WHEEL_DATA[k];
+                                const isSelected = k === currentKey;
+                                return (
+                                    <button
+                                        key={k}
+                                        type="button"
+                                        onClick={() => { onSelectKey(k); onClose(); }}
+                                        className={`p-1.5 rounded flex flex-col items-center justify-center border transition-all cursor-pointer ${
+                                            isSelected 
+                                                ? 'bg-djcyan-500 text-black border-djcyan-300 shadow-[0_0_10px_rgba(34,211,238,0.6)] font-bold' 
+                                                : 'bg-djzinc-900 hover:bg-djzinc-800 text-gray-200 border-djzinc-800'
+                                        }`}
+                                    >
+                                        <span className="text-[11px] font-mono font-bold">{k}</span>
+                                        <span className={`text-[9px] font-mono ${isSelected ? 'text-black' : 'text-gray-400'}`}>{kInfo.classical}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="px-6 py-3.5 bg-djzinc-900/60 border-t border-djzinc-800 flex justify-end">
+                    <button onClick={onClose} className="px-4 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 text-xs font-semibold rounded-lg cursor-pointer">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // Modal de configuración por lotes para Auditoría
 const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
@@ -620,6 +782,10 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
     const [fsFolders, setFsFolders] = useState([]);
     const [fsLoading, setFsLoading] = useState(false);
 
+    // Rueda Armónica Camelot & TAP Tempo
+    const [camelotModalOpen, setCamelotModalOpen] = useState(false);
+    const tapTimesRef = useRef([]);
+
     const currentTrack = tracks.find(t => t.id === selectedTrack) || tracks[0] || {};
 
     useEffect(() => {
@@ -634,6 +800,26 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
 
     const updateCurrentTrackField = (field, val) => {
         setTracks(prev => prev.map(t => t.id === currentTrack.id ? { ...t, [field]: val } : t));
+    };
+
+    const handleTapTempo = () => {
+        const now = Date.now();
+        const taps = tapTimesRef.current.filter(t => now - t < 2500);
+        taps.push(now);
+        tapTimesRef.current = taps;
+        if (taps.length >= 2) {
+            const intervals = [];
+            for (let i = 1; i < taps.length; i++) {
+                intervals.push(taps[i] - taps[i - 1]);
+            }
+            const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            const bpmCalc = (60000.0 / avg);
+            if (bpmCalc >= 40 && bpmCalc <= 240) {
+                const formatted = bpmCalc.toFixed(2);
+                updateCurrentTrackField('b', formatted);
+                updateCurrentTrackField('bpm', formatted);
+            }
+        }
     };
 
     const handleMicroAjusteTrim = (deltaMs) => {
@@ -1241,43 +1427,162 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
+                        {/* BPM Exacto con TAP y micro-ajustes */}
                         <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800">
                             <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
                                 <span>BPM Decimal</span>
-                                <InfoTip title="BPM Exacto" text="Tempo con precisión de dos decimales para evitar desfases tras varias frases de mezcla." />
+                                <InfoTip title="BPM Exacto & TAP" text="Tempo con precisión de dos decimales con botón TAP para marcar pulsaciones y micro-ajustes finos." />
                             </div>
                             <div className="flex items-center gap-1">
-                                <input type="text" value={currentTrack.b || ''} onChange={(e) => updateCurrentTrackField('b', e.target.value)} className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-mono font-bold text-white outline-none" />
-                                <button onClick={() => { const v = parseFloat(currentTrack.b); if (!isNaN(v)) updateCurrentTrackField('b', (v / 2).toFixed(2)); }} className="px-1.5 py-1 text-[9px] font-mono bg-djzinc-800 rounded border border-djzinc-700 cursor-pointer">/2</button>
-                                <button onClick={() => { const v = parseFloat(currentTrack.b); if (!isNaN(v)) updateCurrentTrackField('b', (v * 2).toFixed(2)); }} className="px-1.5 py-1 text-[9px] font-mono bg-djzinc-800 rounded border border-djzinc-700 cursor-pointer">x2</button>
+                                <input 
+                                    type="text" 
+                                    value={currentTrack.b || ''} 
+                                    onChange={(e) => updateCurrentTrackField('b', e.target.value)} 
+                                    className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-1.5 py-1 text-xs font-mono font-bold text-white outline-none" 
+                                />
+                                <button 
+                                    type="button" 
+                                    onClick={handleTapTempo} 
+                                    className="px-2 py-1 text-[9px] font-mono font-black bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 rounded border border-djcyan-800/80 cursor-pointer shadow active:scale-95 transition-all"
+                                    title="Pulsa repetidamente al ritmo de la música para calcular el tempo"
+                                >
+                                    TAP
+                                </button>
+                                <button onClick={() => { const v = parseFloat(currentTrack.b); if (!isNaN(v)) updateCurrentTrackField('b', (v - 0.1).toFixed(2)); }} className="px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Restar 0.1 BPM">-0.1</button>
+                                <button onClick={() => { const v = parseFloat(currentTrack.b); if (!isNaN(v)) updateCurrentTrackField('b', (v + 0.1).toFixed(2)); }} className="px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Sumar 0.1 BPM">+0.1</button>
+                                <button onClick={() => { const v = parseFloat(currentTrack.b); if (!isNaN(v)) updateCurrentTrackField('b', (v / 2).toFixed(2)); }} className="px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Dividir por 2">/2</button>
+                                <button onClick={() => { const v = parseFloat(currentTrack.b); if (!isNaN(v)) updateCurrentTrackField('b', (v * 2).toFixed(2)); }} className="px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Multiplicar por 2">x2</button>
                             </div>
                         </div>
+
+                        {/* Clave Armónica Bidireccional (Camelot ↔ Clásica) */}
                         <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800">
                             <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
-                                <span>Key (Camelot)</span>
-                                <InfoTip title="Tono Armónico" text="Notación de la rueda Camelot para mezcla armónica compatible (+1/-1, mismo número A/B)." />
+                                <span className="flex items-center gap-1">
+                                    <span>Key</span>
+                                    <span className="text-[10px] font-mono text-djcyan-400 font-bold">
+                                        ({CAMELOT_WHEEL_DATA[currentTrack.k]?.classical || 'Am'})
+                                    </span>
+                                </span>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setCamelotModalOpen(true)}
+                                    className="text-[9px] font-mono font-bold text-djcyan-400 hover:text-djcyan-300 flex items-center gap-0.5 cursor-pointer"
+                                    title="Abrir Rueda Armónica Camelot Interactiva"
+                                >
+                                    🎡 Rueda
+                                </button>
                             </div>
-                            <select value={currentTrack.k || '8A'} onChange={(e) => updateCurrentTrackField('k', e.target.value)} className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-mono font-bold text-djcyan-400 outline-none cursor-pointer">
-                                {['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B','7A','7B','8A','8B','9A','9B','10A','10B','11A','11B','12A','12B'].map(k => <option key={k} value={k}>{k}</option>)}
+                            <select 
+                                value={currentTrack.k || '8A'} 
+                                onChange={(e) => updateCurrentTrackField('k', e.target.value)} 
+                                className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-mono font-bold text-djcyan-400 outline-none cursor-pointer"
+                            >
+                                {Object.entries(CAMELOT_WHEEL_DATA).map(([kKey, kData]) => (
+                                    <option key={kKey} value={kKey}>
+                                        {kKey} • {kData.classical} ({kData.name})
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </div>
 
-                    <div className="bg-djzinc-950 p-3 rounded border border-djzinc-800 space-y-3">
-                        <div>
-                            <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
-                                <span>Energy Level ({currentTrack.e || 80}%)</span>
-                                <InfoTip title="Nivel de Energía" text="Calculado según la pegada de graves y densidad espectral RMS (1-100). Indica la potencia en la pista." />
-                            </div>
-                            <input type="range" min="1" max="100" value={currentTrack.e || 80} onChange={(e) => updateCurrentTrackField('e', Number(e.target.value))} className="w-full accent-djgreen-500 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer" />
+                    {/* Medidor de Pegada en 5 Segmentos LED (Pioneer / Numark style) */}
+                    <div className="bg-djzinc-950 p-3 rounded border border-djzinc-800 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] text-gray-400">
+                            <span className="font-semibold flex items-center">
+                                Nivel de Energía & Pegada
+                                <InfoTip title="Vúmetro de Energía" text="Medidor de pegada e intensidad sonora (rango 1-100) en escala de 5 segmentos LED de club." />
+                            </span>
+                            <span className="font-mono font-bold text-xs text-white">
+                                {currentTrack.e || 80}%
+                            </span>
                         </div>
-                        <div>
-                            <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
-                                <span>Danceability ({currentTrack.dance || 85}%)</span>
-                                <InfoTip title="Danceability" text="Mide la regularidad del ritmo y solidez del beat. Cuanto más alto, más fácil es bailar y mezclar en compás." />
-                            </div>
-                            <input type="range" min="1" max="100" value={currentTrack.dance || 85} onChange={(e) => updateCurrentTrackField('dance', Number(e.target.value))} className="w-full accent-djcyan-500 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer" />
+                        
+                        <div className="grid grid-cols-5 gap-1.5 h-6 p-1 bg-black/60 rounded border border-djzinc-850">
+                            {[
+                                { val: 20, color: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]', off: 'bg-emerald-950/40 border-emerald-900/40' },
+                                { val: 40, color: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]', off: 'bg-emerald-950/40 border-emerald-900/40' },
+                                { val: 60, color: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]', off: 'bg-amber-950/40 border-amber-900/40' },
+                                { val: 80, color: 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]', off: 'bg-orange-950/40 border-orange-900/40' },
+                                { val: 100, color: 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.9)] animate-pulse', off: 'bg-red-950/40 border-red-900/40' }
+                            ].map((seg, sIdx) => {
+                                const isActive = (currentTrack.e || 80) >= seg.val;
+                                return (
+                                    <button
+                                        key={sIdx}
+                                        type="button"
+                                        onClick={() => updateCurrentTrackField('e', seg.val)}
+                                        className={`h-full rounded-sm border transition-all cursor-pointer ${isActive ? `${seg.color} border-transparent` : `${seg.off}`}`}
+                                        title={`Nivel ${sIdx + 1} (${seg.val}%)`}
+                                    />
+                                );
+                            })}
                         </div>
+                        <input 
+                            type="range" 
+                            min="1" 
+                            max="100" 
+                            value={currentTrack.e || 80} 
+                            onChange={(e) => updateCurrentTrackField('e', Number(e.target.value))} 
+                            className="w-full accent-djgreen-500 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer" 
+                        />
+                    </div>
+
+                    {/* Danceability & Mood Dropdown */}
+                    <div className="grid grid-cols-2 gap-2">
+                        {/* Danceability */}
+                        <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800 flex flex-col justify-between">
+                            <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                                <span>Danceability</span>
+                                <InfoTip title="Bailabilidad" text="Fuerza del compás y estabilidad rítmica para mantener la pista bailando." />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-mono font-bold text-djcyan-400">{currentTrack.dance || 85}%</span>
+                                <input 
+                                    type="range" 
+                                    min="1" 
+                                    max="100" 
+                                    value={currentTrack.dance || 85} 
+                                    onChange={(e) => updateCurrentTrackField('dance', Number(e.target.value))} 
+                                    className="w-20 accent-djcyan-400 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer" 
+                                />
+                            </div>
+                        </div>
+
+                        {/* Mood Selector */}
+                        <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800 flex flex-col justify-between">
+                            <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                                <span>Mood / Color</span>
+                                <InfoTip title="Atmósfera Sonora" text="Clasificador del color sonoro y momento ideal de sesión." />
+                            </div>
+                            <select 
+                                value={currentTrack.mood || 'Peak Time'} 
+                                onChange={(e) => updateCurrentTrackField('mood', e.target.value)} 
+                                className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-1.5 py-1 text-xs font-semibold text-emerald-400 outline-none cursor-pointer"
+                            >
+                                {DJ_MOODS_LIST.map(m => (
+                                    <option key={m.id} value={m.id}>{m.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Género / Categorización Serato Crate */}
+                    <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800">
+                        <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                            <span>Género / Serato Crate</span>
+                            <InfoTip title="Género y Taxonomía" text="Clasificación para enrutamiento físico y organización en crates de Serato / Rekordbox." />
+                        </div>
+                        <select 
+                            value={currentTrack.genre || 'Tech House'} 
+                            onChange={(e) => updateCurrentTrackField('genre', e.target.value)} 
+                            className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-semibold text-gray-200 outline-none cursor-pointer"
+                        >
+                            {DJ_GENRES_LIST.map(g => (
+                                <option key={g} value={g}>{g}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
@@ -1300,7 +1605,30 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                             <span>Comentario Táctico DJ</span>
                             <InfoTip title="Comentario de Mezcla" text="Texto estratégico inyectado en el tag ID3 COMM visible en las pantallas de la mesa para recordar qué hacer con la pista." />
                         </div>
-                        <textarea value={currentTrack.comment || ""} onChange={(e) => updateCurrentTrackField('comment', e.target.value)} rows="2" className="w-full bg-djzinc-950 border border-djzinc-700 rounded p-2 text-xs text-gray-200 outline-none font-mono resize-none"></textarea>
+                        <div className="flex flex-wrap gap-1 mb-1.5">
+                            {[
+                                { label: '🔥 Peak Time', text: 'Peak Time • Drop Contundente • Outro Rápido 32b' },
+                                { label: '🎧 Warm Up', text: 'Warm Up • Groovy 64b • Entrada Progresiva' },
+                                { label: '🎤 Breakdown', text: 'Breakdown Vocal Intenso • Mezcla Larga con Bajos' },
+                                { label: '⚡ After', text: 'Afterhours • Dark Hypnotic • Bombo Pesado' }
+                            ].map((tpl, tIdx) => (
+                                <button
+                                    key={tIdx}
+                                    type="button"
+                                    onClick={() => updateCurrentTrackField('comment', tpl.text)}
+                                    className="px-1.5 py-0.5 text-[9px] font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer transition-colors"
+                                    title={`Insertar: "${tpl.text}"`}
+                                >
+                                    {tpl.label}
+                                </button>
+                            ))}
+                        </div>
+                        <textarea 
+                            value={currentTrack.comment || ""} 
+                            onChange={(e) => updateCurrentTrackField('comment', e.target.value)} 
+                            rows="2" 
+                            className="w-full bg-djzinc-950 border border-djzinc-700 rounded p-2 text-xs text-gray-200 outline-none font-mono resize-none"
+                        ></textarea>
                     </div>
                 </div>
                 <div className="p-3 bg-djzinc-950 border-t border-djzinc-800">
@@ -1528,6 +1856,16 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Modal Rueda Armónica Camelot (Circle of Fifths) */}
+            {camelotModalOpen && (
+                <CamelotWheelModal 
+                    isOpen={camelotModalOpen} 
+                    onClose={() => setCamelotModalOpen(false)} 
+                    currentKey={currentTrack.k || '8A'} 
+                    onSelectKey={(newKey) => updateCurrentTrackField('k', newKey)} 
+                />
             )}
         </div>
     );
