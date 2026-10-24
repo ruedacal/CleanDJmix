@@ -7080,6 +7080,9 @@ const TaxonomyWorkspace = ({
     onTracksUpdated, 
     onNavigateTab,
     onPlayTrack,
+    nowPlayingTrack = null,
+    isPlaying = false,
+    onTogglePlay = () => {},
     onSelectTrackForCues,
     onSendToSpotify 
 }) => {
@@ -7457,6 +7460,11 @@ const TaxonomyWorkspace = ({
     // Manejador de pre-escucha / Cargar en Deck 1
     const handleCargarEnDeck = (trk) => {
         if (!trk) return;
+        const isCurrent = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || (nowPlayingTrack.path && nowPlayingTrack.path === trk.path) || nowPlayingTrack.title === trk.displayTitle);
+        if (isCurrent && onTogglePlay) {
+            onTogglePlay();
+            return;
+        }
         if (onPlayTrack) {
             onPlayTrack(trk, 0, true);
             setFeedbackMsg(`✓ "${trk.displayTitle}" cargado y reproduciendo en Deck 1`);
@@ -8241,7 +8249,7 @@ const TaxonomyWorkspace = ({
                                                         className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-base transition-opacity cursor-pointer shadow"
                                                         title="Cargar y Reproducir en Deck 1"
                                                     >
-                                                        ▶
+                                                        {isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || (nowPlayingTrack.path && nowPlayingTrack.path === trk.path) || nowPlayingTrack.title === trk.displayTitle) ? '❚❚' : '▶'}
                                                     </button>
                                                 </div>
 
@@ -9983,6 +9991,9 @@ const App = () => {
                         onTracksUpdated={setAuditTracks} 
                         onNavigateTab={setActiveTab} 
                         onPlayTrack={handlePlayTrack}
+                        nowPlayingTrack={nowPlayingTrack}
+                        isPlaying={isPlaying}
+                        onTogglePlay={togglePlayPause}
                         onSelectTrackForCues={(trk) => {
                             if (!trk) return;
                             const existing = auditTracks.find(t => t.id === trk.id || (t.path && t.path === trk.path));

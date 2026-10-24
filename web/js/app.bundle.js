@@ -1486,8 +1486,8 @@ const HotCueStudioModal = ({
   selectedCueId = 1,
   onSelectCue,
   onPlayTrack,
-  nowPlayingTrack: nowPlayingTrack2,
-  isPlaying: isPlaying2 = false,
+  nowPlayingTrack,
+  isPlaying = false,
   onTogglePlay,
   playProgress = 0,
   onGuardarTrack,
@@ -1632,7 +1632,7 @@ const HotCueStudioModal = ({
       if (onPlayTrack) onPlayTrack(track, targetCue.pct !== void 0 ? targetCue.pct : 0, true);
     }
   };
-  const isThisTrackPlaying = isPlaying2 && nowPlayingTrack2 && (String(nowPlayingTrack2.id) === String(track.id) || nowPlayingTrack2.path === track.path || nowPlayingTrack2.f === track.f);
+  const isThisTrackPlaying = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(track.id) || nowPlayingTrack.path === track.path || nowPlayingTrack.f === track.f);
   return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-6xl max-h-[95vh] bg-[#09090e] border border-djcyan-500/40 rounded-xl shadow-[0_0_50px_rgba(6,182,212,0.15)] flex flex-col overflow-hidden text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 bg-djzinc-950 border-b border-djzinc-800 flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
     "img",
     {
@@ -1923,7 +1923,7 @@ const HotCueStudioModal = ({
     /* @__PURE__ */ React.createElement("span", null, isSavingLocal ? "Guardando en Archivo..." : "Guardar Pista en Fichero")
   )))));
 };
-const FooterMasterWaveform = ({ track, isPlaying: isPlaying2, playProgress = 0, onSeek, cues = NV2_COLORS }) => {
+const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues = NV2_COLORS }) => {
   const canvasRef = useRef(null);
   const rawId = track && track.id ? String(track.id) : "1";
   const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
@@ -2567,8 +2567,8 @@ const AuditWorkspace = ({
   selectedTrack,
   setSelectedTrack,
   onPlayTrack,
-  nowPlayingTrack: nowPlayingTrack2,
-  isPlaying: isPlaying2,
+  nowPlayingTrack,
+  isPlaying,
   onTogglePlay,
   playProgress = 0,
   onNavigateTab,
@@ -3311,7 +3311,7 @@ const AuditWorkspace = ({
     /* @__PURE__ */ React.createElement("option", { value: "MP3" }, "MP3"),
     /* @__PURE__ */ React.createElement("option", { value: "FAKE" }, "FLAC Fake")
   )))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: "15", className: "py-12 text-center text-gray-500 font-mono text-xs" }, 'No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Directorio".')), tracksFiltrados.map((row) => {
-    const isRowPlaying = nowPlayingTrack2 && String(nowPlayingTrack2.id) === String(row.id) && isPlaying2;
+    const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
     const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
     const isFake = Boolean(row.es_fake || row.format === "FLAC" && String(row.status || "").includes("Fake"));
     return /* @__PURE__ */ React.createElement("tr", { key: row.id, onClick: () => {
@@ -3397,7 +3397,7 @@ const AuditWorkspace = ({
     "button",
     {
       onClick: () => {
-        if (nowPlayingTrack2 && (String(nowPlayingTrack2.id) === String(currentTrack.id) || nowPlayingTrack2.path === currentTrack.path || nowPlayingTrack2.f === currentTrack.f)) {
+        if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f)) {
           onTogglePlay && onTogglePlay();
         } else {
           onPlayTrack && onPlayTrack(currentTrack, 0, true);
@@ -3405,7 +3405,7 @@ const AuditWorkspace = ({
       },
       className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0 transition-colors"
     },
-    nowPlayingTrack2 && (String(nowPlayingTrack2.id) === String(currentTrack.id) || nowPlayingTrack2.path === currentTrack.path || nowPlayingTrack2.f === currentTrack.f) && isPlaying2 ? "\u275A\u275A PAUSE" : "\u25B6 PLAY"
+    nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) && isPlaying ? "\u275A\u275A PAUSE" : "\u25B6 PLAY"
   )), /* @__PURE__ */ React.createElement(
     RekordboxWaveform,
     {
@@ -3413,8 +3413,8 @@ const AuditWorkspace = ({
       cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
       duration: currentTrack.duration || "05:00",
       onSeekTrack: onPlayTrack,
-      playProgress: isPlaying2 && nowPlayingTrack2 && (String(nowPlayingTrack2.id) === String(currentTrack.id) || nowPlayingTrack2.path === currentTrack.path || nowPlayingTrack2.f === currentTrack.f) ? playProgress : 0,
-      isCurrentPlaying: isPlaying2 && nowPlayingTrack2 && (String(nowPlayingTrack2.id) === String(currentTrack.id) || nowPlayingTrack2.path === currentTrack.path || nowPlayingTrack2.f === currentTrack.f),
+      playProgress: isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) ? playProgress : 0,
+      isCurrentPlaying: isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f),
       onUpdateCues: (newCues) => updateCurrentTrackField("cues", newCues),
       selectedCueId,
       onSelectCue: setSelectedCueId,
@@ -3710,8 +3710,8 @@ const AuditWorkspace = ({
       selectedCueId,
       onSelectCue: setSelectedCueId,
       onPlayTrack,
-      nowPlayingTrack: nowPlayingTrack2,
-      isPlaying: isPlaying2,
+      nowPlayingTrack,
+      isPlaying,
       onTogglePlay,
       playProgress,
       onGuardarTrack: handleGuardarTrack,
@@ -3726,8 +3726,8 @@ const HotCuesWorkspace = ({
   selectedTrack,
   setSelectedTrack,
   onPlayTrack,
-  nowPlayingTrack: nowPlayingTrack2,
-  isPlaying: isPlaying2,
+  nowPlayingTrack,
+  isPlaying,
   onTogglePlay,
   playProgress = 0,
   onNavigateTab,
@@ -4010,7 +4010,7 @@ const HotCuesWorkspace = ({
     const q = filterQuery.toLowerCase();
     return (t2.title || t2.t || "").toLowerCase().includes(q) || (t2.artist || t2.a || "").toLowerCase().includes(q) || (t2.bpm || t2.b || "").toLowerCase().includes(q) || (t2.key || t2.k || "").toLowerCase().includes(q);
   });
-  const isCurrentPlayingThis = isPlaying2 && nowPlayingTrack2 && (String(nowPlayingTrack2.id) === String(currentTrack?.id) || nowPlayingTrack2.path === currentTrack?.path || nowPlayingTrack2.f === currentTrack?.f);
+  const isCurrentPlayingThis = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack?.id) || nowPlayingTrack.path === currentTrack?.path || nowPlayingTrack.f === currentTrack?.f);
   return /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200" }, /* @__PURE__ */ React.createElement("header", { className: "h-14 border-b border-djzinc-800 bg-[#0a0a0f] px-4 flex items-center justify-between shrink-0 gap-3 z-10 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]", title: currentFolder }, /* @__PURE__ */ React.createElement(Icons.Folder, null), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, currentFolder ? currentFolder.split("/").pop() || currentFolder : "Sin carpeta")), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -4537,7 +4537,7 @@ const HotCuesWorkspace = ({
     "\u2713 Cargar Esta Carpeta"
   ))))));
 };
-const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack: nowPlayingTrack2, isPlaying: isPlaying2, onTogglePlay, lang = "es", t = (k) => k }) => {
+const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePlay, lang = "es", t = (k) => k }) => {
   const [spotifyUrl, setSpotifyUrl] = useState("https://open.spotify.com/intl-es/artist/23zJj2W0TQ0SvF4Fwo7mZK");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [destDir, setDestDir] = useState("/Users/admin/Music/mi musica");
@@ -4757,7 +4757,7 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack: nowPlayingTrack2, isPl
   const handlePlayPreview = async (track, e) => {
     if (e) e.stopPropagation();
     setSelectedId(track.id);
-    if (nowPlayingTrack2 && (String(nowPlayingTrack2.id) === String(track.id) || nowPlayingTrack2.title === track.title)) {
+    if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(track.id) || nowPlayingTrack.title === track.title)) {
       if (onTogglePlay) {
         onTogglePlay();
         return;
@@ -4966,7 +4966,7 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack: nowPlayingTrack2, isPl
     /* @__PURE__ */ React.createElement("option", { value: "FAKE" }, "FLAC Fake")
   )))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltradosSp.length === 0 && !isAnalyzing && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: "13", className: "py-12 text-center text-gray-500 font-mono text-xs" }, tracks.length === 0 ? 'Pega una URL de Spotify o escribe una b\xFAsqueda por texto arriba y haz clic en "Buscar / Analizar".' : "No hay pistas que coincidan con los filtros aplicados.")), tracksFiltradosSp.map((row) => {
     const isSelectedRow = row.id === selectedId;
-    const isRowPlaying = nowPlayingTrack2 && String(nowPlayingTrack2.id) === String(row.id) && isPlaying2;
+    const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
     const isFake = Boolean(row.es_fake || String(row.status || "").includes("Fake"));
     return /* @__PURE__ */ React.createElement("tr", { key: row.id, onClick: () => {
       setSelectedId(row.id);
@@ -4984,13 +4984,17 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack: nowPlayingTrack2, isPl
   }))))), /* @__PURE__ */ React.createElement("aside", { key: currentTrack ? currentTrack.id : "sp_none", className: "w-96 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-20 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Spotify, null), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs uppercase tracking-wider text-djcyan-400" }, "Spotify Ingest Inspector")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded" }, "ID #", currentTrack.id || "--")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "w-full aspect-video bg-[#050508] rounded-lg border border-djzinc-800 overflow-hidden relative shadow-inner flex items-center justify-center" }, /* @__PURE__ */ React.createElement("img", { src: getValidCover(currentTrack.cover), alt: "Cover", onError: (e) => {
     e.target.onerror = null;
     e.target.src = DEFAULT_VINYL_SVG;
-  }, className: "w-full h-full object-cover" }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono border border-djzinc-700" }, "HD Cover 640px")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-sm text-djcyan-400 truncate", title: currentTrack.title }, currentTrack.title || "Selecciona una pista"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 truncate" }, currentTrack.artist || "--")), /* @__PURE__ */ React.createElement("button", { onClick: (e) => handlePlayPreview(currentTrack, e), className: "px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0" }, nowPlayingTrack2 && (String(nowPlayingTrack2.id) === String(currentTrack.id) || nowPlayingTrack2.title === currentTrack.title) && isPlaying2 ? "\u275A\u275A PAUSE" : "\u25B6 PRE-ESCUCHA")), /* @__PURE__ */ React.createElement(RekordboxWaveform, { track: currentTrack, duration: currentTrack.duration || "03:30", onSeekTrack: (trk, pct) => handlePlayPreview(trk) }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Tempo"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, currentTrack.bpm ? `${currentTrack.bpm} BPM` : "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Clave Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, currentTrack.key || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xC1lbum:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[200px]" }, currentTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "ISRC:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-300" }, currentTrack.isrc || "Auto-Tag")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Formato Destino:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-djcyan-400 font-bold uppercase" }, ".", selectedFormat, " Lossless")))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800" }, /* @__PURE__ */ React.createElement("button", { onClick: () => lanzarDescargaReal(selectedCount > 0 ? tracks.filter((t2) => t2.selected) : [currentTrack]), className: "w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Descargar ", selectedCount > 1 ? `Seleccionadas (${selectedCount})` : "Pista Actual", " .", selectedFormat.toUpperCase()))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0b10] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white uppercase tracking-wider font-mono" }, "Seleccionar Carpeta de Destino")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer" }, "\u2715 Cerrar")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 truncate flex-1" }, fsCurrentPath || "/"), fsParentPath && /* @__PURE__ */ React.createElement("button", { onClick: () => handleNavegarACarpeta(fsParentPath), className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 cursor-pointer text-xs" }, "\u2B06 Subir nivel")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-3 space-y-1 min-h-[250px] max-h-[400px]" }, fsLoading ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-djcyan-400 animate-pulse" }, "Explorando directorios...") : fsFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-gray-500" }, "No se encontraron subdirectorios") : fsFolders.map((f, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, onDoubleClick: () => handleNavegarACarpeta(f.path), className: "flex items-center justify-between p-2 rounded hover:bg-djzinc-900 cursor-pointer border border-transparent hover:border-djzinc-800 transition-colors" }, /* @__PURE__ */ React.createElement("div", { onClick: () => handleNavegarACarpeta(f.path), className: "flex items-center gap-2.5 flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 text-sm" }, "\u{1F4C1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-300 truncate" }, f.name)), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(f.path), className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] rounded cursor-pointer shrink-0" }, "Seleccionar")))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "px-3 py-1.5 rounded text-xs bg-djzinc-900 border border-djzinc-800 text-gray-400 hover:text-white cursor-pointer" }, "Cancelar"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(fsCurrentPath), className: "px-4 py-1.5 rounded text-xs font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black cursor-pointer shadow" }, "Usar esta Carpeta")))));
+  }, className: "w-full h-full object-cover" }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono border border-djzinc-700" }, "HD Cover 640px")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-sm text-djcyan-400 truncate", title: currentTrack.title }, currentTrack.title || "Selecciona una pista"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 truncate" }, currentTrack.artist || "--")), /* @__PURE__ */ React.createElement("button", { onClick: (e) => handlePlayPreview(currentTrack, e), className: "px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0" }, nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.title === currentTrack.title) && isPlaying ? "\u275A\u275A PAUSE" : "\u25B6 PRE-ESCUCHA")), /* @__PURE__ */ React.createElement(RekordboxWaveform, { track: currentTrack, duration: currentTrack.duration || "03:30", onSeekTrack: (trk, pct) => handlePlayPreview(trk) }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Tempo"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, currentTrack.bpm ? `${currentTrack.bpm} BPM` : "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Clave Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, currentTrack.key || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xC1lbum:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[200px]" }, currentTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "ISRC:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-300" }, currentTrack.isrc || "Auto-Tag")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Formato Destino:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-djcyan-400 font-bold uppercase" }, ".", selectedFormat, " Lossless")))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800" }, /* @__PURE__ */ React.createElement("button", { onClick: () => lanzarDescargaReal(selectedCount > 0 ? tracks.filter((t2) => t2.selected) : [currentTrack]), className: "w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Descargar ", selectedCount > 1 ? `Seleccionadas (${selectedCount})` : "Pista Actual", " .", selectedFormat.toUpperCase()))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0b10] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white uppercase tracking-wider font-mono" }, "Seleccionar Carpeta de Destino")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer" }, "\u2715 Cerrar")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 truncate flex-1" }, fsCurrentPath || "/"), fsParentPath && /* @__PURE__ */ React.createElement("button", { onClick: () => handleNavegarACarpeta(fsParentPath), className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 cursor-pointer text-xs" }, "\u2B06 Subir nivel")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-3 space-y-1 min-h-[250px] max-h-[400px]" }, fsLoading ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-djcyan-400 animate-pulse" }, "Explorando directorios...") : fsFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-gray-500" }, "No se encontraron subdirectorios") : fsFolders.map((f, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, onDoubleClick: () => handleNavegarACarpeta(f.path), className: "flex items-center justify-between p-2 rounded hover:bg-djzinc-900 cursor-pointer border border-transparent hover:border-djzinc-800 transition-colors" }, /* @__PURE__ */ React.createElement("div", { onClick: () => handleNavegarACarpeta(f.path), className: "flex items-center gap-2.5 flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 text-sm" }, "\u{1F4C1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-300 truncate" }, f.name)), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(f.path), className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] rounded cursor-pointer shrink-0" }, "Seleccionar")))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "px-3 py-1.5 rounded text-xs bg-djzinc-900 border border-djzinc-800 text-gray-400 hover:text-white cursor-pointer" }, "Cancelar"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(fsCurrentPath), className: "px-4 py-1.5 rounded text-xs font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black cursor-pointer shadow" }, "Usar esta Carpeta")))));
 };
 const TaxonomyWorkspace = ({
   tracks = [],
   onTracksUpdated,
   onNavigateTab,
   onPlayTrack,
+  nowPlayingTrack = null,
+  isPlaying = false,
+  onTogglePlay = () => {
+  },
   onSelectTrackForCues,
   onSendToSpotify
 }) => {
@@ -5311,6 +5315,11 @@ const TaxonomyWorkspace = ({
   }, [allPoolTracks, aiQuery, parsedQuery, selectedGenreFilter, selectedSubgenreFilterUI, selectedVersionFilter, selectedBpmFilter, selectedKeyFilter, selectedMoodFilter, taxFilterSearch, taxFilterGenre, taxFilterOrigin, taxSortField, taxSortDir]);
   const handleCargarEnDeck = (trk) => {
     if (!trk) return;
+    const isCurrent = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.path && nowPlayingTrack.path === trk.path || nowPlayingTrack.title === trk.displayTitle);
+    if (isCurrent && onTogglePlay) {
+      onTogglePlay();
+      return;
+    }
     if (onPlayTrack) {
       onPlayTrack(trk, 0, true);
       setFeedbackMsg(`\u2713 "${trk.displayTitle}" cargado y reproduciendo en Deck 1`);
@@ -5823,7 +5832,7 @@ const TaxonomyWorkspace = ({
             className: "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-base transition-opacity cursor-pointer shadow",
             title: "Cargar y Reproducir en Deck 1"
           },
-          "\u25B6"
+          isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.path && nowPlayingTrack.path === trk.path || nowPlayingTrack.title === trk.displayTitle) ? "\u275A\u275A" : "\u25B6"
         )), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${isLocal ? "bg-djcyan-950 text-djcyan-300 border-djcyan-700/60" : isOnline ? "bg-purple-950 text-purple-300 border-purple-700/60" : "bg-emerald-950 text-emerald-300 border-emerald-700/60"}` }, isLocal ? "\u{1F4C1} Local" : isOnline ? "\u2601\uFE0F Online Pool" : "\u{1F31F} Cuenca Pool"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-700/60 px-1.5 py-0.2 rounded shadow-sm" }, "\u26A1 ", trk.matchScore, "% Match")), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white truncate mt-1", title: trk.displayTitle }, trk.displayTitle), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-djcyan-400 truncate", title: trk.displayArtist }, trk.displayArtist))),
         /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1.5 font-mono text-[9.5px]" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-gray-300 font-semibold" }, "\u{1F3A7} ", trk.displaySubgenre || trk.displayGenre), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-djcyan-300 font-bold" }, "\u{1F39A}\uFE0F ", trk.displayBpm, " BPM"), /* @__PURE__ */ React.createElement(
           "span",
@@ -6616,8 +6625,8 @@ const App = () => {
   const [auditTracks, setAuditTracks] = useState([]);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
-  const [nowPlayingTrack2, setNowPlayingTrack] = useState(null);
-  const [isPlaying2, setIsPlaying] = useState(false);
+  const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [playProgress, setPlayProgress] = useState(0);
   const audioRef = useRef(null);
   const [logs, setLogs] = useState([
@@ -6716,7 +6725,7 @@ const App = () => {
     const audio = audioRef.current;
     if (audio && audio.duration && !isNaN(audio.duration)) {
       audio.currentTime = audio.duration * pct;
-      if (!isPlaying2) {
+      if (!isPlaying) {
         audio.play().then(() => setIsPlaying(true)).catch(() => {
         });
       }
@@ -6724,7 +6733,7 @@ const App = () => {
   };
   const togglePlayPause = () => {
     const audio = audioRef.current;
-    if (isPlaying2) {
+    if (isPlaying) {
       if (audio) {
         audio.pause();
       }
@@ -6736,12 +6745,12 @@ const App = () => {
       if (audio && audio.src && audio.src !== window.location.href && !audio.ended) {
         audio.play().then(() => setIsPlaying(true)).catch((err) => {
           console.warn("Play error:", err);
-          if (nowPlayingTrack2) {
-            handlePlayTrack(nowPlayingTrack2, playProgress, true);
+          if (nowPlayingTrack) {
+            handlePlayTrack(nowPlayingTrack, playProgress, true);
           }
         });
-      } else if (nowPlayingTrack2) {
-        handlePlayTrack(nowPlayingTrack2, playProgress, true);
+      } else if (nowPlayingTrack) {
+        handlePlayTrack(nowPlayingTrack, playProgress, true);
       }
     }
   };
@@ -6754,7 +6763,7 @@ const App = () => {
     setIsPlaying(false);
     setPlayProgress(0);
     if (window.eel && window.eel.cue_audio_mac) {
-      const trk = window.__bwCurrentTrack || nowPlayingTrack2 || {};
+      const trk = window.__bwCurrentTrack || nowPlayingTrack || {};
       window.eel.cue_audio_mac(trk.path || trk.f || "")();
     }
   };
@@ -6840,8 +6849,8 @@ const App = () => {
       setSelectedTrack,
       onPlayTrack: handlePlayTrack,
       onTogglePlay: togglePlayPause,
-      nowPlayingTrack: nowPlayingTrack2,
-      isPlaying: isPlaying2,
+      nowPlayingTrack,
+      isPlaying,
       playProgress,
       onNavigateTab: setActiveTab,
       lang,
@@ -6858,8 +6867,8 @@ const App = () => {
       setSelectedTrack,
       onPlayTrack: handlePlayTrack,
       onTogglePlay: togglePlayPause,
-      nowPlayingTrack: nowPlayingTrack2,
-      isPlaying: isPlaying2,
+      nowPlayingTrack,
+      isPlaying,
       playProgress,
       onNavigateTab: setActiveTab,
       lang,
@@ -6871,8 +6880,8 @@ const App = () => {
     SpotifyWorkspace,
     {
       onPlayTrack: handlePlayTrack,
-      nowPlayingTrack: nowPlayingTrack2,
-      isPlaying: isPlaying2,
+      nowPlayingTrack,
+      isPlaying,
       onTogglePlay: togglePlayPause,
       lang,
       t
@@ -6897,6 +6906,9 @@ const App = () => {
       onTracksUpdated: setAuditTracks,
       onNavigateTab: setActiveTab,
       onPlayTrack: handlePlayTrack,
+      nowPlayingTrack,
+      isPlaying,
+      onTogglePlay: togglePlayPause,
       onSelectTrackForCues: (trk) => {
         if (!trk) return;
         const existing = auditTracks.find((t2) => t2.id === trk.id || t2.path && t2.path === trk.path);
@@ -6914,10 +6926,10 @@ const App = () => {
         setActiveTab("spotify");
       }
     }
-  ))), /* @__PURE__ */ React.createElement("footer", { className: "h-16 bg-[#0a0a0e] border-t border-djzinc-800 px-5 flex items-center justify-between shrink-0 glass-panel z-30" }, !nowPlayingTrack2 ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 min-w-0 w-80 shrink-0 opacity-40 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "w-11 h-11 rounded-md bg-[#0a0a0f] border border-djzinc-850 flex items-center justify-center text-gray-600 shadow-inner" }, /* @__PURE__ */ React.createElement("svg", { className: "w-5 h-5 text-gray-600", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "10", strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "3" }))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-500 uppercase tracking-wider" }, "DECK 1 STANDBY"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-600 font-mono" }, "Sin pista seleccionada"))) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 min-w-0 w-80 shrink-0" }, /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("footer", { className: "h-16 bg-[#0a0a0e] border-t border-djzinc-800 px-5 flex items-center justify-between shrink-0 glass-panel z-30" }, !nowPlayingTrack ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 min-w-0 w-80 shrink-0 opacity-40 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "w-11 h-11 rounded-md bg-[#0a0a0f] border border-djzinc-850 flex items-center justify-center text-gray-600 shadow-inner" }, /* @__PURE__ */ React.createElement("svg", { className: "w-5 h-5 text-gray-600", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "10", strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "3" }))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-500 uppercase tracking-wider" }, "DECK 1 STANDBY"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-600 font-mono" }, "Sin pista seleccionada"))) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 min-w-0 w-80 shrink-0" }, /* @__PURE__ */ React.createElement(
     "img",
     {
-      src: getValidCover(nowPlayingTrack2.cover || (nowPlayingTrack2.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack2.path)}` : nowPlayingTrack2.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack2.f)}` : null)),
+      src: getValidCover(nowPlayingTrack.cover || (nowPlayingTrack.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack.path)}` : nowPlayingTrack.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack.f)}` : null)),
       alt: "Deck Cover",
       onError: (e) => {
         e.target.onerror = null;
@@ -6925,41 +6937,41 @@ const App = () => {
       },
       className: "w-11 h-11 rounded-md object-cover border border-djzinc-700 shrink-0 shadow-md"
     }
-  ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-white truncate", title: nowPlayingTrack2.t || nowPlayingTrack2.title }, nowPlayingTrack2.t || nowPlayingTrack2.title), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-djcyan-400 font-medium truncate", title: nowPlayingTrack2.a || nowPlayingTrack2.artist }, nowPlayingTrack2.a || nowPlayingTrack2.artist), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate" }, `${nowPlayingTrack2.b || nowPlayingTrack2.bpm || "--"} BPM \u2022 Key ${nowPlayingTrack2.k || nowPlayingTrack2.key || "--"}`))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 shrink-0" }, /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-white truncate", title: nowPlayingTrack.t || nowPlayingTrack.title }, nowPlayingTrack.t || nowPlayingTrack.title), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-djcyan-400 font-medium truncate", title: nowPlayingTrack.a || nowPlayingTrack.artist }, nowPlayingTrack.a || nowPlayingTrack.artist), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate" }, `${nowPlayingTrack.b || nowPlayingTrack.bpm || "--"} BPM \u2022 Key ${nowPlayingTrack.k || nowPlayingTrack.key || "--"}`))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 shrink-0" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      disabled: !nowPlayingTrack2,
+      disabled: !nowPlayingTrack,
       onClick: handleCue,
-      className: `px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${!nowPlayingTrack2 ? "bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none" : "bg-[#16161d] hover:bg-[#20202a] text-gray-300 border-djzinc-700 active:translate-y-[1px] cursor-pointer"}`
+      className: `px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${!nowPlayingTrack ? "bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none" : "bg-[#16161d] hover:bg-[#20202a] text-gray-300 border-djzinc-700 active:translate-y-[1px] cursor-pointer"}`
     },
     "CUE"
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      disabled: !nowPlayingTrack2,
+      disabled: !nowPlayingTrack,
       onClick: togglePlayPause,
-      className: `w-10 h-10 rounded-lg flex items-center justify-center transition-all ${!nowPlayingTrack2 ? "bg-djzinc-900 border border-djzinc-800 text-gray-600 opacity-40 cursor-not-allowed pointer-events-none" : "bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)] active:translate-y-[1px] cursor-pointer"}`
+      className: `w-10 h-10 rounded-lg flex items-center justify-center transition-all ${!nowPlayingTrack ? "bg-djzinc-900 border border-djzinc-800 text-gray-600 opacity-40 cursor-not-allowed pointer-events-none" : "bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)] active:translate-y-[1px] cursor-pointer"}`
     },
-    isPlaying2 ? /* @__PURE__ */ React.createElement(Icons.Pause, null) : /* @__PURE__ */ React.createElement(Icons.Play, null)
+    isPlaying ? /* @__PURE__ */ React.createElement(Icons.Pause, null) : /* @__PURE__ */ React.createElement(Icons.Play, null)
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      disabled: !nowPlayingTrack2,
+      disabled: !nowPlayingTrack,
       onClick: () => setPlayProgress(0.22),
-      className: `px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${!nowPlayingTrack2 ? "bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none" : "bg-[#16161d] hover:bg-[#20202a] text-gray-300 border-djzinc-700 active:translate-y-[1px] cursor-pointer"}`
+      className: `px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${!nowPlayingTrack ? "bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none" : "bg-[#16161d] hover:bg-[#20202a] text-gray-300 border-djzinc-700 active:translate-y-[1px] cursor-pointer"}`
     },
     "SYNC"
   )), /* @__PURE__ */ React.createElement(
     FooterMasterWaveform,
     {
-      track: nowPlayingTrack2,
-      isPlaying: isPlaying2,
+      track: nowPlayingTrack,
+      isPlaying,
       playProgress,
       onSeek: handleFooterSeek,
-      cues: nowPlayingTrack2 && nowPlayingTrack2.cues && nowPlayingTrack2.cues.length > 0 ? nowPlayingTrack2.cues : currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS
+      cues: nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0 ? nowPlayingTrack.cues : currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS
     }
   )));
 };
