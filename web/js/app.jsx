@@ -394,16 +394,16 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
                 )}
 
                 {cues.map((c, idx) => {
-                    let leftPos = Math.min(94, Math.max(4, (idx * 12.2) + 3));
+                    let leftPos = c.pct !== undefined ? (c.pct * 100) : Math.min(94, Math.max(4, (idx * 12.2) + 3));
                     if (idx === 0 && downbeatPct !== null) {
                         leftPos = Math.min(94, Math.max(0.5, downbeatPct));
                     }
                     return (
-                        <div key={c.id} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10" style={{ left: `${leftPos}%` }}>
-                            <div className="w-4 h-3.5 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow" style={{ backgroundColor: c.color }}>
-                                {c.id}
+                        <div key={c.id || idx} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10" style={{ left: `${leftPos}%` }}>
+                            <div className="w-4 h-3.5 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow" style={{ backgroundColor: c.color || '#ef4444' }}>
+                                {c.id || (idx + 1)}
                             </div>
-                            <div className="w-[1px] h-full opacity-60" style={{ backgroundColor: c.color }}></div>
+                            <div className="w-[1px] h-full opacity-60" style={{ backgroundColor: c.color || '#ef4444' }}></div>
                         </div>
                     );
                 })}
@@ -497,11 +497,11 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
         <div onClick={handleScrub} className="flex-1 h-11 bg-[#060609] rounded-lg border border-djzinc-800/90 relative overflow-hidden group cursor-pointer hover:border-djcyan-500/70 transition-colors shadow-inner flex items-center mx-6">
             <canvas ref={canvasRef} style={{ width: "100%", height: "42px", display: "block" }} />
             {cues.map((cue, idx) => {
-                const leftPos = Math.min(96, Math.max(3, (idx * 12.4) + 2.5));
+                const leftPos = cue.pct !== undefined ? (cue.pct * 100) : Math.min(96, Math.max(3, (idx * 12.4) + 2.5));
                 return (
-                    <div key={cue.id} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10" style={{ left: `${leftPos}%` }}>
-                        <div className="w-3.5 h-3 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow" style={{ backgroundColor: cue.color }}>{cue.id}</div>
-                        <div className="w-[1px] h-full opacity-50" style={{ backgroundColor: cue.color }}></div>
+                    <div key={cue.id || idx} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10" style={{ left: `${leftPos}%` }}>
+                        <div className="w-3.5 h-3 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow" style={{ backgroundColor: cue.color || '#ef4444' }}>{cue.id || (idx + 1)}</div>
+                        <div className="w-[1px] h-full opacity-50" style={{ backgroundColor: cue.color || '#ef4444' }}></div>
                     </div>
                 );
             })}
@@ -862,6 +862,36 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                 setBatchProgress(0);
                 setBatchStatusMsg('');
             }, 1200);
+        }
+    };
+
+    const handleAutoPhraseCues = async () => {
+        if (!currentTrack || !currentTrack.id) return;
+        const durMs = parseDurationMs(currentTrack.duration || "05:00");
+        const bpm = parseFloat(currentTrack.b || currentTrack.bpm || 128.0);
+        const downbeatMs = parseFloat(currentTrack.first_downbeat_ms || 0);
+
+        setBatchProgress(40);
+        setBatchStatusMsg(`Calculando 8 Hot Cues por frases musicales (16/32b) para ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
+        try {
+            if (window.eel && window.eel.calcular_hot_cues_fraseo) {
+                const res = await window.eel.calcular_hot_cues_fraseo(durMs, bpm, downbeatMs)();
+                if (res && Array.isArray(res) && res.length > 0) {
+                    updateCurrentTrackField('cues', res);
+                    setBatchProgress(100);
+                    setBatchStatusMsg(`✓ 8 Hot Cues anclados al Beatgrid 1.0.0 (Compases 1, 17, 33...) generados.`);
+                } else {
+                    setBatchStatusMsg("No se pudieron generar los cues.");
+                }
+            }
+        } catch (err) {
+            console.error("Error auto-calculating hot cues:", err);
+            setBatchStatusMsg("Error calculando frases.");
+        } finally {
+            setTimeout(() => {
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 1500);
         }
     };
 
@@ -1346,7 +1376,7 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                         </button>
                     </div>
 
-                    <RekordboxWaveform track={currentTrack} duration={currentTrack.duration || "05:00"} onSeekTrack={onPlayTrack} />
+                    <RekordboxWaveform track={currentTrack} cues={(currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS} duration={currentTrack.duration || "05:00"} onSeekTrack={onPlayTrack} />
 
                     <div className="bg-djzinc-950 p-3 rounded-lg border border-djzinc-800 space-y-2.5">
                         <div className="flex items-center justify-between text-xs">
@@ -1587,16 +1617,40 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
 
                     <div>
                         <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase mb-1">
-                            <span>8 Hot Cues (Pads Numark NV2)</span>
-                            <InfoTip title="Pads Numark NV2" text="Mapeo exacto de los 8 pads RGB de la controladora Numark NV2 con los 8 puntos estructurales estándar de sesión." />
+                            <span className="flex items-center gap-1.5">
+                                <span>8 Hot Cues (Pads Numark NV2)</span>
+                                <button
+                                    type="button"
+                                    onClick={handleAutoPhraseCues}
+                                    className="px-2 py-0.5 text-[9px] font-mono font-bold bg-djcyan-500/20 hover:bg-djcyan-500/30 text-djcyan-400 rounded border border-djcyan-500/40 cursor-pointer shadow active:scale-95 transition-all"
+                                    title="Auto-calcular 8 Hot Cues por frases musicales (16/32 compases) anclados al Beatgrid 1.0.0"
+                                >
+                                    ⚡ Auto-Frasear 16/32b
+                                </button>
+                            </span>
+                            <InfoTip title="Pads Numark NV2" text="Mapeo exacto de los 8 pads RGB de la controladora Numark NV2 sincronizados a compases de 16 y 32 compases anclados al bombo 1.0.0." />
                         </div>
                         <div className="grid grid-cols-2 gap-2 mt-1">
-                            {NV2_COLORS.map((c, idx) => (
-                                <div key={c.id} onClick={() => onPlayTrack && onPlayTrack(currentTrack, (idx * 0.12) + 0.02, true)} className={`p-2 rounded border flex flex-col justify-between cursor-pointer ${c.bg} ${c.border}`}>
-                                    <div className="flex justify-between items-center"><span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded text-black" style={{ backgroundColor: c.color }}>Pad {c.id}</span><span className="text-[9px] font-mono text-gray-400">{c.time}</span></div>
-                                    <span className={`text-[11px] font-semibold truncate mt-1 ${c.text}`}>{c.name}</span>
-                                </div>
-                            ))}
+                            {((currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS).map((c, idx) => {
+                                const cuePct = c.pct !== undefined ? c.pct : ((idx * 0.12) + 0.02);
+                                return (
+                                    <div 
+                                        key={c.id || idx} 
+                                        onClick={() => onPlayTrack && onPlayTrack(currentTrack, cuePct, true)} 
+                                        className={`p-2 rounded border flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${c.bg || 'bg-djzinc-850'} ${c.border || 'border-djzinc-700'}`}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded text-black shadow-sm" style={{ backgroundColor: c.color || '#ef4444' }}>
+                                                Pad {c.id || (idx + 1)} {c.bar_str ? `• ${c.bar_str}` : ''}
+                                            </span>
+                                            <span className="text-[9px] font-mono text-gray-300 font-semibold">{c.time || '00:00.0'}</span>
+                                        </div>
+                                        <span className={`text-[11px] font-semibold truncate mt-1 ${c.text || 'text-gray-200'}`}>
+                                            {c.short_name || c.name || `Cue ${idx + 1}`}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -2710,7 +2764,7 @@ const App = () => {
                     isPlaying={isPlaying} 
                     playProgress={playProgress} 
                     onSeek={handleFooterSeek} 
-                    cues={NV2_COLORS} 
+                    cues={(nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0) ? nowPlayingTrack.cues : ((currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS)} 
                 />
             </footer>
         </div>

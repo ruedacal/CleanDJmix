@@ -101,6 +101,15 @@ def calcular_trim_downbeat_track(filepath, track_id=None):
     return audit_svc.analizar_trim_downbeat(filepath, track_id)
 
 @eel.expose
+def calcular_hot_cues_fraseo(duration_ms, bpm, downbeat_ms=0):
+    from infrastructure.audio_processor import AudioProcessorService
+    return AudioProcessorService.calcular_8_hot_cues_fraseo(
+        duration_ms=int(duration_ms) if duration_ms else 300000,
+        bpm=float(bpm) if bpm else 128.0,
+        downbeat_ms=int(downbeat_ms) if downbeat_ms else 0
+    )
+
+@eel.expose
 def exportar_auditoria_xls(tracks, destino_dir="/Users/admin/Music/mi musica"):
     return export_svc.exportar_tracks_xls(tracks, destino_dir)
 

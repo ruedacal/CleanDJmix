@@ -237,6 +237,13 @@ class AudioProcessorService:
             else:
                 mood_val = "Peak Time"
     
+        dur_ms = int(duration_sec * 1000) if duration_sec > 0 else 300000
+        cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
+            duration_ms=dur_ms,
+            bpm=bpm,
+            downbeat_ms=int(first_downbeat_ms)
+        )
+
         return {
             "title": title,
             "artist": artist,
@@ -250,8 +257,98 @@ class AudioProcessorService:
             "missing_meta": missing_meta,
             "format": ext.replace(".", "").upper(),
             "trim_start_ms": trim_start_ms,
-            "first_downbeat_ms": first_downbeat_ms
+            "first_downbeat_ms": first_downbeat_ms,
+            "cues": cues
         }
+
+    @staticmethod
+    def calcular_8_hot_cues_fraseo(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0) -> list:
+        """Calcula automáticamente los 8 Hot Cues estándar (Pads Numark NV2 / Pioneer DJ)
+        sincronizados a compases y frases musicales (16 y 32 compases) anclados al Beatgrid 1.0.0."""
+        try:
+            bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
+        except Exception:
+            bpm_clean = 128.0
+
+        try:
+            dur_clean = int(duration_ms) if duration_ms and int(duration_ms) > 1000 else 300000
+        except Exception:
+            dur_clean = 300000
+
+        try:
+            downbeat_clean = max(0, int(downbeat_ms))
+        except Exception:
+            downbeat_clean = 0
+
+        # Duración de 1 beat (negra) y 1 compás (4/4 = 4 beats) en milisegundos
+        beat_ms = 60000.0 / bpm_clean
+        bar_ms = beat_ms * 4.0
+
+        # Total de compases en el track
+        usable_dur = max(1000, dur_clean - downbeat_clean)
+        total_bars = max(8.0, usable_dur / bar_ms)
+
+        # Distribución armónica de frases según la longitud del track
+        if total_bars >= 144:
+            bar_offsets = [0, 16, 32, 64, 96, 128, 160]
+            outro_offset = max(bar_offsets[-1] + 16, int(total_bars - 16))
+            bar_offsets.append(outro_offset)
+        elif total_bars >= 96:
+            bar_offsets = [0, 16, 32, 48, 64, 80, 96]
+            outro_offset = max(bar_offsets[-1] + 8, int(total_bars - 16))
+            bar_offsets.append(outro_offset)
+        elif total_bars >= 48:
+            bar_offsets = [0, 8, 16, 24, 32, 40, 48]
+            outro_offset = max(bar_offsets[-1] + 8, int(total_bars - 8))
+            bar_offsets.append(outro_offset)
+        else:
+            step = max(1.0, total_bars / 8.0)
+            bar_offsets = [int(i * step) for i in range(8)]
+
+        cue_configs = [
+            {"id": 1, "name": "Kick / Intro", "color": "#ef4444", "rgb": (239, 68, 68), "text": "text-red-400", "border": "border-red-500/50", "bg": "bg-red-500/10"},
+            {"id": 2, "name": "Hi-Hats In", "color": "#f97316", "rgb": (249, 115, 22), "text": "text-orange-400", "border": "border-orange-500/50", "bg": "bg-orange-500/10"},
+            {"id": 3, "name": "Bassline", "color": "#eab308", "rgb": (234, 179, 8), "text": "text-yellow-400", "border": "border-yellow-500/50", "bg": "bg-yellow-500/10"},
+            {"id": 4, "name": "Main Break", "color": "#22c55e", "rgb": (34, 197, 94), "text": "text-green-400", "border": "border-green-500/50", "bg": "bg-green-500/10"},
+            {"id": 5, "name": "Drop 1 (Climax)", "color": "#06b6d4", "rgb": (6, 182, 212), "text": "text-cyan-400", "border": "border-cyan-500/50", "bg": "bg-cyan-500/10"},
+            {"id": 6, "name": "Mid Break", "color": "#3b82f6", "rgb": (59, 130, 246), "text": "text-blue-400", "border": "border-blue-500/50", "bg": "bg-blue-500/10"},
+            {"id": 7, "name": "Drop 2 (Re-Kick)", "color": "#a855f7", "rgb": (168, 85, 247), "text": "text-purple-400", "border": "border-purple-500/50", "bg": "bg-purple-500/10"},
+            {"id": 8, "name": "Outro Mix Point", "color": "#ec4899", "rgb": (236, 72, 153), "text": "text-pink-400", "border": "border-pink-500/50", "bg": "bg-pink-500/10"}
+        ]
+
+        result = []
+        for idx in range(8):
+            cfg = cue_configs[idx]
+            b_offset = bar_offsets[idx] if idx < len(bar_offsets) else (idx * 16)
+            compas = b_offset + 1
+            pos_ms = int(downbeat_clean + (b_offset * bar_ms))
+            if pos_ms >= dur_clean:
+                pos_ms = max(0, dur_clean - int((8 - idx) * 1000))
+
+            sec = pos_ms / 1000.0
+            m = int(sec // 60)
+            s = sec % 60
+            time_str = f"{m:02d}:{s:04.1f}"
+            pct = round(pos_ms / dur_clean, 4) if dur_clean > 0 else 0.0
+
+            result.append({
+                "id": cfg["id"],
+                "bar": compas,
+                "bar_str": f"Bar {compas}",
+                "name": f"{cfg['name']} (Bar {compas})",
+                "short_name": cfg["name"],
+                "pos_ms": pos_ms,
+                "time": time_str,
+                "pct": pct,
+                "color": cfg["color"],
+                "rgb": cfg["rgb"],
+                "text": cfg["text"],
+                "border": cfg["border"],
+                "bg": cfg["bg"]
+            })
+
+        return result
+
     @staticmethod
     def generar_serato_markers2(duration_ms: int = 300000, bpm: float = 128.0, cues: list = None, downbeat_ms: int = 0) -> bytes:
         """Construye el bloque binario base64 compatible con Serato Markers2 (Pads 1-8 Numark/Pioneer)."""
@@ -261,21 +358,17 @@ class AudioProcessorService:
         # BPMLOCK: 0 (desbloqueado)
         out.extend(b"BPMLOCK\x00" + struct.pack(">I", 1) + b"\x00")
 
-        # 8 Cues estándar Numark NV2 / Pioneer DJ
-        default_cues = [
-            {"id": 0, "pct": 0.00, "name": "Intro Mix Point", "rgb": (6, 182, 212)},
-            {"id": 1, "pct": 0.12, "name": "Buildup 16 Bars", "rgb": (168, 85, 247)},
-            {"id": 2, "pct": 0.24, "name": "Drop Main", "rgb": (239, 68, 68)},
-            {"id": 3, "pct": 0.40, "name": "Breakdown Vocal", "rgb": (245, 158, 11)},
-            {"id": 4, "pct": 0.55, "name": "Main Peak Time", "rgb": (234, 179, 8)},
-            {"id": 5, "pct": 0.70, "name": "Break 2 Rebuild", "rgb": (59, 130, 246)},
-            {"id": 6, "pct": 0.82, "name": "Final Drop Peak", "rgb": (34, 197, 94)},
-            {"id": 7, "pct": 0.90, "name": "Outro Mix Point", "rgb": (236, 72, 153)},
-        ]
+        if not cues or len(cues) == 0:
+            active_cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
+                duration_ms=duration_ms,
+                bpm=bpm,
+                downbeat_ms=downbeat_ms
+            )
+        else:
+            active_cues = cues
 
-        active_cues = cues if cues and len(cues) > 0 else default_cues
         for i, c in enumerate(active_cues[:8]):
-            cid = int(c.get("id", i))
+            cid = i # Serato pad ID: 0..7
             if "pos_ms" in c:
                 pos_ms = int(c["pos_ms"])
             elif "time" in c and ":" in str(c["time"]):
@@ -292,7 +385,7 @@ class AudioProcessorService:
                 if i == 0 and downbeat_ms > 0:
                     pos_ms = int(downbeat_ms)
 
-            cname = str(c.get("name", f"Cue {cid + 1}")).encode("utf-8") + b"\x00"
+            cname = str(c.get("name", f"Cue {i + 1}")).encode("utf-8") + b"\x00"
             rgb = c.get("rgb") or (6, 182, 212)
             if isinstance(rgb, str) and rgb.startswith("#"):
                 h = rgb.lstrip("#")

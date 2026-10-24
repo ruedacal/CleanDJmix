@@ -210,3 +210,45 @@ def test_iniciar_auditoria_con_opts_fft(tmp_path):
     assert "status" in track
     assert "dance" in track
     assert "mood" in track
+    assert "cues" in track
+    assert len(track["cues"]) == 8
+
+def test_calcular_8_hot_cues_fraseo_estructura():
+    # Track estándar de club: 360 segundos (6 min) a 128 BPM con downbeat en 800ms
+    cues = AudioProcessorService.calcular_8_hot_cues_fraseo(duration_ms=360000, bpm=128.0, downbeat_ms=800)
+    assert len(cues) == 8
+    # Pad 1 debe coincidir con el downbeat (Bar 1)
+    assert cues[0]["id"] == 1
+    assert cues[0]["bar"] == 1
+    assert cues[0]["pos_ms"] == 800
+    assert "Bar 1" in cues[0]["bar_str"]
+
+    # 1 bar = 4 * (60000/128) = 1875 ms. 16 bars = 30000 ms.
+    # Pad 2 debe ser Bar 17 (+16 bars = 30000ms -> 30800ms)
+    assert cues[1]["id"] == 2
+    assert cues[1]["bar"] == 17
+    assert cues[1]["pos_ms"] == 30800
+
+    # Pad 3 debe ser Bar 33 (+32 bars = 60000ms -> 60800ms)
+    assert cues[2]["id"] == 3
+    assert cues[2]["bar"] == 33
+    assert cues[2]["pos_ms"] == 60800
+
+    # Colores y propiedades para UI
+    for c in cues:
+        assert "color" in c
+        assert "rgb" in c
+        assert "time" in c
+        assert "pct" in c
+        assert 0.0 <= c["pct"] <= 1.0
+
+def test_generar_serato_markers2_con_fraseo_automatico():
+    # Al pasar cues=None, debe generar automáticamente los 8 cues por frases y empaquetar en base64
+    b64 = AudioProcessorService.generar_serato_markers2(duration_ms=300000, bpm=124.0, cues=None, downbeat_ms=250)
+    assert b64 is not None
+    import base64
+    raw = base64.b64decode(b64)
+    assert b"COLOR" in raw
+    assert b"BPMLOCK" in raw
+    # Debe contener 8 chunks "CUE\x00"
+    assert raw.count(b"CUE\x00") == 8

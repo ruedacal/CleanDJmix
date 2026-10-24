@@ -225,7 +225,8 @@ class AuditService:
                 "spectrum": spectrum_points,
                 "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
                 "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
-                "comment": str(info.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b")
+                "comment": str(info.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b"),
+                "cues": info.get("cues") or []
             })
 
         total = len(tracks_auditados)
@@ -364,6 +365,21 @@ class AuditService:
             if missing:
                 sin_meta_count += 1
 
+            cues_frase = []
+            if bpm_str != "--" and dur_str != "00:00":
+                try:
+                    dur_calc_ms = 300000
+                    if ":" in dur_str:
+                        dp = dur_str.split(":")
+                        dur_calc_ms = int((int(dp[0]) * 60 + float(dp[1])) * 1000)
+                    cues_frase = AudioProcessorService.calcular_8_hot_cues_fraseo(
+                        duration_ms=dur_calc_ms,
+                        bpm=float(bpm_str),
+                        downbeat_ms=int(first_downbeat_ms)
+                    )
+                except Exception:
+                    pass
+
             tracks_cargados.append({
                 "id": idx,
                 "f": str(file),
@@ -386,7 +402,8 @@ class AuditService:
                 "cutoff_khz": 0.0,
                 "trim_start_ms": trim_start_ms,
                 "first_downbeat_ms": first_downbeat_ms,
-                "comment": ""
+                "comment": "",
+                "cues": cues_frase
             })
 
         total = len(tracks_cargados)
