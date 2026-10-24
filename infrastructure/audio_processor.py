@@ -3,10 +3,10 @@ import re
 import struct
 import base64
 from mutagen import File as MutagenFile
-from mutagen.flac import FLAC, FLACNoHeaderError
-from mutagen.id3 import ID3, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, ID3NoHeaderError
+from mutagen.flac import FLAC, FLACNoHeaderError, Picture
+from mutagen.id3 import ID3, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, APIC, ID3NoHeaderError
 from mutagen.aiff import AIFF
-from mutagen.mp4 import MP4
+from mutagen.mp4 import MP4, MP4Cover
 
 CAMELOT_MAP = {
     "C": "8B", "Am": "8A", "G": "9B", "Em": "9A", "D": "10B", "Bm": "10A",
@@ -405,9 +405,86 @@ class AudioProcessorService:
         return base64.b64encode(out)
 
     @staticmethod
+    def serializar_serato_beatgrid(bpm: float = 128.0, downbeat_ms: float = 0.0) -> bytes:
+        """Serializa el bloque binario oficial Serato BeatGrid (GEOB:Serato BeatGrid).
+        Estructura estándar Serato DJ Pro:
+        - Header (6 bytes): \\x01\\x00 + uint32 BE (conteo de marcadores = 1)
+        - Marcador terminal (8 bytes): float32 BE (posición segundos) + float32 BE (BPM)
+        - Footer (1 byte): \\x00
+        """
+        try:
+            bpm_val = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
+        except Exception:
+            bpm_val = 128.0
+        try:
+            pos_sec = max(0.0, float(downbeat_ms) / 1000.0)
+        except Exception:
+            pos_sec = 0.0
+
+        header = b"\x01\x00" + struct.pack(">I", 1)
+        marker = struct.pack(">ff", pos_sec, bpm_val)
+        footer = b"\x00"
+        return header + marker + footer
+
+    @staticmethod
+    def procesar_caratula_cuadrada(cover_source, max_dim: int = 600) -> bytes:
+        """Descarga o abre una carátula, la recorta a proporción 1:1 cuadrada centrada
+        y la reescala a max_dim x max_dim en formato JPEG optimizado para hardware DJ."""
+        if not cover_source:
+            return b""
+        try:
+            from PIL import Image
+            import io
+            import base64
+            import urllib.request
+
+            img = None
+            if isinstance(cover_source, bytes):
+                img = Image.open(io.BytesIO(cover_source))
+            elif isinstance(cover_source, str):
+                cover_str = cover_source.strip()
+                if cover_str.startswith("data:image"):
+                    b64_data = cover_str.split(",", 1)[-1]
+                    raw_bytes = base64.b64decode(b64_data)
+                    img = Image.open(io.BytesIO(raw_bytes))
+                elif cover_str.startswith("http://") or cover_str.startswith("https://"):
+                    req = urllib.request.Request(
+                        cover_str,
+                        headers={"User-Agent": "Mozilla/5.0 (BeatWave Pro)"}
+                    )
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        raw_bytes = resp.read()
+                        img = Image.open(io.BytesIO(raw_bytes))
+                elif os.path.exists(cover_str):
+                    img = Image.open(cover_str)
+
+            if img is None:
+                return b""
+
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+
+            w, h = img.size
+            if w != h:
+                min_dim = min(w, h)
+                left = (w - min_dim) // 2
+                top = (h - min_dim) // 2
+                img = img.crop((left, top, left + min_dim, top + min_dim))
+
+            resample_filter = getattr(Image, "Resampling", Image).LANCZOS
+            img = img.resize((max_dim, max_dim), resample=resample_filter)
+
+            out_buf = io.BytesIO()
+            img.save(out_buf, format="JPEG", quality=92, optimize=True, progressive=False)
+            return out_buf.getvalue()
+        except Exception as e:
+            print(f"[ARTWORK WARN] No se pudo procesar carátula: {e}")
+            return b""
+
+    @staticmethod
     def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None) -> bool:
         """Inyecta metadatos profesionales para DJs (BPM exacto, Camelot TKEY, Comentario Táctico COMM,
-        Serato Markers2 Cues, ISRC, Género) en archivos FLAC, MP3, AIFF, M4A y WAV."""
+        Serato Markers2 Cues, Serato BeatGrid, Carátula 1:1, ISRC, Género) en archivos FLAC, MP3, AIFF, M4A y WAV."""
         if not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
             return False
 
@@ -451,6 +528,13 @@ class AudioProcessorService:
             cues=cues_list,
             downbeat_ms=downbeat_ms
         )
+        serato_beatgrid_bin = AudioProcessorService.serializar_serato_beatgrid(
+            bpm=bpm_float,
+            downbeat_ms=downbeat_ms
+        )
+
+        cover_source = cover_url or meta_track.get("cover") or meta_track.get("cover_url") or meta_track.get("image_url")
+        cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
 
         try:
             if ext == ".flac":
@@ -479,6 +563,23 @@ class AudioProcessorService:
                 if downbeat_ms > 0:
                     audio["FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}"]
                 audio["SERATO_MARKERS_V2"] = [serato_b64.decode("ascii")]
+                audio["SERATO_BEATGRID"] = [base64.b64encode(serato_beatgrid_bin).decode("ascii")]
+
+                if cover_bytes:
+                    try:
+                        pic = Picture()
+                        pic.type = 3
+                        pic.mime = "image/jpeg"
+                        pic.desc = "Front Cover"
+                        pic.width = 600
+                        pic.height = 600
+                        pic.depth = 24
+                        pic.data = cover_bytes
+                        audio.clear_pictures()
+                        audio.add_picture(pic)
+                    except Exception as p_err:
+                        print(f"[ARTWORK WARN] Fallo incrustando carátula FLAC: {p_err}")
+
                 audio.save()
                 return True
 
@@ -514,6 +615,13 @@ class AudioProcessorService:
                     desc="Serato Markers2",
                     data=serato_b64
                 ))
+                # Inyección GEOB para Serato BeatGrid
+                id3.add(GEOB(
+                    encoding=0,
+                    mime="application/octet-stream",
+                    desc="Serato BeatGrid",
+                    data=serato_beatgrid_bin
+                ))
                 # Inyección GEOB para Serato Autotags
                 autotags_data = b"\x01\x01" + f"{bpm_str}\x000.000\x000.000\x00".encode("ascii")
                 id3.add(GEOB(
@@ -522,6 +630,19 @@ class AudioProcessorService:
                     desc="Serato Autotags",
                     data=autotags_data
                 ))
+
+                if cover_bytes:
+                    try:
+                        id3.delall("APIC")
+                        id3.add(APIC(
+                            encoding=3,
+                            mime="image/jpeg",
+                            type=3,
+                            desc="Cover",
+                            data=cover_bytes
+                        ))
+                    except Exception as a_err:
+                        print(f"[ARTWORK WARN] Fallo incrustando carátula MP3: {a_err}")
 
                 id3.save(ruta, v2_version=4)
                 return True
@@ -546,6 +667,21 @@ class AudioProcessorService:
                 if downbeat_ms > 0:
                     tags.add(TXXX(encoding=3, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
                 tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Markers2", data=serato_b64))
+                tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato BeatGrid", data=serato_beatgrid_bin))
+
+                if cover_bytes:
+                    try:
+                        tags.delall("APIC")
+                        tags.add(APIC(
+                            encoding=3,
+                            mime="image/jpeg",
+                            type=3,
+                            desc="Cover",
+                            data=cover_bytes
+                        ))
+                    except Exception as a_err:
+                        print(f"[ARTWORK WARN] Fallo incrustando carátula AIFF: {a_err}")
+
                 audio.save()
                 return True
 
@@ -568,6 +704,13 @@ class AudioProcessorService:
                     audio["----:com.apple.iTunes:TRIM_START_MS"] = [f"{trim_ms:.1f}".encode("utf-8")]
                 if downbeat_ms > 0:
                     audio["----:com.apple.iTunes:FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}".encode("utf-8")]
+
+                if cover_bytes:
+                    try:
+                        audio["covr"] = [MP4Cover(cover_bytes, imageformat=MP4Cover.FORMAT_JPEG)]
+                    except Exception as c_err:
+                        print(f"[ARTWORK WARN] Fallo incrustando carátula MP4: {c_err}")
+
                 audio.save()
                 return True
 

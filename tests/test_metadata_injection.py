@@ -252,3 +252,74 @@ def test_generar_serato_markers2_con_fraseo_automatico():
     assert b"BPMLOCK" in raw
     # Debe contener 8 chunks "CUE\x00"
     assert raw.count(b"CUE\x00") == 8
+
+def test_serializar_serato_beatgrid_binario():
+    # Beatgrid para 128.0 BPM con downbeat a 500ms (0.5s)
+    grid_bin = AudioProcessorService.serializar_serato_beatgrid(bpm=128.0, downbeat_ms=500.0)
+    assert len(grid_bin) == 15  # 2 header + 4 count + 4 pos + 4 bpm + 1 footer
+    assert grid_bin[:2] == b"\x01\x00"
+    import struct
+    marker_count = struct.unpack(">I", grid_bin[2:6])[0]
+    assert marker_count == 1
+    pos_sec, bpm_val = struct.unpack(">ff", grid_bin[6:14])
+    assert abs(pos_sec - 0.5) < 0.001
+    assert abs(bpm_val - 128.0) < 0.001
+    assert grid_bin[14:] == b"\x00"
+
+def test_procesar_caratula_cuadrada_reescalado():
+    from PIL import Image
+    import io
+    # Crear imagen rectangular 800x400
+    img = Image.new("RGB", (800, 400), color=(0, 200, 255))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    raw_input = buf.getvalue()
+
+    # Procesar
+    sq_bytes = AudioProcessorService.procesar_caratula_cuadrada(raw_input, max_dim=600)
+    assert len(sq_bytes) > 0
+    res_img = Image.open(io.BytesIO(sq_bytes))
+    assert res_img.format == "JPEG"
+    assert res_img.size == (600, 600)
+
+def test_escribir_metadatos_pro_beatgrid_y_artwork_mp3(tmp_path):
+    mp3_file = tmp_path / "track_beatgrid.mp3"
+    with open(str(mp3_file), "wb") as f:
+        f.write(b"\xff\xfb\x90\x64" * 1000)
+
+    from PIL import Image
+    import io
+    img = Image.new("RGB", (400, 300), color=(255, 100, 50))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    img_bytes = buf.getvalue()
+
+    meta = {
+        "title": "Subtle Rhythm",
+        "artist": "Techno Master",
+        "album": "CleanDJmix Records",
+        "bpm": "130.00",
+        "key": "11A",
+        "first_downbeat_ms": 350.0,
+        "cover": img_bytes
+    }
+
+    ok = AudioProcessorService.escribir_metadatos_pro(str(mp3_file), meta)
+    assert ok is True
+
+    from mutagen.id3 import ID3
+    id3 = ID3(str(mp3_file))
+    # Verifica GEOB Serato BeatGrid
+    assert "GEOB:Serato BeatGrid" in id3
+    beatgrid_frame = id3["GEOB:Serato BeatGrid"]
+    assert beatgrid_frame.desc == "Serato BeatGrid"
+    assert len(beatgrid_frame.data) == 15
+
+    # Verifica APIC Artwork Cover
+    apic_keys = [k for k in id3.keys() if k.startswith("APIC")]
+    assert len(apic_keys) > 0
+    apic_frame = id3[apic_keys[0]]
+    assert apic_frame.mime == "image/jpeg"
+    assert apic_frame.type == 3  # Front cover
+    cover_loaded = Image.open(io.BytesIO(apic_frame.data))
+    assert cover_loaded.size == (600, 600)
