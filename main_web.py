@@ -12,6 +12,23 @@ from services.export_service import ExportService
 from application.taxonomy_service import TaxonomyService
 from services.shazam_service import ShazamRecognitionService
 
+def compilar_frontend_si_necesario():
+    jsx_path = os.path.join("web", "js", "app.jsx")
+    bundle_path = os.path.join("web", "js", "app.bundle.js")
+    if os.path.exists(jsx_path):
+        if not os.path.exists(bundle_path) or os.path.getmtime(jsx_path) > os.path.getmtime(bundle_path):
+            try:
+                subprocess.run(
+                    ["npx", "-y", "esbuild", jsx_path, f"--outfile={bundle_path}"],
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except Exception:
+                pass
+
+compilar_frontend_si_necesario()
+
 eel.init("web")
 
 audio_playback_svc = AudioPlaybackService()
