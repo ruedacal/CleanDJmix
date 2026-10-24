@@ -2,6 +2,7 @@ import os
 import subprocess
 import time
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from infrastructure.spotify_flac_ingest import SpotifyFlacIngestService
 
 class DownloadService:
@@ -35,20 +36,21 @@ class DownloadService:
 
         def worker():
             total = len(tracks_to_download)
+            if total == 0:
+                return
+
+            counter_lock = threading.Lock()
             completadas = 0
             fallidas = 0
+            procesadas = 0
 
-            for i, t in enumerate(tracks_to_download):
-                nombre = t.get('title', f"Track_{i+1}")
+            def procesar_una_pista(indice_pista, t):
+                nonlocal completadas, fallidas, procesadas
+
+                nombre = t.get('title', f"Track_{indice_pista+1}")
                 artista = t.get('artist', 'Artista')
                 spotify_id = t.get('id', '')
                 isrc = t.get('isrc', '')
-
-                porcentaje = int((i / total) * 100)
-                try:
-                    eel_ref.actualizar_estado_descarga(porcentaje, f"[DESCARGANDO] ({i+1}/{total}) Procesando: {artista} - {nombre}")()
-                except Exception:
-                    pass
 
                 meta = {
                     "id": str(spotify_id),
@@ -75,27 +77,58 @@ class DownloadService:
                             break
                         msg_error = res_ingest.get("msg", "") if res_ingest else "Respuesta nula"
                         if any(code in msg_error for code in ["403", "409", "429"]):
-                            time.sleep(2 ** intento)
+                            time.sleep(2.0 + (intento * 1.5))
                         else:
                             break
                     except Exception as e:
                         msg_error = str(e)
-                        time.sleep(2 ** intento)
+                        time.sleep(2.0 + (intento * 1.5))
 
-                if ruta_final and os.path.exists(ruta_final) and os.path.getsize(ruta_final) > 2048:
-                    completadas += 1
+                exito = bool(ruta_final and os.path.exists(ruta_final) and os.path.getsize(ruta_final) > 2048)
+
+                with counter_lock:
+                    procesadas += 1
+                    pct = int((procesadas / total) * 100)
+                    if exito:
+                        completadas += 1
+                        try:
+                            eel_ref.actualizar_estado_descarga(
+                                pct, 
+                                f"[DESCARGANDO] ({procesadas}/{total}) ✓ {artista} - {nombre}"
+                            )()
+                            eel_ref.log_to_console(f"✅ Guardado: {os.path.basename(ruta_final)}")()
+                        except Exception:
+                            pass
+                    else:
+                        fallidas += 1
+                        try:
+                            eel_ref.actualizar_estado_descarga(
+                                pct, 
+                                f"[DESCARGANDO] ({procesadas}/{total}) ⚠ Fallo: {artista} - {nombre}"
+                            )()
+                            eel_ref.log_to_console(f"❌ Error en {nombre}: {msg_error}")()
+                        except Exception:
+                            pass
+
+                if exito and audio_service_ref:
                     try:
-                        eel_ref.log_to_console(f"✅ Guardado: {os.path.basename(ruta_final)}")()
                         fft_res = audio_service_ref.analizar_espectro_fft(ruta_final)
                         eel_ref.notificar_resultado_auditoria({"id": spotify_id, **fft_res})()
-                    except:
+                    except Exception:
                         pass
-                else:
-                    fallidas += 1
+
+            # Pool controlado de 2 workers concurrentes con Lock de negociación anti-409/429
+            num_workers = min(2, max(1, total))
+            with ThreadPoolExecutor(max_workers=num_workers) as executor:
+                futures = [
+                    executor.submit(procesar_una_pista, idx, trk)
+                    for idx, trk in enumerate(tracks_to_download)
+                ]
+                for fut in futures:
                     try:
-                        eel_ref.log_to_console(f"❌ Error en {nombre}: {msg_error}")()
-                    except:
-                        pass
+                        fut.result()
+                    except Exception as err:
+                        print(f"[DOWNLOAD WORKER EXCEPTION] {err}")
 
             resumen_msg = f"[COMPLETADO] Lote finalizado. Éxitos: {completadas}, Fallos: {fallidas}."
             try:

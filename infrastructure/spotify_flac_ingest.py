@@ -4,6 +4,8 @@ import time
 import json
 import urllib.parse
 import subprocess
+import threading
+import random
 import requests
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -25,6 +27,8 @@ class SpotifyFlacIngestService:
         self.sp = self._inicializar_spotipy()
         self.session = requests.Session()
         self._csrf_token = "H23AezPwrrB3Eh1rQzNwaL4o0hqBEvCpmnIosJFu"
+        self._negotiation_lock = threading.Lock()
+        self._last_negotiation_time = 0.0
         self._inicializar_sesion_superflac()
 
     def _cargar_config(self) -> dict:
@@ -109,6 +113,40 @@ class SpotifyFlacIngestService:
         except Exception as e:
             print(f"[SUPERFLAC WARN] Error resolviendo Apple Music URL: {e}")
         return ""
+
+    def _solicitar_descarga_segura(self, music_url: str, quality: str = "FLAC_HIRES") -> tuple:
+        """Negociación protegida por Mutex/Lock y espaciado temporal (Jitter) para
+        garantizar cero colisiones HTTP 409 y cero bloqueos HTTP 429."""
+        with self._negotiation_lock:
+            ahora = time.time()
+            delta = ahora - self._last_negotiation_time
+            intervalo_minimo = 1.2 + random.uniform(0.1, 0.3)
+            if delta < intervalo_minimo:
+                time.sleep(intervalo_minimo - delta)
+
+            res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=quality)
+            self._last_negotiation_time = time.time()
+
+            # Recuperación proactiva contra 403, 409 y 429
+            if status_code in (403, 419):
+                print(f"[SUPERFLAC] Sesión expirada ({status_code}). Forzando refresco de tokens...")
+                self._inicializar_sesion_superflac(force_refresh=True)
+                time.sleep(1.0)
+                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=quality)
+                self._last_negotiation_time = time.time()
+            elif status_code == 409:
+                print("[SUPERFLAC WARN] HTTP 409 Conflicto en cola remota. Esperando 2.5s y refrescando...")
+                self._inicializar_sesion_superflac(force_refresh=True)
+                time.sleep(2.5)
+                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=quality)
+                self._last_negotiation_time = time.time()
+            elif status_code == 429:
+                print("[SUPERFLAC WARN] HTTP 429 Rate Limit. Aplicando backoff de 4.0s...")
+                time.sleep(4.0 + random.uniform(0.5, 1.5))
+                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=quality)
+                self._last_negotiation_time = time.time()
+
+            return res_obj, status_code, info_msg
 
     def _solicitar_descarga_superflac(self, music_url: str, quality: str = "FLAC_HIRES") -> tuple:
         endpoint = "https://superflac.com/downloads?inline=1"
@@ -226,14 +264,15 @@ class SpotifyFlacIngestService:
                 if enlace_encontrado:
                     print(f"[SUPERFLAC] Siguiente nodo detectado: {enlace_encontrado}")
                     url_actual = enlace_encontrado
-                    time.sleep(3)
+                    time.sleep(1.0)
                     continue
 
-                time.sleep(3)
+                poll_delay = min(2.5, 1.0 + (intento * 0.3))
+                time.sleep(poll_delay)
 
             except Exception as e:
                 print(f"[SUPERFLAC POLL WARN] Excepción: {e}")
-                time.sleep(3)
+                time.sleep(2.0)
 
         return None, "Tiempo de espera agotado esperando el binario final en SuperFLAC"
 
@@ -267,14 +306,7 @@ class SpotifyFlacIngestService:
 
         print(f"[SUPERFLAC] Solicitando {sf_quality} para URL: {music_url}")
 
-        res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=sf_quality)
-        if status_code in (403, 419):
-            self._inicializar_sesion_superflac(force_refresh=True)
-            res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=sf_quality)
-
-        if status_code in (403, 409, 429):
-            return {"status": "error", "msg": f"HTTP {status_code}: Conflicto o límite en pasarela SuperFLAC", "path": ""}
-
+        res_obj, status_code, info_msg = self._solicitar_descarga_segura(music_url, quality=sf_quality)
         if not res_obj:
             return {"status": "error", "msg": info_msg, "path": ""}
 
@@ -286,23 +318,23 @@ class SpotifyFlacIngestService:
                     return {"status": "error", "msg": err_stream, "path": ""}
                 with r_stream:
                     with open(ruta_temp_flac, "wb") as f:
-                        for chunk in r_stream.iter_content(chunk_size=65536):
+                        for chunk in r_stream.iter_content(chunk_size=262144):
                             if chunk:
                                 f.write(chunk)
             else:
                 with open(ruta_temp_flac, "wb") as f:
-                    for chunk in res_obj.iter_content(chunk_size=65536):
+                    for chunk in res_obj.iter_content(chunk_size=262144):
                         if chunk:
                             f.write(chunk)
 
             if os.path.exists(ruta_temp_flac):
                 with open(ruta_temp_flac, "rb") as check_f:
                     header_snippet = check_f.read(128)
-                    if not header_snippet.startswith(b"fLaC") and not header_snippet.startswith(b"ID3"):
+                    if not header_snippet.startswith(b"fLaC") and not header_snippet.startswith(b"ID3") and not (len(header_snippet) >= 2 and header_snippet[0] == 0xFF):
                         os.remove(ruta_temp_flac)
                         return {
                             "status": "error",
-                            "msg": f"Cabecera inválida (no es fLaC/ID3): {header_snippet[:60]}",
+                            "msg": f"Cabecera inválida (no es audio reconocido): {header_snippet[:60]}",
                             "path": ""
                         }
 
@@ -311,19 +343,33 @@ class SpotifyFlacIngestService:
                     os.remove(ruta_temp_flac)
                 return {"status": "error", "msg": "El archivo devuelto está vacío o incompleto.", "path": ""}
 
+            # Detección de stream nativo para evitar transcodificación innecesaria
+            is_mp3_native = False
+            if ext_final == "mp3" and os.path.exists(ruta_temp_flac):
+                with open(ruta_temp_flac, "rb") as check_f:
+                    snip = check_f.read(4)
+                    if snip.startswith(b"ID3") or (len(snip) >= 2 and snip[0] == 0xFF and (snip[1] & 0xE0) == 0xE0):
+                        is_mp3_native = True
+
             if ext_final != "flac":
-                cmd_ff = ["ffmpeg", "-y", "-i", ruta_temp_flac]
-                if ext_final == "mp3":
-                    cmd_ff += ["-ab", "320k", "-map_metadata", "0", "-id3v2_version", "3", ruta_final]
-                elif ext_final == "aiff":
-                    cmd_ff += ["-c:a", "pcm_s16be", "-write_id3v2", "1", ruta_final]
+                if is_mp3_native:
+                    if ruta_temp_flac != ruta_final:
+                        if os.path.exists(ruta_final):
+                            os.remove(ruta_final)
+                        os.rename(ruta_temp_flac, ruta_final)
                 else:
-                    cmd_ff += [ruta_final]
-                subprocess.run(cmd_ff, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                if os.path.exists(ruta_final) and os.path.getsize(ruta_final) > 2048:
-                    os.remove(ruta_temp_flac)
-                else:
-                    ruta_final = ruta_temp_flac
+                    cmd_ff = ["ffmpeg", "-y", "-i", ruta_temp_flac]
+                    if ext_final == "mp3":
+                        cmd_ff += ["-ab", "320k", "-map_metadata", "0", "-id3v2_version", "3", ruta_final]
+                    elif ext_final == "aiff":
+                        cmd_ff += ["-c:a", "pcm_s16be", "-write_id3v2", "1", ruta_final]
+                    else:
+                        cmd_ff += [ruta_final]
+                    subprocess.run(cmd_ff, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    if os.path.exists(ruta_final) and os.path.getsize(ruta_final) > 2048:
+                        os.remove(ruta_temp_flac)
+                    else:
+                        ruta_final = ruta_temp_flac
             else:
                 ruta_final = ruta_temp_flac
 
