@@ -224,3 +224,105 @@ def test_organizar_pista_error_disco(tmp_path):
 
     assert "Error:" in res["estado"]
     assert "Acceso denegado" in res["estado"]
+
+# -------------------------------------------------------------
+# PRUEBAS DE TAXONOMÍA JERÁRQUICA Y RUTEO DE LOTES
+# -------------------------------------------------------------
+
+def test_obtener_arbol_taxonomia():
+    arbol = TaxonomyService.obtener_arbol_taxonomia()
+    assert isinstance(arbol, dict)
+    assert "Techno" in arbol
+    assert "House" in arbol
+    assert "Trance" in arbol
+    assert "Drum & Bass" in arbol
+    assert "Electro & Breaks" in arbol
+    assert "Downtempo" in arbol
+
+    assert "Peak Time / Driving" in arbol["Techno"]
+    assert "Tech House" in arbol["House"]
+    assert "Deep House" in arbol["House"]
+    assert "Liquid Drum & Bass" in arbol["Drum & Bass"]
+
+def test_organizar_lote_copiar(tmp_path):
+    service = TaxonomyService()
+    origen_dir = tmp_path / "origen"
+    origen_dir.mkdir()
+    f1 = origen_dir / "Adam Beyer - Rave.mp3"
+    f1.write_text("mp3 content 1")
+    f2 = origen_dir / "Fisher - Losing It.mp3"
+    f2.write_text("mp3 content 2")
+
+    destino_base = str(tmp_path / "crates")
+
+    tracks = [
+        {"path": str(f1), "genre": "Techno", "subgenre": "Peak Time / Driving", "title": "Rave", "artist": "Adam Beyer"},
+        {"path": str(f2), "genre": "House", "subgenre": "Tech House", "title": "Losing It", "artist": "Fisher"}
+    ]
+
+    progress_events = []
+    def progress_cb(pct, msg):
+        progress_events.append((pct, msg))
+
+    res = service.organizar_lote(
+        tracks=tracks,
+        ruta_base=destino_base,
+        mover_archivo=False,
+        progreso_cb=progress_cb
+    )
+
+    assert res["status"] == "ok"
+    assert res["total"] == 2
+    assert res["procesados"] == 2
+    assert res["errores"] == 0
+
+    expected_f1 = os.path.join(destino_base, "Techno", "Peak Time / Driving", "Adam Beyer - Rave.mp3")
+    expected_f2 = os.path.join(destino_base, "House", "Tech House", "Fisher - Losing It.mp3")
+
+    assert os.path.exists(expected_f1)
+    assert os.path.exists(expected_f2)
+    assert os.path.exists(str(f1))
+    assert os.path.exists(str(f2))
+    assert len(progress_events) > 0
+    assert progress_events[-1][0] == 100
+
+def test_organizar_lote_mover(tmp_path):
+    service = TaxonomyService()
+    origen_dir = tmp_path / "mover_origen"
+    origen_dir.mkdir()
+    f1 = origen_dir / "Charlotte - Selected.mp3"
+    f1.write_text("audio data")
+
+    destino_base = str(tmp_path / "crates_mover")
+
+    tracks = [
+        {"path": str(f1), "genre": "Techno", "subgenre": "Hard Techno / Industrial", "title": "Selected", "artist": "Charlotte"}
+    ]
+
+    res = service.organizar_lote(
+        tracks=tracks,
+        ruta_base=destino_base,
+        mover_archivo=True
+    )
+
+    assert res["status"] == "ok"
+    assert res["procesados"] == 1
+    expected_f1 = os.path.join(destino_base, "Techno", "Hard Techno / Industrial", "Charlotte - Selected.mp3")
+    assert os.path.exists(expected_f1)
+    assert not os.path.exists(str(f1))
+
+def test_organizar_lote_vacio():
+    service = TaxonomyService()
+    res = service.organizar_lote([], "/tmp/crates")
+    assert res["status"] == "error"
+    assert res["procesados"] == 0
+
+def test_organizar_lote_archivo_inexistente(tmp_path):
+    service = TaxonomyService()
+    tracks = [
+        {"path": "/ruta/fantasma/inexistente.mp3", "genre": "Techno", "subgenre": "Peak Time"}
+    ]
+    res = service.organizar_lote(tracks, str(tmp_path / "crates"))
+    assert res["status"] == "ok"
+    assert res["procesados"] == 0
+    assert res["errores"] == 1

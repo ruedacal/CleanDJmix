@@ -9,6 +9,7 @@ from services.audit_service import AuditService
 from services.media_service import MediaService
 from services.download_service import DownloadService
 from services.export_service import ExportService
+from application.taxonomy_service import TaxonomyService
 
 eel.init("web")
 
@@ -17,6 +18,7 @@ audit_svc = AuditService()
 media_svc = MediaService()
 download_svc = DownloadService()
 export_svc = ExportService()
+taxonomy_svc = TaxonomyService()
 
 @bottle.route('/cover')
 def get_cover():
@@ -175,6 +177,54 @@ def obtener_directorio_descarga_actual():
 @eel.expose
 def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir=""):
     return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audit_svc, eel)
+
+@eel.expose
+def obtener_taxonomia_dj():
+    return taxonomy_svc.obtener_arbol_taxonomia()
+
+@eel.expose
+def organizar_pista_en_crate(track, ruta_base="/Users/admin/Music/mi musica", modo="copy"):
+    if not track or not isinstance(track, dict):
+        return {"status": "error", "msg": "Pista inválida"}
+    path = track.get("path") or track.get("f")
+    if not path or not os.path.exists(path):
+        real_path = audio_playback_svc._resolver_ruta(path or "")
+        if real_path and os.path.exists(real_path):
+            path = real_path
+        else:
+            return {"status": "error", "msg": "Archivo no encontrado"}
+
+    genero = track.get("genre") or "Tech House"
+    subgenero = track.get("subgenre") or "General"
+    artista = track.get("artist") or track.get("a") or "Desconocido"
+    titulo = track.get("title") or track.get("t") or os.path.splitext(os.path.basename(path))[0]
+    try:
+        bpm = int(float(str(track.get("bpm") or track.get("b") or 128).replace(",", ".")))
+    except Exception:
+        bpm = 128
+
+    res = taxonomy_svc.organizar_pista(
+        ruta_origen=path,
+        artista=artista,
+        titulo=titulo,
+        bpm=bpm,
+        año=2024,
+        genero=genero,
+        subgenero=subgenero,
+        ruta_base=ruta_base,
+        modo_seguro=False,
+        mover_archivo=(modo == "move")
+    )
+    return {"status": "ok" if res.get("estado") == "OK" else "error", "res": res}
+
+@eel.expose
+def organizar_lote_en_crates(tracks, ruta_base="/Users/admin/Music/mi musica", modo="copy"):
+    return taxonomy_svc.organizar_lote(
+        tracks=tracks,
+        ruta_base=ruta_base,
+        mover_archivo=(modo == "move"),
+        progreso_cb=_emitir_progreso_batch
+    )
 
 if __name__ == "__main__":
     try:

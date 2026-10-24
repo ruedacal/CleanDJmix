@@ -537,16 +537,47 @@ const CAMELOT_WHEEL_DATA = {
     "12B": { classical: "E", name: "Mi Mayor", rel: "12A", up: "1B", down: "11B", color: "#15803d" }
 };
 
-const DJ_GENRES_LIST = [
-    "Tech House",
-    "Techno (Peak Time / Driving)",
-    "Melodic Techno & Indie Dance",
-    "Trance (Uplifting / Psy)",
-    "Hard Techno",
-    "Deep House / House",
-    "Minimal / Deep Tech",
-    "Drum & Bass"
-];
+const TAXONOMY_TREE = {
+    "Techno": [
+        "Peak Time / Driving",
+        "Raw / Deep / Hypnotic",
+        "Hard Techno / Industrial",
+        "Melodic Techno",
+        "Acid Techno"
+    ],
+    "House": [
+        "Tech House",
+        "Deep House",
+        "Afro House",
+        "Melodic / Progressive House",
+        "Jackin / Funky House"
+    ],
+    "Trance": [
+        "Uplifting Trance",
+        "Psy-Trance",
+        "Progressive Trance",
+        "Tech Trance"
+    ],
+    "Drum & Bass": [
+        "Liquid Drum & Bass",
+        "Neurofunk",
+        "Jump Up",
+        "Dancefloor DnB"
+    ],
+    "Electro & Breaks": [
+        "Breakbeat",
+        "Electro House",
+        "Minimal / Deep Tech",
+        "UK Garage / 2-Step"
+    ],
+    "Downtempo": [
+        "Organic House",
+        "Chillout / Lounge",
+        "Electronica"
+    ]
+};
+
+const DJ_GENRES_LIST = Object.keys(TAXONOMY_TREE);
 
 const DJ_MOODS_LIST = [
     { id: "Peak Time", label: "🔥 Peak Time", desc: "Clímax de pista, alta pegada" },
@@ -756,7 +787,17 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
 };
 
 // Espacio de Trabajo: Auditoría & DSP
-const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayingTrack, isPlaying, onTogglePlay, playProgress = 0 }) => {
+const AuditWorkspace = ({ 
+    tracks: externalTracks, 
+    setTracks: setExternalTracks, 
+    selectedTrack, 
+    setSelectedTrack, 
+    onPlayTrack, 
+    nowPlayingTrack, 
+    isPlaying, 
+    onTogglePlay, 
+    playProgress = 0 
+}) => {
     const [rutaOrigen, setRutaOrigen] = useState('');
     const [isAuditing, setIsAuditing] = useState(false);
     const [isLoadingDir, setIsLoadingDir] = useState(false);
@@ -770,7 +811,9 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
     const [batchStatusMsg, setBatchStatusMsg] = useState('');
     const [saveFeedback, setSaveFeedback] = useState('');
 
-    const [tracks, setTracks] = useState([]);
+    const [internalTracks, setInternalTracks] = useState([]);
+    const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
+    const setTracks = setExternalTracks !== undefined ? setExternalTracks : setInternalTracks;
     const [fftModalOpen, setFftModalOpen] = useState(false);
     const [fftAnalysisData, setFftAnalysisData] = useState(null);
     const [isAnalyzingFft, setIsAnalyzingFft] = useState(false);
@@ -887,6 +930,43 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
         } catch (err) {
             console.error("Error auto-calculating hot cues:", err);
             setBatchStatusMsg("Error calculando frases.");
+        } finally {
+            setTimeout(() => {
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 1500);
+        }
+    };
+
+    const handleEnrutarPistaActual = async () => {
+        if (!currentTrack || !currentTrack.id) return;
+        const targetPath = currentTrack.path || currentTrack.f;
+        if (!targetPath) return;
+
+        const gen = currentTrack.genre || 'Tech House';
+        const subg = currentTrack.subgenre || (TAXONOMY_TREE[gen] ? TAXONOMY_TREE[gen][0] : 'General');
+
+        setBatchProgress(40);
+        setBatchStatusMsg(`Enrutando ${currentTrack.t || currentTrack.title} a crate /${gen}/${subg}...`);
+        try {
+            if (window.eel && window.eel.organizar_pista_en_crate) {
+                const res = await window.eel.organizar_pista_en_crate(
+                    { ...currentTrack, genre: gen, subgenre: subg },
+                    destinoDescarga || "/Users/admin/Music/mi musica",
+                    "copy"
+                )();
+                if (res && res.status === 'ok') {
+                    setBatchProgress(100);
+                    setBatchStatusMsg(`✓ Archivo enrutado con éxito a /${gen}/${subg}`);
+                    setSaveFeedback("✓ Enrutado a Crate Serato");
+                    setTimeout(() => setSaveFeedback(''), 3000);
+                } else {
+                    setBatchStatusMsg(res?.msg || "Error al enrutar archivo.");
+                }
+            }
+        } catch (err) {
+            console.error("Error al enrutar pista:", err);
+            setBatchStatusMsg("Error al enrutar.");
         } finally {
             setTimeout(() => {
                 setBatchProgress(0);
@@ -1598,21 +1678,56 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                         </div>
                     </div>
 
-                    {/* Género / Categorización Serato Crate */}
-                    <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800">
-                        <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
-                            <span>Género / Serato Crate</span>
-                            <InfoTip title="Género y Taxonomía" text="Clasificación para enrutamiento físico y organización en crates de Serato / Rekordbox." />
+                    {/* Género y Subgénero / Taxonomía Crate */}
+                    <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] text-gray-400">
+                            <span className="font-bold">Taxonomía Serato Crate</span>
+                            <InfoTip title="Género y Taxonomía" text="Clasificación en dos niveles (Género Raíz ➡ Subgénero Estilo) que determina el etiquetado TCON y el ruteo físico a carpetas y crates de Serato / Rekordbox." />
                         </div>
-                        <select 
-                            value={currentTrack.genre || 'Tech House'} 
-                            onChange={(e) => updateCurrentTrackField('genre', e.target.value)} 
-                            className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-semibold text-gray-200 outline-none cursor-pointer"
-                        >
-                            {DJ_GENRES_LIST.map(g => (
-                                <option key={g} value={g}>{g}</option>
-                            ))}
-                        </select>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <span className="text-[10px] text-gray-400 block mb-1">Género Raíz</span>
+                                <select 
+                                    value={currentTrack.genre || 'Tech House'} 
+                                    onChange={(e) => {
+                                        const newG = e.target.value;
+                                        updateCurrentTrackField('genre', newG);
+                                        const subList = TAXONOMY_TREE[newG] || [];
+                                        updateCurrentTrackField('subgenre', subList[0] || newG);
+                                    }}
+                                    className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-semibold text-gray-200 outline-none cursor-pointer"
+                                >
+                                    {Object.keys(TAXONOMY_TREE).map(g => (
+                                        <option key={g} value={g}>{g}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <span className="text-[10px] text-gray-400 block mb-1">Subgénero / Crate</span>
+                                <select 
+                                    value={currentTrack.subgenre || (TAXONOMY_TREE[currentTrack.genre || 'Tech House'] ? TAXONOMY_TREE[currentTrack.genre || 'Tech House'][0] : 'Tech House')} 
+                                    onChange={(e) => updateCurrentTrackField('subgenre', e.target.value)} 
+                                    className="w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-semibold text-djcyan-400 outline-none cursor-pointer"
+                                >
+                                    {(TAXONOMY_TREE[currentTrack.genre || 'Tech House'] || [currentTrack.subgenre || 'Tech House']).map(sg => (
+                                        <option key={sg} value={sg}>{sg}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-djzinc-850 text-[10px]">
+                            <span className="text-gray-400 font-mono truncate max-w-[210px]" title={`/${currentTrack.genre || 'Tech House'}/${currentTrack.subgenre || ''}/`}>
+                                📁 /{currentTrack.genre || 'Tech House'}/{currentTrack.subgenre || 'General'}/
+                            </span>
+                            <button
+                                type="button"
+                                onClick={handleEnrutarPistaActual}
+                                className="px-2 py-1 bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 border border-djcyan-700/60 rounded font-bold text-[9px] cursor-pointer transition-colors shadow active:scale-95"
+                                title="Enrutar y copiar/mover archivo a su carpeta física y crate Serato"
+                            >
+                                🚚 Enrutar a Crate
+                            </button>
+                        </div>
                     </div>
 
                     <div>
@@ -2355,36 +2470,379 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
     );
 };
 
-// Espacio de Trabajo: Taxonomía
-const TaxonomyWorkspace = () => {
-    const [subgenres, setSubgenres] = useState([
-        { name: 'Hard Techno', path: '/Users/admin/Music/Serato/Techno/Hard Techno/' },
-        { name: 'Melodic Techno', path: '/Users/admin/Music/Serato/Techno/Melodic Techno/' },
-        { name: 'Peak Time', path: '/Users/admin/Music/Serato/Techno/Peak Time/' },
-        { name: 'Deep House', path: '/Users/admin/Music/Serato/House/Deep House/' },
-        { name: 'Tech House', path: '/Users/admin/Music/Serato/House/Tech House/' }
-    ]);
+// Espacio de Trabajo: Taxonomía y Ruteo a Serato Crates
+const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
+    const [rutaBase, setRutaBase] = useState('/Users/admin/Music/mi musica');
+    const [modo, setModo] = useState('copy'); // 'copy' o 'move'
+    const [isRouting, setIsRouting] = useState(false);
+    const [routeProgress, setRouteProgress] = useState(0);
+    const [routeStatusMsg, setRouteStatusMsg] = useState('');
+    const [resultSummary, setResultSummary] = useState(null);
+    const [expandedGenre, setExpandedGenre] = useState('Techno');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState(null);
+
+    // Selección de directorio de destino con fallback nativo
+    const handleSeleccionarDestino = async () => {
+        try {
+            if (window.eel && window.eel.seleccionar_directorio) {
+                const dir = await window.eel.seleccionar_directorio()();
+                if (dir) {
+                    setRutaBase(dir);
+                }
+            }
+        } catch (err) {
+            console.error("Error al seleccionar carpeta destino:", err);
+        }
+    };
+
+    // Ruteo de Lote Completo a Crates
+    const handleOrganizarLote = async () => {
+        if (!tracks || tracks.length === 0) return;
+        setIsRouting(true);
+        setRouteProgress(5);
+        setRouteStatusMsg(`Iniciando ruteo de ${tracks.length} pistas a ${rutaBase}...`);
+        setResultSummary(null);
+
+        try {
+            if (window.eel && window.eel.organizar_lote_en_crates) {
+                const res = await window.eel.organizar_lote_en_crates(tracks, rutaBase, modo)();
+                if (res && res.status === 'ok') {
+                    setResultSummary(res);
+                    setRouteProgress(100);
+                    setRouteStatusMsg(`✓ Lote completado: ${res.procesados} pistas organizadas.`);
+                } else {
+                    setResultSummary({ status: 'error', msg: res?.msg || 'Error en el ruteo de lote.' });
+                    setRouteStatusMsg(res?.msg || 'Error durante la operación.');
+                }
+            }
+        } catch (err) {
+            console.error("Error al organizar lote:", err);
+            setResultSummary({ status: 'error', msg: String(err) });
+            setRouteStatusMsg('Fallo inesperado al enrutar lote.');
+        } finally {
+            setIsRouting(false);
+            setTimeout(() => {
+                setRouteProgress(0);
+            }, 4000);
+        }
+    };
+
+    const getGenreStats = (gen) => {
+        return tracks.filter(t => (t.genre || 'Tech House').toLowerCase() === gen.toLowerCase()).length;
+    };
+
+    const getSubgenreStats = (gen, subg) => {
+        return tracks.filter(t => {
+            const g = (t.genre || 'Tech House').toLowerCase();
+            const sg = (t.subgenre || (TAXONOMY_TREE[t.genre || 'Tech House'] ? TAXONOMY_TREE[t.genre || 'Tech House'][0] : '')).toLowerCase();
+            return g === gen.toLowerCase() && sg === subg.toLowerCase();
+        });
+    };
+
+    const genresList = Object.keys(TAXONOMY_TREE);
+    const totalCratesCount = genresList.reduce((acc, g) => acc + TAXONOMY_TREE[g].length, 0);
+
+    const filteredGenres = genresList.filter(g => {
+        if (!searchTerm) return true;
+        const s = searchTerm.toLowerCase();
+        if (g.toLowerCase().includes(s)) return true;
+        return TAXONOMY_TREE[g].some(sg => sg.toLowerCase().includes(s));
+    });
+
     return (
-        <div className="flex flex-col h-full p-6 w-full overflow-auto bg-djzinc-950">
-            <div className="mb-6 flex justify-between items-end border-b border-djzinc-800 pb-4">
-                <div>
-                    <h2 className="text-xl font-bold text-white mb-1">Ruteo de Destinos (Taxonomía)</h2>
-                    <p className="text-gray-400 text-sm">Define dónde se guardan los archivos físicos basándose en su género principal para Serato Crates.</p>
-                </div>
-                <button className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 text-white px-4 py-2 rounded text-sm font-medium cursor-pointer">
-                    Añadir Nueva Regla
-                </button>
-            </div>
-            <div className="bg-djzinc-900 border border-djzinc-700 rounded-xl mb-6 shadow-lg overflow-hidden">
-                <div className="p-2 divide-y divide-djzinc-800">
-                    {subgenres.map((sub, idx) => (
-                        <div key={idx} className="flex gap-4 items-center p-3 hover:bg-djzinc-800/50 rounded-lg transition-colors">
-                            <div className="w-40 text-sm font-bold text-gray-300">{sub.name}</div>
-                            <input type="text" value={sub.path} readOnly className="flex-1 bg-djzinc-950 border border-djzinc-800 rounded px-3 py-2 text-xs font-mono text-gray-300" />
-                            <button className="px-3 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded text-xs text-gray-300 cursor-pointer">Examinar</button>
+        <div className="flex flex-col h-full w-full overflow-hidden bg-djzinc-950 text-gray-200">
+            {/* ENCABEZADO DE CONTROL TAXONÓMICO */}
+            <div className="p-5 border-b border-djzinc-800 bg-djzinc-950 shrink-0 space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]"></span>
+                            <h2 className="text-xl font-black text-white uppercase tracking-wider font-mono">
+                                Taxonomía DJ & Serato Crate Routing
+                            </h2>
+                            <span className="text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 px-2 py-0.5 rounded font-mono font-bold">
+                                2-TIER CRATES
+                            </span>
                         </div>
-                    ))}
+                        <p className="text-gray-400 text-xs">
+                            Clasificación jerárquica en dos niveles (Género Raíz ➡ Subgénero Estilo) con ruteo físico a carpetas y crates de Serato DJ Pro y Rekordbox.
+                        </p>
+                    </div>
+
+                    {/* BOTÓN MAESTRO DE ACCIÓN */}
+                    <div className="flex items-center gap-3 shrink-0">
+                        <button
+                            type="button"
+                            disabled={isRouting || tracks.length === 0}
+                            onClick={handleOrganizarLote}
+                            className={`px-4 py-2.5 rounded-lg font-bold text-xs flex items-center gap-2 shadow-lg cursor-pointer transition-all ${
+                                isRouting || tracks.length === 0
+                                    ? 'bg-djzinc-800 text-gray-500 border border-djzinc-700 cursor-not-allowed opacity-60'
+                                    : 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-djcyan-500/25 active:scale-95'
+                            }`}
+                        >
+                            <Icons.Routing />
+                            {isRouting ? 'Ruteando a Crates...' : `Enrutar Biblioteca a Crates (${tracks.length})`}
+                        </button>
+                    </div>
                 </div>
+
+                {/* BARRA DE CONFIGURACIÓN DE DESTINO Y MODO */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-djzinc-900/90 border border-djzinc-800 p-3 rounded-xl">
+                    <div className="md:col-span-7 flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold text-gray-400 shrink-0">📁 Destino Crates:</span>
+                        <input
+                            type="text"
+                            value={rutaBase}
+                            onChange={(e) => setRutaBase(e.target.value)}
+                            className="flex-1 bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs font-mono text-gray-200 outline-none focus:border-djcyan-500"
+                            placeholder="/Users/admin/Music/mi musica"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleSeleccionarDestino}
+                            className="px-2.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded text-xs font-semibold text-gray-300 cursor-pointer"
+                        >
+                            Examinar...
+                        </button>
+                    </div>
+
+                    <div className="md:col-span-3 flex items-center gap-2 justify-start md:justify-center">
+                        <span className="text-xs font-mono text-gray-400">Modo:</span>
+                        <div className="inline-flex rounded-lg border border-djzinc-700 p-0.5 bg-djzinc-950">
+                            <button
+                                type="button"
+                                onClick={() => setModo('copy')}
+                                className={`px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${
+                                    modo === 'copy' ? 'bg-djcyan-500 text-black shadow' : 'text-gray-400 hover:text-white'
+                                }`}
+                                title="Copia los archivos a la estructura de carpetas sin borrar los originales"
+                            >
+                                Copiar (Seguro)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setModo('move')}
+                                className={`px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${
+                                    modo === 'move' ? 'bg-amber-500 text-black shadow' : 'text-gray-400 hover:text-white'
+                                }`}
+                                title="Mueve los archivos directamente a las carpetas destino"
+                            >
+                                Mover
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-2 flex items-center">
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Buscar género o crate..."
+                            className="w-full bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500"
+                        />
+                    </div>
+                </div>
+
+                {/* BARRA DE PROGRESO DE RUTEO */}
+                {isRouting && (
+                    <div className="p-3 bg-djzinc-900 border border-djcyan-700/60 rounded-xl space-y-1.5 animate-pulse">
+                        <div className="flex justify-between text-xs font-mono">
+                            <span className="text-djcyan-400 font-bold">{routeStatusMsg || 'Procesando ruteo de lote...'}</span>
+                            <span className="text-white font-bold">{routeProgress}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800">
+                            <div
+                                className="h-full bg-gradient-to-r from-djcyan-500 to-emerald-400 transition-all duration-200"
+                                style={{ width: `${routeProgress}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                )}
+
+                {/* MENSAJE DE ÉXITO O ERROR DEL ÚLTIMO RUTEO */}
+                {resultSummary && (
+                    <div className={`p-3 rounded-xl border flex items-center justify-between text-xs font-mono ${
+                        resultSummary.status === 'ok' 
+                            ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300' 
+                            : 'bg-red-950/40 border-red-500/50 text-red-300'
+                    }`}>
+                        <div className="flex items-center gap-2">
+                            <span>{resultSummary.status === 'ok' ? '✓' : '⚠'}</span>
+                            <span>
+                                {resultSummary.status === 'ok'
+                                    ? `Ruteo completado con éxito: ${resultSummary.procesados} pistas procesadas (${resultSummary.errores} errores) hacia ${rutaBase}.`
+                                    : (resultSummary.msg || 'Fallo durante el ruteo de lote.')}
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setResultSummary(null)}
+                            className="text-gray-400 hover:text-white cursor-pointer px-2 py-0.5 rounded"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
+
+                {/* RESUMEN DE MÉTRICAS */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">Pistas en Sesión</span>
+                        <span className="text-sm font-black text-white font-mono">{tracks.length}</span>
+                    </div>
+                    <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">Géneros Raíz</span>
+                        <span className="text-sm font-black text-djcyan-400 font-mono">{genresList.length}</span>
+                    </div>
+                    <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">Crates / Subgéneros</span>
+                        <span className="text-sm font-black text-purple-400 font-mono">{totalCratesCount}</span>
+                    </div>
+                    <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">Estructura Serato</span>
+                        <span className="text-[11px] font-bold text-emerald-400 font-mono">/[Género]/[Subgénero]/</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* ÁREA PRINCIPAL: LISTA DE GÉNEROS Y CRATES */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                {tracks.length === 0 ? (
+                    <div className="h-64 border-2 border-dashed border-djzinc-800 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-djzinc-900/20">
+                        <div className="w-12 h-12 rounded-full bg-djzinc-800 flex items-center justify-center text-djcyan-400 mb-3 shadow-inner">
+                            <Icons.Routing />
+                        </div>
+                        <h3 className="text-base font-bold text-gray-200 mb-1">No hay pistas cargadas en la Auditoría</h3>
+                        <p className="text-xs text-gray-400 max-w-md mb-4">
+                            Carga una carpeta en la pestaña <strong>Auditoría & DSP</strong> para ver el desglose en tiempo real de pistas asignadas a cada Crate y ejecutar el ruteo físico inteligente.
+                        </p>
+                        {onNavigateTab && (
+                            <button
+                                type="button"
+                                onClick={() => onNavigateTab('audit')}
+                                className="px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-bold rounded-lg cursor-pointer transition-colors shadow"
+                            >
+                                Ir a Auditoría & DSP
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredGenres.map(genre => {
+                            const subgenres = TAXONOMY_TREE[genre] || [];
+                            const genreTracksCount = getGenreStats(genre);
+                            const isExpanded = expandedGenre === genre;
+
+                            return (
+                                <div
+                                    key={genre}
+                                    className="bg-djzinc-900/80 border border-djzinc-800 rounded-xl overflow-hidden shadow-md transition-all hover:border-djzinc-700"
+                                >
+                                    {/* CABECERA DE GÉNERO RAÍZ */}
+                                    <div
+                                        onClick={() => setExpandedGenre(isExpanded ? null : genre)}
+                                        className="p-3.5 bg-djzinc-900 flex items-center justify-between cursor-pointer hover:bg-djzinc-850 select-none border-b border-djzinc-800/60"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs text-gray-500 font-mono">
+                                                {isExpanded ? '▼' : '▶'}
+                                            </span>
+                                            <div>
+                                                <span className="text-sm font-black text-white uppercase tracking-wider font-mono">
+                                                    {genre}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 ml-2 font-mono">
+                                                    ({subgenres.length} subgéneros)
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
+                                                genreTracksCount > 0
+                                                    ? 'bg-djcyan-950 text-djcyan-400 border border-djcyan-700/60 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
+                                                    : 'bg-djzinc-800 text-gray-500 border border-djzinc-700'
+                                            }`}>
+                                                {genreTracksCount} pistas
+                                            </span>
+                                            <span className="text-gray-500 text-xs font-mono">
+                                                📁 /{genre}/
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* CRATES / SUBGÉNEROS */}
+                                    {isExpanded && (
+                                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-djzinc-950/40">
+                                            {subgenres.map(subg => {
+                                                const matchingTracks = getSubgenreStats(genre, subg);
+                                                const isFilterSelected = selectedSubgenreFilter === `${genre}__${subg}`;
+
+                                                return (
+                                                    <div
+                                                        key={subg}
+                                                        className={`p-3 rounded-lg border transition-all ${
+                                                            isFilterSelected
+                                                                ? 'bg-djcyan-950/30 border-djcyan-500 shadow-[0_0_12px_rgba(6,182,212,0.15)]'
+                                                                : 'bg-djzinc-900 border-djzinc-800 hover:border-djzinc-700'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                                            <div className="font-bold text-xs text-gray-200">
+                                                                {subg}
+                                                            </div>
+                                                            <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold shrink-0 ${
+                                                                matchingTracks.length > 0
+                                                                    ? 'bg-djcyan-500 text-black'
+                                                                    : 'bg-djzinc-800 text-gray-500'
+                                                            }`}>
+                                                                {matchingTracks.length}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="text-[10px] font-mono text-gray-400 truncate mb-2" title={`${rutaBase}/${genre}/${subg}/`}>
+                                                            📁 /{genre}/{subg}/
+                                                        </div>
+
+                                                        {matchingTracks.length > 0 ? (
+                                                            <div className="pt-2 border-t border-djzinc-800/80 space-y-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedSubgenreFilter(isFilterSelected ? null : `${genre}__${subg}`)}
+                                                                    className="text-[10px] text-djcyan-400 hover:text-djcyan-300 font-semibold cursor-pointer underline flex items-center gap-1"
+                                                                >
+                                                                    {isFilterSelected ? 'Ocultar pistas' : `Ver ${matchingTracks.length} pistas`}
+                                                                </button>
+
+                                                                {isFilterSelected && (
+                                                                    <div className="mt-2 max-h-36 overflow-y-auto space-y-1 pr-1 font-mono text-[9.5px]">
+                                                                        {matchingTracks.map((tr, idx) => (
+                                                                            <div key={idx} className="p-1 rounded bg-djzinc-950 border border-djzinc-800/80 truncate text-gray-300">
+                                                                                <span className="text-white font-bold">{tr.t || tr.title}</span>
+                                                                                <span className="text-gray-400"> - {tr.a || tr.artist}</span>
+                                                                                <span className="text-djcyan-400 ml-1">({tr.b || tr.bpm || '--'} BPM)</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-[9.5px] text-gray-400 italic">
+                                                                Sin pistas asignadas
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -2421,6 +2879,7 @@ const LogsWorkspace = ({ logs, setLogs }) => (
 // Componente Principal de la Aplicación
 const App = () => {
     const [activeTab, setActiveTab] = useState('audit');
+    const [auditTracks, setAuditTracks] = useState([]);
     const [selectedTrack, setSelectedTrack] = useState(1);
     const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -2691,6 +3150,8 @@ const App = () => {
             <main className="flex-1 min-h-0 w-full overflow-hidden relative">
                 <div style={{ display: activeTab === 'audit' ? 'flex' : 'none' }} className="w-full h-full">
                     <AuditWorkspace 
+                        tracks={auditTracks}
+                        setTracks={setAuditTracks}
                         selectedTrack={selectedTrack} 
                         setSelectedTrack={setSelectedTrack} 
                         onPlayTrack={handlePlayTrack} 
@@ -2709,7 +3170,11 @@ const App = () => {
                     />
                 </div>
                 <div style={{ display: activeTab === 'taxonomy' ? 'flex' : 'none' }} className="w-full h-full">
-                    <TaxonomyWorkspace />
+                    <TaxonomyWorkspace 
+                        tracks={auditTracks} 
+                        onTracksUpdated={setAuditTracks} 
+                        onNavigateTab={setActiveTab} 
+                    />
                 </div>
                 <div style={{ display: activeTab === 'logs' ? 'flex' : 'none' }} className="w-full h-full">
                     <LogsWorkspace logs={logs} setLogs={setLogs} />

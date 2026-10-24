@@ -94,3 +94,26 @@ def test_calcular_trim_downbeat_track(mock_trim):
     assert res["trim_start_ms"] == 15.0
     assert res["first_downbeat_ms"] == 500.0
     mock_trim.assert_called_with("/path/to/audio.mp3", 1)
+
+# --- TAXONOMÍA Y ENRUTAMIENTO CRATES ---
+def test_obtener_taxonomia_dj_exposed():
+    arbol = main_web.obtener_taxonomia_dj()
+    assert isinstance(arbol, dict)
+    assert "Techno" in arbol
+
+def test_organizar_pista_en_crate_invalido():
+    res = main_web.organizar_pista_en_crate(None)
+    assert res["status"] == "error"
+
+@patch.object(main_web.taxonomy_svc, 'organizar_pista', return_value={"estado": "OK", "ruta_destino": "/crates/Techno/track.mp3"})
+def test_organizar_pista_en_crate_valido(mock_org, tmp_path):
+    f = tmp_path / "track.mp3"
+    f.touch()
+    res = main_web.organizar_pista_en_crate({"path": str(f), "title": "Test Track", "genre": "Techno", "subgenre": "Peak Time"}, ruta_base=str(tmp_path))
+    assert res["status"] == "ok"
+
+@patch.object(main_web.taxonomy_svc, 'organizar_lote', return_value={"status": "ok", "procesados": 3})
+def test_organizar_lote_en_crates_exposed(mock_org):
+    res = main_web.organizar_lote_en_crates([{"path": "/mock/1.mp3"}], ruta_base="/dest")
+    assert res["status"] == "ok"
+    assert res["procesados"] == 3

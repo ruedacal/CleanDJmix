@@ -323,3 +323,32 @@ def test_escribir_metadatos_pro_beatgrid_y_artwork_mp3(tmp_path):
     assert apic_frame.type == 3  # Front cover
     cover_loaded = Image.open(io.BytesIO(apic_frame.data))
     assert cover_loaded.size == (600, 600)
+
+def test_escribir_y_leer_genero_subgenero_mp3(tmp_path):
+    mp3_file = tmp_path / "track_taxonomy.mp3"
+    with open(str(mp3_file), "wb") as f:
+        f.write(b"\xff\xfb\x90\x64" * 1000)
+
+    meta = {
+        "title": "Solar Wind",
+        "artist": "Cosmic Gate",
+        "genre": "Trance",
+        "subgenre": "Uplifting Trance",
+        "bpm": "138.00",
+        "key": "4A"
+    }
+
+    ok = AudioProcessorService.escribir_metadatos_pro(str(mp3_file), meta)
+    assert ok is True
+
+    from mutagen.id3 import ID3
+    id3 = ID3(str(mp3_file))
+    assert "TCON" in id3
+    assert "Trance / Uplifting Trance" in str(id3["TCON"].text[0])
+    assert "TXXX:SUBGENRE" in id3
+    assert id3["TXXX:SUBGENRE"].text[0] == "Uplifting Trance"
+
+    # Verificar que el analizador avanzado extrae ambos campos adecuadamente
+    info = AudioProcessorService.analizar_track_avanzado(str(mp3_file))
+    assert info["genre"] == "Trance"
+    assert info["subgenre"] == "Uplifting Trance"

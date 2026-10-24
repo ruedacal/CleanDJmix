@@ -226,6 +226,8 @@ class AuditService:
                 "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
                 "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
                 "comment": str(info.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b"),
+                "genre": str(info.get("genre") or "Tech House"),
+                "subgenre": str(info.get("subgenre") or "Tech House"),
                 "cues": info.get("cues") or []
             })
 
@@ -285,6 +287,8 @@ class AuditService:
             bpm_str = "--"
             key_str = "--"
             dur_str = "00:00"
+            genre_str = ""
+            subgenre_str = ""
             trim_start_ms = 0.0
             first_downbeat_ms = 0.0
 
@@ -319,11 +323,18 @@ class AuditService:
                                 first_downbeat_ms = float(raw_down)
                             except Exception:
                                 pass
+                        raw_g = f.get("GENRE", [""])[0]
+                        raw_sg = f.get("SUBGENRE", [""])[0]
+                        if raw_g:
+                            genre_str = str(raw_g)
+                        if raw_sg:
+                            subgenre_str = str(raw_sg)
                     except Exception:
                         m = MutagenFile(full_path, easy=True)
                         if m:
                             title = str(m.get("title", [""])[0])
                             artist = str(m.get("artist", [""])[0])
+                            genre_str = str(m.get("genre", [""])[0])
                             if m.info and hasattr(m.info, "length"):
                                 dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
                 else:
@@ -331,6 +342,12 @@ class AuditService:
                         id3_tags = ID3(full_path)
                         t_frame = id3_tags.get("TXXX:TRIM_START_MS")
                         d_frame = id3_tags.get("TXXX:FIRST_DOWNBEAT_MS")
+                        tcon_frame = id3_tags.get("TCON")
+                        subg_frame = id3_tags.get("TXXX:SUBGENRE")
+                        if tcon_frame and tcon_frame.text:
+                            genre_str = str(tcon_frame.text[0])
+                        if subg_frame and subg_frame.text:
+                            subgenre_str = str(subg_frame.text[0])
                         if t_frame and t_frame.text:
                             trim_start_ms = float(t_frame.text[0])
                         if d_frame and d_frame.text:
@@ -351,6 +368,8 @@ class AuditService:
                         raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
                         if raw_key:
                             key_str = AudioProcessorService.normalizar_key(raw_key)
+                        if not genre_str:
+                            genre_str = str(m.get("genre", [""])[0])
                         if m.info and hasattr(m.info, "length"):
                             dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
             except Exception:
@@ -360,6 +379,14 @@ class AuditService:
                 title = title_fb
             if not artist:
                 artist = artist_fb
+
+            if " / " in genre_str:
+                parts = genre_str.split(" / ", 1)
+                genre_str = parts[0].strip()
+                if not subgenre_str:
+                    subgenre_str = parts[1].strip()
+            genre_str = genre_str or "Tech House"
+            subgenre_str = subgenre_str or "Tech House"
 
             missing = (bpm_str == "--" or key_str == "--")
             if missing:
@@ -396,6 +423,8 @@ class AuditService:
                 "e": 0,
                 "dance": 0,
                 "mood": "Pendiente Auditoría",
+                "genre": genre_str,
+                "subgenre": subgenre_str,
                 "duration": dur_str,
                 "format": ext.replace(".", "").upper(),
                 "status": "Cargado (Sin auditar)",

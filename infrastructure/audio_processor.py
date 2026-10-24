@@ -118,6 +118,8 @@ class AudioProcessorService:
         first_downbeat_ms = 0.0
         danceability_val = 0
         mood_val = ""
+        genre_val = "Tech House"
+        subgenre_val = ""
 
         # Intento de lectura específico para FLAC con fallback universal
         try:
@@ -135,6 +137,12 @@ class AudioProcessorService:
                     down_raw = f.get("FIRST_DOWNBEAT_MS", [""])[0]
                     dance_raw = f.get("DANCEABILITY", [""])[0]
                     mood_raw = f.get("MOOD", [""])[0]
+                    raw_genre = f.get("GENRE", [""])[0]
+                    raw_subgenre = f.get("SUBGENRE", [""])[0]
+                    if raw_genre:
+                        genre_val = str(raw_genre)
+                    if raw_subgenre:
+                        subgenre_val = str(raw_subgenre)
                     if trim_raw:
                         try:
                             trim_start_ms = float(trim_raw)
@@ -158,6 +166,7 @@ class AudioProcessorService:
                         duration_sec = int(getattr(m.info, "length", 0))
                         title = str(m.get("title", [""])[0])
                         artist = str(m.get("artist", [""])[0])
+                        genre_val = str(m.get("genre", ["Tech House"])[0])
             else:
                 try:
                     id3_tags = ID3(ruta)
@@ -165,6 +174,12 @@ class AudioProcessorService:
                     d_frame = id3_tags.get("TXXX:FIRST_DOWNBEAT_MS")
                     dance_frame = id3_tags.get("TXXX:DANCEABILITY")
                     mood_frame = id3_tags.get("TXXX:MOOD")
+                    tcon_frame = id3_tags.get("TCON")
+                    subg_frame = id3_tags.get("TXXX:SUBGENRE")
+                    if tcon_frame and tcon_frame.text:
+                        genre_val = str(tcon_frame.text[0])
+                    if subg_frame and subg_frame.text:
+                        subgenre_val = str(subg_frame.text[0])
                     if t_frame and t_frame.text:
                         trim_start_ms = float(t_frame.text[0])
                     if d_frame and d_frame.text:
@@ -194,6 +209,10 @@ class AudioProcessorService:
                     raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
                     if raw_key:
                         key = AudioProcessorService.normalizar_key(raw_key)
+                    if not genre_val or genre_val == "Tech House":
+                        m_genre = str(m.get("genre", [""])[0])
+                        if m_genre:
+                            genre_val = m_genre
         except Exception:
             pass
 
@@ -244,6 +263,12 @@ class AudioProcessorService:
             downbeat_ms=int(first_downbeat_ms)
         )
 
+        if " / " in genre_val:
+            parts = genre_val.split(" / ", 1)
+            genre_val = parts[0].strip()
+            if not subgenre_val:
+                subgenre_val = parts[1].strip()
+
         return {
             "title": title,
             "artist": artist,
@@ -253,6 +278,8 @@ class AudioProcessorService:
             "danceability": danceability_val,
             "dance": danceability_val,
             "mood": mood_val,
+            "genre": genre_val,
+            "subgenre": subgenre_val,
             "duration": dur_str,
             "missing_meta": missing_meta,
             "format": ext.replace(".", "").upper(),
@@ -503,7 +530,12 @@ class AudioProcessorService:
         raw_key = meta_track.get("key") or meta_track.get("k") or ""
         key_camelot = AudioProcessorService.normalizar_key(raw_key) if raw_key else ""
         comment = str(meta_track.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b")
-        genre = str(meta_track.get("genre") or meta_track.get("mood") or "Tech House / Techno")
+        genre_val = str(meta_track.get("genre") or meta_track.get("mood") or "Tech House").strip()
+        subgenre_val = str(meta_track.get("subgenre") or "").strip()
+        if subgenre_val and subgenre_val.lower() not in genre_val.lower():
+            genre_full = f"{genre_val} / {subgenre_val}"
+        else:
+            genre_full = genre_val
         isrc = str(meta_track.get("isrc") or "")
 
         # Cálculo de duración en milisegundos para sincronización de Cues
@@ -553,7 +585,9 @@ class AudioProcessorService:
                     audio["KEY"] = [key_camelot]
                 audio["COMMENT"] = [comment]
                 audio["DESCRIPTION"] = [comment]
-                audio["GENRE"] = [genre]
+                audio["GENRE"] = [genre_full]
+                if subgenre_val:
+                    audio["SUBGENRE"] = [subgenre_val]
                 if isrc:
                     audio["ISRC"] = [isrc]
                 audio["DANCEABILITY"] = [str(dance_val)]
@@ -596,7 +630,9 @@ class AudioProcessorService:
                 if key_camelot:
                     id3.add(TKEY(encoding=3, text=[key_camelot]))
                 id3.add(COMM(encoding=3, lang="eng", desc="", text=[comment]))
-                id3.add(TCON(encoding=3, text=[genre]))
+                id3.add(TCON(encoding=3, text=[genre_full]))
+                if subgenre_val:
+                    id3.add(TXXX(encoding=3, desc="SUBGENRE", text=[subgenre_val]))
                 if isrc:
                     id3.add(TSRC(encoding=3, text=[isrc]))
 
@@ -659,7 +695,9 @@ class AudioProcessorService:
                 if key_camelot:
                     tags.add(TKEY(encoding=3, text=[key_camelot]))
                 tags.add(COMM(encoding=3, lang="eng", desc="", text=[comment]))
-                tags.add(TCON(encoding=3, text=[genre]))
+                tags.add(TCON(encoding=3, text=[genre_full]))
+                if subgenre_val:
+                    tags.add(TXXX(encoding=3, desc="SUBGENRE", text=[subgenre_val]))
                 tags.add(TXXX(encoding=3, desc="DANCEABILITY", text=[str(dance_val)]))
                 tags.add(TXXX(encoding=3, desc="MOOD", text=[mood_val]))
                 if trim_ms > 0:
@@ -695,7 +733,9 @@ class AudioProcessorService:
                 except Exception:
                     pass
                 audio["\xa9cmt"] = [comment]
-                audio["\xa9gen"] = [genre]
+                audio["\xa9gen"] = [genre_full]
+                if subgenre_val:
+                    audio["----:com.apple.iTunes:SUBGENRE"] = [subgenre_val.encode("utf-8")]
                 if key_camelot:
                     audio["----:com.apple.iTunes:initialkey"] = [key_camelot.encode("utf-8")]
                 audio["----:com.apple.iTunes:DANCEABILITY"] = [str(dance_val).encode("utf-8")]
