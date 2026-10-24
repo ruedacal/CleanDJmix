@@ -557,6 +557,8 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
     const [rutaOrigen, setRutaOrigen] = useState('');
     const [isAuditing, setIsAuditing] = useState(false);
     const [isLoadingDir, setIsLoadingDir] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isInjecting, setIsInjecting] = useState(false);
     const [metrics, setMetrics] = useState({ total: 0, missing: 0, ready: 0, errors: 0 });
     const [filtro, setFiltro] = useState('todos');
     const [busqueda, setBusqueda] = useState('');
@@ -650,6 +652,7 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
         if (!target) return;
         if (window.eel && window.eel.cargar_metadatos_directorio) {
             setIsLoadingDir(true);
+            setBatchProgress(5);
             setBatchStatusMsg(`Leyendo metadatos de archivos en ${target}...`);
             // Limpiar selección previa para evitar track residual de otra carpeta
             setSelectedTrack(null);
@@ -673,11 +676,17 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                     setSelectedTrack(null);
                     setMetrics({ total: 0, missing: 0, ready: 0, errors: 0 });
                 }
+                setBatchProgress(100);
+                setBatchStatusMsg(`✓ Completado: ${res?.total || 0} pistas cargadas.`);
             } catch (e) {
                 console.error("Fallo carga metadatos de directorio:", e);
+                setBatchStatusMsg("Error al leer metadatos del directorio.");
             } finally {
-                setIsLoadingDir(false);
-                setBatchStatusMsg('');
+                setTimeout(() => {
+                    setIsLoadingDir(false);
+                    setBatchProgress(0);
+                    setBatchStatusMsg('');
+                }, 600);
             }
         }
     };
@@ -690,8 +699,8 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
         }
         if (window.eel && window.eel.iniciar_auditoria && !isAuditing) {
             setIsAuditing(true);
-            setBatchStatusMsg(`Auditando biblioteca en ${target}...`);
-            setBatchProgress(35);
+            setBatchProgress(5);
+            setBatchStatusMsg(`Iniciando auditoría acústica avanzada en ${target}...`);
             try {
                 const res = await window.eel.iniciar_auditoria(target)();
                 if (res && Array.isArray(res.tracks)) {
@@ -706,11 +715,17 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                         errors: res.errors !== undefined ? res.errors : res.tracks.filter(x => String(x.status).includes('Fake')).length
                     });
                 }
+                setBatchProgress(100);
+                setBatchStatusMsg(`✓ Auditoría completada: ${res?.total || 0} pistas procesadas.`);
             } catch (e) {
                 console.error("Fallo auditoría:", e);
+                setBatchStatusMsg("Error durante la auditoría.");
             } finally {
-                setBatchProgress(100);
-                setTimeout(() => { setIsAuditing(false); setBatchProgress(0); setBatchStatusMsg(''); }, 400);
+                setTimeout(() => { 
+                    setIsAuditing(false); 
+                    setBatchProgress(0); 
+                    setBatchStatusMsg(''); 
+                }, 600);
             }
         }
     };
@@ -721,18 +736,31 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
             return;
         }
         if (window.eel && window.eel.exportar_auditoria_xls) {
+            setIsExporting(true);
+            setBatchProgress(25);
+            setBatchStatusMsg("Generando reporte de auditoría en formato Excel (XLSX)...");
             try {
                 const res = await window.eel.exportar_auditoria_xls(tracks, rutaOrigen)();
+                setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     const nombreArchivo = res.path ? res.path.split('/').pop() : "CleanDJmix_Audit_Respaldo.xlsx";
+                    setBatchStatusMsg(`✓ Exportado con éxito: ${nombreArchivo}`);
                     setSaveFeedback(`✓ Exportado con éxito: ${nombreArchivo}`);
                     setTimeout(() => setSaveFeedback(''), 4000);
                 } else {
+                    setBatchStatusMsg("Error al exportar a Excel.");
                     alert(res?.msg || "Error al exportar a Excel.");
                 }
             } catch (e) {
                 console.error("Error al exportar XLS:", e);
+                setBatchStatusMsg("Error durante la exportación.");
                 alert("Error al exportar reporte XLS.");
+            } finally {
+                setTimeout(() => {
+                    setIsExporting(false);
+                    setBatchProgress(0);
+                    setBatchStatusMsg('');
+                }, 800);
             }
         }
     };
@@ -769,11 +797,26 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
 
     const handleGuardarTrack = async () => {
         if (!currentTrack) return;
-        if (window.eel && window.eel.guardar_cambios_track) {
-            await window.eel.guardar_cambios_track(currentTrack)();
+        setIsInjecting(true);
+        setBatchProgress(30);
+        setBatchStatusMsg(`Inyectando tags ID3v2.4 y marcas Serato en ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
+        try {
+            if (window.eel && window.eel.guardar_cambios_track) {
+                await window.eel.guardar_cambios_track(currentTrack)();
+            }
+            setBatchProgress(100);
+            setBatchStatusMsg("✓ Inyección completada y guardada en disco.");
+            setSaveFeedback('✓ Guardado en disco e inyectado');
+            setTimeout(() => setSaveFeedback(''), 3000);
+        } catch (err) {
+            setBatchStatusMsg("Error al inyectar metadatos.");
+        } finally {
+            setTimeout(() => {
+                setIsInjecting(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 800);
         }
-        setSaveFeedback('✓ Guardado en disco');
-        setTimeout(() => setSaveFeedback(''), 2500);
     };
 
     const tracksFiltrados = tracks.filter(t => {
@@ -823,14 +866,20 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                     </div>
                 </div>
 
-                {isAuditing && (
-                    <div className="bg-djzinc-900 border-b border-djzinc-800 px-4 py-2 flex flex-col gap-1.5 shrink-0">
+                {(isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && (
+                    <div className="bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all">
                         <div className="flex justify-between items-center text-xs font-mono">
-                            <span className="text-djcyan-400 font-semibold truncate">{batchStatusMsg}</span>
+                            <span className="text-djcyan-400 font-semibold truncate flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></span>
+                                {batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")}
+                            </span>
                             <span className="text-gray-300 font-bold">{batchProgress}%</span>
                         </div>
-                        <div className="w-full bg-djzinc-950 h-1.5 rounded-full overflow-hidden border border-djzinc-800">
-                            <div className="bg-djcyan-500 h-full transition-all duration-200" style={{ width: `${batchProgress}%` }}></div>
+                        <div className="w-full bg-djzinc-950 h-2 rounded-full overflow-hidden border border-djzinc-800 shadow-inner">
+                            <div 
+                                className="bg-gradient-to-r from-djcyan-500 to-djgreen-400 h-full transition-all duration-300 ease-out shadow-lg shadow-djcyan-500/50" 
+                                style={{ width: `${Math.max(5, Math.min(100, batchProgress))}%` }}
+                            ></div>
                         </div>
                     </div>
                 )}
@@ -1310,6 +1359,13 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
 
     const [tracks, setTracks] = useState([]);
 
+    // Navegador de Carpetas Web Integrado para Destino (Cero popups del SO)
+    const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState('');
+    const [fsParentPath, setFsParentPath] = useState('');
+    const [fsFolders, setFsFolders] = useState([]);
+    const [fsLoading, setFsLoading] = useState(false);
+
     useEffect(() => {
         if (window.eel && typeof window.eel.expose === 'function') {
             const updateDownload = (pct, msg) => {
@@ -1335,6 +1391,52 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
         handleAnalizar();
     }, []);
 
+    const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
+        setFsBrowserOpen(true);
+        setFsLoading(true);
+        const startPath = initialPath || destDir || "";
+        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+            try {
+                const res = await window.eel.listar_subcarpetas_sistema(startPath)();
+                if (res) {
+                    setFsCurrentPath(res.current || "");
+                    setFsParentPath(res.parent || "");
+                    setFsFolders(res.folders || []);
+                }
+            } catch (err) {
+                console.error("Error al listar carpetas:", err);
+            } finally {
+                setFsLoading(false);
+            }
+        } else {
+            setFsLoading(false);
+        }
+    };
+
+    const handleNavegarACarpeta = async (targetPath) => {
+        setFsLoading(true);
+        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+            try {
+                const res = await window.eel.listar_subcarpetas_sistema(targetPath)();
+                if (res) {
+                    setFsCurrentPath(res.current || "");
+                    setFsParentPath(res.parent || "");
+                    setFsFolders(res.folders || []);
+                }
+            } catch (err) {
+                console.error("Error navegando:", err);
+            } finally {
+                setFsLoading(false);
+            }
+        }
+    };
+
+    const handleSeleccionarCarpetaDestino = (targetPath) => {
+        const finalPath = targetPath || fsCurrentPath;
+        setDestDir(finalPath);
+        setFsBrowserOpen(false);
+    };
+
     const currentTrack = tracks.find(t => t.id === selectedId) || tracks[0] || {};
     const selectedCount = tracks.filter(t => t.selected).length;
     const allSelected = tracks.length > 0 && selectedCount === tracks.length;
@@ -1353,7 +1455,7 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
         if (e) e.stopPropagation();
         setSelectedId(track.id);
 
-        if (nowPlayingTrack && String(nowPlayingTrack.id) === String(track.id)) {
+        if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(track.id) || nowPlayingTrack.title === track.title)) {
             if (onTogglePlay) {
                 onTogglePlay();
                 return;
@@ -1392,47 +1494,53 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
     const handleAnalizar = async () => {
         if (!spotifyUrl || isAnalyzing) return;
         setIsAnalyzing(true);
-        setDownloadingMsg("[ANALIZANDO] Consultando catálogo Spotify...");
+        setDownloadProgress(20);
+        setDownloadingMsg("[ANALIZANDO] Extrayendo metadatos y carátulas de alta resolución en Spotify...");
         try {
             if (window.eel && window.eel.analizar_catalogo_spotify) {
+                setDownloadProgress(45);
                 const res = await window.eel.analizar_catalogo_spotify(spotifyUrl)();
+                setDownloadProgress(95);
                 if (res && res.tracks && res.tracks.length > 0) {
                     const mapped = res.tracks.map((t, i) => ({ ...t, selected: i === 0 }));
                     setTracks(mapped);
                     setSelectedId(mapped[0].id);
-                    setDownloadingMsg(`[LISTO] ${mapped.length} pistas cargadas.`);
+                    setDownloadProgress(100);
+                    setDownloadingMsg(`[LISTO] ${mapped.length} pistas cargadas con carátulas oficiales.`);
                 } else {
+                    setDownloadProgress(0);
                     setDownloadingMsg("[AVISO] No se encontraron pistas para este enlace.");
                 }
             }
         } catch (e) {
+            setDownloadProgress(0);
             setDownloadingMsg(`[ERROR] Fallo al analizar catálogo: ${e}`);
         } finally {
-            setIsAnalyzing(false);
+            setTimeout(() => {
+                setIsAnalyzing(false);
+                setDownloadProgress(0);
+            }, 1200);
         }
     };
 
     const lanzarDescargaReal = async (listaPistas) => {
         if (!listaPistas || listaPistas.length === 0) return;
         setIsDownloading(true);
-        setDownloadProgress(8);
-        setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${listaPistas.length} pista(s) en .${selectedFormat.toUpperCase()}...`);
+        setDownloadProgress(10);
+        setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${listaPistas.length} pista(s) en formato .${selectedFormat.toUpperCase()}...`);
         if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
             try {
                 await window.eel.descargar_pistas_spotify_seleccionadas(listaPistas, selectedFormat, destDir)();
             } catch (e) {
                 setIsDownloading(false);
+                setDownloadProgress(0);
+                setDownloadingMsg(`[ERROR] Fallo en la descarga: ${e}`);
             }
         }
     };
 
-    const handleCambiarCarpeta = async () => {
-        if (window.eel && window.eel.seleccionar_directorio_descarga) {
-            const res = await window.eel.seleccionar_directorio_descarga()();
-            if (res && res.status === 'ok' && res.path) {
-                setDestDir(res.path);
-            }
-        }
+    const handleCambiarCarpeta = () => {
+        handleAbrirNavegadorCarpetas(destDir);
     };
 
     return (
@@ -1487,21 +1595,25 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                 <div className="px-4 py-2 bg-[#09090c] border-b border-djzinc-850 flex flex-col gap-1.5 shrink-0">
                     <div className="flex justify-between items-center text-xs font-mono">
                         <span className="text-djcyan-400 font-semibold flex items-center gap-1.5 truncate">
-                            <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></span>
+                            <span className={`w-2 h-2 rounded-full ${isAnalyzing || isDownloading ? 'bg-djcyan-400 animate-pulse' : 'bg-djgreen-400'}`}></span>
                             <span>{downloadingMsg || `[LISTO] Introduce un enlace de Spotify o pulsa Analizar Enlace.`}</span>
                         </span>
                         <div className="flex items-center gap-3">
-                            {isDownloading && downloadProgress > 0 && (
+                            {(isDownloading || isAnalyzing || downloadProgress > 0) && (
                                 <span className="text-djcyan-300 font-mono font-bold text-xs">{downloadProgress}%</span>
                             )}
                             <span className="text-gray-500 text-[11px] font-bold">{tracks.length} Pistas detectadas</span>
                         </div>
                     </div>
-                    {downloadProgress > 0 && (
+                    {(downloadProgress > 0 || isAnalyzing || isDownloading) && (
                         <div className="w-full bg-[#121217] h-2 rounded-full overflow-hidden border border-djzinc-800 shadow-inner">
                             <div 
-                                className="bg-gradient-to-r from-djcyan-500 to-djgreen-400 h-full transition-all duration-300 ease-out shadow-lg shadow-djcyan-500/50" 
-                                style={{ width: `${downloadProgress}%` }}
+                                className={`h-full transition-all duration-300 ease-out shadow-lg shadow-djcyan-500/50 ${
+                                    isAnalyzing && downloadProgress <= 25
+                                        ? 'bg-gradient-to-r from-djcyan-500 via-djpurple-500 to-djcyan-500 animate-pulse'
+                                        : 'bg-gradient-to-r from-djcyan-500 to-djgreen-400'
+                                }`} 
+                                style={{ width: `${Math.max(5, Math.min(100, downloadProgress))}%` }}
                             ></div>
                         </div>
                     )}
@@ -1611,6 +1723,55 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                     </button>
                 </div>
             </aside>
+
+            {/* Modal Navegador de Carpetas Web Integrado para Destino */}
+            {fsBrowserOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="bg-[#0b0b10] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+                        <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <Icons.Library />
+                                <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Seleccionar Carpeta de Destino</h3>
+                            </div>
+                            <button onClick={() => setFsBrowserOpen(false)} className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer">✕ Cerrar</button>
+                        </div>
+                        <div className="px-4 py-2.5 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono">
+                            <span className="text-gray-400 shrink-0">Ruta:</span>
+                            <span className="text-djcyan-400 truncate flex-1">{fsCurrentPath || "/"}</span>
+                            {fsParentPath && (
+                                <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 cursor-pointer text-xs">
+                                    ⬆ Subir nivel
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-3 space-y-1 min-h-[250px] max-h-[400px]">
+                            {fsLoading ? (
+                                <div className="py-12 text-center text-xs font-mono text-djcyan-400 animate-pulse">Explorando directorios...</div>
+                            ) : fsFolders.length === 0 ? (
+                                <div className="py-12 text-center text-xs font-mono text-gray-500">No se encontraron subdirectorios</div>
+                            ) : (
+                                fsFolders.map((f, idx) => (
+                                    <div key={idx} onDoubleClick={() => handleNavegarACarpeta(f.path)} className="flex items-center justify-between p-2 rounded hover:bg-djzinc-900 cursor-pointer border border-transparent hover:border-djzinc-800 transition-colors">
+                                        <div onClick={() => handleNavegarACarpeta(f.path)} className="flex items-center gap-2.5 flex-1 min-w-0">
+                                            <span className="text-amber-400 text-sm">📁</span>
+                                            <span className="text-xs font-mono text-gray-300 truncate">{f.name}</span>
+                                        </div>
+                                        <button onClick={() => handleSeleccionarCarpetaDestino(f.path)} className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] rounded cursor-pointer shrink-0">
+                                            Seleccionar
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <div className="p-3 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center">
+                            <button onClick={() => setFsBrowserOpen(false)} className="px-3 py-1.5 rounded text-xs bg-djzinc-900 border border-djzinc-800 text-gray-400 hover:text-white cursor-pointer">Cancelar</button>
+                            <button onClick={() => handleSeleccionarCarpetaDestino(fsCurrentPath)} className="px-4 py-1.5 rounded text-xs font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black cursor-pointer shadow">
+                                Usar esta Carpeta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1788,20 +1949,25 @@ const App = () => {
 
     const togglePlayPause = () => {
         const audio = audioRef.current;
-        if (audio && audio.src && audio.src !== window.location.href) {
-            if (isPlaying) {
+        if (isPlaying) {
+            if (audio) {
                 audio.pause();
-                setIsPlaying(false);
-                if (window.eel && window.eel.detener_audio_mac) {
-                    window.eel.detener_audio_mac()();
-                }
-            } else {
+            }
+            setIsPlaying(false);
+            if (window.eel && window.eel.detener_audio_mac) {
+                window.eel.detener_audio_mac()();
+            }
+        } else {
+            if (audio && audio.src && audio.src !== window.location.href && !audio.ended) {
                 audio.play().then(() => setIsPlaying(true)).catch((err) => {
                     console.warn("Play error:", err);
+                    if (nowPlayingTrack) {
+                        handlePlayTrack(nowPlayingTrack, playProgress, true);
+                    }
                 });
+            } else if (nowPlayingTrack) {
+                handlePlayTrack(nowPlayingTrack, playProgress, true);
             }
-        } else if (nowPlayingTrack && (nowPlayingTrack.path || nowPlayingTrack.f || nowPlayingTrack.preview_url)) {
-            handlePlayTrack(nowPlayingTrack, playProgress, true);
         }
     };
 
@@ -1962,7 +2128,7 @@ const App = () => {
             <footer className="h-16 bg-[#0a0a0e] border-t border-djzinc-800 px-5 flex items-center justify-between shrink-0 glass-panel z-30">
                 <div className="flex items-center gap-3 min-w-0 w-80 shrink-0">
                     <img 
-                        src={getValidCover(nowPlayingTrack?.cover)} 
+                        src={getValidCover(nowPlayingTrack?.cover || (nowPlayingTrack?.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack.path)}` : (nowPlayingTrack?.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack.f)}` : null)))} 
                         alt="Deck Cover" 
                         onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
                         className="w-11 h-11 rounded-md object-cover border border-djzinc-700 shrink-0 shadow-md" 

@@ -66,7 +66,8 @@ class MediaService:
                         cover_default = ""
                         if entity.get('visualIdentity', {}).get('image'):
                             imgs = entity['visualIdentity']['image']
-                            cover_default = imgs[0].get('url') if imgs else ""
+                            best = max(imgs, key=lambda x: x.get('maxWidth', 0)) if imgs else {}
+                            cover_default = best.get('url', '')
 
                         trackList = entity.get('trackList', [])
                         # Si es un track individual
@@ -89,19 +90,27 @@ class MediaService:
                         if trackList:
                             from concurrent.futures import ThreadPoolExecutor
 
+                            def clean_title_for_search(raw_t):
+                                return re.sub(r'\s*-\s*(Original Mix|Remix|Rework|Radio Edit|Extended Mix|Club Mix|Edit).*$', '', raw_t, flags=re.I).strip()
+
                             def resolver_cover_y_album_track(t_item):
                                 tid = str(t_item.get('uri', '')).split(':')[-1]
                                 t_title = t_item.get('title', 'Unknown Track')
                                 t_artist = t_item.get('subtitle', entity.get('name', 'Artista'))
-                                t_cover = cover_default
-                                t_album = entity.get('name', entity.get('title', 'Single / EP'))
+                                t_cover = ""
+                                t_album = "Single / EP"
 
-                                # Obtener la carátula real del álbum/track desde el embed individual de Spotify
-                                if tid and len(tid) > 10:
+                                # 1. Si la entidad padre es un álbum completo, todos los tracks heredan la portada oficial del álbum
+                                if entity.get('type') == 'album' and cover_default:
+                                    t_cover = cover_default
+                                    t_album = entity.get('name') or entity.get('title') or t_album
+
+                                # 2. Obtener la carátula ORIGINAL de Spotify (640x640) directamente del embed individual del track
+                                if not t_cover and tid and len(tid) > 10:
                                     try:
                                         t_url = f"https://open.spotify.com/embed/track/{tid}"
                                         rq_t = urllib.request.Request(t_url, headers={
-                                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+                                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                                         })
                                         with urllib.request.urlopen(rq_t, context=self._ssl_context(), timeout=3) as res_t:
                                             html_t = res_t.read().decode('utf-8')
@@ -110,31 +119,37 @@ class MediaService:
                                                 d_t = json.loads(m_t.group(1))
                                                 ent_t = d_t.get('props', {}).get('pageProps', {}).get('state', {}).get('data', {}).get('entity', {})
                                                 imgs_t = ent_t.get('visualIdentity', {}).get('image', [])
-                                                if imgs_t and imgs_t[0].get('url'):
-                                                    t_cover = imgs_t[0]['url']
-                                                if ent_t.get('name') and ent_t.get('name') != t_title:
-                                                    t_album = ent_t.get('name')
+                                                if imgs_t:
+                                                    best_img = max(imgs_t, key=lambda x: x.get('maxWidth', 0))
+                                                    t_cover = best_img.get('url', '')
                                     except Exception:
                                         pass
 
-                                # Fallback a iTunes si aún no tiene portada propia o nombre de álbum
-                                if not t_cover or t_album == 'Single / EP':
-                                    try:
-                                        q = urllib.parse.quote(f"{t_artist} {t_title}")
-                                        rq_it = urllib.request.Request(f"https://itunes.apple.com/search?term={q}&entity=song&limit=1", headers={'User-Agent': 'Mozilla/5.0'})
-                                        with urllib.request.urlopen(rq_it, context=self._ssl_context(), timeout=3) as res_it:
-                                            d_it = json.loads(res_it.read().decode('utf-8')).get('results', [])
-                                            if d_it:
-                                                if not t_cover:
-                                                    t_cover = (d_it[0].get('artworkUrl100') or '').replace('100x100bb', '600x600bb')
-                                                if t_album == 'Single / EP':
-                                                    t_album = d_it[0].get('collectionName', t_album)
-                                    except Exception:
-                                        pass
+                                # 3. Enriquecer con nombre de Álbum o fallback de carátula mediante iTunes Search API
+                                try:
+                                    ct = clean_title_for_search(t_title)
+                                    main_art = t_artist.split(',')[0].strip()
+                                    q = urllib.parse.quote(f"{main_art} {ct}")
+                                    rq_it = urllib.request.Request(
+                                        f"https://itunes.apple.com/search?term={q}&entity=song&limit=1",
+                                        headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
+                                    )
+                                    with urllib.request.urlopen(rq_it, context=self._ssl_context(), timeout=2.5) as res_it:
+                                        d_it = json.loads(res_it.read().decode('utf-8')).get('results', [])
+                                        if d_it:
+                                            if t_album == 'Single / EP' and d_it[0].get('collectionName'):
+                                                t_album = d_it[0].get('collectionName')
+                                            if not t_cover and d_it[0].get('artworkUrl100'):
+                                                t_cover = (d_it[0].get('artworkUrl100') or '').replace('100x100bb', '600x600bb')
+                                except Exception:
+                                    pass
+
+                                if not t_cover:
+                                    t_cover = cover_default
 
                                 return t_cover, t_album
 
-                            with ThreadPoolExecutor(max_workers=min(10, len(trackList))) as executor:
+                            with ThreadPoolExecutor(max_workers=min(12, len(trackList))) as executor:
                                 meta_extra = list(executor.map(resolver_cover_y_album_track, trackList))
 
                             tracks = []

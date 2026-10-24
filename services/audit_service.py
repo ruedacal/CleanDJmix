@@ -114,7 +114,7 @@ class AuditService:
                     pass
             return err_res
 
-    def iniciar_auditoria(self, ruta_directorio, emitir_log_cb=None):
+    def iniciar_auditoria(self, ruta_directorio, emitir_log_cb=None, progreso_cb=None):
         if not ruta_directorio or not os.path.exists(ruta_directorio):
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
@@ -122,58 +122,76 @@ class AuditService:
         if emitir_log_cb:
             emitir_log_cb(f"Iniciando auditoría avanzada en: {ruta_directorio}")
 
-        tracks_auditados = []
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
-        idx = 1
+        archivos = []
+        for root, _, files in os.walk(ruta_directorio):
+            for file in sorted(files):
+                if not file.startswith(".") and file.lower().endswith(extensiones):
+                    archivos.append((root, file))
+                    if len(archivos) >= 50000:
+                        break
+            if len(archivos) >= 50000:
+                break
+
+        total_files = len(archivos)
+        if total_files == 0:
+            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
+
+        if progreso_cb:
+            progreso_cb(5, f"Iniciando auditoría acústica ({total_files} pistas encontradas)...")
+
+        tracks_auditados = []
         sin_meta_count = 0
         fake_count = 0
 
-        for root, _, files in os.walk(ruta_directorio):
-            for file in sorted(files):
-                if file.startswith(".") or not file.lower().endswith(extensiones):
-                    continue
-                full_path = os.path.join(root, file)
-                info = AudioProcessorService.analizar_track_avanzado(full_path)
-                bpm_val = info.get("bpm")
-                key_val = info.get("key")
-                is_missing = bool(info.get("missing_meta", False) or not bpm_val or not key_val or str(bpm_val) == "--" or str(key_val) == "--")
-                if is_missing:
-                    sin_meta_count += 1
+        for idx, (root, file) in enumerate(archivos, 1):
+            full_path = os.path.join(root, file)
+            pct = int(5 + (idx / total_files) * 90)
+            if total_files <= 30 or idx % max(1, total_files // 25) == 0 or idx == total_files:
+                if progreso_cb:
+                    progreso_cb(pct, f"Auditando ({idx}/{total_files}): {file}")
 
-                status_str = str(info.get("status") or "Lossless OK")
-                if "Fake" in status_str or "Error" in status_str:
-                    fake_count += 1
+            info = AudioProcessorService.analizar_track_avanzado(full_path)
+            bpm_val = info.get("bpm")
+            key_val = info.get("key")
+            is_missing = bool(info.get("missing_meta", False) or not bpm_val or not key_val or str(bpm_val) == "--" or str(key_val) == "--")
+            if is_missing:
+                sin_meta_count += 1
 
-                tracks_auditados.append({
-                    "id": idx,
-                    "f": str(file),
-                    "filename": str(file),
-                    "path": str(full_path),
-                    "t": str(info.get("title") or os.path.splitext(file)[0]),
-                    "title": str(info.get("title") or os.path.splitext(file)[0]),
-                    "a": str(info.get("artist") or "Desconocido"),
-                    "artist": str(info.get("artist") or "Desconocido"),
-                    "b": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
-                    "bpm": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
-                    "k": str(key_val or "--"),
-                    "key": str(key_val or "--"),
-                    "e": int(info.get("energy") or 85),
-                    "dance": int(info.get("danceability") or 85),
-                    "mood": str(info.get("mood") or "Peak Time Hypnotic"),
-                    "duration": str(info.get("duration") or "05:30"),
-                    "format": str(info.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
-                    "status": status_str,
-                    "cutoff_khz": float(info.get("cutoff_khz") or 22.0),
-                    "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
-                    "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
-                    "comment": str(info.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b")
-                })
-                idx += 1
-                if len(tracks_auditados) >= 50000:
-                    break
+            status_str = str(info.get("status") or "Lossless OK")
+            if "Fake" in status_str or "Error" in status_str:
+                fake_count += 1
+
+            tracks_auditados.append({
+                "id": idx,
+                "f": str(file),
+                "filename": str(file),
+                "path": str(full_path),
+                "t": str(info.get("title") or os.path.splitext(file)[0]),
+                "title": str(info.get("title") or os.path.splitext(file)[0]),
+                "a": str(info.get("artist") or "Desconocido"),
+                "artist": str(info.get("artist") or "Desconocido"),
+                "b": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
+                "bpm": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
+                "k": str(key_val or "--"),
+                "key": str(key_val or "--"),
+                "e": int(info.get("energy") or 85),
+                "dance": int(info.get("danceability") or 85),
+                "mood": str(info.get("mood") or "Peak Time Hypnotic"),
+                "duration": str(info.get("duration") or "05:30"),
+                "format": str(info.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
+                "status": status_str,
+                "cutoff_khz": float(info.get("cutoff_khz") or 22.0),
+                "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
+                "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
+                "comment": str(info.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b")
+            })
 
         total = len(tracks_auditados)
         ready_count = max(0, total - sin_meta_count)
+        if progreso_cb:
+            progreso_cb(100, f"Auditoría finalizada: {total} pistas procesadas.")
+
         return {
             "total": total,
             "sin_meta": sin_meta_count,
@@ -182,116 +200,134 @@ class AuditService:
             "tracks": tracks_auditados
         }
 
-    def cargar_metadatos_directorio(self, ruta_directorio):
+    def cargar_metadatos_directorio(self, ruta_directorio, progreso_cb=None):
         """Lee únicamente los metadatos existentes de los archivos sin ejecutar procesos pesados."""
         if not ruta_directorio or not os.path.exists(ruta_directorio):
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
         self.directorio_actual = ruta_directorio
-        tracks_cargados = []
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
-        idx = 1
-        sin_meta_count = 0
-
+        archivos = []
         for root, _, files in os.walk(ruta_directorio):
             for file in sorted(files):
-                if file.startswith(".") or not file.lower().endswith(extensiones):
-                    continue
-                full_path = os.path.join(root, file)
-                filename = os.path.basename(full_path)
-                ext = os.path.splitext(filename)[1].lower()
-                artist_fb, title_fb = AudioProcessorService._parsear_nombre(filename)
+                if not file.startswith(".") and file.lower().endswith(extensiones):
+                    archivos.append((root, file))
+                    if len(archivos) >= 50000:
+                        break
+            if len(archivos) >= 50000:
+                break
 
-                title = ""
-                artist = ""
-                bpm_str = "--"
-                key_str = "--"
-                dur_str = "00:00"
+        total_files = len(archivos)
+        if total_files == 0:
+            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
-                try:
-                    if ext == ".flac":
-                        try:
-                            f = FLAC(full_path)
-                            title = f.get("TITLE", [""])[0]
-                            artist = f.get("ARTIST", [""])[0]
-                            raw_k = f.get("INITIALKEY", f.get("KEY", [""]))[0]
-                            if raw_k:
-                                key_str = AudioProcessorService.normalizar_key(raw_k)
-                            bpm_val = f.get("BPM", [""])[0]
-                            if bpm_val:
-                                try:
-                                    bpm_str = f"{float(str(bpm_val).replace(',', '.')):.2f}"
-                                except Exception:
-                                    pass
-                            if f.info and f.info.length:
-                                m = int(f.info.length) // 60
-                                s = int(f.info.length) % 60
-                                dur_str = f"{m}:{s:02d}"
-                        except Exception:
-                            m = MutagenFile(full_path, easy=True)
-                            if m:
-                                title = str(m.get("title", [""])[0])
-                                artist = str(m.get("artist", [""])[0])
-                                if m.info and hasattr(m.info, "length"):
-                                    dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
-                    else:
+        if progreso_cb:
+            progreso_cb(5, f"Leyendo metadatos locales ({total_files} pistas encontradas)...")
+
+        tracks_cargados = []
+        sin_meta_count = 0
+
+        for idx, (root, file) in enumerate(archivos, 1):
+            full_path = os.path.join(root, file)
+            pct = int(5 + (idx / total_files) * 90)
+            if total_files <= 30 or idx % max(1, total_files // 30) == 0 or idx == total_files:
+                if progreso_cb:
+                    progreso_cb(pct, f"Leyendo tags ({idx}/{total_files}): {file}")
+
+            filename = os.path.basename(full_path)
+            ext = os.path.splitext(filename)[1].lower()
+            artist_fb, title_fb = AudioProcessorService._parsear_nombre(filename)
+
+            title = ""
+            artist = ""
+            bpm_str = "--"
+            key_str = "--"
+            dur_str = "00:00"
+
+            try:
+                if ext == ".flac":
+                    try:
+                        f = FLAC(full_path)
+                        title = f.get("TITLE", [""])[0]
+                        artist = f.get("ARTIST", [""])[0]
+                        raw_k = f.get("INITIALKEY", f.get("KEY", [""]))[0]
+                        if raw_k:
+                            key_str = AudioProcessorService.normalizar_key(raw_k)
+                        bpm_val = f.get("BPM", [""])[0]
+                        if bpm_val:
+                            try:
+                                bpm_str = f"{float(str(bpm_val).replace(',', '.')):.2f}"
+                            except Exception:
+                                pass
+                        if f.info and f.info.length:
+                            m = int(f.info.length) // 60
+                            s = int(f.info.length) % 60
+                            dur_str = f"{m}:{s:02d}"
+                    except Exception:
                         m = MutagenFile(full_path, easy=True)
                         if m:
                             title = str(m.get("title", [""])[0])
                             artist = str(m.get("artist", [""])[0])
-                            raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
-                            if raw_bpm:
-                                try:
-                                    bpm_str = f"{float(raw_bpm):.2f}"
-                                except Exception:
-                                    pass
-                            raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
-                            if raw_key:
-                                key_str = AudioProcessorService.normalizar_key(raw_key)
                             if m.info and hasattr(m.info, "length"):
                                 dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
-                except Exception:
-                    pass
+                else:
+                    m = MutagenFile(full_path, easy=True)
+                    if m:
+                        title = str(m.get("title", [""])[0])
+                        artist = str(m.get("artist", [""])[0])
+                        raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
+                        if raw_bpm:
+                            try:
+                                bpm_str = f"{float(raw_bpm):.2f}"
+                            except Exception:
+                                pass
+                        raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
+                        if raw_key:
+                            key_str = AudioProcessorService.normalizar_key(raw_key)
+                        if m.info and hasattr(m.info, "length"):
+                            dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
+            except Exception:
+                pass
 
-                if not title:
-                    title = title_fb
-                if not artist:
-                    artist = artist_fb
+            if not title:
+                title = title_fb
+            if not artist:
+                artist = artist_fb
 
-                missing = (bpm_str == "--" or key_str == "--")
-                if missing:
-                    sin_meta_count += 1
+            missing = (bpm_str == "--" or key_str == "--")
+            if missing:
+                sin_meta_count += 1
 
-                tracks_cargados.append({
-                    "id": idx,
-                    "f": str(file),
-                    "filename": str(file),
-                    "path": str(full_path),
-                    "t": str(title),
-                    "title": str(title),
-                    "a": str(artist),
-                    "artist": str(artist),
-                    "b": bpm_str,
-                    "bpm": bpm_str,
-                    "k": key_str,
-                    "key": key_str,
-                    "e": 0,
-                    "dance": 0,
-                    "mood": "Pendiente Auditoría",
-                    "duration": dur_str,
-                    "format": ext.replace(".", "").upper(),
-                    "status": "Cargado (Sin auditar)",
-                    "cutoff_khz": 0.0,
-                    "trim_start_ms": 0.0,
-                    "first_downbeat_ms": 0.0,
-                    "comment": ""
-                })
-                idx += 1
-                if len(tracks_cargados) >= 50000:
-                    break
+            tracks_cargados.append({
+                "id": idx,
+                "f": str(file),
+                "filename": str(file),
+                "path": str(full_path),
+                "t": str(title),
+                "title": str(title),
+                "a": str(artist),
+                "artist": str(artist),
+                "b": bpm_str,
+                "bpm": bpm_str,
+                "k": key_str,
+                "key": key_str,
+                "e": 0,
+                "dance": 0,
+                "mood": "Pendiente Auditoría",
+                "duration": dur_str,
+                "format": ext.replace(".", "").upper(),
+                "status": "Cargado (Sin auditar)",
+                "cutoff_khz": 0.0,
+                "trim_start_ms": 0.0,
+                "first_downbeat_ms": 0.0,
+                "comment": ""
+            })
 
         total = len(tracks_cargados)
         ready_count = max(0, total - sin_meta_count)
+        if progreso_cb:
+            progreso_cb(100, f"Carga completada: {total} pistas listas.")
+
         return {
             "total": total,
             "sin_meta": sin_meta_count,

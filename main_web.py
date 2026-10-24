@@ -48,6 +48,13 @@ def _emitir_log_ui(mensaje: str):
     except Exception:
         pass
 
+def _emitir_progreso_batch(pct: int, msg: str):
+    try:
+        if hasattr(eel, "actualizar_progreso_batch"):
+            eel.actualizar_progreso_batch(pct, msg)()
+    except Exception:
+        pass
+
 @eel.expose
 def reproducir_pista_mac(nombre_archivo):
     return audio_playback_svc.reproducir_mac(nombre_archivo)
@@ -73,17 +80,17 @@ def listar_subcarpetas_sistema(ruta_base=""):
 @eel.expose
 def cargar_metadatos_directorio(ruta_directorio):
     audio_playback_svc.establecer_directorio(ruta_directorio)
-    return audit_svc.cargar_metadatos_directorio(ruta_directorio)
+    return audit_svc.cargar_metadatos_directorio(ruta_directorio, _emitir_progreso_batch)
 
 @eel.expose
 def iniciar_auditoria(ruta_directorio):
     audio_playback_svc.establecer_directorio(ruta_directorio)
-    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
+    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui, _emitir_progreso_batch)
 
 @eel.expose
 def ejecutar_auditoria_lote(ruta_directorio, opts=None):
     audio_playback_svc.establecer_directorio(ruta_directorio)
-    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui)
+    return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui, _emitir_progreso_batch)
 
 @eel.expose
 def analizar_espectro_fft(filepath, spotify_id=None):
