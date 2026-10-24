@@ -98,7 +98,11 @@ const I18N_TRANSLATIONS = {
         download_btn: "Descargar",
         fft_auditing_msg: "Auditoría FFT en curso...",
         fft_certified: "PASS 22.05kHz",
-        fft_fake: "Falso FLAC"
+        fft_fake: "Falso FLAC",
+        taxonomy_search_title: "Buscador Inteligente por Taxonomías & Estilos",
+        taxonomy_search_prompt: "Pedile la música a la IA: Escribilo con tus palabras, como se lo dirías a otro DJ",
+        taxonomy_tab_search: "Buscador IA (Cuenca Style)",
+        taxonomy_tab_crates: "Serato Crates & Rekordbox"
     },
     en: {
         nav_audit: "Audit & DSP",
@@ -178,7 +182,11 @@ const I18N_TRANSLATIONS = {
         download_btn: "Download",
         fft_auditing_msg: "FFT Audit in progress...",
         fft_certified: "PASS 22.05kHz",
-        fft_fake: "Fake FLAC"
+        fft_fake: "Fake FLAC",
+        taxonomy_search_title: "Smart Search by Taxonomy & Music Styles",
+        taxonomy_search_prompt: "Ask the AI for music: Write it in your own words, like you'd say to another DJ",
+        taxonomy_tab_search: "AI Search (Cuenca Style)",
+        taxonomy_tab_crates: "Serato Crates & Rekordbox"
     }
 };
 
@@ -2448,7 +2456,7 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
 
     const handleScrub = (e) => {
-        if (!canvasRef.current || !onSeek) return;
+        if (!canvasRef.current || !onSeek || !track) return;
         const rect = canvasRef.current.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const pct = Math.max(0, Math.min(1, clickX / rect.width));
@@ -2458,6 +2466,11 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+        if (!track) {
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
         const ctx = canvas.getContext("2d");
         const dpr = window.devicePixelRatio || 1;
         const width = canvas.parentElement.clientWidth || 640;
@@ -2521,6 +2534,17 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
         ctx.stroke();
         ctx.shadowBlur = 0;
     }, [track, playProgress, seed]);
+
+    if (!track) {
+        return (
+            <div className="flex-1 h-11 bg-[#060609]/70 rounded-lg border border-djzinc-850/80 mx-6 flex items-center justify-center select-none shadow-inner">
+                <div className="flex items-center gap-2 text-[10px] font-mono text-gray-600 uppercase tracking-widest">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
+                    <span>DECK 1 STANDBY • SIN PISTA CARGADA</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div onClick={handleScrub} className="flex-1 h-11 bg-[#060609] rounded-lg border border-djzinc-800/90 relative overflow-hidden group cursor-pointer hover:border-djcyan-500/70 transition-colors shadow-inner flex items-center mx-6">
@@ -2603,10 +2627,423 @@ const TAXONOMY_TREE = {
         "Organic House",
         "Chillout / Lounge",
         "Electronica"
+    ],
+    "Latin & Urban": [
+        "Reggaetón",
+        "Cachengue / RKT",
+        "Cuarteto",
+        "Cumbia",
+        "Guaracha",
+        "Latin House"
     ]
 };
 
 const DJ_GENRES_LIST = Object.keys(TAXONOMY_TREE);
+
+const DJ_VERSIONS_LIST = [
+    "Extended Mix",
+    "Intro / Outro",
+    "Remix / Club Mix",
+    "Mashup / Bootleg",
+    "Transition",
+    "Acapella / DIY",
+    "Short Edit / Radio"
+];
+
+const CUENCA_PROMPT_CHIPS = [
+    { label: "⚡ Tech House a 128 BPM", query: "tech house a 128 bpm" },
+    { label: "🌴 Afro House para bailar", query: "afro house para bailar" },
+    { label: "🔊 Melodic Techno en 6A", query: "melodic techno en 6A" },
+    { label: "🔥 Reggaetón Retro previa", query: "reggaeton retro para la previa" },
+    { label: "🎛️ Progressive 122 BPM 8A", query: "house progresivo de 2019 a 122 BPM en 8A" },
+    { label: "🎺 Guaracha para la pista", query: "guaracha para la pista" },
+    { label: "🔀 Cachengue Remix Extended", query: "cachengue remix extended" },
+    { label: "🥁 Minimal Tech 126 BPM", query: "minimal tech driving 126 bpm" },
+    { label: "🚀 Peak Time Driving 132 BPM", query: "peak time driving a 132 bpm" },
+    { label: "🌌 Trance Emotivo en 9B", query: "uplifting trance emotivo en 9B" }
+];
+
+// Catálogo Curado de Muestra para Demostración y Descubrimiento Instantáneo
+const DJ_CURATED_CATALOG = [
+    {
+        id: "cat_1",
+        title: "Losing It (Extended Mix)",
+        artist: "Fisher",
+        genre: "House",
+        subgenre: "Tech House",
+        bpm: 126,
+        key: "8A",
+        version: "Extended Mix",
+        mood: "Peak Time / Pista",
+        year: 2018,
+        cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        duration: "06:40",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_2",
+        title: "The Garden (Original Mix)",
+        artist: "Black Coffee, Caiiro",
+        genre: "House",
+        subgenre: "Afro House",
+        bpm: 122,
+        key: "4A",
+        version: "Extended Mix",
+        mood: "Chill / Sunset / After",
+        year: 2021,
+        cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        duration: "07:15",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_3",
+        title: "Eternity (Club Edit)",
+        artist: "Anyma & Chris Avantgarde",
+        genre: "Techno",
+        subgenre: "Melodic Techno",
+        bpm: 125,
+        key: "6A",
+        version: "Remix / Club Mix",
+        mood: "Peak Time / Pista",
+        year: 2023,
+        cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+        duration: "05:50",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_4",
+        title: "Gasolina (DJ Intro Previa Edit)",
+        artist: "Daddy Yankee",
+        genre: "Latin & Urban",
+        subgenre: "Reggaetón",
+        bpm: 96,
+        key: "11A",
+        version: "Intro / Outro",
+        mood: "Previa / Warm Up",
+        year: 2004,
+        cover: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+        duration: "03:45",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_5",
+        title: "RKT Session (Mashup Bailable)",
+        artist: "L-Gante x Bizarrap",
+        genre: "Latin & Urban",
+        subgenre: "Cachengue / RKT",
+        bpm: 100,
+        key: "2A",
+        version: "Mashup / Bootleg",
+        mood: "Peak Time / Pista",
+        year: 2021,
+        cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+        duration: "03:12",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_6",
+        title: "Me Provocas (Guaracha Tribal Mix)",
+        artist: "Fumaratto",
+        genre: "Latin & Urban",
+        subgenre: "Guaracha",
+        bpm: 130,
+        key: "7A",
+        version: "Extended Mix",
+        mood: "Peak Time / Pista",
+        year: 2020,
+        cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+        duration: "04:30",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_7",
+        title: "Cola (VIP Extended Mix)",
+        artist: "CamelPhat & Elderbrook",
+        genre: "House",
+        subgenre: "Melodic / Progressive House",
+        bpm: 122,
+        key: "8A",
+        version: "Extended Mix",
+        mood: "Previa / Warm Up",
+        year: 2017,
+        cover: "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+        duration: "06:55",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_8",
+        title: "Feel It (Driving Acid Techno)",
+        artist: "Amelie Lens",
+        genre: "Techno",
+        subgenre: "Peak Time / Driving",
+        bpm: 134,
+        key: "10A",
+        version: "Extended Mix",
+        mood: "Peak Time / Pista",
+        year: 2022,
+        cover: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+        duration: "06:10",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_9",
+        title: "Lo Mejor del Amor (Transition Cuarteto)",
+        artist: "Rodrigo",
+        genre: "Latin & Urban",
+        subgenre: "Cuarteto",
+        bpm: 140,
+        key: "5B",
+        version: "Transition",
+        mood: "Peak Time / Pista",
+        year: 2000,
+        cover: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+        duration: "03:50",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_10",
+        title: "Hanging Tree (Groove Edit)",
+        artist: "Michael Bibi",
+        genre: "Electro & Breaks",
+        subgenre: "Minimal / Deep Tech",
+        bpm: 128,
+        key: "3A",
+        version: "Short Edit / Radio",
+        mood: "Peak Time / Pista",
+        year: 2019,
+        cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+        duration: "05:15",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_11",
+        title: "Communication (Uplifting Euphoria)",
+        artist: "Armin van Buuren",
+        genre: "Trance",
+        subgenre: "Uplifting Trance",
+        bpm: 138,
+        key: "1B",
+        version: "Extended Mix",
+        mood: "Peak Time / Pista",
+        year: 2007,
+        cover: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        duration: "07:40",
+        cues: NV2_COLORS
+    },
+    {
+        id: "cat_12",
+        title: "Aguila (Latin House Extended)",
+        artist: "Hugel & Westend",
+        genre: "House",
+        subgenre: "Latin House",
+        bpm: 126,
+        key: "9A",
+        version: "Extended Mix",
+        mood: "Peak Time / Pista",
+        year: 2022,
+        cover: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&h=300&fit=crop",
+        preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        duration: "05:30",
+        cues: NV2_COLORS
+    }
+];
+
+// Parser de Lenguaje Natural DJ Estilo Cuenca Music
+function parseCuencaDJQuery(query) {
+    if (!query || typeof query !== 'string') {
+        return {
+            raw: '',
+            genre: null,
+            subgenre: null,
+            targetBpm: null,
+            minBpm: null,
+            maxBpm: null,
+            key: null,
+            compatibleKeys: [],
+            version: null,
+            mood: null,
+            year: null,
+            tokens: []
+        };
+    }
+
+    const q = query.toLowerCase().trim();
+    const result = {
+        raw: query,
+        genre: null,
+        subgenre: null,
+        targetBpm: null,
+        minBpm: null,
+        maxBpm: null,
+        key: null,
+        compatibleKeys: [],
+        version: null,
+        mood: null,
+        year: null,
+        tokens: []
+    };
+
+    // 1. Rango o BPM exacto
+    const bpmRangeMatch = q.match(/(\d{2,3})\s*(?:-|a|to)\s*(\d{2,3})\s*(?:bpm)?/);
+    if (bpmRangeMatch) {
+        result.minBpm = parseInt(bpmRangeMatch[1], 10);
+        result.maxBpm = parseInt(bpmRangeMatch[2], 10);
+        result.targetBpm = Math.round((result.minBpm + result.maxBpm) / 2);
+        result.tokens.push({ type: 'bpm', label: `${result.minBpm}-${result.maxBpm} BPM` });
+    } else {
+        const singleBpmMatch = q.match(/(?:a\s+)?(\b1[0-9]{2}\b|\b[6-9][0-9]\b)\s*(?:bpm)?/);
+        if (singleBpmMatch) {
+            const val = parseInt(singleBpmMatch[1], 10);
+            if (val >= 60 && val <= 200) {
+                result.targetBpm = val;
+                result.minBpm = val - 3;
+                result.maxBpm = val + 3;
+                result.tokens.push({ type: 'bpm', label: `${val} BPM (±3)` });
+            }
+        }
+    }
+
+    // 2. Tonalidad Camelot o Clásica
+    const camelotMatch = q.match(/\b(1[0-2]|[1-9])([abAB])\b/);
+    if (camelotMatch) {
+        const k = (camelotMatch[1] + camelotMatch[2]).toUpperCase();
+        result.key = k;
+        if (CAMELOT_WHEEL_DATA[k]) {
+            result.compatibleKeys = [k, CAMELOT_WHEEL_DATA[k].rel, CAMELOT_WHEEL_DATA[k].up, CAMELOT_WHEEL_DATA[k].down];
+        }
+        result.tokens.push({ type: 'key', label: `Key ${k}` });
+    } else {
+        for (const [camKey, data] of Object.entries(CAMELOT_WHEEL_DATA)) {
+            const cls = data.classical.toLowerCase();
+            const nm = data.name.toLowerCase();
+            if (q.includes(`en ${cls}`) || q.includes(`en ${nm}`) || q.includes(` ${cls}`)) {
+                result.key = camKey;
+                result.compatibleKeys = [camKey, data.rel, data.up, data.down];
+                result.tokens.push({ type: 'key', label: `Key ${camKey} (${data.classical})` });
+                break;
+            }
+        }
+    }
+
+    // 3. Versión / Tag DJ
+    if (q.includes("extended") || q.includes("ext")) {
+        result.version = "Extended Mix";
+        result.tokens.push({ type: 'version', label: 'Extended Mix' });
+    } else if (q.includes("intro") || q.includes("outro")) {
+        result.version = "Intro / Outro";
+        result.tokens.push({ type: 'version', label: 'Intro / Outro' });
+    } else if (q.includes("mashup") || q.includes("bootleg")) {
+        result.version = "Mashup / Bootleg";
+        result.tokens.push({ type: 'version', label: 'Mashup' });
+    } else if (q.includes("remix") || q.includes("club mix")) {
+        result.version = "Remix / Club Mix";
+        result.tokens.push({ type: 'version', label: 'Remix' });
+    } else if (q.includes("acapella") || q.includes("acappella")) {
+        result.version = "Acapella";
+        result.tokens.push({ type: 'version', label: 'Acapella' });
+    } else if (q.includes("transition") || q.includes("transicion")) {
+        result.version = "Transition";
+        result.tokens.push({ type: 'version', label: 'Transition' });
+    }
+
+    // 4. Mood / Momento
+    if (q.includes("previa") || q.includes("warm up") || q.includes("warmup")) {
+        result.mood = "Previa / Warm Up";
+        result.tokens.push({ type: 'mood', label: 'Previa / Warm Up' });
+    } else if (q.includes("pista") || q.includes("peak time") || q.includes("festival") || q.includes("driving") || q.includes("bailar") || q.includes("baile")) {
+        result.mood = "Peak Time / Pista";
+        result.tokens.push({ type: 'mood', label: 'Peak Time / Pista' });
+    } else if (q.includes("sunset") || q.includes("chill") || q.includes("after") || q.includes("lounge")) {
+        result.mood = "Chill / Sunset / After";
+        result.tokens.push({ type: 'mood', label: 'Chill / Sunset' });
+    }
+
+    // 5. Año o Época
+    const yearMatch = q.match(/\b(19\d{2}|20\d{2})\b/);
+    if (yearMatch) {
+        result.year = parseInt(yearMatch[1], 10);
+        result.tokens.push({ type: 'year', label: `Año ${result.year}` });
+    } else if (q.includes("retro") || q.includes("90s") || q.includes("80s") || q.includes("2000s")) {
+        result.year = "Retro";
+        result.tokens.push({ type: 'year', label: 'Retro' });
+    }
+
+    // 6. Género y Subgénero
+    if (q.includes("tech house")) {
+        result.genre = "House";
+        result.subgenre = "Tech House";
+        result.tokens.push({ type: 'genre', label: 'Tech House' });
+    } else if (q.includes("afro house") || q.includes("afro")) {
+        result.genre = "House";
+        result.subgenre = "Afro House";
+        result.tokens.push({ type: 'genre', label: 'Afro House' });
+    } else if (q.includes("melodic techno")) {
+        result.genre = "Techno";
+        result.subgenre = "Melodic Techno";
+        result.tokens.push({ type: 'genre', label: 'Melodic Techno' });
+    } else if (q.includes("progressive house") || q.includes("house progresivo")) {
+        result.genre = "House";
+        result.subgenre = "Melodic / Progressive House";
+        result.tokens.push({ type: 'genre', label: 'Progressive House' });
+    } else if (q.includes("deep house")) {
+        result.genre = "House";
+        result.subgenre = "Deep House";
+        result.tokens.push({ type: 'genre', label: 'Deep House' });
+    } else if (q.includes("minimal") || q.includes("deep tech")) {
+        result.genre = "Electro & Breaks";
+        result.subgenre = "Minimal / Deep Tech";
+        result.tokens.push({ type: 'genre', label: 'Minimal / Deep Tech' });
+    } else if (q.includes("reggaeton") || q.includes("reggaetón")) {
+        result.genre = "Latin & Urban";
+        result.subgenre = "Reggaetón";
+        result.tokens.push({ type: 'genre', label: 'Reggaetón' });
+    } else if (q.includes("cachengue") || q.includes("rkt")) {
+        result.genre = "Latin & Urban";
+        result.subgenre = "Cachengue / RKT";
+        result.tokens.push({ type: 'genre', label: 'Cachengue / RKT' });
+    } else if (q.includes("cuarteto")) {
+        result.genre = "Latin & Urban";
+        result.subgenre = "Cuarteto";
+        result.tokens.push({ type: 'genre', label: 'Cuarteto' });
+    } else if (q.includes("guaracha")) {
+        result.genre = "Latin & Urban";
+        result.subgenre = "Guaracha";
+        result.tokens.push({ type: 'genre', label: 'Guaracha' });
+    } else if (q.includes("cumbia")) {
+        result.genre = "Latin & Urban";
+        result.subgenre = "Cumbia";
+        result.tokens.push({ type: 'genre', label: 'Cumbia' });
+    } else if (q.includes("latin house")) {
+        result.genre = "House";
+        result.subgenre = "Latin House";
+        result.tokens.push({ type: 'genre', label: 'Latin House' });
+    } else if (q.includes("techno") || q.includes("tecno")) {
+        result.genre = "Techno";
+        result.tokens.push({ type: 'genre', label: 'Techno' });
+    } else if (q.includes("house")) {
+        result.genre = "House";
+        result.tokens.push({ type: 'genre', label: 'House' });
+    } else if (q.includes("trance")) {
+        result.genre = "Trance";
+        result.tokens.push({ type: 'genre', label: 'Trance' });
+    } else if (q.includes("drum & bass") || q.includes("drum and bass") || q.includes("dnb")) {
+        result.genre = "Drum & Bass";
+        result.tokens.push({ type: 'genre', label: 'Drum & Bass' });
+    }
+
+    return result;
+}
 
 const DJ_MOODS_LIST = [
     { id: "Peak Time", label: "🔥 Peak Time", desc: "Clímax de pista, alta pegada" },
@@ -6124,8 +6561,31 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
     );
 };
 
-// Espacio de Trabajo: Taxonomía y Ruteo a Serato Crates
-const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
+// Espacio de Trabajo: Taxonomía, Buscador Inteligente IA (Estilo Cuenca Music) y Ruteo a Serato Crates
+const TaxonomyWorkspace = ({ 
+    tracks = [], 
+    onTracksUpdated, 
+    onNavigateTab,
+    onPlayTrack,
+    onSelectTrackForCues,
+    onSendToSpotify 
+}) => {
+    // Sub-pestaña activa: 'search' (Buscador Cuenca Music IA) o 'routing' (Serato Crates)
+    const [activeSubView, setActiveSubView] = useState('search');
+
+    // Estado del Buscador Inteligente por Taxonomías (Cuenca Music Style)
+    const [aiQuery, setAiQuery] = useState('');
+    const [selectedGenreFilter, setSelectedGenreFilter] = useState('ALL');
+    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState('ALL');
+    const [selectedVersionFilter, setSelectedVersionFilter] = useState('ALL');
+    const [selectedBpmFilter, setSelectedBpmFilter] = useState('ALL');
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState('ALL');
+    const [selectedMoodFilter, setSelectedMoodFilter] = useState('ALL');
+    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [feedbackMsg, setFeedbackMsg] = useState('');
+
+    // Estado de Ruteo Físico y Exportación Serato / Rekordbox
     const [rutaBase, setRutaBase] = useState('/Users/admin/Music/mi musica');
     const [modo, setModo] = useState('copy'); // 'copy' o 'move'
     const [isRouting, setIsRouting] = useState(false);
@@ -6136,7 +6596,237 @@ const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState(null);
 
-    // Selección de directorio de destino con fallback nativo
+    // Parseo en tiempo real de la consulta con el motor de IA DJ
+    const parsedQuery = useMemo(() => parseCuencaDJQuery(aiQuery), [aiQuery]);
+
+    // Combinación de pistas locales de auditoría + catálogo curado de pool
+    const localTracks = useMemo(() => {
+        return (Array.isArray(tracks) ? tracks : []).map(t => ({
+            ...t,
+            isLocal: true,
+            displayTitle: t.t || t.title || 'Pista Local',
+            displayArtist: t.a || t.artist || 'Artista',
+            displayBpm: parseFloat(t.b || t.bpm || 128),
+            displayKey: (t.k || t.key || '8A').toUpperCase(),
+            displayGenre: t.genre || 'House',
+            displaySubgenre: t.subgenre || 'Tech House',
+            displayVersion: t.version || 'Extended Mix',
+            displayMood: t.mood_subtag || t.mood || 'Peak Time / Pista',
+            displayCover: t.cover || (t.path ? `/cover?path=${encodeURIComponent(t.path)}` : null)
+        }));
+    }, [tracks]);
+
+    const catalogTracks = useMemo(() => {
+        return DJ_CURATED_CATALOG.map(t => ({
+            ...t,
+            isCatalog: true,
+            displayTitle: t.title,
+            displayArtist: t.artist,
+            displayBpm: t.bpm,
+            displayKey: t.key,
+            displayGenre: t.genre,
+            displaySubgenre: t.subgenre,
+            displayVersion: t.version,
+            displayMood: t.mood,
+            displayCover: t.cover
+        }));
+    }, []);
+
+    const allPoolTracks = useMemo(() => {
+        return localTracks.length > 0 ? [...localTracks, ...catalogTracks] : catalogTracks;
+    }, [localTracks, catalogTracks]);
+
+    // Algoritmo de emparejamiento y scoring por taxonomía musical
+    const searchResults = useMemo(() => {
+        const hasTextQuery = Boolean(aiQuery && aiQuery.trim().length > 0);
+
+        return allPoolTracks.map(trk => {
+            let score = 0;
+            let matchedReasons = [];
+            const trkGenre = (trk.displayGenre || '').toLowerCase();
+            const trkSubgenre = (trk.displaySubgenre || '').toLowerCase();
+            const trkBpm = trk.displayBpm || 128;
+            const trkKey = (trk.displayKey || '').toUpperCase();
+            const trkTitle = (trk.displayTitle || '').toLowerCase();
+            const trkArtist = (trk.displayArtist || '').toLowerCase();
+            const trkVersion = (trk.displayVersion || '').toLowerCase();
+            const trkMood = (trk.displayMood || '').toLowerCase();
+
+            if (hasTextQuery) {
+                // 1. Género y Subgénero
+                if (parsedQuery.genre && trkGenre.includes(parsedQuery.genre.toLowerCase())) {
+                    score += 30;
+                    matchedReasons.push(parsedQuery.genre);
+                }
+                if (parsedQuery.subgenre && (trkSubgenre.includes(parsedQuery.subgenre.toLowerCase()) || trkTitle.includes(parsedQuery.subgenre.toLowerCase()))) {
+                    score += 25;
+                    matchedReasons.push(parsedQuery.subgenre);
+                }
+
+                // 2. BPM Match
+                if (parsedQuery.targetBpm && trkBpm > 0) {
+                    const diff = Math.abs(trkBpm - parsedQuery.targetBpm);
+                    if (diff <= 1.5) {
+                        score += 30;
+                        matchedReasons.push(`${trkBpm} BPM`);
+                    } else if (diff <= 3.5) {
+                        score += 20;
+                        matchedReasons.push(`±${Math.round(diff)} BPM`);
+                    } else if (diff <= 6) {
+                        score += 10;
+                    }
+                } else if (parsedQuery.minBpm && parsedQuery.maxBpm && trkBpm >= parsedQuery.minBpm && trkBpm <= parsedQuery.maxBpm) {
+                    score += 25;
+                    matchedReasons.push(`${trkBpm} BPM`);
+                }
+
+                // 3. Tonalidad Camelot
+                if (parsedQuery.key) {
+                    if (trkKey === parsedQuery.key) {
+                        score += 30;
+                        matchedReasons.push(`Key ${trkKey}`);
+                    } else if (parsedQuery.compatibleKeys.includes(trkKey)) {
+                        score += 20;
+                        matchedReasons.push(`Harmonic ${trkKey}`);
+                    }
+                }
+
+                // 4. Versión DJ
+                if (parsedQuery.version) {
+                    const vLower = parsedQuery.version.toLowerCase();
+                    if (trkVersion.includes(vLower) || trkTitle.includes(vLower)) {
+                        score += 20;
+                        matchedReasons.push(parsedQuery.version);
+                    }
+                }
+
+                // 5. Mood / Energía
+                if (parsedQuery.mood) {
+                    const mLower = parsedQuery.mood.toLowerCase();
+                    if (trkMood.includes(mLower) || (parsedQuery.mood.includes("Previa") && (trkBpm < 118 || trkMood.includes("warm"))) || (parsedQuery.mood.includes("Pista") && (trkBpm >= 124 || trkMood.includes("peak")))) {
+                        score += 15;
+                        matchedReasons.push(parsedQuery.mood);
+                    }
+                }
+
+                // 6. Palabras libres
+                const queryWords = aiQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !['para', 'con', 'del', 'the', 'los', 'las', 'por'].includes(w));
+                queryWords.forEach(word => {
+                    if (trkTitle.includes(word) || trkArtist.includes(word)) {
+                        score += 15;
+                    }
+                });
+            } else {
+                score = 85;
+            }
+
+            // Filtros manuales adicionales
+            let matchesManual = true;
+            if (selectedGenreFilter !== 'ALL' && !trkGenre.includes(selectedGenreFilter.toLowerCase())) {
+                matchesManual = false;
+            }
+            if (selectedSubgenreFilterUI !== 'ALL' && !trkSubgenre.includes(selectedSubgenreFilterUI.toLowerCase())) {
+                matchesManual = false;
+            }
+            if (selectedVersionFilter !== 'ALL') {
+                const sv = selectedVersionFilter.toLowerCase();
+                if (!trkVersion.includes(sv) && !trkTitle.includes(sv)) matchesManual = false;
+            }
+            if (selectedBpmFilter !== 'ALL') {
+                if (selectedBpmFilter === '<120' && trkBpm >= 120) matchesManual = false;
+                if (selectedBpmFilter === '120-125' && (trkBpm < 120 || trkBpm > 125)) matchesManual = false;
+                if (selectedBpmFilter === '126-129' && (trkBpm < 126 || trkBpm > 129)) matchesManual = false;
+                if (selectedBpmFilter === '130-135' && (trkBpm < 130 || trkBpm > 135)) matchesManual = false;
+                if (selectedBpmFilter === '>135' && trkBpm <= 135) matchesManual = false;
+            }
+            if (selectedKeyFilter !== 'ALL' && trkKey !== selectedKeyFilter) {
+                matchesManual = false;
+            }
+            if (selectedMoodFilter !== 'ALL' && !trkMood.includes(selectedMoodFilter.toLowerCase())) {
+                matchesManual = false;
+            }
+
+            const finalPct = Math.min(100, Math.max(10, score));
+            return {
+                ...trk,
+                matchScore: finalPct,
+                matchedReasons,
+                matchesManual
+            };
+        })
+        .filter(t => t.matchesManual && (!hasTextQuery || t.matchScore >= 20))
+        .sort((a, b) => b.matchScore - a.matchScore);
+    }, [allPoolTracks, aiQuery, parsedQuery, selectedGenreFilter, selectedSubgenreFilterUI, selectedVersionFilter, selectedBpmFilter, selectedKeyFilter, selectedMoodFilter]);
+
+    // Manejador de pre-escucha / Cargar en Deck 1
+    const handleCargarEnDeck = (trk) => {
+        if (!trk) return;
+        if (onPlayTrack) {
+            onPlayTrack(trk, 0, true);
+            setFeedbackMsg(`✓ "${trk.displayTitle}" cargado y reproduciendo en Deck 1`);
+            setTimeout(() => setFeedbackMsg(''), 3500);
+        }
+    };
+
+    // Manejador para abrir en Hot-Cues Studio
+    const handleAbrirEnHotCues = (trk) => {
+        if (!trk) return;
+        if (onSelectTrackForCues) {
+            onSelectTrackForCues(trk);
+        } else if (onNavigateTab) {
+            onNavigateTab('hotcues');
+        }
+    };
+
+    // Apuntar en Libreta Digital de Apuntes
+    const handleApuntarEnLibreta = (trk) => {
+        try {
+            const saved = localStorage.getItem('beatwave_shazam_notebook');
+            const list = saved ? JSON.parse(saved) : [];
+            const exists = list.some(item => item.title === trk.displayTitle && item.artist === trk.displayArtist);
+            if (!exists) {
+                const now = new Date();
+                const item = {
+                    title: trk.displayTitle,
+                    artist: trk.displayArtist,
+                    bpm: trk.displayBpm,
+                    key: trk.displayKey,
+                    genre: trk.displayGenre,
+                    cover: trk.displayCover,
+                    added_at: now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    notebook_id: Date.now()
+                };
+                list.unshift(item);
+                localStorage.setItem('beatwave_shazam_notebook', JSON.stringify(list));
+                setFeedbackMsg(`✓ "${trk.displayTitle}" guardado en tu Libreta Digital.`);
+            } else {
+                setFeedbackMsg(`ℹ "${trk.displayTitle}" ya estaba en tu libreta.`);
+            }
+            setTimeout(() => setFeedbackMsg(''), 3000);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // Asignar pista individual a Crate Serato
+    const handleAsignarACrateIndividual = async (trk) => {
+        if (!trk) return;
+        try {
+            if (window.eel && window.eel.organizar_pista_en_crate) {
+                const res = await window.eel.organizar_pista_en_crate(trk, rutaBase, modo)();
+                if (res && res.status === 'ok') {
+                    setFeedbackMsg(`✓ Pista enrutada a Crate /${trk.displayGenre}/${trk.displaySubgenre}/`);
+                } else {
+                    setFeedbackMsg(`⚠ ${res?.msg || 'Error al enrutar pista'}`);
+                }
+                setTimeout(() => setFeedbackMsg(''), 3500);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // Manejadores de Ruteo de Lote a Serato Crates
     const handleSeleccionarDestino = async () => {
         try {
             if (window.eel && window.eel.seleccionar_directorio) {
@@ -6150,7 +6840,6 @@ const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
         }
     };
 
-    // Ruteo de Lote Completo a Crates
     const handleOrganizarLote = async () => {
         if (!tracks || tracks.length === 0) return;
         setIsRouting(true);
@@ -6176,9 +6865,7 @@ const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
             setRouteStatusMsg('Fallo inesperado al enrutar lote.');
         } finally {
             setIsRouting(false);
-            setTimeout(() => {
-                setRouteProgress(0);
-            }, 4000);
+            setTimeout(() => setRouteProgress(0), 4000);
         }
     };
 
@@ -6253,337 +6940,829 @@ const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
     };
 
     const genresList = Object.keys(TAXONOMY_TREE);
-    const totalCratesCount = genresList.reduce((acc, g) => acc + TAXONOMY_TREE[g].length, 0);
+    const totalCratesCount = genresList.reduce((acc, g) => acc + (TAXONOMY_TREE[g] ? TAXONOMY_TREE[g].length : 0), 0);
 
     const filteredGenres = genresList.filter(g => {
         if (!searchTerm) return true;
         const s = searchTerm.toLowerCase();
         if (g.toLowerCase().includes(s)) return true;
-        return TAXONOMY_TREE[g].some(sg => sg.toLowerCase().includes(s));
+        return TAXONOMY_TREE[g] && TAXONOMY_TREE[g].some(sg => sg.toLowerCase().includes(s));
     });
+
+    const resetFilters = () => {
+        setAiQuery('');
+        setSelectedGenreFilter('ALL');
+        setSelectedSubgenreFilterUI('ALL');
+        setSelectedVersionFilter('ALL');
+        setSelectedBpmFilter('ALL');
+        setSelectedKeyFilter('ALL');
+        setSelectedMoodFilter('ALL');
+    };
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden bg-djzinc-950 text-gray-200">
-            {/* ENCABEZADO DE CONTROL TAXONÓMICO */}
-            <div className="p-5 border-b border-djzinc-800 bg-djzinc-950 shrink-0 space-y-4">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]"></span>
-                            <h2 className="text-xl font-black text-white uppercase tracking-wider font-mono">
-                                Taxonomía DJ & Serato Crate Routing
+            {/* ENCABEZADO Y SELECTOR DE VISTAS TAXONÓMICAS */}
+            <div className="px-5 pt-4 pb-3 border-b border-djzinc-800 bg-[#08080c] shrink-0 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/40 flex items-center justify-center text-djcyan-400 font-bold shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+                            ⚡
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                                Centro de Taxonomía Musical & Crates
                             </h2>
-                            <span className="text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 px-2 py-0.5 rounded font-mono font-bold">
-                                2-TIER CRATES
+                            <p className="text-gray-400 text-xs">
+                                Buscador inteligente en lenguaje natural inspirado en Cuenca Music y ruteo jerárquico a crates de Serato / Rekordbox.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* SELECTOR DE MODO: BUSCADOR IA CUENCA VS RUTEO CRATES */}
+                    <div className="inline-flex rounded-xl border border-djzinc-700/80 p-1 bg-djzinc-900/90 shadow">
+                        <button
+                            type="button"
+                            onClick={() => setActiveSubView('search')}
+                            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                                activeSubView === 'search'
+                                    ? 'bg-gradient-to-r from-djcyan-500 to-blue-500 text-black shadow-md'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            <span>🔍 Buscador IA Cuenca Style</span>
+                            <span className="text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black">
+                                {searchResults.length}
                             </span>
-                        </div>
-                        <p className="text-gray-400 text-xs">
-                            Clasificación jerárquica en dos niveles (Género Raíz ➡ Subgénero Estilo) con ruteo físico a carpetas y crates de Serato DJ Pro y Rekordbox.
-                        </p>
-                    </div>
-
-                    {/* BOTONES DE ACCIÓN: RUTEO FÍSICO + EXPORTACIÓN SERATO CRATES / REKORDBOX XML */}
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        <button
-                            type="button"
-                            disabled={isRouting || tracks.length === 0}
-                            onClick={handleExportarSeratoCrates}
-                            className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${
-                                isRouting || tracks.length === 0
-                                    ? 'bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60'
-                                    : 'bg-purple-950/60 hover:bg-purple-900 border-purple-500/60 text-purple-300 shadow hover:shadow-purple-500/20 active:scale-95'
-                            }`}
-                            title="Exporta archivos .crate oficiales a ~/Music/_Serato_/Subcrates para importación instantánea en Serato DJ Pro"
-                        >
-                            💽 Exportar Serato (.crate)
                         </button>
-
                         <button
                             type="button"
-                            disabled={isRouting || tracks.length === 0}
-                            onClick={handleExportarRekordboxXml}
-                            className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${
-                                isRouting || tracks.length === 0
-                                    ? 'bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60'
-                                    : 'bg-blue-950/60 hover:bg-blue-900 border-blue-500/60 text-blue-300 shadow hover:shadow-blue-500/20 active:scale-95'
-                            }`}
-                            title="Genera archivo rekordbox.xml estándar Pioneer DJ con Hot Cues y estructura de playlists para Rekordbox"
-                        >
-                            📋 Exportar Rekordbox XML
-                        </button>
-
-                        <button
-                            type="button"
-                            disabled={isRouting || tracks.length === 0}
-                            onClick={handleOrganizarLote}
-                            className={`px-4 py-2.5 rounded-lg font-bold text-xs flex items-center gap-2 shadow-lg cursor-pointer transition-all ${
-                                isRouting || tracks.length === 0
-                                    ? 'bg-djzinc-800 text-gray-500 border border-djzinc-700 cursor-not-allowed opacity-60'
-                                    : 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-djcyan-500/25 active:scale-95'
+                            onClick={() => setActiveSubView('routing')}
+                            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                                activeSubView === 'routing'
+                                    ? 'bg-djcyan-500 text-black shadow-md'
+                                    : 'text-gray-400 hover:text-white'
                             }`}
                         >
-                            <Icons.Routing />
-                            {isRouting ? 'Ruteando a Crates...' : `Enrutar Biblioteca (${tracks.length})`}
+                            <span>🗂️ Serato Crates & Rekordbox</span>
+                            <span className="text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black">
+                                {totalCratesCount}
+                            </span>
                         </button>
                     </div>
                 </div>
 
-                {/* BARRA DE CONFIGURACIÓN DE DESTINO Y MODO */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-djzinc-900/90 border border-djzinc-800 p-3 rounded-xl">
-                    <div className="md:col-span-7 flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-gray-400 shrink-0">📁 Destino Crates:</span>
-                        <input
-                            type="text"
-                            value={rutaBase}
-                            onChange={(e) => setRutaBase(e.target.value)}
-                            className="flex-1 bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs font-mono text-gray-200 outline-none focus:border-djcyan-500"
-                            placeholder="/Users/admin/Music/mi musica"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleSeleccionarDestino}
-                            className="px-2.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded text-xs font-semibold text-gray-300 cursor-pointer"
-                        >
-                            Examinar...
-                        </button>
-                    </div>
-
-                    <div className="md:col-span-3 flex items-center gap-2 justify-start md:justify-center">
-                        <span className="text-xs font-mono text-gray-400">Modo:</span>
-                        <div className="inline-flex rounded-lg border border-djzinc-700 p-0.5 bg-djzinc-950">
-                            <button
-                                type="button"
-                                onClick={() => setModo('copy')}
-                                className={`px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${
-                                    modo === 'copy' ? 'bg-djcyan-500 text-black shadow' : 'text-gray-400 hover:text-white'
-                                }`}
-                                title="Copia los archivos a la estructura de carpetas sin borrar los originales"
-                            >
-                                Copiar (Seguro)
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setModo('move')}
-                                className={`px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${
-                                    modo === 'move' ? 'bg-amber-500 text-black shadow' : 'text-gray-400 hover:text-white'
-                                }`}
-                                title="Mueve los archivos directamente a las carpetas destino"
-                            >
-                                Mover
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="md:col-span-2 flex items-center">
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Buscar género o crate..."
-                            className="w-full bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500"
-                        />
-                    </div>
-                </div>
-
-                {/* BARRA DE PROGRESO DE RUTEO */}
-                {isRouting && (
-                    <div className="p-3 bg-djzinc-900 border border-djcyan-700/60 rounded-xl space-y-1.5 animate-pulse">
-                        <div className="flex justify-between text-xs font-mono">
-                            <span className="text-djcyan-400 font-bold">{routeStatusMsg || 'Procesando ruteo de lote...'}</span>
-                            <span className="text-white font-bold">{routeProgress}%</span>
-                        </div>
-                        <div className="w-full h-2 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800">
-                            <div
-                                className="h-full bg-gradient-to-r from-djcyan-500 to-emerald-400 transition-all duration-200"
-                                style={{ width: `${routeProgress}%` }}
-                            ></div>
-                        </div>
-                    </div>
-                )}
-
-                {/* MENSAJE DE ÉXITO O ERROR DEL ÚLTIMO RUTEO */}
-                {resultSummary && (
-                    <div className={`p-3 rounded-xl border flex items-center justify-between text-xs font-mono ${
-                        resultSummary.status === 'ok' 
-                            ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300' 
-                            : 'bg-red-950/40 border-red-500/50 text-red-300'
-                    }`}>
+                {/* MENSAJE DE FEEDBACK TOAST */}
+                {feedbackMsg && (
+                    <div className="p-2.5 rounded-lg bg-djcyan-950/80 border border-djcyan-500/50 text-djcyan-300 text-xs font-mono flex items-center justify-between shadow-lg">
                         <div className="flex items-center gap-2">
-                            <span>{resultSummary.status === 'ok' ? '✓' : '⚠'}</span>
-                            <span>
-                                {resultSummary.status === 'ok'
-                                    ? `Ruteo completado con éxito: ${resultSummary.procesados} pistas procesadas (${resultSummary.errores} errores) hacia ${rutaBase}.`
-                                    : (resultSummary.msg || 'Fallo durante el ruteo de lote.')}
-                            </span>
+                            <span className="animate-pulse">●</span>
+                            <span>{feedbackMsg}</span>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => setResultSummary(null)}
-                            className="text-gray-400 hover:text-white cursor-pointer px-2 py-0.5 rounded"
-                        >
-                            ✕
-                        </button>
+                        <button type="button" onClick={() => setFeedbackMsg('')} className="text-gray-400 hover:text-white cursor-pointer px-1">✕</button>
                     </div>
                 )}
-
-                {/* RESUMEN DE MÉTRICAS */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
-                        <span className="text-[11px] text-gray-400">Pistas en Sesión</span>
-                        <span className="text-sm font-black text-white font-mono">{tracks.length}</span>
-                    </div>
-                    <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
-                        <span className="text-[11px] text-gray-400">Géneros Raíz</span>
-                        <span className="text-sm font-black text-djcyan-400 font-mono">{genresList.length}</span>
-                    </div>
-                    <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
-                        <span className="text-[11px] text-gray-400">Crates / Subgéneros</span>
-                        <span className="text-sm font-black text-purple-400 font-mono">{totalCratesCount}</span>
-                    </div>
-                    <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
-                        <span className="text-[11px] text-gray-400">Estructura Serato</span>
-                        <span className="text-[11px] font-bold text-emerald-400 font-mono">/[Género]/[Subgénero]/</span>
-                    </div>
-                </div>
             </div>
 
-            {/* ÁREA PRINCIPAL: LISTA DE GÉNEROS Y CRATES */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                {tracks.length === 0 ? (
-                    <div className="h-64 border-2 border-dashed border-djzinc-800 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-djzinc-900/20">
-                        <div className="w-12 h-12 rounded-full bg-djzinc-800 flex items-center justify-center text-djcyan-400 mb-3 shadow-inner">
-                            <Icons.Routing />
-                        </div>
-                        <h3 className="text-base font-bold text-gray-200 mb-1">No hay pistas cargadas en la Auditoría</h3>
-                        <p className="text-xs text-gray-400 max-w-md mb-4">
-                            Carga una carpeta en la pestaña <strong>Auditoría & DSP</strong> para ver el desglose en tiempo real de pistas asignadas a cada Crate y ejecutar el ruteo físico inteligente.
-                        </p>
-                        {onNavigateTab && (
+            {/* VISTA 1: BUSCADOR IA POR TAXONOMÍAS & ESTILOS (ESTILO CUENCA MUSIC) */}
+            {activeSubView === 'search' && (
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* BARRA DE BÚSQUEDA EN LENGUAJE NATURAL IA */}
+                    <div className="p-5 border-b border-djzinc-850 bg-[#09090e] shrink-0 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm">🤖</span>
+                                <span className="text-xs font-bold font-mono text-djcyan-400 uppercase tracking-widest">
+                                    Pedile la música a la IA
+                                </span>
+                                <span className="text-[10px] text-gray-500 font-medium">
+                                    Escribilo con tus palabras, como se lo dirías a otro DJ
+                                </span>
+                            </div>
                             <button
                                 type="button"
-                                onClick={() => onNavigateTab('audit')}
-                                className="px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-bold rounded-lg cursor-pointer transition-colors shadow"
+                                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                                    showAdvancedFilters || selectedGenreFilter !== 'ALL' || selectedBpmFilter !== 'ALL' || selectedKeyFilter !== 'ALL'
+                                        ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-600'
+                                        : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
+                                }`}
                             >
-                                Ir a Auditoría & DSP
+                                <span>🎚️ Filtros Manuales</span>
+                                <span>{showAdvancedFilters ? '▲' : '▼'}</span>
                             </button>
+                        </div>
+
+                        {/* INPUT PRINCIPAL CON GLOW CIAN */}
+                        <div className="relative flex items-center">
+                            <span className="absolute left-3.5 text-gray-400 text-base pointer-events-none">🔍</span>
+                            <input
+                                type="text"
+                                value={aiQuery}
+                                onChange={(e) => setAiQuery(e.target.value)}
+                                placeholder="Ej: tech house a 128 bpm en 8A, afro house para bailar, reggaeton retro para la previa, extended mix..."
+                                className="w-full bg-[#040407] border-2 border-djzinc-750 focus:border-djcyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-xl pl-10 pr-24 py-3 text-sm font-medium text-white placeholder-gray-500 outline-none transition-all shadow-inner"
+                            />
+                            {aiQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setAiQuery('')}
+                                    className="absolute right-3 px-2 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 hover:text-white text-xs font-bold rounded cursor-pointer transition-colors"
+                                    title="Limpiar consulta"
+                                >
+                                    ✕ Limpiar
+                                </button>
+                            )}
+                        </div>
+
+                        {/* DESGLOSE EN TIEMPO REAL DE TOKENS INTERPRETADOS POR LA IA */}
+                        {parsedQuery.tokens && parsedQuery.tokens.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                <span className="text-[10px] font-mono text-gray-400 mr-1">IA Interpretó:</span>
+                                {parsedQuery.tokens.map((tok, idx) => (
+                                    <span
+                                        key={idx}
+                                        className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-djcyan-950/80 text-djcyan-300 border border-djcyan-600/70 shadow-sm flex items-center gap-1"
+                                    >
+                                        <span>✓</span>
+                                        <span>{tok.label}</span>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* CHIPS DE PROMPT RÁPIDO (INSPIRADOS EN CUENCA MUSIC) */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            <span className="text-[10px] font-mono text-gray-500 mr-1 shrink-0">Sugerencias:</span>
+                            {CUENCA_PROMPT_CHIPS.map((chip, cIdx) => (
+                                <button
+                                    key={cIdx}
+                                    type="button"
+                                    onClick={() => setAiQuery(chip.query)}
+                                    className={`text-[10.5px] px-2.5 py-1 rounded-lg border font-medium transition-all cursor-pointer ${
+                                        aiQuery === chip.query
+                                            ? 'bg-djcyan-500 text-black border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.4)] font-bold'
+                                            : 'bg-djzinc-900/90 text-gray-300 border-djzinc-800 hover:border-djcyan-500/50 hover:text-white'
+                                    }`}
+                                >
+                                    {chip.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* FILTROS MANUALES DESPLEGABLES */}
+                        {showAdvancedFilters && (
+                            <div className="p-3.5 bg-djzinc-900/90 border border-djzinc-800 rounded-xl grid grid-cols-2 md:grid-cols-6 gap-2.5 text-xs font-mono animate-fadeIn">
+                                {/* Género */}
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-gray-400 text-[10px]">Género Raíz:</label>
+                                    <select
+                                        value={selectedGenreFilter}
+                                        onChange={(e) => setSelectedGenreFilter(e.target.value)}
+                                        className="bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+                                    >
+                                        <option value="ALL">Todos los Géneros</option>
+                                        {genresList.map(g => (
+                                            <option key={g} value={g}>{g}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Versión */}
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-gray-400 text-[10px]">Versión / Edit:</label>
+                                    <select
+                                        value={selectedVersionFilter}
+                                        onChange={(e) => setSelectedVersionFilter(e.target.value)}
+                                        className="bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+                                    >
+                                        <option value="ALL">Todas las Versiones</option>
+                                        {DJ_VERSIONS_LIST.map(v => (
+                                            <option key={v} value={v}>{v}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Rango BPM */}
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-gray-400 text-[10px]">Rango BPM:</label>
+                                    <select
+                                        value={selectedBpmFilter}
+                                        onChange={(e) => setSelectedBpmFilter(e.target.value)}
+                                        className="bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+                                    >
+                                        <option value="ALL">Cualquier Tempo</option>
+                                        <option value="<120">&lt; 120 BPM (Previa/Downtempo)</option>
+                                        <option value="120-125">120 - 125 BPM (Afro/Deep)</option>
+                                        <option value="126-129">126 - 129 BPM (Tech House Clave)</option>
+                                        <option value="130-135">130 - 135 BPM (Driving / Techno)</option>
+                                        <option value=">135">&gt; 135 BPM (Peak Time / Trance)</option>
+                                    </select>
+                                </div>
+
+                                {/* Key Camelot */}
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-gray-400 text-[10px]">Tonalidad:</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsCamelotModalOpen(true)}
+                                            className="text-[9px] text-djcyan-400 hover:underline cursor-pointer"
+                                        >
+                                            🎡 Rueda
+                                        </button>
+                                    </div>
+                                    <select
+                                        value={selectedKeyFilter}
+                                        onChange={(e) => setSelectedKeyFilter(e.target.value)}
+                                        className="bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+                                    >
+                                        <option value="ALL">Cualquier Tono</option>
+                                        {Object.keys(CAMELOT_WHEEL_DATA).map(k => (
+                                            <option key={k} value={k}>{k} ({CAMELOT_WHEEL_DATA[k].classical})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Mood */}
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-gray-400 text-[10px]">Atmósfera / Mood:</label>
+                                    <select
+                                        value={selectedMoodFilter}
+                                        onChange={(e) => setSelectedMoodFilter(e.target.value)}
+                                        className="bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+                                    >
+                                        <option value="ALL">Cualquier Mood</option>
+                                        <option value="Previa / Warm Up">Previa / Warm Up</option>
+                                        <option value="Peak Time / Pista">Peak Time / Pista</option>
+                                        <option value="Chill / Sunset / After">Chill / Sunset / After</option>
+                                    </select>
+                                </div>
+
+                                {/* Reset */}
+                                <div className="flex flex-col justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={resetFilters}
+                                        className="w-full py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white rounded border border-djzinc-700 text-xs font-bold cursor-pointer transition-colors"
+                                    >
+                                        ↺ Reset Filtros
+                                    </button>
+                                </div>
+                            </div>
                         )}
                     </div>
-                ) : (
-                    <div className="space-y-4">
-                        {filteredGenres.map(genre => {
-                            const subgenres = TAXONOMY_TREE[genre] || [];
-                            const genreTracksCount = getGenreStats(genre);
-                            const isExpanded = expandedGenre === genre;
 
-                            return (
-                                <div
-                                    key={genre}
-                                    className="bg-djzinc-900/80 border border-djzinc-800 rounded-xl overflow-hidden shadow-md transition-all hover:border-djzinc-700"
-                                >
-                                    {/* CABECERA DE GÉNERO RAÍZ */}
-                                    <div
-                                        onClick={() => setExpandedGenre(isExpanded ? null : genre)}
-                                        className="p-3.5 bg-djzinc-900 flex items-center justify-between cursor-pointer hover:bg-djzinc-850 select-none border-b border-djzinc-800/60"
+                    {/* LISTADO DE RESULTADOS EMPAREJADOS POR IA */}
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                        <div className="flex items-center justify-between text-xs font-mono text-gray-400">
+                            <div>
+                                <span>Mostrando </span>
+                                <strong className="text-white font-bold">{searchResults.length}</strong>
+                                <span> temas para </span>
+                                <span className="text-djcyan-400 font-bold">{aiQuery ? `"${aiQuery}"` : "Exploración Taxonómica"}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-djcyan-400"></span>
+                                    <span>Biblioteca ({localTracks.length})</span>
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                                    <span>Pool Cuenca ({catalogTracks.length})</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {searchResults.length === 0 ? (
+                            <div className="p-8 border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-900/30 text-center space-y-3">
+                                <span className="text-3xl">🔎</span>
+                                <h3 className="text-base font-bold text-white">No se encontraron temas coincidentes</h3>
+                                <p className="text-xs text-gray-400 max-w-md mx-auto">
+                                    No hay pistas en tu colección que cumplan todos los criterios de "{aiQuery}". Puedes reiniciar los filtros o buscar en SuperFLAC / Spotify Ingest para descargar versiones compatibles.
+                                </p>
+                                <div className="flex items-center justify-center gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={resetFilters}
+                                        className="px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded-lg text-xs font-bold cursor-pointer"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xs text-gray-500 font-mono">
-                                                {isExpanded ? '▼' : '▶'}
-                                            </span>
-                                            <div>
-                                                <span className="text-sm font-black text-white uppercase tracking-wider font-mono">
-                                                    {genre}
+                                        ↺ Limpiar Búsqueda
+                                    </button>
+                                    {onSendToSpotify && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onSendToSpotify(aiQuery)}
+                                            className="px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-bold shadow-md cursor-pointer"
+                                        >
+                                            🌐 Ingestar desde SuperFLAC / Spotify →
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                                {searchResults.map((trk, idx) => {
+                                    const keyData = CAMELOT_WHEEL_DATA[trk.displayKey] || CAMELOT_WHEEL_DATA['8A'];
+                                    const isLocal = Boolean(trk.isLocal);
+
+                                    return (
+                                        <div
+                                            key={trk.id || idx}
+                                            className="p-3.5 bg-[#0a0a0f] rounded-xl border border-djzinc-850 hover:border-djcyan-500/50 transition-all shadow-md hover:shadow-cyan-500/10 flex flex-col justify-between gap-3 group"
+                                        >
+                                            {/* CABECERA DE LA PISTA */}
+                                            <div className="flex items-start gap-3 min-w-0">
+                                                <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-djzinc-800 shadow">
+                                                    <img
+                                                        src={getValidCover(trk.displayCover)}
+                                                        alt="Cover"
+                                                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleCargarEnDeck(trk)}
+                                                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-base transition-opacity cursor-pointer shadow"
+                                                        title="Cargar y Reproducir en Deck 1"
+                                                    >
+                                                        ▶
+                                                    </button>
+                                                </div>
+
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${
+                                                            isLocal
+                                                                ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-700/60'
+                                                                : 'bg-purple-950 text-purple-300 border-purple-700/60'
+                                                        }`}>
+                                                            {isLocal ? '📁 Local' : '🌟 Pool'}
+                                                        </span>
+                                                        <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-700/60 px-1.5 py-0.2 rounded shadow-sm">
+                                                            ⚡ {trk.matchScore}% Match
+                                                        </span>
+                                                    </div>
+
+                                                    <h4 className="text-xs font-bold text-white truncate mt-1" title={trk.displayTitle}>
+                                                        {trk.displayTitle}
+                                                    </h4>
+                                                    <p className="text-[11px] text-djcyan-400 truncate" title={trk.displayArtist}>
+                                                        {trk.displayArtist}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* BADGES TAXONÓMICOS (GÉNERO, BPM, KEY, VERSIÓN, MOOD) */}
+                                            <div className="flex flex-wrap items-center gap-1.5 font-mono text-[9.5px]">
+                                                {/* Género & Subgénero */}
+                                                <span className="px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-gray-300 font-semibold">
+                                                    🎧 {trk.displaySubgenre || trk.displayGenre}
                                                 </span>
-                                                <span className="text-[10px] text-gray-400 ml-2 font-mono">
-                                                    ({subgenres.length} subgéneros)
+
+                                                {/* BPM */}
+                                                <span className="px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-djcyan-300 font-bold">
+                                                    🎚️ {trk.displayBpm} BPM
                                                 </span>
+
+                                                {/* Key Camelot */}
+                                                <span
+                                                    className="px-2 py-0.5 rounded border font-black flex items-center gap-1 cursor-pointer hover:brightness-125"
+                                                    style={{
+                                                        backgroundColor: `${keyData.color}20`,
+                                                        borderColor: `${keyData.color}80`,
+                                                        color: keyData.color
+                                                    }}
+                                                    onClick={() => setIsCamelotModalOpen(true)}
+                                                    title={`Key ${trk.displayKey} (${keyData.classical}). Click para ver Rueda Armónica`}
+                                                >
+                                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: keyData.color }}></span>
+                                                    <span>{trk.displayKey}</span>
+                                                </span>
+
+                                                {/* Versión */}
+                                                {trk.displayVersion && (
+                                                    <span className="px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-600/50 text-amber-300">
+                                                        🎛️ {trk.displayVersion}
+                                                    </span>
+                                                )}
+
+                                                {/* Mood */}
+                                                {trk.displayMood && (
+                                                    <span className="px-1.5 py-0.5 rounded bg-pink-950/40 border border-pink-600/50 text-pink-300">
+                                                        🔥 {trk.displayMood}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* BOTONES DE ACCIÓN DJ RÁPIDOS */}
+                                            <div className="pt-2 border-t border-djzinc-850 flex items-center justify-between gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCargarEnDeck(trk)}
+                                                    className="flex-1 py-1 px-2 rounded bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] font-mono flex items-center justify-center gap-1 shadow cursor-pointer transition-transform active:scale-95"
+                                                >
+                                                    <span>▶</span>
+                                                    <span>Cargar Deck</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAbrirEnHotCues(trk)}
+                                                    className="py-1 px-2 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-200 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                                    title="Editar Hot Cues en el Estudio"
+                                                >
+                                                    <span>🎛️</span>
+                                                    <span>Cues</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleApuntarEnLibreta(trk)}
+                                                    className="py-1 px-2 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-200 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                                    title="Apuntar en Libreta Digital"
+                                                >
+                                                    <span>📋</span>
+                                                </button>
+
+                                                {isLocal && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAsignarACrateIndividual(trk)}
+                                                        className="py-1 px-2 rounded bg-purple-950/60 hover:bg-purple-900 border border-purple-500/60 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                                        title="Rutar físicamente a Serato Crate"
+                                                    >
+                                                        <span>📁</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
+                                    );
+                                })}
+                            </div>
+                        )}
 
-                                        <div className="flex items-center gap-3">
-                                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
-                                                genreTracksCount > 0
-                                                    ? 'bg-djcyan-950 text-djcyan-400 border border-djcyan-700/60 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
-                                                    : 'bg-djzinc-800 text-gray-500 border border-djzinc-700'
-                                            }`}>
-                                                {genreTracksCount} pistas
-                                            </span>
-                                            <span className="text-gray-500 text-xs font-mono">
-                                                📁 /{genre}/
-                                            </span>
-                                        </div>
-                                    </div>
+                        {/* BANNER INFERIOR DE INGESTA DESDE SUPERFLAC / SPOTIFY */}
+                        <div className="p-4 bg-gradient-to-r from-djzinc-900 via-djzinc-900 to-djcyan-950/40 border border-djzinc-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">🌐</span>
+                                <div>
+                                    <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                                        ¿Buscas canciones que no están en tu biblioteca local?
+                                    </h4>
+                                    <p className="text-[11px] text-gray-400">
+                                        Explora y descarga temas por taxonomía en SuperFLAC / Spotify Ingest con carátula en alta definición y tags automáticos.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (onSendToSpotify) onSendToSpotify(aiQuery || 'Tech House 2024');
+                                    else if (onNavigateTab) onNavigateTab('spotify');
+                                }}
+                                className="px-3.5 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded-lg shadow-md cursor-pointer transition-all active:scale-95 shrink-0"
+                            >
+                                Ingestar en Spotify / SuperFLAC →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                                    {/* CRATES / SUBGÉNEROS */}
-                                    {isExpanded && (
-                                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-djzinc-950/40">
-                                            {subgenres.map(subg => {
-                                                const matchingTracks = getSubgenreStats(genre, subg);
-                                                const isFilterSelected = selectedSubgenreFilter === `${genre}__${subg}`;
+            {/* VISTA 2: RUTEO FÍSICO A SERATO CRATES Y REKORDBOX XML */}
+            {activeSubView === 'routing' && (
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* BARRA DE CONFIGURACIÓN Y ACCIÓN */}
+                    <div className="p-5 border-b border-djzinc-800 bg-djzinc-950 shrink-0 space-y-4">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]"></span>
+                                    <h3 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                                        Ruteo Físico de Biblioteca a Crates Serato / Rekordbox
+                                    </h3>
+                                    <span className="text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 px-2 py-0.5 rounded font-mono font-bold">
+                                        2-TIER CRATES
+                                    </span>
+                                </div>
+                                <p className="text-gray-400 text-xs">
+                                    Clasificación jerárquica en dos niveles (Género Raíz ➡ Subgénero Estilo) con ruteo físico a carpetas y crates de Serato DJ Pro y Rekordbox.
+                                </p>
+                            </div>
 
-                                                return (
-                                                    <div
-                                                        key={subg}
-                                                        className={`p-3 rounded-lg border transition-all ${
-                                                            isFilterSelected
-                                                                ? 'bg-djcyan-950/30 border-djcyan-500 shadow-[0_0_12px_rgba(6,182,212,0.15)]'
-                                                                : 'bg-djzinc-900 border-djzinc-800 hover:border-djzinc-700'
-                                                        }`}
-                                                    >
-                                                        <div className="flex items-start justify-between gap-2 mb-2">
-                                                            <div className="font-bold text-xs text-gray-200">
-                                                                {subg}
-                                                            </div>
-                                                            <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold shrink-0 ${
-                                                                matchingTracks.length > 0
-                                                                    ? 'bg-djcyan-500 text-black'
-                                                                    : 'bg-djzinc-800 text-gray-500'
-                                                            }`}>
-                                                                {matchingTracks.length}
-                                                            </span>
-                                                        </div>
+                            {/* BOTONES DE ACCIÓN: RUTEO FÍSICO + EXPORTACIÓN SERATO CRATES / REKORDBOX XML */}
+                            <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                <button
+                                    type="button"
+                                    disabled={isRouting || tracks.length === 0}
+                                    onClick={handleExportarSeratoCrates}
+                                    className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${
+                                        isRouting || tracks.length === 0
+                                            ? 'bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60'
+                                            : 'bg-purple-950/60 hover:bg-purple-900 border-purple-500/60 text-purple-300 shadow hover:shadow-purple-500/20 active:scale-95'
+                                    }`}
+                                    title="Exporta archivos .crate oficiales a ~/Music/_Serato_/Subcrates para importación instantánea en Serato DJ Pro"
+                                >
+                                    💽 Exportar Serato (.crate)
+                                </button>
 
-                                                        <div className="text-[10px] font-mono text-gray-400 truncate mb-2" title={`${rutaBase}/${genre}/${subg}/`}>
-                                                            📁 /{genre}/{subg}/
-                                                        </div>
+                                <button
+                                    type="button"
+                                    disabled={isRouting || tracks.length === 0}
+                                    onClick={handleExportarRekordboxXml}
+                                    className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${
+                                        isRouting || tracks.length === 0
+                                            ? 'bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60'
+                                            : 'bg-blue-950/60 hover:bg-blue-900 border-blue-500/60 text-blue-300 shadow hover:shadow-blue-500/20 active:scale-95'
+                                    }`}
+                                    title="Genera archivo rekordbox.xml estándar Pioneer DJ con Hot Cues y playlists"
+                                >
+                                    📋 Exportar Rekordbox XML
+                                </button>
 
-                                                        {matchingTracks.length > 0 ? (
-                                                            <div className="pt-2 border-t border-djzinc-800/80 space-y-1">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setSelectedSubgenreFilter(isFilterSelected ? null : `${genre}__${subg}`)}
-                                                                    className="text-[10px] text-djcyan-400 hover:text-djcyan-300 font-semibold cursor-pointer underline flex items-center gap-1"
-                                                                >
-                                                                    {isFilterSelected ? 'Ocultar pistas' : `Ver ${matchingTracks.length} pistas`}
-                                                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isRouting || tracks.length === 0}
+                                    onClick={handleOrganizarLote}
+                                    className={`px-4 py-2.5 rounded-lg font-bold text-xs flex items-center gap-2 shadow-lg cursor-pointer transition-all ${
+                                        isRouting || tracks.length === 0
+                                            ? 'bg-djzinc-800 text-gray-500 border border-djzinc-700 cursor-not-allowed opacity-60'
+                                            : 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-djcyan-500/25 active:scale-95'
+                                    }`}
+                                >
+                                    <Icons.Routing />
+                                    {isRouting ? 'Ruteando a Crates...' : `Enrutar Biblioteca (${tracks.length})`}
+                                </button>
+                            </div>
+                        </div>
 
-                                                                {isFilterSelected && (
-                                                                    <div className="mt-2 max-h-36 overflow-y-auto space-y-1 pr-1 font-mono text-[9.5px]">
-                                                                        {matchingTracks.map((tr, idx) => (
-                                                                            <div key={idx} className="p-1 rounded bg-djzinc-950 border border-djzinc-800/80 truncate text-gray-300">
-                                                                                <span className="text-white font-bold">{tr.t || tr.title}</span>
-                                                                                <span className="text-gray-400"> - {tr.a || tr.artist}</span>
-                                                                                <span className="text-djcyan-400 ml-1">({tr.b || tr.bpm || '--'} BPM)</span>
+                        {/* CONFIGURACIÓN DE DESTINO Y MODO */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-djzinc-900/90 border border-djzinc-800 p-3 rounded-xl">
+                            <div className="md:col-span-7 flex items-center gap-2">
+                                <span className="text-xs font-mono font-bold text-gray-400 shrink-0">📁 Destino Crates:</span>
+                                <input
+                                    type="text"
+                                    value={rutaBase}
+                                    onChange={(e) => setRutaBase(e.target.value)}
+                                    className="flex-1 bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs font-mono text-gray-200 outline-none focus:border-djcyan-500"
+                                    placeholder="/Users/admin/Music/mi musica"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleSeleccionarDestino}
+                                    className="px-2.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded text-xs font-semibold text-gray-300 cursor-pointer"
+                                >
+                                    Examinar...
+                                </button>
+                            </div>
+
+                            <div className="md:col-span-3 flex items-center gap-2 justify-start md:justify-center">
+                                <span className="text-xs font-mono text-gray-400">Modo:</span>
+                                <div className="inline-flex rounded-lg border border-djzinc-700 p-0.5 bg-djzinc-950">
+                                    <button
+                                        type="button"
+                                        onClick={() => setModo('copy')}
+                                        className={`px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${
+                                            modo === 'copy' ? 'bg-djcyan-500 text-black shadow' : 'text-gray-400 hover:text-white'
+                                        }`}
+                                        title="Copia los archivos sin borrar los originales"
+                                    >
+                                        Copiar (Seguro)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setModo('move')}
+                                        className={`px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${
+                                            modo === 'move' ? 'bg-amber-500 text-black shadow' : 'text-gray-400 hover:text-white'
+                                        }`}
+                                        title="Mueve los archivos directamente a las carpetas destino"
+                                    >
+                                        Mover
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-2 flex items-center">
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Filtrar crate..."
+                                    className="w-full bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500"
+                                />
+                            </div>
+                        </div>
+
+                        {/* PROGRESO DE RUTEO */}
+                        {isRouting && (
+                            <div className="p-3 bg-djzinc-900 border border-djcyan-700/60 rounded-xl space-y-1.5 animate-pulse">
+                                <div className="flex justify-between text-xs font-mono">
+                                    <span className="text-djcyan-400 font-bold">{routeStatusMsg || 'Procesando ruteo de lote...'}</span>
+                                    <span className="text-white font-bold">{routeProgress}%</span>
+                                </div>
+                                <div className="w-full h-2 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-djcyan-500 to-emerald-400 transition-all duration-200"
+                                        style={{ width: `${routeProgress}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* MENSAJE DE ÉXITO O ERROR DEL ÚLTIMO RUTEO */}
+                        {resultSummary && (
+                            <div className={`p-3 rounded-xl border flex items-center justify-between text-xs font-mono ${
+                                resultSummary.status === 'ok' 
+                                    ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300' 
+                                    : 'bg-red-950/40 border-red-500/50 text-red-300'
+                            }`}>
+                                <div className="flex items-center gap-2">
+                                    <span>{resultSummary.status === 'ok' ? '✓' : '⚠'}</span>
+                                    <span>
+                                        {resultSummary.status === 'ok'
+                                            ? `Ruteo completado con éxito: ${resultSummary.procesados} pistas procesadas (${resultSummary.errores} errores) hacia ${rutaBase}.`
+                                            : (resultSummary.msg || 'Fallo durante el ruteo de lote.')}
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setResultSummary(null)}
+                                    className="text-gray-400 hover:text-white cursor-pointer px-2 py-0.5 rounded"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+
+                        {/* MÉTRICAS */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
+                                <span className="text-[11px] text-gray-400">Pistas en Sesión</span>
+                                <span className="text-sm font-black text-white font-mono">{tracks.length}</span>
+                            </div>
+                            <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
+                                <span className="text-[11px] text-gray-400">Géneros Raíz</span>
+                                <span className="text-sm font-black text-djcyan-400 font-mono">{genresList.length}</span>
+                            </div>
+                            <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
+                                <span className="text-[11px] text-gray-400">Crates / Subgéneros</span>
+                                <span className="text-sm font-black text-purple-400 font-mono">{totalCratesCount}</span>
+                            </div>
+                            <div className="bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between">
+                                <span className="text-[11px] text-gray-400">Estructura Serato</span>
+                                <span className="text-[11px] font-bold text-emerald-400 font-mono">/[Género]/[Subgénero]/</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* LISTA DE GÉNEROS Y CRATES */}
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                        {tracks.length === 0 ? (
+                            <div className="h-64 border-2 border-dashed border-djzinc-800 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-djzinc-900/20">
+                                <div className="w-12 h-12 rounded-full bg-djzinc-800 flex items-center justify-center text-djcyan-400 mb-3 shadow-inner">
+                                    <Icons.Routing />
+                                </div>
+                                <h3 className="text-base font-bold text-gray-200 mb-1">No hay pistas cargadas en la Auditoría</h3>
+                                <p className="text-xs text-gray-400 max-w-md mb-4">
+                                    Carga una carpeta en la pestaña <strong>Auditoría & DSP</strong> para ver el desglose en tiempo real de pistas asignadas a cada Crate y ejecutar el ruteo físico inteligente.
+                                </p>
+                                {onNavigateTab && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onNavigateTab('audit')}
+                                        className="px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-bold rounded-lg cursor-pointer transition-colors shadow"
+                                    >
+                                        Ir a Auditoría & DSP
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {filteredGenres.map(genre => {
+                                    const subgenres = TAXONOMY_TREE[genre] || [];
+                                    const genreTracksCount = getGenreStats(genre);
+                                    const isExpanded = expandedGenre === genre;
+
+                                    return (
+                                        <div
+                                            key={genre}
+                                            className="bg-djzinc-900/80 border border-djzinc-800 rounded-xl overflow-hidden shadow-md transition-all hover:border-djzinc-700"
+                                        >
+                                            <div
+                                                onClick={() => setExpandedGenre(isExpanded ? null : genre)}
+                                                className="p-3.5 bg-djzinc-900 flex items-center justify-between cursor-pointer hover:bg-djzinc-850 select-none border-b border-djzinc-800/60"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-xs text-gray-500 font-mono">
+                                                        {isExpanded ? '▼' : '▶'}
+                                                    </span>
+                                                    <div>
+                                                        <span className="text-sm font-black text-white uppercase tracking-wider font-mono">
+                                                            {genre}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400 ml-2 font-mono">
+                                                            ({subgenres.length} subgéneros)
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
+                                                        genreTracksCount > 0
+                                                            ? 'bg-djcyan-950 text-djcyan-400 border border-djcyan-700/60 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
+                                                            : 'bg-djzinc-800 text-gray-500 border border-djzinc-700'
+                                                    }`}>
+                                                        {genreTracksCount} pistas
+                                                    </span>
+                                                    <span className="text-gray-500 text-xs font-mono">
+                                                        📁 /{genre}/
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {isExpanded && (
+                                                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-djzinc-950/40">
+                                                    {subgenres.map(subg => {
+                                                        const matchingTracks = getSubgenreStats(genre, subg);
+                                                        const isFilterSelected = selectedSubgenreFilter === `${genre}__${subg}`;
+
+                                                        return (
+                                                            <div
+                                                                key={subg}
+                                                                className={`p-3 rounded-lg border transition-all ${
+                                                                    isFilterSelected
+                                                                        ? 'bg-djcyan-950/30 border-djcyan-500 shadow-[0_0_12px_rgba(6,182,212,0.15)]'
+                                                                        : 'bg-djzinc-900 border-djzinc-800 hover:border-djzinc-700'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-start justify-between gap-2 mb-2">
+                                                                    <div className="font-bold text-xs text-gray-200">
+                                                                        {subg}
+                                                                    </div>
+                                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold shrink-0 ${
+                                                                        matchingTracks.length > 0
+                                                                            ? 'bg-djcyan-500 text-black'
+                                                                            : 'bg-djzinc-800 text-gray-500'
+                                                                    }`}>
+                                                                        {matchingTracks.length}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="text-[10px] font-mono text-gray-400 truncate mb-2" title={`${rutaBase}/${genre}/${subg}/`}>
+                                                                    📁 /{genre}/{subg}/
+                                                                </div>
+
+                                                                {matchingTracks.length > 0 ? (
+                                                                    <div className="pt-2 border-t border-djzinc-800/80 space-y-1">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setSelectedSubgenreFilter(isFilterSelected ? null : `${genre}__${subg}`)}
+                                                                            className="text-[10px] text-djcyan-400 hover:text-djcyan-300 font-semibold cursor-pointer underline flex items-center gap-1"
+                                                                        >
+                                                                            {isFilterSelected ? 'Ocultar pistas' : `Ver ${matchingTracks.length} pistas`}
+                                                                        </button>
+
+                                                                        {isFilterSelected && (
+                                                                            <div className="mt-2 max-h-36 overflow-y-auto space-y-1 pr-1 font-mono text-[9.5px]">
+                                                                                {matchingTracks.map((tr, idx) => (
+                                                                                    <div key={idx} className="p-1 rounded bg-djzinc-950 border border-djzinc-800/80 truncate text-gray-300">
+                                                                                        <span className="text-white font-bold">{tr.t || tr.title}</span>
+                                                                                        <span className="text-gray-400"> - {tr.a || tr.artist}</span>
+                                                                                        <span className="text-djcyan-400 ml-1">({tr.b || tr.bpm || '--'} BPM)</span>
+                                                                                    </div>
+                                                                                ))}
                                                                             </div>
-                                                                        ))}
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-[9.5px] text-gray-400 italic">
+                                                                        Sin pistas asignadas
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                        ) : (
-                                                            <div className="text-[9.5px] text-gray-400 italic">
-                                                                Sin pistas asignadas
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            {/* MODAL DE RUEDA ARMÓNICA CAMELOT */}
+            <CamelotWheelModal
+                isOpen={isCamelotModalOpen}
+                onClose={() => setIsCamelotModalOpen(false)}
+                currentKey={selectedKeyFilter !== 'ALL' ? selectedKeyFilter : '8A'}
+                onSelectKey={(k) => {
+                    setSelectedKeyFilter(k);
+                    setIsCamelotModalOpen(false);
+                }}
+            />
         </div>
     );
 };
@@ -7469,8 +8648,8 @@ const App = () => {
     const [activeTab, setActiveTab] = useState('audit');
     const [currentFolder, setCurrentFolder] = useState('/Users/admin/Music/mi musica');
     const [auditTracks, setAuditTracks] = useState([]);
-    const [selectedTrack, setSelectedTrack] = useState(1);
-    const currentTrack = auditTracks.find(t => t.id === selectedTrack) || auditTracks[0] || null;
+    const [selectedTrack, setSelectedTrack] = useState(null);
+    const currentTrack = selectedTrack ? (auditTracks.find(t => t.id === selectedTrack) || null) : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playProgress, setPlayProgress] = useState(0);
@@ -7842,6 +9021,23 @@ const App = () => {
                         tracks={auditTracks} 
                         onTracksUpdated={setAuditTracks} 
                         onNavigateTab={setActiveTab} 
+                        onPlayTrack={handlePlayTrack}
+                        onSelectTrackForCues={(trk) => {
+                            if (!trk) return;
+                            const existing = auditTracks.find(t => t.id === trk.id || (t.path && t.path === trk.path));
+                            if (existing) {
+                                setSelectedTrack(existing.id);
+                            } else {
+                                const newId = auditTracks.length > 0 ? Math.max(...auditTracks.map(t => Number(t.id) || 0)) + 1 : 1;
+                                const newTrk = { ...trk, id: newId };
+                                setAuditTracks(prev => [newTrk, ...prev]);
+                                setSelectedTrack(newId);
+                            }
+                            setActiveTab('hotcues');
+                        }}
+                        onSendToSpotify={(query) => {
+                            setActiveTab('spotify');
+                        }}
                     />
                 </div>
                 <div style={{ display: activeTab === 'logs' ? 'flex' : 'none' }} className="w-full h-full">
@@ -7851,42 +9047,79 @@ const App = () => {
 
             {/* GLOBAL DECK PLAYER (Footer) */}
             <footer className="h-16 bg-[#0a0a0e] border-t border-djzinc-800 px-5 flex items-center justify-between shrink-0 glass-panel z-30">
-                <div className="flex items-center gap-3 min-w-0 w-80 shrink-0">
-                    <img 
-                        src={getValidCover(nowPlayingTrack?.cover || (nowPlayingTrack?.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack.path)}` : (nowPlayingTrack?.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack.f)}` : null)))} 
-                        alt="Deck Cover" 
-                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                        className="w-11 h-11 rounded-md object-cover border border-djzinc-700 shrink-0 shadow-md" 
-                    />
-                    <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-white truncate" title={nowPlayingTrack ? (nowPlayingTrack.t || nowPlayingTrack.title) : ''}>
-                            {nowPlayingTrack ? (nowPlayingTrack.t || nowPlayingTrack.title) : 'Selecciona una pista'}
-                        </span>
-                        <span className="text-[11px] text-djcyan-400 font-medium truncate" title={nowPlayingTrack ? (nowPlayingTrack.a || nowPlayingTrack.artist) : ''}>
-                            {nowPlayingTrack ? (nowPlayingTrack.a || nowPlayingTrack.artist) : '--'}
-                        </span>
-                        <span className="text-[10px] text-gray-500 font-mono truncate">
-                            {nowPlayingTrack ? `${nowPlayingTrack.b || nowPlayingTrack.bpm || '--'} BPM • Key ${nowPlayingTrack.k || nowPlayingTrack.key || '--'}` : '-- BPM'}
-                        </span>
+                {!nowPlayingTrack ? (
+                    <div className="flex items-center gap-3 min-w-0 w-80 shrink-0 opacity-40 select-none">
+                        <div className="w-11 h-11 rounded-md bg-[#0a0a0f] border border-djzinc-850 flex items-center justify-center text-gray-600 shadow-inner">
+                            <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <circle cx="12" cy="12" r="10" strokeDasharray="3 3"></circle>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider">
+                                DECK 1 STANDBY
+                            </span>
+                            <span className="text-[10px] text-gray-600 font-mono">
+                                Sin pista seleccionada
+                            </span>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="flex items-center gap-3 min-w-0 w-80 shrink-0">
+                        <img 
+                            src={getValidCover(nowPlayingTrack.cover || (nowPlayingTrack.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack.path)}` : (nowPlayingTrack.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack.f)}` : null)))} 
+                            alt="Deck Cover" 
+                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
+                            className="w-11 h-11 rounded-md object-cover border border-djzinc-700 shrink-0 shadow-md" 
+                        />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold text-white truncate" title={nowPlayingTrack.t || nowPlayingTrack.title}>
+                                {nowPlayingTrack.t || nowPlayingTrack.title}
+                            </span>
+                            <span className="text-[11px] text-djcyan-400 font-medium truncate" title={nowPlayingTrack.a || nowPlayingTrack.artist}>
+                                {nowPlayingTrack.a || nowPlayingTrack.artist}
+                            </span>
+                            <span className="text-[10px] text-gray-500 font-mono truncate">
+                                {`${nowPlayingTrack.b || nowPlayingTrack.bpm || '--'} BPM • Key ${nowPlayingTrack.k || nowPlayingTrack.key || '--'}`}
+                            </span>
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex items-center gap-2.5 shrink-0">
                     <button 
+                        type="button"
+                        disabled={!nowPlayingTrack}
                         onClick={handleCue} 
-                        className="px-3 py-1.5 bg-[#16161d] hover:bg-[#20202a] text-gray-300 rounded font-mono font-bold text-xs border border-djzinc-700 active:translate-y-[1px] transition-all cursor-pointer"
+                        className={`px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${
+                            !nowPlayingTrack 
+                                ? 'bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none'
+                                : 'bg-[#16161d] hover:bg-[#20202a] text-gray-300 border-djzinc-700 active:translate-y-[1px] cursor-pointer'
+                        }`}
                     >
                         CUE
                     </button>
                     <button 
+                        type="button"
+                        disabled={!nowPlayingTrack}
                         onClick={togglePlayPause} 
-                        className="w-10 h-10 rounded-lg bg-djcyan-500 hover:bg-djcyan-400 text-black flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.5)] active:translate-y-[1px] transition-all cursor-pointer"
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+                            !nowPlayingTrack
+                                ? 'bg-djzinc-900 border border-djzinc-800 text-gray-600 opacity-40 cursor-not-allowed pointer-events-none'
+                                : 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)] active:translate-y-[1px] cursor-pointer'
+                        }`}
                     >
                         {isPlaying ? <Icons.Pause /> : <Icons.Play />}
                     </button>
                     <button 
+                        type="button"
+                        disabled={!nowPlayingTrack}
                         onClick={() => setPlayProgress(0.22)} 
-                        className="px-3 py-1.5 bg-[#16161d] hover:bg-[#20202a] text-gray-300 rounded font-mono font-bold text-xs border border-djzinc-700 active:translate-y-[1px] transition-all cursor-pointer"
+                        className={`px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${
+                            !nowPlayingTrack 
+                                ? 'bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none'
+                                : 'bg-[#16161d] hover:bg-[#20202a] text-gray-300 border-djzinc-700 active:translate-y-[1px] cursor-pointer'
+                        }`}
                     >
                         SYNC
                     </button>

@@ -40,6 +40,14 @@ TAXONOMIA_DJ = {
         "Organic House",
         "Chillout / Lounge",
         "Electronica"
+    ],
+    "Latin & Urban": [
+        "Reggaetón",
+        "Cachengue / RKT",
+        "Cuarteto",
+        "Cumbia",
+        "Guaracha",
+        "Latin House"
     ]
 }
 
