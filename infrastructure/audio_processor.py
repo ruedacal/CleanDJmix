@@ -4,7 +4,7 @@ import struct
 import base64
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC, FLACNoHeaderError
-from mutagen.id3 import ID3, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, ID3NoHeaderError
+from mutagen.id3 import ID3, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, ID3NoHeaderError
 from mutagen.aiff import AIFF
 from mutagen.mp4 import MP4
 
@@ -37,6 +37,73 @@ class AudioProcessorService:
         return "Desconocido", base.strip()
 
     @staticmethod
+    def detectar_trim_y_downbeat(ruta: str) -> tuple:
+        """Calcula el punto de recorte de silencio (zero-crossing) en ms y el primer
+        transitorio de bombo/downbeat (Beatgrid 1.0.0) en ms usando DSP rápido."""
+        if not ruta or not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
+            return 0.0, 0.0
+        try:
+            import soundfile as sf
+            import numpy as np
+
+            # Leer hasta 8 segundos
+            data, sr = sf.read(ruta, frames=8 * 44100, dtype="float32")
+            if len(data) == 0:
+                return 0.0, 0.0
+            if data.ndim > 1:
+                mono = np.mean(data, axis=1)
+            else:
+                mono = data
+
+            # 1. Zero-crossing Silence Trim (-60 dBFS -> linear ~ 0.001)
+            threshold = 0.001
+            above_thresh = np.where(np.abs(mono) > threshold)[0]
+            if len(above_thresh) == 0:
+                return 0.0, 0.0
+
+            first_audible_idx = int(above_thresh[0])
+            if first_audible_idx > 0:
+                signs = np.signbit(mono[:first_audible_idx + 1])
+                diffs = np.where(np.diff(signs))[0]
+                zero_cross_idx = int(diffs[-1]) if len(diffs) > 0 else first_audible_idx
+            else:
+                zero_cross_idx = 0
+
+            trim_ms = round(float(zero_cross_idx) / sr * 1000.0, 1)
+
+            # 2. Downbeat detection (Primer golpe de bombo / transitorio de energía)
+            sub_audio = mono[zero_cross_idx:zero_cross_idx + int(sr * 4.0)]
+            frame_len = int(sr * 0.010)  # 10ms
+            hop_len = int(sr * 0.002)    # 2ms
+
+            if len(sub_audio) > frame_len:
+                num_frames = (len(sub_audio) - frame_len) // hop_len
+                frames = np.lib.stride_tricks.as_strided(
+                    sub_audio,
+                    shape=(num_frames, frame_len),
+                    strides=(sub_audio.strides[0] * hop_len, sub_audio.strides[0])
+                )
+                energies = np.sqrt(np.mean(frames ** 2, axis=1))
+                energy_diff = np.maximum(0, np.diff(energies))
+
+                max_val = float(np.max(energy_diff)) if len(energy_diff) > 0 else 0.0
+                if max_val > 0.005:
+                    peaks = np.where(energy_diff > (max_val * 0.25))[0]
+                    if len(peaks) > 0:
+                        first_peak = int(peaks[0])
+                        downbeat_ms = round(trim_ms + (float(first_peak * hop_len) / sr * 1000.0), 1)
+                    else:
+                        downbeat_ms = trim_ms
+                else:
+                    downbeat_ms = trim_ms
+            else:
+                downbeat_ms = trim_ms
+
+            return trim_ms, downbeat_ms
+        except Exception:
+            return 0.0, 0.0
+
+    @staticmethod
     def analizar_track_avanzado(ruta: str) -> dict:
         filename = os.path.basename(ruta)
         ext = os.path.splitext(filename)[1].lower()
@@ -47,6 +114,8 @@ class AudioProcessorService:
         bpm = 0.0
         key = ""
         duration_sec = 0
+        trim_start_ms = 0.0
+        first_downbeat_ms = 0.0
 
         # Intento de lectura específico para FLAC con fallback universal
         try:
@@ -60,6 +129,18 @@ class AudioProcessorService:
                     if bpm_val:
                         bpm = float(str(bpm_val).replace(",", "."))
                     duration_sec = int(f.info.length) if f.info else 0
+                    trim_raw = f.get("TRIM_START_MS", [""])[0]
+                    down_raw = f.get("FIRST_DOWNBEAT_MS", [""])[0]
+                    if trim_raw:
+                        try:
+                            trim_start_ms = float(trim_raw)
+                        except Exception:
+                            pass
+                    if down_raw:
+                        try:
+                            first_downbeat_ms = float(down_raw)
+                        except Exception:
+                            pass
                 except (FLACNoHeaderError, Exception):
                     m = MutagenFile(ruta, easy=True)
                     if m and m.info:
@@ -67,6 +148,17 @@ class AudioProcessorService:
                         title = str(m.get("title", [""])[0])
                         artist = str(m.get("artist", [""])[0])
             else:
+                try:
+                    id3_tags = ID3(ruta)
+                    t_frame = id3_tags.get("TXXX:TRIM_START_MS")
+                    d_frame = id3_tags.get("TXXX:FIRST_DOWNBEAT_MS")
+                    if t_frame and t_frame.text:
+                        trim_start_ms = float(t_frame.text[0])
+                    if d_frame and d_frame.text:
+                        first_downbeat_ms = float(d_frame.text[0])
+                except Exception:
+                    pass
+
                 m = MutagenFile(ruta, easy=True)
                 if m:
                     if m.info:
@@ -100,6 +192,9 @@ class AudioProcessorService:
             pool = ["8A", "9A", "10A", "11A", "12A", "5A", "6A", "7A", "8B", "9B"]
             key = pool[os.path.getsize(ruta) % len(pool)]
 
+        if trim_start_ms <= 0.0 and first_downbeat_ms <= 0.0:
+            trim_start_ms, first_downbeat_ms = AudioProcessorService.detectar_trim_y_downbeat(ruta)
+
         mins = duration_sec // 60
         secs = duration_sec % 60
         dur_str = f"{mins}:{secs:02d}" if duration_sec > 0 else "5:30"
@@ -113,7 +208,9 @@ class AudioProcessorService:
             "energy": energy,
             "duration": dur_str,
             "missing_meta": missing_meta,
-            "format": ext.replace(".", "").upper()
+            "format": ext.replace(".", "").upper(),
+            "trim_start_ms": trim_start_ms,
+            "first_downbeat_ms": first_downbeat_ms
         }
     @staticmethod
     def generar_serato_markers2(duration_ms: int = 300000, bpm: float = 128.0, cues: list = None, downbeat_ms: int = 0) -> bytes:
@@ -209,7 +306,8 @@ class AudioProcessorService:
             except Exception:
                 pass
 
-        downbeat_ms = int(meta_track.get("first_downbeat_ms") or 0)
+        downbeat_ms = int(float(meta_track.get("first_downbeat_ms") or 0))
+        trim_ms = float(meta_track.get("trim_start_ms") or 0.0)
         cues_list = meta_track.get("cues") or []
 
         serato_b64 = AudioProcessorService.generar_serato_markers2(
@@ -239,6 +337,10 @@ class AudioProcessorService:
                 audio["GENRE"] = [genre]
                 if isrc:
                     audio["ISRC"] = [isrc]
+                if trim_ms > 0:
+                    audio["TRIM_START_MS"] = [f"{trim_ms:.1f}"]
+                if downbeat_ms > 0:
+                    audio["FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}"]
                 audio["SERATO_MARKERS_V2"] = [serato_b64.decode("ascii")]
                 audio.save()
                 return True
@@ -259,6 +361,11 @@ class AudioProcessorService:
                 id3.add(TCON(encoding=3, text=[genre]))
                 if isrc:
                     id3.add(TSRC(encoding=3, text=[isrc]))
+
+                if trim_ms > 0:
+                    id3.add(TXXX(encoding=3, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
+                if downbeat_ms > 0:
+                    id3.add(TXXX(encoding=3, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
 
                 # Inyección GEOB para Serato Markers2 (Cues oficiales)
                 id3.add(GEOB(
@@ -292,6 +399,10 @@ class AudioProcessorService:
                     tags.add(TKEY(encoding=3, text=[key_camelot]))
                 tags.add(COMM(encoding=3, lang="eng", desc="", text=[comment]))
                 tags.add(TCON(encoding=3, text=[genre]))
+                if trim_ms > 0:
+                    tags.add(TXXX(encoding=3, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
+                if downbeat_ms > 0:
+                    tags.add(TXXX(encoding=3, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
                 tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Markers2", data=serato_b64))
                 audio.save()
                 return True
@@ -309,6 +420,10 @@ class AudioProcessorService:
                 audio["\xa9gen"] = [genre]
                 if key_camelot:
                     audio["----:com.apple.iTunes:initialkey"] = [key_camelot.encode("utf-8")]
+                if trim_ms > 0:
+                    audio["----:com.apple.iTunes:TRIM_START_MS"] = [f"{trim_ms:.1f}".encode("utf-8")]
+                if downbeat_ms > 0:
+                    audio["----:com.apple.iTunes:FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}".encode("utf-8")]
                 audio.save()
                 return True
 

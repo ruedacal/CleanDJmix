@@ -85,3 +85,74 @@ def test_inyectar_lote_metadatos(tmp_path):
     assert res["inyectados"] == 2
     assert res["errores"] == 0
     assert len(progress_events) >= 2
+
+def test_detectar_trim_y_downbeat_silencio(tmp_path):
+    import soundfile as sf
+    import numpy as np
+
+    wav_file = tmp_path / "silence.wav"
+    silence = np.zeros((44100, 2), dtype=np.float32)
+    sf.write(str(wav_file), silence, 44100, format="WAV")
+
+    trim_ms, downbeat_ms = AudioProcessorService.detectar_trim_y_downbeat(str(wav_file))
+    assert trim_ms == 0.0
+    assert downbeat_ms == 0.0
+
+def test_detectar_trim_y_downbeat_synthetic_kick(tmp_path):
+    import soundfile as sf
+    import numpy as np
+
+    wav_file = tmp_path / "kick.wav"
+    # 100 ms of silence (4410 samples at 44.1kHz) followed by kick transient
+    data = np.zeros(44100 * 2, dtype=np.float32)
+    kick_samples = np.sin(np.linspace(0, 100, 4410)) * 0.9
+    data[4410:4410 + 4410] = kick_samples
+    sf.write(str(wav_file), data, 44100, format="WAV")
+
+    trim_ms, downbeat_ms = AudioProcessorService.detectar_trim_y_downbeat(str(wav_file))
+    assert 90.0 <= trim_ms <= 110.0
+    assert downbeat_ms >= trim_ms
+
+def test_detectar_trim_y_downbeat_archivo_inexistente():
+    trim_ms, downbeat_ms = AudioProcessorService.detectar_trim_y_downbeat("archivo_no_existente_12345.mp3")
+    assert trim_ms == 0.0
+    assert downbeat_ms == 0.0
+
+def test_escribir_y_persistir_trim_downbeat_mp3(tmp_path):
+    mp3_file = tmp_path / "test_trim.mp3"
+    with open(str(mp3_file), "wb") as f:
+        f.write(b"\xff\xfb\x90\x64" * 1000)
+
+    meta = {
+        "title": "Minimal Acid",
+        "artist": "Techno Collective",
+        "bpm": "130.00",
+        "key": "11A",
+        "trim_start_ms": 23.5,
+        "first_downbeat_ms": 850.0
+    }
+
+    ok = AudioProcessorService.escribir_metadatos_pro(str(mp3_file), meta)
+    assert ok is True
+
+    from mutagen.id3 import ID3
+    id3 = ID3(str(mp3_file))
+    assert id3["TXXX:TRIM_START_MS"].text == ["23.5"]
+    assert id3["TXXX:FIRST_DOWNBEAT_MS"].text == ["850.0"]
+
+def test_audit_service_analizar_trim_downbeat(tmp_path):
+    import soundfile as sf
+    import numpy as np
+
+    wav_file = tmp_path / "test_audit.wav"
+    data = np.zeros(44100, dtype=np.float32)
+    data[2205:] = np.sin(np.linspace(0, 50, 44100 - 2205)) * 0.8
+    sf.write(str(wav_file), data, 44100, format="WAV")
+
+    audit_svc = AuditService()
+    res = audit_svc.analizar_trim_downbeat(str(wav_file), track_id=42)
+    assert res["status"] == "ok"
+    assert res["id"] == 42
+    assert "trim_start_ms" in res
+    assert "first_downbeat_ms" in res
+    assert res["trim_start_ms"] >= 40.0

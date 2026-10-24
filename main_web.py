@@ -97,6 +97,10 @@ def analizar_espectro_fft(filepath, spotify_id=None):
     return audit_svc.analizar_espectro_fft(filepath, spotify_id)
 
 @eel.expose
+def calcular_trim_downbeat_track(filepath, track_id=None):
+    return audit_svc.analizar_trim_downbeat(filepath, track_id)
+
+@eel.expose
 def exportar_auditoria_xls(tracks, destino_dir="/Users/admin/Music/mi musica"):
     return export_svc.exportar_tracks_xls(tracks, destino_dir)
 

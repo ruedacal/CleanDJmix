@@ -244,11 +244,28 @@ const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurre
     );
 };
 
+// Helper para parsear formato mm:ss a milisegundos
+const parseDurationMs = (dur) => {
+    if (!dur || typeof dur !== "string") return 300000;
+    const parts = dur.split(":");
+    if (parts.length === 2) {
+        const m = parseInt(parts[0], 10) || 0;
+        const s = parseFloat(parts[1]) || 0;
+        return Math.max(1000, (m * 60 + s) * 1000);
+    }
+    return 300000;
+};
+
 // Visualizador de Onda Rekordbox Pro con Separación de Componentes (Bass, Drums, Vocals, Treble, Parones) y Cues
 const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSeekTrack, playProgress = 0, isCurrentPlaying = false }) => {
     const canvasRef = useRef(null);
     const rawId = track && track.id ? String(track.id) : "1";
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const durMs = parseDurationMs(duration);
+    const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
+    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const downbeatPct = downbeatMs > 0 ? Math.max(0.4, Math.min(99.0, (downbeatMs / durMs) * 100)) : null;
+    const trimPct = trimMs > 0 ? Math.max(0.2, Math.min(99.0, (trimMs / durMs) * 100)) : null;
 
     const handleCanvasClick = (e) => {
         if (!canvasRef.current || !onSeekTrack) return;
@@ -355,8 +372,32 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
             </div>
             <div onClick={handleCanvasClick} className="relative w-full h-[114px] bg-[#030306] rounded border border-djzinc-800/80 overflow-hidden cursor-pointer hover:border-djcyan-500/50 transition-colors">
                 <canvas ref={canvasRef} style={{ width: "100%", height: "114px", display: "block" }} />
+                
+                {/* Marcador Zero-Crossing Trim */}
+                {trimPct !== null && (
+                    <div className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-20" style={{ left: `${trimPct}%` }}>
+                        <div className="px-1 py-0.5 rounded-b text-[7px] font-mono font-black text-black bg-amber-400 flex items-center justify-center shadow">
+                            TRIM
+                        </div>
+                        <div className="w-[1.5px] h-full bg-amber-400 opacity-90 shadow-[0_0_6px_rgba(251,191,36,0.9)]"></div>
+                    </div>
+                )}
+
+                {/* Marcador Beatgrid 1.0.0 Downbeat */}
+                {downbeatPct !== null && (
+                    <div className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-20" style={{ left: `${downbeatPct}%` }}>
+                        <div className="px-1 py-0.5 rounded-b text-[7px] font-mono font-black text-black bg-djcyan-400 flex items-center justify-center shadow">
+                            1.0.0
+                        </div>
+                        <div className="w-[1.5px] h-full bg-djcyan-400 opacity-90 shadow-[0_0_6px_rgba(34,211,238,0.9)]"></div>
+                    </div>
+                )}
+
                 {cues.map((c, idx) => {
-                    const leftPos = Math.min(94, Math.max(4, (idx * 12.2) + 3));
+                    let leftPos = Math.min(94, Math.max(4, (idx * 12.2) + 3));
+                    if (idx === 0 && downbeatPct !== null) {
+                        leftPos = Math.min(94, Math.max(0.5, downbeatPct));
+                    }
                     return (
                         <div key={c.id} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10" style={{ left: `${leftPos}%` }}>
                             <div className="w-4 h-3.5 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow" style={{ backgroundColor: c.color }}>
@@ -593,6 +634,57 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
 
     const updateCurrentTrackField = (field, val) => {
         setTracks(prev => prev.map(t => t.id === currentTrack.id ? { ...t, [field]: val } : t));
+    };
+
+    const handleMicroAjusteTrim = (deltaMs) => {
+        if (!currentTrack || !currentTrack.id) return;
+        const cur = parseFloat(currentTrack.trim_start_ms || 0);
+        const nxt = Math.max(0, parseFloat((cur + deltaMs).toFixed(1)));
+        updateCurrentTrackField('trim_start_ms', nxt);
+    };
+
+    const handleMicroAjusteDownbeat = (deltaMs) => {
+        if (!currentTrack || !currentTrack.id) return;
+        const cur = parseFloat(currentTrack.first_downbeat_ms || 0);
+        const nxt = Math.max(0, parseFloat((cur + deltaMs).toFixed(1)));
+        updateCurrentTrackField('first_downbeat_ms', nxt);
+    };
+
+    const handleAutoDetectarTrimDownbeat = async () => {
+        if (!currentTrack || !currentTrack.id) return;
+        const targetPath = currentTrack.path || currentTrack.f;
+        if (!targetPath) return;
+        setBatchProgress(25);
+        setBatchStatusMsg(`Calculando Zero-Crossing y Beat 1.0.0 en ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
+        try {
+            if (window.eel && window.eel.calcular_trim_downbeat_track) {
+                const res = await window.eel.calcular_trim_downbeat_track(targetPath, currentTrack.id)();
+                if (res && res.status === 'ok') {
+                    updateCurrentTrackField('trim_start_ms', res.trim_start_ms);
+                    updateCurrentTrackField('first_downbeat_ms', res.first_downbeat_ms);
+                    setBatchProgress(100);
+                    setBatchStatusMsg(`✓ Trim: -${res.trim_start_ms}ms | Beatgrid 1.0.0: ${res.first_downbeat_ms}ms`);
+                } else {
+                    setBatchStatusMsg("No se pudo detectar el corte de silencio.");
+                }
+            }
+        } catch (err) {
+            console.error("Error auto-detecting trim/downbeat:", err);
+            setBatchStatusMsg("Error al calcular DSP.");
+        } finally {
+            setTimeout(() => {
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 1200);
+        }
+    };
+
+    const handlePreescuchaOffset = (offsetMs) => {
+        if (!currentTrack) return;
+        const offsetSec = Math.max(0, (parseFloat(offsetMs || 0) / 1000.0));
+        if (onPlayTrack) {
+            onPlayTrack(currentTrack, 0, true, offsetSec);
+        }
     };
 
     const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
@@ -1089,19 +1181,62 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                                 </button>
                             </div>
                         </div>
-                        <div className="flex items-center justify-between pt-1 border-t border-djzinc-850">
-                            <span className="text-xs text-gray-400 flex items-center">
-                                Trim Silencio (Zero-Cross)
-                                <InfoTip title="Recorte de Silencio" text="Elimina el silencio muerto en cabecera y cola cortando en paso por cero de amplitud (-60dBfs)." />
-                            </span>
-                            <button onClick={() => updateCurrentTrackField('trim_start_ms', 0)} className="text-[10px] font-bold bg-djzinc-800 text-gray-200 px-2 py-1 rounded border border-djzinc-700">{`Auto-Trim (-${currentTrack.trim_start_ms || 0}ms)`}</button>
+                        {/* Alineación Temporal: Trim Zero-Crossing */}
+                        <div className="pt-2 border-t border-djzinc-850 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-300 font-semibold flex items-center">
+                                    Trim Silencio (Zero-Cross)
+                                    <InfoTip title="Recorte de Silencio" text="Elimina el silencio muerto en cabecera cortando en paso por cero de amplitud (-60dBFS) para evitar clicks al mezclar." />
+                                </span>
+                                <span className="text-[11px] font-mono font-black text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/60">
+                                    {`-${Number(currentTrack.trim_start_ms || 0).toFixed(1)} ms`}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-1">
+                                <div className="flex items-center gap-1">
+                                    <button onClick={() => handleMicroAjusteTrim(-10)} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Restar 10ms">-10ms</button>
+                                    <button onClick={() => handleMicroAjusteTrim(-1)} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Restar 1ms">-1ms</button>
+                                    <button onClick={() => handleMicroAjusteTrim(1)} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Sumar 1ms">+1ms</button>
+                                    <button onClick={() => handleMicroAjusteTrim(10)} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Sumar 10ms">+10ms</button>
+                                    <button onClick={handleAutoDetectarTrimDownbeat} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-800 hover:bg-djzinc-700 text-amber-300 rounded border border-amber-800/60 cursor-pointer" title="Auto-detectar con DSP">Auto</button>
+                                </div>
+                                <button 
+                                    onClick={() => handlePreescuchaOffset(currentTrack.trim_start_ms || 0)} 
+                                    className="px-2 py-0.5 text-[9px] font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 rounded border border-amber-800/80 cursor-pointer transition-colors"
+                                    title="Preescucha directa desde el punto de recorte"
+                                >
+                                    ▶ Trim
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex items-center justify-between pt-1 border-t border-djzinc-850">
-                            <span className="text-xs text-gray-400 flex items-center">
-                                Alinear Beatgrid 1.0.0
-                                <InfoTip title="Beatgrid Downbeat" text="Fija el primer golpe de bombo real para que el sincro de Serato nunca quede a contratiempo." />
-                            </span>
-                            <button onClick={() => updateCurrentTrackField('first_downbeat_ms', 0)} className="text-[10px] font-bold bg-djcyan-950 text-djcyan-400 px-2 py-1 rounded border border-djcyan-800/60">{`Anclar Beat 1 (${currentTrack.first_downbeat_ms || 0}ms)`}</button>
+
+                        {/* Alineación Temporal: Beatgrid 1.0.0 Downbeat */}
+                        <div className="pt-2 border-t border-djzinc-850 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-300 font-semibold flex items-center">
+                                    Beatgrid 1.0.0 (Downbeat)
+                                    <InfoTip title="Beatgrid Downbeat" text="Fija el primer golpe de bombo real para que el sincro de Serato/Rekordbox nunca quede a contratiempo." />
+                                </span>
+                                <span className="text-[11px] font-mono font-black text-djcyan-300 bg-djcyan-950/80 px-2 py-0.5 rounded border border-djcyan-800/60">
+                                    {`${Number(currentTrack.first_downbeat_ms || 0).toFixed(1)} ms`}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-1">
+                                <div className="flex items-center gap-1">
+                                    <button onClick={() => handleMicroAjusteDownbeat(-10)} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Restar 10ms">-10ms</button>
+                                    <button onClick={() => handleMicroAjusteDownbeat(-1)} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Restar 1ms">-1ms</button>
+                                    <button onClick={() => handleMicroAjusteDownbeat(1)} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Sumar 1ms">+1ms</button>
+                                    <button onClick={() => handleMicroAjusteDownbeat(10)} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer" title="Sumar 10ms">+10ms</button>
+                                    <button onClick={handleAutoDetectarTrimDownbeat} className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-800 hover:bg-djzinc-700 text-djcyan-300 rounded border border-djcyan-800/60 cursor-pointer" title="Auto-detectar con DSP">Auto</button>
+                                </div>
+                                <button 
+                                    onClick={() => handlePreescuchaOffset(currentTrack.first_downbeat_ms || 0)} 
+                                    className="px-2 py-0.5 text-[9px] font-bold bg-djcyan-950/70 hover:bg-djcyan-900 text-djcyan-300 rounded border border-djcyan-800/80 cursor-pointer transition-colors"
+                                    title="Preescucha directa desde el primer golpe de bombo"
+                                >
+                                    ▶ Beat 1
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -1937,7 +2072,7 @@ const App = () => {
         };
     }, []);
 
-    const handlePlayTrack = (track, seekPct = 0, autoPlay = true) => {
+    const handlePlayTrack = (track, seekPct = 0, autoPlay = true, startOffsetSec = null) => {
         if (!track) return;
         const resolvedCover = track.cover || (track.path ? `/cover?path=${encodeURIComponent(track.path)}` : (track.f ? `/cover?path=${encodeURIComponent(track.f)}` : null));
         const trackWithCover = { ...track, cover: resolvedCover };
@@ -1959,25 +2094,38 @@ const App = () => {
                 }
 
                 if (targetSrc) {
-                    if (audio.src !== targetSrc && !audio.src.endsWith(targetSrc)) {
-                        audio.src = targetSrc;
-                    }
-                    audio.play().then(() => {
-                        setIsPlaying(true);
-                        if (seekPct > 0 && audio.duration && !isNaN(audio.duration)) {
+                    const isSameSrc = (audio.src === targetSrc || audio.src.endsWith(targetSrc));
+                    const applyPosition = () => {
+                        if (startOffsetSec !== null && !isNaN(startOffsetSec)) {
+                            audio.currentTime = Math.max(0, startOffsetSec);
+                            if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
+                                setPlayProgress(startOffsetSec / audio.duration);
+                            }
+                        } else if (seekPct > 0 && audio.duration && !isNaN(audio.duration)) {
                             audio.currentTime = audio.duration * seekPct;
                             setPlayProgress(seekPct);
                         }
-                    }).catch((err) => {
-                        console.warn("Audio HTML5 play fallback to afplay:", err);
-                        // Fallback a afplay nativo
-                        if (track.path || track.f) {
-                            if (window.eel && window.eel.reproducir_pista_mac) {
-                                window.eel.reproducir_pista_mac(track.path || track.f)();
-                                setIsPlaying(true);
+                    };
+
+                    if (isSameSrc) {
+                        applyPosition();
+                        audio.play().then(() => setIsPlaying(true)).catch(() => {});
+                    } else {
+                        audio.src = targetSrc;
+                        audio.play().then(() => {
+                            setIsPlaying(true);
+                            applyPosition();
+                        }).catch((err) => {
+                            console.warn("Audio HTML5 play fallback to afplay:", err);
+                            // Fallback a afplay nativo
+                            if (track.path || track.f) {
+                                if (window.eel && window.eel.reproducir_pista_mac) {
+                                    window.eel.reproducir_pista_mac(track.path || track.f)();
+                                    setIsPlaying(true);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 } else if (track.path || track.f) {
                     if (window.eel && window.eel.reproducir_pista_mac) {
                         window.eel.reproducir_pista_mac(track.path || track.f)();

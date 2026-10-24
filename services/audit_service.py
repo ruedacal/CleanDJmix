@@ -114,6 +114,24 @@ class AuditService:
                     pass
             return err_res
 
+    def analizar_trim_downbeat(self, filepath: str, track_id=None) -> dict:
+        """Calcula de forma específica bajo demanda el trim zero-crossing y el primer downbeat."""
+        if not filepath or not os.path.exists(filepath):
+            real_path = self.directorio_actual and os.path.join(self.directorio_actual, os.path.basename(filepath or ""))
+            if real_path and os.path.exists(real_path):
+                filepath = real_path
+            else:
+                return {"status": "error", "msg": "Archivo no encontrado", "trim_start_ms": 0.0, "first_downbeat_ms": 0.0}
+
+        trim_ms, downbeat_ms = AudioProcessorService.detectar_trim_y_downbeat(filepath)
+        return {
+            "status": "ok",
+            "id": track_id,
+            "path": filepath,
+            "trim_start_ms": trim_ms,
+            "first_downbeat_ms": downbeat_ms
+        }
+
     def iniciar_auditoria(self, ruta_directorio, emitir_log_cb=None, progreso_cb=None):
         if not ruta_directorio or not os.path.exists(ruta_directorio):
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
@@ -243,6 +261,8 @@ class AuditService:
             bpm_str = "--"
             key_str = "--"
             dur_str = "00:00"
+            trim_start_ms = 0.0
+            first_downbeat_ms = 0.0
 
             try:
                 if ext == ".flac":
@@ -263,6 +283,18 @@ class AuditService:
                             m = int(f.info.length) // 60
                             s = int(f.info.length) % 60
                             dur_str = f"{m}:{s:02d}"
+                        raw_trim = f.get("TRIM_START_MS", [""])[0]
+                        if raw_trim:
+                            try:
+                                trim_start_ms = float(raw_trim)
+                            except Exception:
+                                pass
+                        raw_down = f.get("FIRST_DOWNBEAT_MS", [""])[0]
+                        if raw_down:
+                            try:
+                                first_downbeat_ms = float(raw_down)
+                            except Exception:
+                                pass
                     except Exception:
                         m = MutagenFile(full_path, easy=True)
                         if m:
@@ -271,6 +303,17 @@ class AuditService:
                             if m.info and hasattr(m.info, "length"):
                                 dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
                 else:
+                    try:
+                        id3_tags = ID3(full_path)
+                        t_frame = id3_tags.get("TXXX:TRIM_START_MS")
+                        d_frame = id3_tags.get("TXXX:FIRST_DOWNBEAT_MS")
+                        if t_frame and t_frame.text:
+                            trim_start_ms = float(t_frame.text[0])
+                        if d_frame and d_frame.text:
+                            first_downbeat_ms = float(d_frame.text[0])
+                    except Exception:
+                        pass
+
                     m = MutagenFile(full_path, easy=True)
                     if m:
                         title = str(m.get("title", [""])[0])
@@ -318,8 +361,8 @@ class AuditService:
                 "format": ext.replace(".", "").upper(),
                 "status": "Cargado (Sin auditar)",
                 "cutoff_khz": 0.0,
-                "trim_start_ms": 0.0,
-                "first_downbeat_ms": 0.0,
+                "trim_start_ms": trim_start_ms,
+                "first_downbeat_ms": first_downbeat_ms,
                 "comment": ""
             })
 

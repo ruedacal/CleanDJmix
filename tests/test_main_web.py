@@ -86,3 +86,11 @@ def test_wrappers(mock_spotify):
     main_web.log_to_console("Test")
     res_enr = main_web.enriquecer_pista_local("path")
     assert res_enr["status"] == "ok"
+
+@patch.object(main_web.audit_svc, 'analizar_trim_downbeat', return_value={"status": "ok", "trim_start_ms": 15.0, "first_downbeat_ms": 500.0})
+def test_calcular_trim_downbeat_track(mock_trim):
+    res = main_web.calcular_trim_downbeat_track("/path/to/audio.mp3", track_id=1)
+    assert res["status"] == "ok"
+    assert res["trim_start_ms"] == 15.0
+    assert res["first_downbeat_ms"] == 500.0
+    mock_trim.assert_called_with("/path/to/audio.mp3", 1)
