@@ -82,6 +82,11 @@ const I18N_TRANSLATIONS = {
         th_waveform: "Waveform",
         th_title: "Archivo / Título",
         th_artist: "Artista",
+        th_format: "Formato",
+        th_khz: "kHz",
+        th_kbps: "kbps",
+        th_quality: "Calidad",
+        th_loss: "Pérdida / Compresión",
         th_duration: "Duración",
         th_bpm: "BPM",
         th_key: "Key",
@@ -166,6 +171,11 @@ const I18N_TRANSLATIONS = {
         th_waveform: "Waveform",
         th_title: "File / Title",
         th_artist: "Artist",
+        th_format: "Format",
+        th_khz: "kHz",
+        th_kbps: "kbps",
+        th_quality: "Quality",
+        th_loss: "Loss / Compression",
         th_duration: "Duration",
         th_bpm: "BPM",
         th_key: "Key",
@@ -3581,7 +3591,7 @@ const AuditWorkspace = ({
                         total: res.total || 0,
                         missing: res.sin_meta || 0,
                         ready: res.ready !== undefined ? res.ready : Math.max(0, (res.total || 0) - (res.sin_meta || 0)),
-                        errors: res.errors !== undefined ? res.errors : res.tracks.filter(x => String(x.status).includes('Fake')).length
+                        errors: res.errors !== undefined ? res.errors : res.tracks.filter(x => Boolean(x.es_fake) || (x.format === 'FLAC' && String(x.status).includes('Fake'))).length
                     });
                 }
                 setBatchProgress(100);
@@ -3848,7 +3858,7 @@ const AuditWorkspace = ({
         const m = (t?.t || t?.title || '').toLowerCase().includes(term) || (t?.a || t?.artist || '').toLowerCase().includes(term) || (t?.f || t?.filename || '').toLowerCase().includes(term);
         if (!m) return false;
         if (filtro === 'missing') return (t?.b === '--' || t?.k === '--');
-        if (filtro === 'error') return String(t?.status || '').includes('Fake');
+        if (filtro === 'error') return Boolean(t?.es_fake) || (t?.format === 'FLAC' && String(t?.status || '').includes('Fake'));
         return true;
     });
 
@@ -4011,26 +4021,25 @@ const AuditWorkspace = ({
                             <tr>
                                 <th className="py-2.5 px-2 w-7 text-center">{t('th_num') || '#'}</th>
                                 <th className="py-2.5 px-2 w-28 text-center text-djcyan-400">{t('th_waveform') || 'Waveform'}</th>
-                                <th className="py-2.5 px-3 min-w-[240px]">{t('th_title') || 'Archivo / Título'}</th>
+                                <th className="py-2.5 px-3 min-w-[220px]">{t('th_title') || 'Archivo / Título'}</th>
                                 <th className="py-2.5 px-2 w-28">{t('th_artist') || 'Artista'}</th>
+                                <th className="py-2.5 px-2 text-center w-16">{t('th_format') || 'Formato'}</th>
+                                <th className="py-2.5 px-2 text-center w-16">{t('th_khz') || 'kHz'}</th>
+                                <th className="py-2.5 px-2 text-center w-20">{t('th_kbps') || 'kbps'}</th>
+                                <th className="py-2.5 px-2 text-center w-24">{t('th_quality') || 'Calidad'}</th>
+                                <th className="py-2.5 px-3 text-center min-w-[170px]">{t('th_loss') || 'Pérdida / Compresión'}</th>
+                                <th className="py-2.5 px-1.5 text-center">{t('th_fft') || 'Cert. FFT'}</th>
                                 <th className="py-2.5 px-1.5 text-center">{t('th_duration') || 'Time'}</th>
                                 <th className="py-2.5 px-1.5 text-center">BPM</th>
                                 <th className="py-2.5 px-1.5 text-center">Key</th>
-                                <th className="py-2.5 px-1.5 text-center">{t('th_fft') || 'Cert. FFT'}</th>
-                                <th className="py-2.5 px-1.5 text-center">Auto-Trim</th>
-                                <th className="py-2.5 px-1.5 text-center">Beat 1.0.0</th>
                                 <th className="py-2.5 px-1.5 text-center">{t('th_cues') || '8 Hot Cues'}</th>
-                                <th className="py-2.5 px-1.5 text-center">{t('th_energy') || 'Energía'}</th>
-                                <th className="py-2.5 px-1.5 text-center">{t('th_dance') || 'Dance'}</th>
-                                <th className="py-2.5 px-2 text-center">{t('th_mood') || 'Atmósfera'}</th>
-                                <th className="py-2.5 px-3 min-w-[180px]">{t('th_comment') || 'Comentario Táctico DJ'}</th>
                                 <th className="py-2.5 px-2 text-center">{t('th_status') || 'Estado'}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracksFiltrados.length === 0 && !isAuditing && (
                                 <tr>
-                                    <td colSpan="16" className="py-12 text-center text-gray-500 font-mono text-xs">
+                                    <td colSpan="15" className="py-12 text-center text-gray-500 font-mono text-xs">
                                         No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Directorio".
                                     </td>
                                 </tr>
@@ -4038,6 +4047,7 @@ const AuditWorkspace = ({
                             {tracksFiltrados.map((row) => {
                                 const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
                                 const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : (row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null)));
+                                const isFake = Boolean(row.es_fake || (row.format === 'FLAC' && String(row.status || '').includes('Fake')));
                                 return (
                                     <tr key={row.id} onClick={() => { setSelectedTrack(row.id); setSidebarOpen(true); if (onPlayTrack) onPlayTrack(row, 0, false); }} className={`cursor-pointer select-none transition-colors ${selectedTrack === row.id ? 'bg-djcyan-950/40 border-l-2 border-djcyan-400' : 'hover:bg-djzinc-850/40'}`}>
                                         <td className="py-2 px-2 text-center text-djzinc-500 font-mono">{row.id}</td>
@@ -4070,12 +4080,64 @@ const AuditWorkspace = ({
                                             </div>
                                         </td>
                                         <td className="py-2 px-2 text-gray-300 truncate max-w-[120px]" title={row.a || row.artist}>{row.a || row.artist}</td>
+
+                                        {/* FORMATO */}
+                                        <td className="py-2 px-2 text-center">
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-djcyan-400 border border-djzinc-750">
+                                                {row.format || (row.f ? row.f.split('.').pop().toUpperCase() : 'FLAC')}
+                                            </span>
+                                        </td>
+
+                                        {/* KHZ */}
+                                        <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
+                                            {row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : '44.1 kHz'}
+                                        </td>
+
+                                        {/* KBPS */}
+                                        <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
+                                            {row.bitrate_kbps ? `${row.bitrate_kbps} kbps` : (row.format === 'MP3' ? '320 kbps' : '1062 kbps')}
+                                        </td>
+
+                                        {/* CALIDAD */}
+                                        <td className="py-2 px-2 text-center">
+                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
+                                                isFake ? 'bg-red-950 text-red-400 border-red-800' :
+                                                (String(row.calidad || '').includes('Alta') || String(row.calidad || '').includes('Hi-Res')) ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800' :
+                                                String(row.calidad || '').includes('Media') ? 'bg-amber-950/80 text-amber-400 border-amber-800' :
+                                                (row.calidad && row.calidad !== 'Pendiente Auditoría') ? 'bg-red-950/80 text-red-400 border-red-800' :
+                                                'bg-djzinc-850 text-gray-400 border-djzinc-750'
+                                            }`}>
+                                                {row.calidad || (isFake ? 'Baja' : 'Alta')}
+                                            </span>
+                                        </td>
+
+                                        {/* PÉRDIDA / COMPRESIÓN */}
+                                        <td className="py-2 px-3 text-center">
+                                            {isFake ? (
+                                                <span className="text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800" title={`Corte espectral a ${row.cutoff_khz || '--'}kHz`}>
+                                                    ⚠️ Transcode ({row.perdida_pct || 0}%)
+                                                </span>
+                                            ) : row.perdida === 'Sin Pérdida' ? (
+                                                <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60">
+                                                    Sin Pérdida
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] font-mono text-gray-300">
+                                                    {row.perdida || 'Sin auditar'}
+                                                </span>
+                                            )}
+                                        </td>
+
+                                        {/* CERT. FFT */}
+                                        <td className="py-2 px-1.5 text-center">
+                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${isFake ? 'bg-red-950 text-red-400 border-red-800' : 'bg-djgreen-950/80 text-djgreen-400 border-djgreen-800'}`}>
+                                                {row.cutoff_khz ? `${row.cutoff_khz}kHz` : 'PASS'}
+                                            </span>
+                                        </td>
+
                                         <td className="py-2 px-1.5 text-center text-gray-400 font-mono">{row.duration}</td>
                                         <td className="py-2 px-1.5 text-center"><span className="bg-djzinc-850 text-gray-200 px-1.5 py-0.5 rounded font-mono border border-djzinc-750">{row.b}</span></td>
                                         <td className="py-2 px-1.5 text-center"><span className="px-1.5 py-0.5 rounded font-mono font-bold bg-djcyan-950 text-djcyan-400 border border-djcyan-800/50">{row.k}</span></td>
-                                        <td className="py-2 px-1.5 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${String(row.status).includes('Fake') ? 'bg-red-950/80 text-red-400 border-red-800' : 'bg-djgreen-950/80 text-djgreen-400 border-djgreen-800'}`}>{row.cutoff_khz ? `${row.cutoff_khz}kHz` : 'PASS'}</span></td>
-                                        <td className="py-2 px-1.5 text-center font-mono text-[10px] text-amber-300">{row.trim_start_ms > 0 ? `-${row.trim_start_ms}ms` : '0ms'}</td>
-                                        <td className="py-2 px-1.5 text-center font-mono text-[10px] text-blue-300">{row.first_downbeat_ms ? `${row.first_downbeat_ms}ms` : '0ms'}</td>
                                         <td className="py-2 px-1.5 text-center">
                                             <button
                                                 type="button"
@@ -4094,11 +4156,27 @@ const AuditWorkspace = ({
                                                 🎛️ 8 Cues
                                             </button>
                                         </td>
-                                        <td className="py-2 px-1.5 text-center font-mono text-[10px] text-pink-300 font-bold">{row.e || 80}%</td>
-                                        <td className="py-2 px-1.5 text-center font-mono text-[10px] text-indigo-300 font-bold">{row.dance || 85}%</td>
-                                        <td className="py-2 px-2 text-center text-[9px] font-mono text-emerald-300">{row.mood || 'Peak Time'}</td>
-                                        <td className="py-2 px-3 text-[10px] font-mono text-gray-300 truncate max-w-[200px]" title={row.comment}>💬 {row.comment}</td>
-                                        <td className="py-2 px-2 text-center"><span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-djzinc-850 text-djgreen-400 border border-djzinc-750">{row.status}</span></td>
+
+                                        {/* ESTADO */}
+                                        <td className="py-2 px-2 text-center">
+                                            {isFake ? (
+                                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" title="¡Alerta! Falso FLAC con corte lossy previo">
+                                                    FLAC FAKE
+                                                </span>
+                                            ) : String(row.status || '').includes('VERDADERO') || String(row.status || '').includes('True') || String(row.status || '').includes('HI-RES') ? (
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                                                    {row.status}
+                                                </span>
+                                            ) : row.format === 'MP3' || String(row.status || '').includes('MP3') ? (
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-cyan-300 border border-djzinc-700">
+                                                    {row.status}
+                                                </span>
+                                            ) : (
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-djzinc-850 text-gray-300 border border-djzinc-750">
+                                                    {row.status}
+                                                </span>
+                                            )}
+                                        </td>
                                     </tr>
                                 );
                             })}
@@ -4189,25 +4267,63 @@ const AuditWorkspace = ({
                         onToggleGrid={() => setShowBeatgrid(prev => !prev)}
                     />
 
-                    <div className="bg-djzinc-950 p-3 rounded-lg border border-djzinc-800 space-y-2.5">
-                        <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-400 font-semibold flex items-center">
-                                Certificación FFT
-                                <InfoTip title="Análisis FFT de Pérdida" text="Comprueba si el espectro rebasa los 20kHz reales o si es un MP3 inflado artificialmente a FLAC." />
+                    <div className="bg-djzinc-950 p-3 rounded-lg border border-djzinc-800 space-y-3">
+                        <div className="flex items-center justify-between text-xs pb-2 border-b border-djzinc-850">
+                            <span className="text-gray-300 font-bold flex items-center gap-1">
+                                <span>🔬 Pureza & Calidad Acústica</span>
+                                <InfoTip title="Teorema de Nyquist y Pérdida" text="En audio sin pérdida (FLAC/WAV a 44.1kHz), la frecuencia máxima teórica es de 22.05kHz cubriendo todo el rango audible humano. Un corte abrupto a 16kHz o 20kHz evidencia transcode falso desde MP3 con pérdida." />
                             </span>
-                            <div className="flex items-center gap-1.5">
-                                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${String(currentTrack.status || '').includes('Fake') ? 'bg-red-950 text-red-400 border-red-800' : 'bg-djgreen-950 text-djgreen-400 border-djgreen-800'}`}>
-                                    {currentTrack.cutoff_khz ? `${currentTrack.cutoff_khz} kHz` : 'PASS 22.05kHz'}
+                            <button 
+                                onClick={() => handleAbrirFftModal(currentTrack)} 
+                                className="px-2 py-0.5 bg-djzinc-800 hover:bg-djzinc-700 text-djcyan-400 text-[10px] font-mono font-bold rounded border border-djzinc-650 cursor-pointer transition-colors"
+                                title="Abrir análisis espectral FFT en detalle"
+                            >
+                                VER FFT 📊
+                            </button>
+                        </div>
+
+                        {/* Grid de Métricas Técnicas */}
+                        <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                            <div className="bg-djzinc-900/80 p-2 rounded border border-djzinc-800">
+                                <span className="text-gray-500 text-[9px] uppercase block">Formato / Tasa</span>
+                                <span className="text-djcyan-300 font-bold">{currentTrack.format || 'FLAC'} • {currentTrack.sample_rate_khz || 44.1} kHz</span>
+                            </div>
+                            <div className="bg-djzinc-900/80 p-2 rounded border border-djzinc-800">
+                                <span className="text-gray-500 text-[9px] uppercase block">Bitrate / Bits</span>
+                                <span className="text-gray-200 font-bold">{currentTrack.bitrate_kbps ? `${currentTrack.bitrate_kbps} kbps` : (currentTrack.format === 'MP3' ? '320 kbps' : '1062 kbps')}</span>
+                            </div>
+                            <div className="bg-djzinc-900/80 p-2 rounded border border-djzinc-800">
+                                <span className="text-gray-500 text-[9px] uppercase block">Corte Espectral FFT</span>
+                                <span className={`font-bold ${Boolean(currentTrack.es_fake || (currentTrack.format === 'FLAC' && String(currentTrack.status || '').includes('Fake'))) ? 'text-red-400' : 'text-emerald-400'}`}>
+                                    {currentTrack.cutoff_khz ? `${currentTrack.cutoff_khz} kHz` : 'PASS 22.05 kHz'}
                                 </span>
-                                <button 
-                                    onClick={() => handleAbrirFftModal(currentTrack)} 
-                                    className="px-2 py-0.5 bg-djzinc-800 hover:bg-djzinc-700 text-djcyan-400 text-[10px] font-mono font-bold rounded border border-djzinc-650 cursor-pointer transition-colors"
-                                    title="Abrir análisis espectral FFT en detalle"
-                                >
-                                    VER FFT
-                                </button>
+                            </div>
+                            <div className="bg-djzinc-900/80 p-2 rounded border border-djzinc-800">
+                                <span className="text-gray-500 text-[9px] uppercase block">Calidad & Pérdida</span>
+                                <span className={`font-bold ${Boolean(currentTrack.es_fake || (currentTrack.format === 'FLAC' && String(currentTrack.status || '').includes('Fake'))) ? 'text-red-400' : 'text-emerald-400'}`}>
+                                    {currentTrack.calidad || (Boolean(currentTrack.es_fake) ? 'Baja' : 'Alta')} ({currentTrack.perdida_pct ? `${currentTrack.perdida_pct}%` : '0%'})
+                                </span>
                             </div>
                         </div>
+
+                        {/* Veredicto de Integridad */}
+                        {Boolean(currentTrack.es_fake || (currentTrack.format === 'FLAC' && String(currentTrack.status || '').includes('Fake'))) ? (
+                            <div className="p-2 bg-red-950/80 border border-red-700/80 rounded text-[11px] font-mono text-red-300 flex items-center gap-2 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.3)]">
+                                <span>⚠️</span>
+                                <div>
+                                    <span className="font-bold block uppercase">FLAC FAKE DETECTADO</span>
+                                    <span className="text-[10px] text-red-400">Corte a {currentTrack.cutoff_khz}kHz. Archivo inflado desde MP3 con pérdida.</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-2 bg-emerald-950/50 border border-emerald-800/60 rounded text-[11px] font-mono text-emerald-300 flex items-center gap-2">
+                                <span>✓</span>
+                                <div>
+                                    <span className="font-bold block uppercase">{currentTrack.status || 'Audio Auténtico'}</span>
+                                    <span className="text-[10px] text-emerald-400/90">{currentTrack.perdida || 'Sin Pérdida (Rango audible 100% preservado)'}</span>
+                                </div>
+                            </div>
+                        )}
                         {/* Alineación Temporal: Trim Zero-Crossing */}
                         <div className="pt-2 border-t border-djzinc-850 flex flex-col gap-1.5">
                             <div className="flex items-center justify-between">
@@ -6073,7 +6189,20 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                             return {
                                 ...t,
                                 cutoff_khz: res.cutoff_khz,
-                                status: res.estado || (res.cutoff_khz >= 20.0 ? 'PASS 22.05kHz' : 'Fake FLAC'),
+                                corte: res.corte,
+                                status: res.status || res.estado || (res.cutoff_khz >= 20.0 ? 'FLAC VERDADERO' : 'FLAC FAKE'),
+                                estado: res.estado || res.status,
+                                calidad: res.calidad || (res.cutoff_khz >= 20.0 ? 'Alta' : 'Baja'),
+                                perdida: res.perdida || 'Sin Pérdida',
+                                perdida_pct: res.perdida_pct !== undefined ? res.perdida_pct : 0,
+                                compresion: res.compresion || '',
+                                format: res.format || (selectedFormat ? selectedFormat.toUpperCase() : 'FLAC'),
+                                sample_rate_khz: res.sample_rate_khz || 44.1,
+                                bitrate_kbps: res.bitrate_kbps || 0,
+                                bit_depth: res.bit_depth || 16,
+                                es_fake: Boolean(res.es_fake),
+                                badge_color: res.badge_color || (res.es_fake ? 'red' : 'green'),
+                                audit_msg: res.audit_msg || '',
                                 spectrum: res.spectrum || [],
                                 downloaded: true,
                                 local_path: res.path
@@ -6081,6 +6210,9 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                         }
                         return t;
                     }));
+                    if (res.audit_msg) {
+                        setFftMsg(res.audit_msg);
+                    }
                 }
             };
             const finishBatch = (msg) => {
@@ -6093,7 +6225,7 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                     setDownloadProgress(0);
                     setFftProgress(0);
                     setIsAuditingFft(false);
-                }, 4000);
+                }, 7000);
             };
 
             window.actualizar_estado_descarga = updateDownload;
@@ -6394,18 +6526,23 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                             <tr>
                                 <th className="py-2.5 px-3 w-8 text-center"><input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} className="accent-djcyan-500 cursor-pointer" /></th>
                                 <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
-                                <th className="py-2.5 px-3 min-w-[280px]">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'}</th>
-                                <th className="py-2.5 px-3 min-w-[180px]">{t('th_artist') || 'ARTISTA'}</th>
-                                <th className="py-2.5 px-3 text-center w-20">{t('th_duration') || 'DURACIÓN'}</th>
-                                <th className="py-2.5 px-3 text-center w-20">BPM</th>
-                                <th className="py-2.5 px-3 text-center w-20">KEY</th>
-                                <th className="py-2.5 px-4 text-center w-40">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'}</th>
+                                <th className="py-2.5 px-3 min-w-[260px]">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'}</th>
+                                <th className="py-2.5 px-3 min-w-[160px]">{t('th_artist') || 'ARTISTA'}</th>
+                                <th className="py-2.5 px-2 text-center w-16">{t('th_format') || 'FORMATO'}</th>
+                                <th className="py-2.5 px-2 text-center w-16">{t('th_khz') || 'KHZ'}</th>
+                                <th className="py-2.5 px-2 text-center w-20">{t('th_kbps') || 'KBPS'}</th>
+                                <th className="py-2.5 px-2 text-center w-24">{t('th_quality') || 'CALIDAD'}</th>
+                                <th className="py-2.5 px-3 text-center min-w-[170px]">{t('th_loss') || 'PÉRDIDA / CORTE'}</th>
+                                <th className="py-2.5 px-2 text-center w-16">{t('th_duration') || 'DURACIÓN'}</th>
+                                <th className="py-2.5 px-2 text-center w-16">BPM</th>
+                                <th className="py-2.5 px-2 text-center w-16">KEY</th>
+                                <th className="py-2.5 px-3 text-center min-w-[140px]">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracks.length === 0 && !isAnalyzing && (
                                 <tr>
-                                    <td colSpan="8" className="py-12 text-center text-gray-500 font-mono text-xs">
+                                    <td colSpan="13" className="py-12 text-center text-gray-500 font-mono text-xs">
                                         Pega una URL de Spotify arriba y haz clic en "Analizar Enlace".
                                     </td>
                                 </tr>
@@ -6413,6 +6550,7 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                             {tracks.map((row) => {
                                 const isSelectedRow = row.id === selectedId;
                                 const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
+                                const isFake = Boolean(row.es_fake || String(row.status || '').includes('Fake'));
                                 return (
                                     <tr key={row.id} onClick={() => { setSelectedId(row.id); }} className={`cursor-pointer select-none transition-colors ${isSelectedRow ? 'bg-djcyan-950/35 border-l-2 border-djcyan-400' : 'hover:bg-[#101015]'}`}>
                                         <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={row.selected} onChange={() => handleToggleRow(row.id)} className="accent-djcyan-500 cursor-pointer" /></td>
@@ -6431,26 +6569,82 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                             </div>
                                         </td>
                                         <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-xs">{row.artist}</td>
-                                        <td className="py-2 px-3 text-center font-mono text-gray-400 text-xs">{row.duration}</td>
-                                        <td className="py-2 px-3 text-center"><span className="bg-[#14141c] text-gray-200 px-2 py-0.5 rounded text-[11px] font-mono border border-djzinc-800">{row.bpm}</span></td>
-                                        <td className="py-2 px-3 text-center"><span className="text-djcyan-400 font-mono font-bold text-xs">{row.key}</span></td>
-                                        <td className="py-2 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                                            <div className="flex items-center justify-center gap-2">
-                                                {row.cutoff_khz && (
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${String(row.status || '').includes('Fake') ? 'bg-red-950 text-red-400 border-red-800' : 'bg-djgreen-950 text-djgreen-400 border-djgreen-800'}`} title={`Frecuencia de corte FFT detectada: ${row.cutoff_khz}kHz`}>
-                                                        {row.cutoff_khz}kHz
+                                        
+                                        {/* FORMATO */}
+                                        <td className="py-2 px-2 text-center">
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-djcyan-400 border border-djzinc-750">
+                                                {row.format || (selectedFormat || 'flac').toUpperCase()}
+                                            </span>
+                                        </td>
+
+                                        {/* KHZ */}
+                                        <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
+                                            {row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : (row.downloaded ? '44.1 kHz' : '--')}
+                                        </td>
+
+                                        {/* KBPS */}
+                                        <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
+                                            {row.bitrate_kbps ? `${row.bitrate_kbps} kbps` : (row.downloaded ? (selectedFormat === 'mp3' ? '320 kbps' : '1062 kbps') : '--')}
+                                        </td>
+
+                                        {/* CALIDAD */}
+                                        <td className="py-2 px-2 text-center">
+                                            {row.downloaded ? (
+                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
+                                                    isFake ? 'bg-red-950 text-red-400 border-red-800' :
+                                                    (String(row.calidad || '').includes('Alta') || String(row.calidad || '').includes('Hi-Res')) ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800' :
+                                                    String(row.calidad || '').includes('Media') ? 'bg-amber-950/80 text-amber-400 border-amber-800' :
+                                                    'bg-red-950/80 text-red-400 border-red-800'
+                                                }`}>
+                                                    {row.calidad || (isFake ? 'Baja' : 'Alta')}
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] font-mono text-gray-500">Pendiente</span>
+                                            )}
+                                        </td>
+
+                                        {/* PÉRDIDA / CORTE */}
+                                        <td className="py-2 px-3 text-center">
+                                            {row.downloaded ? (
+                                                isFake ? (
+                                                    <span className="text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800" title={`Corte espectral a ${row.cutoff_khz || '--'}kHz`}>
+                                                        ⚠️ Transcode ({row.perdida_pct || 0}%)
                                                     </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60" title={`Corte a ${row.cutoff_khz || 22.05}kHz`}>
+                                                        {row.perdida === 'Sin Pérdida' ? 'Sin Pérdida' : (row.perdida || 'Sin Pérdida')}
+                                                    </span>
+                                                )
+                                            ) : (
+                                                <span className="text-[10px] font-mono text-gray-500">--</span>
+                                            )}
+                                        </td>
+
+                                        <td className="py-2 px-2 text-center font-mono text-gray-400 text-xs">{row.duration}</td>
+                                        <td className="py-2 px-2 text-center"><span className="bg-[#14141c] text-gray-200 px-1.5 py-0.5 rounded text-[11px] font-mono border border-djzinc-800">{row.bpm}</span></td>
+                                        <td className="py-2 px-2 text-center"><span className="text-djcyan-400 font-mono font-bold text-xs">{row.key}</span></td>
+
+                                        {/* ESTADO / ACCIÓN */}
+                                        <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                {row.downloaded ? (
+                                                    isFake ? (
+                                                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" title="¡Alerta! Falso FLAC con corte lossy previo">
+                                                            FLAC FAKE
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 shadow" title={`Corte detectado: ${row.cutoff_khz || 22.05}kHz`}>
+                                                            {row.status || 'FLAC VERDADERO'}
+                                                        </span>
+                                                    )
+                                                ) : (
+                                                    <button 
+                                                        onClick={() => lanzarDescargaReal([row])} 
+                                                        className="px-3 py-1 rounded text-[11px] font-mono font-semibold border transition-colors cursor-pointer bg-[#14141c] hover:bg-djcyan-600 hover:text-black text-gray-300 border-djzinc-750"
+                                                    >
+                                                        {`${t('download_btn') || 'Descargar'} .${selectedFormat}`}
+                                                    </button>
                                                 )}
-                                                <button 
-                                                    onClick={() => lanzarDescargaReal([row])} 
-                                                    className={`px-3 py-1 rounded text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
-                                                        row.downloaded 
-                                                            ? 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-700/60' 
-                                                            : 'bg-[#14141c] hover:bg-djcyan-600 hover:text-black text-gray-300 border-djzinc-750'
-                                                    }`}
-                                                >
-                                                    {row.downloaded ? '✓ En Disco' : `${t('download_btn') || 'Descargar'} .${selectedFormat}`}
-                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -9069,16 +9263,6 @@ const App = () => {
                     >
                         <Icons.Routing /> {t('nav_taxonomy') || 'Taxonomía'}
                     </button>
-                    <button 
-                        onClick={() => setActiveTab('logs')} 
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
-                            activeTab === 'logs' 
-                            ? 'bg-djcyan-500 text-black shadow-lg shadow-djcyan-500/20 font-bold' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-900'
-                        }`}
-                    >
-                        <Icons.Terminal /> {t('nav_logs') || 'Consola'}
-                    </button>
                 </nav>
 
                 <div className="flex items-center gap-3">
@@ -9193,9 +9377,6 @@ const App = () => {
                             setActiveTab('spotify');
                         }}
                     />
-                </div>
-                <div style={{ display: activeTab === 'logs' ? 'flex' : 'none' }} className="w-full h-full">
-                    <LogsWorkspace logs={logs} setLogs={setLogs} />
                 </div>
             </main>
 

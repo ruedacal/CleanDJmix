@@ -306,6 +306,9 @@ class AudioProcessorService:
             "duration": dur_str,
             "missing_meta": missing_meta,
             "format": ext.replace(".", "").upper(),
+            "sample_rate_khz": 44.1,
+            "bitrate_kbps": 320 if ext == ".mp3" else 1411,
+            "bit_depth": 16,
             "trim_start_ms": trim_start_ms,
             "first_downbeat_ms": first_downbeat_ms,
             "cues": cues

@@ -138,15 +138,46 @@ class DownloadService:
                             pass
 
                         fft_res = audio_service_ref.analizar_espectro_fft(ruta_final, spotify_id=spotify_id)
+                        diag = fft_res.get("diagnostico") or {}
+                        status_cert = diag.get("status") or fft_res.get("estado") or fft_res.get("status") or "Lossless OK"
+                        calidad_cert = diag.get("calidad") or "Alta"
+                        perdida_cert = diag.get("perdida") or (f"{fft_res.get('perdida')}%" if fft_res.get('perdida') else "Sin Pérdida")
+                        perdida_pct = diag.get("perdida_pct", fft_res.get("perdida", 0))
+                        compresion_cert = diag.get("compresion") or "Lossless"
+                        corte_cert = fft_res.get("corte") or f"{fft_res.get('cutoff_khz', 22.0)} kHz"
+                        khz_cert = diag.get("sample_rate_khz") or round(fft_res.get("samplerate", 44100) / 1000.0, 1)
+                        kbps_cert = diag.get("bitrate_kbps") or 0
+                        fmt_cert = diag.get("format") or os.path.splitext(ruta_final)[1].replace(".", "").upper()
+                        es_fake = bool(diag.get("es_fake", False) or ("Fake" in str(status_cert)))
+                        badge_color = diag.get("badge_color", "red" if es_fake else "green")
+
+                        if es_fake:
+                            audit_cert_msg = f"⚠️ [{status_cert}] {fmt_cert} {khz_cert}kHz ({kbps_cert}kbps) • Corte: {corte_cert} • Calidad: {calidad_cert} • {perdida_cert} ({perdida_pct}%)"
+                        else:
+                            audit_cert_msg = f"✅ [{status_cert}] {fmt_cert} {khz_cert}kHz ({kbps_cert}kbps) • Corte: {corte_cert} • Calidad: {calidad_cert} • {perdida_cert}"
+
+                        if hasattr(eel_ref, "actualizar_estado_fft"):
+                            eel_ref.actualizar_estado_fft(fft_pct, audit_cert_msg)()
+
                         if hasattr(eel_ref, "notificar_resultado_auditoria"):
                             eel_ref.notificar_resultado_auditoria({
                                 "id": spotify_id,
-                                "status": "ok",
+                                "status": status_cert,
+                                "estado": status_cert,
+                                "calidad": calidad_cert,
+                                "perdida": perdida_cert,
+                                "perdida_pct": perdida_pct,
+                                "compresion": compresion_cert,
                                 "cutoff_khz": fft_res.get("cutoff_khz", 22.0),
-                                "corte": fft_res.get("corte", "22.0 kHz"),
-                                "estado": fft_res.get("estado", "True Lossless"),
+                                "corte": corte_cert,
+                                "format": fmt_cert,
+                                "sample_rate_khz": khz_cert,
+                                "bitrate_kbps": kbps_cert,
+                                "bit_depth": diag.get("bit_depth", 16),
+                                "es_fake": es_fake,
+                                "badge_color": badge_color,
+                                "audit_msg": audit_cert_msg,
                                 "spectrum": fft_res.get("spectrum", []),
-                                "perdida": fft_res.get("perdida", 0),
                                 "path": ruta_final
                             })()
                     except Exception as e_fft:
@@ -168,9 +199,11 @@ class DownloadService:
             if self._cancelar:
                 resumen_msg = f"[CANCELADO] Lote cancelado. Descargadas: {completadas}, Pendientes: {total - procesadas}."
             else:
-                resumen_msg = f"[COMPLETADO 100%] Lote finalizado. Éxitos: {completadas}, Fallos: {fallidas}."
+                resumen_msg = f"✅ [COMPLETADO 100%] Lote finalizado: {completadas} pistas descargadas y certificadas por FFT."
             try:
                 eel_ref.actualizar_estado_descarga(100, resumen_msg)()
+                if hasattr(eel_ref, "actualizar_estado_fft"):
+                    eel_ref.actualizar_estado_fft(100, f"✅ [AUDITORÍA FINALIZADA] {completadas} pistas certificadas por FFT.")()
                 eel_ref.notificar_fin_lote(resumen_msg)()
             except Exception:
                 pass

@@ -6,6 +6,8 @@ import soundfile as sf
 import eel
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3
 from infrastructure.audio_processor import AudioProcessorService
 
 class AuditService:
@@ -13,6 +15,203 @@ class AuditService:
         self.directorio_actual = "/Users/admin/Music/mi musica"
         self._lock = threading.Lock()
         self._cancelar_proceso = False
+
+    @staticmethod
+    def extraer_info_tecnica_audio(filepath: str) -> dict:
+        """Extrae de forma ultrarrápida formato, sample_rate (kHz), bit_depth y bitrate (kbps)."""
+        ext = os.path.splitext(filepath)[1].lower() if filepath else ""
+        fmt = ext.replace(".", "").upper()
+        samplerate = 44100
+        bit_depth = 16
+        bitrate_kbps = 0
+        channels = 2
+        duration_sec = 0.0
+
+        try:
+            if ext in (".flac", ".wav", ".aiff", ".aif"):
+                try:
+                    info_sf = sf.info(filepath)
+                    samplerate = info_sf.samplerate
+                    channels = info_sf.channels
+                    duration_sec = info_sf.duration
+                    subtype = str(info_sf.subtype)
+                    if "24" in subtype:
+                        bit_depth = 24
+                    elif "32" in subtype:
+                        bit_depth = 32
+                    elif "16" in subtype:
+                        bit_depth = 16
+                    elif "8" in subtype:
+                        bit_depth = 8
+                except Exception:
+                    pass
+
+                if ext == ".flac":
+                    try:
+                        f = FLAC(filepath)
+                        if f.info:
+                            samplerate = f.info.sample_rate
+                            bit_depth = f.info.bits_per_sample
+                            channels = f.info.channels
+                            duration_sec = f.info.length
+                            if getattr(f.info, "bitrate", 0):
+                                bitrate_kbps = round(f.info.bitrate / 1000)
+                    except Exception:
+                        pass
+                elif ext in (".wav", ".aiff", ".aif"):
+                    if samplerate > 0 and bit_depth > 0 and channels > 0:
+                        bitrate_kbps = round((samplerate * bit_depth * channels) / 1000)
+            elif ext == ".mp3":
+                try:
+                    mp = MP3(filepath)
+                    if mp and mp.info:
+                        samplerate = mp.info.sample_rate
+                        bitrate_kbps = round(mp.info.bitrate / 1000)
+                        duration_sec = mp.info.length
+                        channels = mp.info.channels
+                except Exception:
+                    m = MutagenFile(filepath)
+                    if m and m.info:
+                        samplerate = getattr(m.info, "sample_rate", 44100)
+                        bitrate_bps = getattr(m.info, "bitrate", 0)
+                        if bitrate_bps:
+                            bitrate_kbps = round(bitrate_bps / 1000)
+                        duration_sec = getattr(m.info, "length", 0.0)
+            else:
+                try:
+                    m = MutagenFile(filepath)
+                    if m and m.info:
+                        samplerate = getattr(m.info, "sample_rate", 44100)
+                        bitrate_bps = getattr(m.info, "bitrate", 0)
+                        if bitrate_bps:
+                            bitrate_kbps = round(bitrate_bps / 1000)
+                        bit_depth = getattr(m.info, "bits_per_sample", 16)
+                        duration_sec = getattr(m.info, "length", 0.0)
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"[AUDIO INFO ERROR] {e}")
+
+        # Fallback de bitrate mediante bytes de archivo y duración si aplica
+        if bitrate_kbps <= 0 and duration_sec > 0:
+            try:
+                file_bytes = os.path.getsize(filepath)
+                bitrate_kbps = round((file_bytes * 8) / (duration_sec * 1000))
+            except Exception:
+                bitrate_kbps = 320 if ext == ".mp3" else 1411
+
+        if bitrate_kbps <= 0:
+            bitrate_kbps = 320 if ext == ".mp3" else (1411 if ext in (".wav", ".aiff") else 950)
+
+        return {
+            "format": fmt,
+            "samplerate": samplerate,
+            "sample_rate_khz": round(samplerate / 1000.0, 1),
+            "bit_depth": bit_depth,
+            "bitrate_kbps": bitrate_kbps,
+            "channels": channels,
+            "duration_sec": duration_sec
+        }
+
+    @staticmethod
+    def diagnosticar_calidad_audio(
+        filepath: str,
+        cutoff_khz: float = 0.0,
+        samplerate: int = 44100,
+        bit_depth: int = 16,
+        bitrate_kbps: int = 0,
+        fmt: str = ""
+    ) -> dict:
+        """Determina con rigor acústico y según Nyquist si el archivo es Lossless puro, Hi-Res,
+        MP3 legítimo por tramos de bitrate/corte, o un FLAC FAKE (upscale de MP3 con frecuencias cortadas)."""
+        ext = os.path.splitext(filepath)[1].lower() if filepath else ""
+        format_clean = (fmt or ext.replace(".", "")).upper()
+        is_lossless = format_clean in ("FLAC", "WAV", "AIFF", "AIF", "ALAC")
+        sr_khz = round(samplerate / 1000.0, 1) if samplerate else 44.1
+        nyquist_khz = round(samplerate / 2000.0, 2) if samplerate else 22.05
+        cutoff = round(float(cutoff_khz), 1) if cutoff_khz > 0 else 0.0
+
+        if is_lossless:
+            if cutoff == 0.0:
+                estado = f"{format_clean} (Cargado)"
+                calidad = "Pendiente Auditoría"
+                perdida_desc = "Sin auditar"
+                perdida_pct = 0.0
+                compresion = f"Lossless {bit_depth}-bit / {sr_khz}kHz"
+                es_fake = False
+                badge_color = "zinc"
+            elif samplerate >= 88200 and cutoff >= 24.0:
+                estado = "HI-RES LOSSLESS"
+                calidad = "Alta (Hi-Res Master)"
+                perdida_desc = "Sin Pérdida (Lossless Puro)"
+                perdida_pct = 0.0
+                compresion = f"Lossless {bit_depth}-bit / {sr_khz}kHz"
+                es_fake = False
+                badge_color = "purple"
+            elif cutoff >= 20.0:
+                estado = f"{format_clean} VERDADERO"
+                calidad = "Alta"
+                perdida_desc = "Sin Pérdida (Lossless)"
+                perdida_pct = 0.0
+                compresion = f"Lossless {bit_depth}-bit / {sr_khz}kHz"
+                es_fake = False
+                badge_color = "green"
+            else:
+                # Upscale / Transcode Falso: Contenedor lossless pero corte de frecuencias típico de MP3
+                estado = f"{format_clean} FAKE"
+                es_fake = True
+                badge_color = "red"
+                perdida_desc = "Pérdida por Transcode Falso"
+                perdida_pct = round(max(0.0, (1.0 - (cutoff / min(nyquist_khz, 22.05))) * 100.0), 1)
+                if cutoff <= 16.5:
+                    calidad = "Baja (Origen MP3 128k)"
+                    compresion = "Transcode Falso (MP3 128k → Lossless)"
+                elif cutoff <= 18.5:
+                    calidad = "Media (Origen MP3 192k)"
+                    compresion = "Transcode Falso (MP3 192k → Lossless)"
+                else:
+                    calidad = "Media-Alta (Origen MP3 320k)"
+                    compresion = "Transcode Falso (MP3 320k → Lossless)"
+        else:
+            # Formatos Comprimidos con Pérdida Legítimos (MP3, AAC, M4A, OGG)
+            es_fake = False
+            effective_kbps = bitrate_kbps if bitrate_kbps > 0 else (320 if cutoff >= 20.0 else (192 if cutoff >= 17.5 else 128))
+            if effective_kbps >= 310 or cutoff >= 20.0:
+                estado = f"{format_clean} 320k (HQ)"
+                calidad = "Alta"
+                perdida_desc = "Compresión Ligera (Corte ~20.5kHz)"
+                perdida_pct = round(max(0.0, (1.0 - (cutoff / 22.05)) * 100.0), 1) if cutoff > 0 else 7.0
+                compresion = f"Lossy CBR/VBR ({effective_kbps} kbps)"
+                badge_color = "cyan"
+            elif effective_kbps >= 190 or cutoff >= 17.5:
+                estado = f"{format_clean} {effective_kbps}k (MQ)"
+                calidad = "Media"
+                perdida_desc = "Compresión Media (Corte ~18.5kHz)"
+                perdida_pct = round(max(0.0, (1.0 - (cutoff / 22.05)) * 100.0), 1) if cutoff > 0 else 18.0
+                compresion = f"Lossy ({effective_kbps} kbps)"
+                badge_color = "yellow"
+            else:
+                estado = f"{format_clean} {effective_kbps}k (Baja)"
+                calidad = "Baja"
+                perdida_desc = "Pérdida Severa (Corte ~16kHz)"
+                perdida_pct = round(max(0.0, (1.0 - (cutoff / 22.05)) * 100.0), 1) if cutoff > 0 else 28.0
+                compresion = f"Lossy Compresión Alta ({effective_kbps} kbps)"
+                badge_color = "red"
+
+        return {
+            "status": estado,
+            "calidad": calidad,
+            "perdida": perdida_desc,
+            "perdida_pct": perdida_pct,
+            "compresion": compresion,
+            "cutoff_khz": cutoff,
+            "sample_rate_khz": sr_khz,
+            "bitrate_kbps": bitrate_kbps,
+            "bit_depth": bit_depth,
+            "format": format_clean,
+            "es_fake": es_fake,
+            "badge_color": badge_color
+        }
 
     def cancelar_proceso(self):
         """Activa la bandera de cancelación para abortar auditorías, inyecciones o descargas activas."""
@@ -111,8 +310,17 @@ class AuditService:
             mag_db = 20 * np.log10(mag)
             frecuencias_validas = xf[mag_db > (np.max(mag_db) - 80)]
             cutoff_khz = (np.max(frecuencias_validas) if len(frecuencias_validas) > 0 else 0) / 1000.0
-            estado = "True Lossless" if cutoff_khz >= 20.0 else "Falso FLAC"
-            perdida = 0 if estado == "True Lossless" else max(0, round((1.0 - (cutoff_khz / 22.05)) * 100, 1))
+
+            # Extracción técnica y diagnóstico físico de pureza y pérdida
+            tech = self.extraer_info_tecnica_audio(filepath)
+            diag = self.diagnosticar_calidad_audio(
+                filepath=filepath,
+                cutoff_khz=cutoff_khz,
+                samplerate=samplerate or tech.get("samplerate", 44100),
+                bit_depth=tech.get("bit_depth", 16),
+                bitrate_kbps=tech.get("bitrate_kbps", 0),
+                fmt=tech.get("format", "")
+            )
 
             # Reducir magnitudes a un submuestreo de 64 bandas para visualizador UI
             bins_count = 64
@@ -131,12 +339,23 @@ class AuditService:
 
             resultado = {
                 "id": spotify_id,
-                "estado": estado,
+                "status": diag["status"],
+                "estado": diag["status"],
+                "calidad": diag["calidad"],
+                "perdida": diag["perdida"],
+                "perdida_pct": diag["perdida_pct"],
+                "compresion": diag["compresion"],
+                "es_fake": diag["es_fake"],
+                "badge_color": diag["badge_color"],
                 "corte": f"{cutoff_khz:.1f} kHz",
                 "cutoff_khz": round(float(cutoff_khz), 1),
-                "perdida": perdida,
                 "spectrum": spectrum_points,
-                "samplerate": samplerate
+                "samplerate": samplerate,
+                "sample_rate_khz": diag["sample_rate_khz"],
+                "bitrate_kbps": diag["bitrate_kbps"],
+                "bit_depth": diag["bit_depth"],
+                "format": diag["format"],
+                "diagnostico": diag
             }
             if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
                 try:
@@ -146,7 +365,24 @@ class AuditService:
             return resultado
         except Exception as e:
             print(f"[ERROR DSP] {e}")
-            err_res = {"id": spotify_id, "estado": "Error I/O", "corte": "N/A", "cutoff_khz": 22.0, "perdida": 0, "spectrum": []}
+            err_res = {
+                "id": spotify_id, 
+                "status": "Error I/O",
+                "estado": "Error I/O", 
+                "calidad": "Desconocida",
+                "perdida": "Error",
+                "perdida_pct": 0,
+                "compresion": "--",
+                "es_fake": False,
+                "badge_color": "red",
+                "corte": "N/A", 
+                "cutoff_khz": 22.0, 
+                "sample_rate_khz": 44.1,
+                "bitrate_kbps": 0,
+                "bit_depth": 16,
+                "format": "FLAC",
+                "spectrum": []
+            }
             if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
                 try:
                     eel.notificar_resultado_auditoria(err_res)()
@@ -236,16 +472,42 @@ class AuditService:
                     cutoff_khz = float(fft_res.get("cutoff_khz", 22.0))
                     perdida = fft_res.get("perdida", 0)
                     spectrum_points = fft_res.get("spectrum", [])
-                    if cutoff_khz < 20.0:
-                        status_str = f"Fake FLAC ({cutoff_khz:.1f}kHz)"
+                    diag = fft_res.get("diagnostico") or self.diagnosticar_calidad_audio(
+                        filepath=full_path,
+                        cutoff_khz=cutoff_khz,
+                        samplerate=fft_res.get("samplerate", 44100),
+                        bit_depth=fft_res.get("bit_depth", 16),
+                        bitrate_kbps=fft_res.get("bitrate_kbps", 0),
+                        fmt=fft_res.get("format", "")
+                    )
+                    status_str = diag.get("status", "Lossless OK")
+                    if diag.get("es_fake", False):
                         fake_count += 1
-                    else:
-                        status_str = "True Lossless"
                 except Exception:
-                    status_str = str(info.get("status") or "Lossless OK")
+                    tech = self.extraer_info_tecnica_audio(full_path)
+                    diag = self.diagnosticar_calidad_audio(
+                        filepath=full_path,
+                        cutoff_khz=cutoff_khz,
+                        samplerate=tech.get("samplerate", 44100),
+                        bit_depth=tech.get("bit_depth", 16),
+                        bitrate_kbps=tech.get("bitrate_kbps", 0),
+                        fmt=tech.get("format", "")
+                    )
+                    status_str = diag.get("status", "Lossless OK")
+                    if diag.get("es_fake", False):
+                        fake_count += 1
             else:
-                status_str = str(info.get("status") or "Lossless OK")
-                if "Fake" in status_str or "Error" in status_str:
+                tech = self.extraer_info_tecnica_audio(full_path)
+                diag = self.diagnosticar_calidad_audio(
+                    filepath=full_path,
+                    cutoff_khz=0.0,
+                    samplerate=tech.get("samplerate", 44100),
+                    bit_depth=tech.get("bit_depth", 16),
+                    bitrate_kbps=tech.get("bitrate_kbps", 0),
+                    fmt=tech.get("format", "")
+                )
+                status_str = diag.get("status", "Lossless OK")
+                if diag.get("es_fake", False):
                     fake_count += 1
 
             # Inyección opcional de carátulas durante la auditoría por lote
@@ -279,10 +541,19 @@ class AuditService:
                 "mood": str(info.get("mood") or "Peak Time"),
                 "duration": str(info.get("duration") or "05:30"),
                 "cover": track_cover,
-                "format": str(info.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
+                "format": str(diag.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
+                "sample_rate_khz": float(diag.get("sample_rate_khz", 44.1)),
+                "bitrate_kbps": int(diag.get("bitrate_kbps", 0)),
+                "bit_depth": int(diag.get("bit_depth", 16)),
+                "calidad": str(diag.get("calidad", "Alta")),
+                "perdida": str(diag.get("perdida", "Sin Pérdida")),
+                "perdida_pct": float(diag.get("perdida_pct", 0.0)),
+                "compresion": str(diag.get("compresion", "")),
+                "es_fake": bool(diag.get("es_fake", False)),
+                "badge_color": str(diag.get("badge_color", "green")),
                 "status": status_str,
                 "cutoff_khz": cutoff_khz,
-                "perdida": perdida,
+                "perdida": perdida or diag.get("perdida", "Sin Pérdida"),
                 "spectrum": spectrum_points,
                 "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
                 "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
@@ -468,6 +739,16 @@ class AuditService:
                 except Exception:
                     pass
 
+            tech = self.extraer_info_tecnica_audio(full_path)
+            diag = self.diagnosticar_calidad_audio(
+                filepath=full_path,
+                cutoff_khz=0.0,
+                samplerate=tech.get("samplerate", 44100),
+                bit_depth=tech.get("bit_depth", 16),
+                bitrate_kbps=tech.get("bitrate_kbps", 0),
+                fmt=tech.get("format", ext.replace(".", "").upper())
+            )
+
             tracks_cargados.append({
                 "id": idx,
                 "f": str(file),
@@ -487,8 +768,17 @@ class AuditService:
                 "genre": genre_str,
                 "subgenre": subgenre_str,
                 "duration": dur_str,
-                "format": ext.replace(".", "").upper(),
-                "status": "Cargado (Sin auditar)",
+                "format": str(diag.get("format") or ext.replace(".", "").upper()),
+                "sample_rate_khz": float(diag.get("sample_rate_khz", 44.1)),
+                "bitrate_kbps": int(diag.get("bitrate_kbps", 0)),
+                "bit_depth": int(diag.get("bit_depth", 16)),
+                "calidad": str(diag.get("calidad", "Pendiente")),
+                "perdida": str(diag.get("perdida", "Sin auditar")),
+                "perdida_pct": float(diag.get("perdida_pct", 0.0)),
+                "compresion": str(diag.get("compresion", "")),
+                "es_fake": bool(diag.get("es_fake", False)),
+                "badge_color": str(diag.get("badge_color", "zinc")),
+                "status": str(diag.get("status") or "Cargado (Sin auditar)"),
                 "cutoff_khz": 0.0,
                 "trim_start_ms": trim_start_ms,
                 "first_downbeat_ms": first_downbeat_ms,
