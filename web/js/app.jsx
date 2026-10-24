@@ -705,7 +705,7 @@ const CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
 
 // Modal de configuración por lotes para Auditoría
 const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
-    const [opts, setOpts] = useState({ fftLossless: true, trimSilences: true, beatgrid: true, bpmKey: true, energyDance: true, moodDetect: true, hotCues8: true, tacticalComments: true });
+    const [opts, setOpts] = useState({ fftLossless: true, trimSilences: true, beatgrid: true, bpmKey: true, energyDance: true, moodDetect: true, hotCues8: true, tacticalComments: true, injectCovers: true });
     if (!isOpen) return null;
     const toggle = (key) => setOpts(prev => ({ ...prev, [key]: !prev[key] }));
     const activeCount = Object.values(opts).filter(Boolean).length;
@@ -722,7 +722,8 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
             group: "Metadatos & Mezcla Armónica",
             items: [
                 { key: "beatgrid", title: "Fijación Downbeat Beatgrid 1.0.0", desc: "Encuentra el primer golpe de bombo real y ancla el grid para evitar desfases de sincro.", badge: "Grid Auto", badgeColor: "text-blue-400 bg-blue-950/80 border-blue-800/60" },
-                { key: "bpmKey", title: "BPM Decimal & Notación Camelot", desc: "Calcula tempo con 2 decimales y mapea tono a notación Camelot estándar.", badge: "Key Wheel", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" }
+                { key: "bpmKey", title: "BPM Decimal & Notación Camelot", desc: "Calcula tempo con 2 decimales y mapea tono a notación Camelot estándar.", badge: "Key Wheel", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" },
+                { key: "injectCovers", title: "Inyección de Carátulas 1:1 (Artwork)", desc: "Detecta carátulas de carpeta o carátula oficial y las incrusta 600x600 en APIC/FLAC.", badge: "Cover 1:1", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" }
             ]
         },
         {
@@ -1279,29 +1280,29 @@ const AuditWorkspace = ({
         }
     };
 
-    const handleInyectarSeratoLote = async () => {
+    const handleInyectarCaratulasLote = async () => {
         if (!tracks || tracks.length === 0) {
-            alert("No hay pistas cargadas para inyectar.");
+            alert("No hay pistas cargadas para inyectar carátulas.");
             return;
         }
         setIsInjecting(true);
         setBatchProgress(5);
-        setBatchStatusMsg(`Iniciando inyección profunda de metadatos en ${tracks.length} pistas...`);
+        setBatchStatusMsg(`Buscando e inyectando carátulas 1:1 en ${tracks.length} pistas...`);
         try {
-            if (window.eel && window.eel.inyectar_lote_metadatos) {
-                const res = await window.eel.inyectar_lote_metadatos(tracks)();
+            if (window.eel && window.eel.inyectar_caratulas_lote) {
+                const res = await window.eel.inyectar_caratulas_lote(tracks)();
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
-                    setBatchStatusMsg(`✓ Inyección completada: ${res.inyectados} pistas actualizadas con éxito.`);
-                    setSaveFeedback(`✓ ${res.inyectados} pistas inyectadas en Serato`);
+                    setBatchStatusMsg(`✓ Carátulas actualizadas: ${res.actualizadas} pistas con artwork.`);
+                    setSaveFeedback(`✓ ${res.actualizadas} carátulas incrustadas en archivos`);
                     setTimeout(() => setSaveFeedback(''), 4000);
                 } else {
-                    setBatchStatusMsg("Error durante la inyección de lote.");
+                    setBatchStatusMsg("Error al inyectar carátulas.");
                 }
             }
         } catch (e) {
-            console.error("Error al inyectar lote:", e);
-            setBatchStatusMsg("Error al inyectar metadatos.");
+            console.error("Error al inyectar carátulas:", e);
+            setBatchStatusMsg("Fallo durante la inyección de carátulas.");
         } finally {
             setTimeout(() => {
                 setIsInjecting(false);
@@ -1310,6 +1311,40 @@ const AuditWorkspace = ({
             }, 1000);
         }
     };
+
+    const handleGuardarTodoEnFicheros = async () => {
+        if (!tracks || tracks.length === 0) {
+            alert("No hay pistas cargadas para guardar.");
+            return;
+        }
+        setIsInjecting(true);
+        setBatchProgress(5);
+        setBatchStatusMsg(`Guardando todos los metadatos en ${tracks.length} archivos físicos...`);
+        try {
+            if (window.eel && window.eel.inyectar_lote_metadatos) {
+                const res = await window.eel.inyectar_lote_metadatos(tracks)();
+                setBatchProgress(100);
+                if (res && res.status === 'ok') {
+                    setBatchStatusMsg(`✓ Guardado completo: ${res.inyectados} archivos actualizados en disco con éxito.`);
+                    setSaveFeedback(`✓ ${res.inyectados} archivos guardados con metadatos completos`);
+                    setTimeout(() => setSaveFeedback(''), 4000);
+                } else {
+                    setBatchStatusMsg("Error durante el guardado de archivos.");
+                }
+            }
+        } catch (e) {
+            console.error("Error al guardar todo en ficheros:", e);
+            setBatchStatusMsg("Error al guardar metadatos.");
+        } finally {
+            setTimeout(() => {
+                setIsInjecting(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 1000);
+        }
+    };
+
+    const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
 
     const tracksFiltrados = tracks.filter(t => {
         const term = busqueda.toLowerCase();
@@ -1342,29 +1377,32 @@ const AuditWorkspace = ({
                         </div>
                         <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-4 py-1.5 text-xs font-bold text-gray-300 cursor-pointer transition-colors">Explorar</button>
                     </div>
-                    <div className="flex gap-2.5 items-center">
-                        <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-3.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer">
-                            <Icons.Sliders /> Configurar Lote (Batch)
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
+                            <Icons.Sliders /> Configurar Lote
                         </button>
-                        <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djzinc-800 hover:bg-djzinc-700 text-white px-4 py-2 rounded-md font-semibold text-xs border border-djzinc-600 flex items-center gap-1.5 cursor-pointer">
+                        <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djzinc-800 hover:bg-djzinc-700 text-white px-3.5 py-2 rounded-md font-semibold text-xs border border-djzinc-600 flex items-center gap-1.5 cursor-pointer">
                             <Icons.Library /> {isAuditing ? 'Auditando...' : 'Auditar Directorio'}
                         </button>
-                        <button onClick={handleExportarXLS} className="bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
+                        <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-amber-400 border border-amber-600/60 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
+                            🖼️ Inyectar Carátulas
+                        </button>
+                        <button onClick={handleExportarXLS} className="bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-2.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
                             <Icons.Excel /> XLS
                         </button>
-                        <button onClick={handleExportarSeratoCrates} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-purple-400 border border-purple-700/60 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Exportar archivos .crate oficiales a Serato DJ Pro">
+                        <button onClick={handleExportarSeratoCrates} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-purple-400 border border-purple-700/60 px-2.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Exportar archivos .crate oficiales a Serato DJ Pro">
                             💽 Crates
                         </button>
-                        <button onClick={handleExportarRekordboxXml} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-blue-400 border border-blue-700/60 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Exportar rekordbox.xml estándar Pioneer DJ">
+                        <button onClick={handleExportarRekordboxXml} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-blue-400 border border-blue-700/60 px-2.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Exportar rekordbox.xml estándar Pioneer DJ">
                             📋 Rekordbox
                         </button>
                         <button 
-                            onClick={handleInyectarSeratoLote} 
+                            onClick={handleGuardarTodoEnFicheros} 
                             disabled={isInjecting || tracks.length === 0}
-                            className="bg-djcyan-600 hover:bg-djcyan-500 disabled:opacity-50 text-black px-4 py-2 rounded-md font-bold text-xs shadow-md cursor-pointer transition-colors"
-                            title="Inyecta tags ID3v2.4 / Vorbis, BPM, Camelot Key, Comentario Táctico y Cues en todos los archivos cargados"
+                            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-4 py-2 rounded-md font-black text-xs shadow-lg shadow-emerald-500/25 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                            title="Guarda y persiste todos los metadatos editados (BPM, Key Camelot, Comentarios Tácticos, Cues, Beatgrid, Taxonomía y Carátulas) directamente en los archivos físicos de audio en disco"
                         >
-                            Inyectar a Serato ({tracks.length})
+                            💾 Guardar Todo en Ficheros ({tracks.length})
                         </button>
                     </div>
                 </div>
@@ -1891,6 +1929,10 @@ const AuditWorkspace = ({
                         if (res && res.tracks) {
                             setTracks(res.tracks);
                             setMetrics({ total: res.total, missing: res.sin_meta, ready: res.ready, errors: res.errors || 0 });
+                            if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
+                                setBatchStatusMsg("Inyectando carátulas 1:1 en archivos físicos...");
+                                await window.eel.inyectar_caratulas_lote(res.tracks)();
+                            }
                             if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
                                 setBatchStatusMsg("Inyectando comentarios tácticos y tags en archivos físicos...");
                                 await window.eel.inyectar_lote_metadatos(res.tracks)();

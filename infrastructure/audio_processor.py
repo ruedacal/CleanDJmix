@@ -509,6 +509,45 @@ class AudioProcessorService:
             return b""
 
     @staticmethod
+    def resolver_caratula_local_o_remota(ruta: str, artist: str = "", title: str = "") -> str:
+        """Busca carátula de alta resolución en la carpeta local o vía API de iTunes si la pista no tiene carátula."""
+        if not ruta:
+            return ""
+        directorio = os.path.dirname(ruta)
+        if directorio and os.path.exists(directorio):
+            candidatos = [
+                "cover.jpg", "cover.png", "cover.jpeg",
+                "folder.jpg", "folder.png", "album.jpg",
+                "front.jpg", "front.png"
+            ]
+            for cand in candidatos:
+                c_path = os.path.join(directorio, cand)
+                if os.path.exists(c_path):
+                    return c_path
+
+        if artist and title and artist != "Desconocido":
+            try:
+                import urllib.parse
+                import urllib.request
+                import json
+                import ssl
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                q = urllib.parse.quote(f"{artist} {title}")
+                url = f"https://itunes.apple.com/search?term={q}&entity=song&limit=1"
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (BeatWave Pro)"})
+                with urllib.request.urlopen(req, context=ctx, timeout=4) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    results = data.get("results", [])
+                    if results and results[0].get("artworkUrl100"):
+                        return results[0]["artworkUrl100"].replace("100x100bb", "600x600bb")
+            except Exception as e:
+                print(f"[ARTWORK SEARCH WARN] {e}")
+
+        return ""
+
+    @staticmethod
     def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None) -> bool:
         """Inyecta metadatos profesionales para DJs (BPM exacto, Camelot TKEY, Comentario Táctico COMM,
         Serato Markers2 Cues, Serato BeatGrid, Carátula 1:1, ISRC, Género) en archivos FLAC, MP3, AIFF, M4A y WAV."""
@@ -566,6 +605,8 @@ class AudioProcessorService:
         )
 
         cover_source = cover_url or meta_track.get("cover") or meta_track.get("cover_url") or meta_track.get("image_url")
+        if not cover_source:
+            cover_source = AudioProcessorService.resolver_caratula_local_o_remota(ruta, artist, title)
         cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
 
         try:

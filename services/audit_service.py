@@ -163,6 +163,7 @@ class AuditService:
         fake_count = 0
 
         ejecutar_fft = bool(opts is None or (isinstance(opts, dict) and opts.get("fftLossless", True)))
+        inyectar_covers = bool(isinstance(opts, dict) and opts.get("injectCovers", False))
 
         for idx, (root, file) in enumerate(archivos, 1):
             full_path = os.path.join(root, file)
@@ -200,6 +201,18 @@ class AuditService:
                 if "Fake" in status_str or "Error" in status_str:
                     fake_count += 1
 
+            # Inyección opcional de carátulas durante la auditoría por lote
+            track_cover = str(info.get("cover") or "")
+            if inyectar_covers:
+                resolved_c = AudioProcessorService.resolver_caratula_local_o_remota(
+                    full_path, 
+                    str(info.get("artist") or ""), 
+                    str(info.get("title") or "")
+                )
+                if resolved_c:
+                    track_cover = resolved_c
+                    AudioProcessorService.escribir_metadatos_pro(full_path, info, cover_url=resolved_c)
+
             tracks_auditados.append({
                 "id": idx,
                 "f": str(file),
@@ -218,6 +231,7 @@ class AuditService:
                 "danceability": int(info.get("danceability") or info.get("dance") or 85),
                 "mood": str(info.get("mood") or "Peak Time"),
                 "duration": str(info.get("duration") or "05:30"),
+                "cover": track_cover,
                 "format": str(info.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
                 "status": status_str,
                 "cutoff_khz": cutoff_khz,
@@ -432,6 +446,7 @@ class AuditService:
                 "trim_start_ms": trim_start_ms,
                 "first_downbeat_ms": first_downbeat_ms,
                 "comment": "",
+                "cover": "",
                 "cues": cues_frase
             })
 
@@ -446,6 +461,61 @@ class AuditService:
             "ready": ready_count,
             "errors": 0,
             "tracks": tracks_cargados
+        }
+
+    def inyectar_caratulas_lote(self, tracks: list, progreso_cb=None) -> dict:
+        """Busca o extrae carátulas 1:1 en alta resolución (local o remota) e incrusta en los archivos físicos."""
+        if not tracks or not isinstance(tracks, list):
+            return {"status": "error", "msg": "Lista de pistas vacía", "actualizadas": 0}
+
+        total = len(tracks)
+        actualizadas = 0
+        errores = 0
+
+        if progreso_cb:
+            progreso_cb(5, f"Buscando e inyectando carátulas 1:1 ({total} pistas)...")
+
+        for idx, t in enumerate(tracks, 1):
+            pct = int(5 + (idx / total) * 90)
+            target_path = t.get("path")
+            filename = t.get("filename") or t.get("f") or os.path.basename(target_path or "")
+            if progreso_cb:
+                progreso_cb(pct, f"Inyectando carátula ({idx}/{total}): {filename}")
+
+            if not target_path or not os.path.exists(target_path):
+                real = self.directorio_actual and os.path.join(self.directorio_actual, filename)
+                if real and os.path.exists(real):
+                    target_path = real
+
+            if not target_path or not os.path.exists(target_path):
+                errores += 1
+                continue
+
+            artista = str(t.get("artist") or t.get("a") or "")
+            titulo = str(t.get("title") or t.get("t") or "")
+
+            cover_src = t.get("cover") or t.get("cover_url")
+            if not cover_src:
+                cover_src = AudioProcessorService.resolver_caratula_local_o_remota(target_path, artista, titulo)
+
+            if cover_src:
+                ok = AudioProcessorService.escribir_metadatos_pro(target_path, t, cover_url=cover_src)
+                if ok:
+                    t["cover"] = cover_src
+                    actualizadas += 1
+                else:
+                    errores += 1
+            else:
+                errores += 1
+
+        if progreso_cb:
+            progreso_cb(100, f"Inyección de carátulas completada: {actualizadas} pistas actualizadas.")
+
+        return {
+            "status": "ok",
+            "total": total,
+            "actualizadas": actualizadas,
+            "errores": errores
         }
 
     def inyectar_lote_metadatos(self, tracks: list, progreso_cb=None) -> dict:

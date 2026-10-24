@@ -77,6 +77,12 @@ def test_inyectar_lote_metadatos(mock_inyectar):
     assert res["status"] == "ok"
     assert res["inyectados"] == 5
 
+@patch.object(main_web.audit_svc, 'inyectar_caratulas_lote', return_value={"status": "ok", "actualizadas": 5})
+def test_inyectar_caratulas_lote_exposed(mock_inyectar_c):
+    res = main_web.inyectar_caratulas_lote([{"title": "Track 1"}])
+    assert res["status"] == "ok"
+    assert res["actualizadas"] == 5
+
 # --- WRAPPERS ---
 @patch.object(main_web.media_svc, 'analizar_catalogo_spotify', return_value=[])
 def test_wrappers(mock_spotify):

@@ -120,6 +120,10 @@ def inyectar_lote_metadatos(tracks):
     return audit_svc.inyectar_lote_metadatos(tracks, _emitir_progreso_batch)
 
 @eel.expose
+def inyectar_caratulas_lote(tracks):
+    return audit_svc.inyectar_caratulas_lote(tracks, _emitir_progreso_batch)
+
+@eel.expose
 def guardar_cambios_track(track):
     if not track or not isinstance(track, dict):
         return {"status": "error", "msg": "Datos inválidos"}

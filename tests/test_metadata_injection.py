@@ -352,3 +352,38 @@ def test_escribir_y_leer_genero_subgenero_mp3(tmp_path):
     info = AudioProcessorService.analizar_track_avanzado(str(mp3_file))
     assert info["genre"] == "Trance"
     assert info["subgenre"] == "Uplifting Trance"
+
+def test_resolver_caratula_local_encontrada(tmp_path):
+    mp3_file = tmp_path / "song.mp3"
+    mp3_file.write_bytes(b"\xff\xfb\x90\x64" * 500)
+    cover_file = tmp_path / "cover.jpg"
+    cover_file.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+    res = AudioProcessorService.resolver_caratula_local_o_remota(str(mp3_file))
+    assert res == str(cover_file)
+
+def test_inyectar_caratulas_lote(tmp_path):
+    from PIL import Image
+    import io
+    from services.audit_service import AuditService
+
+    mp3_file = tmp_path / "track_art.mp3"
+    mp3_file.write_bytes(b"\xff\xfb\x90\x64" * 1000)
+
+    cover_file = tmp_path / "folder.jpg"
+    img = Image.new("RGB", (300, 300), color=(100, 150, 200))
+    img.save(str(cover_file), format="JPEG")
+
+    tracks = [
+        {"path": str(mp3_file), "title": "Track Art", "artist": "Art Master"}
+    ]
+
+    svc = AuditService()
+    res = svc.inyectar_caratulas_lote(tracks)
+    assert res["status"] == "ok"
+    assert res["actualizadas"] == 1
+
+    from mutagen.id3 import ID3
+    id3 = ID3(str(mp3_file))
+    apic_keys = [k for k in id3.keys() if k.startswith("APIC")]
+    assert len(apic_keys) > 0
