@@ -4303,6 +4303,7 @@ const HotCuesWorkspace = ({
     const [carpetasSistema, setCarpetasSistema] = useState([]);
     const [rutaNavegacion, setRutaNavegacion] = useState(currentFolder || "/Users/admin/Music/mi musica");
     const [isLoadingDir, setIsLoadingDir] = useState(false);
+    const [showControllerPhoto, setShowControllerPhoto] = useState(false);
 
     const activeCues = (currentTrack && currentTrack.cues && currentTrack.cues.length > 0)
         ? currentTrack.cues
@@ -4535,10 +4536,26 @@ const HotCuesWorkspace = ({
     const handleAbrirNavegador = async (dir) => {
         const target = dir || currentFolder || "/Users/admin/Music/mi musica";
         setRutaNavegacion(target);
+        setFsBrowserOpen(true);
         if (window.eel && window.eel.listar_subcarpetas_sistema) {
-            const list = await window.eel.listar_subcarpetas_sistema(target)();
-            setCarpetasSistema(list || []);
-            setFsBrowserOpen(true);
+            try {
+                const res = await window.eel.listar_subcarpetas_sistema(target)();
+                if (res) {
+                    if (res.current) setRutaNavegacion(res.current);
+                    if (Array.isArray(res.folders)) {
+                        setCarpetasSistema(res.folders);
+                    } else if (Array.isArray(res)) {
+                        setCarpetasSistema(res);
+                    } else {
+                        setCarpetasSistema([]);
+                    }
+                } else {
+                    setCarpetasSistema([]);
+                }
+            } catch (err) {
+                console.error("Error al listar carpetas:", err);
+                setCarpetasSistema([]);
+            }
         }
     };
 
@@ -4795,14 +4812,51 @@ const HotCuesWorkspace = ({
                                                 HOT CUE MODE
                                             </span>
                                         </div>
-                                        <span className="text-[10px] font-mono text-gray-400">
+                                        <span className="text-[10px] font-mono text-gray-400 hidden sm:inline">
                                             DDJ-FLX10 Multi-Color Performance Pads
                                         </span>
                                     </div>
-                                    <span className="text-[10px] font-mono text-djcyan-400 font-bold">
-                                        {isCurrentPlayingThis ? `● EN SECCIÓN: CUE ${activePlayingCueId}` : 'PAUSA'}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowControllerPhoto(prev => !prev)}
+                                            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border cursor-pointer transition-all flex items-center gap-1 ${
+                                                showControllerPhoto
+                                                    ? 'bg-djcyan-500 text-black border-djcyan-400 shadow-[0_0_8px_rgba(6,182,212,0.5)]'
+                                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
+                                            }`}
+                                            title="Alternar visualización de la foto del controlador Pioneer DDJ-FLX10"
+                                        >
+                                            <span>🎛️</span>
+                                            <span>{showControllerPhoto ? 'Ocultar Foto FLX10' : 'Ver Foto FLX10'}</span>
+                                        </button>
+                                        <span className="text-[10px] font-mono text-djcyan-400 font-bold">
+                                            {isCurrentPlayingThis ? `● EN SECCIÓN: CUE ${activePlayingCueId}` : 'PAUSA'}
+                                        </span>
+                                    </div>
                                 </div>
+
+                                {/* Visualización opcional de la foto del controlador DDJ-FLX10 con overlay animado de cues */}
+                                {showControllerPhoto && (
+                                    <div className="relative mb-3 rounded-lg overflow-hidden border border-djzinc-750 shadow-2xl bg-black animate-fadeIn">
+                                        <img 
+                                            src="/img/flx10_controller.png" 
+                                            alt="Pioneer DDJ-FLX10 Controller" 
+                                            className="w-full max-h-56 object-cover opacity-90 hover:opacity-100 transition-opacity"
+                                        />
+                                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none bg-black/80 backdrop-blur px-3 py-1.5 rounded-lg border border-djzinc-700">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                                <span className="text-[11px] font-mono font-bold text-white">
+                                                    Pioneer DDJ-FLX10 Hardware Mapping
+                                                </span>
+                                            </div>
+                                            <span className="text-[11px] font-mono text-djcyan-400 font-bold">
+                                                Pad #{activePlayingCueId}: {activeCues[activePlayingCueId - 1]?.name || 'Cue'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Matriz 4x2 de los 8 Pads Pioneer FLX10 con Iluminación Dinámica */}
                                 <div className="grid grid-cols-4 gap-2">
@@ -5166,16 +5220,124 @@ const HotCuesWorkspace = ({
                     </div>
                 </div>
             ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3">
-                    <span className="text-4xl">🎛️</span>
-                    <p className="text-sm font-mono font-medium">No hay pistas cargadas en el estudio de Hot Cues.</p>
-                    <button
-                        type="button"
-                        onClick={() => handleAbrirNavegador(currentFolder)}
-                        className="px-4 py-2 bg-djcyan-500 text-black font-mono font-bold text-xs rounded-lg shadow-md hover:bg-djcyan-400 transition-all cursor-pointer"
-                    >
-                        📂 Cargar Carpeta de Música
-                    </button>
+                <div className="flex-1 min-h-0 flex flex-col p-6 overflow-y-auto custom-scrollbar gap-6 items-center justify-center">
+                    {/* CONSOLA PIONEER DDJ-FLX10 STANDBY CON ILUMINACIÓN DINÁMICA */}
+                    <div className="max-w-4xl w-full bg-gradient-to-b from-[#181828] via-[#10101a] to-[#08080f] border-2 border-djzinc-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col items-center">
+                        {/* Bisel Metálico con Resplandor Neón */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-djcyan-400 to-pink-500"></div>
+
+                        {/* Encabezado Hardware Pioneer DJ */}
+                        <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-djzinc-800 pb-4 mb-4 gap-3">
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">🎛️</span>
+                                <div>
+                                    <h2 className="text-base font-black text-white font-mono tracking-wider flex items-center gap-2">
+                                        PIONEER DJ DDJ-FLX10 • HOT CUES STUDIO
+                                        <span className="px-2 py-0.5 rounded text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 font-bold">
+                                            STANDBY MODE
+                                        </span>
+                                    </h2>
+                                    <p className="text-xs text-gray-400 font-mono">
+                                        Consola hardware con mapeo de 8 Hot Cues por frases musicales y beatgrid milimétrico
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => handleAbrirNavegador(currentFolder)}
+                                className="px-4 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg shadow-lg hover:shadow-djcyan-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
+                            >
+                                <span>📂</span>
+                                <span>Cargar Carpeta de Música</span>
+                            </button>
+                        </div>
+
+                        {/* FOTOGRAFÍA OFICIAL DEL CONTROLADOR PIONEER DDJ-FLX10 CON PADS ILUMINADOS */}
+                        <div className="relative rounded-xl overflow-hidden border border-djzinc-750 shadow-2xl max-w-2xl w-full group my-2 bg-black">
+                            <img 
+                                src="/img/flx10_controller.png" 
+                                alt="Pioneer DJ DDJ-FLX10 Controller" 
+                                className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
+                            <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between pointer-events-none">
+                                <span className="text-xs font-mono font-bold text-white bg-black/80 px-2.5 py-1 rounded border border-djzinc-700 backdrop-blur">
+                                    Pioneer DDJ-FLX10 • Performance Deck
+                                </span>
+                                <span className="text-xs font-mono font-bold text-djcyan-400 bg-black/80 px-2.5 py-1 rounded border border-djzinc-700 backdrop-blur animate-pulse">
+                                    ● 8 Pads RGB Dinámicos Activos
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* MATRIZ DE 8 PADS PERFORMANCE INTERACTIVOS FLX10 EN STANDBY */}
+                        <div className="w-full max-w-2xl bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner mt-2">
+                            <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3">
+                                <span className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    Código de Colores Oficial Pioneer / Serato
+                                </span>
+                                <span className="text-xs font-mono text-gray-400">
+                                    Haz clic en cualquier pad para probar
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-2.5">
+                                {NV2_COLORS.slice(0, 8).map((cue, idx) => {
+                                    const padNum = idx + 1;
+                                    const isSelected = (selectedCueId === padNum);
+                                    const color = cue.color || '#ef4444';
+                                    return (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setSelectedCueId(padNum)}
+                                            className={`p-3 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group ${
+                                                isSelected ? 'bg-[#181826] scale-105 shadow-xl' : 'bg-[#0f0f18] hover:bg-[#14141e]'
+                                            }`}
+                                            style={{
+                                                borderColor: isSelected ? '#ffffff' : `${color}80`,
+                                                boxShadow: isSelected ? `0 0 20px ${color}` : `0 0 8px ${color}30`
+                                            }}
+                                        >
+                                            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: color }}></div>
+                                            <div className="flex items-center justify-between mt-1">
+                                                <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${isSelected ? 'bg-white text-black' : 'bg-black/60 text-white'}`}>
+                                                    PAD {padNum}
+                                                </span>
+                                                <span className="w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: color }}></span>
+                                            </div>
+                                            <div className="mt-2 text-left">
+                                                <p className="text-[11px] font-bold text-white truncate">{cue.name}</p>
+                                                <p className="text-[10px] font-mono font-semibold" style={{ color: color }}>
+                                                    {cue.time}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Botones de Acción para Carga */}
+                        <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+                            <button
+                                type="button"
+                                onClick={() => handleAbrirNavegador(currentFolder)}
+                                className="px-5 py-2.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg shadow-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <span>📂</span>
+                                <span>Explorar y Cargar Carpeta</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onNavigateTab && onNavigateTab('auditoria')}
+                                className="px-5 py-2.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <span>📋</span>
+                                <span>Ir a Auditoría de Archivos</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -5201,7 +5363,7 @@ const HotCuesWorkspace = ({
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar border border-djzinc-800 rounded-lg p-1 divide-y divide-djzinc-850 max-h-60 bg-djzinc-950">
-                            {carpetasSistema.map((folder, idx) => (
+                            {(Array.isArray(carpetasSistema) ? carpetasSistema : []).map((folder, idx) => (
                                 <div
                                     key={idx}
                                     onClick={() => handleAbrirNavegador(folder.path)}
@@ -5214,6 +5376,11 @@ const HotCuesWorkspace = ({
                                     <span className="text-[10px] text-gray-500">Subir / Entrar →</span>
                                 </div>
                             ))}
+                            {(!carpetasSistema || (Array.isArray(carpetasSistema) && carpetasSistema.length === 0)) && (
+                                <div className="p-4 text-center text-xs text-gray-500 font-mono">
+                                    No hay subcarpetas en este directorio.
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex items-center justify-between mt-4 pt-3 border-t border-djzinc-800">
