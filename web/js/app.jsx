@@ -3040,6 +3040,7 @@ const App = () => {
     const [activeTab, setActiveTab] = useState('audit');
     const [auditTracks, setAuditTracks] = useState([]);
     const [selectedTrack, setSelectedTrack] = useState(1);
+    const currentTrack = auditTracks.find(t => t.id === selectedTrack) || auditTracks[0] || null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playProgress, setPlayProgress] = useState(0);
