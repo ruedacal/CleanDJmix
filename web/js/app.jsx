@@ -4129,6 +4129,8 @@ const AuditWorkspace = ({
     const [filterHeaderFormat, setFilterHeaderFormat] = useState('ALL');
     const [filterHeaderQuality, setFilterHeaderQuality] = useState('ALL');
     const [filterHeaderStatus, setFilterHeaderStatus] = useState('ALL');
+    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState('ALL');
+    const [filterHeaderDance, setFilterHeaderDance] = useState('ALL');
 
     const handleSortAudit = (field) => {
         setAuditSortDir(prev => auditSortField === field && prev === 'asc' ? 'desc' : 'asc');
@@ -4168,6 +4170,18 @@ const AuditWorkspace = ({
                 if (filterHeaderStatus === 'FAKE' && !isFake) return false;
                 if (filterHeaderStatus === 'LOSSLESS' && (isFake || (!String(t?.status || '').includes('Lossless') && !String(t?.status || '').includes('VERDADERO') && !String(t?.status || '').includes('HI-RES')))) return false;
                 if (filterHeaderStatus === 'MP3' && (t?.format !== 'MP3' && !String(t?.status || '').includes('MP3'))) return false;
+            }
+            if (filterHeaderEnergy !== 'ALL') {
+                const eVal = Number(t?.e || t?.energy || 80);
+                if (filterHeaderEnergy === 'HIGH' && eVal < 80) return false;
+                if (filterHeaderEnergy === 'MED' && (eVal < 65 || eVal >= 80)) return false;
+                if (filterHeaderEnergy === 'LOW' && eVal >= 65) return false;
+            }
+            if (filterHeaderDance !== 'ALL') {
+                const dVal = Number(t?.dance || t?.danceability || 80);
+                if (filterHeaderDance === 'HIGH' && dVal < 80) return false;
+                if (filterHeaderDance === 'MED' && (dVal < 65 || dVal >= 80)) return false;
+                if (filterHeaderDance === 'LOW' && dVal >= 65) return false;
             }
             return true;
         });
@@ -4216,7 +4230,7 @@ const AuditWorkspace = ({
         });
 
         return result;
-    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, auditSortField, auditSortDir]);
+    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, auditSortField, auditSortDir]);
 
     return (
         <div className="flex w-full h-full overflow-hidden">
@@ -4418,13 +4432,15 @@ const AuditWorkspace = ({
                             </tr>
                             <tr className="bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans">
                                 <th className="p-1 text-center font-mono text-[9px] text-gray-500">
-                                    {(filterHeaderSearch || filterHeaderFormat !== 'ALL' || filterHeaderQuality !== 'ALL' || filterHeaderStatus !== 'ALL') ? (
+                                    {(filterHeaderSearch || filterHeaderFormat !== 'ALL' || filterHeaderQuality !== 'ALL' || filterHeaderStatus !== 'ALL' || filterHeaderEnergy !== 'ALL' || filterHeaderDance !== 'ALL') ? (
                                         <button 
                                             onClick={() => {
                                                 setFilterHeaderSearch('');
                                                 setFilterHeaderFormat('ALL');
                                                 setFilterHeaderQuality('ALL');
                                                 setFilterHeaderStatus('ALL');
+                                                setFilterHeaderEnergy('ALL');
+                                                setFilterHeaderDance('ALL');
                                             }}
                                             title="Limpiar filtros de cabecera"
                                             className="text-amber-400 hover:text-white cursor-pointer"
@@ -4477,8 +4493,30 @@ const AuditWorkspace = ({
                                 <th className="p-1"></th>
                                 <th className="p-1"></th>
                                 <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={filterHeaderEnergy} 
+                                        onChange={(e) => setFilterHeaderEnergy(e.target.value)}
+                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todas</option>
+                                        <option value="HIGH">&gt;80% Alta</option>
+                                        <option value="MED">65-80% Media</option>
+                                        <option value="LOW">&lt;65% Baja</option>
+                                    </select>
+                                </th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={filterHeaderDance} 
+                                        onChange={(e) => setFilterHeaderDance(e.target.value)}
+                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todas</option>
+                                        <option value="HIGH">&gt;80% Alta</option>
+                                        <option value="MED">65-80% Media</option>
+                                        <option value="LOW">&lt;65% Baja</option>
+                                    </select>
+                                </th>
                                 <th className="p-1"></th>
                                 <th className="p-1"></th>
                                 <th className="p-1 text-center">
@@ -6690,7 +6728,16 @@ const HotCuesWorkspace = ({
 };
 
 // Espacio de Trabajo: Spotify Ingest
-const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePlay, lang = "es", t = (k) => k }) => {
+const SpotifyWorkspace = ({ 
+    tracks: externalTracks, 
+    setTracks: externalSetTracks, 
+    onPlayTrack, 
+    nowPlayingTrack, 
+    isPlaying, 
+    onTogglePlay, 
+    lang = "es", 
+    t = (k) => k 
+}) => {
     const [spotifyUrl, setSpotifyUrl] = useState('https://open.spotify.com/intl-es/artist/23zJj2W0TQ0SvF4Fwo7mZK');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [destDir, setDestDir] = useState('/Users/admin/Music/mi musica');
@@ -6704,7 +6751,9 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
     const [selectedId, setSelectedId] = useState("10");
     const [spInspectorOpen, setSpInspectorOpen] = useState(false);
 
-    const [tracks, setTracks] = useState([]);
+    const [internalTracks, setInternalTracks] = useState([]);
+    const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
+    const setTracks = externalSetTracks !== undefined ? externalSetTracks : setInternalTracks;
 
     // Navegador de Carpetas Web Integrado para Destino (Cero popups del SO)
     const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
@@ -6855,6 +6904,9 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
     const [spFilterFormat, setSpFilterFormat] = useState('ALL');
     const [spFilterQuality, setSpFilterQuality] = useState('ALL');
     const [spFilterStatus, setSpFilterStatus] = useState('ALL');
+    const [spFilterOrigin, setSpFilterOrigin] = useState('ALL');
+    const [spFilterEnergy, setSpFilterEnergy] = useState('ALL');
+    const [spFilterDance, setSpFilterDance] = useState('ALL');
 
     const handleSortSp = (field) => {
         setSpSortDir(prev => spSortField === field && prev === 'asc' ? 'desc' : 'asc');
@@ -6875,6 +6927,10 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                           (t.album || '').toLowerCase().includes(term);
                 if (!m) return false;
             }
+            if (spFilterOrigin !== 'ALL') {
+                const o = t.origin || 'spotify';
+                if (o !== spFilterOrigin) return false;
+            }
             if (spFilterFormat !== 'ALL') {
                 const fmt = (t.format || selectedFormat || '').toUpperCase();
                 if (fmt !== spFilterFormat) return false;
@@ -6888,6 +6944,18 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                 if (spFilterStatus === 'DOWNLOADED' && !t.downloaded) return false;
                 if (spFilterStatus === 'PENDING' && t.downloaded) return false;
                 if (spFilterStatus === 'LOSSLESS' && (!t.downloaded || isFake || String(t.format || selectedFormat).toLowerCase() === 'mp3')) return false;
+            }
+            if (spFilterEnergy !== 'ALL') {
+                const eVal = Number(t.energy || t.e || 80);
+                if (spFilterEnergy === 'HIGH' && eVal < 80) return false;
+                if (spFilterEnergy === 'MED' && (eVal < 65 || eVal >= 80)) return false;
+                if (spFilterEnergy === 'LOW' && eVal >= 65) return false;
+            }
+            if (spFilterDance !== 'ALL') {
+                const dVal = Number(t.danceability || t.dance || 80);
+                if (spFilterDance === 'HIGH' && dVal < 80) return false;
+                if (spFilterDance === 'MED' && (dVal < 65 || dVal >= 80)) return false;
+                if (spFilterDance === 'LOW' && dVal >= 65) return false;
             }
             return true;
         });
@@ -6903,9 +6971,12 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                 };
                 valA = parseSec(a.duration);
                 valB = parseSec(b.duration);
-            } else if (['id', 'sample_rate_khz', 'bitrate_kbps', 'cutoff_khz', 'bpm'].includes(spSortField)) {
-                valA = Number(valA) || 0;
-                valB = Number(valB) || 0;
+            } else if (['id', 'sample_rate_khz', 'bitrate_kbps', 'cutoff_khz', 'bpm', 'energy', 'danceability'].includes(spSortField)) {
+                valA = Number(valA || a.energy || a.danceability) || 0;
+                valB = Number(valB || b.energy || b.danceability) || 0;
+            } else if (spSortField === 'origin') {
+                valA = a.origin || 'spotify';
+                valB = b.origin || 'spotify';
             }
 
             if (typeof valA === 'number' && typeof valB === 'number') {
@@ -6917,7 +6988,7 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
         });
 
         return result;
-    }, [tracks, spFilterSearch, spFilterFormat, spFilterQuality, spFilterStatus, spSortField, spSortDir, selectedFormat]);
+    }, [tracks, spFilterSearch, spFilterOrigin, spFilterFormat, spFilterQuality, spFilterStatus, spFilterEnergy, spFilterDance, spSortField, spSortDir, selectedFormat]);
 
     const currentTrack = tracks.find(t => t.id === selectedId) || tracks[0] || {};
     const selectedCount = tracks.filter(t => t.selected).length;
@@ -6985,8 +7056,17 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                 const res = await window.eel.analizar_catalogo_spotify(spotifyUrl)();
                 setDownloadProgress(95);
                 if (res && res.tracks && res.tracks.length > 0) {
-                    const mapped = res.tracks.map((t, i) => ({ ...t, selected: i === 0 }));
-                    setTracks(mapped);
+                    const mapped = res.tracks.map((t, i) => ({ 
+                        ...t, 
+                        selected: i === 0,
+                        origin: t.origin || 'spotify',
+                        energy: t.energy || 80,
+                        danceability: t.danceability || 80
+                    }));
+                    setTracks(prev => {
+                        const existingTax = (prev || []).filter(item => item.origin === 'taxonomy');
+                        return [...existingTax, ...mapped];
+                    });
                     setSelectedId(mapped[0].id);
                     setDownloadProgress(100);
                     setDownloadingMsg(`[LISTO] ${mapped.length} pistas cargadas con carátulas oficiales.`);
@@ -7180,7 +7260,8 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                 <th className="py-2.5 px-3 w-8 text-center"><input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} className="accent-djcyan-500 cursor-pointer" /></th>
                                 <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
                                 <th onClick={() => handleSortSp('title')} className="py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'} {renderSortArrowSp('title')}</th>
-                                <th onClick={() => handleSortSp('artist')} className="py-2.5 px-3 min-w-[160px] cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'ARTISTA'} {renderSortArrowSp('artist')}</th>
+                                <th onClick={() => handleSortSp('artist')} className="py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'ARTISTA'} {renderSortArrowSp('artist')}</th>
+                                <th onClick={() => handleSortSp('origin')} className="py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors">ORIGEN {renderSortArrowSp('origin')}</th>
                                 <th onClick={() => handleSortSp('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'FORMATO'} {renderSortArrowSp('format')}</th>
                                 <th onClick={() => handleSortSp('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'KHZ'} {renderSortArrowSp('sample_rate_khz')}</th>
                                 <th onClick={() => handleSortSp('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'KBPS'} {renderSortArrowSp('bitrate_kbps')}</th>
@@ -7189,17 +7270,22 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                 <th onClick={() => handleSortSp('duration')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_duration') || 'DURACIÓN'} {renderSortArrowSp('duration')}</th>
                                 <th onClick={() => handleSortSp('bpm')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowSp('bpm')}</th>
                                 <th onClick={() => handleSortSp('key')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">KEY {renderSortArrowSp('key')}</th>
+                                <th onClick={() => handleSortSp('energy')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">⚡ ENERGÍA {renderSortArrowSp('energy')}</th>
+                                <th onClick={() => handleSortSp('danceability')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">🕺 DANCE {renderSortArrowSp('danceability')}</th>
                                 <th onClick={() => handleSortSp('status')} className="py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'} {renderSortArrowSp('status')}</th>
                             </tr>
                             <tr className="bg-[#07070a] border-b border-djzinc-800 text-[10px] lowercase font-sans">
                                 <th className="p-1 text-center font-mono text-[9px] text-gray-500">
-                                    {(spFilterSearch || spFilterFormat !== 'ALL' || spFilterQuality !== 'ALL' || spFilterStatus !== 'ALL') ? (
+                                    {(spFilterSearch || spFilterOrigin !== 'ALL' || spFilterFormat !== 'ALL' || spFilterQuality !== 'ALL' || spFilterStatus !== 'ALL' || spFilterEnergy !== 'ALL' || spFilterDance !== 'ALL') ? (
                                         <button 
                                             onClick={() => {
                                                 setSpFilterSearch('');
+                                                setSpFilterOrigin('ALL');
                                                 setSpFilterFormat('ALL');
                                                 setSpFilterQuality('ALL');
                                                 setSpFilterStatus('ALL');
+                                                setSpFilterEnergy('ALL');
+                                                setSpFilterDance('ALL');
                                             }}
                                             title="Limpiar filtros"
                                             className="text-amber-400 hover:text-white cursor-pointer"
@@ -7217,6 +7303,18 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                     />
                                 </th>
                                 <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={spFilterOrigin} 
+                                        onChange={(e) => setSpFilterOrigin(e.target.value)}
+                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todos</option>
+                                        <option value="taxonomy">🏷️ Taxonomía</option>
+                                        <option value="spotify">🎧 Spotify</option>
+                                        <option value="shazam">⚡ Shazam</option>
+                                    </select>
+                                </th>
                                 <th className="p-1 text-center">
                                     <select 
                                         value={spFilterFormat} 
@@ -7249,6 +7347,30 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                 <th className="p-1"></th>
                                 <th className="p-1 text-center">
                                     <select 
+                                        value={spFilterEnergy} 
+                                        onChange={(e) => setSpFilterEnergy(e.target.value)}
+                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todas</option>
+                                        <option value="HIGH">&gt;80% Alta</option>
+                                        <option value="MED">65-80% Media</option>
+                                        <option value="LOW">&lt;65% Baja</option>
+                                    </select>
+                                </th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={spFilterDance} 
+                                        onChange={(e) => setSpFilterDance(e.target.value)}
+                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todas</option>
+                                        <option value="HIGH">&gt;80% Alta</option>
+                                        <option value="MED">65-80% Media</option>
+                                        <option value="LOW">&lt;65% Baja</option>
+                                    </select>
+                                </th>
+                                <th className="p-1 text-center">
+                                    <select 
                                         value={spFilterStatus} 
                                         onChange={(e) => setSpFilterStatus(e.target.value)}
                                         className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
@@ -7265,7 +7387,7 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracksFiltradosSp.length === 0 && !isAnalyzing && (
                                 <tr>
-                                    <td colSpan="13" className="py-12 text-center text-gray-500 font-mono text-xs">
+                                    <td colSpan="16" className="py-12 text-center text-gray-500 font-mono text-xs">
                                         {tracks.length === 0 ? 'Pega una URL de Spotify o escribe una búsqueda por texto arriba y haz clic en "Buscar / Analizar".' : 'No hay pistas que coincidan con los filtros aplicados.'}
                                     </td>
                                 </tr>
@@ -7274,8 +7396,19 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                 const isSelectedRow = row.id === selectedId;
                                 const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
                                 const isFake = Boolean(row.es_fake || String(row.status || '').includes('Fake'));
+                                const isTaxonomy = row.origin === 'taxonomy';
+                                const isPendingTaxonomy = isTaxonomy && !row.downloaded;
+
                                 return (
-                                    <tr key={row.id} onClick={() => { setSelectedId(row.id); setSpInspectorOpen(true); }} className={`cursor-pointer select-none transition-colors ${isSelectedRow ? 'bg-djcyan-950/35 border-l-2 border-djcyan-400' : 'hover:bg-[#101015]'}`}>
+                                    <tr 
+                                        key={row.id} 
+                                        onClick={() => { setSelectedId(row.id); setSpInspectorOpen(true); }} 
+                                        className={`cursor-pointer select-none transition-colors ${
+                                            isSelectedRow 
+                                                ? (isPendingTaxonomy ? 'bg-emerald-950/40 border-l-2 border-emerald-400' : 'bg-djcyan-950/35 border-l-2 border-djcyan-400') 
+                                                : (isPendingTaxonomy ? 'bg-emerald-950/15 border-l-2 border-emerald-500/50 hover:bg-emerald-950/30' : 'hover:bg-[#101015]')
+                                        }`}
+                                    >
                                         <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={row.selected} onChange={() => handleToggleRow(row.id)} className="accent-djcyan-500 cursor-pointer" /></td>
                                         <td className="py-2 px-2 text-center" onClick={(e) => handlePlayPreview(row, e)}>
                                             <button className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isRowPlaying ? 'bg-djcyan-500 text-black font-bold shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-[#181820] text-gray-400 hover:text-white hover:bg-djzinc-800'}`}>
@@ -7286,12 +7419,44 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                             <div className="flex items-center gap-3">
                                                 <img src={getValidCover(row.cover)} alt="Cover" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} className="w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" />
                                                 <div className="flex flex-col min-w-0">
-                                                    <span className="font-semibold text-djcyan-400 text-xs truncate max-w-sm" title={row.title}>{row.title}</span>
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        {isPendingTaxonomy && (
+                                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" title="Pendiente de descarga desde Taxonomía"></span>
+                                                        )}
+                                                        <span className={`text-xs truncate max-w-sm ${isPendingTaxonomy ? 'font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]' : 'font-semibold text-djcyan-400'}`} title={row.title}>
+                                                            {row.title}
+                                                        </span>
+                                                        {isPendingTaxonomy && (
+                                                            <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-600/70 shrink-0">
+                                                                TAXONOMÍA
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <span className="text-[10px] text-gray-500 font-mono truncate max-w-sm" title={row.album}>{row.album}</span>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-xs">{row.artist}</td>
+
+                                        {/* ORIGEN */}
+                                        <td className="py-2 px-2.5 text-center">
+                                            {row.origin === 'taxonomy' ? (
+                                                <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/80 shadow-[0_0_8px_rgba(16,185,129,0.35)] inline-flex items-center gap-1">
+                                                    <span>🏷️</span>
+                                                    <span>Taxonomía</span>
+                                                </span>
+                                            ) : row.origin === 'shazam' ? (
+                                                <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-blue-950 text-blue-300 border border-blue-600 inline-flex items-center gap-1">
+                                                    <span>⚡</span>
+                                                    <span>Shazam</span>
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-djzinc-850 text-djcyan-300 border border-djzinc-750 inline-flex items-center gap-1">
+                                                    <span>🎧</span>
+                                                    <span>Spotify</span>
+                                                </span>
+                                            )}
+                                        </td>
                                         
                                         {/* FORMATO */}
                                         <td className="py-2 px-2 text-center">
@@ -7347,6 +7512,40 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                         <td className="py-2 px-2 text-center"><span className="bg-[#14141c] text-gray-200 px-1.5 py-0.5 rounded text-[11px] font-mono border border-djzinc-800">{row.bpm}</span></td>
                                         <td className="py-2 px-2 text-center"><span className="text-djcyan-400 font-mono font-bold text-xs">{row.key}</span></td>
 
+                                        {/* ENERGÍA */}
+                                        <td className="py-2 px-2 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                    <span className="text-gray-400">⚡</span>
+                                                    <span className={`font-bold ${(row.energy || 80) >= 82 ? 'text-red-400' : (row.energy || 80) >= 68 ? 'text-amber-400' : 'text-djcyan-400'}`}>
+                                                        {row.energy || 80}%
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                    <div 
+                                                        className={`h-full rounded-full ${(row.energy || 80) >= 82 ? 'bg-gradient-to-r from-amber-500 to-red-500' : (row.energy || 80) >= 68 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 'bg-gradient-to-r from-cyan-400 to-blue-500'}`} 
+                                                        style={{ width: `${Math.min(100, Math.max(10, row.energy || 80))}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        {/* DANCEABILITY */}
+                                        <td className="py-2 px-2 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                    <span className="text-gray-400">🕺</span>
+                                                    <span className="font-bold text-purple-300">{row.danceability || 80}%</span>
+                                                </div>
+                                                <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                    <div 
+                                                        className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" 
+                                                        style={{ width: `${Math.min(100, Math.max(10, row.danceability || 80))}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </td>
+
                                         {/* ESTADO / ACCIÓN */}
                                         <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-center gap-1.5">
@@ -7363,7 +7562,11 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                                 ) : (
                                                     <button 
                                                         onClick={() => lanzarDescargaReal([row])} 
-                                                        className="px-3 py-1 rounded text-[11px] font-mono font-semibold border transition-colors cursor-pointer bg-[#14141c] hover:bg-djcyan-600 hover:text-black text-gray-300 border-djzinc-750"
+                                                        className={`px-3 py-1 rounded text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
+                                                            isPendingTaxonomy 
+                                                                ? 'bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-400 font-bold shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                                                                : 'bg-[#14141c] hover:bg-djcyan-600 hover:text-black text-gray-300 border-djzinc-750'
+                                                        }`}
                                                     >
                                                         {`${t('download_btn') || 'Descargar'} .${selectedFormat}`}
                                                     </button>
@@ -7502,7 +7705,8 @@ const TaxonomyWorkspace = ({
     isPlaying = false,
     onTogglePlay = () => {},
     onSelectTrackForCues,
-    onSendToSpotify 
+    onSendToSpotify,
+    onAddTrackToSpotify
 }) => {
     // Sub-pestaña activa: 'search' (Buscador Cuenca Music IA) o 'routing' (Serato Crates)
     const [activeSubView, setActiveSubView] = useState('search');
@@ -7521,6 +7725,8 @@ const TaxonomyWorkspace = ({
     const [taxFilterSearch, setTaxFilterSearch] = useState('');
     const [taxFilterGenre, setTaxFilterGenre] = useState('ALL');
     const [taxFilterOrigin, setTaxFilterOrigin] = useState('ALL');
+    const [taxFilterEnergy, setTaxFilterEnergy] = useState('ALL');
+    const [taxFilterDance, setTaxFilterDance] = useState('ALL');
 
     const handleSortTax = (field) => {
         setTaxSortDir(prev => taxSortField === field && prev === 'asc' ? 'desc' : 'asc');
@@ -7822,6 +8028,18 @@ const TaxonomyWorkspace = ({
                 if (taxFilterOrigin === 'local' && !isLoc) matchesManual = false;
                 if (taxFilterOrigin === 'online' && isLoc) matchesManual = false;
             }
+            if (taxFilterEnergy !== 'ALL') {
+                const eVal = Number(trk.energy || trk.e || 80);
+                if (taxFilterEnergy === 'HIGH' && eVal < 80) matchesManual = false;
+                if (taxFilterEnergy === 'MED' && (eVal < 65 || eVal >= 80)) matchesManual = false;
+                if (taxFilterEnergy === 'LOW' && eVal >= 65) matchesManual = false;
+            }
+            if (taxFilterDance !== 'ALL') {
+                const dVal = Number(trk.danceability || trk.dance || 80);
+                if (taxFilterDance === 'HIGH' && dVal < 80) matchesManual = false;
+                if (taxFilterDance === 'MED' && (dVal < 65 || dVal >= 80)) matchesManual = false;
+                if (taxFilterDance === 'LOW' && dVal >= 65) matchesManual = false;
+            }
 
             const finalPct = Math.min(100, Math.max(10, score));
             return {
@@ -7859,9 +8077,9 @@ const TaxonomyWorkspace = ({
             } else if (taxSortField === 'origin') {
                 valA = Boolean(a.isLocal || a.is_local) ? 'local' : 'online';
                 valB = Boolean(b.isLocal || b.is_local) ? 'local' : 'online';
-            } else if (['matchScore', 'displayBpm'].includes(taxSortField)) {
-                valA = Number(valA) || 0;
-                valB = Number(valB) || 0;
+            } else if (['matchScore', 'displayBpm', 'energy', 'danceability'].includes(taxSortField)) {
+                valA = Number(valA || (taxSortField === 'energy' ? (a.energy || a.e) : (a.danceability || a.dance))) || 0;
+                valB = Number(valB || (taxSortField === 'energy' ? (b.energy || b.e) : (b.danceability || b.dance))) || 0;
             }
 
             if (typeof valA === 'number' && typeof valB === 'number') {
@@ -7873,7 +8091,20 @@ const TaxonomyWorkspace = ({
         });
 
         return scored;
-    }, [allPoolTracks, aiQuery, parsedQuery, selectedGenreFilter, selectedSubgenreFilterUI, selectedVersionFilter, selectedBpmFilter, selectedKeyFilter, selectedMoodFilter, taxFilterSearch, taxFilterGenre, taxFilterOrigin, taxSortField, taxSortDir]);
+    }, [allPoolTracks, aiQuery, parsedQuery, selectedGenreFilter, selectedSubgenreFilterUI, selectedVersionFilter, selectedBpmFilter, selectedKeyFilter, selectedMoodFilter, taxFilterSearch, taxFilterGenre, taxFilterOrigin, taxFilterEnergy, taxFilterDance, taxSortField, taxSortDir]);
+
+    // Añadir a Cola de Descargas (Spotify Ingest)
+    const handleAnadirADescargas = (trk) => {
+        if (!trk) return;
+        if (onAddTrackToSpotify) {
+            onAddTrackToSpotify(trk, 'taxonomy');
+            setFeedbackMsg(`✓ "${trk.displayTitle}" añadido a Descargas (Spotify Ingest). Redirigiendo a descargas...`);
+        } else if (onSendToSpotify) {
+            onSendToSpotify(trk.displayTitle);
+        } else if (onNavigateTab) {
+            onNavigateTab('spotify');
+        }
+    };
 
     // Manejador de pre-escucha / Cargar en Deck 1
     const handleCargarEnDeck = (trk) => {
@@ -8081,6 +8312,11 @@ const TaxonomyWorkspace = ({
         setSelectedBpmFilter('ALL');
         setSelectedKeyFilter('ALL');
         setSelectedMoodFilter('ALL');
+        setTaxFilterSearch('');
+        setTaxFilterGenre('ALL');
+        setTaxFilterOrigin('ALL');
+        setTaxFilterEnergy('ALL');
+        setTaxFilterDance('ALL');
     };
 
     return (
@@ -8298,7 +8534,7 @@ const TaxonomyWorkspace = ({
 
                         {/* FILTROS MANUALES DESPLEGABLES */}
                         {showAdvancedFilters && (
-                            <div className="p-3.5 bg-djzinc-900/90 border border-djzinc-800 rounded-xl grid grid-cols-2 md:grid-cols-6 gap-2.5 text-xs font-mono animate-fadeIn">
+                            <div className="p-3.5 bg-djzinc-900/90 border border-djzinc-800 rounded-xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5 text-xs font-mono animate-fadeIn">
                                 {/* Género */}
                                 <div className="flex flex-col gap-1">
                                     <label className="text-gray-400 text-[10px]">Género Raíz:</label>
@@ -8382,6 +8618,36 @@ const TaxonomyWorkspace = ({
                                         <option value="Previa / Warm Up">Previa / Warm Up</option>
                                         <option value="Peak Time / Pista">Peak Time / Pista</option>
                                         <option value="Chill / Sunset / After">Chill / Sunset / After</option>
+                                    </select>
+                                </div>
+
+                                {/* Energía */}
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-gray-400 text-[10px]">⚡ Energía DJ:</label>
+                                    <select
+                                        value={taxFilterEnergy}
+                                        onChange={(e) => setTaxFilterEnergy(e.target.value)}
+                                        className="bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+                                    >
+                                        <option value="ALL">Cualquier Nivel</option>
+                                        <option value="HIGH">&gt;80% Alta (Peak Time)</option>
+                                        <option value="MED">65-80% Media (Build-Up)</option>
+                                        <option value="LOW">&lt;65% Baja (Warm Up/Calma)</option>
+                                    </select>
+                                </div>
+
+                                {/* Danceability */}
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-gray-400 text-[10px]">🕺 Danceability:</label>
+                                    <select
+                                        value={taxFilterDance}
+                                        onChange={(e) => setTaxFilterDance(e.target.value)}
+                                        className="bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+                                    >
+                                        <option value="ALL">Cualquier Nivel</option>
+                                        <option value="HIGH">&gt;80% Alta (Club/Groove)</option>
+                                        <option value="MED">65-80% Media</option>
+                                        <option value="LOW">&lt;65% Baja</option>
                                     </select>
                                 </div>
 
@@ -8498,20 +8764,22 @@ const TaxonomyWorkspace = ({
                                             <th onClick={() => handleSortTax('version')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">VERSIÓN {renderSortArrowTax('version')}</th>
                                             <th onClick={() => handleSortTax('origin')} className="py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors">ORIGEN {renderSortArrowTax('origin')}</th>
                                             <th onClick={() => handleSortTax('matchScore')} className="py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors">MATCH % {renderSortArrowTax('matchScore')}</th>
-                                            <th className="py-2.5 px-2 text-center">⚡ ENERGÍA</th>
-                                            <th className="py-2.5 px-2 text-center">🕺 DANCE</th>
+                                            <th onClick={() => handleSortTax('energy')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">⚡ ENERGÍA {renderSortArrowTax('energy')}</th>
+                                            <th onClick={() => handleSortTax('danceability')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">🕺 DANCE {renderSortArrowTax('danceability')}</th>
                                             <th className="py-2.5 px-2 text-center">FASE DJ</th>
                                             <th className="py-2.5 px-2.5 text-left">COMENTARIO PRO</th>
                                             <th className="py-2.5 px-3 text-center min-w-[150px]">ACCIONES DJ</th>
                                         </tr>
                                         <tr className="bg-[#050508] border-b border-djzinc-800 text-[10px] lowercase font-sans">
                                             <th className="p-1 text-center font-mono text-[9px] text-gray-500">
-                                                {(taxFilterSearch || taxFilterGenre !== 'ALL' || taxFilterOrigin !== 'ALL') ? (
+                                                {(taxFilterSearch || taxFilterGenre !== 'ALL' || taxFilterOrigin !== 'ALL' || taxFilterEnergy !== 'ALL' || taxFilterDance !== 'ALL') ? (
                                                     <button 
                                                         onClick={() => {
                                                             setTaxFilterSearch('');
                                                             setTaxFilterGenre('ALL');
                                                             setTaxFilterOrigin('ALL');
+                                                            setTaxFilterEnergy('ALL');
+                                                            setTaxFilterDance('ALL');
                                                         }}
                                                         title="Limpiar filtros"
                                                         className="text-amber-400 hover:text-white cursor-pointer"
@@ -8560,8 +8828,30 @@ const TaxonomyWorkspace = ({
                                                 </select>
                                             </th>
                                             <th className="p-1"></th>
-                                            <th className="p-1"></th>
-                                            <th className="p-1"></th>
+                                            <th className="p-1 text-center">
+                                                <select 
+                                                    value={taxFilterEnergy} 
+                                                    onChange={(e) => setTaxFilterEnergy(e.target.value)}
+                                                    className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                                >
+                                                    <option value="ALL">Todas</option>
+                                                    <option value="HIGH">&gt;80% Alta</option>
+                                                    <option value="MED">65-80% Media</option>
+                                                    <option value="LOW">&lt;65% Baja</option>
+                                                </select>
+                                            </th>
+                                            <th className="p-1 text-center">
+                                                <select 
+                                                    value={taxFilterDance} 
+                                                    onChange={(e) => setTaxFilterDance(e.target.value)}
+                                                    className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                                >
+                                                    <option value="ALL">Todas</option>
+                                                    <option value="HIGH">&gt;80% Alta</option>
+                                                    <option value="MED">65-80% Media</option>
+                                                    <option value="LOW">&lt;65% Baja</option>
+                                                </select>
+                                            </th>
                                             <th className="p-1"></th>
                                             <th className="p-1"></th>
                                             <th className="p-1"></th>
@@ -8697,6 +8987,14 @@ const TaxonomyWorkspace = ({
                                                             <button onClick={() => handleAbrirEnHotCues(trk)} className="px-2 py-1 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 border border-djzinc-700 text-[10px] font-mono cursor-pointer" title="Hot Cues Studio">
                                                                 🎛️
                                                             </button>
+                                                            <button 
+                                                                onClick={() => handleAnadirADescargas(trk)} 
+                                                                className="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-[10px] cursor-pointer shadow flex items-center gap-1 transition-all active:scale-95" 
+                                                                title="Añadir pista a la cola de descargas en Spotify Ingest"
+                                                            >
+                                                                <span>📥</span>
+                                                                <span>Añadir a Descargas</span>
+                                                            </button>
                                                             {isOnline ? (
                                                                 <button 
                                                                     onClick={() => {
@@ -8704,9 +9002,9 @@ const TaxonomyWorkspace = ({
                                                                         else if (onNavigateTab) onNavigateTab('spotify');
                                                                     }}
                                                                     className="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer"
-                                                                    title="Descargar en SuperFLAC / Spotify Ingest"
+                                                                    title="Buscar en Spotify Ingest"
                                                                 >
-                                                                    📥 SuperFLAC
+                                                                    🔍 Spotify
                                                                 </button>
                                                             ) : (
                                                                 <button onClick={() => handleAsignarACrateIndividual(trk)} className="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer" title="Rutar a Crate">
@@ -8839,6 +9137,16 @@ const TaxonomyWorkspace = ({
                                                 >
                                                     <span>🎛️</span>
                                                     <span>Cues</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAnadirADescargas(trk)}
+                                                    className="py-1 px-2.5 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-transform active:scale-95 shadow"
+                                                    title="Añadir a la cola de descargas en Spotify Ingest"
+                                                >
+                                                    <span>📥</span>
+                                                    <span>Añadir a Descargas</span>
                                                 </button>
 
                                                 <button
@@ -10127,12 +10435,45 @@ const App = () => {
     const [activeTab, setActiveTab] = useState('audit');
     const [currentFolder, setCurrentFolder] = useState('/Users/admin/Music/mi musica');
     const [auditTracks, setAuditTracks] = useState([]);
+    const [spotifyTracks, setSpotifyTracks] = useState([]);
     const [selectedTrack, setSelectedTrack] = useState(null);
     const currentTrack = selectedTrack ? (auditTracks.find(t => t.id === selectedTrack) || null) : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playProgress, setPlayProgress] = useState(0);
     const audioRef = useRef(null);
+
+    const handleAddTrackToSpotify = (trackData, origin = 'taxonomy') => {
+        if (!trackData) return;
+        const newTrack = {
+            id: `tax_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            title: trackData.displayTitle || trackData.title || trackData.t || 'Pista Taxonomía',
+            artist: trackData.displayArtist || trackData.artist || trackData.a || 'Artista',
+            album: trackData.displayAlbum || trackData.album || 'Taxonomía AI',
+            bpm: parseFloat(trackData.displayBpm || trackData.bpm || trackData.b || 128),
+            key: (trackData.displayKey || trackData.key || trackData.k || '8A').toUpperCase(),
+            cover: trackData.displayCover || trackData.cover || null,
+            duration: trackData.duration || '04:00',
+            origin: origin,
+            downloaded: false,
+            selected: true,
+            format: 'FLAC',
+            energy: trackData.energy || trackData.e || 80,
+            danceability: trackData.danceability || trackData.dance || 80,
+            fase_badge: trackData.fase_badge || null,
+            comment: trackData.comment || null,
+            calidad: 'Pendiente',
+            status: 'Pendiente Descarga'
+        };
+        setSpotifyTracks(prev => {
+            const filtered = (prev || []).filter(t => !(
+                (t.title || '').toLowerCase() === newTrack.title.toLowerCase() && 
+                (t.artist || '').toLowerCase() === newTrack.artist.toLowerCase()
+            ));
+            return [newTrack, ...filtered];
+        });
+        setActiveTab('spotify');
+    };
     const [logs, setLogs] = useState([
         { type: 'info', text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
         { type: 'divider', text: "--------------------------------------------------" },
@@ -10464,6 +10805,8 @@ const App = () => {
                 </div>
                 <div style={{ display: activeTab === 'spotify' ? 'flex' : 'none' }} className="w-full h-full">
                     <SpotifyWorkspace 
+                        tracks={spotifyTracks}
+                        setTracks={setSpotifyTracks}
                         onPlayTrack={handlePlayTrack} 
                         nowPlayingTrack={nowPlayingTrack} 
                         isPlaying={isPlaying} 
@@ -10475,7 +10818,11 @@ const App = () => {
                 <div style={{ display: activeTab === 'shazam' ? 'flex' : 'none' }} className="w-full h-full">
                     <ShazamWorkspace 
                         onSendToSpotify={(query) => {
-                            setActiveTab('spotify');
+                            if (typeof query === 'object' && query !== null) {
+                                handleAddTrackToSpotify(query, 'shazam');
+                            } else {
+                                setActiveTab('spotify');
+                            }
                         }}
                         onSendToAudit={(trackData) => {
                             setAuditTracks(prev => [trackData, ...prev]);
@@ -10510,6 +10857,7 @@ const App = () => {
                         onSendToSpotify={(query) => {
                             setActiveTab('spotify');
                         }}
+                        onAddTrackToSpotify={handleAddTrackToSpotify}
                     />
                 </div>
             </main>
