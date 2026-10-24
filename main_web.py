@@ -292,6 +292,73 @@ def exportar_serato_crates(tracks, destino_serato_dir=None):
 def exportar_rekordbox_xml(tracks, destino_dir="/Users/admin/Music/mi musica", nombre_archivo="rekordbox.xml"):
     return export_svc.exportar_rekordbox_xml(tracks, destino_dir, nombre_archivo)
 
+@eel.expose
+def exportar_apuntes_shazam(tracks, formato="xls", destino_dir="/Users/admin/Music/mi musica"):
+    try:
+        import datetime
+        os.makedirs(destino_dir, exist_ok=True)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        if formato == "txt":
+            filename = f"BeatWave_Shazam_Apuntes_{timestamp}.txt"
+            filepath = os.path.join(destino_dir, filename)
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("=" * 60 + "\n")
+                f.write("BEATWAVE PRO • LIBRETA DIGITAL DE APUNTES SHAZAM\n")
+                f.write(f"Fecha de exportacion: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+                f.write(f"Total de pistas: {len(tracks)}\n")
+                f.write("=" * 60 + "\n\n")
+                for i, trk in enumerate(tracks, 1):
+                    art = trk.get("artist") or trk.get("a") or "Desconocido"
+                    tit = trk.get("title") or trk.get("t") or "Desconocido"
+                    alb = trk.get("album") or ""
+                    gen = trk.get("genre") or "Electronic"
+                    yr = trk.get("year") or ""
+                    isrc = trk.get("isrc") or ""
+                    f.write(f"{i:02d}. {art} - {tit} [{alb} {yr}] - {gen} (ISRC: {isrc})\n")
+            return {"status": "ok", "path": filepath, "filename": filename, "total": len(tracks)}
+        else:
+            filename = f"BeatWave_Shazam_Apuntes_{timestamp}.xlsx"
+            filepath = os.path.join(destino_dir, filename)
+            try:
+                import pandas as pd
+                data = []
+                for i, trk in enumerate(tracks, 1):
+                    data.append({
+                        "#": i,
+                        "Artista": trk.get("artist") or trk.get("a") or "",
+                        "Titulo": trk.get("title") or trk.get("t") or "",
+                        "Album": trk.get("album") or "",
+                        "Genero": trk.get("genre") or "Electronic",
+                        "Ano": trk.get("year") or "",
+                        "ISRC": trk.get("isrc") or "",
+                        "Fecha Apunte": trk.get("added_at") or datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),
+                        "Spotify Query": trk.get("spotify_query") or f"{trk.get('title','')} {trk.get('artist','')}"
+                    })
+                df = pd.DataFrame(data)
+                df.to_excel(filepath, index=False)
+                return {"status": "ok", "path": filepath, "filename": filename, "total": len(tracks)}
+            except Exception:
+                filename = f"BeatWave_Shazam_Apuntes_{timestamp}.csv"
+                filepath = os.path.join(destino_dir, filename)
+                import csv
+                with open(filepath, "w", encoding="utf-8-sig", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["#", "Artista", "Titulo", "Album", "Genero", "Ano", "ISRC", "Fecha Apunte"])
+                    for i, trk in enumerate(tracks, 1):
+                        writer.writerow([
+                            i,
+                            trk.get("artist") or trk.get("a") or "",
+                            trk.get("title") or trk.get("t") or "",
+                            trk.get("album") or "",
+                            trk.get("genre") or "",
+                            trk.get("year") or "",
+                            trk.get("isrc") or "",
+                            trk.get("added_at") or ""
+                        ])
+                return {"status": "ok", "path": filepath, "filename": filename, "total": len(tracks)}
+    except Exception as e:
+        return {"status": "error", "msg": str(e)}
+
 if __name__ == "__main__":
     try:
         try:

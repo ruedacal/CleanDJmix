@@ -2777,7 +2777,7 @@ const AuditWorkspace = ({
     const [batchProgress, setBatchProgress] = useState(0);
     const [batchStatusMsg, setBatchStatusMsg] = useState('');
     const [saveFeedback, setSaveFeedback] = useState('');
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     const [internalTracks, setInternalTracks] = useState([]);
     const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
@@ -3532,7 +3532,7 @@ const AuditWorkspace = ({
                                 const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
                                 const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : (row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null)));
                                 return (
-                                    <tr key={row.id} onClick={() => { setSelectedTrack(row.id); if (onPlayTrack) onPlayTrack(row, 0, false); }} className={`cursor-pointer select-none transition-colors ${selectedTrack === row.id ? 'bg-djcyan-950/40 border-l-2 border-djcyan-400' : 'hover:bg-djzinc-850/40'}`}>
+                                    <tr key={row.id} onClick={() => { setSelectedTrack(row.id); setSidebarOpen(true); if (onPlayTrack) onPlayTrack(row, 0, false); }} className={`cursor-pointer select-none transition-colors ${selectedTrack === row.id ? 'bg-djcyan-950/40 border-l-2 border-djcyan-400' : 'hover:bg-djzinc-850/40'}`}>
                                         <td className="py-2 px-2 text-center text-djzinc-500 font-mono">{row.id}</td>
                                         <td className="py-2 px-2 text-center">
                                             <TableHarmonicWaveform 
@@ -4330,6 +4330,20 @@ const HotCuesWorkspace = ({
     const barMs = beatMs * 4.0;
     const downbeatMs = currentTrack && currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
 
+    // Cálculo del Hot Cue activo dinámicamente según la posición de reproducción (Estilo Pioneer FLX10)
+    const currentMs = playProgress * durMs;
+    let activePlayingCueId = 1;
+    if (activeCues && activeCues.length > 0) {
+        for (let i = activeCues.length - 1; i >= 0; i--) {
+            const c = activeCues[i];
+            const pos = c.pos_ms !== undefined ? c.pos_ms : parseTimeToMs(c.time || '0');
+            if (currentMs >= pos - 150) {
+                activePlayingCueId = c.id !== undefined ? c.id : (i + 1);
+                break;
+            }
+        }
+    }
+
     // Actualiza campos de la pista seleccionada en el estado compartido
     const updateCurrentTrackField = (field, val) => {
         if (!currentTrack || !setTracks) return;
@@ -4676,52 +4690,179 @@ const HotCuesWorkspace = ({
             {/* CUERPO DEL ESTUDIO: WAVEFORM EXPANDIDO, CONTROLES DE TRANSPORTE Y PADS */}
             {currentTrack ? (
                 <div className="flex-1 min-h-0 flex flex-col p-4 overflow-y-auto custom-scrollbar gap-4">
-                    {/* CABECERA DE LA PISTA ACTIVA CON METADATOS DJ Y CARÁTULA */}
-                    <div className="bg-[#0c0c14] border border-djzinc-800 rounded-xl p-3.5 flex items-center justify-between shadow-lg">
-                        <div className="flex items-center gap-3.5 min-w-0">
-                            <img
-                                src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
-                                alt="Cover"
-                                onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
-                                className="w-14 h-14 rounded-lg object-cover border border-djzinc-700 shadow-md shrink-0"
-                            />
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-base font-bold text-white truncate max-w-xl">
-                                        {currentTrack.title || currentTrack.t || currentTrack.filename}
-                                    </h2>
-                                    <span className="px-1.5 py-0.5 rounded bg-djzinc-850 text-djcyan-400 font-mono text-[10px] font-bold border border-djzinc-750 shrink-0">
-                                        {currentTrack.format || 'AUDIO'}
+                    {/* CONSOLA HARDWARE PIONEER DDJ-FLX10 PERFORMANCE DECK & HOT CUES */}
+                    <div className="bg-gradient-to-b from-[#181826] via-[#101018] to-[#0a0a0f] border-2 border-djzinc-800 rounded-2xl p-4 shadow-2xl relative overflow-hidden">
+                        {/* Bisel Metálico Superior */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-djcyan-500/40 to-transparent"></div>
+
+                        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+                            {/* LADO IZQUIERDO: DECK TRANSPORT FLX10 (JOG DISPLAY CIRCULAR + BOTONES CUE & PLAY) */}
+                            <div className="flex items-center gap-5 shrink-0">
+                                {/* Jog Wheel Circular con Carátula Giratoria y BPM */}
+                                <div className="relative w-28 h-28 rounded-full bg-[#06060a] border-4 border-djzinc-750 p-1 flex items-center justify-center shadow-2xl ring-2 ring-black/90">
+                                    <div className={`w-full h-full rounded-full overflow-hidden relative flex items-center justify-center ${isCurrentPlayingThis ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
+                                        <img 
+                                            src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
+                                            alt="Jog Art"
+                                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/20 backdrop-blur-[0.5px]"></div>
+                                    </div>
+                                    {/* Núcleo Central del Jog Display */}
+                                    <div className="absolute w-12 h-12 rounded-full bg-[#0c0c14] border border-djzinc-600 flex flex-col items-center justify-center shadow-inner pointer-events-none">
+                                        <span className="text-[10px] font-mono font-black text-djcyan-400">{bpm.toFixed(1)}</span>
+                                        <span className="text-[8px] font-mono font-bold text-gray-300">{currentTrack.key || '8A'}</span>
+                                    </div>
+                                </div>
+
+                                {/* Botones Circulares Oficiales DDJ-FLX10: CUE (Ámbar) & PLAY/PAUSE (Verde Neón) */}
+                                <div className="flex flex-col gap-3">
+                                    {/* Botón Circular CUE (Pulsación Ámbar en Pausa / Sincro) */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const firstCue = activeCues[0] || {};
+                                            const cueMs = firstCue.pos_ms !== undefined ? firstCue.pos_ms : (downbeatMs || 0);
+                                            const cuePct = durMs > 0 ? (cueMs / durMs) : 0;
+                                            if (onPlayTrack) {
+                                                onPlayTrack(currentTrack, cuePct, false);
+                                            }
+                                        }}
+                                        className={`w-14 h-14 rounded-full border-2 flex items-center justify-center font-mono font-black text-xs cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
+                                            !isCurrentPlayingThis
+                                                ? 'bg-amber-500/25 border-amber-400 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.6)] animate-pulse'
+                                                : 'bg-[#181824] border-amber-700/60 text-amber-500 hover:border-amber-400 hover:text-amber-300'
+                                        }`}
+                                        title="CUE: Regresar al punto de inicio maestro"
+                                    >
+                                        <span className="tracking-wider">CUE</span>
+                                    </button>
+
+                                    {/* Botón Circular PLAY/PAUSE (Verde Neón Brillante en Reproducción) */}
+                                    <button
+                                        type="button"
+                                        onClick={() => onTogglePlay && onTogglePlay()}
+                                        className={`w-14 h-14 rounded-full border-2 flex items-center justify-center text-sm cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
+                                            isCurrentPlayingThis
+                                                ? 'bg-emerald-500 border-white text-black font-black shadow-[0_0_22px_rgba(16,185,129,0.9)]'
+                                                : 'bg-emerald-950/40 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse'
+                                        }`}
+                                        title="PLAY/PAUSE: Iniciar o pausar reproducción"
+                                    >
+                                        {isCurrentPlayingThis ? (
+                                            <span className="text-black font-black text-base">❚❚</span>
+                                        ) : (
+                                            <span className="text-emerald-400 font-black text-lg ml-0.5">▶</span>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* Metadatos Rápidos del Deck */}
+                                <div className="flex flex-col min-w-0 max-w-[210px]">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-600/50 text-[9px] font-mono font-black uppercase">
+                                            DECK 1 • MASTER
+                                        </span>
+                                        <span className="text-[10px] font-mono text-gray-400">{currentTrack.format || 'FLAC'}</span>
+                                    </div>
+                                    <h3 className="text-sm font-black text-white truncate mt-1" title={currentTrack.title || currentTrack.t}>
+                                        {currentTrack.title || currentTrack.t || 'Track'}
+                                    </h3>
+                                    <p className="text-xs text-djcyan-400 font-semibold truncate" title={currentTrack.artist || currentTrack.a}>
+                                        {currentTrack.artist || currentTrack.a || 'Artista'}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-2 text-xs font-mono font-bold">
+                                        <span className="text-djcyan-300">
+                                            {formatMsToTime(playProgress * durMs)}
+                                        </span>
+                                        <span className="text-gray-600">/</span>
+                                        <span className="text-gray-400">
+                                            -{formatMsToTime(Math.max(0, durMs - (playProgress * durMs)))}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* LADO DERECHO: PIONEER DDJ-FLX10 8-PERFORMANCE PAD MATRIX CON DINÁMICA DE ENCENDIDO/APAGADO */}
+                            <div className="flex-1 min-w-0 max-w-2xl bg-[#09090f] p-3 rounded-xl border border-djzinc-800 shadow-inner">
+                                {/* Barra Superior del Pad Mode FLX10 */}
+                                <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-2.5">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 bg-[#12121c] px-2 py-0.5 rounded border border-djzinc-750">
+                                            <span className="w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]"></span>
+                                            <span className="text-[10px] font-mono font-black text-white uppercase tracking-wider">
+                                                HOT CUE MODE
+                                            </span>
+                                        </div>
+                                        <span className="text-[10px] font-mono text-gray-400">
+                                            DDJ-FLX10 Multi-Color Performance Pads
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-djcyan-400 font-bold">
+                                        {isCurrentPlayingThis ? `● EN SECCIÓN: CUE ${activePlayingCueId}` : 'PAUSA'}
                                     </span>
                                 </div>
-                                <p className="text-xs text-gray-400 font-medium truncate mt-0.5">
-                                    {currentTrack.artist || currentTrack.a || "Artista Desconocido"}
-                                    {currentTrack.album ? ` • ${currentTrack.album}` : ''}
-                                </p>
-                            </div>
-                        </div>
 
-                        {/* Badges DJ (BPM, Key Camelot, Energy, Mood, Duración) */}
-                        <div className="flex items-center gap-2 shrink-0">
-                            <div className="flex flex-col items-center px-3 py-1 bg-djzinc-900 border border-djzinc-800 rounded-lg">
-                                <span className="text-[9px] text-gray-400 font-mono font-semibold uppercase">BPM</span>
-                                <span className="text-xs font-mono font-bold text-white">{bpm.toFixed(2)}</span>
-                            </div>
-                            <div className="flex flex-col items-center px-3 py-1 bg-djzinc-900 border border-djzinc-800 rounded-lg">
-                                <span className="text-[9px] text-gray-400 font-mono font-semibold uppercase">TONO</span>
-                                <span className="text-xs font-mono font-bold text-djcyan-400">{currentTrack.key || currentTrack.k || '8A'}</span>
-                            </div>
-                            <div className="flex flex-col items-center px-3 py-1 bg-djzinc-900 border border-djzinc-800 rounded-lg">
-                                <span className="text-[9px] text-gray-400 font-mono font-semibold uppercase">ENERGÍA</span>
-                                <span className="text-xs font-mono font-bold text-emerald-400">{currentTrack.energy || currentTrack.e || 85}%</span>
-                            </div>
-                            <div className="flex flex-col items-center px-3 py-1 bg-djzinc-900 border border-djzinc-800 rounded-lg">
-                                <span className="text-[9px] text-gray-400 font-mono font-semibold uppercase">ATMÓSFERA</span>
-                                <span className="text-xs font-mono font-bold text-amber-300">{currentTrack.mood || 'Peak Time'}</span>
-                            </div>
-                            <div className="flex flex-col items-center px-3 py-1 bg-djzinc-900 border border-djzinc-800 rounded-lg">
-                                <span className="text-[9px] text-gray-400 font-mono font-semibold uppercase">DURACIÓN</span>
-                                <span className="text-xs font-mono font-bold text-gray-300">{currentTrack.duration || '05:00'}</span>
+                                {/* Matriz 4x2 de los 8 Pads Pioneer FLX10 con Iluminación Dinámica */}
+                                <div className="grid grid-cols-4 gap-2">
+                                    {activeCues.slice(0, 8).map((cue, idx) => {
+                                        const padNum = cue.id !== undefined ? cue.id : (idx + 1);
+                                        const isSelected = (selectedCueId === padNum);
+                                        const isPlayingThisCue = (activePlayingCueId === padNum && isCurrentPlayingThis);
+                                        const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : '#ef4444');
+                                        const cueMs = cue.pos_ms !== undefined ? cue.pos_ms : parseTimeToMs(cue.time || '00:00.00');
+                                        const barNum = Math.max(1, Math.floor((cueMs - downbeatMs) / barMs) + 1);
+
+                                        return (
+                                            <div
+                                                key={idx}
+                                                onClick={() => {
+                                                    setSelectedCueId(padNum);
+                                                    handleJumpToCue(cue);
+                                                }}
+                                                className={`p-2 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group ${
+                                                    isPlayingThisCue
+                                                        ? 'bg-[#181824] scale-[1.03] ring-2 ring-white/90 shadow-lg'
+                                                        : isSelected
+                                                            ? 'bg-[#14141f] border-white shadow-md'
+                                                            : 'bg-[#0f0f18] hover:bg-[#14141e] border-djzinc-800'
+                                                }`}
+                                                style={{
+                                                    borderColor: isPlayingThisCue ? color : (isSelected ? '#ffffff' : `${color}60`),
+                                                    boxShadow: isPlayingThisCue ? `0 0 20px ${color}90` : (isSelected ? '0 0 10px rgba(255,255,255,0.4)' : `0 0 6px ${color}30`)
+                                                }}
+                                            >
+                                                {/* Halo Superior de Iluminación LED del Pad */}
+                                                <div 
+                                                    className={`absolute top-0 left-0 right-0 h-1 transition-all ${isPlayingThisCue ? 'opacity-100 animate-pulse' : 'opacity-60'}`}
+                                                    style={{ backgroundColor: color }}
+                                                ></div>
+
+                                                <div className="flex items-center justify-between mt-1">
+                                                    <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${isPlayingThisCue ? 'bg-white text-black' : 'bg-black/60 text-white'}`}>
+                                                        PAD {padNum}
+                                                    </span>
+                                                    <span 
+                                                        className={`w-2.5 h-2.5 rounded-full transition-all ${isPlayingThisCue ? 'scale-125 animate-ping' : ''}`}
+                                                        style={{ backgroundColor: color }}
+                                                    ></span>
+                                                </div>
+
+                                                <div className="my-1.5 truncate">
+                                                    <span className="text-[11px] font-bold text-gray-200 block truncate group-hover:text-white" title={cue.name || cue.short_name}>
+                                                        {cue.name || cue.short_name || `Cue ${padNum}`}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-djzinc-800/80">
+                                                    <span className="font-bold text-djcyan-300">{cue.time || "00:00.00"}</span>
+                                                    <span className="text-gray-400 text-[9px]">Bar {barNum}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -4845,239 +4986,94 @@ const HotCuesWorkspace = ({
                         </div>
                     </div>
 
-                    {/* CONTROLES DE TRANSPORTE & REPRODUCTOR DJ */}
-                    <div className="bg-[#0a0a10] border border-djzinc-800 rounded-xl p-3 flex items-center justify-between shadow-md">
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (onTogglePlay) onTogglePlay();
+                    {/* BARRA DE MICRO-AJUSTE (NUDGE) & EDICIÓN DEL CUE SELECCIONADO */}
+                    <div className="bg-[#0a0a10] border border-djzinc-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-md">
+                        <div className="flex items-center gap-2.5">
+                            <span className="text-xs font-bold text-djcyan-400 font-mono bg-djcyan-950/80 px-2.5 py-1 rounded border border-djcyan-700/60">
+                                PAD {selectedCueId} ({currentCue.name || `Cue ${selectedCueId}`})
+                            </span>
+                            <input
+                                type="text"
+                                value={cueNameInput}
+                                onChange={(e) => {
+                                    setCueNameInput(e.target.value);
+                                    updateSingleCue({ name: e.target.value, short_name: e.target.value });
                                 }}
-                                className="px-5 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg shadow-md cursor-pointer transition-transform active:scale-95 flex items-center gap-2"
-                            >
-                                {isCurrentPlayingThis ? (
-                                    <><Icons.Pause /> <span>PAUSE</span></>
-                                ) : (
-                                    <><Icons.Play /> <span>PLAY</span></>
-                                )}
-                            </button>
+                                placeholder="Nombre del punto (ej. Drop A)"
+                                className="w-48 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-white font-mono outline-none"
+                            />
+                            <input
+                                type="text"
+                                value={cueTimeInput}
+                                onChange={handleTimeInputChange}
+                                placeholder="00:00.00"
+                                className="w-24 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center"
+                            />
+                        </div>
 
+                        {/* Botones de Micro-Ajuste Nudge */}
+                        <div className="flex items-center gap-1 font-mono text-xs">
+                            <span className="text-[10px] text-gray-400 uppercase mr-1">Nudge:</span>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    if (onPlayTrack) onPlayTrack(currentTrack, 0, false);
-                                }}
-                                className="px-3 py-2 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 font-mono text-xs rounded-lg border border-djzinc-750 cursor-pointer shadow active:scale-95"
-                                title="Volver al inicio (00:00.00)"
+                                onClick={() => handleNudgeMs(-barMs)}
+                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                title="Retroceder 1 compás (4 beats)"
                             >
-                                ⏹ STOP
+                                -1c
                             </button>
-
-                            {/* Salto entre Hot Cues anterior / siguiente */}
                             <button
                                 type="button"
-                                onClick={() => {
-                                    const prevCue = activeCues.slice().reverse().find(c => {
-                                        const cMs = c.pos_ms !== undefined ? c.pos_ms : parseTimeToMs(c.time || '0');
-                                        return cMs < (playProgress * durMs) - 500;
-                                    });
-                                    if (prevCue) handleJumpToCue(prevCue);
-                                }}
-                                className="px-3 py-2 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 font-mono text-xs rounded-lg border border-djzinc-750 cursor-pointer shadow active:scale-95"
-                                title="Saltar al Hot Cue anterior"
+                                onClick={() => handleNudgeMs(-beatMs)}
+                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                title="Retroceder 1 beat (negra)"
                             >
-                                ⏮ Cue Prev
+                                -1b
                             </button>
-
                             <button
                                 type="button"
-                                onClick={() => {
-                                    const nextCue = activeCues.find(c => {
-                                        const cMs = c.pos_ms !== undefined ? c.pos_ms : parseTimeToMs(c.time || '0');
-                                        return cMs > (playProgress * durMs) + 500;
-                                    });
-                                    if (nextCue) handleJumpToCue(nextCue);
-                                }}
-                                className="px-3 py-2 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 font-mono text-xs rounded-lg border border-djzinc-750 cursor-pointer shadow active:scale-95"
-                                title="Saltar al Hot Cue siguiente"
+                                onClick={() => handleNudgeMs(-10)}
+                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                title="Retroceder 10 milisegundos"
                             >
-                                Cue Next ⏭
+                                -10ms
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleNudgeMs(10)}
+                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                title="Avanzar 10 milisegundos"
+                            >
+                                +10ms
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleNudgeMs(beatMs)}
+                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                title="Avanzar 1 beat (negra)"
+                            >
+                                +1b
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleNudgeMs(barMs)}
+                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                title="Avanzar 1 compás (4 beats)"
+                            >
+                                +1c
                             </button>
                         </div>
 
-                        {/* Contador de Tiempo Elapsed & Remaining */}
-                        <div className="flex items-center gap-4 font-mono">
-                            <div className="text-right">
-                                <span className="text-[10px] text-gray-400 uppercase block">Transcurrido</span>
-                                <span className="text-sm font-bold text-djcyan-400">
-                                    {formatMsToTime(playProgress * durMs)}
-                                </span>
-                            </div>
-                            <span className="text-gray-600 text-lg">/</span>
-                            <div>
-                                <span className="text-[10px] text-gray-400 uppercase block">Restante</span>
-                                <span className="text-sm font-bold text-gray-300">
-                                    -{formatMsToTime(Math.max(0, durMs - (playProgress * durMs)))}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Botón Anclar Cue en la Aguja actual */}
+                        {/* Botón Anclar en Playhead actual */}
                         <button
                             type="button"
                             onClick={handleSetCueAtPlayhead}
-                            className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-black font-mono font-bold text-xs rounded-lg shadow-md cursor-pointer transition-transform active:scale-95"
+                            className="px-4 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-black font-mono font-bold text-xs rounded-lg shadow-md cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5"
                             title="Fijar el Pad seleccionado en la posición actual de reproducción"
                         >
-                            📍 Fijar Pad {selectedCueId} en Playhead
+                            <span>📍</span>
+                            <span>Fijar Pad {selectedCueId} en Playhead</span>
                         </button>
-                    </div>
-
-                    {/* MATRIZ DE LOS 8 PERFORMANCE PADS DJ (NUMARK NV2 / PIONEER RGB) */}
-                    <div className="bg-[#0a0a10] border border-djzinc-800 rounded-xl p-3.5 shadow-md">
-                        <div className="flex items-center justify-between border-b border-djzinc-800 pb-2 mb-3">
-                            <span className="text-xs font-bold text-gray-300 uppercase tracking-wider font-mono flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]"></span>
-                                8 Performance Pads Numark NV2 / Pioneer RGB
-                            </span>
-                            <span className="text-[10px] font-mono text-gray-400">
-                                Haz clic en un Pad para seleccionarlo o saltar al punto de mezcla
-                            </span>
-                        </div>
-
-                        {/* Grid de 8 Pads en 2 filas de 4 */}
-                        <div className="grid grid-cols-4 gap-2.5">
-                            {activeCues.slice(0, 8).map((cue, idx) => {
-                                const padNum = cue.id !== undefined ? cue.id : (idx + 1);
-                                const isSelected = (selectedCueId === padNum);
-                                const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : '#ef4444');
-                                const cueMs = cue.pos_ms !== undefined ? cue.pos_ms : parseTimeToMs(cue.time || '00:00.00');
-                                const barNum = Math.max(1, Math.floor((cueMs - downbeatMs) / barMs) + 1);
-
-                                return (
-                                    <div
-                                        key={idx}
-                                        onClick={() => setSelectedCueId(padNum)}
-                                        className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all shadow-md group ${
-                                            isSelected
-                                            ? 'bg-djzinc-850 border-white ring-2 ring-white/60 shadow-[0_0_15px_rgba(255,255,255,0.2)]'
-                                            : 'bg-djzinc-900/80 border-djzinc-800 hover:border-djzinc-700 hover:bg-djzinc-850/80'
-                                        }`}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-1.5">
-                                                <span
-                                                    className="w-3.5 h-3.5 rounded-full shadow-md shrink-0"
-                                                    style={{ backgroundColor: color }}
-                                                ></span>
-                                                <span className="font-bold text-xs text-white">Pad {padNum}</span>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleJumpToCue(cue);
-                                                }}
-                                                className="px-2 py-0.5 bg-black/60 hover:bg-djcyan-500 hover:text-black text-djcyan-400 text-[10px] font-mono font-bold rounded border border-djcyan-500/30 transition-colors"
-                                                title={`Saltar a Pad ${padNum}`}
-                                            >
-                                                ▶ Jump
-                                            </button>
-                                        </div>
-
-                                        <div className="my-1.5">
-                                            <span className="text-xs text-gray-300 font-medium truncate block">
-                                                {cue.name || cue.short_name || `Cue ${padNum}`}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center justify-between text-[11px] font-mono pt-1.5 border-t border-djzinc-800/80">
-                                            <span className="text-djcyan-400 font-bold">{cue.time || "00:00.00"}</span>
-                                            <span className="text-gray-400 text-[10px]">Bar {barNum}</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Barra de Micro-Ajuste (Nudge) & Edición del Cue Seleccionado */}
-                        <div className="mt-3.5 p-3 rounded-lg bg-djzinc-950 border border-djzinc-850 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-gray-300 font-mono">
-                                    Pad {selectedCueId}:
-                                </span>
-                                <input
-                                    type="text"
-                                    value={cueNameInput}
-                                    onChange={(e) => {
-                                        setCueNameInput(e.target.value);
-                                        updateSingleCue({ name: e.target.value, short_name: e.target.value });
-                                    }}
-                                    placeholder="Nombre del punto (ej. Drop A)"
-                                    className="w-44 bg-djzinc-900 border border-djzinc-750 rounded px-2.5 py-1 text-xs text-white font-mono outline-none"
-                                />
-                                <input
-                                    type="text"
-                                    value={cueTimeInput}
-                                    onChange={handleTimeInputChange}
-                                    placeholder="00:00.00"
-                                    className="w-24 bg-djzinc-900 border border-djzinc-750 rounded px-2 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center"
-                                />
-                            </div>
-
-                            {/* Botones de Nudge Milimétrico */}
-                            <div className="flex items-center gap-1 font-mono text-xs">
-                                <span className="text-[10px] text-gray-400 uppercase mr-1">Micro-Ajuste:</span>
-                                <button
-                                    type="button"
-                                    onClick={() => handleNudgeMs(-barMs)}
-                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
-                                    title="Retroceder 1 compás (4 beats)"
-                                >
-                                    -1c
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleNudgeMs(-beatMs)}
-                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
-                                    title="Retroceder 1 beat (negra)"
-                                >
-                                    -1b
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleNudgeMs(-10)}
-                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
-                                    title="Retroceder 10 milisegundos"
-                                >
-                                    -10ms
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleNudgeMs(10)}
-                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
-                                    title="Avanzar 10 milisegundos"
-                                >
-                                    +10ms
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleNudgeMs(beatMs)}
-                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
-                                    title="Avanzar 1 beat (negra)"
-                                >
-                                    +1b
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleNudgeMs(barMs)}
-                                    className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
-                                    title="Avanzar 1 compás (4 beats)"
-                                >
-                                    +1c
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
                     {/* SECCIÓN DE INTELIGENCIA ACÚSTICA: ATMÓSFERA (MOOD) Y COMENTARIO TÁCTICO PROFESIONAL */}
@@ -6264,6 +6260,139 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const fileInputRef = useRef(null);
     const [dragOver, setDragOver] = useState(false);
 
+    // Libreta Digital de Apuntes DJ (Persistida en LocalStorage)
+    const [notebookTracks, setNotebookTracks] = useState(() => {
+        try {
+            const saved = localStorage.getItem('beatwave_shazam_notebook');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
+    const [notebookFeedback, setNotebookFeedback] = useState("");
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('beatwave_shazam_notebook', JSON.stringify(notebookTracks));
+        } catch (e) {}
+    }, [notebookTracks]);
+
+    const handleApuntarEnLista = (trk) => {
+        const trackToAdd = trk || identifiedTrack;
+        if (!trackToAdd) return;
+        const exists = notebookTracks.some(t => t.title === trackToAdd.title && t.artist === trackToAdd.artist);
+        if (!exists) {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const item = {
+                ...trackToAdd,
+                notebook_id: Date.now(),
+                added_at: dateStr
+            };
+            setNotebookTracks(prev => [item, ...prev]);
+            setNotebookFeedback(`✓ "${trackToAdd.title}" apuntado en tu libreta digital.`);
+            setTimeout(() => setNotebookFeedback(""), 3500);
+        } else {
+            setNotebookFeedback(`ℹ "${trackToAdd.title}" ya estaba en la libreta.`);
+            setTimeout(() => setNotebookFeedback(""), 3000);
+        }
+    };
+
+    const handleDescartarDeteccion = () => {
+        if (previewPlaying) {
+            audioRef.current.pause();
+            setPreviewPlaying(false);
+        }
+        setIdentifiedTrack(null);
+        setStatusMsg("Detección descartada. Listo para una nueva captura.");
+        setTimeout(() => setStatusMsg(""), 2500);
+    };
+
+    const handleEliminarDeNotebook = (notebookId) => {
+        setNotebookTracks(prev => prev.filter(t => t.notebook_id !== notebookId));
+    };
+
+    const handleVaciarNotebook = () => {
+        if (window.confirm("¿Seguro que deseas vaciar todas las pistas de tu libreta de apuntes?")) {
+            setNotebookTracks([]);
+            setNotebookFeedback("Libreta de apuntes vaciada.");
+            setTimeout(() => setNotebookFeedback(""), 2500);
+        }
+    };
+
+    const handleExportarNotebookXLS = async () => {
+        if (notebookTracks.length === 0) {
+            alert("No hay pistas en la libreta para exportar.");
+            return;
+        }
+        if (window.eel && window.eel.exportar_apuntes_shazam) {
+            try {
+                const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "xls")();
+                if (res && res.status === 'ok') {
+                    setNotebookFeedback(`✓ Archivo Excel generado: ${res.filename}`);
+                    setTimeout(() => setNotebookFeedback(""), 4000);
+                }
+            } catch (e) {
+                console.error("Fallo exportando a disco:", e);
+            }
+        }
+        // Descarga directa en navegador para compatibilidad instantánea
+        const headers = ["#", "Artista", "Título", "Álbum", "Género", "Año", "ISRC", "Fecha de Apunte"];
+        const rows = notebookTracks.map((t, idx) => [
+            idx + 1,
+            `"${(t.artist || '').replace(/"/g, '""')}"`,
+            `"${(t.title || '').replace(/"/g, '""')}"`,
+            `"${(t.album || '').replace(/"/g, '""')}"`,
+            `"${(t.genre || '').replace(/"/g, '""')}"`,
+            `"${(t.year || '').replace(/"/g, '""')}"`,
+            `"${(t.isrc || '').replace(/"/g, '""')}"`,
+            `"${(t.added_at || '').replace(/"/g, '""')}"`
+        ]);
+        const csvContent = "\uFEFF" + [headers.join("\t"), ...rows.map(r => r.join("\t"))].join("\n");
+        const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `BeatWave_Shazam_Apuntes_${Date.now()}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportarNotebookTXT = async () => {
+        if (notebookTracks.length === 0) {
+            alert("No hay pistas en la libreta para exportar.");
+            return;
+        }
+        if (window.eel && window.eel.exportar_apuntes_shazam) {
+            try {
+                const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "txt")();
+                if (res && res.status === 'ok') {
+                    setNotebookFeedback(`✓ Archivo TXT guardado: ${res.filename}`);
+                    setTimeout(() => setNotebookFeedback(""), 4000);
+                }
+            } catch (e) {}
+        }
+        let txt = "====================================================\n";
+        txt += "BEATWAVE PRO • LIBRETA DIGITAL DE APUNTES SHAZAM\n";
+        txt += `Fecha: ${new Date().toLocaleString()}\n`;
+        txt += `Total pistas: ${notebookTracks.length}\n`;
+        txt += "====================================================\n\n";
+        notebookTracks.forEach((t, i) => {
+            txt += `${String(i + 1).padStart(2, '0')}. ${t.artist} - ${t.title} [${t.album || ''} ${t.year || ''}] • ${t.genre || 'Electronic'}${t.isrc ? ` (ISRC: ${t.isrc})` : ''}\n`;
+        });
+        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `BeatWave_Shazam_Tracklist_${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     useEffect(() => {
         const audio = audioRef.current;
         const handleEnded = () => setPreviewPlaying(false);
@@ -6562,72 +6691,90 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 </div>
             </div>
 
-            {/* Resultado de Identificación Activa */}
+            {/* Resultado de Identificación Activa con Reproductor y Acciones */}
             {identifiedTrack && (
-                <div className="bg-gradient-to-r from-blue-950/40 via-djzinc-950 to-indigo-950/40 p-5 rounded-2xl border border-djcyan-500/40 shadow-2xl space-y-4">
+                <div className="bg-gradient-to-r from-blue-950/50 via-djzinc-950 to-indigo-950/50 p-5 rounded-2xl border-2 border-djcyan-500/50 shadow-2xl space-y-4 animate-fadeIn">
                     <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-3">
                         <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]"></span>
-                            <span className="text-xs font-mono font-bold text-djcyan-400 uppercase tracking-wider">
+                            <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse"></span>
+                            <span className="text-xs font-mono font-black text-djcyan-400 uppercase tracking-wider">
                                 PISTA IDENTIFICADA POR SHAZAM
                             </span>
                         </div>
-                        {identifiedTrack.isrc && (
-                            <span className="text-[10px] font-mono text-gray-400 bg-djzinc-900 px-2 py-0.5 rounded border border-djzinc-750">
-                                ISRC: {identifiedTrack.isrc}
-                            </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {identifiedTrack.isrc && (
+                                <span className="text-[10px] font-mono text-gray-400 bg-djzinc-900 px-2 py-0.5 rounded border border-djzinc-750">
+                                    ISRC: {identifiedTrack.isrc}
+                                </span>
+                            )}
+                            <button
+                                type="button"
+                                onClick={handleDescartarDeteccion}
+                                className="w-6 h-6 rounded-full bg-djzinc-850 hover:bg-red-950 text-gray-400 hover:text-red-400 flex items-center justify-center text-xs font-bold border border-djzinc-750 cursor-pointer transition-colors"
+                                title="Descartar esta detección"
+                            >
+                                ✕
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex flex-col md:flex-row items-center gap-6">
+                        {/* Artwork con Reproductor DJ Integrado */}
                         <div className="relative group shrink-0">
                             <img 
                                 src={getValidCover(identifiedTrack.cover)} 
                                 alt="Shazam Artwork" 
-                                className="w-40 h-40 rounded-xl object-cover border border-djzinc-700 shadow-2xl"
+                                className="w-44 h-44 rounded-2xl object-cover border-2 border-djzinc-700 shadow-2xl"
                             />
                             {identifiedTrack.preview_url && (
                                 <button
                                     type="button"
                                     onClick={() => togglePlayPreview(identifiedTrack.preview_url)}
-                                    className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-djcyan-500 text-black flex items-center justify-center shadow-xl opacity-90 hover:opacity-100 hover:scale-110 transition-all cursor-pointer font-bold"
-                                    title="Reproducir pre-escucha oficial"
+                                    className={`absolute inset-0 m-auto w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer font-black text-lg ${
+                                        previewPlaying 
+                                            ? 'bg-emerald-500 text-black scale-105 shadow-[0_0_20px_rgba(16,185,129,0.7)]' 
+                                            : 'bg-djcyan-500 text-black hover:scale-110 shadow-[0_0_20px_rgba(6,182,212,0.6)]'
+                                    }`}
+                                    title="Reproducir pre-escucha de audio oficial"
                                 >
                                     {previewPlaying ? '❚❚' : '▶'}
                                 </button>
                             )}
+                            <span className="absolute bottom-2 left-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-gray-300 border border-djzinc-700">
+                                Pre-Escucha 30s
+                            </span>
                         </div>
 
-                        <div className="flex-1 min-w-0 space-y-3">
+                        <div className="flex-1 min-w-0 space-y-3.5">
                             <div>
                                 <h1 className="text-2xl font-black text-white truncate" title={identifiedTrack.title}>
                                     {identifiedTrack.title}
                                 </h1>
-                                <p className="text-base font-bold text-djcyan-400 truncate" title={identifiedTrack.artist}>
+                                <p className="text-lg font-bold text-djcyan-400 truncate mt-0.5" title={identifiedTrack.artist}>
                                     {identifiedTrack.artist}
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                                <div className="bg-[#050508] p-2 rounded border border-djzinc-800">
+                                <div className="bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
                                     <span className="text-[9px] text-gray-500 block uppercase">Álbum</span>
                                     <span className="text-gray-200 font-semibold truncate block" title={identifiedTrack.album}>
                                         {identifiedTrack.album || '--'}
                                     </span>
                                 </div>
-                                <div className="bg-[#050508] p-2 rounded border border-djzinc-800">
+                                <div className="bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
                                     <span className="text-[9px] text-gray-500 block uppercase">Género</span>
                                     <span className="text-emerald-400 font-semibold truncate block">
                                         {identifiedTrack.genre || 'Electronic'}
                                     </span>
                                 </div>
-                                <div className="bg-[#050508] p-2 rounded border border-djzinc-800">
+                                <div className="bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
                                     <span className="text-[9px] text-gray-500 block uppercase">Lanzamiento</span>
                                     <span className="text-gray-200 font-semibold truncate block">
                                         {identifiedTrack.year || '--'}
                                     </span>
                                 </div>
-                                <div className="bg-[#050508] p-2 rounded border border-djzinc-800">
+                                <div className="bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
                                     <span className="text-[9px] text-gray-500 block uppercase">Sello / Label</span>
                                     <span className="text-gray-300 font-semibold truncate block" title={identifiedTrack.label}>
                                         {identifiedTrack.label || '--'}
@@ -6635,51 +6782,231 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                            {/* DOS BOTONES PRINCIPALES: APUNTAR EN LISTA O DESCARTAR */}
+                            <div className="flex flex-wrap items-center gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleApuntarEnLista(identifiedTrack)}
+                                    className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                                    title="Añadir esta pista a tu Libreta Digital de Apuntes DJ"
+                                >
+                                    <span className="text-base">📝</span>
+                                    <span>Apuntar en Lista</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleDescartarDeteccion}
+                                    className="px-4 py-2.5 bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-800 font-mono font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                    title="Descartar esta detección y dejar el radar listo"
+                                >
+                                    <span>🗑️</span>
+                                    <span>Descartar</span>
+                                </button>
+
+                                <div className="h-6 w-px bg-djzinc-800 hidden sm:block"></div>
+
                                 <button
                                     type="button"
                                     onClick={() => handleSendToSpotifyInternal(identifiedTrack)}
-                                    className="px-3 py-1.5 bg-djgreen-950 hover:bg-djgreen-900 text-djgreen-400 border border-djgreen-700/80 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow active:scale-95 transition-all"
-                                    title="Descargar este track en FLAC a través de Spotify Ingest"
+                                    className="px-3.5 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-djgreen-400 border border-djgreen-800/80 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                                    title="Enviar a la cola de descarga en FLAC"
                                 >
                                     <span>📥</span>
-                                    <span>Descargar en Spotify Ingest</span>
+                                    <span>Spotify Ingest</span>
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => handleSendToAuditInternal(identifiedTrack)}
-                                    className="px-3 py-1.5 bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 border border-djcyan-700/80 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow active:scale-95 transition-all"
-                                    title="Añadir esta pista a la tabla de Auditoría para análisis DSP y Beatgrid"
+                                    className="px-3.5 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-400 border border-djcyan-800/80 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                                    title="Añadir a la tabla de auditoría para análisis DSP"
                                 >
                                     <span>📋</span>
-                                    <span>Añadir a Auditoría DJ</span>
+                                    <span>Auditoría DJ</span>
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => handleCopyToClipboard(identifiedTrack)}
-                                    className="px-2.5 py-1.5 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 border border-djzinc-750 rounded-lg text-xs font-mono cursor-pointer transition-colors"
-                                    title="Copiar Artista - Título al portapapeles"
+                                    className="px-3 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 rounded-xl text-xs font-mono cursor-pointer transition-colors"
+                                    title="Copiar texto al portapapeles"
                                 >
-                                    📋 Copiar Texto
+                                    Copiar
                                 </button>
-
-                                {identifiedTrack.shazam_url && (
-                                    <a
-                                        href={identifiedTrack.shazam_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="px-2.5 py-1.5 bg-blue-950 hover:bg-blue-900 text-blue-300 border border-blue-800 rounded-lg text-xs font-mono transition-colors"
-                                    >
-                                        🔗 Shazam Web
-                                    </a>
-                                )}
                             </div>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* LIBRETA DIGITAL DE APUNTES DJ CON DESCARGA XLS Y TXT */}
+            <div className="bg-[#09090f] border border-djzinc-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-djzinc-800 pb-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-bold text-sm shadow">
+                            📓
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-sm font-black text-white font-mono uppercase tracking-wider">
+                                    Libreta Digital de Apuntes DJ
+                                </h3>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono font-black">
+                                    {notebookTracks.length} apuntes
+                                </span>
+                            </div>
+                            <p className="text-[11px] text-gray-400">
+                                Colección de pistas cazadas en vivo en el radar, listas para exportar o enviar a producción.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {notebookFeedback && (
+                            <span className="text-xs font-mono font-bold text-emerald-400 animate-pulse mr-2">
+                                {notebookFeedback}
+                            </span>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={handleExportarNotebookXLS}
+                            disabled={notebookTracks.length === 0}
+                            className="px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-djgreen-400 border border-djgreen-700/60 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-40"
+                            title="Descargar listado en formato Excel (.xls / .xlsx)"
+                        >
+                            <span>📊</span>
+                            <span>Descargar XLS</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleExportarNotebookTXT}
+                            disabled={notebookTracks.length === 0}
+                            className="px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-700/60 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-40"
+                            title="Descargar tracklist limpio en formato texto (.txt)"
+                        >
+                            <span>📄</span>
+                            <span>Descargar TXT</span>
+                        </button>
+
+                        {notebookTracks.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleVaciarNotebook}
+                                className="px-2.5 py-1.5 bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800/80 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-colors"
+                                title="Vaciar todos los apuntes"
+                            >
+                                🗑️ Vaciar
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Lista / Tabla de Apuntes */}
+                {notebookTracks.length === 0 ? (
+                    <div className="py-10 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-850 rounded-xl bg-djzinc-950/50">
+                        <span className="text-2xl block mb-1">📝</span>
+                        Tu libreta de apuntes está vacía. Cuando identifiques un track en el Radar, pulsa <strong className="text-emerald-400">"Apuntar en Lista"</strong> para guardarlo aquí.
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
+                            <thead className="bg-[#0d0d14] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400">
+                                <tr>
+                                    <th className="py-2 px-2 text-center w-8">#</th>
+                                    <th className="py-2 px-2 w-10 text-center">PLAY</th>
+                                    <th className="py-2 px-3 min-w-[260px]">PISTA / ÁLBUM</th>
+                                    <th className="py-2 px-3 min-w-[160px]">ARTISTA</th>
+                                    <th className="py-2 px-2 text-center w-24">GÉNERO</th>
+                                    <th className="py-2 px-2 text-center w-16">AÑO</th>
+                                    <th className="py-2 px-3 text-center w-28">HORA APUNTE</th>
+                                    <th className="py-2 px-3 text-center w-36">ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-djzinc-850/60 font-sans">
+                                {notebookTracks.map((row, idx) => {
+                                    const isRowPlaying = previewPlaying && audioRef.current.src === row.preview_url;
+                                    return (
+                                        <tr key={row.notebook_id || idx} className="hover:bg-[#12121a] transition-colors">
+                                            <td className="py-2 px-2 text-center text-gray-500 font-mono">{idx + 1}</td>
+                                            <td className="py-2 px-2 text-center">
+                                                {row.preview_url ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePlayPreview(row.preview_url)}
+                                                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                                                            isRowPlaying 
+                                                                ? 'bg-emerald-500 text-black font-bold shadow-[0_0_8px_rgba(16,185,129,0.8)]' 
+                                                                : 'bg-djzinc-850 hover:bg-djcyan-500 hover:text-black text-djcyan-400'
+                                                        }`}
+                                                        title="Reproducir pre-escucha"
+                                                    >
+                                                        {isRowPlaying ? '❚❚' : '▶'}
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-gray-600 text-[10px] font-mono">--</span>
+                                                )}
+                                            </td>
+                                            <td className="py-2 px-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <img
+                                                        src={getValidCover(row.cover)}
+                                                        alt="Cover"
+                                                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                                        className="w-8 h-8 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm"
+                                                    />
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="font-semibold text-white text-xs truncate max-w-xs" title={row.title}>
+                                                            {row.title}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400 font-mono truncate max-w-xs" title={row.album}>
+                                                            {row.album || '--'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-2 px-3 text-gray-300 font-medium truncate max-w-xs">{row.artist}</td>
+                                            <td className="py-2 px-2 text-center font-mono text-[10px] text-emerald-400">{row.genre || 'Electronic'}</td>
+                                            <td className="py-2 px-2 text-center font-mono text-gray-400">{row.year || '--'}</td>
+                                            <td className="py-2 px-3 text-center font-mono text-[10px] text-gray-400">{row.added_at || '--'}</td>
+                                            <td className="py-2 px-3 text-center">
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSendToSpotifyInternal(row)}
+                                                        className="px-2 py-0.5 bg-djzinc-850 hover:bg-djgreen-950 text-djgreen-400 border border-djzinc-700 hover:border-djgreen-700/60 rounded text-[10px] font-mono cursor-pointer transition-colors"
+                                                        title="Enviar a Spotify Ingest"
+                                                    >
+                                                        📥 Spotify
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSendToAuditInternal(row)}
+                                                        className="px-2 py-0.5 bg-djzinc-850 hover:bg-djcyan-950 text-djcyan-400 border border-djzinc-700 hover:border-djcyan-700/60 rounded text-[10px] font-mono cursor-pointer transition-colors"
+                                                        title="Añadir a Auditoría"
+                                                    >
+                                                        📋 Auditar
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleEliminarDeNotebook(row.notebook_id)}
+                                                        className="px-1.5 py-0.5 text-gray-500 hover:text-red-400 text-xs cursor-pointer transition-colors"
+                                                        title="Eliminar de la libreta"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
 
             {/* Historial de Pistas Identificadas en la Sesión */}
             {history.length > 0 && (
