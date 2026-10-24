@@ -244,6 +244,27 @@ const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurre
     );
 };
 
+// Leyenda oficial de bandas espectrales Rekordbox / Pioneer DJ
+const WAVEFORM_COLOR_LEGEND = [
+    { name: "Bass / Sub", color: "#2563eb", rgb: [37, 99, 235], hex: "#2563EB", desc: "Subgraves y pegada de bombos (<150Hz)", text: "text-blue-400", dot: "bg-blue-500" },
+    { name: "Drums / Impact", color: "#ef4444", rgb: [239, 68, 68], hex: "#EF4444", desc: "Cajas, claps y transitorios rítmicos (150-1kHz)", text: "text-red-400", dot: "bg-red-500" },
+    { name: "Vocal / Synth", color: "#10b981", rgb: [16, 185, 129], hex: "#10B981", desc: "Vocales, pads y sintetizadores melódicos (1k-5kHz)", text: "text-emerald-400", dot: "bg-emerald-500" },
+    { name: "Hi-Hat / Treble", color: "#22d3ee", rgb: [34, 211, 238], hex: "#22D3EE", desc: "Platos, shakers y brillo aéreo (>5kHz)", text: "text-djcyan-400", dot: "bg-djcyan-400" }
+];
+
+// Paleta oficial de 8 pads RGB Numark NV2 / Pioneer DJ con códigos HEX
+const DJ_PAD_PALETTE = [
+    { id: 1, name: "Kick / Intro", color: "#ef4444", hex: "#EF4444", text: "text-red-400", border: "border-red-500/50", bg: "bg-red-500/10", rgb: [239, 68, 68] },
+    { id: 2, name: "Hi-Hats In", color: "#f97316", hex: "#F97316", text: "text-orange-400", border: "border-orange-500/50", bg: "bg-orange-500/10", rgb: [249, 115, 22] },
+    { id: 3, name: "Bassline", color: "#eab308", hex: "#EAB308", text: "text-yellow-400", border: "border-yellow-500/50", bg: "bg-yellow-500/10", rgb: [234, 179, 8] },
+    { id: 4, name: "Main Break", color: "#22c55e", hex: "#22C55E", text: "text-green-400", border: "border-green-500/50", bg: "bg-green-500/10", rgb: [34, 197, 94] },
+    { id: 5, name: "Drop 1 (Climax)", color: "#06b6d4", hex: "#06B6D4", text: "text-cyan-400", border: "border-cyan-500/50", bg: "bg-cyan-500/10", rgb: [6, 182, 212] },
+    { id: 6, name: "Mid Break", color: "#3b82f6", hex: "#3B82F6", text: "text-blue-400", border: "border-blue-500/50", bg: "bg-blue-500/10", rgb: [59, 130, 246] },
+    { id: 7, name: "Drop 2 (Re-Kick)", color: "#a855f7", hex: "#A855F7", text: "text-purple-400", border: "border-purple-500/50", bg: "bg-purple-500/10", rgb: [168, 85, 247] },
+    { id: 8, name: "Outro Mix Point", color: "#ec4899", hex: "#EC4899", text: "text-pink-400", border: "border-pink-500/50", bg: "bg-pink-500/10", rgb: [236, 72, 153] },
+    { id: 9, name: "Blanco Serato", color: "#f8fafc", hex: "#F8FAFC", text: "text-slate-100", border: "border-slate-400/50", bg: "bg-slate-400/10", rgb: [248, 250, 252] }
+];
+
 // Helper para parsear formato mm:ss a milisegundos
 const parseDurationMs = (dur) => {
     if (!dur || typeof dur !== "string") return 300000;
@@ -256,23 +277,136 @@ const parseDurationMs = (dur) => {
     return 300000;
 };
 
-// Visualizador de Onda Rekordbox Pro con Separación de Componentes (Bass, Drums, Vocals, Treble, Parones) y Cues
-const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSeekTrack, playProgress = 0, isCurrentPlaying = false }) => {
+// Helper para parsear mm:ss.ms o segundos a milisegundos
+const parseTimeToMs = (timeStr) => {
+    if (!timeStr || typeof timeStr !== "string") return 0;
+    const parts = timeStr.trim().split(":");
+    if (parts.length === 2) {
+        const m = parseInt(parts[0], 10) || 0;
+        const s = parseFloat(parts[1]) || 0;
+        return Math.max(0, (m * 60 + s) * 1000);
+    }
+    const num = parseFloat(timeStr);
+    return !isNaN(num) ? Math.max(0, num * 1000) : 0;
+};
+
+// Helper para formatear milisegundos a mm:ss.ms
+const formatMsToTime = (ms) => {
+    const totalSec = Math.max(0, ms) / 1000;
+    const m = Math.floor(totalSec / 60);
+    const s = (totalSec % 60).toFixed(2);
+    const sPadded = s.length < 5 ? "0" + s : s;
+    return `${String(m).padStart(2, "0")}:${sPadded}`;
+};
+
+// Visualizador de Onda Rekordbox Pro con Separación de Componentes, Beatgrid y Arrastre de Hot Cues
+const RekordboxWaveform = ({ 
+    track, 
+    cues = NV2_COLORS, 
+    duration = "06:12", 
+    onSeekTrack, 
+    playProgress = 0, 
+    isCurrentPlaying = false,
+    onUpdateCues,
+    selectedCueId = 1,
+    onSelectCue,
+    snapToGrid = true,
+    showBeatgrid = true,
+    onToggleSnap,
+    onToggleGrid
+}) => {
     const canvasRef = useRef(null);
+    const containerRef = useRef(null);
+    const [draggingCueIdx, setDraggingCueIdx] = useState(null);
+    const [dragInfo, setDragInfo] = useState(null);
+
     const rawId = track && track.id ? String(track.id) : "1";
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
     const durMs = parseDurationMs(duration);
+    const bpm = (track && (track.bpm || track.b)) ? Math.max(30.0, parseFloat(track.bpm || track.b) || 128.0) : 128.0;
+    const beatMs = 60000.0 / bpm;
+    const barMs = beatMs * 4.0;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
     const downbeatPct = downbeatMs > 0 ? Math.max(0.4, Math.min(99.0, (downbeatMs / durMs) * 100)) : null;
     const trimPct = trimMs > 0 ? Math.max(0.2, Math.min(99.0, (trimMs / durMs) * 100)) : null;
 
+    const activeCues = (cues && cues.length > 0) ? cues : NV2_COLORS;
+
     const handleCanvasClick = (e) => {
-        if (!canvasRef.current || !onSeekTrack) return;
-        const rect = canvasRef.current.getBoundingClientRect();
+        if (!containerRef.current || !onSeekTrack || draggingCueIdx !== null) return;
+        const rect = containerRef.current.getBoundingClientRect();
         const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
         onSeekTrack(track, pct, true);
     };
+
+    const handleCueMouseDown = (e, idx) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setDraggingCueIdx(idx);
+        if (onSelectCue && activeCues[idx]) {
+            onSelectCue(activeCues[idx].id || (idx + 1));
+        }
+    };
+
+    useEffect(() => {
+        if (draggingCueIdx === null) return;
+
+        const handleMouseMove = (e) => {
+            if (!containerRef.current) return;
+            const rect = containerRef.current.getBoundingClientRect();
+            const rawPct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const rawMs = rawPct * durMs;
+
+            let finalMs = rawMs;
+            if (snapToGrid) {
+                const beatOffset = Math.round((rawMs - downbeatMs) / beatMs);
+                finalMs = Math.max(0, Math.min(durMs, downbeatMs + (beatOffset * beatMs)));
+            }
+            const finalPct = durMs > 0 ? (finalMs / durMs) : 0;
+            const timeStr = formatMsToTime(finalMs);
+            const barNum = Math.max(1, Math.floor((finalMs - downbeatMs) / barMs) + 1);
+            const beatNum = Math.floor(Math.max(0, (finalMs - downbeatMs) % barMs) / beatMs) + 1;
+            const barStr = `Bar ${barNum}.${beatNum}`;
+
+            setDragInfo({
+                idx: draggingCueIdx,
+                pct: finalPct * 100,
+                time: timeStr,
+                bar: barStr,
+                posMs: Math.round(finalMs)
+            });
+
+            if (onUpdateCues) {
+                const updated = activeCues.map((c, i) => {
+                    if (i === draggingCueIdx) {
+                        return {
+                            ...c,
+                            pct: finalPct,
+                            pos_ms: Math.round(finalMs),
+                            time: timeStr,
+                            bar: barNum,
+                            bar_str: `Bar ${barNum}`
+                        };
+                    }
+                    return c;
+                });
+                onUpdateCues(updated);
+            }
+        };
+
+        const handleMouseUp = () => {
+            setDraggingCueIdx(null);
+            setDragInfo(null);
+        };
+
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [draggingCueIdx, durMs, downbeatMs, beatMs, barMs, snapToGrid, activeCues, onUpdateCues]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -289,18 +423,53 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
         ctx.fillRect(0, 0, width, height);
         const centerY = height / 2;
 
-        // Cuadrícula de compases de fondo (32 compases)
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
-        ctx.lineWidth = 1;
-        for (let b = 0; b <= 32; b++) {
-            const bx = (b / 32) * width;
-            ctx.beginPath();
-            ctx.moveTo(bx, 0);
-            ctx.lineTo(bx, height);
-            ctx.stroke();
+        // 1. Renderizado de líneas del Beatgrid Rekordbox/Serato (anclado al Bombo 1.0.0)
+        if (showBeatgrid && bpm >= 40.0) {
+            // Forward from downbeat
+            for (let t = downbeatMs; t <= durMs; t += beatMs) {
+                const bx = (t / durMs) * width;
+                if (bx < 0 || bx > width) continue;
+                const bIdx = Math.round((t - downbeatMs) / beatMs);
+                const isBar = (bIdx % 4 === 0);
+                const isPhrase16 = (bIdx % 16 === 0);
+
+                ctx.beginPath();
+                if (isPhrase16) {
+                    ctx.strokeStyle = "rgba(6, 182, 212, 0.45)"; // Cian de frase
+                    ctx.lineWidth = 1.2;
+                } else if (isBar) {
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.22)"; // Blanco nítido de compás
+                    ctx.lineWidth = 1.0;
+                } else {
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.07)"; // Tick de negra
+                    ctx.lineWidth = 0.75;
+                }
+                ctx.moveTo(bx, 0);
+                ctx.lineTo(bx, height);
+                ctx.stroke();
+
+                // Marca de acento superior de compás
+                if (isBar) {
+                    ctx.fillStyle = isPhrase16 ? "#06b6d4" : "rgba(255, 255, 255, 0.4)";
+                    ctx.fillRect(bx - 0.5, 0, 1.5, 5);
+                }
+            }
+            // Backward from downbeat
+            for (let t = downbeatMs - beatMs; t >= 0; t -= beatMs) {
+                const bx = (t / durMs) * width;
+                if (bx < 0 || bx > width) continue;
+                const bIdx = Math.round((t - downbeatMs) / beatMs);
+                const isBar = (bIdx % 4 === 0);
+                ctx.beginPath();
+                ctx.strokeStyle = isBar ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.05)";
+                ctx.lineWidth = isBar ? 1.0 : 0.75;
+                ctx.moveTo(bx, 0);
+                ctx.lineTo(bx, height);
+                ctx.stroke();
+            }
         }
 
-        // Renderizado estructural por capas de instrumentación (Bass, Drums, Vocales, Treble)
+        // 2. Renderizado estructural por capas de instrumentación (Bass, Drums, Vocales, Treble)
         for (let x = 0; x <= width; x += 1.5) {
             const xNorm = x / width;
             const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
@@ -353,24 +522,46 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
             ctx.stroke();
             ctx.shadowBlur = 0;
         }
-    }, [track, seed, playProgress, isCurrentPlaying]);
+    }, [track, seed, playProgress, isCurrentPlaying, showBeatgrid, bpm, downbeatMs, durMs, beatMs]);
 
     return (
         <div className="flex flex-col gap-1 w-full bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
             <div className="flex justify-between items-center text-[10px] font-mono text-gray-400 px-0.5">
-                <span className="text-djcyan-400 font-semibold flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span>
-                    ESTRUCTURA DE PISTA Y STEMS REKORDBOX
-                </span>
+                <div className="flex items-center gap-2">
+                    <span className="text-djcyan-400 font-semibold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 animate-pulse"></span>
+                        WAVEFORM & BEATGRID REKORDBOX
+                    </span>
+                    <span className="text-[9px] text-gray-400 font-mono bg-djzinc-900 px-1.5 py-0.2 rounded border border-djzinc-750">
+                        {bpm.toFixed(2)} BPM • Grid @ {Math.round(downbeatMs)}ms
+                    </span>
+                </div>
                 <div className="flex items-center gap-2 text-[9px]">
-                    <span className="flex items-center gap-1 text-blue-400"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Bass</span>
-                    <span className="flex items-center gap-1 text-red-400"><span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>Drums</span>
-                    <span className="flex items-center gap-1 text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Vocal</span>
-                    <span className="flex items-center gap-1 text-djcyan-400"><span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span>Hi-Hat</span>
-                    <span className="text-gray-400 ml-1">{duration}</span>
+                    <button
+                        type="button"
+                        onClick={onToggleGrid}
+                        className={`px-1.5 py-0.5 rounded font-mono font-bold text-[8px] transition-colors border cursor-pointer ${showBeatgrid ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700' : 'bg-djzinc-900 text-gray-500 border-djzinc-800'}`}
+                        title="Activar/Desactivar visualización de compases del Beatgrid"
+                    >
+                        {showBeatgrid ? '🔲 Grid: ON' : '🔳 Grid: OFF'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onToggleSnap}
+                        className={`px-1.5 py-0.5 rounded font-mono font-bold text-[8px] transition-colors border cursor-pointer ${snapToGrid ? 'bg-emerald-950 text-emerald-400 border-emerald-700' : 'bg-djzinc-900 text-gray-500 border-djzinc-800'}`}
+                        title="Imantar / Snap magnético al compás al arrastrar cues"
+                    >
+                        {snapToGrid ? '🧲 Snap: ON' : '🧲 Snap: OFF'}
+                    </button>
+                    <span className="text-gray-400 font-mono ml-1">{duration}</span>
                 </div>
             </div>
-            <div onClick={handleCanvasClick} className="relative w-full h-[114px] bg-[#030306] rounded border border-djzinc-800/80 overflow-hidden cursor-pointer hover:border-djcyan-500/50 transition-colors">
+
+            <div 
+                ref={containerRef}
+                onClick={handleCanvasClick} 
+                className="relative w-full h-[114px] bg-[#030306] rounded border border-djzinc-800/80 overflow-hidden cursor-pointer hover:border-djcyan-500/50 transition-colors select-none"
+            >
                 <canvas ref={canvasRef} style={{ width: "100%", height: "114px", display: "block" }} />
                 
                 {/* Marcador Zero-Crossing Trim */}
@@ -393,20 +584,486 @@ const RekordboxWaveform = ({ track, cues = NV2_COLORS, duration = "06:12", onSee
                     </div>
                 )}
 
-                {cues.map((c, idx) => {
+                {/* Marcadores Hot Cues interactivos arrastrables */}
+                {activeCues.map((c, idx) => {
                     let leftPos = c.pct !== undefined ? (c.pct * 100) : Math.min(94, Math.max(4, (idx * 12.2) + 3));
-                    if (idx === 0 && downbeatPct !== null) {
+                    if (idx === 0 && downbeatPct !== null && c.pct === undefined) {
                         leftPos = Math.min(94, Math.max(0.5, downbeatPct));
                     }
+                    const isSelected = selectedCueId === (c.id || (idx + 1));
+                    const isDragging = draggingCueIdx === idx;
+
                     return (
-                        <div key={c.id || idx} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10" style={{ left: `${leftPos}%` }}>
-                            <div className="w-4 h-3.5 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow" style={{ backgroundColor: c.color || '#ef4444' }}>
+                        <div 
+                            key={c.id || idx} 
+                            className="absolute top-0 bottom-0 flex flex-col items-center z-30" 
+                            style={{ left: `${leftPos}%`, transform: 'translateX(-50%)' }}
+                        >
+                            <div 
+                                onMouseDown={(e) => handleCueMouseDown(e, idx)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onSelectCue) onSelectCue(c.id || (idx + 1));
+                                }}
+                                onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onSeekTrack) onSeekTrack(track, c.pct !== undefined ? c.pct : (leftPos / 100), true);
+                                }}
+                                title={`Pad ${c.id || (idx + 1)}: ${c.name || 'Cue'} (${c.time || '00:00.0'}) • ${c.color || '#ef4444'}\nArrastra para mover en el Grid • Clic para editar • Doble clic para reproducir`}
+                                className={`w-4 h-4 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing select-none transition-all ${isSelected ? 'ring-2 ring-white scale-125 z-40' : 'hover:scale-115'}`} 
+                                style={{ backgroundColor: c.color || '#ef4444' }}
+                            >
                                 {c.id || (idx + 1)}
                             </div>
-                            <div className="w-[1px] h-full opacity-60" style={{ backgroundColor: c.color || '#ef4444' }}></div>
+                            <div 
+                                className={`w-[1.5px] h-full ${isSelected || isDragging ? 'opacity-100 shadow-[0_0_8px]' : 'opacity-65'}`} 
+                                style={{ backgroundColor: c.color || '#ef4444', boxShadow: isSelected ? `0 0 8px ${c.color || '#ef4444'}` : undefined }}
+                            ></div>
                         </div>
                     );
                 })}
+
+                {/* Tooltip de arrastre activo en tiempo real */}
+                {dragInfo && (
+                    <div 
+                        className="absolute top-1 pointer-events-none z-50 px-2 py-0.5 bg-black/90 border border-djcyan-400 rounded shadow-xl text-center transform -translate-x-1/2 flex items-center gap-1.5"
+                        style={{ left: `${dragInfo.pct}%` }}
+                    >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: activeCues[dragInfo.idx]?.color || '#ef4444' }}></span>
+                        <span className="text-[9px] font-mono font-bold text-white">Pad {activeCues[dragInfo.idx]?.id || (dragInfo.idx + 1)}:</span>
+                        <span className="text-[9px] font-mono font-bold text-djcyan-400">{dragInfo.time}</span>
+                        <span className="text-[8px] font-mono text-gray-300">({dragInfo.bar})</span>
+                        {snapToGrid && <span className="text-[7px] font-bold text-emerald-400 uppercase bg-emerald-950/80 px-1 rounded">Snap</span>}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Panel interactivo de edición de Hot Cues con códigos de color de forma de onda y beatgrid
+const HotCueEditorPanel = ({
+    track,
+    cues = NV2_COLORS,
+    duration = "05:00",
+    onUpdateCues,
+    selectedCueId = 1,
+    onSelectCue,
+    onPlayTrack,
+    onAutoPhraseCues,
+    snapToGrid = true,
+    onToggleSnap,
+    playProgress = 0,
+    onGuardarTrack
+}) => {
+    const activeCues = (cues && cues.length > 0) ? cues : NV2_COLORS;
+    const currentCue = activeCues.find(c => (c.id || 1) === selectedCueId) || activeCues[0] || {};
+    const durMs = parseDurationMs(duration);
+    const bpm = (track && (track.bpm || track.b)) ? Math.max(30.0, parseFloat(track.bpm || track.b) || 128.0) : 128.0;
+    const beatMs = 60000.0 / bpm;
+    const barMs = beatMs * 4.0;
+    const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
+
+    const [timeInputValue, setTimeInputValue] = useState(currentCue.time || "00:00.00");
+    const [nameInputValue, setNameInputValue] = useState(currentCue.name || "");
+
+    useEffect(() => {
+        setTimeInputValue(currentCue.time || "00:00.00");
+        setNameInputValue(currentCue.name || currentCue.short_name || `Cue ${currentCue.id || 1}`);
+    }, [selectedCueId, currentCue.time, currentCue.name]);
+
+    const updateSingleCue = (updatedFields) => {
+        if (!onUpdateCues) return;
+        const targetId = currentCue.id || 1;
+        const newCues = activeCues.map((c, idx) => {
+            const cid = c.id !== undefined ? c.id : (idx + 1);
+            if (cid === targetId) {
+                return { ...c, ...updatedFields };
+            }
+            return c;
+        });
+        onUpdateCues(newCues);
+    };
+
+    const handleTimeInputChange = (e) => {
+        const val = e.target.value;
+        setTimeInputValue(val);
+        const ms = parseTimeToMs(val);
+        const newPct = durMs > 0 ? Math.max(0, Math.min(1, ms / durMs)) : 0;
+        const barNum = Math.max(1, Math.floor((ms - downbeatMs) / barMs) + 1);
+        updateSingleCue({
+            time: val,
+            pos_ms: Math.round(ms),
+            pct: newPct,
+            bar: barNum,
+            bar_str: `Bar ${barNum}`
+        });
+    };
+
+    const handleNudge = (deltaMs) => {
+        const curMs = currentCue.pos_ms !== undefined ? currentCue.pos_ms : parseTimeToMs(currentCue.time || "00:00.00");
+        const nextMs = Math.max(0, Math.min(durMs, curMs + deltaMs));
+        const newPct = durMs > 0 ? (nextMs / durMs) : 0;
+        const formattedTime = formatMsToTime(nextMs);
+        const barNum = Math.max(1, Math.floor((nextMs - downbeatMs) / barMs) + 1);
+        setTimeInputValue(formattedTime);
+        updateSingleCue({
+            pos_ms: Math.round(nextMs),
+            time: formattedTime,
+            pct: newPct,
+            bar: barNum,
+            bar_str: `Bar ${barNum}`
+        });
+    };
+
+    const handleSnapCurrentCue = () => {
+        const curMs = currentCue.pos_ms !== undefined ? currentCue.pos_ms : parseTimeToMs(currentCue.time || "00:00.00");
+        const beatOffset = Math.round((curMs - downbeatMs) / beatMs);
+        const snappedMs = Math.max(0, Math.min(durMs, downbeatMs + (beatOffset * beatMs)));
+        const newPct = durMs > 0 ? (snappedMs / durMs) : 0;
+        const formattedTime = formatMsToTime(snappedMs);
+        const barNum = Math.max(1, Math.floor((snappedMs - downbeatMs) / barMs) + 1);
+        setTimeInputValue(formattedTime);
+        updateSingleCue({
+            pos_ms: Math.round(snappedMs),
+            time: formattedTime,
+            pct: newPct,
+            bar: barNum,
+            bar_str: `Bar ${barNum}`
+        });
+    };
+
+    const handleSetToPlayhead = () => {
+        const playheadMs = Math.max(0, Math.min(durMs, playProgress * durMs));
+        let targetMs = playheadMs;
+        if (snapToGrid) {
+            const beatOffset = Math.round((playheadMs - downbeatMs) / beatMs);
+            targetMs = Math.max(0, Math.min(durMs, downbeatMs + (beatOffset * beatMs)));
+        }
+        const newPct = durMs > 0 ? (targetMs / durMs) : 0;
+        const formattedTime = formatMsToTime(targetMs);
+        const barNum = Math.max(1, Math.floor((targetMs - downbeatMs) / barMs) + 1);
+        setTimeInputValue(formattedTime);
+        updateSingleCue({
+            pos_ms: Math.round(targetMs),
+            time: formattedTime,
+            pct: newPct,
+            bar: barNum,
+            bar_str: `Bar ${barNum}`
+        });
+    };
+
+    const handleNameChange = (newName) => {
+        setNameInputValue(newName);
+        updateSingleCue({
+            name: newName,
+            short_name: newName
+        });
+    };
+
+    const handleColorChange = (paletteItem) => {
+        updateSingleCue({
+            color: paletteItem.color,
+            hex: paletteItem.hex,
+            rgb: paletteItem.rgb,
+            text: paletteItem.text,
+            border: paletteItem.border,
+            bg: paletteItem.bg
+        });
+    };
+
+    return (
+        <div className="flex flex-col gap-3 bg-djzinc-900/60 p-3 rounded-lg border border-djzinc-800">
+            {/* Cabecera del Editor */}
+            <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-djcyan-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-djcyan-400"></span>
+                        8 HOT CUES & BEATGRID (NUMARK NV2 / PIONEER RGB)
+                    </span>
+                    <InfoTip title="Hot Cues & Beatgrid" text="Editor táctico de los 8 pads RGB sincronizados al Beatgrid Rekordbox/Serato. Arrastra los marcadores en la onda, escribe el tiempo exacto en milisegundos y asigna colores estándar." />
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <button
+                        type="button"
+                        onClick={onAutoPhraseCues}
+                        className="px-2 py-1 text-[9px] font-mono font-bold bg-djcyan-500/20 hover:bg-djcyan-500/30 text-djcyan-400 rounded border border-djcyan-500/40 cursor-pointer shadow active:scale-95 transition-all"
+                        title="Auto-calcular 8 Hot Cues por frases musicales (16/32 compases) anclados al Beatgrid 1.0.0"
+                    >
+                        ⚡ Auto-Frasear 16/32b
+                    </button>
+                    {onGuardarTrack && (
+                        <button
+                            type="button"
+                            onClick={onGuardarTrack}
+                            className="px-2 py-1 text-[9px] font-mono font-bold bg-djgreen-950 hover:bg-djgreen-900 text-djgreen-400 rounded border border-djgreen-700/60 cursor-pointer shadow active:scale-95 transition-all"
+                            title="Guardar cues modificados en archivo de disco"
+                        >
+                            💾 Guardar
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* CÓDIGOS DE COLOR DE FORMA DE ONDA & PADS */}
+            <div className="bg-[#040407] p-2 rounded border border-djzinc-800/80 space-y-1.5">
+                <div className="flex justify-between items-center text-[9px] font-mono font-bold text-gray-400">
+                    <span className="text-gray-300 flex items-center gap-1">
+                        🎨 CÓDIGOS DE COLOR DE FORMA DE ONDA (FRECUENCIAS)
+                    </span>
+                    <span className="text-[8px] text-gray-400">Pioneer DJ RGB Standard</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 text-[8px] font-mono">
+                    {WAVEFORM_COLOR_LEGEND.map(stem => (
+                        <div key={stem.name} className="flex items-center gap-1.5 p-1 rounded bg-djzinc-900 border border-djzinc-800" title={stem.desc}>
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow" style={{ backgroundColor: stem.color }}></span>
+                            <div className="min-w-0">
+                                <span className={`font-bold block truncate ${stem.text}`}>{stem.name}</span>
+                                <span className="text-gray-400 text-[7px]">{stem.hex}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Matriz de los 8 Pads Numark NV2 / Pioneer DJ */}
+            <div>
+                <div className="flex justify-between items-center text-[10px] font-mono text-gray-400 mb-1 px-0.5">
+                    <span className="font-semibold text-gray-300">PADS 1 - 8 (Clic para editar • ▶ para reproducir)</span>
+                    <span className="text-[9px] text-djcyan-400">Imantación al Grid: {snapToGrid ? 'ACTIVA' : 'LIBRE'}</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    {activeCues.map((c, idx) => {
+                        const cueId = c.id !== undefined ? c.id : (idx + 1);
+                        const isSelected = selectedCueId === cueId;
+                        const cuePct = c.pct !== undefined ? c.pct : ((idx * 0.12) + 0.02);
+
+                        return (
+                            <div
+                                key={cueId}
+                                onClick={() => onSelectCue && onSelectCue(cueId)}
+                                className={`p-2 rounded border flex flex-col justify-between cursor-pointer transition-all select-none relative group ${
+                                    isSelected 
+                                        ? 'bg-djzinc-800 border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)] ring-1 ring-djcyan-400' 
+                                        : `${c.bg || 'bg-djzinc-850'} ${c.border || 'border-djzinc-750'} hover:border-gray-500`
+                                }`}
+                            >
+                                <div className="flex justify-between items-center mb-1">
+                                    <div className="flex items-center gap-1">
+                                        <span 
+                                            className="text-[9px] font-mono font-black px-1.5 py-0.2 rounded text-black shadow-sm"
+                                            style={{ backgroundColor: c.color || '#ef4444' }}
+                                        >
+                                            PAD {cueId}
+                                        </span>
+                                        <span className="text-[7px] font-mono text-gray-400">
+                                            {c.color || '#ef4444'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onPlayTrack) onPlayTrack(track, cuePct, true);
+                                        }}
+                                        className="w-4 h-4 rounded bg-djzinc-900 hover:bg-djcyan-500 hover:text-black text-djcyan-400 flex items-center justify-center text-[8px] font-bold border border-djzinc-700 transition-colors shadow"
+                                        title={`Reproducir desde ${c.time || '00:00.0'}`}
+                                    >
+                                        ▶
+                                    </button>
+                                </div>
+                                <span className={`text-[10px] font-bold truncate ${c.text || 'text-gray-200'}`}>
+                                    {c.short_name || c.name || `Cue ${cueId}`}
+                                </span>
+                                <div className="flex justify-between items-center text-[8px] font-mono text-gray-400 mt-1 pt-1 border-t border-djzinc-800">
+                                    <span className="text-gray-300 font-semibold">{c.time || '00:00.0'}</span>
+                                    <span>{c.bar_str || `Bar ${c.bar || ((idx * 16) + 1)}`}</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* EDITOR DETALLADO DEL PAD SELECCIONADO */}
+            <div className="bg-[#050509] p-2.5 rounded border border-djcyan-500/30 space-y-2">
+                <div className="flex justify-between items-center text-[10px] font-mono border-b border-djzinc-800 pb-1.5">
+                    <div className="flex items-center gap-2">
+                        <span 
+                            className="px-2 py-0.5 rounded text-[9px] font-black font-mono text-black shadow" 
+                            style={{ backgroundColor: currentCue.color || '#ef4444' }}
+                        >
+                            PAD {currentCue.id || 1}
+                        </span>
+                        <span className="font-bold text-gray-200">
+                            Editando: <span className="text-djcyan-400">{currentCue.name || `Cue ${currentCue.id || 1}`}</span>
+                        </span>
+                        <span className="text-[9px] text-gray-400 font-mono">
+                            ({currentCue.color || '#ef4444'})
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            onClick={handleSetToPlayhead}
+                            className="px-2 py-0.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 text-[8px] font-mono rounded border border-djzinc-700 cursor-pointer shadow active:scale-95 transition-colors"
+                            title="Mover este cue a la posición actual de reproducción"
+                        >
+                            📍 Fijar en Playhead
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSnapCurrentCue}
+                            className="px-2 py-0.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 text-[8px] font-mono rounded border border-emerald-800/60 cursor-pointer shadow active:scale-95 transition-colors"
+                            title="Alinear magnéticamente al beatgrid más próximo"
+                        >
+                            🧲 Snap a Beat
+                        </button>
+                    </div>
+                </div>
+
+                {/* Edición de tiempo y Nudge */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div>
+                        <div className="flex justify-between items-center text-[9px] font-mono text-gray-400 mb-0.5">
+                            <span className="font-semibold text-gray-300">TIEMPO EXACTO (mm:ss.ms)</span>
+                            <span className="text-gray-400 font-mono">{currentCue.pos_ms || 0} ms</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <input
+                                type="text"
+                                value={timeInputValue}
+                                onChange={handleTimeInputChange}
+                                placeholder="00:00.00"
+                                className="w-full bg-djzinc-950 border border-djzinc-700 focus:border-djcyan-400 rounded px-2 py-1 text-xs font-mono font-bold text-djcyan-300 outline-none"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const cuePct = currentCue.pct !== undefined ? currentCue.pct : 0;
+                                    if (onPlayTrack) onPlayTrack(track, cuePct, true);
+                                }}
+                                className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded cursor-pointer shadow shrink-0"
+                                title="Audicionar este punto de cue"
+                            >
+                                ▶
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div className="flex justify-between items-center text-[9px] font-mono text-gray-400 mb-0.5">
+                            <span className="font-semibold text-gray-300">NOMBRE DEL CUE / FRASE</span>
+                            <span className="text-gray-400">{currentCue.bar_str || 'Bar 1'}</span>
+                        </div>
+                        <input
+                            type="text"
+                            value={nameInputValue}
+                            onChange={(e) => handleNameChange(e.target.value)}
+                            placeholder="Nombre táctico del cue..."
+                            className="w-full bg-djzinc-950 border border-djzinc-700 focus:border-djcyan-400 rounded px-2 py-1 text-xs font-semibold text-gray-200 outline-none"
+                        />
+                    </div>
+                </div>
+
+                {/* Botones de Nudge rápido (Compás, Beat, 10ms) */}
+                <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-djzinc-850">
+                    <div className="flex items-center gap-1 text-[9px] font-mono">
+                        <span className="text-gray-400 mr-0.5">Ajuste Fino:</span>
+                        <button
+                            type="button"
+                            onClick={() => handleNudge(-barMs)}
+                            className="px-1.5 py-0.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                            title="Retroceder 1 compás (4 beats)"
+                        >
+                            ◀◀ -1 Compás
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleNudge(-beatMs)}
+                            className="px-1.5 py-0.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                            title="Retroceder 1 beat"
+                        >
+                            ◀ -1 Beat
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleNudge(-10)}
+                            className="px-1.5 py-0.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                            title="Retroceder 10ms"
+                        >
+                            -10ms
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleNudge(10)}
+                            className="px-1.5 py-0.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                            title="Avanzar 10ms"
+                        >
+                            +10ms
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleNudge(beatMs)}
+                            className="px-1.5 py-0.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                            title="Avanzar 1 beat"
+                        >
+                            +1 Beat ▶
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleNudge(barMs)}
+                            className="px-1.5 py-0.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow active:scale-95"
+                            title="Avanzar 1 compás (4 beats)"
+                        >
+                            +1 Compás ▶▶
+                        </button>
+                    </div>
+
+                    {/* Presets rápidos de nombre de Cue */}
+                    <div className="flex items-center gap-1 text-[8px] font-mono">
+                        <span className="text-gray-400">Presets:</span>
+                        {['Kick', 'Hi-Hats', 'Bass', 'Break', 'Drop 1', 'Drop 2', 'Outro'].map(p => (
+                            <button
+                                key={p}
+                                type="button"
+                                onClick={() => handleNameChange(p)}
+                                className="px-1 py-0.2 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer transition-colors"
+                            >
+                                {p}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Selector de Color RGB del Pad con Código Hexadecimal Explícito */}
+                <div className="pt-1 border-t border-djzinc-850">
+                    <div className="flex justify-between items-center text-[9px] font-mono text-gray-400 mb-1">
+                        <span className="font-semibold text-gray-300">ASIGNAR COLOR DE PAD (PIONEER DJ / NUMARK RGB)</span>
+                        <span className="text-gray-400">Actual: <span className="font-mono text-white font-bold">{currentCue.color || '#ef4444'}</span></span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                        {DJ_PAD_PALETTE.map(pal => {
+                            const isCurrentColor = (currentCue.color || '#ef4444').toLowerCase() === pal.color.toLowerCase();
+                            return (
+                                <button
+                                    key={pal.color}
+                                    type="button"
+                                    onClick={() => handleColorChange(pal)}
+                                    className={`px-1.5 py-1 rounded text-[8px] font-mono font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                                        isCurrentColor 
+                                            ? 'ring-2 ring-white border-white scale-105 shadow-md bg-djzinc-800' 
+                                            : 'bg-djzinc-900 border-djzinc-750 hover:border-gray-500'
+                                    }`}
+                                    title={`${pal.name} • ${pal.hex}`}
+                                >
+                                    <span className="w-2.5 h-2.5 rounded-full shadow" style={{ backgroundColor: pal.color }}></span>
+                                    <span className="text-gray-200">{pal.hex}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -829,6 +1486,11 @@ const AuditWorkspace = ({
     // Rueda Armónica Camelot & TAP Tempo
     const [camelotModalOpen, setCamelotModalOpen] = useState(false);
     const tapTimesRef = useRef([]);
+
+    // Hot Cues & Beatgrid
+    const [selectedCueId, setSelectedCueId] = useState(1);
+    const [snapToGrid, setSnapToGrid] = useState(true);
+    const [showBeatgrid, setShowBeatgrid] = useState(true);
 
     const currentTrack = tracks.find(t => t.id === selectedTrack) || tracks[0] || {};
 
@@ -1567,7 +2229,21 @@ const AuditWorkspace = ({
                         </button>
                     </div>
 
-                    <RekordboxWaveform track={currentTrack} cues={(currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS} duration={currentTrack.duration || "05:00"} onSeekTrack={onPlayTrack} />
+                    <RekordboxWaveform 
+                        track={currentTrack} 
+                        cues={(currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS} 
+                        duration={currentTrack.duration || "05:00"} 
+                        onSeekTrack={onPlayTrack}
+                        playProgress={isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) ? playProgress : 0}
+                        isCurrentPlaying={isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f)}
+                        onUpdateCues={(newCues) => updateCurrentTrackField('cues', newCues)}
+                        selectedCueId={selectedCueId}
+                        onSelectCue={setSelectedCueId}
+                        snapToGrid={snapToGrid}
+                        showBeatgrid={showBeatgrid}
+                        onToggleSnap={() => setSnapToGrid(prev => !prev)}
+                        onToggleGrid={() => setShowBeatgrid(prev => !prev)}
+                    />
 
                     <div className="bg-djzinc-950 p-3 rounded-lg border border-djzinc-800 space-y-2.5">
                         <div className="flex items-center justify-between text-xs">
@@ -1841,44 +2517,20 @@ const AuditWorkspace = ({
                         </div>
                     </div>
 
-                    <div>
-                        <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase mb-1">
-                            <span className="flex items-center gap-1.5">
-                                <span>8 Hot Cues (Pads Numark NV2)</span>
-                                <button
-                                    type="button"
-                                    onClick={handleAutoPhraseCues}
-                                    className="px-2 py-0.5 text-[9px] font-mono font-bold bg-djcyan-500/20 hover:bg-djcyan-500/30 text-djcyan-400 rounded border border-djcyan-500/40 cursor-pointer shadow active:scale-95 transition-all"
-                                    title="Auto-calcular 8 Hot Cues por frases musicales (16/32 compases) anclados al Beatgrid 1.0.0"
-                                >
-                                    ⚡ Auto-Frasear 16/32b
-                                </button>
-                            </span>
-                            <InfoTip title="Pads Numark NV2" text="Mapeo exacto de los 8 pads RGB de la controladora Numark NV2 sincronizados a compases de 16 y 32 compases anclados al bombo 1.0.0." />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 mt-1">
-                            {((currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS).map((c, idx) => {
-                                const cuePct = c.pct !== undefined ? c.pct : ((idx * 0.12) + 0.02);
-                                return (
-                                    <div 
-                                        key={c.id || idx} 
-                                        onClick={() => onPlayTrack && onPlayTrack(currentTrack, cuePct, true)} 
-                                        className={`p-2 rounded border flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] ${c.bg || 'bg-djzinc-850'} ${c.border || 'border-djzinc-700'}`}
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded text-black shadow-sm" style={{ backgroundColor: c.color || '#ef4444' }}>
-                                                Pad {c.id || (idx + 1)} {c.bar_str ? `• ${c.bar_str}` : ''}
-                                            </span>
-                                            <span className="text-[9px] font-mono text-gray-300 font-semibold">{c.time || '00:00.0'}</span>
-                                        </div>
-                                        <span className={`text-[11px] font-semibold truncate mt-1 ${c.text || 'text-gray-200'}`}>
-                                            {c.short_name || c.name || `Cue ${idx + 1}`}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    <HotCueEditorPanel
+                        track={currentTrack}
+                        cues={(currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS}
+                        duration={currentTrack.duration || "05:00"}
+                        onUpdateCues={(newCues) => updateCurrentTrackField('cues', newCues)}
+                        selectedCueId={selectedCueId}
+                        onSelectCue={setSelectedCueId}
+                        onPlayTrack={onPlayTrack}
+                        onAutoPhraseCues={handleAutoPhraseCues}
+                        snapToGrid={snapToGrid}
+                        onToggleSnap={() => setSnapToGrid(prev => !prev)}
+                        playProgress={isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) ? playProgress : 0}
+                        onGuardarTrack={handleGuardarTrack}
+                    />
 
                     <div>
                         <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase mb-1">

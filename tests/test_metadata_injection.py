@@ -253,6 +253,22 @@ def test_generar_serato_markers2_con_fraseo_automatico():
     # Debe contener 8 chunks "CUE\x00"
     assert raw.count(b"CUE\x00") == 8
 
+def test_generar_serato_markers2_con_cues_editados_personalizados():
+    # Permite editar tiempos con texto mm:ss.ms y colores hexadecimales
+    cues_editados = [
+        {"id": 1, "name": "Entrada Bombo Pro", "time": "00:15.500", "color": "#ef4444"},
+        {"id": 2, "name": "Climax Drop 1", "time": "01:30.250", "color": "#06b6d4"},
+        {"id": 3, "name": "Breakdown Melodico", "pos_ms": 120000, "color": "#22c55e"}
+    ]
+    b64 = AudioProcessorService.generar_serato_markers2(duration_ms=360000, bpm=128.0, cues=cues_editados, downbeat_ms=0)
+    import base64
+    raw = base64.b64decode(b64)
+    assert b"Entrada Bombo Pro" in raw
+    assert b"Climax Drop 1" in raw
+    assert b"Breakdown Melodico" in raw
+    # Verificar que los 3 cues están presentes
+    assert raw.count(b"CUE\x00") == 3
+
 def test_serializar_serato_beatgrid_binario():
     # Beatgrid para 128.0 BPM con downbeat a 500ms (0.5s)
     grid_bin = AudioProcessorService.serializar_serato_beatgrid(bpm=128.0, downbeat_ms=500.0)

@@ -413,10 +413,25 @@ class AudioProcessorService:
                     pos_ms = int(downbeat_ms)
 
             cname = str(c.get("name", f"Cue {i + 1}")).encode("utf-8") + b"\x00"
-            rgb = c.get("rgb") or (6, 182, 212)
-            if isinstance(rgb, str) and rgb.startswith("#"):
-                h = rgb.lstrip("#")
-                rgb = tuple(int(h[x:x+2], 16) for x in (0, 2, 4))
+            rgb = c.get("rgb")
+            if not rgb and isinstance(c.get("color"), str) and c.get("color").startswith("#"):
+                try:
+                    h = c.get("color").lstrip("#")
+                    if len(h) == 6:
+                        rgb = tuple(int(h[x:x+2], 16) for x in (0, 2, 4))
+                except Exception:
+                    pass
+            if not rgb:
+                rgb = (6, 182, 212)
+            elif isinstance(rgb, str) and rgb.startswith("#"):
+                try:
+                    h = rgb.lstrip("#")
+                    if len(h) == 6:
+                        rgb = tuple(int(h[x:x+2], 16) for x in (0, 2, 4))
+                    else:
+                        rgb = (6, 182, 212)
+                except Exception:
+                    rgb = (6, 182, 212)
 
             cdata = bytearray()
             cdata.append(cid & 0xFF)
