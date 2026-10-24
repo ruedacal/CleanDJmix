@@ -181,6 +181,44 @@ def identificar_audio_base64(b64_data):
     return shazam_svc.reconocer_base64(b64_data)
 
 @eel.expose
+def regenerar_mood_y_comentario(track, lang="es"):
+    from services.mood_intelligence_service import MoodIntelligenceService
+    if not track or not isinstance(track, dict):
+        return {"status": "error", "msg": "Track inválido"}
+    try:
+        bpm = float(track.get("bpm") or track.get("b") or 128.0)
+    except Exception:
+        bpm = 128.0
+    key = str(track.get("key") or track.get("k") or "8A")
+    try:
+        energy = int(track.get("energy") or track.get("e") or 80)
+    except Exception:
+        energy = 80
+    try:
+        dance = int(track.get("danceability") or track.get("dance") or 80)
+    except Exception:
+        dance = 80
+    path = str(track.get("path") or track.get("f") or "")
+    cues = track.get("cues") or []
+    try:
+        downbeat = float(track.get("first_downbeat_ms") or 0.0)
+    except Exception:
+        downbeat = 0.0
+
+    res = MoodIntelligenceService.clasificar_mood(bpm=bpm, key=key, energy=energy, danceability=dance, filepath=path)
+    comment = MoodIntelligenceService.generar_comentario_tactico(
+        bpm=bpm, key=key, mood=res["mood"], subtag=res["subtag"], energy=energy, cues=cues, first_downbeat_ms=downbeat, lang=lang
+    )
+    return {
+        "status": "ok",
+        "mood": res["mood"],
+        "mood_subtag": res["subtag"],
+        "valence": res["valence"],
+        "arousal": res["arousal"],
+        "comment": comment
+    }
+
+@eel.expose
 def seleccionar_directorio_descarga():
     return download_svc.seleccionar_directorio_descarga()
 

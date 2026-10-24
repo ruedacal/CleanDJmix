@@ -242,26 +242,45 @@ class AudioProcessorService:
         if danceability_val <= 0:
             danceability_val = min(98, max(50, int(92 - abs(bpm - 126.0) * 0.9)))
 
-        if not mood_val:
-            if key.endswith("A") and energy >= 80:
-                mood_val = "Peak Time"
-            elif key.endswith("A") and bpm >= 134:
-                mood_val = "Dark"
-            elif key.endswith("B") and energy >= 70:
-                mood_val = "Euphoric"
-            elif key in ("8A", "9A", "5A", "6A"):
-                mood_val = "Hypnotic"
-            elif bpm >= 138:
-                mood_val = "Raw"
-            else:
-                mood_val = "Peak Time"
-    
         dur_ms = int(duration_sec * 1000) if duration_sec > 0 else 300000
         cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
             duration_ms=dur_ms,
             bpm=bpm,
             downbeat_ms=int(first_downbeat_ms)
         )
+
+        subtag_val = ""
+        valence_val = 50
+        arousal_val = energy
+        try:
+            from services.mood_intelligence_service import MoodIntelligenceService
+            mood_res = MoodIntelligenceService.clasificar_mood(
+                bpm=bpm,
+                key=key,
+                energy=energy,
+                danceability=danceability_val,
+                filepath=ruta
+            )
+            if not mood_val:
+                mood_val = mood_res.get("mood", "Peak Time")
+            subtag_val = mood_res.get("subtag", f"{mood_val} / Driving")
+            valence_val = mood_res.get("valence", 50)
+            arousal_val = mood_res.get("arousal", energy)
+            tactical_comment = MoodIntelligenceService.generar_comentario_tactico(
+                bpm=bpm,
+                key=key,
+                mood=mood_val,
+                subtag=subtag_val,
+                energy=energy,
+                cues=cues,
+                first_downbeat_ms=first_downbeat_ms,
+                lang="es"
+            )
+        except Exception as e:
+            if not mood_val:
+                mood_val = "Peak Time"
+            subtag_val = f"{mood_val} / Driving"
+            tactical_comment = f"[{bpm:.1f} BPM | {key}] Intro limpia 32b • Drop contundente • Outro 64b"
 
         if " / " in genre_val:
             parts = genre_val.split(" / ", 1)
@@ -278,6 +297,10 @@ class AudioProcessorService:
             "danceability": danceability_val,
             "dance": danceability_val,
             "mood": mood_val,
+            "mood_subtag": subtag_val,
+            "valence": valence_val,
+            "arousal": arousal_val,
+            "comment": tactical_comment,
             "genre": genre_val,
             "subgenre": subgenre_val,
             "duration": dur_str,

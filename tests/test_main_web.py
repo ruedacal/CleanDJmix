@@ -135,3 +135,28 @@ def test_exportar_rekordbox_xml_exposed(mock_exp):
     res = main_web.exportar_rekordbox_xml([{"title": "Track"}])
     assert res["status"] == "ok"
     assert res["path"] == "/mock/rekordbox.xml"
+
+def test_regenerar_mood_y_comentario_exposed():
+    mock_track = {
+        "title": "Solar Detroit",
+        "artist": "Maceo Plex",
+        "bpm": "125.0",
+        "key": "8A",
+        "energy": 86,
+        "danceability": 88
+    }
+    res_es = main_web.regenerar_mood_y_comentario(mock_track, lang="es")
+    assert res_es["status"] == "ok"
+    assert "mood" in res_es
+    assert "comment" in res_es
+    assert "125.0 BPM" in res_es["comment"]
+    assert "Mix Armónico" in res_es["comment"]
+
+    res_en = main_web.regenerar_mood_y_comentario(mock_track, lang="en")
+    assert res_en["status"] == "ok"
+    assert "Harmonic Mix" in res_en["comment"]
+
+def test_regenerar_mood_y_comentario_invalido():
+    res = main_web.regenerar_mood_y_comentario(None)
+    assert res["status"] == "error"
+
