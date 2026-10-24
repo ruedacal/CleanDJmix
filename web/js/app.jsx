@@ -1153,6 +1153,73 @@ const AuditWorkspace = ({
         }
     };
 
+    const handleExportarSeratoCrates = async () => {
+        if (!tracks || tracks.length === 0) {
+            alert("No hay pistas auditadas para exportar.");
+            return;
+        }
+        if (window.eel && window.eel.exportar_serato_crates) {
+            setIsExporting(true);
+            setBatchProgress(40);
+            setBatchStatusMsg("Generando archivos .crate oficiales para Serato DJ Pro...");
+            try {
+                const res = await window.eel.exportar_serato_crates(tracks)();
+                setBatchProgress(100);
+                if (res && res.status === 'ok') {
+                    setBatchStatusMsg(`✓ ${res.total_crates} crates generados en ~/Music/_Serato_/Subcrates`);
+                    setSaveFeedback(`✓ ${res.total_crates} crates exportados a Serato`);
+                    setTimeout(() => setSaveFeedback(''), 4000);
+                } else {
+                    setBatchStatusMsg("Error al exportar crates de Serato.");
+                    alert(res?.msg || "Error al exportar crates de Serato.");
+                }
+            } catch (e) {
+                console.error("Error al exportar crates Serato:", e);
+                setBatchStatusMsg("Error durante la exportación.");
+            } finally {
+                setTimeout(() => {
+                    setIsExporting(false);
+                    setBatchProgress(0);
+                    setBatchStatusMsg('');
+                }, 1000);
+            }
+        }
+    };
+
+    const handleExportarRekordboxXml = async () => {
+        if (!tracks || tracks.length === 0) {
+            alert("No hay pistas auditadas para exportar.");
+            return;
+        }
+        if (window.eel && window.eel.exportar_rekordbox_xml) {
+            setIsExporting(true);
+            setBatchProgress(40);
+            setBatchStatusMsg("Generando archivo rekordbox.xml estándar Pioneer DJ...");
+            try {
+                const targetDir = rutaOrigen || "/Users/admin/Music/mi musica";
+                const res = await window.eel.exportar_rekordbox_xml(tracks, targetDir, "rekordbox.xml")();
+                setBatchProgress(100);
+                if (res && res.status === 'ok') {
+                    setBatchStatusMsg(`✓ rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists)`);
+                    setSaveFeedback(`✓ rekordbox.xml generado en ${res.path}`);
+                    setTimeout(() => setSaveFeedback(''), 4000);
+                } else {
+                    setBatchStatusMsg("Error al exportar rekordbox.xml.");
+                    alert(res?.msg || "Error al exportar rekordbox.xml.");
+                }
+            } catch (e) {
+                console.error("Error al exportar rekordbox XML:", e);
+                setBatchStatusMsg("Error durante la exportación.");
+            } finally {
+                setTimeout(() => {
+                    setIsExporting(false);
+                    setBatchProgress(0);
+                    setBatchStatusMsg('');
+                }, 1000);
+            }
+        }
+    };
+
     const handleAbrirFftModal = async (trackParaAnalisis) => {
         const trk = trackParaAnalisis || currentTrack;
         const targetPath = trk?.path || trk?.f;
@@ -1282,8 +1349,14 @@ const AuditWorkspace = ({
                         <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djzinc-800 hover:bg-djzinc-700 text-white px-4 py-2 rounded-md font-semibold text-xs border border-djzinc-600 flex items-center gap-1.5 cursor-pointer">
                             <Icons.Library /> {isAuditing ? 'Auditando...' : 'Auditar Directorio'}
                         </button>
-                        <button onClick={handleExportarXLS} className="bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-3.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
-                            <Icons.Excel /> Exportar XLS
+                        <button onClick={handleExportarXLS} className="bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
+                            <Icons.Excel /> XLS
+                        </button>
+                        <button onClick={handleExportarSeratoCrates} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-purple-400 border border-purple-700/60 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Exportar archivos .crate oficiales a Serato DJ Pro">
+                            💽 Crates
+                        </button>
+                        <button onClick={handleExportarRekordboxXml} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-blue-400 border border-blue-700/60 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Exportar rekordbox.xml estándar Pioneer DJ">
+                            📋 Rekordbox
                         </button>
                         <button 
                             onClick={handleInyectarSeratoLote} 
@@ -2528,6 +2601,64 @@ const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
         }
     };
 
+    const handleExportarSeratoCrates = async () => {
+        if (!tracks || tracks.length === 0) return;
+        setIsRouting(true);
+        setRouteProgress(50);
+        setRouteStatusMsg("Generando archivos binarios .crate para Serato DJ Pro...");
+        try {
+            if (window.eel && window.eel.exportar_serato_crates) {
+                const res = await window.eel.exportar_serato_crates(tracks)();
+                setRouteProgress(100);
+                if (res && res.status === 'ok') {
+                    setResultSummary({
+                        status: 'ok',
+                        procesados: res.total_pistas,
+                        errores: 0,
+                        msg: `✓ ${res.total_crates} crates generados exitosamente en ${res.destino}`
+                    });
+                } else {
+                    setResultSummary({ status: 'error', msg: res?.msg || 'Error al exportar crates Serato.' });
+                }
+            }
+        } catch (err) {
+            console.error("Error al exportar crates Serato:", err);
+            setResultSummary({ status: 'error', msg: String(err) });
+        } finally {
+            setIsRouting(false);
+            setTimeout(() => setRouteProgress(0), 4000);
+        }
+    };
+
+    const handleExportarRekordboxXml = async () => {
+        if (!tracks || tracks.length === 0) return;
+        setIsRouting(true);
+        setRouteProgress(50);
+        setRouteStatusMsg("Generando archivo rekordbox.xml estándar Pioneer DJ...");
+        try {
+            if (window.eel && window.eel.exportar_rekordbox_xml) {
+                const res = await window.eel.exportar_rekordbox_xml(tracks, rutaBase, "rekordbox.xml")();
+                setRouteProgress(100);
+                if (res && res.status === 'ok') {
+                    setResultSummary({
+                        status: 'ok',
+                        procesados: res.total_tracks,
+                        errores: 0,
+                        msg: `✓ Archivo rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists) en ${res.path}`
+                    });
+                } else {
+                    setResultSummary({ status: 'error', msg: res?.msg || 'Error al exportar rekordbox.xml.' });
+                }
+            }
+        } catch (err) {
+            console.error("Error al exportar rekordbox XML:", err);
+            setResultSummary({ status: 'error', msg: String(err) });
+        } finally {
+            setIsRouting(false);
+            setTimeout(() => setRouteProgress(0), 4000);
+        }
+    };
+
     const getGenreStats = (gen) => {
         return tracks.filter(t => (t.genre || 'Tech House').toLowerCase() === gen.toLowerCase()).length;
     };
@@ -2570,8 +2701,36 @@ const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
                         </p>
                     </div>
 
-                    {/* BOTÓN MAESTRO DE ACCIÓN */}
-                    <div className="flex items-center gap-3 shrink-0">
+                    {/* BOTONES DE ACCIÓN: RUTEO FÍSICO + EXPORTACIÓN SERATO CRATES / REKORDBOX XML */}
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <button
+                            type="button"
+                            disabled={isRouting || tracks.length === 0}
+                            onClick={handleExportarSeratoCrates}
+                            className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${
+                                isRouting || tracks.length === 0
+                                    ? 'bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60'
+                                    : 'bg-purple-950/60 hover:bg-purple-900 border-purple-500/60 text-purple-300 shadow hover:shadow-purple-500/20 active:scale-95'
+                            }`}
+                            title="Exporta archivos .crate oficiales a ~/Music/_Serato_/Subcrates para importación instantánea en Serato DJ Pro"
+                        >
+                            💽 Exportar Serato (.crate)
+                        </button>
+
+                        <button
+                            type="button"
+                            disabled={isRouting || tracks.length === 0}
+                            onClick={handleExportarRekordboxXml}
+                            className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${
+                                isRouting || tracks.length === 0
+                                    ? 'bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60'
+                                    : 'bg-blue-950/60 hover:bg-blue-900 border-blue-500/60 text-blue-300 shadow hover:shadow-blue-500/20 active:scale-95'
+                            }`}
+                            title="Genera archivo rekordbox.xml estándar Pioneer DJ con Hot Cues y estructura de playlists para Rekordbox"
+                        >
+                            📋 Exportar Rekordbox XML
+                        </button>
+
                         <button
                             type="button"
                             disabled={isRouting || tracks.length === 0}
@@ -2583,7 +2742,7 @@ const TaxonomyWorkspace = ({ tracks = [], onTracksUpdated, onNavigateTab }) => {
                             }`}
                         >
                             <Icons.Routing />
-                            {isRouting ? 'Ruteando a Crates...' : `Enrutar Biblioteca a Crates (${tracks.length})`}
+                            {isRouting ? 'Ruteando a Crates...' : `Enrutar Biblioteca (${tracks.length})`}
                         </button>
                     </div>
                 </div>

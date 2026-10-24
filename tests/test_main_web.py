@@ -117,3 +117,15 @@ def test_organizar_lote_en_crates_exposed(mock_org):
     res = main_web.organizar_lote_en_crates([{"path": "/mock/1.mp3"}], ruta_base="/dest")
     assert res["status"] == "ok"
     assert res["procesados"] == 3
+
+@patch.object(main_web.export_svc, 'exportar_serato_crates', return_value={"status": "ok", "total_crates": 4})
+def test_exportar_serato_crates_exposed(mock_exp):
+    res = main_web.exportar_serato_crates([{"title": "Track"}])
+    assert res["status"] == "ok"
+    assert res["total_crates"] == 4
+
+@patch.object(main_web.export_svc, 'exportar_rekordbox_xml', return_value={"status": "ok", "path": "/mock/rekordbox.xml"})
+def test_exportar_rekordbox_xml_exposed(mock_exp):
+    res = main_web.exportar_rekordbox_xml([{"title": "Track"}])
+    assert res["status"] == "ok"
+    assert res["path"] == "/mock/rekordbox.xml"

@@ -226,6 +226,14 @@ def organizar_lote_en_crates(tracks, ruta_base="/Users/admin/Music/mi musica", m
         progreso_cb=_emitir_progreso_batch
     )
 
+@eel.expose
+def exportar_serato_crates(tracks, destino_serato_dir=None):
+    return export_svc.exportar_serato_crates(tracks, destino_serato_dir)
+
+@eel.expose
+def exportar_rekordbox_xml(tracks, destino_dir="/Users/admin/Music/mi musica", nombre_archivo="rekordbox.xml"):
+    return export_svc.exportar_rekordbox_xml(tracks, destino_dir, nombre_archivo)
+
 if __name__ == "__main__":
     try:
         try:
