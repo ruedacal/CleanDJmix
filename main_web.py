@@ -191,6 +191,7 @@ if __name__ == "__main__":
             mode="chrome",
             size=(w, h),
             position=(0, 0),
+            close_callback=lambda page, sockets: None,
             cmdline_args=[
                 "--start-maximized",
                 "--no-first-run",
