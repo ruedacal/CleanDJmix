@@ -648,15 +648,19 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
     const handleCargarDirectorio = async (pathOverride) => {
         const target = pathOverride || rutaOrigen;
         if (!target) return;
-        if (window.eel && window.eel.cargar_metadatos_directorio && !isLoadingDir) {
+        if (window.eel && window.eel.cargar_metadatos_directorio) {
             setIsLoadingDir(true);
             setBatchStatusMsg(`Leyendo metadatos de archivos en ${target}...`);
+            // Limpiar selección previa para evitar track residual de otra carpeta
+            setSelectedTrack(null);
             try {
                 const res = await window.eel.cargar_metadatos_directorio(target)();
                 if (res && Array.isArray(res.tracks)) {
                     setTracks(res.tracks);
                     if (res.tracks.length > 0) {
                         setSelectedTrack(res.tracks[0].id);
+                    } else {
+                        setSelectedTrack(null);
                     }
                     setMetrics({
                         total: res.total || 0,
@@ -664,6 +668,10 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                         ready: res.ready !== undefined ? res.ready : Math.max(0, (res.total || 0) - (res.sin_meta || 0)),
                         errors: res.errors || 0
                     });
+                } else {
+                    setTracks([]);
+                    setSelectedTrack(null);
+                    setMetrics({ total: 0, missing: 0, ready: 0, errors: 0 });
                 }
             } catch (e) {
                 console.error("Fallo carga metadatos de directorio:", e);
@@ -686,9 +694,11 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
             setBatchProgress(35);
             try {
                 const res = await window.eel.iniciar_auditoria(target)();
-                if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {
+                if (res && Array.isArray(res.tracks)) {
                     setTracks(res.tracks);
-                    setSelectedTrack(res.tracks[0].id);
+                    if (res.tracks.length > 0) {
+                        setSelectedTrack(res.tracks[0].id);
+                    }
                     setMetrics({
                         total: res.total || 0,
                         missing: res.sin_meta || 0,
@@ -782,9 +792,20 @@ const AuditWorkspace = ({ selectedTrack, setSelectedTrack, onPlayTrack, nowPlayi
                     <div className="flex gap-3 items-center w-1/2">
                         <div className="flex-1 max-w-md bg-djzinc-900 rounded-md border border-djzinc-700 flex overflow-hidden">
                             <span className="bg-djzinc-800 px-3 py-1.5 text-xs text-gray-400 font-mono border-r border-djzinc-700 flex items-center">ORIGEN</span>
-                            <input type="text" value={rutaOrigen} onChange={(e) => setRutaOrigen(e.target.value)} className="flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono" />
+                            <input 
+                                type="text" 
+                                value={rutaOrigen} 
+                                onChange={(e) => setRutaOrigen(e.target.value)} 
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleCargarDirectorio(e.target.value);
+                                    }
+                                }}
+                                placeholder="Escribe o explora una ruta de carpeta..."
+                                className="flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono" 
+                            />
                         </div>
-                        <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-4 py-1.5 text-xs font-bold text-gray-300 cursor-pointer">Explorar</button>
+                        <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-4 py-1.5 text-xs font-bold text-gray-300 cursor-pointer transition-colors">Explorar</button>
                     </div>
                     <div className="flex gap-2.5 items-center">
                         <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-3.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer">
