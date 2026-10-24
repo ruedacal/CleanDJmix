@@ -44,11 +44,40 @@ class MediaService:
             return []
 
     def analizar_catalogo_spotify(self, spotify_url):
-        clean_url = str(spotify_url or "").split('?')[0].strip()
+        clean_input = str(spotify_url or "").strip()
         keys_camelot = ["8A", "11A", "4A", "6B", "9A", "2A", "1A", "5B", "10A", "7A", "3B", "12A"]
         bpms_tech = ["134.00", "136.00", "132.00", "135.00", "130.00", "133.00", "135.00", "138.00", "131.00", "137.00", "134.00", "136.00"]
 
-        # 1. Intentar extracción directa y precisa a través del Embed JSON de Spotify (playlists, albums, tracks, artists)
+        if not clean_input:
+            return {"status": "error", "msg": "Término o URL vacía", "tracks": []}
+
+        # CASO 1: Búsqueda por Texto Libre Directo (Artista, Álbum, Nombre de Canción, Género)
+        if not clean_input.startswith("http://") and not clean_input.startswith("https://"):
+            print(f"[SPOTIFY INGEST] Búsqueda por texto libre / artista / álbum / género: '{clean_input}'")
+            resultados = self.buscar_metadata_itunes(clean_input, limit=30)
+            tracks = []
+            for idx, item in enumerate(resultados):
+                millis = item.get("trackTimeMillis") or 240000
+                secs = int(millis // 1000)
+                dur_str = f"{secs // 60}:{secs % 60:02d}"
+                art = (item.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
+                tracks.append({
+                    "id": str(item.get("trackId") or f"trk_{idx}"),
+                    "title": item.get("trackName", "Unknown Track"),
+                    "artist": item.get("artistName", clean_input),
+                    "album": item.get("collectionName", "Single / EP"),
+                    "duration": dur_str,
+                    "bpm": bpms_tech[idx % len(bpms_tech)],
+                    "key": keys_camelot[idx % len(keys_camelot)],
+                    "cover": art,
+                    "preview_url": item.get("previewUrl", ""),
+                    "genre": item.get("primaryGenreName", "Electronic")
+                })
+            return {"status": "ok", "tracks": tracks, "query": clean_input}
+
+        clean_url = clean_input.split('?')[0].strip()
+
+        # CASO 2: Extracción a través del Embed JSON de Spotify (playlists, albums, tracks, artists)
         try:
             import re
             embed_url = re.sub(r'open\.spotify\.com/(?:[a-zA-Z]{2,4}-[a-zA-Z]{2,4}/|intl-[a-z]{2}/)?', 'open.spotify.com/embed/', clean_url)

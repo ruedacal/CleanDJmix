@@ -3853,14 +3853,92 @@ const AuditWorkspace = ({
         setTimeout(() => setBatchStatusMsg(''), 2500);
     };
 
-    const tracksFiltrados = tracks.filter(t => {
-        const term = busqueda.toLowerCase();
-        const m = (t?.t || t?.title || '').toLowerCase().includes(term) || (t?.a || t?.artist || '').toLowerCase().includes(term) || (t?.f || t?.filename || '').toLowerCase().includes(term);
-        if (!m) return false;
-        if (filtro === 'missing') return (t?.b === '--' || t?.k === '--');
-        if (filtro === 'error') return Boolean(t?.es_fake) || (t?.format === 'FLAC' && String(t?.status || '').includes('Fake'));
-        return true;
-    });
+    // Estado de Ordenación y Filtros por Cabecera de Tabla
+    const [auditSortField, setAuditSortField] = useState('id');
+    const [auditSortDir, setAuditSortDir] = useState('asc'); // 'asc' | 'desc'
+    const [filterHeaderSearch, setFilterHeaderSearch] = useState('');
+    const [filterHeaderFormat, setFilterHeaderFormat] = useState('ALL');
+    const [filterHeaderQuality, setFilterHeaderQuality] = useState('ALL');
+    const [filterHeaderStatus, setFilterHeaderStatus] = useState('ALL');
+
+    const handleSortAudit = (field) => {
+        setAuditSortDir(prev => auditSortField === field && prev === 'asc' ? 'desc' : 'asc');
+        setAuditSortField(field);
+    };
+
+    const renderSortArrowAudit = (field) => {
+        if (auditSortField !== field) return <span className="text-gray-600 ml-1 text-[9px]">↕</span>;
+        return <span className="text-djcyan-400 ml-1 font-bold text-[10px]">{auditSortDir === 'asc' ? '▲' : '▼'}</span>;
+    };
+
+    const tracksFiltrados = useMemo(() => {
+        let result = tracks.filter(t => {
+            const term = busqueda.toLowerCase();
+            const m = (t?.t || t?.title || '').toLowerCase().includes(term) || (t?.a || t?.artist || '').toLowerCase().includes(term) || (t?.f || t?.filename || '').toLowerCase().includes(term);
+            if (!m) return false;
+            if (filtro === 'missing') return (t?.b === '--' || t?.k === '--');
+            if (filtro === 'error') return Boolean(t?.es_fake) || (t?.format === 'FLAC' && String(t?.status || '').includes('Fake'));
+
+            // Filtros de Cabecera
+            if (filterHeaderSearch) {
+                const hTerm = filterHeaderSearch.toLowerCase();
+                const matchHeader = (t?.t || t?.title || '').toLowerCase().includes(hTerm) || (t?.a || t?.artist || '').toLowerCase().includes(hTerm) || (t?.f || t?.filename || '').toLowerCase().includes(hTerm);
+                if (!matchHeader) return false;
+            }
+            if (filterHeaderFormat !== 'ALL') {
+                if (String(t?.format || '').toUpperCase() !== filterHeaderFormat) return false;
+            }
+            if (filterHeaderQuality !== 'ALL') {
+                if (!String(t?.calidad || '').toLowerCase().includes(filterHeaderQuality.toLowerCase())) return false;
+            }
+            if (filterHeaderStatus !== 'ALL') {
+                const isFake = Boolean(t?.es_fake || (t?.format === 'FLAC' && String(t?.status || '').includes('Fake')));
+                if (filterHeaderStatus === 'FAKE' && !isFake) return false;
+                if (filterHeaderStatus === 'LOSSLESS' && (isFake || (!String(t?.status || '').includes('Lossless') && !String(t?.status || '').includes('VERDADERO') && !String(t?.status || '').includes('HI-RES')))) return false;
+                if (filterHeaderStatus === 'MP3' && (t?.format !== 'MP3' && !String(t?.status || '').includes('MP3'))) return false;
+            }
+            return true;
+        });
+
+        result.sort((a, b) => {
+            let valA = a[auditSortField];
+            let valB = b[auditSortField];
+
+            if (auditSortField === 'title') {
+                valA = a.t || a.title || '';
+                valB = b.t || b.title || '';
+            } else if (auditSortField === 'artist') {
+                valA = a.a || a.artist || '';
+                valB = b.a || b.artist || '';
+            } else if (auditSortField === 'bpm') {
+                valA = parseFloat(a.b || a.bpm) || 0;
+                valB = parseFloat(b.b || b.bpm) || 0;
+            } else if (auditSortField === 'key') {
+                valA = a.k || a.key || '';
+                valB = b.k || b.key || '';
+            } else if (auditSortField === 'duration') {
+                const parseSec = (d) => {
+                    if (!d || !d.includes(':')) return 0;
+                    const p = d.split(':');
+                    return parseInt(p[0]) * 60 + parseFloat(p[1]);
+                };
+                valA = parseSec(a.duration);
+                valB = parseSec(b.duration);
+            } else if (['id', 'cutoff_khz', 'sample_rate_khz', 'bitrate_kbps', 'e', 'dance'].includes(auditSortField)) {
+                valA = Number(valA) || 0;
+                valB = Number(valB) || 0;
+            }
+
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                return auditSortDir === 'asc' ? valA - valB : valB - valA;
+            }
+            return auditSortDir === 'asc' 
+                ? String(valA || '').localeCompare(String(valB || '')) 
+                : String(valB || '').localeCompare(String(valA || ''));
+        });
+
+        return result;
+    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, auditSortField, auditSortDir]);
 
     return (
         <div className="flex w-full h-full overflow-hidden">
@@ -4019,21 +4097,95 @@ const AuditWorkspace = ({
                     <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                         <thead className="sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400">
                             <tr>
-                                <th className="py-2.5 px-2 w-7 text-center">{t('th_num') || '#'}</th>
+                                <th onClick={() => handleSortAudit('id')} className="py-2.5 px-2 w-7 text-center cursor-pointer hover:text-white transition-colors">{t('th_num') || '#'} {renderSortArrowAudit('id')}</th>
                                 <th className="py-2.5 px-2 w-28 text-center text-djcyan-400">{t('th_waveform') || 'Waveform'}</th>
-                                <th className="py-2.5 px-3 min-w-[220px]">{t('th_title') || 'Archivo / Título'}</th>
-                                <th className="py-2.5 px-2 w-28">{t('th_artist') || 'Artista'}</th>
-                                <th className="py-2.5 px-2 text-center w-16">{t('th_format') || 'Formato'}</th>
-                                <th className="py-2.5 px-2 text-center w-16">{t('th_khz') || 'kHz'}</th>
-                                <th className="py-2.5 px-2 text-center w-20">{t('th_kbps') || 'kbps'}</th>
-                                <th className="py-2.5 px-2 text-center w-24">{t('th_quality') || 'Calidad'}</th>
-                                <th className="py-2.5 px-3 text-center min-w-[170px]">{t('th_loss') || 'Pérdida / Compresión'}</th>
-                                <th className="py-2.5 px-1.5 text-center">{t('th_fft') || 'Cert. FFT'}</th>
-                                <th className="py-2.5 px-1.5 text-center">{t('th_duration') || 'Time'}</th>
-                                <th className="py-2.5 px-1.5 text-center">BPM</th>
-                                <th className="py-2.5 px-1.5 text-center">Key</th>
+                                <th onClick={() => handleSortAudit('title')} className="py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'Archivo / Título'} {renderSortArrowAudit('title')}</th>
+                                <th onClick={() => handleSortAudit('artist')} className="py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'Artista'} {renderSortArrowAudit('artist')}</th>
+                                <th onClick={() => handleSortAudit('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'Formato'} {renderSortArrowAudit('format')}</th>
+                                <th onClick={() => handleSortAudit('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'kHz'} {renderSortArrowAudit('sample_rate_khz')}</th>
+                                <th onClick={() => handleSortAudit('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'kbps'} {renderSortArrowAudit('bitrate_kbps')}</th>
+                                <th onClick={() => handleSortAudit('calidad')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_quality') || 'Calidad'} {renderSortArrowAudit('calidad')}</th>
+                                <th onClick={() => handleSortAudit('perdida_pct')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors">{t('th_loss') || 'Pérdida / Compresión'} {renderSortArrowAudit('perdida_pct')}</th>
+                                <th onClick={() => handleSortAudit('cutoff_khz')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_fft') || 'Cert. FFT'} {renderSortArrowAudit('cutoff_khz')}</th>
+                                <th onClick={() => handleSortAudit('duration')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_duration') || 'Time'} {renderSortArrowAudit('duration')}</th>
+                                <th onClick={() => handleSortAudit('bpm')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowAudit('bpm')}</th>
+                                <th onClick={() => handleSortAudit('key')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">Key {renderSortArrowAudit('key')}</th>
                                 <th className="py-2.5 px-1.5 text-center">{t('th_cues') || '8 Hot Cues'}</th>
-                                <th className="py-2.5 px-2 text-center">{t('th_status') || 'Estado'}</th>
+                                <th onClick={() => handleSortAudit('status')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_status') || 'Estado'} {renderSortArrowAudit('status')}</th>
+                            </tr>
+                            <tr className="bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans">
+                                <th className="p-1 text-center font-mono text-[9px] text-gray-500">
+                                    {(filterHeaderSearch || filterHeaderFormat !== 'ALL' || filterHeaderQuality !== 'ALL' || filterHeaderStatus !== 'ALL') ? (
+                                        <button 
+                                            onClick={() => {
+                                                setFilterHeaderSearch('');
+                                                setFilterHeaderFormat('ALL');
+                                                setFilterHeaderQuality('ALL');
+                                                setFilterHeaderStatus('ALL');
+                                            }}
+                                            title="Limpiar filtros de cabecera"
+                                            className="text-amber-400 hover:text-white cursor-pointer"
+                                        >✕</button>
+                                    ) : 'filtro'}
+                                </th>
+                                <th className="p-1"></th>
+                                <th className="p-1">
+                                    <input 
+                                        type="text" 
+                                        value={filterHeaderSearch} 
+                                        onChange={(e) => setFilterHeaderSearch(e.target.value)} 
+                                        placeholder="Filtrar título/archivo..." 
+                                        className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
+                                    />
+                                </th>
+                                <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={filterHeaderFormat} 
+                                        onChange={(e) => setFilterHeaderFormat(e.target.value)}
+                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todos</option>
+                                        <option value="FLAC">FLAC</option>
+                                        <option value="MP3">MP3</option>
+                                        <option value="WAV">WAV</option>
+                                        <option value="AIFF">AIFF</option>
+                                        <option value="M4A">M4A</option>
+                                    </select>
+                                </th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={filterHeaderQuality} 
+                                        onChange={(e) => setFilterHeaderQuality(e.target.value)}
+                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todas</option>
+                                        <option value="Hi-Res">Hi-Res</option>
+                                        <option value="Alta">Alta</option>
+                                        <option value="Media">Media</option>
+                                        <option value="Baja">Baja</option>
+                                    </select>
+                                </th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={filterHeaderStatus} 
+                                        onChange={(e) => setFilterHeaderStatus(e.target.value)}
+                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todos</option>
+                                        <option value="LOSSLESS">Lossless</option>
+                                        <option value="MP3">MP3</option>
+                                        <option value="FAKE">FLAC Fake</option>
+                                    </select>
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
@@ -6305,13 +6457,85 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
         setFsBrowserOpen(false);
     };
 
+    // Ordenación y Filtros de Cabecera en Spotify Workspace
+    const [spSortField, setSpSortField] = useState('title');
+    const [spSortDir, setSpSortDir] = useState('asc');
+    const [spFilterSearch, setSpFilterSearch] = useState('');
+    const [spFilterFormat, setSpFilterFormat] = useState('ALL');
+    const [spFilterQuality, setSpFilterQuality] = useState('ALL');
+    const [spFilterStatus, setSpFilterStatus] = useState('ALL');
+
+    const handleSortSp = (field) => {
+        setSpSortDir(prev => spSortField === field && prev === 'asc' ? 'desc' : 'asc');
+        setSpSortField(field);
+    };
+
+    const renderSortArrowSp = (field) => {
+        if (spSortField !== field) return <span className="text-gray-600 ml-1 text-[9px]">↕</span>;
+        return <span className="text-djcyan-400 ml-1 font-bold text-[10px]">{spSortDir === 'asc' ? '▲' : '▼'}</span>;
+    };
+
+    const tracksFiltradosSp = useMemo(() => {
+        let result = tracks.filter(t => {
+            if (spFilterSearch) {
+                const term = spFilterSearch.toLowerCase();
+                const m = (t.title || '').toLowerCase().includes(term) || 
+                          (t.artist || '').toLowerCase().includes(term) || 
+                          (t.album || '').toLowerCase().includes(term);
+                if (!m) return false;
+            }
+            if (spFilterFormat !== 'ALL') {
+                const fmt = (t.format || selectedFormat || '').toUpperCase();
+                if (fmt !== spFilterFormat) return false;
+            }
+            if (spFilterQuality !== 'ALL') {
+                if (!String(t.calidad || '').toLowerCase().includes(spFilterQuality.toLowerCase())) return false;
+            }
+            if (spFilterStatus !== 'ALL') {
+                const isFake = Boolean(t.es_fake || String(t.status || '').includes('Fake'));
+                if (spFilterStatus === 'FAKE' && !isFake) return false;
+                if (spFilterStatus === 'DOWNLOADED' && !t.downloaded) return false;
+                if (spFilterStatus === 'PENDING' && t.downloaded) return false;
+                if (spFilterStatus === 'LOSSLESS' && (!t.downloaded || isFake || String(t.format || selectedFormat).toLowerCase() === 'mp3')) return false;
+            }
+            return true;
+        });
+
+        result.sort((a, b) => {
+            let valA = a[spSortField];
+            let valB = b[spSortField];
+            if (spSortField === 'duration') {
+                const parseSec = (d) => {
+                    if (!d || !d.includes(':')) return 0;
+                    const p = d.split(':');
+                    return parseInt(p[0]) * 60 + parseFloat(p[1]);
+                };
+                valA = parseSec(a.duration);
+                valB = parseSec(b.duration);
+            } else if (['id', 'sample_rate_khz', 'bitrate_kbps', 'cutoff_khz', 'bpm'].includes(spSortField)) {
+                valA = Number(valA) || 0;
+                valB = Number(valB) || 0;
+            }
+
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                return spSortDir === 'asc' ? valA - valB : valB - valA;
+            }
+            return spSortDir === 'asc' 
+                ? String(valA || '').localeCompare(String(valB || '')) 
+                : String(valB || '').localeCompare(String(valA || ''));
+        });
+
+        return result;
+    }, [tracks, spFilterSearch, spFilterFormat, spFilterQuality, spFilterStatus, spSortField, spSortDir, selectedFormat]);
+
     const currentTrack = tracks.find(t => t.id === selectedId) || tracks[0] || {};
     const selectedCount = tracks.filter(t => t.selected).length;
-    const allSelected = tracks.length > 0 && selectedCount === tracks.length;
+    const allSelected = tracksFiltradosSp.length > 0 && tracksFiltradosSp.every(t => t.selected);
 
     const handleToggleSelectAll = () => {
         const targetState = !allSelected;
-        setTracks(prev => prev.map(t => ({ ...t, selected: targetState })));
+        const idsToToggle = new Set(tracksFiltradosSp.map(t => t.id));
+        setTracks(prev => prev.map(t => idsToToggle.has(t.id) ? { ...t, selected: targetState } : t));
     };
 
     const handleToggleRow = (id) => {
@@ -6416,12 +6640,37 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
             <div className="flex-1 flex flex-col min-w-0">
                 <div className="p-3.5 border-b border-djzinc-800 bg-[#0c0c10] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2 flex-1 max-w-xl">
-                        <div className="flex-1 bg-[#060609] border border-djzinc-750 rounded flex items-center overflow-hidden">
-                            <span className="px-2.5 py-1.5 text-[11px] font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-semibold">SPOTIFY</span>
-                            <input type="text" value={spotifyUrl} onChange={(e) => setSpotifyUrl(e.target.value)} className="bg-transparent px-3 py-1.5 text-xs text-white outline-none flex-1 font-mono" />
+                        <div className="flex-1 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded flex items-center overflow-hidden">
+                            <span className="px-2.5 py-1.5 text-[11px] font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-semibold shrink-0">BÚSQUEDA / SPOTIFY</span>
+                            <input 
+                                type="text" 
+                                value={spotifyUrl} 
+                                onChange={(e) => setSpotifyUrl(e.target.value)} 
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleAnalizar();
+                                    }
+                                }}
+                                placeholder="Pega enlace de Spotify o busca por artista, álbum, canción, género..." 
+                                className="bg-transparent px-3 py-1.5 text-xs text-white placeholder-gray-500 outline-none flex-1 font-mono" 
+                            />
+                            {spotifyUrl && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSpotifyUrl('')}
+                                    className="px-2 text-gray-500 hover:text-white text-xs cursor-pointer"
+                                    title="Borrar texto"
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
-                        <button onClick={handleAnalizar} disabled={isAnalyzing} className="px-4 py-1.5 bg-[#14141a] hover:bg-[#1c1c24] border border-djzinc-700 text-white rounded text-xs font-bold cursor-pointer transition-colors">
-                            {isAnalyzing ? 'Analizando...' : 'Analizar Enlace'}
+                        <button 
+                            onClick={handleAnalizar} 
+                            disabled={isAnalyzing} 
+                            className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono rounded text-xs font-bold cursor-pointer transition-colors shadow flex items-center gap-1.5 disabled:opacity-50 shrink-0"
+                        >
+                            {isAnalyzing ? 'Buscando...' : '🔍 Buscar / Analizar'}
                         </button>
                     </div>
 
@@ -6526,28 +6775,98 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                             <tr>
                                 <th className="py-2.5 px-3 w-8 text-center"><input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} className="accent-djcyan-500 cursor-pointer" /></th>
                                 <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
-                                <th className="py-2.5 px-3 min-w-[260px]">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'}</th>
-                                <th className="py-2.5 px-3 min-w-[160px]">{t('th_artist') || 'ARTISTA'}</th>
-                                <th className="py-2.5 px-2 text-center w-16">{t('th_format') || 'FORMATO'}</th>
-                                <th className="py-2.5 px-2 text-center w-16">{t('th_khz') || 'KHZ'}</th>
-                                <th className="py-2.5 px-2 text-center w-20">{t('th_kbps') || 'KBPS'}</th>
-                                <th className="py-2.5 px-2 text-center w-24">{t('th_quality') || 'CALIDAD'}</th>
-                                <th className="py-2.5 px-3 text-center min-w-[170px]">{t('th_loss') || 'PÉRDIDA / CORTE'}</th>
-                                <th className="py-2.5 px-2 text-center w-16">{t('th_duration') || 'DURACIÓN'}</th>
-                                <th className="py-2.5 px-2 text-center w-16">BPM</th>
-                                <th className="py-2.5 px-2 text-center w-16">KEY</th>
-                                <th className="py-2.5 px-3 text-center min-w-[140px]">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'}</th>
+                                <th onClick={() => handleSortSp('title')} className="py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'} {renderSortArrowSp('title')}</th>
+                                <th onClick={() => handleSortSp('artist')} className="py-2.5 px-3 min-w-[160px] cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'ARTISTA'} {renderSortArrowSp('artist')}</th>
+                                <th onClick={() => handleSortSp('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'FORMATO'} {renderSortArrowSp('format')}</th>
+                                <th onClick={() => handleSortSp('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'KHZ'} {renderSortArrowSp('sample_rate_khz')}</th>
+                                <th onClick={() => handleSortSp('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'KBPS'} {renderSortArrowSp('bitrate_kbps')}</th>
+                                <th onClick={() => handleSortSp('calidad')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_quality') || 'CALIDAD'} {renderSortArrowSp('calidad')}</th>
+                                <th onClick={() => handleSortSp('cutoff_khz')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors">{t('th_loss') || 'PÉRDIDA / CORTE'} {renderSortArrowSp('cutoff_khz')}</th>
+                                <th onClick={() => handleSortSp('duration')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_duration') || 'DURACIÓN'} {renderSortArrowSp('duration')}</th>
+                                <th onClick={() => handleSortSp('bpm')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowSp('bpm')}</th>
+                                <th onClick={() => handleSortSp('key')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">KEY {renderSortArrowSp('key')}</th>
+                                <th onClick={() => handleSortSp('status')} className="py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'} {renderSortArrowSp('status')}</th>
+                            </tr>
+                            <tr className="bg-[#07070a] border-b border-djzinc-800 text-[10px] lowercase font-sans">
+                                <th className="p-1 text-center font-mono text-[9px] text-gray-500">
+                                    {(spFilterSearch || spFilterFormat !== 'ALL' || spFilterQuality !== 'ALL' || spFilterStatus !== 'ALL') ? (
+                                        <button 
+                                            onClick={() => {
+                                                setSpFilterSearch('');
+                                                setSpFilterFormat('ALL');
+                                                setSpFilterQuality('ALL');
+                                                setSpFilterStatus('ALL');
+                                            }}
+                                            title="Limpiar filtros"
+                                            className="text-amber-400 hover:text-white cursor-pointer"
+                                        >✕</button>
+                                    ) : 'filtro'}
+                                </th>
+                                <th className="p-1"></th>
+                                <th className="p-1">
+                                    <input 
+                                        type="text" 
+                                        value={spFilterSearch} 
+                                        onChange={(e) => setSpFilterSearch(e.target.value)} 
+                                        placeholder="Filtrar por título o álbum..." 
+                                        className="w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
+                                    />
+                                </th>
+                                <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={spFilterFormat} 
+                                        onChange={(e) => setSpFilterFormat(e.target.value)}
+                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todos</option>
+                                        <option value="FLAC">FLAC</option>
+                                        <option value="MP3">MP3</option>
+                                        <option value="WAV">WAV</option>
+                                    </select>
+                                </th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={spFilterQuality} 
+                                        onChange={(e) => setSpFilterQuality(e.target.value)}
+                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todas</option>
+                                        <option value="Alta">Alta</option>
+                                        <option value="Media">Media</option>
+                                        <option value="Baja">Baja</option>
+                                    </select>
+                                </th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={spFilterStatus} 
+                                        onChange={(e) => setSpFilterStatus(e.target.value)}
+                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todos</option>
+                                        <option value="DOWNLOADED">Descargado</option>
+                                        <option value="PENDING">Pendiente</option>
+                                        <option value="LOSSLESS">Lossless</option>
+                                        <option value="FAKE">FLAC Fake</option>
+                                    </select>
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
-                            {tracks.length === 0 && !isAnalyzing && (
+                            {tracksFiltradosSp.length === 0 && !isAnalyzing && (
                                 <tr>
                                     <td colSpan="13" className="py-12 text-center text-gray-500 font-mono text-xs">
-                                        Pega una URL de Spotify arriba y haz clic en "Analizar Enlace".
+                                        {tracks.length === 0 ? 'Pega una URL de Spotify o escribe una búsqueda por texto arriba y haz clic en "Buscar / Analizar".' : 'No hay pistas que coincidan con los filtros aplicados.'}
                                     </td>
                                 </tr>
                             )}
-                            {tracks.map((row) => {
+                            {tracksFiltradosSp.map((row) => {
                                 const isSelectedRow = row.id === selectedId;
                                 const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
                                 const isFake = Boolean(row.es_fake || String(row.status || '').includes('Fake'));
@@ -6771,7 +7090,26 @@ const TaxonomyWorkspace = ({
     const [searchScope, setSearchScope] = useState('all');
     const [isSearchingOnline, setIsSearchingOnline] = useState(false);
     const [onlineResults, setOnlineResults] = useState([]);
+    const [searchLocalResults, setSearchLocalResults] = useState([]);
     const [hasExecutedSearch, setHasExecutedSearch] = useState(false);
+
+    // Estado de Tabla & Filtros de Cabecera en Taxonomía
+    const [displayMode, setDisplayMode] = useState('table'); // 'table' o 'grid'
+    const [taxSortField, setTaxSortField] = useState('matchScore');
+    const [taxSortDir, setTaxSortDir] = useState('desc');
+    const [taxFilterSearch, setTaxFilterSearch] = useState('');
+    const [taxFilterGenre, setTaxFilterGenre] = useState('ALL');
+    const [taxFilterOrigin, setTaxFilterOrigin] = useState('ALL');
+
+    const handleSortTax = (field) => {
+        setTaxSortDir(prev => taxSortField === field && prev === 'asc' ? 'desc' : 'asc');
+        setTaxSortField(field);
+    };
+
+    const renderSortArrowTax = (field) => {
+        if (taxSortField !== field) return <span className="text-gray-600 ml-1 text-[9px]">↕</span>;
+        return <span className="text-djcyan-400 ml-1 font-bold text-[10px]">{taxSortDir === 'asc' ? '▲' : '▼'}</span>;
+    };
 
     // Estado del Buscador Inteligente por Taxonomías (Cuenca Music Style)
     const [aiQuery, setAiQuery] = useState('');
@@ -6796,6 +7134,11 @@ const TaxonomyWorkspace = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState(null);
 
+    // Auto-carga inicial para que la lista nunca esté vacía
+    useEffect(() => {
+        handleEjecutarBusqueda("");
+    }, []);
+
     // Parseo en tiempo real de la consulta con el motor de IA DJ
     const parsedQuery = useMemo(() => parseCuencaDJQuery(aiQuery), [aiQuery]);
 
@@ -6806,6 +7149,7 @@ const TaxonomyWorkspace = ({
             isLocal: true,
             displayTitle: t.t || t.title || 'Pista Local',
             displayArtist: t.a || t.artist || 'Artista',
+            displayAlbum: t.album || '',
             displayBpm: parseFloat(t.b || t.bpm || 128),
             displayKey: (t.k || t.key || '8A').toUpperCase(),
             displayGenre: t.genre || 'House',
@@ -6822,6 +7166,7 @@ const TaxonomyWorkspace = ({
             isCatalog: true,
             displayTitle: t.title,
             displayArtist: t.artist,
+            displayAlbum: t.album || '',
             displayBpm: t.bpm,
             displayKey: t.key,
             displayGenre: t.genre,
@@ -6834,67 +7179,84 @@ const TaxonomyWorkspace = ({
 
     // Fusión de catálogo según ámbito seleccionado
     const allPoolTracks = useMemo(() => {
+        const combinedLocals = searchLocalResults.length > 0 ? searchLocalResults : localTracks;
+        const combinedOnline = onlineResults.length > 0 ? onlineResults : catalogTracks;
         if (searchScope === 'local') {
-            return localTracks;
+            return combinedLocals;
         } else if (searchScope === 'online') {
-            return onlineResults.length > 0 ? onlineResults : catalogTracks;
+            return combinedOnline;
         } else {
-            // 'all' Híbrido: Combina local + online results + demo pool
-            return [...localTracks, ...onlineResults, ...(onlineResults.length === 0 ? catalogTracks : [])];
+            return [...combinedLocals, ...combinedOnline];
         }
-    }, [localTracks, onlineResults, catalogTracks, searchScope]);
+    }, [localTracks, searchLocalResults, onlineResults, catalogTracks, searchScope]);
 
     // Ejecución Activa de Búsqueda (Boton Buscar / Enter / Chip)
     const handleEjecutarBusqueda = async (queryOverride) => {
         const q = (queryOverride !== undefined ? queryOverride : aiQuery).trim();
-        if (!q) {
-            setFeedbackMsg('Escribe un término o selecciona una sugerencia para buscar.');
-            setTimeout(() => setFeedbackMsg(''), 3000);
-            return;
-        }
-
         setIsSearchingOnline(true);
         setHasExecutedSearch(true);
         const scopeLabel = searchScope === 'local' ? 'Biblioteca Local' : (searchScope === 'online' ? 'Record Pool Online' : 'Local y Pool Online');
-        setFeedbackMsg(`Buscando "${q}" en ${scopeLabel}...`);
+        setFeedbackMsg(`Buscando ${q ? `"${q}"` : "catálogo"} en ${scopeLabel}...`);
 
         try {
             if (window.eel && window.eel.buscar_temas_taxonomia) {
-                const res = await window.eel.buscar_temas_taxonomia(q, searchScope, rutaBase, 30)();
+                const res = await window.eel.buscar_temas_taxonomia(q, searchScope, rutaBase, 40)();
                 if (res && res.status === 'ok') {
                     const onlineItems = (res.online || []).map(item => ({
                         ...item,
                         isOnlinePool: true,
+                        isFromSearch: true,
                         displayTitle: item.title,
                         displayArtist: item.artist,
-                        displayBpm: item.bpm,
-                        displayKey: item.key,
-                        displayGenre: item.genre,
-                        displaySubgenre: item.subgenre,
-                        displayVersion: item.version,
-                        displayMood: item.mood,
+                        displayAlbum: item.album || '',
+                        displayBpm: parseFloat(item.bpm || 128),
+                        displayKey: (item.key || '8A').toUpperCase(),
+                        displayGenre: item.genre || 'House',
+                        displaySubgenre: item.subgenre || 'Tech House',
+                        displayVersion: item.version || 'Original Mix',
+                        displayMood: item.mood || 'Peak Time / Pista',
                         displayCover: item.cover,
                         matchScore: 98
                     }));
+                    const localItems = (res.locales || []).map(item => ({
+                        ...item,
+                        isLocal: true,
+                        isLocalSearch: true,
+                        isFromSearch: true,
+                        displayTitle: item.title || item.t || 'Pista Local',
+                        displayArtist: item.artist || item.a || 'Artista Local',
+                        displayAlbum: item.album || '',
+                        displayBpm: parseFloat(item.bpm || item.b || 128),
+                        displayKey: (item.key || item.k || '8A').toUpperCase(),
+                        displayGenre: item.genre || 'House',
+                        displaySubgenre: item.subgenre || 'Tech House',
+                        displayVersion: item.version || 'Extended Mix',
+                        displayMood: item.mood || 'Peak Time / Pista',
+                        displayCover: item.cover || (item.path ? `/cover?path=${encodeURIComponent(item.path)}` : null),
+                        matchScore: 98
+                    }));
                     setOnlineResults(onlineItems);
-                    const totalFound = (res.total_local || 0) + onlineItems.length;
-                    setFeedbackMsg(`✓ Encontrados ${totalFound} temas (${res.total_local || 0} locales en disco + ${onlineItems.length} en Pool Online)`);
+                    setSearchLocalResults(localItems);
+                    const totalFound = localItems.length + onlineItems.length;
+                    setFeedbackMsg(`✓ Encontrados ${totalFound} temas (${localItems.length} en disco + ${onlineItems.length} en Record Pool)`);
                 }
             }
         } catch (err) {
             console.error("Error al buscar temas en taxonomía:", err);
-            setFeedbackMsg(`✓ Búsqueda filtrada en pistas locales cargadas.`);
+            setFeedbackMsg(`✓ Búsqueda filtrada en pistas de biblioteca.`);
         } finally {
             setIsSearchingOnline(false);
             setTimeout(() => setFeedbackMsg(''), 4500);
         }
     };
 
-    // Algoritmo de emparejamiento y scoring por taxonomía musical
+    // Algoritmo de emparejamiento, scoring y ordenación por taxonomía musical
     const searchResults = useMemo(() => {
         const hasTextQuery = Boolean(aiQuery && aiQuery.trim().length > 0);
+        const qLower = (aiQuery || '').toLowerCase().trim();
+        const queryWords = qLower.split(/\s+/).filter(w => w.length >= 2 && !['para', 'con', 'del', 'the', 'los', 'las', 'por', 'and'].includes(w));
 
-        return allPoolTracks.map(trk => {
+        let scored = allPoolTracks.map(trk => {
             let score = 0;
             let matchedReasons = [];
             const trkGenre = (trk.displayGenre || '').toLowerCase();
@@ -6903,17 +7265,30 @@ const TaxonomyWorkspace = ({
             const trkKey = (trk.displayKey || '').toUpperCase();
             const trkTitle = (trk.displayTitle || '').toLowerCase();
             const trkArtist = (trk.displayArtist || '').toLowerCase();
+            const trkAlbum = (trk.displayAlbum || '').toLowerCase();
             const trkVersion = (trk.displayVersion || '').toLowerCase();
             const trkMood = (trk.displayMood || '').toLowerCase();
 
             if (hasTextQuery) {
+                // Si la pista vino directamente del backend como resultado de búsqueda
+                if (trk.isFromSearch) {
+                    score += 80;
+                    matchedReasons.push("Resultado directo");
+                }
+
+                // Coincidencia exacta con la consulta completa
+                if (trkTitle.includes(qLower) || trkArtist.includes(qLower) || trkAlbum.includes(qLower) || trkGenre.includes(qLower) || trkSubgenre.includes(qLower)) {
+                    score += 65;
+                    matchedReasons.push("Coincidencia directa");
+                }
+
                 // 1. Género y Subgénero
                 if (parsedQuery.genre && trkGenre.includes(parsedQuery.genre.toLowerCase())) {
-                    score += 30;
+                    score += 35;
                     matchedReasons.push(parsedQuery.genre);
                 }
                 if (parsedQuery.subgenre && (trkSubgenre.includes(parsedQuery.subgenre.toLowerCase()) || trkTitle.includes(parsedQuery.subgenre.toLowerCase()))) {
-                    score += 25;
+                    score += 30;
                     matchedReasons.push(parsedQuery.subgenre);
                 }
 
@@ -6963,18 +7338,30 @@ const TaxonomyWorkspace = ({
                     }
                 }
 
-                // 6. Palabras libres
-                const queryWords = aiQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !['para', 'con', 'del', 'the', 'los', 'las', 'por'].includes(w));
+                // 6. Palabras libres (Artista, Título, Álbum, Género, Subgénero)
                 queryWords.forEach(word => {
-                    if (trkTitle.includes(word) || trkArtist.includes(word)) {
-                        score += 15;
+                    if (trkArtist.includes(word)) {
+                        score += 35;
+                        matchedReasons.push(`Artista: ${word}`);
+                    }
+                    if (trkTitle.includes(word)) {
+                        score += 30;
+                        matchedReasons.push(`Título: ${word}`);
+                    }
+                    if (trkAlbum.includes(word)) {
+                        score += 25;
+                        matchedReasons.push(`Álbum: ${word}`);
+                    }
+                    if (trkGenre.includes(word) || trkSubgenre.includes(word)) {
+                        score += 25;
+                        matchedReasons.push(`Estilo: ${word}`);
                     }
                 });
             } else {
                 score = 85;
             }
 
-            // Filtros manuales adicionales
+            // Filtros manuales adicionales del panel expandible
             let matchesManual = true;
             if (selectedGenreFilter !== 'ALL' && !trkGenre.includes(selectedGenreFilter.toLowerCase())) {
                 matchesManual = false;
@@ -7000,6 +7387,21 @@ const TaxonomyWorkspace = ({
                 matchesManual = false;
             }
 
+            // Filtros de Cabecera de Tabla
+            if (taxFilterSearch) {
+                const hTerm = taxFilterSearch.toLowerCase();
+                const mSearch = trkTitle.includes(hTerm) || trkArtist.includes(hTerm) || trkAlbum.includes(hTerm);
+                if (!mSearch) matchesManual = false;
+            }
+            if (taxFilterGenre !== 'ALL') {
+                if (!trkGenre.includes(taxFilterGenre.toLowerCase())) matchesManual = false;
+            }
+            if (taxFilterOrigin !== 'ALL') {
+                const isLoc = Boolean(trk.isLocal || trk.is_local);
+                if (taxFilterOrigin === 'local' && !isLoc) matchesManual = false;
+                if (taxFilterOrigin === 'online' && isLoc) matchesManual = false;
+            }
+
             const finalPct = Math.min(100, Math.max(10, score));
             return {
                 ...trk,
@@ -7008,9 +7410,49 @@ const TaxonomyWorkspace = ({
                 matchesManual
             };
         })
-        .filter(t => t.matchesManual && (!hasTextQuery || t.matchScore >= 20))
-        .sort((a, b) => b.matchScore - a.matchScore);
-    }, [allPoolTracks, aiQuery, parsedQuery, selectedGenreFilter, selectedSubgenreFilterUI, selectedVersionFilter, selectedBpmFilter, selectedKeyFilter, selectedMoodFilter]);
+        .filter(t => t.matchesManual && (!hasTextQuery || t.matchScore >= 15 || t.isFromSearch));
+
+        // Ordenación de la Tabla / Grid
+        scored.sort((a, b) => {
+            let valA = a[taxSortField];
+            let valB = b[taxSortField];
+
+            if (taxSortField === 'title') {
+                valA = a.displayTitle || '';
+                valB = b.displayTitle || '';
+            } else if (taxSortField === 'artist') {
+                valA = a.displayArtist || '';
+                valB = b.displayArtist || '';
+            } else if (taxSortField === 'album') {
+                valA = a.displayAlbum || '';
+                valB = b.displayAlbum || '';
+            } else if (taxSortField === 'genre') {
+                valA = a.displayGenre || '';
+                valB = b.displayGenre || '';
+            } else if (taxSortField === 'subgenre') {
+                valA = a.displaySubgenre || '';
+                valB = b.displaySubgenre || '';
+            } else if (taxSortField === 'key') {
+                valA = a.displayKey || '';
+                valB = b.displayKey || '';
+            } else if (taxSortField === 'origin') {
+                valA = Boolean(a.isLocal || a.is_local) ? 'local' : 'online';
+                valB = Boolean(b.isLocal || b.is_local) ? 'local' : 'online';
+            } else if (['matchScore', 'displayBpm'].includes(taxSortField)) {
+                valA = Number(valA) || 0;
+                valB = Number(valB) || 0;
+            }
+
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                return taxSortDir === 'asc' ? valA - valB : valB - valA;
+            }
+            return taxSortDir === 'asc'
+                ? String(valA || '').localeCompare(String(valB || ''))
+                : String(valB || '').localeCompare(String(valA || ''));
+        });
+
+        return scored;
+    }, [allPoolTracks, aiQuery, parsedQuery, selectedGenreFilter, selectedSubgenreFilterUI, selectedVersionFilter, selectedBpmFilter, selectedKeyFilter, selectedMoodFilter, taxFilterSearch, taxFilterGenre, taxFilterOrigin, taxSortField, taxSortDir]);
 
     // Manejador de pre-escucha / Cargar en Deck 1
     const handleCargarEnDeck = (trk) => {
@@ -7533,7 +7975,7 @@ const TaxonomyWorkspace = ({
 
                     {/* LISTADO DE RESULTADOS EMPAREJADOS POR IA */}
                     <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                        <div className="flex items-center justify-between text-xs font-mono text-gray-400">
+                        <div className="flex flex-wrap items-center justify-between text-xs font-mono text-gray-400 gap-2">
                             <div>
                                 <span>Mostrando </span>
                                 <strong className="text-white font-bold">{searchResults.length}</strong>
@@ -7546,12 +7988,34 @@ const TaxonomyWorkspace = ({
                             <div className="flex items-center gap-3">
                                 <span className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-djcyan-400"></span>
-                                    <span>Biblioteca ({localTracks.length})</span>
+                                    <span>Biblioteca ({localTracks.length + searchLocalResults.length})</span>
                                 </span>
                                 <span className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-purple-400"></span>
                                     <span>Record Pool Online ({onlineResults.length > 0 ? onlineResults.length : catalogTracks.length})</span>
                                 </span>
+
+                                {/* Selector de Modo: Tabla con filtros / Mosaico */}
+                                <div className="inline-flex rounded-lg border border-djzinc-750 p-0.5 bg-[#050508] ml-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setDisplayMode('table')}
+                                        className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                                            displayMode === 'table' ? 'bg-djcyan-500 text-black' : 'text-gray-400 hover:text-white'
+                                        }`}
+                                    >
+                                        <span>𝄜</span> Tabla
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDisplayMode('grid')}
+                                        className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                                            displayMode === 'grid' ? 'bg-djcyan-500 text-black' : 'text-gray-400 hover:text-white'
+                                        }`}
+                                    >
+                                        <span>⊞</span> Mosaico
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -7591,7 +8055,166 @@ const TaxonomyWorkspace = ({
                                     )}
                                 </div>
                             </div>
+                        ) : displayMode === 'table' ? (
+                            /* VISTA DE TABLA CON ORDENACIÓN Y FILTROS EN CABECERA */
+                            <div className="overflow-x-auto rounded-xl border border-djzinc-800 bg-[#07070a] shadow-lg">
+                                <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
+                                    <thead className="sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400">
+                                        <tr>
+                                            <th className="py-2.5 px-3 w-8 text-center">#</th>
+                                            <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
+                                            <th onClick={() => handleSortTax('title')} className="py-2.5 px-3 min-w-[240px] cursor-pointer hover:text-white transition-colors">TÍTULO / ÁLBUM {renderSortArrowTax('title')}</th>
+                                            <th onClick={() => handleSortTax('artist')} className="py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors">ARTISTA {renderSortArrowTax('artist')}</th>
+                                            <th onClick={() => handleSortTax('genre')} className="py-2.5 px-2.5 cursor-pointer hover:text-white transition-colors">GÉNERO {renderSortArrowTax('genre')}</th>
+                                            <th onClick={() => handleSortTax('subgenre')} className="py-2.5 px-2.5 cursor-pointer hover:text-white transition-colors">SUBGÉNERO {renderSortArrowTax('subgenre')}</th>
+                                            <th onClick={() => handleSortTax('displayBpm')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowTax('displayBpm')}</th>
+                                            <th onClick={() => handleSortTax('key')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">KEY {renderSortArrowTax('key')}</th>
+                                            <th onClick={() => handleSortTax('version')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">VERSIÓN {renderSortArrowTax('version')}</th>
+                                            <th onClick={() => handleSortTax('origin')} className="py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors">ORIGEN {renderSortArrowTax('origin')}</th>
+                                            <th onClick={() => handleSortTax('matchScore')} className="py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors">MATCH % {renderSortArrowTax('matchScore')}</th>
+                                            <th className="py-2.5 px-3 text-center min-w-[150px]">ACCIONES DJ</th>
+                                        </tr>
+                                        <tr className="bg-[#050508] border-b border-djzinc-800 text-[10px] lowercase font-sans">
+                                            <th className="p-1 text-center font-mono text-[9px] text-gray-500">
+                                                {(taxFilterSearch || taxFilterGenre !== 'ALL' || taxFilterOrigin !== 'ALL') ? (
+                                                    <button 
+                                                        onClick={() => {
+                                                            setTaxFilterSearch('');
+                                                            setTaxFilterGenre('ALL');
+                                                            setTaxFilterOrigin('ALL');
+                                                        }}
+                                                        title="Limpiar filtros"
+                                                        className="text-amber-400 hover:text-white cursor-pointer"
+                                                    >✕</button>
+                                                ) : 'filtro'}
+                                            </th>
+                                            <th className="p-1"></th>
+                                            <th className="p-1">
+                                                <input 
+                                                    type="text" 
+                                                    value={taxFilterSearch} 
+                                                    onChange={(e) => setTaxFilterSearch(e.target.value)} 
+                                                    placeholder="Filtrar por título, álbum o artista..." 
+                                                    className="w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
+                                                />
+                                            </th>
+                                            <th className="p-1"></th>
+                                            <th className="p-1">
+                                                <select 
+                                                    value={taxFilterGenre} 
+                                                    onChange={(e) => setTaxFilterGenre(e.target.value)}
+                                                    className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                                >
+                                                    <option value="ALL">Todos</option>
+                                                    <option value="House">House</option>
+                                                    <option value="Techno">Techno</option>
+                                                    <option value="Latin & Urban">Latin & Urban</option>
+                                                    <option value="Trance">Trance</option>
+                                                    <option value="Afro House">Afro House</option>
+                                                </select>
+                                            </th>
+                                            <th className="p-1"></th>
+                                            <th className="p-1"></th>
+                                            <th className="p-1"></th>
+                                            <th className="p-1"></th>
+                                            <th className="p-1 text-center">
+                                                <select 
+                                                    value={taxFilterOrigin} 
+                                                    onChange={(e) => setTaxFilterOrigin(e.target.value)}
+                                                    className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                                >
+                                                    <option value="ALL">Todos</option>
+                                                    <option value="local">📁 Local</option>
+                                                    <option value="online">☁️ Pool Online</option>
+                                                </select>
+                                            </th>
+                                            <th className="p-1"></th>
+                                            <th className="p-1"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-djzinc-850/60 font-sans">
+                                        {searchResults.map((trk, idx) => {
+                                            const keyData = CAMELOT_WHEEL_DATA[trk.displayKey] || CAMELOT_WHEEL_DATA['8A'];
+                                            const isLocal = Boolean(trk.isLocal || trk.is_local);
+                                            const isOnline = Boolean(trk.isOnlinePool || trk.is_online);
+                                            const isPlayingRow = nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.title === trk.displayTitle) && isPlaying;
+                                            return (
+                                                <tr key={trk.id || idx} className="hover:bg-[#101016] transition-colors cursor-pointer select-none">
+                                                    <td className="py-2 px-3 text-center text-gray-500 font-mono text-[10px]">{idx + 1}</td>
+                                                    <td className="py-2 px-2 text-center" onClick={(e) => { e.stopPropagation(); handleCargarEnDeck(trk); }}>
+                                                        <button className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isPlayingRow ? 'bg-djcyan-500 text-black font-bold shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-[#181820] text-gray-400 hover:text-white hover:bg-djzinc-800'}`}>
+                                                            {isPlayingRow ? '❚❚' : '▶'}
+                                                        </button>
+                                                    </td>
+                                                    <td className="py-2 px-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <img src={getValidCover(trk.displayCover)} alt="Cover" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} className="w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" />
+                                                            <div className="flex flex-col min-w-0">
+                                                                <span className="font-semibold text-djcyan-400 text-xs truncate max-w-sm" title={trk.displayTitle}>{trk.displayTitle}</span>
+                                                                <span className="text-[10px] text-gray-500 font-mono truncate max-w-sm" title={trk.displayAlbum}>{trk.displayAlbum || '--'}</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-xs">{trk.displayArtist}</td>
+                                                    <td className="py-2 px-2.5 font-mono text-[11px] text-gray-300">{trk.displayGenre}</td>
+                                                    <td className="py-2 px-2.5 font-mono text-[10px] text-djcyan-400 font-semibold">{trk.displaySubgenre}</td>
+                                                    <td className="py-2 px-2 text-center font-mono text-xs text-white font-bold">{trk.displayBpm}</td>
+                                                    <td className="py-2 px-2 text-center">
+                                                        <span 
+                                                            className="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] border cursor-pointer"
+                                                            style={{ backgroundColor: `${keyData.color}20`, borderColor: `${keyData.color}80`, color: keyData.color }}
+                                                            onClick={() => setIsCamelotModalOpen(true)}
+                                                            title={`Key ${trk.displayKey} (${keyData.classical})`}
+                                                        >
+                                                            {trk.displayKey}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-400">{trk.displayVersion || 'Original Mix'}</td>
+                                                    <td className="py-2 px-2.5 text-center">
+                                                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${
+                                                            isLocal ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-700/60' :
+                                                            (isOnline ? 'bg-purple-950 text-purple-300 border-purple-700/60' : 'bg-emerald-950 text-emerald-300 border-emerald-700/60')
+                                                        }`}>
+                                                            {isLocal ? '📁 Local' : (isOnline ? '☁️ Record Pool' : '🌟 Cuenca Pool')}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2 px-2.5 text-center font-mono text-xs font-bold text-emerald-400">
+                                                        ⚡ {trk.matchScore}%
+                                                    </td>
+                                                    <td className="py-2 px-3 text-center">
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            <button onClick={() => handleCargarEnDeck(trk)} className="px-2 py-1 rounded bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] font-mono cursor-pointer" title="Cargar y Reproducir en Deck 1">
+                                                                ▶ Deck
+                                                            </button>
+                                                            <button onClick={() => handleAbrirEnHotCues(trk)} className="px-2 py-1 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 border border-djzinc-700 text-[10px] font-mono cursor-pointer" title="Hot Cues Studio">
+                                                                🎛️
+                                                            </button>
+                                                            {isOnline ? (
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        if (onSendToSpotify) onSendToSpotify(`${trk.displayArtist} - ${trk.displayTitle}`);
+                                                                        else if (onNavigateTab) onNavigateTab('spotify');
+                                                                    }}
+                                                                    className="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer"
+                                                                    title="Descargar en SuperFLAC / Spotify Ingest"
+                                                                >
+                                                                    📥 SuperFLAC
+                                                                </button>
+                                                            ) : (
+                                                                <button onClick={() => handleAsignarACrateIndividual(trk)} className="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer" title="Rutar a Crate">
+                                                                    📁 Crate
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         ) : (
+                            /* VISTA DE MOSAICO / TARJETAS */
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                                 {searchResults.map((trk, idx) => {
                                     const keyData = CAMELOT_WHEEL_DATA[trk.displayKey] || CAMELOT_WHEEL_DATA['8A'];

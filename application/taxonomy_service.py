@@ -244,7 +244,7 @@ class TaxonomyService:
         # 1. Búsqueda Local en disco (si ámbito es 'all' o 'local')
         if ambito in ("all", "local") and ruta_local and os.path.exists(ruta_local):
             q_lower = query_limpia.lower()
-            terminos = [t for t in q_lower.split() if len(t) > 2 and t not in ('para', 'con', 'del', 'the', 'los', 'las', 'por')]
+            terminos = [t for t in q_lower.split() if len(t) >= 2 and t not in ('para', 'con', 'del', 'the', 'los', 'las', 'por')]
             
             formatos_audio = ('.mp3', '.flac', '.aiff', '.wav', '.m4a')
             count = 0
@@ -252,7 +252,8 @@ class TaxonomyService:
                 for f in files:
                     if f.lower().endswith(formatos_audio):
                         f_lower = f.lower()
-                        if not terminos or any(term in f_lower or term in root.lower() for term in terminos):
+                        root_lower = root.lower()
+                        if not terminos or any(term in f_lower or term in root_lower for term in terminos):
                             full_path = os.path.join(root, f)
                             nombre_sin_ext = os.path.splitext(f)[0]
                             partes = nombre_sin_ext.split(" - ")
@@ -268,6 +269,7 @@ class TaxonomyService:
                                 "id": f"local_{abs(hash(full_path))}",
                                 "title": titulo,
                                 "artist": artista,
+                                "album": padre if padre != os.path.basename(ruta_local) else "Biblioteca Local",
                                 "path": full_path,
                                 "f": full_path,
                                 "genre": genero_sug,
@@ -285,7 +287,8 @@ class TaxonomyService:
                     break
 
         # 2. Búsqueda Online en Record Pool (si ámbito es 'all' o 'online')
-        if ambito in ("all", "online") and query_limpia:
+        term_online = query_limpia if query_limpia else "Tech House Club"
+        if ambito in ("all", "online") and term_online:
             import urllib.parse
             import urllib.request
             import ssl
@@ -306,9 +309,9 @@ class TaxonomyService:
                 if key_match:
                     target_key = (key_match.group(1) + key_match.group(2)).upper()
 
-                clean_term = re.sub(r'\b(a|en|para|la|el|bpm|key)\b', '', query_limpia, flags=re.IGNORECASE).strip()
+                clean_term = re.sub(r'\b(a|en|para|la|el|bpm|key)\b', '', term_online, flags=re.IGNORECASE).strip()
                 if not clean_term:
-                    clean_term = query_limpia
+                    clean_term = term_online
 
                 q_encoded = urllib.parse.quote(clean_term)
                 url = f"https://itunes.apple.com/search?term={q_encoded}&entity=song&limit={limite}"
