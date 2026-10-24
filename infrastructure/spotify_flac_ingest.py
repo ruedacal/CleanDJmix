@@ -200,8 +200,9 @@ class SpotifyFlacIngestService:
 
         return None, 200, f"No se encontró enlace de descarga en la respuesta HTMX ({len(body_text)} bytes)"
 
-    def _resolver_stream_final(self, url_candidata: str, max_polls: int = 25) -> tuple:
+    def _resolver_stream_final(self, url_candidata: str, max_polls: int = 15) -> tuple:
         url_actual = url_candidata
+        timeouts_count = 0
         for intento in range(max_polls):
             try:
                 is_cdn_file = "/file?" in url_actual or "expires=" in url_actual
@@ -211,7 +212,7 @@ class SpotifyFlacIngestService:
                     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
                 }
 
-                r_dl = self.session.get(url_actual, headers=hdrs, stream=True, timeout=30, allow_redirects=True)
+                r_dl = self.session.get(url_actual, headers=hdrs, stream=True, timeout=(8, 16), allow_redirects=True)
                 status = r_dl.status_code
 
                 if status == 429:
@@ -270,9 +271,15 @@ class SpotifyFlacIngestService:
                 poll_delay = min(2.5, 1.0 + (intento * 0.3))
                 time.sleep(poll_delay)
 
+            except (requests.exceptions.Timeout, requests.exceptions.ReadTimeout, requests.exceptions.ConnectTimeout) as t_err:
+                timeouts_count += 1
+                print(f"[SUPERFLAC POLL WARN] Timeout al conectar ({t_err}). Reintento {timeouts_count}/2...")
+                if timeouts_count >= 2:
+                    return None, "Tiempo de espera agotado al conectar con el servidor SuperFLAC."
+                time.sleep(1.5)
             except Exception as e:
                 print(f"[SUPERFLAC POLL WARN] Excepción: {e}")
-                time.sleep(2.0)
+                time.sleep(1.5)
 
         return None, "Tiempo de espera agotado esperando el binario final en SuperFLAC"
 

@@ -34,6 +34,12 @@ const I18N_TRANSLATIONS = {
         btn_save_all: "Guardar Todo en Ficheros",
         btn_export_xls: "Exportar Excel",
         btn_change_dir: "Cambiar Carpeta",
+        btn_cancel: "✕ Cancelar",
+        btn_cancel_audit: "✕ Detener Auditoría",
+        btn_cancel_download: "✕ Cancelar Descargas",
+        btn_inspector: "◨ Inspector",
+        btn_close_panel: "✕ Cerrar Panel",
+        btn_edit_cues_studio: "🎛️ Editar Hot Cues en Estudio →",
         search_placeholder: "Buscar por título, artista, BPM o tono...",
         track: "Pista",
         bpm: "BPM",
@@ -64,7 +70,35 @@ const I18N_TRANSLATIONS = {
         shazam_send_spotify: "📥 Descargar en Spotify Ingest",
         shazam_send_audit: "📋 Añadir a Auditoría DJ",
         apply_track_changes: "Aplicar Cambios a este Track",
-        lang_switch: "Idioma"
+        lang_switch: "Idioma",
+        metric_total: "Total Pistas",
+        metric_missing: "Falta Metadata",
+        metric_ready: "Listas para Inyectar",
+        metric_lossless: "Certificación Lossless",
+        filter_all: "Todos",
+        filter_missing: "Falta Metadata",
+        filter_errors: "Errores",
+        th_num: "#",
+        th_waveform: "Waveform",
+        th_title: "Archivo / Título",
+        th_artist: "Artista",
+        th_duration: "Duración",
+        th_bpm: "BPM",
+        th_key: "Key",
+        th_fft: "Cert. FFT",
+        th_trim: "Auto-Trim",
+        th_beat: "Beat 1.0.0",
+        th_cues: "8 Hot Cues",
+        th_energy: "Energía",
+        th_dance: "Dance",
+        th_mood: "Atmósfera",
+        th_comment: "Comentario Táctico DJ",
+        th_status: "Estado",
+        th_album: "Álbum",
+        download_btn: "Descargar",
+        fft_auditing_msg: "Auditoría FFT en curso...",
+        fft_certified: "PASS 22.05kHz",
+        fft_fake: "Falso FLAC"
     },
     en: {
         nav_audit: "Audit & DSP",
@@ -80,6 +114,12 @@ const I18N_TRANSLATIONS = {
         btn_save_all: "Save All to Files",
         btn_export_xls: "Export Excel",
         btn_change_dir: "Change Folder",
+        btn_cancel: "✕ Cancel",
+        btn_cancel_audit: "✕ Stop Audit",
+        btn_cancel_download: "✕ Cancel Downloads",
+        btn_inspector: "◨ Inspector",
+        btn_close_panel: "✕ Close Panel",
+        btn_edit_cues_studio: "🎛️ Edit Hot Cues in Studio →",
         search_placeholder: "Search by title, artist, BPM or key...",
         track: "Track",
         bpm: "BPM",
@@ -110,7 +150,35 @@ const I18N_TRANSLATIONS = {
         shazam_send_spotify: "📥 Download in Spotify Ingest",
         shazam_send_audit: "📋 Add to DJ Audit",
         apply_track_changes: "Apply Changes to this Track",
-        lang_switch: "Language"
+        lang_switch: "Language",
+        metric_total: "Total Tracks",
+        metric_missing: "Missing Metadata",
+        metric_ready: "Ready to Inject",
+        metric_lossless: "Lossless Certification",
+        filter_all: "All",
+        filter_missing: "Missing Metadata",
+        filter_errors: "Errors",
+        th_num: "#",
+        th_waveform: "Waveform",
+        th_title: "File / Title",
+        th_artist: "Artist",
+        th_duration: "Duration",
+        th_bpm: "BPM",
+        th_key: "Key",
+        th_fft: "Cert. FFT",
+        th_trim: "Auto-Trim",
+        th_beat: "Beat 1.0.0",
+        th_cues: "8 Hot Cues",
+        th_energy: "Energy",
+        th_dance: "Dance",
+        th_mood: "Atmosphere",
+        th_comment: "Tactical DJ Comment",
+        th_status: "Status",
+        th_album: "Album",
+        download_btn: "Download",
+        fft_auditing_msg: "FFT Audit in progress...",
+        fft_certified: "PASS 22.05kHz",
+        fft_fake: "Fake FLAC"
     }
 };
 
@@ -2709,6 +2777,7 @@ const AuditWorkspace = ({
     const [batchProgress, setBatchProgress] = useState(0);
     const [batchStatusMsg, setBatchStatusMsg] = useState('');
     const [saveFeedback, setSaveFeedback] = useState('');
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const [internalTracks, setInternalTracks] = useState([]);
     const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
@@ -3250,6 +3319,23 @@ const AuditWorkspace = ({
 
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
 
+    const handleCancelarProceso = async () => {
+        if (window.eel && window.eel.cancelar_procesos_activos) {
+            try {
+                await window.eel.cancelar_procesos_activos()();
+            } catch (e) {
+                console.error("Error al cancelar procesos:", e);
+            }
+        }
+        setIsAuditing(false);
+        setIsLoadingDir(false);
+        setIsInjecting(false);
+        setIsExporting(false);
+        setBatchProgress(0);
+        setBatchStatusMsg(lang === 'en' ? '✕ Process stopped by user.' : '✕ Proceso cancelado por el usuario.');
+        setTimeout(() => setBatchStatusMsg(''), 2500);
+    };
+
     const tracksFiltrados = tracks.filter(t => {
         const term = busqueda.toLowerCase();
         const m = (t?.t || t?.title || '').toLowerCase().includes(term) || (t?.a || t?.artist || '').toLowerCase().includes(term) || (t?.f || t?.filename || '').toLowerCase().includes(term);
@@ -3281,32 +3367,65 @@ const AuditWorkspace = ({
                         </div>
                         <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-4 py-1.5 text-xs font-bold text-gray-300 cursor-pointer transition-colors">{t('btn_change_dir') || 'Explorar'}</button>
                     </div>
-                    <div className="flex flex-wrap gap-2 items-center">
-                        <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
-                            <Icons.Sliders /> {t('btn_audit_batch') || 'Configurar Lote'}
-                        </button>
-                        <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djzinc-800 hover:bg-djzinc-700 text-white px-3.5 py-2 rounded-md font-semibold text-xs border border-djzinc-600 flex items-center gap-1.5 cursor-pointer">
-                            <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Directorio')}
-                        </button>
-                        <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-amber-400 border border-amber-600/60 px-3 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
-                            🖼️ {t('btn_inject_covers') || 'Inyectar Carátulas'}
-                        </button>
-                        <button onClick={handleExportarXLS} className="bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-2.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
-                            <Icons.Excel /> XLS
-                        </button>
-                        <button onClick={handleExportarSeratoCrates} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-purple-400 border border-purple-700/60 px-2.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Exportar archivos .crate oficiales a Serato DJ Pro">
-                            💽 Crates
-                        </button>
-                        <button onClick={handleExportarRekordboxXml} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-blue-400 border border-blue-700/60 px-2.5 py-2 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50" title="Exportar rekordbox.xml estándar Pioneer DJ">
-                            📋 Rekordbox
-                        </button>
+                    <div className="flex flex-wrap gap-2.5 items-center">
+                        {/* Grupo 1: Auditoría & DSP */}
+                        <div className="flex items-center gap-1 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
+                            <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
+                                <Icons.Sliders /> {t('btn_audit_batch') || 'Configurar Lote'}
+                            </button>
+                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djzinc-800 hover:bg-djzinc-700 text-white px-3 py-1.5 rounded-md font-semibold text-xs border border-djzinc-650 flex items-center gap-1.5 cursor-pointer transition-colors">
+                                <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Directorio')}
+                            </button>
+                            <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-amber-400 border border-amber-600/60 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
+                                🖼️ {t('btn_inject_covers') || 'Inyectar Carátulas'}
+                            </button>
+                        </div>
+
+                        {/* Grupo 2: Exportación Oficial */}
+                        <div className="flex items-center gap-1 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
+                            <button onClick={handleExportarXLS} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
+                                <Icons.Excel /> XLS
+                            </button>
+                            <button onClick={handleExportarSeratoCrates} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-purple-400 border border-purple-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Exportar archivos .crate oficiales a Serato DJ Pro">
+                                💽 Crates
+                            </button>
+                            <button onClick={handleExportarRekordboxXml} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-blue-400 border border-blue-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Exportar rekordbox.xml estándar Pioneer DJ">
+                                📋 Rekordbox
+                            </button>
+                        </div>
+
+                        {/* Grupo 3: Persistencia Directa en Disco */}
                         <button 
                             onClick={handleGuardarTodoEnFicheros} 
                             disabled={isInjecting || tracks.length === 0}
-                            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-4 py-2 rounded-md font-black text-xs shadow-lg shadow-emerald-500/25 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-lg shadow-emerald-500/25 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                             title="Guarda y persiste todos los metadatos editados directamente en los archivos físicos de audio en disco"
                         >
                             💾 {t('btn_save_all') || 'Guardar Todo en Ficheros'} ({tracks.length})
+                        </button>
+
+                        {/* Grupo 4: Cancelación & Toggle de Inspector */}
+                        {(isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && (
+                            <button 
+                                onClick={handleCancelarProceso}
+                                className="bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95"
+                                title="Detener el proceso actual inmediatamente"
+                            >
+                                {t('btn_cancel') || '✕ Cancelar'}
+                            </button>
+                        )}
+
+                        <button
+                            onClick={() => setSidebarOpen(prev => !prev)}
+                            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                sidebarOpen 
+                                    ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner' 
+                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
+                            }`}
+                            title={sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}
+                        >
+                            <span>◨</span>
+                            <span>{t('btn_inspector') || 'Inspector'}</span>
                         </button>
                     </div>
                 </div>
@@ -3318,7 +3437,15 @@ const AuditWorkspace = ({
                                 <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></span>
                                 {batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")}
                             </span>
-                            <span className="text-gray-300 font-bold">{batchProgress}%</span>
+                            <div className="flex items-center gap-3">
+                                <span className="text-gray-300 font-bold">{batchProgress}%</span>
+                                <button
+                                    onClick={handleCancelarProceso}
+                                    className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 cursor-pointer transition-colors shadow"
+                                >
+                                    {t('btn_cancel') || '✕ Cancelar'}
+                                </button>
+                            </div>
                         </div>
                         <div className="w-full bg-djzinc-950 h-2 rounded-full overflow-hidden border border-djzinc-800 shadow-inner">
                             <div 
@@ -3330,19 +3457,42 @@ const AuditWorkspace = ({
                 )}
 
                 <div className="grid grid-cols-4 gap-px bg-djzinc-800 border-b border-djzinc-800 shrink-0">
-                    <div className="bg-djzinc-950 p-4 flex flex-col justify-center"><span className="text-[10px] text-gray-500 font-bold uppercase mb-1">Total Pistas</span><span className="text-2xl font-mono text-white">{(metrics.total || 0).toLocaleString()}</span></div>
-                    <div className="bg-djzinc-950 p-4 flex flex-col justify-center"><span className="text-[10px] text-gray-500 font-bold uppercase mb-1">Falta Metadata (BPM/Key)</span><span className="text-2xl font-mono text-amber-500">{(metrics.missing || 0).toLocaleString()}</span></div>
-                    <div className="bg-djzinc-950 p-4 flex flex-col justify-center"><span className="text-[10px] text-gray-500 font-bold uppercase mb-1">Listas para Inyectar</span><span className="text-2xl font-mono text-djgreen-400">{(metrics.ready || 0).toLocaleString()}</span></div>
-                    <div className="bg-djzinc-950 p-4 flex items-center justify-between"><div className="flex flex-col"><span className="text-[10px] text-gray-500 font-bold uppercase mb-1">Motor Lossless</span><span className="text-sm font-medium text-djcyan-400">Activo (FFT / Mutagen)</span></div><div className="w-10 h-5 bg-djcyan-600 rounded-full relative"><div className="w-4 h-4 bg-white rounded-full absolute right-0.5 top-0.5"></div></div></div>
+                    <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase mb-1">{t('metric_total') || 'Total Pistas'}</span>
+                        <span className="text-2xl font-mono text-white">{(metrics.total || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase mb-1">{t('metric_missing') || 'Falta Metadata (BPM/Key)'}</span>
+                        <span className="text-2xl font-mono text-amber-500">{(metrics.missing || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase mb-1">{t('metric_ready') || 'Listas para Inyectar'}</span>
+                        <span className="text-2xl font-mono text-djgreen-400">{(metrics.ready || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="bg-djzinc-950 p-4 flex flex-col justify-center">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase mb-1">{t('metric_lossless') || 'Certificación Lossless'}</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-mono text-djcyan-400">
+                                {tracks.filter(t => t.cutoff_khz && !String(t.status || '').includes('Fake')).length}
+                            </span>
+                            <span className="text-xs font-mono text-gray-500">/ {tracks.length} PASS (22kHz)</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="px-4 py-2 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2 flex-1">
-                        <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por track, artista o clave..." className="w-64 bg-djzinc-950 border border-djzinc-700 rounded-full px-4 py-1.5 text-xs text-gray-300 focus:border-djcyan-500 outline-none" />
+                        <input 
+                            type="text" 
+                            value={busqueda} 
+                            onChange={(e) => setBusqueda(e.target.value)} 
+                            placeholder={t('search_placeholder') || "Buscar por track, artista o clave..."} 
+                            className="w-64 bg-djzinc-950 border border-djzinc-700 rounded-full px-4 py-1.5 text-xs text-gray-300 focus:border-djcyan-500 outline-none" 
+                        />
                         <div className="flex gap-2 ml-2">
-                            <button onClick={() => setFiltro('todos')} className={`px-3 py-1 rounded-full text-[10px] font-medium cursor-pointer ${filtro === 'todos' ? 'bg-djcyan-600 text-white' : 'bg-djzinc-800 text-gray-300'}`}>Todos ({metrics.total})</button>
-                            <button onClick={() => setFiltro('missing')} className={`px-3 py-1 rounded-full text-[10px] font-medium cursor-pointer ${filtro === 'missing' ? 'bg-amber-600 text-white' : 'bg-amber-900/30 text-amber-500'}`}>Falta Metadata ({metrics.missing})</button>
-                            <button onClick={() => setFiltro('error')} className={`px-3 py-1 rounded-full text-[10px] font-medium cursor-pointer ${filtro === 'error' ? 'bg-red-600 text-white' : 'bg-red-900/30 text-red-400'}`}>Errores ({metrics.errors})</button>
+                            <button onClick={() => setFiltro('todos')} className={`px-3 py-1 rounded-full text-[10px] font-medium cursor-pointer ${filtro === 'todos' ? 'bg-djcyan-600 text-white' : 'bg-djzinc-800 text-gray-300'}`}>{t('filter_all') || 'Todos'} ({metrics.total})</button>
+                            <button onClick={() => setFiltro('missing')} className={`px-3 py-1 rounded-full text-[10px] font-medium cursor-pointer ${filtro === 'missing' ? 'bg-amber-600 text-white' : 'bg-amber-900/30 text-amber-500'}`}>{t('filter_missing') || 'Falta Metadata'} ({metrics.missing})</button>
+                            <button onClick={() => setFiltro('error')} className={`px-3 py-1 rounded-full text-[10px] font-medium cursor-pointer ${filtro === 'error' ? 'bg-red-600 text-white' : 'bg-red-900/30 text-red-400'}`}>{t('filter_errors') || 'Errores'} ({metrics.errors})</button>
                         </div>
                     </div>
                     {saveFeedback && <span className="text-xs font-mono text-djgreen-400 font-bold animate-pulse">{saveFeedback}</span>}
@@ -3352,22 +3502,22 @@ const AuditWorkspace = ({
                     <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                         <thead className="sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400">
                             <tr>
-                                <th className="py-2.5 px-2 w-7 text-center">#</th>
-                                <th className="py-2.5 px-2 w-28 text-center text-djcyan-400">Waveform</th>
-                                <th className="py-2.5 px-3 min-w-[240px]">Archivo / Título</th>
-                                <th className="py-2.5 px-2 w-28">Artista</th>
-                                <th className="py-2.5 px-1.5 text-center">Time</th>
+                                <th className="py-2.5 px-2 w-7 text-center">{t('th_num') || '#'}</th>
+                                <th className="py-2.5 px-2 w-28 text-center text-djcyan-400">{t('th_waveform') || 'Waveform'}</th>
+                                <th className="py-2.5 px-3 min-w-[240px]">{t('th_title') || 'Archivo / Título'}</th>
+                                <th className="py-2.5 px-2 w-28">{t('th_artist') || 'Artista'}</th>
+                                <th className="py-2.5 px-1.5 text-center">{t('th_duration') || 'Time'}</th>
                                 <th className="py-2.5 px-1.5 text-center">BPM</th>
                                 <th className="py-2.5 px-1.5 text-center">Key</th>
-                                <th className="py-2.5 px-1.5 text-center">Cert. FFT</th>
+                                <th className="py-2.5 px-1.5 text-center">{t('th_fft') || 'Cert. FFT'}</th>
                                 <th className="py-2.5 px-1.5 text-center">Auto-Trim</th>
                                 <th className="py-2.5 px-1.5 text-center">Beat 1.0.0</th>
-                                <th className="py-2.5 px-1.5 text-center">8 Hot Cues</th>
-                                <th className="py-2.5 px-1.5 text-center">Energía</th>
-                                <th className="py-2.5 px-1.5 text-center">Dance</th>
-                                <th className="py-2.5 px-2 text-center">Atmósfera</th>
-                                <th className="py-2.5 px-3 min-w-[180px]">Comentario Táctico DJ</th>
-                                <th className="py-2.5 px-2 text-center">Estado</th>
+                                <th className="py-2.5 px-1.5 text-center">{t('th_cues') || '8 Hot Cues'}</th>
+                                <th className="py-2.5 px-1.5 text-center">{t('th_energy') || 'Energía'}</th>
+                                <th className="py-2.5 px-1.5 text-center">{t('th_dance') || 'Dance'}</th>
+                                <th className="py-2.5 px-2 text-center">{t('th_mood') || 'Atmósfera'}</th>
+                                <th className="py-2.5 px-3 min-w-[180px]">{t('th_comment') || 'Comentario Táctico DJ'}</th>
+                                <th className="py-2.5 px-2 text-center">{t('th_status') || 'Estado'}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
@@ -3450,13 +3600,41 @@ const AuditWorkspace = ({
                 </div>
             </div>
 
-            <aside key={currentTrack ? currentTrack.id : "none"} className="w-96 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-20 overflow-hidden shadow-2xl">
-                <div className="p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
-                    <div className="flex items-center gap-2"><Icons.Gear /><span className="font-bold text-xs uppercase tracking-wider text-gray-200">Inspector DJ Granular</span></div>
-                    <span className="text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded">Track #{currentTrack.id || '--'}</span>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {/* Carátula Replicada en el Inspector */}
+            {sidebarOpen && (
+                <aside key={currentTrack ? currentTrack.id : "none"} className="w-96 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-20 overflow-hidden shadow-2xl">
+                    <div className="p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
+                        <div className="flex items-center gap-2"><Icons.Gear /><span className="font-bold text-xs uppercase tracking-wider text-gray-200">Inspector DJ Granular</span></div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded">Track #{currentTrack.id || '--'}</span>
+                            <button 
+                                onClick={() => setSidebarOpen(false)} 
+                                className="w-6 h-6 rounded-full bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-bold text-xs cursor-pointer border border-djzinc-700 transition-colors"
+                                title={t('btn_close_panel') || 'Cerrar Panel'}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {/* Direct Link to Hot Cues Studio */}
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                if (currentTrack && currentTrack.id) {
+                                    setSelectedTrack(currentTrack.id);
+                                }
+                                if (onNavigateTab) {
+                                    onNavigateTab('hotcues');
+                                }
+                            }}
+                            className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-pink-950/80 via-purple-950/80 to-djzinc-900 hover:from-pink-900/90 hover:via-purple-900/90 hover:to-djzinc-850 text-pink-300 hover:text-white border border-pink-700/60 font-mono text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-pink-950/40 transition-all active:scale-[0.98]"
+                            title="Abrir este track en la pestaña Estudio Hot Cues a pantalla completa con Beatgrid ampliado"
+                        >
+                            <span>🎛️</span>
+                            <span>{t('btn_edit_cues_studio') || 'Editar Hot Cues en Estudio →'}</span>
+                        </button>
+
+                        {/* Carátula Replicada en el Inspector */}
                     <div className="w-full aspect-video bg-djzinc-950 rounded-lg border border-djzinc-800 relative group overflow-hidden flex items-center justify-center shadow-inner">
                         <img 
                             src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : (currentTrack.f ? `/cover?path=${encodeURIComponent(currentTrack.f)}` : null)))} 
@@ -3828,6 +4006,7 @@ const AuditWorkspace = ({
                     </button>
                 </div>
             </aside>
+            )}
 
             <BatchAuditorModal isOpen={batchModalOpen} onClose={() => setBatchModalOpen(false)} onRunBatch={async (opts) => {
                 setBatchModalOpen(false);
@@ -5077,7 +5256,7 @@ const HotCuesWorkspace = ({
 };
 
 // Espacio de Trabajo: Spotify Ingest
-const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePlay }) => {
+const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePlay, lang = "es", t = (k) => k }) => {
     const [spotifyUrl, setSpotifyUrl] = useState('https://open.spotify.com/intl-es/artist/23zJj2W0TQ0SvF4Fwo7mZK');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [destDir, setDestDir] = useState('/Users/admin/Music/mi musica');
@@ -5085,6 +5264,9 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
     const [downloadingMsg, setDownloadingMsg] = useState('');
     const [downloadProgress, setDownloadProgress] = useState(0);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isAuditingFft, setIsAuditingFft] = useState(false);
+    const [fftProgress, setFftProgress] = useState(0);
+    const [fftMsg, setFftMsg] = useState('');
     const [selectedId, setSelectedId] = useState("10");
 
     const [tracks, setTracks] = useState([]);
@@ -5103,23 +5285,71 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                 setDownloadingMsg(msg || '');
                 setIsDownloading(true);
             };
+            const updateFft = (pct, msg) => {
+                setIsAuditingFft(true);
+                setFftProgress(pct);
+                setFftMsg(msg || '');
+            };
+            const notifyFftResult = (res) => {
+                if (res && res.id) {
+                    setTracks(prev => prev.map(t => {
+                        if (String(t.id) === String(res.id)) {
+                            return {
+                                ...t,
+                                cutoff_khz: res.cutoff_khz,
+                                status: res.estado || (res.cutoff_khz >= 20.0 ? 'PASS 22.05kHz' : 'Fake FLAC'),
+                                spectrum: res.spectrum || [],
+                                downloaded: true,
+                                local_path: res.path
+                            };
+                        }
+                        return t;
+                    }));
+                }
+            };
             const finishBatch = (msg) => {
                 setIsDownloading(false);
+                setIsAuditingFft(false);
                 setDownloadProgress(100);
+                setFftProgress(100);
                 setDownloadingMsg(msg || 'Lote completado con éxito.');
-                setTimeout(() => setDownloadProgress(0), 4000);
+                setTimeout(() => {
+                    setDownloadProgress(0);
+                    setFftProgress(0);
+                    setIsAuditingFft(false);
+                }, 4000);
             };
 
             window.actualizar_estado_descarga = updateDownload;
             window.actualizar_progreso_descarga = updateDownload;
+            window.actualizar_estado_fft = updateFft;
+            window.notificar_resultado_auditoria = notifyFftResult;
             window.notificar_fin_lote = finishBatch;
 
             window.eel.expose(window.actualizar_estado_descarga, "actualizar_estado_descarga");
             window.eel.expose(window.actualizar_progreso_descarga, "actualizar_progreso_descarga");
+            window.eel.expose(window.actualizar_estado_fft, "actualizar_estado_fft");
+            window.eel.expose(window.notificar_resultado_auditoria, "notificar_resultado_auditoria");
             window.eel.expose(window.notificar_fin_lote, "notificar_fin_lote");
         }
         handleAnalizar();
     }, []);
+
+    const handleCancelarDescargas = async () => {
+        if (window.eel && window.eel.cancelar_procesos_activos) {
+            try {
+                await window.eel.cancelar_procesos_activos()();
+            } catch (e) {
+                console.error("Error al cancelar descargas:", e);
+            }
+        }
+        setIsDownloading(false);
+        setIsAuditingFft(false);
+        setDownloadProgress(0);
+        setFftProgress(0);
+        setDownloadingMsg(lang === 'en' ? '[CANCELLED] Downloads and FFT audit stopped by user.' : '[CANCELADO] Descargas y auditoría FFT detenidas por el usuario.');
+        setTimeout(() => setDownloadingMsg(''), 3000);
+    };
 
     const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
         setFsBrowserOpen(true);
@@ -5321,30 +5551,63 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                     </div>
                 </div>
 
-                {/* Franja de Estado y Barra de Progreso Dinámica */}
-                <div className="px-4 py-2 bg-[#09090c] border-b border-djzinc-850 flex flex-col gap-1.5 shrink-0">
-                    <div className="flex justify-between items-center text-xs font-mono">
-                        <span className="text-djcyan-400 font-semibold flex items-center gap-1.5 truncate">
-                            <span className={`w-2 h-2 rounded-full ${isAnalyzing || isDownloading ? 'bg-djcyan-400 animate-pulse' : 'bg-djgreen-400'}`}></span>
-                            <span>{downloadingMsg || `[LISTO] Introduce un enlace de Spotify o pulsa Analizar Enlace.`}</span>
-                        </span>
-                        <div className="flex items-center gap-3">
-                            {(isDownloading || isAnalyzing || downloadProgress > 0) && (
-                                <span className="text-djcyan-300 font-mono font-bold text-xs">{downloadProgress}%</span>
-                            )}
-                            <span className="text-gray-500 text-[11px] font-bold">{tracks.length} Pistas detectadas</span>
+                {/* Franja de Estado y Barras de Progreso Dinámicas (Descarga + Auditoría FFT Independientes) */}
+                <div className="px-4 py-2.5 bg-[#09090c] border-b border-djzinc-850 flex flex-col gap-2 shrink-0">
+                    {/* Barra Fase 1: Descarga FLAC */}
+                    <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between items-center text-xs font-mono">
+                            <span className="text-djcyan-400 font-semibold flex items-center gap-1.5 truncate">
+                                <span className={`w-2 h-2 rounded-full ${isAnalyzing || isDownloading ? 'bg-djcyan-400 animate-pulse' : 'bg-djgreen-400'}`}></span>
+                                <span>{downloadingMsg || `[LISTO] Introduce un enlace de Spotify o pulsa Analizar Enlace.`}</span>
+                            </span>
+                            <div className="flex items-center gap-3">
+                                {(isDownloading || isAnalyzing || downloadProgress > 0) && (
+                                    <span className="text-djcyan-300 font-mono font-bold text-xs">{downloadProgress}%</span>
+                                )}
+                                {(isDownloading || isAuditingFft) && (
+                                    <button
+                                        onClick={handleCancelarDescargas}
+                                        className="px-2 py-0.5 rounded bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 text-[10px] font-mono font-bold cursor-pointer transition-colors shadow flex items-center gap-1"
+                                        title="Cancelar descarga y procesos activos"
+                                    >
+                                        ✕ {t('btn_cancel') || 'Cancelar'}
+                                    </button>
+                                )}
+                                <span className="text-gray-500 text-[11px] font-bold">{tracks.length} Pistas detectadas</span>
+                            </div>
                         </div>
+                        {(downloadProgress > 0 || isAnalyzing || isDownloading) && (
+                            <div className="w-full bg-[#121217] h-2 rounded-full overflow-hidden border border-djzinc-800 shadow-inner">
+                                <div 
+                                    className={`h-full transition-all duration-300 ease-out shadow-lg shadow-djcyan-500/50 ${
+                                        isAnalyzing && downloadProgress <= 25
+                                            ? 'bg-gradient-to-r from-djcyan-500 via-djpurple-500 to-djcyan-500 animate-pulse'
+                                            : downloadProgress >= 100
+                                                ? 'bg-emerald-400'
+                                                : 'bg-gradient-to-r from-djcyan-500 to-djgreen-400'
+                                    }`} 
+                                    style={{ width: `${Math.max(5, Math.min(100, downloadProgress))}%` }}
+                                ></div>
+                            </div>
+                        )}
                     </div>
-                    {(downloadProgress > 0 || isAnalyzing || isDownloading) && (
-                        <div className="w-full bg-[#121217] h-2 rounded-full overflow-hidden border border-djzinc-800 shadow-inner">
-                            <div 
-                                className={`h-full transition-all duration-300 ease-out shadow-lg shadow-djcyan-500/50 ${
-                                    isAnalyzing && downloadProgress <= 25
-                                        ? 'bg-gradient-to-r from-djcyan-500 via-djpurple-500 to-djcyan-500 animate-pulse'
-                                        : 'bg-gradient-to-r from-djcyan-500 to-djgreen-400'
-                                }`} 
-                                style={{ width: `${Math.max(5, Math.min(100, downloadProgress))}%` }}
-                            ></div>
+
+                    {/* Barra Fase 2: Auditoría FFT Acústica Post-Descarga */}
+                    {(isAuditingFft || fftProgress > 0) && (
+                        <div className="pt-2 border-t border-djzinc-850/80 flex flex-col gap-1 transition-all">
+                            <div className="flex justify-between items-center text-xs font-mono">
+                                <span className="text-emerald-400 font-semibold flex items-center gap-1.5 truncate">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <span>{fftMsg || "Auditoría FFT Certificando corte espectral..."}</span>
+                                </span>
+                                <span className="text-emerald-300 font-mono font-bold text-xs">{fftProgress}%</span>
+                            </div>
+                            <div className="w-full bg-[#121217] h-2 rounded-full overflow-hidden border border-emerald-950 shadow-inner">
+                                <div 
+                                    className="h-full bg-gradient-to-r from-emerald-500 via-djcyan-400 to-emerald-400 transition-all duration-300 ease-out shadow-lg shadow-emerald-500/50" 
+                                    style={{ width: `${Math.max(5, Math.min(100, fftProgress))}%` }}
+                                ></div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -5355,12 +5618,12 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                             <tr>
                                 <th className="py-2.5 px-3 w-8 text-center"><input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} className="accent-djcyan-500 cursor-pointer" /></th>
                                 <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
-                                <th className="py-2.5 px-3 min-w-[280px]">TÍTULO / ÁLBUM</th>
-                                <th className="py-2.5 px-3 min-w-[180px]">ARTISTA</th>
-                                <th className="py-2.5 px-3 text-center w-20">DURACIÓN</th>
-                                <th className="py-2.5 px-3 text-center w-20">BPM EST.</th>
-                                <th className="py-2.5 px-3 text-center w-20">KEY EST.</th>
-                                <th className="py-2.5 px-4 text-center w-28">ACCIÓN</th>
+                                <th className="py-2.5 px-3 min-w-[280px]">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'}</th>
+                                <th className="py-2.5 px-3 min-w-[180px]">{t('th_artist') || 'ARTISTA'}</th>
+                                <th className="py-2.5 px-3 text-center w-20">{t('th_duration') || 'DURACIÓN'}</th>
+                                <th className="py-2.5 px-3 text-center w-20">BPM</th>
+                                <th className="py-2.5 px-3 text-center w-20">KEY</th>
+                                <th className="py-2.5 px-4 text-center w-40">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
@@ -5396,7 +5659,23 @@ const SpotifyWorkspace = ({ onPlayTrack, nowPlayingTrack, isPlaying, onTogglePla
                                         <td className="py-2 px-3 text-center"><span className="bg-[#14141c] text-gray-200 px-2 py-0.5 rounded text-[11px] font-mono border border-djzinc-800">{row.bpm}</span></td>
                                         <td className="py-2 px-3 text-center"><span className="text-djcyan-400 font-mono font-bold text-xs">{row.key}</span></td>
                                         <td className="py-2 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                                            <button onClick={() => lanzarDescargaReal([row])} className="px-3 py-1 bg-[#14141c] hover:bg-djcyan-600 hover:text-black text-gray-300 rounded text-[11px] font-mono font-semibold border border-djzinc-750 cursor-pointer transition-colors">Descargar .{selectedFormat}</button>
+                                            <div className="flex items-center justify-center gap-2">
+                                                {row.cutoff_khz && (
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${String(row.status || '').includes('Fake') ? 'bg-red-950 text-red-400 border-red-800' : 'bg-djgreen-950 text-djgreen-400 border-djgreen-800'}`} title={`Frecuencia de corte FFT detectada: ${row.cutoff_khz}kHz`}>
+                                                        {row.cutoff_khz}kHz
+                                                    </span>
+                                                )}
+                                                <button 
+                                                    onClick={() => lanzarDescargaReal([row])} 
+                                                    className={`px-3 py-1 rounded text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
+                                                        row.downloaded 
+                                                            ? 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-700/60' 
+                                                            : 'bg-[#14141c] hover:bg-djcyan-600 hover:text-black text-gray-300 border-djzinc-750'
+                                                    }`}
+                                                >
+                                                    {row.downloaded ? '✓ En Disco' : `${t('download_btn') || 'Descargar'} .${selectedFormat}`}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -6871,6 +7150,8 @@ const App = () => {
                         nowPlayingTrack={nowPlayingTrack} 
                         isPlaying={isPlaying} 
                         onTogglePlay={togglePlayPause} 
+                        lang={lang}
+                        t={t}
                     />
                 </div>
                 <div style={{ display: activeTab === 'shazam' ? 'flex' : 'none' }} className="w-full h-full">

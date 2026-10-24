@@ -9,6 +9,12 @@ class DownloadService:
     def __init__(self):
         self.ingest_service = SpotifyFlacIngestService()
         self.directorio_descargas = "/Users/admin/Music/mi musica"
+        self._cancelar = False
+
+    def cancelar_descarga(self):
+        """Activa la bandera para detener las descargas y análisis en curso."""
+        self._cancelar = True
+        print("[DOWNLOAD SERVICE] Cancelación de descargas activada.")
 
     def seleccionar_directorio_descarga(self):
         try:
@@ -33,6 +39,7 @@ class DownloadService:
     def ejecutar_lote_descarga(self, tracks_to_download, formato, custom_dir, audio_service_ref, eel_ref):
         target_dir = custom_dir if (custom_dir and os.path.isdir(custom_dir)) else self.directorio_descargas
         os.makedirs(target_dir, exist_ok=True)
+        self._cancelar = False
 
         def worker():
             total = len(tracks_to_download)
@@ -46,6 +53,8 @@ class DownloadService:
 
             def procesar_una_pista(indice_pista, t):
                 nonlocal completadas, fallidas, procesadas
+                if self._cancelar:
+                    return
 
                 nombre = t.get('title', f"Track_{indice_pista+1}")
                 artista = t.get('artist', 'Artista')
@@ -70,6 +79,8 @@ class DownloadService:
                 msg_error = ""
 
                 for intento in range(max_intentos):
+                    if self._cancelar:
+                        return
                     try:
                         res_ingest = self.ingest_service.descargar_e_inyectar_flac(meta, target_dir)
                         if res_ingest and res_ingest.get("status") == "ok":
@@ -84,6 +95,9 @@ class DownloadService:
                         msg_error = str(e)
                         time.sleep(2.0 + (intento * 1.5))
 
+                if self._cancelar:
+                    return
+
                 exito = bool(ruta_final and os.path.exists(ruta_final) and os.path.getsize(ruta_final) > 2048)
 
                 with counter_lock:
@@ -93,10 +107,10 @@ class DownloadService:
                         completadas += 1
                         try:
                             eel_ref.actualizar_estado_descarga(
-                                pct, 
-                                f"[DESCARGANDO] ({procesadas}/{total}) ✓ {artista} - {nombre}"
+                                100 if procesadas == total else pct, 
+                                f"[DESCARGADO 100%] ({procesadas}/{total}) ✓ {artista} - {nombre}"
                             )()
-                            eel_ref.log_to_console(f"✅ Guardado: {os.path.basename(ruta_final)}")()
+                            eel_ref.log_to_console(f"✅ Descarga finalizada: {os.path.basename(ruta_final)}")()
                         except Exception:
                             pass
                     else:
@@ -110,12 +124,33 @@ class DownloadService:
                         except Exception:
                             pass
 
-                if exito and audio_service_ref:
+                # Fase 2: Auditoría FFT del archivo descargado
+                if exito and audio_service_ref and not self._cancelar:
                     try:
-                        fft_res = audio_service_ref.analizar_espectro_fft(ruta_final)
-                        eel_ref.notificar_resultado_auditoria({"id": spotify_id, **fft_res})()
-                    except Exception:
-                        pass
+                        fft_pct = int((procesadas / total) * 100)
+                        try:
+                            if hasattr(eel_ref, "actualizar_estado_fft"):
+                                eel_ref.actualizar_estado_fft(
+                                    fft_pct,
+                                    f"[AUDITORÍA FFT] ({procesadas}/{total}) Certificando corte espectral: {artista} - {nombre}..."
+                                )()
+                        except Exception:
+                            pass
+
+                        fft_res = audio_service_ref.analizar_espectro_fft(ruta_final, spotify_id=spotify_id)
+                        if hasattr(eel_ref, "notificar_resultado_auditoria"):
+                            eel_ref.notificar_resultado_auditoria({
+                                "id": spotify_id,
+                                "status": "ok",
+                                "cutoff_khz": fft_res.get("cutoff_khz", 22.0),
+                                "corte": fft_res.get("corte", "22.0 kHz"),
+                                "estado": fft_res.get("estado", "True Lossless"),
+                                "spectrum": fft_res.get("spectrum", []),
+                                "perdida": fft_res.get("perdida", 0),
+                                "path": ruta_final
+                            })()
+                    except Exception as e_fft:
+                        print(f"[AUDITORIA FFT ERROR] {e_fft}")
 
             # Pool controlado de 2 workers concurrentes con Lock de negociación anti-409/429
             num_workers = min(2, max(1, total))
@@ -130,7 +165,10 @@ class DownloadService:
                     except Exception as err:
                         print(f"[DOWNLOAD WORKER EXCEPTION] {err}")
 
-            resumen_msg = f"[COMPLETADO] Lote finalizado. Éxitos: {completadas}, Fallos: {fallidas}."
+            if self._cancelar:
+                resumen_msg = f"[CANCELADO] Lote cancelado. Descargadas: {completadas}, Pendientes: {total - procesadas}."
+            else:
+                resumen_msg = f"[COMPLETADO 100%] Lote finalizado. Éxitos: {completadas}, Fallos: {fallidas}."
             try:
                 eel_ref.actualizar_estado_descarga(100, resumen_msg)()
                 eel_ref.notificar_fin_lote(resumen_msg)()

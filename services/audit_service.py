@@ -12,6 +12,15 @@ class AuditService:
     def __init__(self):
         self.directorio_actual = "/Users/admin/Music/mi musica"
         self._lock = threading.Lock()
+        self._cancelar_proceso = False
+
+    def cancelar_proceso(self):
+        """Activa la bandera de cancelación para abortar auditorías, inyecciones o descargas activas."""
+        self._cancelar_proceso = True
+        print("[AUDIT SERVICE] Solicitud de cancelación recibida.")
+
+    def reiniciar_cancelacion(self):
+        self._cancelar_proceso = False
 
     def listar_subcarpetas_sistema(self, ruta_base=""):
         """Permite navegar por el árbol de carpetas directamente en la UI sin popups de permisos del SO."""
@@ -57,13 +66,44 @@ class AuditService:
         return ""
 
     def analizar_espectro_fft(self, filepath, spotify_id=None):
+        if not filepath:
+            return {"id": spotify_id, "estado": "Error I/O", "corte": "N/A", "cutoff_khz": 22.0, "perdida": 0, "spectrum": []}
+        if not os.path.exists(filepath):
+            if self.directorio_actual and os.path.basename(filepath):
+                cand = os.path.join(self.directorio_actual, os.path.basename(filepath))
+                if os.path.exists(cand):
+                    filepath = cand
         print(f"[AUDITORIA FFT] Analizando espectro de: {os.path.basename(filepath)}")
         try:
             fs = 44100
-            info_sf = sf.info(filepath)
-            start_frame = min(fs * 30, max(0, int(info_sf.frames * 0.25)))
-            frames_to_read = min(fs * 10, max(4096, info_sf.frames - start_frame))
-            data, samplerate = sf.read(filepath, start=start_frame, frames=frames_to_read)
+            data = None
+            samplerate = 44100
+            try:
+                info_sf = sf.info(filepath)
+                start_frame = min(fs * 30, max(0, int(info_sf.frames * 0.25)))
+                frames_to_read = min(fs * 10, max(4096, info_sf.frames - start_frame))
+                data, samplerate = sf.read(filepath, start=start_frame, frames=frames_to_read)
+            except Exception as sf_err:
+                # Fallback seguro con pydub / ffmpeg para MP3, M4A, AIFF o FLACs con cabeceras complejas
+                try:
+                    from pydub import AudioSegment
+                    seg = AudioSegment.from_file(filepath)
+                    dur_ms = len(seg)
+                    start_ms = max(0, int(dur_ms * 0.25))
+                    end_ms = min(dur_ms, start_ms + 10000)
+                    sub_seg = seg[start_ms:end_ms]
+                    samplerate = sub_seg.frame_rate
+                    samples = np.array(sub_seg.get_array_of_samples(), dtype=np.float32)
+                    if sub_seg.channels > 1:
+                        samples = samples.reshape((-1, sub_seg.channels)).mean(axis=1)
+                    data = samples / (2.0 ** (sub_seg.sample_width * 8 - 1))
+                except Exception as pydub_err:
+                    print(f"[AUDITORIA FFT] Error decodificando audio: {pydub_err}")
+                    raise sf_err
+
+            if data is None or len(data) == 0:
+                raise ValueError("Buffer de audio vacío tras decodificación")
+
             if len(data.shape) > 1:
                 data = data.mean(axis=1)
             yf, xf = np.fft.rfft(data), np.fft.rfftfreq(len(data), 1 / samplerate)
@@ -136,6 +176,7 @@ class AuditService:
         if not ruta_directorio or not os.path.exists(ruta_directorio):
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
+        self.reiniciar_cancelacion()
         self.directorio_actual = ruta_directorio
         if emitir_log_cb:
             emitir_log_cb(f"Iniciando auditoría avanzada en: {ruta_directorio}")
@@ -166,6 +207,12 @@ class AuditService:
         inyectar_covers = bool(isinstance(opts, dict) and opts.get("injectCovers", False))
 
         for idx, (root, file) in enumerate(archivos, 1):
+            if self._cancelar_proceso:
+                print(f"[AUDITORIA] Detenida por el usuario en ({idx}/{total_files})")
+                if progreso_cb:
+                    progreso_cb(100, f"Auditoría detenida por el usuario. {len(tracks_auditados)} pistas listas.")
+                break
+
             full_path = os.path.join(root, file)
             pct = int(5 + (idx / total_files) * 90)
             if total_files <= 30 or idx % max(1, total_files // 25) == 0 or idx == total_files:
@@ -476,6 +523,9 @@ class AuditService:
             progreso_cb(5, f"Buscando e inyectando carátulas 1:1 ({total} pistas)...")
 
         for idx, t in enumerate(tracks, 1):
+            if self._cancelar_proceso:
+                print(f"[CARATULAS] Cancelado por usuario en ({idx}/{total})")
+                break
             pct = int(5 + (idx / total) * 90)
             target_path = t.get("path")
             filename = t.get("filename") or t.get("f") or os.path.basename(target_path or "")
@@ -531,6 +581,9 @@ class AuditService:
             progreso_cb(5, f"Iniciando inyección profunda de metadatos ({total} pistas)...")
 
         for idx, t in enumerate(tracks, 1):
+            if self._cancelar_proceso:
+                print(f"[CARATULAS] Cancelado por usuario en ({idx}/{total})")
+                break
             pct = int(5 + (idx / total) * 90)
             target_path = t.get("path")
             filename = t.get("filename") or t.get("f") or os.path.basename(target_path or "")

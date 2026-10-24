@@ -219,6 +219,12 @@ def regenerar_mood_y_comentario(track, lang="es"):
     }
 
 @eel.expose
+def cancelar_procesos_activos():
+    audit_svc.cancelar_proceso()
+    download_svc.cancelar_descarga()
+    return {"status": "ok", "msg": "Procesos cancelados"}
+
+@eel.expose
 def seleccionar_directorio_descarga():
     return download_svc.seleccionar_directorio_descarga()
 

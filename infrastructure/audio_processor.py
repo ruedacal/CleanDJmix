@@ -543,7 +543,15 @@ class AudioProcessorService:
             img.save(out_buf, format="JPEG", quality=92, optimize=True, progressive=False)
             return out_buf.getvalue()
         except Exception as e:
-            print(f"[ARTWORK WARN] No se pudo procesar carátula: {e}")
+            print(f"[ARTWORK WARN] No se pudo procesar carátula con PIL: {e}")
+            if isinstance(cover_source, bytes) and len(cover_source) > 50:
+                return cover_source
+            elif isinstance(cover_source, str) and os.path.exists(cover_source):
+                try:
+                    with open(cover_source, "rb") as f:
+                        return f.read()
+                except Exception:
+                    pass
             return b""
 
     @staticmethod
