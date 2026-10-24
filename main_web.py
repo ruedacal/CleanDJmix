@@ -254,6 +254,15 @@ def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", c
     return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audit_svc, eel)
 
 @eel.expose
+def buscar_temas_taxonomia(query="", ambito="all", ruta_local="/Users/admin/Music/mi musica", limite=25):
+    return taxonomy_svc.buscar_temas_unificado(
+        query=query,
+        ambito=ambito,
+        ruta_local=ruta_local,
+        limite=limite
+    )
+
+@eel.expose
 def obtener_taxonomia_dj():
     return taxonomy_svc.obtener_arbol_taxonomia()
 

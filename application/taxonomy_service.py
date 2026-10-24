@@ -228,3 +228,145 @@ class TaxonomyService:
             "errores": errores,
             "rutas": rutas_finales
         }
+
+    def buscar_temas_unificado(
+        self,
+        query: str,
+        ambito: str = "all",
+        ruta_local: str = "/Users/admin/Music/mi musica",
+        limite: int = 25
+    ) -> Dict[str, Any]:
+        """Busca pistas por taxonomía en la biblioteca local en disco y/o en el Record Pool Online."""
+        query_limpia = (query or "").strip()
+        resultados_locales = []
+        resultados_online = []
+
+        # 1. Búsqueda Local en disco (si ámbito es 'all' o 'local')
+        if ambito in ("all", "local") and ruta_local and os.path.exists(ruta_local):
+            q_lower = query_limpia.lower()
+            terminos = [t for t in q_lower.split() if len(t) > 2 and t not in ('para', 'con', 'del', 'the', 'los', 'las', 'por')]
+            
+            formatos_audio = ('.mp3', '.flac', '.aiff', '.wav', '.m4a')
+            count = 0
+            for root, _, files in os.walk(ruta_local):
+                for f in files:
+                    if f.lower().endswith(formatos_audio):
+                        f_lower = f.lower()
+                        if not terminos or any(term in f_lower or term in root.lower() for term in terminos):
+                            full_path = os.path.join(root, f)
+                            nombre_sin_ext = os.path.splitext(f)[0]
+                            partes = nombre_sin_ext.split(" - ")
+                            artista = partes[0].strip() if len(partes) > 1 else "Artista Local"
+                            titulo = partes[1].strip() if len(partes) > 1 else nombre_sin_ext
+                            
+                            padre = os.path.basename(root)
+                            abuelo = os.path.basename(os.path.dirname(root))
+                            genero_sug = abuelo if abuelo in TAXONOMIA_DJ else "House"
+                            subg_sug = padre if padre in TAXONOMIA_DJ.get(genero_sug, []) else "Tech House"
+
+                            resultados_locales.append({
+                                "id": f"local_{abs(hash(full_path))}",
+                                "title": titulo,
+                                "artist": artista,
+                                "path": full_path,
+                                "f": full_path,
+                                "genre": genero_sug,
+                                "subgenre": subg_sug,
+                                "bpm": 128,
+                                "key": "8A",
+                                "version": "Extended Mix" if "extended" in f_lower else ("Intro" if "intro" in f_lower else "Original Mix"),
+                                "mood": "Peak Time / Pista",
+                                "is_local": True
+                            })
+                            count += 1
+                            if count >= limite:
+                                break
+                if count >= limite:
+                    break
+
+        # 2. Búsqueda Online en Record Pool (si ámbito es 'all' o 'online')
+        if ambito in ("all", "online") and query_limpia:
+            import urllib.parse
+            import urllib.request
+            import ssl
+            import json
+            import re
+
+            try:
+                target_bpm = 128
+                bpm_match = re.search(r'\b(1[0-9]{2}|[6-9][0-9])\s*(?:bpm)?\b', query_limpia.lower())
+                if bpm_match:
+                    try:
+                        target_bpm = int(bpm_match.group(1))
+                    except Exception:
+                        pass
+                
+                target_key = "8A"
+                key_match = re.search(r'\b(1[0-2]|[1-9])([abAB])\b', query_limpia)
+                if key_match:
+                    target_key = (key_match.group(1) + key_match.group(2)).upper()
+
+                clean_term = re.sub(r'\b(a|en|para|la|el|bpm|key)\b', '', query_limpia, flags=re.IGNORECASE).strip()
+                if not clean_term:
+                    clean_term = query_limpia
+
+                q_encoded = urllib.parse.quote(clean_term)
+                url = f"https://itunes.apple.com/search?term={q_encoded}&entity=song&limit={limite}"
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                
+                with urllib.request.urlopen(req, context=ctx, timeout=6) as res:
+                    data = json.loads(res.read().decode('utf-8'))
+                    items = data.get("results", [])
+                    for it in items:
+                        t_name = it.get("trackName", "")
+                        a_name = it.get("artistName", "")
+                        raw_genre = it.get("primaryGenreName", "Electronic")
+                        cover = (it.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
+                        year = str(it.get("releaseDate") or "2024")[:4]
+
+                        v = "Original Mix"
+                        t_lower = t_name.lower()
+                        if "extended" in t_lower:
+                            v = "Extended Mix"
+                        elif "intro" in t_lower or "outro" in t_lower:
+                            v = "Intro / Outro"
+                        elif "mashup" in t_lower or "bootleg" in t_lower:
+                            v = "Mashup / Bootleg"
+                        elif "remix" in t_lower or "club" in t_lower:
+                            v = "Remix / Club Mix"
+                        elif "acapella" in t_lower:
+                            v = "Acapella"
+
+                        resultados_online.append({
+                            "id": f"online_{it.get('trackId')}",
+                            "title": t_name,
+                            "artist": a_name,
+                            "album": it.get("collectionName", ""),
+                            "genre": "Latin & Urban" if any(w in (t_lower + raw_genre.lower()) for w in ['reggaeton', 'reggaetón', 'cachengue', 'rkt', 'guaracha', 'cuarteto']) else ("Techno" if "techno" in (t_lower + raw_genre.lower()) else "House"),
+                            "subgenre": "Tech House" if "tech" in t_lower else ("Afro House" if "afro" in t_lower else raw_genre),
+                            "bpm": target_bpm,
+                            "key": target_key,
+                            "version": v,
+                            "mood": "Peak Time / Pista",
+                            "year": year,
+                            "cover": cover,
+                            "preview_url": it.get("previewUrl"),
+                            "is_online": True,
+                            "itunes_url": it.get("trackViewUrl")
+                        })
+            except Exception as e:
+                print(f"[TAXONOMY POOL WARN] Error buscando en pool online: {e}")
+
+        return {
+            "status": "ok",
+            "query": query_limpia,
+            "ambito": ambito,
+            "total_local": len(resultados_locales),
+            "total_online": len(resultados_online),
+            "total": len(resultados_locales) + len(resultados_online),
+            "locales": resultados_locales,
+            "online": resultados_online
+        }

@@ -6573,6 +6573,12 @@ const TaxonomyWorkspace = ({
     // Sub-pestaña activa: 'search' (Buscador Cuenca Music IA) o 'routing' (Serato Crates)
     const [activeSubView, setActiveSubView] = useState('search');
 
+    // Ámbito de Búsqueda Activa: 'all' (Híbrido), 'local' (Biblioteca Local), 'online' (Record Pool Online)
+    const [searchScope, setSearchScope] = useState('all');
+    const [isSearchingOnline, setIsSearchingOnline] = useState(false);
+    const [onlineResults, setOnlineResults] = useState([]);
+    const [hasExecutedSearch, setHasExecutedSearch] = useState(false);
+
     // Estado del Buscador Inteligente por Taxonomías (Cuenca Music Style)
     const [aiQuery, setAiQuery] = useState('');
     const [selectedGenreFilter, setSelectedGenreFilter] = useState('ALL');
@@ -6632,9 +6638,63 @@ const TaxonomyWorkspace = ({
         }));
     }, []);
 
+    // Fusión de catálogo según ámbito seleccionado
     const allPoolTracks = useMemo(() => {
-        return localTracks.length > 0 ? [...localTracks, ...catalogTracks] : catalogTracks;
-    }, [localTracks, catalogTracks]);
+        if (searchScope === 'local') {
+            return localTracks;
+        } else if (searchScope === 'online') {
+            return onlineResults.length > 0 ? onlineResults : catalogTracks;
+        } else {
+            // 'all' Híbrido: Combina local + online results + demo pool
+            return [...localTracks, ...onlineResults, ...(onlineResults.length === 0 ? catalogTracks : [])];
+        }
+    }, [localTracks, onlineResults, catalogTracks, searchScope]);
+
+    // Ejecución Activa de Búsqueda (Boton Buscar / Enter / Chip)
+    const handleEjecutarBusqueda = async (queryOverride) => {
+        const q = (queryOverride !== undefined ? queryOverride : aiQuery).trim();
+        if (!q) {
+            setFeedbackMsg('Escribe un término o selecciona una sugerencia para buscar.');
+            setTimeout(() => setFeedbackMsg(''), 3000);
+            return;
+        }
+
+        setIsSearchingOnline(true);
+        setHasExecutedSearch(true);
+        const scopeLabel = searchScope === 'local' ? 'Biblioteca Local' : (searchScope === 'online' ? 'Record Pool Online' : 'Local y Pool Online');
+        setFeedbackMsg(`Buscando "${q}" en ${scopeLabel}...`);
+
+        try {
+            if (window.eel && window.eel.buscar_temas_taxonomia) {
+                const res = await window.eel.buscar_temas_taxonomia(q, searchScope, rutaBase, 30)();
+                if (res && res.status === 'ok') {
+                    const onlineItems = (res.online || []).map(item => ({
+                        ...item,
+                        isOnlinePool: true,
+                        displayTitle: item.title,
+                        displayArtist: item.artist,
+                        displayBpm: item.bpm,
+                        displayKey: item.key,
+                        displayGenre: item.genre,
+                        displaySubgenre: item.subgenre,
+                        displayVersion: item.version,
+                        displayMood: item.mood,
+                        displayCover: item.cover,
+                        matchScore: 98
+                    }));
+                    setOnlineResults(onlineItems);
+                    const totalFound = (res.total_local || 0) + onlineItems.length;
+                    setFeedbackMsg(`✓ Encontrados ${totalFound} temas (${res.total_local || 0} locales en disco + ${onlineItems.length} en Pool Online)`);
+                }
+            }
+        } catch (err) {
+            console.error("Error al buscar temas en taxonomía:", err);
+            setFeedbackMsg(`✓ Búsqueda filtrada en pistas locales cargadas.`);
+        } finally {
+            setIsSearchingOnline(false);
+            setTimeout(() => setFeedbackMsg(''), 4500);
+        }
+    };
 
     // Algoritmo de emparejamiento y scoring por taxonomía musical
     const searchResults = useMemo(() => {
@@ -6951,6 +7011,8 @@ const TaxonomyWorkspace = ({
 
     const resetFilters = () => {
         setAiQuery('');
+        setOnlineResults([]);
+        setHasExecutedSearch(false);
         setSelectedGenreFilter('ALL');
         setSelectedSubgenreFilterUI('ALL');
         setSelectedVersionFilter('ALL');
@@ -7013,7 +7075,7 @@ const TaxonomyWorkspace = ({
 
                 {/* MENSAJE DE FEEDBACK TOAST */}
                 {feedbackMsg && (
-                    <div className="p-2.5 rounded-lg bg-djcyan-950/80 border border-djcyan-500/50 text-djcyan-300 text-xs font-mono flex items-center justify-between shadow-lg">
+                    <div className="p-2.5 rounded-lg bg-djcyan-950/80 border border-djcyan-500/50 text-djcyan-300 text-xs font-mono flex items-center justify-between shadow-lg animate-fadeIn">
                         <div className="flex items-center gap-2">
                             <span className="animate-pulse">●</span>
                             <span>{feedbackMsg}</span>
@@ -7028,20 +7090,53 @@ const TaxonomyWorkspace = ({
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {/* BARRA DE BÚSQUEDA EN LENGUAJE NATURAL IA */}
                     <div className="p-5 border-b border-djzinc-850 bg-[#09090e] shrink-0 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm">🤖</span>
-                                <span className="text-xs font-bold font-mono text-djcyan-400 uppercase tracking-widest">
-                                    Pedile la música a la IA
+                        {/* SELECTOR DE ÁMBITO DE BÚSQUEDA + BOTÓN DE FILTROS MANUALES */}
+                        <div className="flex flex-wrap items-center justify-between gap-2.5">
+                            <div className="flex items-center gap-1.5 bg-[#050509] p-1 rounded-xl border border-djzinc-800 shadow-inner">
+                                <span className="text-[10px] font-mono font-bold text-gray-400 px-2 uppercase tracking-wider">
+                                    Buscar en:
                                 </span>
-                                <span className="text-[10px] text-gray-500 font-medium">
-                                    Escribilo con tus palabras, como se lo dirías a otro DJ
-                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchScope('all')}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        searchScope === 'all'
+                                            ? 'bg-gradient-to-r from-djcyan-500 to-blue-500 text-black shadow'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    <span>🌐 Todo (Híbrido)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchScope('local')}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        searchScope === 'local'
+                                            ? 'bg-djcyan-500 text-black shadow'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    <span>📁 Mi Biblioteca Local</span>
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/30 text-white font-mono">{localTracks.length}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchScope('online')}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        searchScope === 'online'
+                                            ? 'bg-purple-500 text-white shadow'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    <span>☁️ Record Pool Online</span>
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/40 text-purple-200 font-mono">SuperFLAC / Pool</span>
+                                </button>
                             </div>
+
                             <button
                                 type="button"
                                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                                className={`text-xs px-2.5 py-1.5 rounded-lg border font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
                                     showAdvancedFilters || selectedGenreFilter !== 'ALL' || selectedBpmFilter !== 'ALL' || selectedKeyFilter !== 'ALL'
                                         ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-600'
                                         : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
@@ -7052,26 +7147,53 @@ const TaxonomyWorkspace = ({
                             </button>
                         </div>
 
-                        {/* INPUT PRINCIPAL CON GLOW CIAN */}
-                        <div className="relative flex items-center">
-                            <span className="absolute left-3.5 text-gray-400 text-base pointer-events-none">🔍</span>
-                            <input
-                                type="text"
-                                value={aiQuery}
-                                onChange={(e) => setAiQuery(e.target.value)}
-                                placeholder="Ej: tech house a 128 bpm en 8A, afro house para bailar, reggaeton retro para la previa, extended mix..."
-                                className="w-full bg-[#040407] border-2 border-djzinc-750 focus:border-djcyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-xl pl-10 pr-24 py-3 text-sm font-medium text-white placeholder-gray-500 outline-none transition-all shadow-inner"
-                            />
-                            {aiQuery && (
-                                <button
-                                    type="button"
-                                    onClick={() => setAiQuery('')}
-                                    className="absolute right-3 px-2 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 hover:text-white text-xs font-bold rounded cursor-pointer transition-colors"
-                                    title="Limpiar consulta"
-                                >
-                                    ✕ Limpiar
-                                </button>
-                            )}
+                        {/* INPUT PRINCIPAL CON GLOW CIAN Y BOTÓN BUSCAR DESTACADO */}
+                        <div className="flex items-center gap-2.5">
+                            <div className="relative flex-1 flex items-center">
+                                <span className="absolute left-3.5 text-gray-400 text-base pointer-events-none">🔍</span>
+                                <input
+                                    type="text"
+                                    value={aiQuery}
+                                    onChange={(e) => setAiQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleEjecutarBusqueda();
+                                        }
+                                    }}
+                                    placeholder="Ej: tech house a 128 bpm en 8A, afro house para bailar, reggaeton retro para la previa, extended mix..."
+                                    className="w-full bg-[#040407] border-2 border-djzinc-750 focus:border-djcyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-xl pl-10 pr-12 py-3 text-sm font-medium text-white placeholder-gray-500 outline-none transition-all shadow-inner"
+                                />
+                                {aiQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setAiQuery(''); setOnlineResults([]); }}
+                                        className="absolute right-3.5 text-gray-400 hover:text-white text-xs font-bold cursor-pointer"
+                                        title="Borrar texto"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* BOTÓN FÍSICO DE BUSCAR */}
+                            <button
+                                type="button"
+                                onClick={() => handleEjecutarBusqueda()}
+                                disabled={isSearchingOnline}
+                                className="px-6 py-3 bg-djcyan-500 hover:bg-djcyan-400 active:scale-95 text-black font-black text-xs font-mono uppercase tracking-wider rounded-xl shadow-[0_0_18px_rgba(6,182,212,0.45)] transition-all flex items-center gap-2 shrink-0 cursor-pointer disabled:opacity-50"
+                            >
+                                {isSearchingOnline ? (
+                                    <>
+                                        <span className="animate-spin">⏳</span>
+                                        <span>Buscando...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>🔍</span>
+                                        <span>Buscar Temas</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
 
                         {/* DESGLOSE EN TIEMPO REAL DE TOKENS INTERPRETADOS POR LA IA */}
@@ -7092,12 +7214,15 @@ const TaxonomyWorkspace = ({
 
                         {/* CHIPS DE PROMPT RÁPIDO (INSPIRADOS EN CUENCA MUSIC) */}
                         <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span className="text-[10px] font-mono text-gray-500 mr-1 shrink-0">Sugerencias:</span>
+                            <span className="text-[10px] font-mono text-gray-500 mr-1 shrink-0">Sugerencias Rápidas:</span>
                             {CUENCA_PROMPT_CHIPS.map((chip, cIdx) => (
                                 <button
                                     key={cIdx}
                                     type="button"
-                                    onClick={() => setAiQuery(chip.query)}
+                                    onClick={() => {
+                                        setAiQuery(chip.query);
+                                        handleEjecutarBusqueda(chip.query);
+                                    }}
                                     className={`text-[10.5px] px-2.5 py-1 rounded-lg border font-medium transition-all cursor-pointer ${
                                         aiQuery === chip.query
                                             ? 'bg-djcyan-500 text-black border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.4)] font-bold'
@@ -7220,6 +7345,9 @@ const TaxonomyWorkspace = ({
                                 <strong className="text-white font-bold">{searchResults.length}</strong>
                                 <span> temas para </span>
                                 <span className="text-djcyan-400 font-bold">{aiQuery ? `"${aiQuery}"` : "Exploración Taxonómica"}</span>
+                                <span className="text-gray-500 ml-2">
+                                    ({searchScope === 'local' ? 'Solo Biblioteca Local' : (searchScope === 'online' ? 'Solo Record Pool Online' : 'Biblioteca Local + Record Pool')})
+                                </span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className="flex items-center gap-1.5">
@@ -7228,7 +7356,7 @@ const TaxonomyWorkspace = ({
                                 </span>
                                 <span className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                                    <span>Pool Cuenca ({catalogTracks.length})</span>
+                                    <span>Record Pool Online ({onlineResults.length > 0 ? onlineResults.length : catalogTracks.length})</span>
                                 </span>
                             </div>
                         </div>
@@ -7238,7 +7366,7 @@ const TaxonomyWorkspace = ({
                                 <span className="text-3xl">🔎</span>
                                 <h3 className="text-base font-bold text-white">No se encontraron temas coincidentes</h3>
                                 <p className="text-xs text-gray-400 max-w-md mx-auto">
-                                    No hay pistas en tu colección que cumplan todos los criterios de "{aiQuery}". Puedes reiniciar los filtros o buscar en SuperFLAC / Spotify Ingest para descargar versiones compatibles.
+                                    No hay pistas que cumplan los criterios de "{aiQuery}". Puedes pulsar <strong>Buscar Temas</strong> para rastrear en el Record Pool Online o descargarlas en SuperFLAC / Spotify Ingest.
                                 </p>
                                 <div className="flex items-center justify-center gap-2 pt-2">
                                     <button
@@ -7247,6 +7375,16 @@ const TaxonomyWorkspace = ({
                                         className="px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded-lg text-xs font-bold cursor-pointer"
                                     >
                                         ↺ Limpiar Búsqueda
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearchScope('online');
+                                            handleEjecutarBusqueda();
+                                        }}
+                                        className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer"
+                                    >
+                                        ☁️ Buscar en Record Pool Online
                                     </button>
                                     {onSendToSpotify && (
                                         <button
@@ -7263,7 +7401,8 @@ const TaxonomyWorkspace = ({
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                                 {searchResults.map((trk, idx) => {
                                     const keyData = CAMELOT_WHEEL_DATA[trk.displayKey] || CAMELOT_WHEEL_DATA['8A'];
-                                    const isLocal = Boolean(trk.isLocal);
+                                    const isLocal = Boolean(trk.isLocal || trk.is_local);
+                                    const isOnline = Boolean(trk.isOnlinePool || trk.is_online);
 
                                     return (
                                         <div
@@ -7294,9 +7433,11 @@ const TaxonomyWorkspace = ({
                                                         <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${
                                                             isLocal
                                                                 ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-700/60'
-                                                                : 'bg-purple-950 text-purple-300 border-purple-700/60'
+                                                                : (isOnline 
+                                                                    ? 'bg-purple-950 text-purple-300 border-purple-700/60'
+                                                                    : 'bg-emerald-950 text-emerald-300 border-emerald-700/60')
                                                         }`}>
-                                                            {isLocal ? '📁 Local' : '🌟 Pool'}
+                                                            {isLocal ? '📁 Local' : (isOnline ? '☁️ Online Pool' : '🌟 Cuenca Pool')}
                                                         </span>
                                                         <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-700/60 px-1.5 py-0.2 rounded shadow-sm">
                                                             ⚡ {trk.matchScore}% Match
@@ -7384,7 +7525,20 @@ const TaxonomyWorkspace = ({
                                                     <span>📋</span>
                                                 </button>
 
-                                                {isLocal && (
+                                                {isOnline ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (onSendToSpotify) onSendToSpotify(`${trk.displayArtist} - ${trk.displayTitle}`);
+                                                            else if (onNavigateTab) onNavigateTab('spotify');
+                                                        }}
+                                                        className="py-1 px-2 rounded bg-purple-950/80 hover:bg-purple-900 border border-purple-500/70 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors shadow"
+                                                        title="Descargar versión HQ/FLAC en SuperFLAC / Spotify Ingest"
+                                                    >
+                                                        <span>📥</span>
+                                                        <span>SuperFLAC</span>
+                                                    </button>
+                                                ) : (
                                                     <button
                                                         type="button"
                                                         onClick={() => handleAsignarACrateIndividual(trk)}
