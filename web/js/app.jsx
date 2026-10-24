@@ -499,7 +499,21 @@ const RekordboxWaveform = ({
     const downbeatPct = downbeatMs > 0 ? Math.max(0.4, Math.min(99.0, (downbeatMs / durMs) * 100)) : null;
     const trimPct = trimMs > 0 ? Math.max(0.2, Math.min(99.0, (trimMs / durMs) * 100)) : null;
 
-    const activeCues = (cues && cues.length > 0) ? cues : NV2_COLORS;
+    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
+    const activeCues = Array.from({ length: 8 }, (_, idx) => {
+        const padNum = idx + 1;
+        const existing = (cues && cues[idx]) ? cues[idx] : null;
+        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
+        if (existing) {
+            return {
+                ...defaultPreset,
+                ...existing,
+                id: padNum,
+                color: existing.color || defaultPreset.color
+            };
+        }
+        return defaultPreset;
+    });
 
     const handleCanvasClick = (e) => {
         if (!containerRef.current || !onSeekTrack || draggingCueIdx !== null) return;
@@ -811,7 +825,21 @@ const RekordboxWaveform = ({
 
 // Resumen Compacto y Elegante de los 8 Hot Cues para la columna derecha de Auditoría
 const CompactHotCuesSummary = ({ track, cues = NV2_COLORS, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
-    const activeCues = (cues && cues.length > 0) ? cues : NV2_COLORS;
+    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
+    const activeCues = Array.from({ length: 8 }, (_, idx) => {
+        const padNum = idx + 1;
+        const existing = (cues && cues[idx]) ? cues[idx] : null;
+        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
+        if (existing) {
+            return {
+                ...defaultPreset,
+                ...existing,
+                id: padNum,
+                color: existing.color || defaultPreset.color
+            };
+        }
+        return defaultPreset;
+    });
     return (
         <div className="bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md">
             <div className="flex items-center justify-between border-b border-djzinc-800 pb-1.5">
@@ -906,7 +934,21 @@ const ZoomableRekordboxWaveform = ({
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
 
-    const activeCues = (cues && cues.length > 0) ? cues : NV2_COLORS;
+    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
+    const activeCues = Array.from({ length: 8 }, (_, idx) => {
+        const padNum = idx + 1;
+        const existing = (cues && cues[idx]) ? cues[idx] : null;
+        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
+        if (existing) {
+            return {
+                ...defaultPreset,
+                ...existing,
+                id: padNum,
+                color: existing.color || defaultPreset.color
+            };
+        }
+        return defaultPreset;
+    });
     const totalWidth = Math.max(containerWidth, Math.round(containerWidth * Math.max(1, zoom)));
 
     // Medición del ancho visible del contenedor
@@ -1324,7 +1366,21 @@ const HotCueEditorPanel = ({
     onGuardarTrack,
     onOpenStudio
 }) => {
-    const activeCues = (cues && cues.length > 0) ? cues : NV2_COLORS;
+    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
+    const activeCues = Array.from({ length: 8 }, (_, idx) => {
+        const padNum = idx + 1;
+        const existing = (cues && cues[idx]) ? cues[idx] : null;
+        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
+        if (existing) {
+            return {
+                ...defaultPreset,
+                ...existing,
+                id: padNum,
+                color: existing.color || defaultPreset.color
+            };
+        }
+        return defaultPreset;
+    });
     const currentCue = activeCues.find(c => (c.id || 1) === selectedCueId) || activeCues[0] || {};
     const durMs = parseDurationMs(duration);
     const bpm = (track && (track.bpm || track.b)) ? Math.max(30.0, parseFloat(track.bpm || track.b) || 128.0) : 128.0;
@@ -1786,7 +1842,21 @@ const HotCueStudioModal = ({
 }) => {
     if (!isOpen || !track) return null;
 
-    const activeCues = (cues && cues.length > 0) ? cues : NV2_COLORS;
+    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
+    const activeCues = Array.from({ length: 8 }, (_, idx) => {
+        const padNum = idx + 1;
+        const existing = (cues && cues[idx]) ? cues[idx] : null;
+        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
+        if (existing) {
+            return {
+                ...defaultPreset,
+                ...existing,
+                id: padNum,
+                color: existing.color || defaultPreset.color
+            };
+        }
+        return defaultPreset;
+    });
     const currentCue = activeCues.find(c => (c.id || 1) === selectedCueId) || activeCues[0] || {};
     const durMs = parseDurationMs(duration);
     const bpm = (track && (track.bpm || track.b)) ? Math.max(30.0, parseFloat(track.bpm || track.b) || 128.0) : 128.0;
@@ -4303,11 +4373,23 @@ const HotCuesWorkspace = ({
     const [carpetasSistema, setCarpetasSistema] = useState([]);
     const [rutaNavegacion, setRutaNavegacion] = useState(currentFolder || "/Users/admin/Music/mi musica");
     const [isLoadingDir, setIsLoadingDir] = useState(false);
-    const [showControllerPhoto, setShowControllerPhoto] = useState(false);
+    const [showTrackListDrawer, setShowTrackListDrawer] = useState(false);
 
-    const activeCues = (currentTrack && currentTrack.cues && currentTrack.cues.length > 0)
-        ? currentTrack.cues
-        : NV2_COLORS;
+    // Asegura que activeCues SIEMPRE contenga los 8 Hot Cues (Pads 1 al 8)
+    const activeCues = Array.from({ length: 8 }, (_, idx) => {
+        const padNum = idx + 1;
+        const existing = (currentTrack && currentTrack.cues && currentTrack.cues[idx]) ? currentTrack.cues[idx] : null;
+        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
+        if (existing) {
+            return {
+                ...defaultPreset,
+                ...existing,
+                id: padNum,
+                color: existing.color || defaultPreset.color
+            };
+        }
+        return defaultPreset;
+    });
     const currentCue = activeCues.find(c => (c.id !== undefined ? c.id : 1) === selectedCueId) || activeCues[0] || {};
 
     const [cueNameInput, setCueNameInput] = useState(currentCue.name || "");
@@ -4600,21 +4682,21 @@ const HotCuesWorkspace = ({
 
     return (
         <div className="flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200">
-            {/* BARRA SUPERIOR: RUTA DE CARPETA, CARGA Y STRIP SELECTOR DE PISTAS */}
+            {/* BARRA SUPERIOR: RUTA DE CARPETA, SELECTOR DE PISTAS Y ACCIONES */}
             <header className="h-14 border-b border-djzinc-800 bg-[#0a0a0f] px-4 flex items-center justify-between shrink-0 gap-3 z-10 shadow-sm">
                 {/* Directorio Actual & Botón Cambiar Carpeta */}
-                <div className="flex items-center gap-2 min-w-0 max-w-md shrink-0">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate">
+                <div className="flex items-center gap-2 min-w-0 shrink-0">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]" title={currentFolder}>
                         <Icons.Folder />
-                        <span className="truncate max-w-[220px]" title={currentFolder}>
-                            {currentFolder || "Sin carpeta seleccionada"}
+                        <span className="truncate">
+                            {currentFolder ? (currentFolder.split('/').pop() || currentFolder) : "Sin carpeta"}
                         </span>
                     </div>
                     <button
                         type="button"
                         onClick={() => handleAbrirNavegador(currentFolder)}
                         className="px-2.5 py-1 text-xs font-bold font-mono bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 rounded border border-djcyan-700/60 cursor-pointer shadow transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
-                        title="Cambiar carpeta de música sin perder auditoría"
+                        title="Cambiar carpeta de música"
                     >
                         <span>📂</span>
                         <span>{t('btn_change_dir') || 'Cambiar Carpeta'}</span>
@@ -4629,50 +4711,50 @@ const HotCuesWorkspace = ({
                     </button>
                 </div>
 
-                {/* Strip Selector Horizontal de Pistas en la Carpeta */}
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                    <div className="relative w-44 shrink-0">
-                        <input
-                            type="text"
-                            value={filterQuery}
-                            onChange={(e) => setFilterQuery(e.target.value)}
-                            placeholder="Filtrar pista..."
-                            className="w-full bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-gray-200 outline-none font-mono placeholder-gray-500"
-                        />
-                        {filterQuery && (
-                            <button
-                                onClick={() => setFilterQuery('')}
-                                className="absolute right-2 top-1.5 text-gray-400 hover:text-white text-xs"
-                            >
-                                ✕
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="flex-1 overflow-x-auto flex items-center gap-1.5 custom-scrollbar py-1">
-                        {filteredTracks.map(trk => {
-                            const isSel = currentTrack && String(currentTrack.id) === String(trk.id);
-                            return (
-                                <button
-                                    key={trk.id}
-                                    type="button"
-                                    onClick={() => setSelectedTrack(trk.id)}
-                                    className={`flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-mono shrink-0 cursor-pointer border transition-all ${
-                                        isSel
-                                        ? 'bg-djcyan-500 text-black border-djcyan-400 font-bold shadow-[0_0_10px_rgba(6,182,212,0.4)]'
-                                        : 'bg-djzinc-900/80 text-gray-400 border-djzinc-800 hover:text-white hover:border-djzinc-700 hover:bg-djzinc-850'
-                                    }`}
+                {/* Selector de Pistas de la Carpeta (Dropdown) y Botón para Desplegar Listado Completo */}
+                <div className="flex-1 min-w-0 max-w-xl flex items-center gap-2">
+                    {filteredTracks && filteredTracks.length > 0 ? (
+                        <>
+                            <div className="relative flex-1 min-w-0">
+                                <select
+                                    value={currentTrack ? String(currentTrack.id) : ''}
+                                    onChange={(e) => {
+                                        const targetId = e.target.value;
+                                        setSelectedTrack(targetId);
+                                        const found = tracks.find(t => String(t.id) === String(targetId));
+                                        if (found && onPlayTrack) {
+                                            onPlayTrack(found, 0, false);
+                                        }
+                                    }}
+                                    className="w-full bg-djzinc-900 border border-djzinc-750 text-white text-xs font-mono rounded-lg px-2.5 py-1.5 outline-none focus:border-djcyan-500 cursor-pointer truncate shadow-sm"
+                                    title="Selecciona la pista para editar sus Hot Cues"
                                 >
-                                    <span className="truncate max-w-[130px]">
-                                        {trk.title || trk.t || trk.filename || 'Pista'}
-                                    </span>
-                                    <span className={`text-[10px] px-1 rounded ${isSel ? 'bg-black text-djcyan-400' : 'bg-djzinc-800 text-gray-400'}`}>
-                                        {trk.bpm || trk.b || '--'}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                                    {filteredTracks.map((trk, idx) => (
+                                        <option key={trk.id} value={trk.id}>
+                                            {idx + 1}. {trk.artist || trk.a || 'Artista'} - {trk.title || trk.t || trk.filename} ({trk.bpm || trk.b || '--'} BPM • {trk.key || trk.k || '--'})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowTrackListDrawer(prev => !prev)}
+                                className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow ${
+                                    showTrackListDrawer
+                                        ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                        : 'bg-djzinc-900 text-gray-300 border-djzinc-750 hover:bg-djzinc-850 hover:text-white'
+                                }`}
+                                title="Ver o esconder la tabla completa de pistas de la carpeta"
+                            >
+                                <span>📋</span>
+                                <span>{showTrackListDrawer ? 'Ocultar Lista' : `Ver Lista (${filteredTracks.length})`}</span>
+                            </button>
+                        </>
+                    ) : (
+                        <span className="text-xs font-mono text-gray-500 italic">
+                            No hay pistas cargadas en esta carpeta.
+                        </span>
+                    )}
                 </div>
 
                 {/* Acciones Globales de Guardado */}
@@ -4689,7 +4771,7 @@ const HotCuesWorkspace = ({
                         title="Guardar cues, downbeat y metadatos de esta pista en el archivo físico"
                     >
                         <span>💾</span>
-                        <span>{t('save_track_disk') || 'Guardar Pista en Disco'}</span>
+                        <span>{t('save_track_disk') || 'Guardar Pista'}</span>
                     </button>
                     <button
                         type="button"
@@ -4704,37 +4786,130 @@ const HotCuesWorkspace = ({
                 </div>
             </header>
 
+            {/* LISTADO DE PISTAS DESPLEGABLE DE LA CARPETA */}
+            {showTrackListDrawer && filteredTracks && filteredTracks.length > 0 && (
+                <div className="bg-[#08080d] border-b border-djzinc-800 p-4 shadow-2xl animate-fadeIn max-h-72 overflow-hidden flex flex-col shrink-0">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-djzinc-800/80">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm">🎵</span>
+                            <h3 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
+                                Pistas en Carpeta: {filteredTracks.length} archivos
+                            </h3>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="text"
+                                value={filterQuery}
+                                onChange={(e) => setFilterQuery(e.target.value)}
+                                placeholder="Filtrar por título, artista, BPM..."
+                                className="w-56 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-gray-200 outline-none font-mono placeholder-gray-500"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowTrackListDrawer(false)}
+                                className="text-gray-400 hover:text-white text-xs font-mono px-2 py-1 bg-djzinc-900 rounded border border-djzinc-750 cursor-pointer"
+                            >
+                                ✕ Cerrar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 pr-1">
+                        <table className="w-full text-left text-xs font-mono">
+                            <thead>
+                                <tr className="text-gray-500 border-b border-djzinc-800 text-[10px] uppercase">
+                                    <th className="py-1 px-2 w-10">#</th>
+                                    <th className="py-1 px-2 w-12">Cover</th>
+                                    <th className="py-1 px-2">Título / Artista</th>
+                                    <th className="py-1 px-2 w-20">BPM</th>
+                                    <th className="py-1 px-2 w-16">Tono</th>
+                                    <th className="py-1 px-2 w-20">Duración</th>
+                                    <th className="py-1 px-2 w-24 text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredTracks.map((trk, idx) => {
+                                    const isSel = currentTrack && String(currentTrack.id) === String(trk.id);
+                                    return (
+                                        <tr
+                                            key={trk.id}
+                                            onClick={() => {
+                                                setSelectedTrack(trk.id);
+                                                if (onPlayTrack) onPlayTrack(trk, 0, false);
+                                            }}
+                                            className={`hover:bg-djzinc-900/80 cursor-pointer transition-colors ${
+                                                isSel ? 'bg-djcyan-950/40 text-djcyan-300 font-bold' : 'text-gray-300'
+                                            }`}
+                                        >
+                                            <td className="py-1.5 px-2 text-gray-500">{idx + 1}</td>
+                                            <td className="py-1.5 px-2">
+                                                <img
+                                                    src={getValidCover(trk.cover || (trk.path ? `/cover?path=${encodeURIComponent(trk.path)}` : null))}
+                                                    alt="Cover"
+                                                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                                    className="w-7 h-7 rounded object-cover border border-djzinc-750"
+                                                />
+                                            </td>
+                                            <td className="py-1.5 px-2">
+                                                <div className="truncate max-w-xs sm:max-w-md font-bold text-white">
+                                                    {trk.title || trk.t || trk.filename}
+                                                </div>
+                                                <div className="truncate max-w-xs text-[11px] text-gray-400">
+                                                    {trk.artist || trk.a || 'Artista Desconocido'}
+                                                </div>
+                                            </td>
+                                            <td className="py-1.5 px-2 font-mono text-gray-300">{trk.bpm || trk.b || '--'}</td>
+                                            <td className="py-1.5 px-2 font-mono text-djcyan-400">{trk.key || trk.k || '--'}</td>
+                                            <td className="py-1.5 px-2 text-gray-400">{trk.duration || '--'}</td>
+                                            <td className="py-1.5 px-2 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTrack(trk.id);
+                                                        setShowTrackListDrawer(false);
+                                                        if (onPlayTrack) onPlayTrack(trk, 0, true);
+                                                    }}
+                                                    className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-mono font-bold rounded cursor-pointer shadow active:scale-95"
+                                                >
+                                                    ▶ Cargar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
             {/* CUERPO DEL ESTUDIO: WAVEFORM EXPANDIDO, CONTROLES DE TRANSPORTE Y PADS */}
             {currentTrack ? (
                 <div className="flex-1 min-h-0 flex flex-col p-4 overflow-y-auto custom-scrollbar gap-4">
-                    {/* CONSOLA HARDWARE PIONEER DDJ-FLX10 PERFORMANCE DECK & HOT CUES */}
-                    <div className="bg-gradient-to-b from-[#181826] via-[#101018] to-[#0a0a0f] border-2 border-djzinc-800 rounded-2xl p-4 shadow-2xl relative overflow-hidden">
+                    {/* CONSOLA HARDWARE PERFORMANCE DECK & 8 HOT CUES */}
+                    <div className="bg-gradient-to-b from-[#181826] via-[#101018] to-[#0a0a0f] border-2 border-djzinc-800 rounded-2xl p-4 shadow-2xl relative">
                         {/* Bisel Metálico Superior */}
                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-djcyan-500/40 to-transparent"></div>
 
                         <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-                            {/* LADO IZQUIERDO: DECK TRANSPORT FLX10 (JOG DISPLAY CIRCULAR + BOTONES CUE & PLAY) */}
-                            <div className="flex items-center gap-5 shrink-0">
-                                {/* Jog Wheel Circular con Carátula Giratoria y BPM */}
-                                <div className="relative w-28 h-28 rounded-full bg-[#06060a] border-4 border-djzinc-750 p-1 flex items-center justify-center shadow-2xl ring-2 ring-black/90">
-                                    <div className={`w-full h-full rounded-full overflow-hidden relative flex items-center justify-center ${isCurrentPlayingThis ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
-                                        <img 
-                                            src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
-                                            alt="Jog Art"
-                                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
-                                            className="w-full h-full object-cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black/20 backdrop-blur-[0.5px]"></div>
-                                    </div>
-                                    {/* Núcleo Central del Jog Display */}
-                                    <div className="absolute w-12 h-12 rounded-full bg-[#0c0c14] border border-djzinc-600 flex flex-col items-center justify-center shadow-inner pointer-events-none">
-                                        <span className="text-[10px] font-mono font-black text-djcyan-400">{bpm.toFixed(1)}</span>
-                                        <span className="text-[8px] font-mono font-bold text-gray-300">{currentTrack.key || '8A'}</span>
+                            {/* LADO IZQUIERDO: CARÁTULA COMPLETA CUADRADA INTACTA + BOTONES CUE & PLAY + METADATOS */}
+                            <div className="flex items-center gap-4 shrink-0">
+                                {/* Carátula Oficial Cuadrada Completa (Sin recorte superior) */}
+                                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-djzinc-950 border-2 border-djzinc-700 p-1 flex items-center justify-center shadow-2xl shrink-0 group">
+                                    <img 
+                                        src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
+                                        alt="Cover Art"
+                                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                        className="w-full h-full object-cover rounded-lg"
+                                    />
+                                    <div className="absolute bottom-1.5 right-1.5 bg-black/85 backdrop-blur px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-djcyan-400 border border-djzinc-750">
+                                        {currentTrack.format || 'FLAC'}
                                     </div>
                                 </div>
 
-                                {/* Botones Circulares Oficiales DDJ-FLX10: CUE (Ámbar) & PLAY/PAUSE (Verde Neón) */}
-                                <div className="flex flex-col gap-3">
+                                {/* Botones Circulares Metálicos Oficiales: CUE (Ámbar) & PLAY/PAUSE (Verde Neón) */}
+                                <div className="flex flex-col gap-2.5 shrink-0">
                                     {/* Botón Circular CUE (Pulsación Ámbar en Pausa / Sincro) */}
                                     <button
                                         type="button"
@@ -4746,7 +4921,7 @@ const HotCuesWorkspace = ({
                                                 onPlayTrack(currentTrack, cuePct, false);
                                             }
                                         }}
-                                        className={`w-14 h-14 rounded-full border-2 flex items-center justify-center font-mono font-black text-xs cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
+                                        className={`w-12 h-12 rounded-full border-2 flex items-center justify-center font-mono font-black text-xs cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
                                             !isCurrentPlayingThis
                                                 ? 'bg-amber-500/25 border-amber-400 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.6)] animate-pulse'
                                                 : 'bg-[#181824] border-amber-700/60 text-amber-500 hover:border-amber-400 hover:text-amber-300'
@@ -4760,7 +4935,7 @@ const HotCuesWorkspace = ({
                                     <button
                                         type="button"
                                         onClick={() => onTogglePlay && onTogglePlay()}
-                                        className={`w-14 h-14 rounded-full border-2 flex items-center justify-center text-sm cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
+                                        className={`w-12 h-12 rounded-full border-2 flex items-center justify-center text-sm cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
                                             isCurrentPlayingThis
                                                 ? 'bg-emerald-500 border-white text-black font-black shadow-[0_0_22px_rgba(16,185,129,0.9)]'
                                                 : 'bg-emerald-950/40 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse'
@@ -4768,9 +4943,9 @@ const HotCuesWorkspace = ({
                                         title="PLAY/PAUSE: Iniciar o pausar reproducción"
                                     >
                                         {isCurrentPlayingThis ? (
-                                            <span className="text-black font-black text-base">❚❚</span>
+                                            <span className="text-black font-black text-sm">❚❚</span>
                                         ) : (
-                                            <span className="text-emerald-400 font-black text-lg ml-0.5">▶</span>
+                                            <span className="text-emerald-400 font-black text-base ml-0.5">▶</span>
                                         )}
                                     </button>
                                 </div>
@@ -4781,7 +4956,8 @@ const HotCuesWorkspace = ({
                                         <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-600/50 text-[9px] font-mono font-black uppercase">
                                             DECK 1 • MASTER
                                         </span>
-                                        <span className="text-[10px] font-mono text-gray-400">{currentTrack.format || 'FLAC'}</span>
+                                        <span className="text-[10px] font-mono text-djcyan-400 font-bold">{bpm.toFixed(1)} BPM</span>
+                                        <span className="text-[10px] font-mono text-purple-400 font-bold">{currentTrack.key || '8A'}</span>
                                     </div>
                                     <h3 className="text-sm font-black text-white truncate mt-1" title={currentTrack.title || currentTrack.t}>
                                         {currentTrack.title || currentTrack.t || 'Track'}
@@ -4789,7 +4965,7 @@ const HotCuesWorkspace = ({
                                     <p className="text-xs text-djcyan-400 font-semibold truncate" title={currentTrack.artist || currentTrack.a}>
                                         {currentTrack.artist || currentTrack.a || 'Artista'}
                                     </p>
-                                    <div className="flex items-center gap-2 mt-2 text-xs font-mono font-bold">
+                                    <div className="flex items-center gap-2 mt-1.5 text-xs font-mono font-bold">
                                         <span className="text-djcyan-300">
                                             {formatMsToTime(playProgress * durMs)}
                                         </span>
@@ -4801,9 +4977,9 @@ const HotCuesWorkspace = ({
                                 </div>
                             </div>
 
-                            {/* LADO DERECHO: PIONEER DDJ-FLX10 8-PERFORMANCE PAD MATRIX CON DINÁMICA DE ENCENDIDO/APAGADO */}
+                            {/* LADO DERECHO: PIONEER DDJ 8-PERFORMANCE PAD MATRIX CON DINÁMICA DE ENCENDIDO/APAGADO */}
                             <div className="flex-1 min-w-0 max-w-2xl bg-[#09090f] p-3 rounded-xl border border-djzinc-800 shadow-inner">
-                                {/* Barra Superior del Pad Mode FLX10 */}
+                                {/* Barra Superior del Pad Mode */}
                                 <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-2.5">
                                     <div className="flex items-center gap-2">
                                         <div className="flex items-center gap-1 bg-[#12121c] px-2 py-0.5 rounded border border-djzinc-750">
@@ -4812,55 +4988,18 @@ const HotCuesWorkspace = ({
                                                 HOT CUE MODE
                                             </span>
                                         </div>
-                                        <span className="text-[10px] font-mono text-gray-400 hidden sm:inline">
-                                            DDJ-FLX10 Multi-Color Performance Pads
+                                        <span className="text-[10px] font-mono text-gray-400">
+                                            8 Multi-Color Performance Pads • Fraseo & Beatgrid
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowControllerPhoto(prev => !prev)}
-                                            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border cursor-pointer transition-all flex items-center gap-1 ${
-                                                showControllerPhoto
-                                                    ? 'bg-djcyan-500 text-black border-djcyan-400 shadow-[0_0_8px_rgba(6,182,212,0.5)]'
-                                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
-                                            }`}
-                                            title="Alternar visualización de la foto del controlador Pioneer DDJ-FLX10"
-                                        >
-                                            <span>🎛️</span>
-                                            <span>{showControllerPhoto ? 'Ocultar Foto FLX10' : 'Ver Foto FLX10'}</span>
-                                        </button>
-                                        <span className="text-[10px] font-mono text-djcyan-400 font-bold">
-                                            {isCurrentPlayingThis ? `● EN SECCIÓN: CUE ${activePlayingCueId}` : 'PAUSA'}
-                                        </span>
-                                    </div>
+                                    <span className="text-[10px] font-mono text-djcyan-400 font-bold">
+                                        {isCurrentPlayingThis ? `● EN SECCIÓN: CUE ${activePlayingCueId}` : 'PAUSA'}
+                                    </span>
                                 </div>
 
-                                {/* Visualización opcional de la foto del controlador DDJ-FLX10 con overlay animado de cues */}
-                                {showControllerPhoto && (
-                                    <div className="relative mb-3 rounded-lg overflow-hidden border border-djzinc-750 shadow-2xl bg-black animate-fadeIn">
-                                        <img 
-                                            src="/img/flx10_controller.png" 
-                                            alt="Pioneer DDJ-FLX10 Controller" 
-                                            className="w-full max-h-56 object-cover opacity-90 hover:opacity-100 transition-opacity"
-                                        />
-                                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none bg-black/80 backdrop-blur px-3 py-1.5 rounded-lg border border-djzinc-700">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                                                <span className="text-[11px] font-mono font-bold text-white">
-                                                    Pioneer DDJ-FLX10 Hardware Mapping
-                                                </span>
-                                            </div>
-                                            <span className="text-[11px] font-mono text-djcyan-400 font-bold">
-                                                Pad #{activePlayingCueId}: {activeCues[activePlayingCueId - 1]?.name || 'Cue'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Matriz 4x2 de los 8 Pads Pioneer FLX10 con Iluminación Dinámica */}
+                                {/* Matriz 4x2 de los 8 Pads (Fila Superior 1-4 y Fila Inferior 5-8 100% VISIBLES) */}
                                 <div className="grid grid-cols-4 gap-2">
-                                    {activeCues.slice(0, 8).map((cue, idx) => {
+                                    {activeCues.map((cue, idx) => {
                                         const padNum = cue.id !== undefined ? cue.id : (idx + 1);
                                         const isSelected = (selectedCueId === padNum);
                                         const isPlayingThisCue = (activePlayingCueId === padNum && isCurrentPlayingThis);
@@ -4875,7 +5014,7 @@ const HotCuesWorkspace = ({
                                                     setSelectedCueId(padNum);
                                                     handleJumpToCue(cue);
                                                 }}
-                                                className={`p-2 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group ${
+                                                className={`p-2 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group min-h-[66px] ${
                                                     isPlayingThisCue
                                                         ? 'bg-[#181824] scale-[1.03] ring-2 ring-white/90 shadow-lg'
                                                         : isSelected
@@ -4893,17 +5032,17 @@ const HotCuesWorkspace = ({
                                                     style={{ backgroundColor: color }}
                                                 ></div>
 
-                                                <div className="flex items-center justify-between mt-1">
+                                                <div className="flex items-center justify-between mt-0.5">
                                                     <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${isPlayingThisCue ? 'bg-white text-black' : 'bg-black/60 text-white'}`}>
                                                         PAD {padNum}
                                                     </span>
                                                     <span 
-                                                        className={`w-2.5 h-2.5 rounded-full transition-all ${isPlayingThisCue ? 'scale-125 animate-ping' : ''}`}
+                                                        className={`w-2 h-2 rounded-full transition-all ${isPlayingThisCue ? 'scale-125 animate-ping' : ''}`}
                                                         style={{ backgroundColor: color }}
                                                     ></span>
                                                 </div>
 
-                                                <div className="my-1.5 truncate">
+                                                <div className="my-1 truncate">
                                                     <span className="text-[11px] font-bold text-gray-200 block truncate group-hover:text-white" title={cue.name || cue.short_name}>
                                                         {cue.name || cue.short_name || `Cue ${padNum}`}
                                                     </span>
@@ -5221,10 +5360,10 @@ const HotCuesWorkspace = ({
                 </div>
             ) : (
                 <div className="flex-1 min-h-0 flex flex-col p-6 overflow-y-auto custom-scrollbar gap-6 items-center justify-center">
-                    {/* CONSOLA PIONEER DDJ-FLX10 STANDBY CON ILUMINACIÓN DINÁMICA */}
-                    <div className="max-w-4xl w-full bg-gradient-to-b from-[#181828] via-[#10101a] to-[#08080f] border-2 border-djzinc-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col items-center">
+                    {/* CONSOLA PIONEER HOT CUES STUDIO STANDBY */}
+                    <div className="max-w-4xl w-full bg-gradient-to-b from-[#181828] via-[#10101a] to-[#08080f] border-2 border-djzinc-800 rounded-2xl p-6 shadow-2xl relative flex flex-col items-center">
                         {/* Bisel Metálico con Resplandor Neón */}
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-djcyan-400 to-pink-500"></div>
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-djcyan-400 to-pink-500 rounded-t-2xl"></div>
 
                         {/* Encabezado Hardware Pioneer DJ */}
                         <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-djzinc-800 pb-4 mb-4 gap-3">
@@ -5232,13 +5371,13 @@ const HotCuesWorkspace = ({
                                 <span className="text-2xl">🎛️</span>
                                 <div>
                                     <h2 className="text-base font-black text-white font-mono tracking-wider flex items-center gap-2">
-                                        PIONEER DJ DDJ-FLX10 • HOT CUES STUDIO
+                                        PIONEER DJ • HOT CUES STUDIO
                                         <span className="px-2 py-0.5 rounded text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 font-bold">
-                                            STANDBY MODE
+                                            LISTO
                                         </span>
                                     </h2>
                                     <p className="text-xs text-gray-400 font-mono">
-                                        Consola hardware con mapeo de 8 Hot Cues por frases musicales y beatgrid milimétrico
+                                        Mapeo de 8 Hot Cues por frases musicales, beatgrid milimétrico y compatibilidad Rekordbox & Serato
                                     </p>
                                 </div>
                             </div>
@@ -5252,33 +5391,70 @@ const HotCuesWorkspace = ({
                             </button>
                         </div>
 
-                        {/* FOTOGRAFÍA OFICIAL DEL CONTROLADOR PIONEER DDJ-FLX10 CON PADS ILUMINADOS */}
-                        <div className="relative rounded-xl overflow-hidden border border-djzinc-750 shadow-2xl max-w-2xl w-full group my-2 bg-black">
-                            <img 
-                                src="/img/flx10_controller.png" 
-                                alt="Pioneer DJ DDJ-FLX10 Controller" 
-                                className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
-                            <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between pointer-events-none">
-                                <span className="text-xs font-mono font-bold text-white bg-black/80 px-2.5 py-1 rounded border border-djzinc-700 backdrop-blur">
-                                    Pioneer DDJ-FLX10 • Performance Deck
-                                </span>
-                                <span className="text-xs font-mono font-bold text-djcyan-400 bg-black/80 px-2.5 py-1 rounded border border-djzinc-700 backdrop-blur animate-pulse">
-                                    ● 8 Pads RGB Dinámicos Activos
-                                </span>
+                        {/* Si hay pistas en la carpeta pero ninguna seleccionada, muestra la tabla para seleccionar */}
+                        {tracks && tracks.length > 0 ? (
+                            <div className="w-full bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner my-2">
+                                <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3">
+                                    <span className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                        <span>🎵</span> Pistas disponibles en la carpeta ({tracks.length})
+                                    </span>
+                                    <span className="text-xs font-mono text-gray-400">
+                                        Haz clic en cualquier pista para cargarla en el Deck
+                                    </span>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850">
+                                    {tracks.map((trk, idx) => (
+                                        <div
+                                            key={trk.id}
+                                            onClick={() => {
+                                                setSelectedTrack(trk.id);
+                                                if (onPlayTrack) onPlayTrack(trk, 0, false);
+                                            }}
+                                            className="p-2.5 hover:bg-djzinc-900 cursor-pointer flex items-center justify-between text-xs font-mono transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <span className="text-gray-500 w-6">{idx + 1}</span>
+                                                <img
+                                                    src={getValidCover(trk.cover || (trk.path ? `/cover?path=${encodeURIComponent(trk.path)}` : null))}
+                                                    alt="Cover"
+                                                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                                    className="w-8 h-8 rounded object-cover border border-djzinc-750 shrink-0"
+                                                />
+                                                <div className="truncate">
+                                                    <span className="font-bold text-white block truncate">{trk.title || trk.t || trk.filename}</span>
+                                                    <span className="text-gray-400 text-[11px] block truncate">{trk.artist || trk.a || 'Artista'}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                <span className="text-gray-400 text-[11px]">{trk.bpm || trk.b || '--'} BPM</span>
+                                                <span className="text-djcyan-400 text-[11px] font-bold">{trk.key || trk.k || '--'}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTrack(trk.id);
+                                                        if (onPlayTrack) onPlayTrack(trk, 0, true);
+                                                    }}
+                                                    className="px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-bold rounded cursor-pointer shadow active:scale-95"
+                                                >
+                                                    ▶ Cargar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        ) : null}
 
-                        {/* MATRIZ DE 8 PADS PERFORMANCE INTERACTIVOS FLX10 EN STANDBY */}
+                        {/* MATRIZ DE 8 PADS PERFORMANCE INTERACTIVOS EN STANDBY (FILA 1-4 Y FILA 5-8 COMPLETAMENTE VISIBLES) */}
                         <div className="w-full max-w-2xl bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner mt-2">
                             <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3">
                                 <span className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    Código de Colores Oficial Pioneer / Serato
+                                    8 Hot Cues Performance • Código de Colores Oficial
                                 </span>
                                 <span className="text-xs font-mono text-gray-400">
-                                    Haz clic en cualquier pad para probar
+                                    Pads 1-4 (Superior) • Pads 5-8 (Inferior)
                                 </span>
                             </div>
 
@@ -5291,7 +5467,7 @@ const HotCuesWorkspace = ({
                                         <div
                                             key={idx}
                                             onClick={() => setSelectedCueId(padNum)}
-                                            className={`p-3 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group ${
+                                            className={`p-2.5 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group min-h-[66px] ${
                                                 isSelected ? 'bg-[#181826] scale-105 shadow-xl' : 'bg-[#0f0f18] hover:bg-[#14141e]'
                                             }`}
                                             style={{
@@ -5300,13 +5476,13 @@ const HotCuesWorkspace = ({
                                             }}
                                         >
                                             <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: color }}></div>
-                                            <div className="flex items-center justify-between mt-1">
+                                            <div className="flex items-center justify-between mt-0.5">
                                                 <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${isSelected ? 'bg-white text-black' : 'bg-black/60 text-white'}`}>
                                                     PAD {padNum}
                                                 </span>
                                                 <span className="w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: color }}></span>
                                             </div>
-                                            <div className="mt-2 text-left">
+                                            <div className="mt-1.5 text-left">
                                                 <p className="text-[11px] font-bold text-white truncate">{cue.name}</p>
                                                 <p className="text-[10px] font-mono font-semibold" style={{ color: color }}>
                                                     {cue.time}
