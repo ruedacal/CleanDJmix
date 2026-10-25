@@ -13059,16 +13059,48 @@ const TrendsWorkspace = ({ lang = "es" }) => {
 // =========================================================================
 
 // =========================================================================
-// ESPACIO DE TRABAJO: SET-BUILDER & ENERGY FLOW CANVAS
+// ESPACIO DE TRABAJO: SET-BUILDER & ENERGY FLOW CANVAS (MOTOR ROBUSTO)
 // =========================================================================
 
 function parseCamelotKey(keyStr) {
-    if (!keyStr) return null;
+    if (!keyStr || keyStr === '--' || keyStr === '?') return null;
     const match = String(keyStr).trim().toUpperCase().match(/^(\d{1,2})([AB])$/);
     if (match) {
         return { num: parseInt(match[1], 10), letter: match[2] };
     }
     return null;
+}
+
+function getTrackBpm(t) {
+    if (!t) return null;
+    for (const k of [t.bpm, t.b, t.displayBpm]) {
+        if (k !== undefined && k !== null && k !== '' && k !== '--') {
+            const v = parseFloat(k);
+            if (!isNaN(v) && v > 40 && v < 250) return Math.round(v * 100) / 100;
+        }
+    }
+    return null;
+}
+
+function getTrackKey(t) {
+    if (!t) return null;
+    for (const k of [t.key, t.k, t.tonalidad, t.initial_key]) {
+        if (k && k !== '--' && k !== '?' && k !== 'N/D') {
+            return String(k).trim().toUpperCase();
+        }
+    }
+    return null;
+}
+
+function getTrackLufs(t) {
+    if (!t) return -8.5;
+    for (const k of [t.lufs, t.integrated_lufs, t.loudness_lufs]) {
+        if (k !== undefined && k !== null && k !== '' && k !== '--') {
+            const v = parseFloat(k);
+            if (!isNaN(v) && v < 0) return Math.round(v * 10) / 10;
+        }
+    }
+    return -8.5;
 }
 
 function evaluateHarmonicTransition(keyA, keyB) {
@@ -13080,7 +13112,7 @@ function evaluateHarmonicTransition(keyA, keyB) {
             badge: '❓ Tonalidad N/D',
             color: 'bg-djzinc-800 text-gray-400 border-djzinc-700',
             score: 50,
-            desc: 'Una de las pistas no tiene tonalidad Camelot identificada.'
+            desc: 'Una de las pistas no tiene tonalidad Camelot detectada. Audita las pistas para calcular compatibilidad.'
         };
     }
 
@@ -13090,7 +13122,7 @@ function evaluateHarmonicTransition(keyA, keyB) {
             badge: '🟢 Misma Clave (0)',
             color: 'bg-emerald-950/90 text-emerald-300 border-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.3)]',
             score: 100,
-            desc: 'Armonía idéntica: Tonalidades emparejadas al 100%. Mezcla transparente y fluida.'
+            desc: 'Armonía perfecta (0): Mismo tono y modo. Fusión de bajo y melodías completamente transparente.'
         };
     }
 
@@ -13100,7 +13132,7 @@ function evaluateHarmonicTransition(keyA, keyB) {
             badge: '🟣 Cambio Modal (A↔B)',
             color: 'bg-purple-950/90 text-purple-300 border-purple-600 shadow-[0_0_8px_rgba(168,85,247,0.3)]',
             score: 95,
-            desc: 'Giro emocional: Transición entre relativo menor y mayor sin disonancias.'
+            desc: 'Giro emocional (A↔B): Modulación entre escala menor y mayor relativa.'
         };
     }
 
@@ -13109,10 +13141,10 @@ function evaluateHarmonicTransition(keyA, keyB) {
     if (diff === 1 && kA.letter === kB.letter) {
         return {
             type: 'BOOST_PLUS_1',
-            badge: '⚡ Subida de Energía (+1)',
+            badge: '⚡ Subida Energía (+1)',
             color: 'bg-amber-950/90 text-amber-300 border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]',
             score: 90,
-            desc: 'Inyección de energía natural en pista: Incremento de tensión armónica.'
+            desc: 'Subida de tensión (+1): Inyección natural de energía armónica en pista.'
         };
     }
 
@@ -13122,7 +13154,7 @@ function evaluateHarmonicTransition(keyA, keyB) {
             badge: '🔵 Descenso Suave (-1)',
             color: 'bg-cyan-950/90 text-cyan-300 border-cyan-600 shadow-[0_0_8px_rgba(6,182,212,0.3)]',
             score: 85,
-            desc: 'Transición profunda: Relajación de tensión armónica hacia notas más oscuras.'
+            desc: 'Descenso suave (-1): Relajación armónica hacia tonalidades más profundas o oscuras.'
         };
     }
 
@@ -13132,17 +13164,17 @@ function evaluateHarmonicTransition(keyA, keyB) {
             badge: '🔥 Salto Doble (+2)',
             color: 'bg-orange-950/90 text-orange-300 border-orange-500',
             score: 75,
-            desc: 'Subidón dramático: Recomendado soltar en el drop o durante un corte de compás.'
+            desc: 'Salto doble de energía (+2): Mezclar en drop o corte percusivo para impacto máximo.'
         };
     }
 
     if ((diff === 1 || diff === 11) && kA.letter !== kB.letter) {
         return {
             type: 'DIAGONAL',
-            badge: '🔷 Transición Diagonal',
+            badge: '🔷 Diagonal (±1 A/B)',
             color: 'bg-blue-950/90 text-blue-300 border-blue-600',
             score: 70,
-            desc: 'Modulación cruzada aceptable con buen flujo melódico en fraseo largo.'
+            desc: 'Modulación diagonal: Transición cruzada armónicamente aceptable con frases largas.'
         };
     }
 
@@ -13151,7 +13183,7 @@ function evaluateHarmonicTransition(keyA, keyB) {
         badge: '⚠️ Choque Disonante',
         color: 'bg-rose-950/90 text-rose-300 border-rose-600 shadow-[0_0_8px_rgba(225,29,72,0.3)]',
         score: 30,
-        desc: 'Conflicto tonal: No solapar melodías o sintes; mezclar en secciones percusivas limpias.'
+        desc: 'Conflicto armónico. No solapar sintes o voces; mezclar en sección percusiva limpia.'
     };
 }
 
@@ -13164,8 +13196,8 @@ function evaluateLufsTransition(lufsA, lufsB) {
     if (absDelta > 2.5) {
         const sign = delta > 0 ? `+${delta}` : `${delta}`;
         const advice = delta > 0 
-            ? `Bajar Trim/Ganancia ~${absDelta} dB en la mesa antes de abrir el fader.`
-            : `Subir Trim/Ganancia ~${absDelta} dB para evitar caída de pegada en pista.`;
+            ? `Bajar Trim/Ganancia ~${absDelta} dB en mesa antes de abrir el fader.`
+            : `Subir Trim/Ganancia ~${absDelta} dB para compensar caída de volumen.`;
         return {
             isAlert: true,
             delta,
@@ -13180,7 +13212,7 @@ function evaluateLufsTransition(lufsA, lufsB) {
         delta,
         badge: `🟢 LUFS Equilibrado (${delta > 0 ? '+' : ''}${delta} dB)`,
         color: 'bg-djzinc-850 text-emerald-400 border-djzinc-700',
-        advice: 'Niveles de sonoridad uniforme sin sorpresas de volumen.'
+        advice: 'Sonoridad uniforme sin saltos de volumen en pista.'
     };
 }
 
@@ -13193,7 +13225,7 @@ function evaluateAntiMuddyTransition(trackA, trackB) {
             isCollision: true,
             badge: '⚠️ Colisión Bass (30-80 Hz)',
             color: 'bg-red-950/90 text-red-300 border-red-700 animate-pulse',
-            advice: 'Ambos temas son Bass Drivers. Cortar EQ Low (-inf a -6dB) del tema saliente antes del drop para evitar cancelación de fase y saturación en master.'
+            advice: 'Ambos temas son Bass Drivers. Cortar EQ Low del tema saliente antes del drop para evitar barrizal de graves y cancelación de fase.'
         };
     }
 
@@ -13221,10 +13253,12 @@ const SetBuilderWorkspace = ({
     setTracks = [],
     setSetTracks,
     auditTracks = [],
+    setAuditTracks,
     onPlayTrack,
     nowPlayingTrack,
     isPlaying,
     onTogglePlay,
+    onNavigateTab,
     lang = "es"
 }) => {
     const [setName, setSetName] = useState("BeatWave_Mainstage_Set");
@@ -13233,43 +13267,93 @@ const SetBuilderWorkspace = ({
     const [searchAddQuery, setSearchAddQuery] = useState("");
     const [exportStatus, setExportStatus] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [isAuditingSet, setIsAuditingSet] = useState(false);
+    const [auditSetProgress, setAuditSetProgress] = useState(0);
 
-    // Calcular estadísticas globales del Set
+    // Sincronizar automáticamente metadatos si las pistas fueron auditadas en otra pestaña
+    useEffect(() => {
+        if (!auditTracks || auditTracks.length === 0 || !setTracks || setTracks.length === 0) return;
+        let hasChanges = false;
+        const updated = setTracks.map(st => {
+            const found = auditTracks.find(at => 
+                (at.id && String(at.id) === String(st.id)) ||
+                (at.path && st.path && at.path === st.path) ||
+                (at.filename && st.filename && at.filename === st.filename)
+            );
+            if (found) {
+                const newBpm = found.bpm || found.b;
+                const newKey = found.key || found.k;
+                const newLufs = found.lufs || found.integrated_lufs;
+                const newRole = found.acoustic_role;
+                if (
+                    (newBpm && newBpm !== '--' && st.bpm !== newBpm) ||
+                    (newKey && newKey !== '--' && st.key !== newKey) ||
+                    (newRole && st.acoustic_role !== newRole)
+                ) {
+                    hasChanges = true;
+                    return {
+                        ...st,
+                        ...found,
+                        bpm: (newBpm && newBpm !== '--') ? newBpm : st.bpm,
+                        key: (newKey && newKey !== '--') ? newKey : st.key,
+                        lufs: (newLufs && newLufs !== '--') ? newLufs : st.lufs,
+                        acoustic_role: newRole || st.acoustic_role || 'Balanced Full-Range',
+                        low_ratio: found.low_ratio || st.low_ratio || 33.3,
+                        mid_ratio: found.mid_ratio || st.mid_ratio || 33.3,
+                        high_ratio: found.high_ratio || st.high_ratio || 33.4
+                    };
+                }
+            }
+            return st;
+        });
+        if (hasChanges) {
+            setSetTracks(updated);
+        }
+    }, [auditTracks]);
+
+    // Estadísticas globales del Set a prueba de fallos (sin NaNs)
     const stats = useMemo(() => {
         if (!setTracks || setTracks.length === 0) {
-            return { totalDurationSec: 0, minBpm: 0, maxBpm: 0, avgBpm: 0, avgLufs: 0, harmonicScore: 100 };
+            return { totalDurationSec: 0, minBpm: 0, maxBpm: 0, avgBpm: 0, avgLufs: 0, harmonicScore: 100, pendingAuditCount: 0 };
         }
 
         let totalSec = 0;
-        let bpms = [];
-        let lufsVals = [];
+        let validBpms = [];
+        let validLufs = [];
+        let pendingAudit = 0;
 
         setTracks.forEach(t => {
             const d = parseFloat(t.duration_sec || t.duration || 0);
             totalSec += (d > 0 ? d : 240);
-            const b = parseFloat(t.bpm || t.b || 0);
-            if (b > 0) bpms.push(b);
-            const l = parseFloat(t.lufs || t.integrated_lufs || -9.0);
-            lufsVals.push(l);
+
+            const b = getTrackBpm(t);
+            if (b !== null) {
+                validBpms.push(b);
+            } else {
+                pendingAudit++;
+            }
+
+            const l = getTrackLufs(t);
+            validLufs.push(l);
         });
 
-        const minBpm = bpms.length > 0 ? Math.min(...bpms) : 124;
-        const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 128;
-        const avgBpm = bpms.length > 0 ? Math.round((bpms.reduce((a, b) => a + b, 0) / bpms.length) * 10) / 10 : 126;
-        const avgLufs = lufsVals.length > 0 ? Math.round((lufsVals.reduce((a, b) => a + b, 0) / lufsVals.length) * 10) / 10 : -8.5;
+        const minBpm = validBpms.length > 0 ? Math.round(Math.min(...validBpms)) : 124;
+        const maxBpm = validBpms.length > 0 ? Math.round(Math.max(...validBpms)) : 128;
+        const avgBpm = validBpms.length > 0 ? Math.round((validBpms.reduce((a, b) => a + b, 0) / validBpms.length) * 10) / 10 : 126;
+        const avgLufs = validLufs.length > 0 ? Math.round((validLufs.reduce((a, b) => a + b, 0) / validLufs.length) * 10) / 10 : -8.5;
 
-        // Calcular puntuación armónica global (% de transiciones armónicas)
+        // Calcular puntuación armónica global
         let totalScore = 0;
         let transitionsCount = Math.max(1, setTracks.length - 1);
         for (let i = 0; i < setTracks.length - 1; i++) {
             const trkA = setTracks[i];
             const trkB = setTracks[i + 1];
-            const harm = evaluateHarmonicTransition(trkA.key || trkA.k, trkB.key || trkB.k);
+            const harm = evaluateHarmonicTransition(getTrackKey(trkA), getTrackKey(trkB));
             totalScore += harm.score;
         }
         const harmonicScore = setTracks.length <= 1 ? 100 : Math.round(totalScore / transitionsCount);
 
-        return { totalDurationSec: totalSec, minBpm, maxBpm, avgBpm, avgLufs, harmonicScore };
+        return { totalDurationSec: totalSec, minBpm, maxBpm, avgBpm, avgLufs, harmonicScore, pendingAuditCount: pendingAudit };
     }, [setTracks]);
 
     // Formatear duración en HH:MM:SS
@@ -13333,37 +13417,38 @@ const SetBuilderWorkspace = ({
         setSetTracks(demo);
     };
 
-    // Auto-Optimizar Pro: Algoritmo de Flujo Armónico y Progresión de BPM
+    // Auto-Optimizar Pro: Algoritmo de Flujo Armónico y Progresión de BPM (Robusto y Determinista)
     const handleOptimizeHarmonicFlow = () => {
         if (!setTracks || setTracks.length < 2) return;
 
-        // Comenzar con la pista con menor BPM (para construcción natural de set)
         let remaining = [...setTracks];
-        remaining.sort((a, b) => (parseFloat(a.bpm || a.b || 126) - parseFloat(b.bpm || b.b || 126)));
+        // Orden inicial por BPM conocido ascendente
+        remaining.sort((a, b) => {
+            const bA = getTrackBpm(a) || 126;
+            const bB = getTrackBpm(b) || 126;
+            return bA - bB;
+        });
 
         const optimized = [remaining.shift()];
 
         while (remaining.length > 0) {
             const current = optimized[optimized.length - 1];
-            const curBpm = parseFloat(current.bpm || current.b || 126);
-            const curKey = current.key || current.k || '';
+            const curBpm = getTrackBpm(current) || 126;
+            const curKey = getTrackKey(current) || '';
 
-            // Puntuación de afinidad para cada candidato
             let bestIdx = 0;
-            let bestScore = -999;
+            let bestScore = -9999;
 
             for (let i = 0; i < remaining.length; i++) {
                 const candidate = remaining[i];
-                const candBpm = parseFloat(candidate.bpm || candidate.b || 126);
-                const candKey = candidate.key || candidate.k || '';
+                const candBpm = getTrackBpm(candidate) || curBpm || 126;
+                const candKey = getTrackKey(candidate) || '';
 
                 const harm = evaluateHarmonicTransition(curKey, candKey);
                 const bpmDiff = Math.abs(candBpm - curBpm);
 
-                // Penalizar grandes saltos de BPM (> 4 BPM)
                 const bpmScore = Math.max(0, 100 - bpmDiff * 15);
 
-                // Anti-Muddy complementariedad
                 const isCurBass = (current.low_ratio || 33) >= 45 || current.acoustic_role === 'Bass Driver';
                 const isCandBass = (candidate.low_ratio || 33) >= 45 || candidate.acoustic_role === 'Bass Driver';
                 const antiMuddyScore = (isCurBass && isCandBass) ? -20 : (isCurBass || isCandBass ? 20 : 0);
@@ -13380,8 +13465,89 @@ const SetBuilderWorkspace = ({
         }
 
         setSetTracks(optimized);
-        setExportStatus({ type: 'success', msg: '¡Set auto-optimizado! Progresión armónica y de BPM calculada sin choques tonales.' });
+        setExportStatus({ type: 'success', msg: '✓ ¡Set auto-optimizado! Progresión armónica y curva de BPM reorganizadas sin choques tonales.' });
         setTimeout(() => setExportStatus(null), 4500);
+    };
+
+    // Botón: Auditar en Lote Pistas del Set que no tengan BPM o Key
+    const handleAuditSetTracks = async () => {
+        const paths = setTracks.map(t => t.path || t.filepath || t.f).filter(p => Boolean(p));
+        if (paths.length === 0) {
+            alert("Las pistas del set no cuentan con una ruta de archivo local válida para auditar.");
+            return;
+        }
+
+        setIsAuditingSet(true);
+        setAuditSetProgress(15);
+        setExportStatus({ type: 'loading', msg: `Iniciando auditoría acústica DSP de ${paths.length} pistas del set...` });
+
+        try {
+            if (window.eel && window.eel.iniciar_auditoria) {
+                const res = await window.eel.iniciar_auditoria(paths)();
+                if (res && res.tracks) {
+                    const mapRes = {};
+                    res.tracks.forEach(tr => {
+                        if (tr.path) mapRes[tr.path] = tr;
+                        if (tr.id) mapRes[String(tr.id)] = tr;
+                    });
+                    const updated = setTracks.map(st => {
+                        const found = mapRes[st.path] || mapRes[String(st.id)];
+                        return found ? { ...st, ...found } : st;
+                    });
+                    setSetTracks(updated);
+
+                    if (setAuditTracks) {
+                        setAuditTracks(prev => {
+                            const merged = [...prev];
+                            res.tracks.forEach(newTr => {
+                                const exIdx = merged.findIndex(x => (x.path && x.path === newTr.path) || (x.id && String(x.id) === String(newTr.id)));
+                                if (exIdx >= 0) merged[exIdx] = { ...merged[exIdx], ...newTr };
+                                else merged.push(newTr);
+                            });
+                            return merged;
+                        });
+                    }
+                    setExportStatus({ type: 'success', msg: `✓ Auditoría completada: ${res.tracks.length} pistas analizadas con BPM, Camelot Key, LUFS y Roles Espectrales.` });
+                }
+            } else {
+                setExportStatus({ type: 'error', msg: 'Servicio de auditoría backend no disponible en este entorno.' });
+            }
+        } catch (err) {
+            console.error("Error auditando pistas del set:", err);
+            setExportStatus({ type: 'error', msg: `Error durante la auditoría: ${err.message || err}` });
+        } finally {
+            setIsAuditingSet(false);
+            setAuditSetProgress(0);
+            setTimeout(() => setExportStatus(null), 5000);
+        }
+    };
+
+    // Auditar una única pista individual del set
+    const handleAuditSingleTrack = async (track, e) => {
+        if (e) e.stopPropagation();
+        const pth = track.path || track.filepath || track.f;
+        if (!pth) {
+            alert("No se encontró la ruta del archivo de audio para auditar.");
+            return;
+        }
+        setExportStatus({ type: 'loading', msg: `Auditando "${track.title || track.t || 'pista'}"...` });
+        try {
+            if (window.eel && window.eel.iniciar_auditoria) {
+                const res = await window.eel.iniciar_auditoria([pth])();
+                if (res && res.tracks && res.tracks.length > 0) {
+                    const audited = res.tracks[0];
+                    setSetTracks(prev => prev.map(t => (t.id === track.id || t.path === pth) ? { ...t, ...audited } : t));
+                    if (setAuditTracks) {
+                        setAuditTracks(prev => prev.map(t => (t.id === track.id || t.path === pth) ? { ...t, ...audited } : t));
+                    }
+                    setExportStatus({ type: 'success', msg: `✓ Pista auditada: ${audited.bpm || '--'} BPM | ${audited.key || '--'} Camelot` });
+                }
+            }
+        } catch (err) {
+            setExportStatus({ type: 'error', msg: `Error al auditar pista: ${err.message || err}` });
+        } finally {
+            setTimeout(() => setExportStatus(null), 4000);
+        }
     };
 
     // Exportar Set M3U8
@@ -13427,7 +13593,7 @@ const SetBuilderWorkspace = ({
             URL.revokeObjectURL(url);
 
             const savedPath = res && res.path ? res.path : 'Descargado en tu navegador';
-            setExportStatus({ type: 'success', msg: `Set exportado con éxito (${setTracks.length} pistas): ${savedPath}` });
+            setExportStatus({ type: 'success', msg: `✓ Set exportado con éxito (${setTracks.length} pistas): ${savedPath}` });
         } catch (e) {
             setExportStatus({ type: 'error', msg: `Error al exportar set: ${e.message || e}` });
         } finally {
@@ -13436,11 +13602,11 @@ const SetBuilderWorkspace = ({
         }
     };
 
-    // Render del Canvas de Flujo de Energía & BPM (SVG Interactivo)
+    // Render del Canvas de Flujo de Energía & BPM (SVG Interactivo Sin NaNs)
     const renderFlowCanvas = () => {
         if (!setTracks || setTracks.length < 2) {
             return (
-                <div className="h-32 flex flex-col items-center justify-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl">
+                <div className="h-32 flex flex-col items-center justify-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl bg-djzinc-950/40">
                     <span>Añade al menos 2 pistas para visualizar la curva de BPM y flujo de energía.</span>
                 </div>
             );
@@ -13448,29 +13614,35 @@ const SetBuilderWorkspace = ({
 
         const width = 900;
         const height = 140;
-        const padX = 50;
-        const padY = 25;
+        const padX = 55;
+        const padY = 28;
 
-        const bpms = setTracks.map(t => parseFloat(t.bpm || t.b || 126));
-        const minB = Math.max(60, Math.min(...bpms) - 2);
-        const maxB = Math.min(180, Math.max(...bpms) + 2);
-        const bpmRange = Math.max(1, maxB - minB);
+        const validBpms = setTracks.map(getTrackBpm).filter(v => v !== null);
+        const fallbackBpm = validBpms.length > 0 ? Math.round(validBpms.reduce((a, b) => a + b, 0) / validBpms.length) : 126;
+        const minB = validBpms.length > 0 ? Math.max(60, Math.floor(Math.min(...validBpms)) - 2) : 122;
+        const maxB = validBpms.length > 0 ? Math.min(180, Math.ceil(Math.max(...validBpms)) + 2) : 130;
+        const bpmRange = Math.max(2, maxB - minB);
 
         const points = setTracks.map((t, idx) => {
-            const x = padX + (idx / (setTracks.length - 1)) * (width - 2 * padX);
-            const bpm = parseFloat(t.bpm || t.b || 126);
+            const x = padX + (idx / Math.max(1, setTracks.length - 1)) * (width - 2 * padX);
+            const parsedBpm = getTrackBpm(t);
+            const bpm = parsedBpm !== null ? parsedBpm : fallbackBpm;
             const y = height - padY - ((bpm - minB) / bpmRange) * (height - 2 * padY);
-            return { x, y, bpm, track: t, idx };
+            return {
+                x: isFinite(x) ? Math.round(x * 10) / 10 : padX,
+                y: isFinite(y) ? Math.round(y * 10) / 10 : Math.round(height / 2),
+                bpm,
+                hasRealBpm: parsedBpm !== null,
+                track: t,
+                idx
+            };
         });
 
-        // Crear string de puntos polyline
         const polylinePoints = points.map(p => `${p.x},${p.y}`).join(' ');
-
-        // Crear polígono de relleno de energía
         const areaPoints = `${padX},${height - padY} ` + polylinePoints + ` ${width - padX},${height - padY}`;
 
         return (
-            <div className="relative w-full bg-gradient-to-b from-djzinc-900/90 to-[#07070a] border border-djzinc-800 rounded-2xl p-4 shadow-xl overflow-x-auto">
+            <div className="relative w-full bg-gradient-to-b from-djzinc-900/95 to-[#07070a] border border-djzinc-800 rounded-2xl p-4 shadow-xl overflow-x-auto">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-ping"></span>
@@ -13485,14 +13657,14 @@ const SetBuilderWorkspace = ({
                         <span className="flex items-center gap-1">
                             <span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span> Tonalidad Camelot
                         </span>
-                        <span className="text-emerald-400 font-bold">
+                        <span className={`font-bold ${stats.harmonicScore >= 85 ? 'text-emerald-400' : stats.harmonicScore >= 70 ? 'text-amber-400' : 'text-rose-400'}`}>
                             Score Armónico: {stats.harmonicScore}%
                         </span>
                     </div>
                 </div>
 
                 <div className="w-full min-w-[700px]">
-                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-36 overflow-visible">
+                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-36 overflow-visible select-none">
                         <defs>
                             <linearGradient id="bpmCurveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                                 <stop offset="0%" stopColor="#06b6d4" />
@@ -13505,10 +13677,11 @@ const SetBuilderWorkspace = ({
                             </linearGradient>
                         </defs>
 
-                        {/* Líneas de referencia horizontales de BPM */}
+                        {/* Líneas horizontales de referencia con valores numéricos limpios */}
                         {[0, 0.5, 1].map((ratio, i) => {
                             const val = Math.round(minB + ratio * bpmRange);
-                            const yPos = height - padY - ratio * (height - 2 * padY);
+                            const yPos = Math.round((height - padY - ratio * (height - 2 * padY)) * 10) / 10;
+                            if (!isFinite(val) || !isFinite(yPos)) return null;
                             return (
                                 <g key={i}>
                                     <line x1={padX} y1={yPos} x2={width - padX} y2={yPos} stroke="#27272a" strokeDasharray="3 3" />
@@ -13520,7 +13693,7 @@ const SetBuilderWorkspace = ({
                         {/* Relleno bajo la curva */}
                         <polygon points={areaPoints} fill="url(#areaFillGrad)" />
 
-                        {/* Curva de BPM */}
+                        {/* Curva de BPM continua */}
                         <polyline
                             points={polylinePoints}
                             fill="none"
@@ -13534,6 +13707,8 @@ const SetBuilderWorkspace = ({
                         {points.map((p, idx) => {
                             const isSelected = selectedTrackIdx === idx;
                             const isCurPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(p.track.id) && isPlaying;
+                            const keyStr = getTrackKey(p.track);
+
                             return (
                                 <g 
                                     key={idx} 
@@ -13545,16 +13720,20 @@ const SetBuilderWorkspace = ({
                                         cx={p.x}
                                         cy={p.y}
                                         r={isSelected || isCurPlaying ? "10" : "6"}
-                                        fill={isCurPlaying ? "#ec4899" : isSelected ? "#06b6d4" : "#18181b"}
-                                        stroke={isCurPlaying ? "#ffffff" : isSelected ? "#38bdf8" : "#a855f7"}
-                                        strokeWidth={isSelected || isCurPlaying ? "3" : "2"}
-                                        className="transition-all duration-200 group-hover:r-8"
-                                    />
-                                    {/* Etiqueta de Track # */}
+                                        fill={isCurPlaying ? "#ec4899" : isSelected ? "#06b6d4" : (p.hasRealBpm ? "#18181b" : "#27272a")}
+                                        stroke={isCurPlaying ? "#ffffff" : isSelected ? "#38bdf8" : (p.hasRealBpm ? "#a855f7" : "#f59e0b")}
+                                        strokeWidth={isSelected || isCurPlaying ? "3" : (p.hasRealBpm ? "2" : "1.5")}
+                                        strokeDasharray={p.hasRealBpm ? "none" : "2 2"}
+                                        className="transition-all duration-200 group-hover:scale-125"
+                                    >
+                                        <title>{`Track #${idx + 1}: ${p.track.title || p.track.t || 'Pista'} | BPM: ${p.hasRealBpm ? p.bpm : '-- (Sin auditar)'} | Key: ${keyStr || '--'}`}</title>
+                                    </circle>
+
+                                    {/* Etiqueta de Track # sobre el nodo */}
                                     <text
                                         x={p.x}
                                         y={p.y - 12}
-                                        fill={isSelected ? "#38bdf8" : "#d4d4d8"}
+                                        fill={isSelected ? "#38bdf8" : (p.hasRealBpm ? "#d4d4d8" : "#f59e0b")}
                                         fontSize="9.5"
                                         fontWeight="bold"
                                         fontFamily="monospace"
@@ -13562,17 +13741,18 @@ const SetBuilderWorkspace = ({
                                     >
                                         #{idx + 1}
                                     </text>
+
                                     {/* Badge de Tonalidad Camelot bajo el nodo */}
                                     <text
                                         x={p.x}
                                         y={height - padY + 14}
-                                        fill="#a855f7"
+                                        fill={keyStr ? "#a855f7" : "#71717a"}
                                         fontSize="9"
                                         fontWeight="black"
                                         fontFamily="monospace"
                                         textAnchor="middle"
                                     >
-                                        {p.track.key || p.track.k || '--'}
+                                        {keyStr || '--'}
                                     </text>
                                 </g>
                             );
@@ -13601,18 +13781,32 @@ const SetBuilderWorkspace = ({
                             </h2>
                         </div>
                         <p className="text-xs text-gray-400 mt-1 max-w-2xl font-sans">
-                            Estructura la progresión de tu sesión en vivo. Visualiza curvas de BPM, saltos armónicos Camelot (+1, -1, cambios modales), saltos de volumen LUFS y alertas Anti-Muddy en transiciones.
+                            Estructura la progresión armónica de tu sesión en vivo. Visualiza curvas de BPM, transiciones Camelot (+1, -1, cambios modales), saltos de volumen LUFS y alertas Anti-Muddy en tiempo real.
                         </p>
                     </div>
 
                     {/* Acciones principales */}
                     <div className="flex items-center gap-2.5 flex-wrap">
+                        {/* Botón Auditar Pistas del Set si hay pistas sin auditar */}
+                        {stats.pendingAuditCount > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleAuditSetTracks}
+                                disabled={isAuditingSet}
+                                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition-all active:scale-95 disabled:opacity-40 cursor-pointer animate-pulse"
+                                title="Calcula BPM exacto, Tonalidad Camelot, LUFS y Roles Espectrales para las pistas del set sin auditar"
+                            >
+                                <span>⚡</span>
+                                <span>{isAuditingSet ? 'Auditando...' : `Auditar Pistas del Set (${stats.pendingAuditCount} pend.)`}</span>
+                            </button>
+                        )}
+
                         <button
                             type="button"
                             onClick={handleOptimizeHarmonicFlow}
-                            disabled={setTracks.length < 2}
+                            disabled={setTracks.length < 2 || isAuditingSet}
                             className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
-                            title="Calcula el orden perfecto de BPM y compatibilidad Camelot sin choques tonales"
+                            title="Reordena automáticamente las pistas para maximizar la compatibilidad armónica Camelot y progresión de BPM"
                         >
                             <span>⚡</span>
                             <span>Auto-Optimizar Pro (Flow Armónico)</span>
@@ -13623,7 +13817,7 @@ const SetBuilderWorkspace = ({
                             onClick={handleExportM3U}
                             disabled={isExporting || setTracks.length === 0}
                             className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
-                            title="Exportar archivo de lista de reproducción compatible con Pioneer Rekordbox, Serato DJ Pro, Traktor Pro y VirtualDJ"
+                            title="Exportar archivo M3U8 para Pioneer Rekordbox, Serato DJ Pro, Traktor Pro y VirtualDJ"
                         >
                             <span>💾</span>
                             <span>{isExporting ? 'Exportando...' : 'Exportar Set (.M3U8)'}</span>
@@ -13650,7 +13844,7 @@ const SetBuilderWorkspace = ({
                     </div>
                 </div>
 
-                {/* Banner de Estado de Exportación */}
+                {/* Banner de Estado de Exportación y Auditoría */}
                 {exportStatus && (
                     <div className={`p-3 rounded-xl border text-xs font-mono flex items-center justify-between animate-fadeIn ${
                         exportStatus.type === 'success' 
@@ -13659,7 +13853,10 @@ const SetBuilderWorkspace = ({
                                 ? 'bg-rose-950/80 border-rose-700 text-rose-300'
                                 : 'bg-djcyan-950/80 border-djcyan-700 text-djcyan-300'
                     }`}>
-                        <span>{exportStatus.msg}</span>
+                        <div className="flex items-center gap-2">
+                            {exportStatus.type === 'loading' && <span className="animate-spin text-base">⚙</span>}
+                            <span>{exportStatus.msg}</span>
+                        </div>
                         <button type="button" onClick={() => setExportStatus(null)} className="text-gray-400 hover:text-white">✕</button>
                     </div>
                 )}
@@ -13686,7 +13883,9 @@ const SetBuilderWorkspace = ({
                     </div>
                     <div className="bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center">
                         <span className="text-[9.5px] font-mono text-gray-400 uppercase">Rango BPM</span>
-                        <span className="text-sm font-mono font-black text-amber-300">{stats.minBpm} - {stats.maxBpm}</span>
+                        <span className="text-sm font-mono font-black text-amber-300">
+                            {stats.minBpm} - {stats.maxBpm}
+                        </span>
                     </div>
                     <div className="bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center">
                         <span className="text-[9.5px] font-mono text-gray-400 uppercase">Score Armónico</span>
@@ -13710,7 +13909,7 @@ const SetBuilderWorkspace = ({
                         </div>
                         <h3 className="text-base font-mono font-bold text-gray-300">Tu Set está vacío</h3>
                         <p className="text-xs text-gray-500 max-w-md mt-1 mb-5 font-sans">
-                            Agrega pistas desde el botón superior, o haz clic en "Cargar Demostración" para explorar cómo funciona el análisis armónico Camelot y de colisión Anti-Muddy.
+                            Agrega pistas desde el botón superior o carga una demostración para explorar el análisis armónico Camelot, compensación LUFS y Anti-Muddy en transiciones.
                         </p>
                         <div className="flex items-center gap-3">
                             <button
@@ -13741,9 +13940,13 @@ const SetBuilderWorkspace = ({
                             const isSelected = selectedTrackIdx === idx;
                             const nextTrack = (idx < setTracks.length - 1) ? setTracks[idx + 1] : null;
 
+                            const trackBpm = getTrackBpm(track);
+                            const trackKey = getTrackKey(track);
+                            const trackLufs = getTrackLufs(track);
+
                             // Evaluaciones de transición frente a la siguiente pista
-                            const harmTrans = nextTrack ? evaluateHarmonicTransition(track.key || track.k, nextTrack.key || nextTrack.k) : null;
-                            const lufsTrans = nextTrack ? evaluateLufsTransition(track.lufs || track.integrated_lufs, nextTrack.lufs || nextTrack.integrated_lufs) : null;
+                            const harmTrans = nextTrack ? evaluateHarmonicTransition(trackKey, getTrackKey(nextTrack)) : null;
+                            const lufsTrans = nextTrack ? evaluateLufsTransition(trackLufs, getTrackLufs(nextTrack)) : null;
                             const antiMuddyTrans = nextTrack ? evaluateAntiMuddyTransition(track, nextTrack) : null;
 
                             return (
@@ -13826,13 +14029,17 @@ const SetBuilderWorkspace = ({
                                             {/* BPM */}
                                             <div className="px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[55px]">
                                                 <span className="text-gray-400 block text-[8px]">BPM</span>
-                                                <span className="font-bold text-white">{track.bpm || track.b || '--'}</span>
+                                                <span className={`font-bold ${trackBpm ? 'text-white' : 'text-amber-400'}`}>
+                                                    {trackBpm ? trackBpm.toFixed(1) : '--'}
+                                                </span>
                                             </div>
 
                                             {/* Camelot Key */}
                                             <div className="px-2 py-1 rounded-lg bg-purple-950/60 border border-purple-800/80 font-mono text-[11px] text-center min-w-[50px]">
                                                 <span className="text-purple-300 block text-[8px]">KEY</span>
-                                                <span className="font-black text-purple-200">{track.key || track.k || '--'}</span>
+                                                <span className={`font-black ${trackKey ? 'text-purple-200' : 'text-gray-500'}`}>
+                                                    {trackKey || '--'}
+                                                </span>
                                             </div>
 
                                             {/* Rol Acústico (Anti-Muddy) */}
@@ -13855,9 +14062,21 @@ const SetBuilderWorkspace = ({
                                             <div className="px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[65px]">
                                                 <span className="text-gray-400 block text-[8px]">LUFS</span>
                                                 <span className="font-bold text-djcyan-400">
-                                                    {track.lufs || track.integrated_lufs ? `${track.lufs || track.integrated_lufs} dB` : '-8.5 dB'}
+                                                    {trackLufs} dB
                                                 </span>
                                             </div>
+
+                                            {/* Botón Auditar Individual si falta BPM o Key */}
+                                            {(!trackBpm || !trackKey) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handleAuditSingleTrack(track, e)}
+                                                    className="px-2 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 text-[10px] font-mono font-bold cursor-pointer transition-all shadow"
+                                                    title="Auditar acústicamente esta pista ahora para detectar BPM y Key"
+                                                >
+                                                    ⚡ Auditar
+                                                </button>
+                                            )}
 
                                             {/* Botón Eliminar */}
                                             <button
@@ -13897,17 +14116,19 @@ const SetBuilderWorkspace = ({
 
                                             {/* Consejos Proactivos para el DJ en Cabina */}
                                             <div className="text-[9.5px] font-mono text-gray-400 flex items-center gap-2">
-                                                {antiMuddyTrans.isCollision && (
+                                                {harmTrans.type === 'UNKNOWN' ? (
+                                                    <span className="text-amber-400 font-bold flex items-center gap-1">
+                                                        <span>⚠️</span> <span>Tonalidad pendiente de auditoría</span>
+                                                    </span>
+                                                ) : antiMuddyTrans.isCollision ? (
                                                     <span className="text-red-400 font-bold flex items-center gap-1">
                                                         <span>⚠️</span> <span>Cortar EQ Low canal saliente</span>
                                                     </span>
-                                                )}
-                                                {lufsTrans.isAlert && (
+                                                ) : lufsTrans.isAlert ? (
                                                     <span className="text-amber-400 font-bold flex items-center gap-1">
                                                         <span>🎚️</span> <span>{lufsTrans.delta > 0 ? `Bajar Trim ~${Math.abs(lufsTrans.delta)}dB` : `Subir Trim ~${Math.abs(lufsTrans.delta)}dB`}</span>
                                                     </span>
-                                                )}
-                                                {!antiMuddyTrans.isCollision && !lufsTrans.isAlert && (
+                                                ) : (
                                                     <span className="text-emerald-400">
                                                         ✨ Mezcla fluida garantizada
                                                     </span>
@@ -14007,7 +14228,15 @@ const SetBuilderWorkspace = ({
     );
 };
 
+// =========================================================================
+// ESPACIO DE TRABAJO: CONOCIMIENTO (CURSOS, VÍDEOS Y MANUALES DJ)
+// =========================================================================
 
+// =========================================================================
+
+// =========================================================================
+// ESPACIO DE TRABAJO: CONOCIMIENTO (CURSOS, VÍDEOS Y MANUALES DJ)
+// =========================================================================
 const KnowledgeWorkspace = ({ lang = "es" }) => {
     const [activeSection, setActiveSection] = useState("courses"); // 'courses' | 'videos' | 'manuals' | 'glossary'
     const [knowledgeData, setKnowledgeData] = useState({
@@ -15154,10 +15383,12 @@ const App = () => {
                         setTracks={setBuilderTracks}
                         setSetTracks={setSetBuilderTracks}
                         auditTracks={auditTracks}
+                        setAuditTracks={setAuditTracks}
                         onPlayTrack={handlePlayTrack}
                         nowPlayingTrack={nowPlayingTrack}
                         isPlaying={isPlaying}
                         onTogglePlay={togglePlayPause}
+                        onNavigateTab={setActiveTab}
                         lang={lang}
                     />
                 </div>

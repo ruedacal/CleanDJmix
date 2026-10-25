@@ -8661,12 +8661,41 @@ ${text}`);
     )))));
   };
   function parseCamelotKey(keyStr) {
-    if (!keyStr) return null;
+    if (!keyStr || keyStr === "--" || keyStr === "?") return null;
     const match = String(keyStr).trim().toUpperCase().match(/^(\d{1,2})([AB])$/);
     if (match) {
       return { num: parseInt(match[1], 10), letter: match[2] };
     }
     return null;
+  }
+  function getTrackBpm(t) {
+    if (!t) return null;
+    for (const k of [t.bpm, t.b, t.displayBpm]) {
+      if (k !== void 0 && k !== null && k !== "" && k !== "--") {
+        const v = parseFloat(k);
+        if (!isNaN(v) && v > 40 && v < 250) return Math.round(v * 100) / 100;
+      }
+    }
+    return null;
+  }
+  function getTrackKey(t) {
+    if (!t) return null;
+    for (const k of [t.key, t.k, t.tonalidad, t.initial_key]) {
+      if (k && k !== "--" && k !== "?" && k !== "N/D") {
+        return String(k).trim().toUpperCase();
+      }
+    }
+    return null;
+  }
+  function getTrackLufs(t) {
+    if (!t) return -8.5;
+    for (const k of [t.lufs, t.integrated_lufs, t.loudness_lufs]) {
+      if (k !== void 0 && k !== null && k !== "" && k !== "--") {
+        const v = parseFloat(k);
+        if (!isNaN(v) && v < 0) return Math.round(v * 10) / 10;
+      }
+    }
+    return -8.5;
   }
   function evaluateHarmonicTransition(keyA, keyB) {
     const kA = parseCamelotKey(keyA);
@@ -8677,7 +8706,7 @@ ${text}`);
         badge: "\u2753 Tonalidad N/D",
         color: "bg-djzinc-800 text-gray-400 border-djzinc-700",
         score: 50,
-        desc: "Una de las pistas no tiene tonalidad Camelot identificada."
+        desc: "Una de las pistas no tiene tonalidad Camelot detectada. Audita las pistas para calcular compatibilidad."
       };
     }
     if (kA.num === kB.num && kA.letter === kB.letter) {
@@ -8686,7 +8715,7 @@ ${text}`);
         badge: "\u{1F7E2} Misma Clave (0)",
         color: "bg-emerald-950/90 text-emerald-300 border-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.3)]",
         score: 100,
-        desc: "Armon\xEDa id\xE9ntica: Tonalidades emparejadas al 100%. Mezcla transparente y fluida."
+        desc: "Armon\xEDa perfecta (0): Mismo tono y modo. Fusi\xF3n de bajo y melod\xEDas completamente transparente."
       };
     }
     if (kA.num === kB.num && kA.letter !== kB.letter) {
@@ -8695,17 +8724,17 @@ ${text}`);
         badge: "\u{1F7E3} Cambio Modal (A\u2194B)",
         color: "bg-purple-950/90 text-purple-300 border-purple-600 shadow-[0_0_8px_rgba(168,85,247,0.3)]",
         score: 95,
-        desc: "Giro emocional: Transici\xF3n entre relativo menor y mayor sin disonancias."
+        desc: "Giro emocional (A\u2194B): Modulaci\xF3n entre escala menor y mayor relativa."
       };
     }
     const diff = (kB.num - kA.num + 12) % 12;
     if (diff === 1 && kA.letter === kB.letter) {
       return {
         type: "BOOST_PLUS_1",
-        badge: "\u26A1 Subida de Energ\xEDa (+1)",
+        badge: "\u26A1 Subida Energ\xEDa (+1)",
         color: "bg-amber-950/90 text-amber-300 border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]",
         score: 90,
-        desc: "Inyecci\xF3n de energ\xEDa natural en pista: Incremento de tensi\xF3n arm\xF3nica."
+        desc: "Subida de tensi\xF3n (+1): Inyecci\xF3n natural de energ\xEDa arm\xF3nica en pista."
       };
     }
     if (diff === 11 && kA.letter === kB.letter) {
@@ -8714,7 +8743,7 @@ ${text}`);
         badge: "\u{1F535} Descenso Suave (-1)",
         color: "bg-cyan-950/90 text-cyan-300 border-cyan-600 shadow-[0_0_8px_rgba(6,182,212,0.3)]",
         score: 85,
-        desc: "Transici\xF3n profunda: Relajaci\xF3n de tensi\xF3n arm\xF3nica hacia notas m\xE1s oscuras."
+        desc: "Descenso suave (-1): Relajaci\xF3n arm\xF3nica hacia tonalidades m\xE1s profundas o oscuras."
       };
     }
     if (diff === 2 && kA.letter === kB.letter) {
@@ -8723,16 +8752,16 @@ ${text}`);
         badge: "\u{1F525} Salto Doble (+2)",
         color: "bg-orange-950/90 text-orange-300 border-orange-500",
         score: 75,
-        desc: "Subid\xF3n dram\xE1tico: Recomendado soltar en el drop o durante un corte de comp\xE1s."
+        desc: "Salto doble de energ\xEDa (+2): Mezclar en drop o corte percusivo para impacto m\xE1ximo."
       };
     }
     if ((diff === 1 || diff === 11) && kA.letter !== kB.letter) {
       return {
         type: "DIAGONAL",
-        badge: "\u{1F537} Transici\xF3n Diagonal",
+        badge: "\u{1F537} Diagonal (\xB11 A/B)",
         color: "bg-blue-950/90 text-blue-300 border-blue-600",
         score: 70,
-        desc: "Modulaci\xF3n cruzada aceptable con buen flujo mel\xF3dico en fraseo largo."
+        desc: "Modulaci\xF3n diagonal: Transici\xF3n cruzada arm\xF3nicamente aceptable con frases largas."
       };
     }
     return {
@@ -8740,7 +8769,7 @@ ${text}`);
       badge: "\u26A0\uFE0F Choque Disonante",
       color: "bg-rose-950/90 text-rose-300 border-rose-600 shadow-[0_0_8px_rgba(225,29,72,0.3)]",
       score: 30,
-      desc: "Conflicto tonal: No solapar melod\xEDas o sintes; mezclar en secciones percusivas limpias."
+      desc: "Conflicto arm\xF3nico. No solapar sintes o voces; mezclar en secci\xF3n percusiva limpia."
     };
   }
   function evaluateLufsTransition(lufsA, lufsB) {
@@ -8750,7 +8779,7 @@ ${text}`);
     const absDelta = Math.abs(delta);
     if (absDelta > 2.5) {
       const sign = delta > 0 ? `+${delta}` : `${delta}`;
-      const advice = delta > 0 ? `Bajar Trim/Ganancia ~${absDelta} dB en la mesa antes de abrir el fader.` : `Subir Trim/Ganancia ~${absDelta} dB para evitar ca\xEDda de pegada en pista.`;
+      const advice = delta > 0 ? `Bajar Trim/Ganancia ~${absDelta} dB en mesa antes de abrir el fader.` : `Subir Trim/Ganancia ~${absDelta} dB para compensar ca\xEDda de volumen.`;
       return {
         isAlert: true,
         delta,
@@ -8764,7 +8793,7 @@ ${text}`);
       delta,
       badge: `\u{1F7E2} LUFS Equilibrado (${delta > 0 ? "+" : ""}${delta} dB)`,
       color: "bg-djzinc-850 text-emerald-400 border-djzinc-700",
-      advice: "Niveles de sonoridad uniforme sin sorpresas de volumen."
+      advice: "Sonoridad uniforme sin saltos de volumen en pista."
     };
   }
   function evaluateAntiMuddyTransition(trackA, trackB) {
@@ -8775,7 +8804,7 @@ ${text}`);
         isCollision: true,
         badge: "\u26A0\uFE0F Colisi\xF3n Bass (30-80 Hz)",
         color: "bg-red-950/90 text-red-300 border-red-700 animate-pulse",
-        advice: "Ambos temas son Bass Drivers. Cortar EQ Low (-inf a -6dB) del tema saliente antes del drop para evitar cancelaci\xF3n de fase y saturaci\xF3n en master."
+        advice: "Ambos temas son Bass Drivers. Cortar EQ Low del tema saliente antes del drop para evitar barrizal de graves y cancelaci\xF3n de fase."
       };
     }
     const isCompA = isBassA && (trackB?.acoustic_role === "Vocal / Lead" || trackB?.acoustic_role === "Percussive Tool");
@@ -8799,10 +8828,12 @@ ${text}`);
     setTracks = [],
     setSetTracks,
     auditTracks = [],
+    setAuditTracks,
     onPlayTrack,
     nowPlayingTrack,
     isPlaying,
     onTogglePlay,
+    onNavigateTab,
     lang = "es"
   }) => {
     const [setName, setSetName] = useState("BeatWave_Mainstage_Set");
@@ -8811,35 +8842,75 @@ ${text}`);
     const [searchAddQuery, setSearchAddQuery] = useState("");
     const [exportStatus, setExportStatus] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [isAuditingSet, setIsAuditingSet] = useState(false);
+    const [auditSetProgress, setAuditSetProgress] = useState(0);
+    useEffect(() => {
+      if (!auditTracks || auditTracks.length === 0 || !setTracks || setTracks.length === 0) return;
+      let hasChanges = false;
+      const updated = setTracks.map((st) => {
+        const found = auditTracks.find(
+          (at) => at.id && String(at.id) === String(st.id) || at.path && st.path && at.path === st.path || at.filename && st.filename && at.filename === st.filename
+        );
+        if (found) {
+          const newBpm = found.bpm || found.b;
+          const newKey = found.key || found.k;
+          const newLufs = found.lufs || found.integrated_lufs;
+          const newRole = found.acoustic_role;
+          if (newBpm && newBpm !== "--" && st.bpm !== newBpm || newKey && newKey !== "--" && st.key !== newKey || newRole && st.acoustic_role !== newRole) {
+            hasChanges = true;
+            return {
+              ...st,
+              ...found,
+              bpm: newBpm && newBpm !== "--" ? newBpm : st.bpm,
+              key: newKey && newKey !== "--" ? newKey : st.key,
+              lufs: newLufs && newLufs !== "--" ? newLufs : st.lufs,
+              acoustic_role: newRole || st.acoustic_role || "Balanced Full-Range",
+              low_ratio: found.low_ratio || st.low_ratio || 33.3,
+              mid_ratio: found.mid_ratio || st.mid_ratio || 33.3,
+              high_ratio: found.high_ratio || st.high_ratio || 33.4
+            };
+          }
+        }
+        return st;
+      });
+      if (hasChanges) {
+        setSetTracks(updated);
+      }
+    }, [auditTracks]);
     const stats = useMemo(() => {
       if (!setTracks || setTracks.length === 0) {
-        return { totalDurationSec: 0, minBpm: 0, maxBpm: 0, avgBpm: 0, avgLufs: 0, harmonicScore: 100 };
+        return { totalDurationSec: 0, minBpm: 0, maxBpm: 0, avgBpm: 0, avgLufs: 0, harmonicScore: 100, pendingAuditCount: 0 };
       }
       let totalSec = 0;
-      let bpms = [];
-      let lufsVals = [];
+      let validBpms = [];
+      let validLufs = [];
+      let pendingAudit = 0;
       setTracks.forEach((t) => {
         const d = parseFloat(t.duration_sec || t.duration || 0);
         totalSec += d > 0 ? d : 240;
-        const b = parseFloat(t.bpm || t.b || 0);
-        if (b > 0) bpms.push(b);
-        const l = parseFloat(t.lufs || t.integrated_lufs || -9);
-        lufsVals.push(l);
+        const b = getTrackBpm(t);
+        if (b !== null) {
+          validBpms.push(b);
+        } else {
+          pendingAudit++;
+        }
+        const l = getTrackLufs(t);
+        validLufs.push(l);
       });
-      const minBpm = bpms.length > 0 ? Math.min(...bpms) : 124;
-      const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 128;
-      const avgBpm = bpms.length > 0 ? Math.round(bpms.reduce((a, b) => a + b, 0) / bpms.length * 10) / 10 : 126;
-      const avgLufs = lufsVals.length > 0 ? Math.round(lufsVals.reduce((a, b) => a + b, 0) / lufsVals.length * 10) / 10 : -8.5;
+      const minBpm = validBpms.length > 0 ? Math.round(Math.min(...validBpms)) : 124;
+      const maxBpm = validBpms.length > 0 ? Math.round(Math.max(...validBpms)) : 128;
+      const avgBpm = validBpms.length > 0 ? Math.round(validBpms.reduce((a, b) => a + b, 0) / validBpms.length * 10) / 10 : 126;
+      const avgLufs = validLufs.length > 0 ? Math.round(validLufs.reduce((a, b) => a + b, 0) / validLufs.length * 10) / 10 : -8.5;
       let totalScore = 0;
       let transitionsCount = Math.max(1, setTracks.length - 1);
       for (let i = 0; i < setTracks.length - 1; i++) {
         const trkA = setTracks[i];
         const trkB = setTracks[i + 1];
-        const harm = evaluateHarmonicTransition(trkA.key || trkA.k, trkB.key || trkB.k);
+        const harm = evaluateHarmonicTransition(getTrackKey(trkA), getTrackKey(trkB));
         totalScore += harm.score;
       }
       const harmonicScore = setTracks.length <= 1 ? 100 : Math.round(totalScore / transitionsCount);
-      return { totalDurationSec: totalSec, minBpm, maxBpm, avgBpm, avgLufs, harmonicScore };
+      return { totalDurationSec: totalSec, minBpm, maxBpm, avgBpm, avgLufs, harmonicScore, pendingAuditCount: pendingAudit };
     }, [setTracks]);
     const formattedDuration = useMemo(() => {
       const s = stats.totalDurationSec;
@@ -8893,18 +8964,22 @@ ${text}`);
     const handleOptimizeHarmonicFlow = () => {
       if (!setTracks || setTracks.length < 2) return;
       let remaining = [...setTracks];
-      remaining.sort((a, b) => parseFloat(a.bpm || a.b || 126) - parseFloat(b.bpm || b.b || 126));
+      remaining.sort((a, b) => {
+        const bA = getTrackBpm(a) || 126;
+        const bB = getTrackBpm(b) || 126;
+        return bA - bB;
+      });
       const optimized = [remaining.shift()];
       while (remaining.length > 0) {
         const current = optimized[optimized.length - 1];
-        const curBpm = parseFloat(current.bpm || current.b || 126);
-        const curKey = current.key || current.k || "";
+        const curBpm = getTrackBpm(current) || 126;
+        const curKey = getTrackKey(current) || "";
         let bestIdx = 0;
-        let bestScore = -999;
+        let bestScore = -9999;
         for (let i = 0; i < remaining.length; i++) {
           const candidate = remaining[i];
-          const candBpm = parseFloat(candidate.bpm || candidate.b || 126);
-          const candKey = candidate.key || candidate.k || "";
+          const candBpm = getTrackBpm(candidate) || curBpm || 126;
+          const candKey = getTrackKey(candidate) || "";
           const harm = evaluateHarmonicTransition(curKey, candKey);
           const bpmDiff = Math.abs(candBpm - curBpm);
           const bpmScore = Math.max(0, 100 - bpmDiff * 15);
@@ -8920,8 +8995,82 @@ ${text}`);
         optimized.push(remaining.splice(bestIdx, 1)[0]);
       }
       setSetTracks(optimized);
-      setExportStatus({ type: "success", msg: "\xA1Set auto-optimizado! Progresi\xF3n arm\xF3nica y de BPM calculada sin choques tonales." });
+      setExportStatus({ type: "success", msg: "\u2713 \xA1Set auto-optimizado! Progresi\xF3n arm\xF3nica y curva de BPM reorganizadas sin choques tonales." });
       setTimeout(() => setExportStatus(null), 4500);
+    };
+    const handleAuditSetTracks = async () => {
+      const paths = setTracks.map((t) => t.path || t.filepath || t.f).filter((p) => Boolean(p));
+      if (paths.length === 0) {
+        alert("Las pistas del set no cuentan con una ruta de archivo local v\xE1lida para auditar.");
+        return;
+      }
+      setIsAuditingSet(true);
+      setAuditSetProgress(15);
+      setExportStatus({ type: "loading", msg: `Iniciando auditor\xEDa ac\xFAstica DSP de ${paths.length} pistas del set...` });
+      try {
+        if (window.eel && window.eel.iniciar_auditoria) {
+          const res = await window.eel.iniciar_auditoria(paths)();
+          if (res && res.tracks) {
+            const mapRes = {};
+            res.tracks.forEach((tr) => {
+              if (tr.path) mapRes[tr.path] = tr;
+              if (tr.id) mapRes[String(tr.id)] = tr;
+            });
+            const updated = setTracks.map((st) => {
+              const found = mapRes[st.path] || mapRes[String(st.id)];
+              return found ? { ...st, ...found } : st;
+            });
+            setSetTracks(updated);
+            if (setAuditTracks) {
+              setAuditTracks((prev) => {
+                const merged = [...prev];
+                res.tracks.forEach((newTr) => {
+                  const exIdx = merged.findIndex((x) => x.path && x.path === newTr.path || x.id && String(x.id) === String(newTr.id));
+                  if (exIdx >= 0) merged[exIdx] = { ...merged[exIdx], ...newTr };
+                  else merged.push(newTr);
+                });
+                return merged;
+              });
+            }
+            setExportStatus({ type: "success", msg: `\u2713 Auditor\xEDa completada: ${res.tracks.length} pistas analizadas con BPM, Camelot Key, LUFS y Roles Espectrales.` });
+          }
+        } else {
+          setExportStatus({ type: "error", msg: "Servicio de auditor\xEDa backend no disponible en este entorno." });
+        }
+      } catch (err) {
+        console.error("Error auditando pistas del set:", err);
+        setExportStatus({ type: "error", msg: `Error durante la auditor\xEDa: ${err.message || err}` });
+      } finally {
+        setIsAuditingSet(false);
+        setAuditSetProgress(0);
+        setTimeout(() => setExportStatus(null), 5e3);
+      }
+    };
+    const handleAuditSingleTrack = async (track, e) => {
+      if (e) e.stopPropagation();
+      const pth = track.path || track.filepath || track.f;
+      if (!pth) {
+        alert("No se encontr\xF3 la ruta del archivo de audio para auditar.");
+        return;
+      }
+      setExportStatus({ type: "loading", msg: `Auditando "${track.title || track.t || "pista"}"...` });
+      try {
+        if (window.eel && window.eel.iniciar_auditoria) {
+          const res = await window.eel.iniciar_auditoria([pth])();
+          if (res && res.tracks && res.tracks.length > 0) {
+            const audited = res.tracks[0];
+            setSetTracks((prev) => prev.map((t) => t.id === track.id || t.path === pth ? { ...t, ...audited } : t));
+            if (setAuditTracks) {
+              setAuditTracks((prev) => prev.map((t) => t.id === track.id || t.path === pth ? { ...t, ...audited } : t));
+            }
+            setExportStatus({ type: "success", msg: `\u2713 Pista auditada: ${audited.bpm || "--"} BPM | ${audited.key || "--"} Camelot` });
+          }
+        }
+      } catch (err) {
+        setExportStatus({ type: "error", msg: `Error al auditar pista: ${err.message || err}` });
+      } finally {
+        setTimeout(() => setExportStatus(null), 4e3);
+      }
     };
     const handleExportM3U = async () => {
       if (!setTracks || setTracks.length === 0) {
@@ -8961,7 +9110,7 @@ ${text}`);
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         const savedPath = res && res.path ? res.path : "Descargado en tu navegador";
-        setExportStatus({ type: "success", msg: `Set exportado con \xE9xito (${setTracks.length} pistas): ${savedPath}` });
+        setExportStatus({ type: "success", msg: `\u2713 Set exportado con \xE9xito (${setTracks.length} pistas): ${savedPath}` });
       } catch (e) {
         setExportStatus({ type: "error", msg: `Error al exportar set: ${e.message || e}` });
       } finally {
@@ -8971,27 +9120,37 @@ ${text}`);
     };
     const renderFlowCanvas = () => {
       if (!setTracks || setTracks.length < 2) {
-        return /* @__PURE__ */ React.createElement("div", { className: "h-32 flex flex-col items-center justify-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl" }, /* @__PURE__ */ React.createElement("span", null, "A\xF1ade al menos 2 pistas para visualizar la curva de BPM y flujo de energ\xEDa."));
+        return /* @__PURE__ */ React.createElement("div", { className: "h-32 flex flex-col items-center justify-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl bg-djzinc-950/40" }, /* @__PURE__ */ React.createElement("span", null, "A\xF1ade al menos 2 pistas para visualizar la curva de BPM y flujo de energ\xEDa."));
       }
       const width = 900;
       const height = 140;
-      const padX = 50;
-      const padY = 25;
-      const bpms = setTracks.map((t) => parseFloat(t.bpm || t.b || 126));
-      const minB = Math.max(60, Math.min(...bpms) - 2);
-      const maxB = Math.min(180, Math.max(...bpms) + 2);
-      const bpmRange = Math.max(1, maxB - minB);
+      const padX = 55;
+      const padY = 28;
+      const validBpms = setTracks.map(getTrackBpm).filter((v) => v !== null);
+      const fallbackBpm = validBpms.length > 0 ? Math.round(validBpms.reduce((a, b) => a + b, 0) / validBpms.length) : 126;
+      const minB = validBpms.length > 0 ? Math.max(60, Math.floor(Math.min(...validBpms)) - 2) : 122;
+      const maxB = validBpms.length > 0 ? Math.min(180, Math.ceil(Math.max(...validBpms)) + 2) : 130;
+      const bpmRange = Math.max(2, maxB - minB);
       const points = setTracks.map((t, idx) => {
-        const x = padX + idx / (setTracks.length - 1) * (width - 2 * padX);
-        const bpm = parseFloat(t.bpm || t.b || 126);
+        const x = padX + idx / Math.max(1, setTracks.length - 1) * (width - 2 * padX);
+        const parsedBpm = getTrackBpm(t);
+        const bpm = parsedBpm !== null ? parsedBpm : fallbackBpm;
         const y = height - padY - (bpm - minB) / bpmRange * (height - 2 * padY);
-        return { x, y, bpm, track: t, idx };
+        return {
+          x: isFinite(x) ? Math.round(x * 10) / 10 : padX,
+          y: isFinite(y) ? Math.round(y * 10) / 10 : Math.round(height / 2),
+          bpm,
+          hasRealBpm: parsedBpm !== null,
+          track: t,
+          idx
+        };
       });
       const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
       const areaPoints = `${padX},${height - padY} ` + polylinePoints + ` ${width - padX},${height - padY}`;
-      return /* @__PURE__ */ React.createElement("div", { className: "relative w-full bg-gradient-to-b from-djzinc-900/90 to-[#07070a] border border-djzinc-800 rounded-2xl p-4 shadow-xl overflow-x-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 animate-ping" }), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-djcyan-300" }, "Lienzo de Curva de BPM & Flujo de Tensi\xF3n Arm\xF3nica")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-0.5 bg-djcyan-400 inline-block" }), " Progresi\xF3n BPM (", stats.minBpm, " \u2192 ", stats.maxBpm, ")"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-purple-500 inline-block" }), " Tonalidad Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, "Score Arm\xF3nico: ", stats.harmonicScore, "%"))), /* @__PURE__ */ React.createElement("div", { className: "w-full min-w-[700px]" }, /* @__PURE__ */ React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, className: "w-full h-36 overflow-visible" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("linearGradient", { id: "bpmCurveGrad", x1: "0%", y1: "0%", x2: "100%", y2: "0%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#06b6d4" }), /* @__PURE__ */ React.createElement("stop", { offset: "50%", stopColor: "#a855f7" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#ec4899" })), /* @__PURE__ */ React.createElement("linearGradient", { id: "areaFillGrad", x1: "0%", y1: "0%", x2: "0%", y2: "100%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#06b6d4", stopOpacity: "0.25" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#06b6d4", stopOpacity: "0.0" }))), [0, 0.5, 1].map((ratio, i) => {
+      return /* @__PURE__ */ React.createElement("div", { className: "relative w-full bg-gradient-to-b from-djzinc-900/95 to-[#07070a] border border-djzinc-800 rounded-2xl p-4 shadow-xl overflow-x-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 animate-ping" }), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-djcyan-300" }, "Lienzo de Curva de BPM & Flujo de Tensi\xF3n Arm\xF3nica")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-0.5 bg-djcyan-400 inline-block" }), " Progresi\xF3n BPM (", stats.minBpm, " \u2192 ", stats.maxBpm, ")"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-purple-500 inline-block" }), " Tonalidad Camelot"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${stats.harmonicScore >= 85 ? "text-emerald-400" : stats.harmonicScore >= 70 ? "text-amber-400" : "text-rose-400"}` }, "Score Arm\xF3nico: ", stats.harmonicScore, "%"))), /* @__PURE__ */ React.createElement("div", { className: "w-full min-w-[700px]" }, /* @__PURE__ */ React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, className: "w-full h-36 overflow-visible select-none" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("linearGradient", { id: "bpmCurveGrad", x1: "0%", y1: "0%", x2: "100%", y2: "0%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#06b6d4" }), /* @__PURE__ */ React.createElement("stop", { offset: "50%", stopColor: "#a855f7" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#ec4899" })), /* @__PURE__ */ React.createElement("linearGradient", { id: "areaFillGrad", x1: "0%", y1: "0%", x2: "0%", y2: "100%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#06b6d4", stopOpacity: "0.25" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#06b6d4", stopOpacity: "0.0" }))), [0, 0.5, 1].map((ratio, i) => {
         const val = Math.round(minB + ratio * bpmRange);
-        const yPos = height - padY - ratio * (height - 2 * padY);
+        const yPos = Math.round((height - padY - ratio * (height - 2 * padY)) * 10) / 10;
+        if (!isFinite(val) || !isFinite(yPos)) return null;
         return /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("line", { x1: padX, y1: yPos, x2: width - padX, y2: yPos, stroke: "#27272a", strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement("text", { x: padX - 8, y: yPos + 3, fill: "#71717a", fontSize: "9", fontFamily: "monospace", textAnchor: "end" }, val));
       }), /* @__PURE__ */ React.createElement("polygon", { points: areaPoints, fill: "url(#areaFillGrad)" }), /* @__PURE__ */ React.createElement(
         "polyline",
@@ -9006,6 +9165,7 @@ ${text}`);
       ), points.map((p, idx) => {
         const isSelected = selectedTrackIdx === idx;
         const isCurPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(p.track.id) && isPlaying;
+        const keyStr = getTrackKey(p.track);
         return /* @__PURE__ */ React.createElement(
           "g",
           {
@@ -9019,18 +9179,20 @@ ${text}`);
               cx: p.x,
               cy: p.y,
               r: isSelected || isCurPlaying ? "10" : "6",
-              fill: isCurPlaying ? "#ec4899" : isSelected ? "#06b6d4" : "#18181b",
-              stroke: isCurPlaying ? "#ffffff" : isSelected ? "#38bdf8" : "#a855f7",
-              strokeWidth: isSelected || isCurPlaying ? "3" : "2",
-              className: "transition-all duration-200 group-hover:r-8"
-            }
+              fill: isCurPlaying ? "#ec4899" : isSelected ? "#06b6d4" : p.hasRealBpm ? "#18181b" : "#27272a",
+              stroke: isCurPlaying ? "#ffffff" : isSelected ? "#38bdf8" : p.hasRealBpm ? "#a855f7" : "#f59e0b",
+              strokeWidth: isSelected || isCurPlaying ? "3" : p.hasRealBpm ? "2" : "1.5",
+              strokeDasharray: p.hasRealBpm ? "none" : "2 2",
+              className: "transition-all duration-200 group-hover:scale-125"
+            },
+            /* @__PURE__ */ React.createElement("title", null, `Track #${idx + 1}: ${p.track.title || p.track.t || "Pista"} | BPM: ${p.hasRealBpm ? p.bpm : "-- (Sin auditar)"} | Key: ${keyStr || "--"}`)
           ),
           /* @__PURE__ */ React.createElement(
             "text",
             {
               x: p.x,
               y: p.y - 12,
-              fill: isSelected ? "#38bdf8" : "#d4d4d8",
+              fill: isSelected ? "#38bdf8" : p.hasRealBpm ? "#d4d4d8" : "#f59e0b",
               fontSize: "9.5",
               fontWeight: "bold",
               fontFamily: "monospace",
@@ -9044,25 +9206,36 @@ ${text}`);
             {
               x: p.x,
               y: height - padY + 14,
-              fill: "#a855f7",
+              fill: keyStr ? "#a855f7" : "#71717a",
               fontSize: "9",
               fontWeight: "black",
               fontFamily: "monospace",
               textAnchor: "middle"
             },
-            p.track.key || p.track.k || "--"
+            keyStr || "--"
           )
         );
       }))));
     };
-    return /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "p-1.5 rounded-lg bg-gradient-to-br from-djcyan-500/20 to-purple-500/20 text-djcyan-400 border border-djcyan-500/30" }, /* @__PURE__ */ React.createElement(Icons.Flow, null)), /* @__PURE__ */ React.createElement("h2", { className: "text-xl font-mono font-black tracking-tight text-white uppercase flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "Set-Builder & Energy Flow Canvas"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djcyan-950 text-djcyan-400 border border-djcyan-800 px-2 py-0.5 rounded-full font-mono font-normal" }, "PRO DJ SET ENGINE"))), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-1 max-w-2xl font-sans" }, "Estructura la progresi\xF3n de tu sesi\xF3n en vivo. Visualiza curvas de BPM, saltos arm\xF3nicos Camelot (+1, -1, cambios modales), saltos de volumen LUFS y alertas Anti-Muddy en transiciones.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "p-1.5 rounded-lg bg-gradient-to-br from-djcyan-500/20 to-purple-500/20 text-djcyan-400 border border-djcyan-500/30" }, /* @__PURE__ */ React.createElement(Icons.Flow, null)), /* @__PURE__ */ React.createElement("h2", { className: "text-xl font-mono font-black tracking-tight text-white uppercase flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "Set-Builder & Energy Flow Canvas"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djcyan-950 text-djcyan-400 border border-djcyan-800 px-2 py-0.5 rounded-full font-mono font-normal" }, "PRO DJ SET ENGINE"))), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-1 max-w-2xl font-sans" }, "Estructura la progresi\xF3n arm\xF3nica de tu sesi\xF3n en vivo. Visualiza curvas de BPM, transiciones Camelot (+1, -1, cambios modales), saltos de volumen LUFS y alertas Anti-Muddy en tiempo real.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, stats.pendingAuditCount > 0 && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleAuditSetTracks,
+        disabled: isAuditingSet,
+        className: "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition-all active:scale-95 disabled:opacity-40 cursor-pointer animate-pulse",
+        title: "Calcula BPM exacto, Tonalidad Camelot, LUFS y Roles Espectrales para las pistas del set sin auditar"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
+      /* @__PURE__ */ React.createElement("span", null, isAuditingSet ? "Auditando..." : `Auditar Pistas del Set (${stats.pendingAuditCount} pend.)`)
+    ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: handleOptimizeHarmonicFlow,
-        disabled: setTracks.length < 2,
+        disabled: setTracks.length < 2 || isAuditingSet,
         className: "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer",
-        title: "Calcula el orden perfecto de BPM y compatibilidad Camelot sin choques tonales"
+        title: "Reordena autom\xE1ticamente las pistas para maximizar la compatibilidad arm\xF3nica Camelot y progresi\xF3n de BPM"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
       /* @__PURE__ */ React.createElement("span", null, "Auto-Optimizar Pro (Flow Arm\xF3nico)")
@@ -9073,7 +9246,7 @@ ${text}`);
         onClick: handleExportM3U,
         disabled: isExporting || setTracks.length === 0,
         className: "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer",
-        title: "Exportar archivo de lista de reproducci\xF3n compatible con Pioneer Rekordbox, Serato DJ Pro, Traktor Pro y VirtualDJ"
+        title: "Exportar archivo M3U8 para Pioneer Rekordbox, Serato DJ Pro, Traktor Pro y VirtualDJ"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
       /* @__PURE__ */ React.createElement("span", null, isExporting ? "Exportando..." : "Exportar Set (.M3U8)")
@@ -9094,7 +9267,7 @@ ${text}`);
         title: "Vaciar set"
       },
       "\u{1F5D1}\uFE0F"
-    ))), exportStatus && /* @__PURE__ */ React.createElement("div", { className: `p-3 rounded-xl border text-xs font-mono flex items-center justify-between animate-fadeIn ${exportStatus.type === "success" ? "bg-emerald-950/80 border-emerald-700 text-emerald-300" : exportStatus.type === "error" ? "bg-rose-950/80 border-rose-700 text-rose-300" : "bg-djcyan-950/80 border-djcyan-700 text-djcyan-300"}` }, /* @__PURE__ */ React.createElement("span", null, exportStatus.msg), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setExportStatus(null), className: "text-gray-400 hover:text-white" }, "\u2715")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-6 gap-3 pt-2 border-t border-djzinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "col-span-2 flex items-center gap-2 bg-djzinc-900/80 border border-djzinc-800 rounded-xl px-3 py-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 uppercase" }, "Nombre:"), /* @__PURE__ */ React.createElement(
+    ))), exportStatus && /* @__PURE__ */ React.createElement("div", { className: `p-3 rounded-xl border text-xs font-mono flex items-center justify-between animate-fadeIn ${exportStatus.type === "success" ? "bg-emerald-950/80 border-emerald-700 text-emerald-300" : exportStatus.type === "error" ? "bg-rose-950/80 border-rose-700 text-rose-300" : "bg-djcyan-950/80 border-djcyan-700 text-djcyan-300"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, exportStatus.type === "loading" && /* @__PURE__ */ React.createElement("span", { className: "animate-spin text-base" }, "\u2699"), /* @__PURE__ */ React.createElement("span", null, exportStatus.msg)), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setExportStatus(null), className: "text-gray-400 hover:text-white" }, "\u2715")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-6 gap-3 pt-2 border-t border-djzinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "col-span-2 flex items-center gap-2 bg-djzinc-900/80 border border-djzinc-800 rounded-xl px-3 py-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 uppercase" }, "Nombre:"), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
@@ -9103,7 +9276,7 @@ ${text}`);
         className: "bg-transparent text-xs font-mono text-white font-bold outline-none flex-1 focus:text-djcyan-300",
         placeholder: "Nombre del Set..."
       }
-    )), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 uppercase" }, "Pistas"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-mono font-black text-djcyan-400" }, setTracks.length)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 uppercase" }, "Duraci\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-mono font-black text-purple-300" }, formattedDuration)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 uppercase" }, "Rango BPM"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-mono font-black text-amber-300" }, stats.minBpm, " - ", stats.maxBpm)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 uppercase" }, "Score Arm\xF3nico"), /* @__PURE__ */ React.createElement("span", { className: `text-sm font-mono font-black ${stats.harmonicScore >= 85 ? "text-emerald-400" : stats.harmonicScore >= 70 ? "text-amber-400" : "text-rose-400"}` }, stats.harmonicScore, "%")))), /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 flex flex-col gap-6 flex-1" }, renderFlowCanvas(), setTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center py-16 text-center border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-950/40 p-6" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-2xl bg-djzinc-900 flex items-center justify-center text-djcyan-400 mb-4 border border-djzinc-800" }, /* @__PURE__ */ React.createElement(Icons.Flow, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-mono font-bold text-gray-300" }, "Tu Set est\xE1 vac\xEDo"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-500 max-w-md mt-1 mb-5 font-sans" }, 'Agrega pistas desde el bot\xF3n superior, o haz clic en "Cargar Demostraci\xF3n" para explorar c\xF3mo funciona el an\xE1lisis arm\xF3nico Camelot y de colisi\xF3n Anti-Muddy.'), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 uppercase" }, "Pistas"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-mono font-black text-djcyan-400" }, setTracks.length)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 uppercase" }, "Duraci\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-mono font-black text-purple-300" }, formattedDuration)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 uppercase" }, "Rango BPM"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-mono font-black text-amber-300" }, stats.minBpm, " - ", stats.maxBpm)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 uppercase" }, "Score Arm\xF3nico"), /* @__PURE__ */ React.createElement("span", { className: `text-sm font-mono font-black ${stats.harmonicScore >= 85 ? "text-emerald-400" : stats.harmonicScore >= 70 ? "text-amber-400" : "text-rose-400"}` }, stats.harmonicScore, "%")))), /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 flex flex-col gap-6 flex-1" }, renderFlowCanvas(), setTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center py-16 text-center border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-950/40 p-6" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-2xl bg-djzinc-900 flex items-center justify-center text-djcyan-400 mb-4 border border-djzinc-800" }, /* @__PURE__ */ React.createElement(Icons.Flow, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-mono font-bold text-gray-300" }, "Tu Set est\xE1 vac\xEDo"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-500 max-w-md mt-1 mb-5 font-sans" }, "Agrega pistas desde el bot\xF3n superior o carga una demostraci\xF3n para explorar el an\xE1lisis arm\xF3nico Camelot, compensaci\xF3n LUFS y Anti-Muddy en transiciones."), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -9123,8 +9296,11 @@ ${text}`);
       const isCurPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(track.id) && isPlaying;
       const isSelected = selectedTrackIdx === idx;
       const nextTrack = idx < setTracks.length - 1 ? setTracks[idx + 1] : null;
-      const harmTrans = nextTrack ? evaluateHarmonicTransition(track.key || track.k, nextTrack.key || nextTrack.k) : null;
-      const lufsTrans = nextTrack ? evaluateLufsTransition(track.lufs || track.integrated_lufs, nextTrack.lufs || nextTrack.integrated_lufs) : null;
+      const trackBpm = getTrackBpm(track);
+      const trackKey = getTrackKey(track);
+      const trackLufs = getTrackLufs(track);
+      const harmTrans = nextTrack ? evaluateHarmonicTransition(trackKey, getTrackKey(nextTrack)) : null;
+      const lufsTrans = nextTrack ? evaluateLufsTransition(trackLufs, getTrackLufs(nextTrack)) : null;
       const antiMuddyTrans = nextTrack ? evaluateAntiMuddyTransition(track, nextTrack) : null;
       return /* @__PURE__ */ React.createElement(React.Fragment, { key: `set_trk_${track.id || idx}_${idx}` }, /* @__PURE__ */ React.createElement(
         "div",
@@ -9174,7 +9350,16 @@ ${text}`);
           },
           isCurPlaying ? "\u23F8" : "\u25B6"
         ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold text-white truncate" }, track.title || track.t || track.filename || "Pista sin t\xEDtulo"), track.format && /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono px-1 rounded bg-djzinc-800 text-gray-400" }, track.format)), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 truncate font-sans" }, track.artist || track.a || "Artista desconocido"))),
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap justify-end" }, /* @__PURE__ */ React.createElement("div", { className: "px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[55px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 block text-[8px]" }, "BPM"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-white" }, track.bpm || track.b || "--")), /* @__PURE__ */ React.createElement("div", { className: "px-2 py-1 rounded-lg bg-purple-950/60 border border-purple-800/80 font-mono text-[11px] text-center min-w-[50px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 block text-[8px]" }, "KEY"), /* @__PURE__ */ React.createElement("span", { className: "font-black text-purple-200" }, track.key || track.k || "--")), /* @__PURE__ */ React.createElement("div", { className: `px-2 py-1 rounded-lg border font-mono text-[10px] text-center min-w-[80px] ${track.acoustic_role === "Bass Driver" ? "bg-rose-950/60 text-rose-300 border-rose-800/80" : track.acoustic_role === "Vocal / Lead" ? "bg-amber-950/60 text-amber-300 border-amber-800/80" : track.acoustic_role === "Percussive Tool" ? "bg-emerald-950/60 text-emerald-300 border-emerald-800/80" : "bg-djzinc-950 text-gray-300 border-djzinc-800"}` }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 block text-[8px]" }, "ROL DSP"), /* @__PURE__ */ React.createElement("span", { className: "font-bold" }, track.acoustic_role === "Bass Driver" ? "\u{1F534} Bass Driver" : track.acoustic_role === "Vocal / Lead" ? "\u{1F7E1} Vocal / Lead" : track.acoustic_role === "Percussive Tool" ? "\u{1F7E2} Percussive" : "\u{1F535} Balanced")), /* @__PURE__ */ React.createElement("div", { className: "px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[65px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 block text-[8px]" }, "LUFS"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-djcyan-400" }, track.lufs || track.integrated_lufs ? `${track.lufs || track.integrated_lufs} dB` : "-8.5 dB")), /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap justify-end" }, /* @__PURE__ */ React.createElement("div", { className: "px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[55px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 block text-[8px]" }, "BPM"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${trackBpm ? "text-white" : "text-amber-400"}` }, trackBpm ? trackBpm.toFixed(1) : "--")), /* @__PURE__ */ React.createElement("div", { className: "px-2 py-1 rounded-lg bg-purple-950/60 border border-purple-800/80 font-mono text-[11px] text-center min-w-[50px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 block text-[8px]" }, "KEY"), /* @__PURE__ */ React.createElement("span", { className: `font-black ${trackKey ? "text-purple-200" : "text-gray-500"}` }, trackKey || "--")), /* @__PURE__ */ React.createElement("div", { className: `px-2 py-1 rounded-lg border font-mono text-[10px] text-center min-w-[80px] ${track.acoustic_role === "Bass Driver" ? "bg-rose-950/60 text-rose-300 border-rose-800/80" : track.acoustic_role === "Vocal / Lead" ? "bg-amber-950/60 text-amber-300 border-amber-800/80" : track.acoustic_role === "Percussive Tool" ? "bg-emerald-950/60 text-emerald-300 border-emerald-800/80" : "bg-djzinc-950 text-gray-300 border-djzinc-800"}` }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 block text-[8px]" }, "ROL DSP"), /* @__PURE__ */ React.createElement("span", { className: "font-bold" }, track.acoustic_role === "Bass Driver" ? "\u{1F534} Bass Driver" : track.acoustic_role === "Vocal / Lead" ? "\u{1F7E1} Vocal / Lead" : track.acoustic_role === "Percussive Tool" ? "\u{1F7E2} Percussive" : "\u{1F535} Balanced")), /* @__PURE__ */ React.createElement("div", { className: "px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[65px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 block text-[8px]" }, "LUFS"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-djcyan-400" }, trackLufs, " dB")), (!trackBpm || !trackKey) && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => handleAuditSingleTrack(track, e),
+            className: "px-2 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 text-[10px] font-mono font-bold cursor-pointer transition-all shadow",
+            title: "Auditar ac\xFAsticamente esta pista ahora para detectar BPM y Key"
+          },
+          "\u26A1 Auditar"
+        ), /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
@@ -9187,7 +9372,7 @@ ${text}`);
           },
           "\u2715"
         ))
-      ), nextTrack && /* @__PURE__ */ React.createElement("div", { className: "mx-4 md:mx-10 my-1 p-2.5 rounded-xl bg-[#0b0b12] border border-djzinc-800/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 font-bold" }, "TRANSICI\xD3N #", idx + 1, " \u2794 #", idx + 2, ":"), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${harmTrans.color}`, title: harmTrans.desc }, harmTrans.badge), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${lufsTrans.color}`, title: lufsTrans.advice }, lufsTrans.badge), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${antiMuddyTrans.color}`, title: antiMuddyTrans.advice }, antiMuddyTrans.badge)), /* @__PURE__ */ React.createElement("div", { className: "text-[9.5px] font-mono text-gray-400 flex items-center gap-2" }, antiMuddyTrans.isCollision && /* @__PURE__ */ React.createElement("span", { className: "text-red-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), " ", /* @__PURE__ */ React.createElement("span", null, "Cortar EQ Low canal saliente")), lufsTrans.isAlert && /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39A}\uFE0F"), " ", /* @__PURE__ */ React.createElement("span", null, lufsTrans.delta > 0 ? `Bajar Trim ~${Math.abs(lufsTrans.delta)}dB` : `Subir Trim ~${Math.abs(lufsTrans.delta)}dB`)), !antiMuddyTrans.isCollision && !lufsTrans.isAlert && /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400" }, "\u2728 Mezcla fluida garantizada"))));
+      ), nextTrack && /* @__PURE__ */ React.createElement("div", { className: "mx-4 md:mx-10 my-1 p-2.5 rounded-xl bg-[#0b0b12] border border-djzinc-800/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 font-bold" }, "TRANSICI\xD3N #", idx + 1, " \u2794 #", idx + 2, ":"), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${harmTrans.color}`, title: harmTrans.desc }, harmTrans.badge), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${lufsTrans.color}`, title: lufsTrans.advice }, lufsTrans.badge), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${antiMuddyTrans.color}`, title: antiMuddyTrans.advice }, antiMuddyTrans.badge)), /* @__PURE__ */ React.createElement("div", { className: "text-[9.5px] font-mono text-gray-400 flex items-center gap-2" }, harmTrans.type === "UNKNOWN" ? /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), " ", /* @__PURE__ */ React.createElement("span", null, "Tonalidad pendiente de auditor\xEDa")) : antiMuddyTrans.isCollision ? /* @__PURE__ */ React.createElement("span", { className: "text-red-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), " ", /* @__PURE__ */ React.createElement("span", null, "Cortar EQ Low canal saliente")) : lufsTrans.isAlert ? /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39A}\uFE0F"), " ", /* @__PURE__ */ React.createElement("span", null, lufsTrans.delta > 0 ? `Bajar Trim ~${Math.abs(lufsTrans.delta)}dB` : `Subir Trim ~${Math.abs(lufsTrans.delta)}dB`)) : /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400" }, "\u2728 Mezcla fluida garantizada"))));
     }))), isAddDrawerOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0e0e16] border border-djzinc-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "\u2795"), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase" }, "A\xF1adir Pistas de Auditor\xEDa al Set")), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -10023,10 +10208,12 @@ ${text}`);
         setTracks: setBuilderTracks,
         setSetTracks: setSetBuilderTracks,
         auditTracks,
+        setAuditTracks,
         onPlayTrack: handlePlayTrack,
         nowPlayingTrack,
         isPlaying,
         onTogglePlay: togglePlayPause,
+        onNavigateTab: setActiveTab,
         lang
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "knowledge" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang }))), /* @__PURE__ */ React.createElement("footer", { className: "h-16 bg-[#0a0a0e] border-t border-djzinc-800 px-3 md:px-5 flex items-center justify-between shrink-0 glass-panel z-30 relative" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 right-0 h-0.5 bg-djzinc-850 md:hidden overflow-hidden" }, /* @__PURE__ */ React.createElement(
