@@ -79,7 +79,19 @@ def stream_audio():
         if real_path and os.path.exists(real_path) and os.path.isfile(real_path):
             dir_name = os.path.dirname(real_path)
             file_name = os.path.basename(real_path)
-            return bottle.static_file(file_name, root=dir_name, mimetype='auto')
+            ext = os.path.splitext(file_name)[1].lower()
+            mime_map = {
+                '.flac': 'audio/flac',
+                '.mp3': 'audio/mpeg',
+                '.wav': 'audio/wav',
+                '.m4a': 'audio/mp4',
+                '.aac': 'audio/aac',
+                '.ogg': 'audio/ogg',
+                '.aiff': 'audio/aiff',
+                '.aif': 'audio/aiff'
+            }
+            mime = mime_map.get(ext, True)
+            return bottle.static_file(file_name, root=dir_name, mimetype=mime)
     bottle.response.status = 404
     return "Audio file not found"
 

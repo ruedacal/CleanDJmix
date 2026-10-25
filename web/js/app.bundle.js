@@ -8938,7 +8938,25 @@ ${text}`);
     };
     const handleAddTrack = (track) => {
       if (!track) return;
-      setSetTracks((prev) => [...prev, track]);
+      const normalized = {
+        ...track,
+        id: track.id || `set_${Date.now()}_${Math.floor(Math.random() * 1e3)}`,
+        path: track.path || track.filepath || track.f || "",
+        f: track.f || track.path || track.filepath || "",
+        title: track.title || track.t || track.filename || "Pista",
+        t: track.title || track.t || track.filename || "Pista",
+        artist: track.artist || track.a || "Artista",
+        a: track.artist || track.a || "Artista",
+        bpm: getTrackBpm(track) || track.bpm || track.b,
+        key: getTrackKey(track) || track.key || track.k,
+        lufs: getTrackLufs(track),
+        acoustic_role: track.acoustic_role || "Balanced Full-Range",
+        low_ratio: track.low_ratio || 33.3,
+        mid_ratio: track.mid_ratio || 33.3,
+        high_ratio: track.high_ratio || 33.4,
+        duration_sec: track.duration_sec || track.duration || 240
+      };
+      setSetTracks((prev) => [...prev, normalized]);
     };
     const handleClearSet = () => {
       if (window.confirm("\xBFSeguro que deseas vaciar todas las pistas de este set?")) {
@@ -8952,12 +8970,102 @@ ${text}`);
         return;
       }
       const demo = [
-        { id: 101, title: "Solaris (Extended Mix)", artist: "Artbat & CamelPhat", bpm: 124, key: "8A", duration_sec: 390, lufs: -8.8, acoustic_role: "Bass Driver", low_ratio: 48, mid_ratio: 32, high_ratio: 20 },
-        { id: 102, title: "Hyperdrive (Club Mix)", artist: "Tale of Us", bpm: 125, key: "9A", duration_sec: 360, lufs: -8.5, acoustic_role: "Vocal / Lead", low_ratio: 30, mid_ratio: 46, high_ratio: 24 },
-        { id: 103, title: "Frequency Tool (Original)", artist: "Chris Liebing", bpm: 126, key: "9A", duration_sec: 330, lufs: -8.4, acoustic_role: "Percussive Tool", low_ratio: 25, mid_ratio: 40, high_ratio: 35 },
-        { id: 104, title: "Echoes of Eternity (Peak Mix)", artist: "Anyma", bpm: 127, key: "10A", duration_sec: 375, lufs: -7.9, acoustic_role: "Bass Driver", low_ratio: 49, mid_ratio: 31, high_ratio: 20 },
-        { id: 105, title: "Resonance (Festival Mix)", artist: "Enrico Sangiuliano", bpm: 128, key: "10A", duration_sec: 420, lufs: -7.5, acoustic_role: "Bass Driver", low_ratio: 52, mid_ratio: 30, high_ratio: 18 },
-        { id: 106, title: "Starlight Anthem (Outro Mix)", artist: "Maceo Plex", bpm: 126, key: "9A", duration_sec: 345, lufs: -8.9, acoustic_role: "Balanced Full-Range", low_ratio: 35, mid_ratio: 35, high_ratio: 30 }
+        {
+          id: 101,
+          title: "Scorpia (Original Mix)",
+          artist: "Marco Bailey",
+          bpm: 126,
+          key: "8A",
+          duration_sec: 390,
+          lufs: -8.8,
+          acoustic_role: "Bass Driver",
+          low_ratio: 48,
+          mid_ratio: 32,
+          high_ratio: 20,
+          format: "FLAC",
+          path: "/Users/admin/Music/mi musica/Marco Bailey - Scorpia.flac",
+          f: "/Users/admin/Music/mi musica/Marco Bailey - Scorpia.flac"
+        },
+        {
+          id: 102,
+          title: "Horny Tiger (Club Edit)",
+          artist: "Marco Bailey",
+          bpm: 127,
+          key: "9A",
+          duration_sec: 360,
+          lufs: -8.5,
+          acoustic_role: "Vocal / Lead",
+          low_ratio: 30,
+          mid_ratio: 46,
+          high_ratio: 24,
+          format: "MP3",
+          path: "/Users/admin/Music/mi musica/Marco Bailey - Horny Tiger.mp3",
+          f: "/Users/admin/Music/mi musica/Marco Bailey - Horny Tiger.mp3"
+        },
+        {
+          id: 103,
+          title: "Frostbite (Peak Tool)",
+          artist: "Marco Bailey",
+          bpm: 128,
+          key: "9A",
+          duration_sec: 330,
+          lufs: -8.4,
+          acoustic_role: "Percussive Tool",
+          low_ratio: 25,
+          mid_ratio: 40,
+          high_ratio: 35,
+          format: "FLAC",
+          path: "/Users/admin/Music/mi musica/Marco Bailey - Frostbite.flac",
+          f: "/Users/admin/Music/mi musica/Marco Bailey - Frostbite.flac"
+        },
+        {
+          id: 104,
+          title: "From My Mind (Hypnotic Mix)",
+          artist: "Marco Bailey",
+          bpm: 128,
+          key: "10A",
+          duration_sec: 375,
+          lufs: -7.9,
+          acoustic_role: "Bass Driver",
+          low_ratio: 49,
+          mid_ratio: 31,
+          high_ratio: 20,
+          format: "FLAC",
+          path: "/Users/admin/Music/mi musica/Marco Bailey - From My Mind.flac",
+          f: "/Users/admin/Music/mi musica/Marco Bailey - From My Mind.flac"
+        },
+        {
+          id: 105,
+          title: "Jungle Laps (Rhythm Driver)",
+          artist: "Marco Bailey",
+          bpm: 129,
+          key: "10A",
+          duration_sec: 420,
+          lufs: -7.5,
+          acoustic_role: "Bass Driver",
+          low_ratio: 52,
+          mid_ratio: 30,
+          high_ratio: 18,
+          format: "FLAC",
+          path: "/Users/admin/Music/mi musica/Marco Bailey - Jungle Laps.flac",
+          f: "/Users/admin/Music/mi musica/Marco Bailey - Jungle Laps.flac"
+        },
+        {
+          id: 106,
+          title: "Caliente (Outro Groove)",
+          artist: "Marco Bailey",
+          bpm: 126,
+          key: "9A",
+          duration_sec: 345,
+          lufs: -8.9,
+          acoustic_role: "Balanced Full-Range",
+          low_ratio: 35,
+          mid_ratio: 35,
+          high_ratio: 30,
+          format: "FLAC",
+          path: "/Users/admin/Music/mi musica/Marco Bailey - Caliente.flac",
+          f: "/Users/admin/Music/mi musica/Marco Bailey - Caliente.flac"
+        }
       ];
       setSetTracks(demo);
     };
@@ -9118,6 +9226,14 @@ ${text}`);
         setTimeout(() => setExportStatus(null), 6e3);
       }
     };
+    const isThisTrack = (trk) => {
+      if (!nowPlayingTrack || !trk) return false;
+      if (trk.id !== void 0 && nowPlayingTrack.id !== void 0 && String(nowPlayingTrack.id) === String(trk.id)) return true;
+      if (trk.path && (nowPlayingTrack.path === trk.path || nowPlayingTrack.f === trk.path)) return true;
+      if (trk.f && (nowPlayingTrack.f === trk.f || nowPlayingTrack.path === trk.f)) return true;
+      if (trk.title && nowPlayingTrack.title && trk.title.toLowerCase() === nowPlayingTrack.title.toLowerCase()) return true;
+      return false;
+    };
     const renderFlowCanvas = () => {
       if (!setTracks || setTracks.length < 2) {
         return /* @__PURE__ */ React.createElement("div", { className: "h-32 flex flex-col items-center justify-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl bg-djzinc-950/40" }, /* @__PURE__ */ React.createElement("span", null, "A\xF1ade al menos 2 pistas para visualizar la curva de BPM y flujo de energ\xEDa."));
@@ -9164,34 +9280,54 @@ ${text}`);
         }
       ), points.map((p, idx) => {
         const isSelected = selectedTrackIdx === idx;
-        const isCurPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(p.track.id) && isPlaying;
+        const isCurPlaying = isThisTrack(p.track) && isPlaying;
         const keyStr = getTrackKey(p.track);
         return /* @__PURE__ */ React.createElement(
           "g",
           {
             key: idx,
             className: "cursor-pointer group",
-            onClick: () => setSelectedTrackIdx(idx)
+            onClick: () => {
+              setSelectedTrackIdx(idx);
+              if (isThisTrack(p.track)) {
+                if (onTogglePlay) onTogglePlay();
+              } else if (onPlayTrack) {
+                onPlayTrack(p.track, 0, true);
+              }
+            }
           },
           /* @__PURE__ */ React.createElement(
             "circle",
             {
               cx: p.x,
               cy: p.y,
-              r: isSelected || isCurPlaying ? "10" : "6",
+              r: isSelected || isCurPlaying ? "11" : "6.5",
               fill: isCurPlaying ? "#ec4899" : isSelected ? "#06b6d4" : p.hasRealBpm ? "#18181b" : "#27272a",
               stroke: isCurPlaying ? "#ffffff" : isSelected ? "#38bdf8" : p.hasRealBpm ? "#a855f7" : "#f59e0b",
               strokeWidth: isSelected || isCurPlaying ? "3" : p.hasRealBpm ? "2" : "1.5",
               strokeDasharray: p.hasRealBpm ? "none" : "2 2",
               className: "transition-all duration-200 group-hover:scale-125"
             },
-            /* @__PURE__ */ React.createElement("title", null, `Track #${idx + 1}: ${p.track.title || p.track.t || "Pista"} | BPM: ${p.hasRealBpm ? p.bpm : "-- (Sin auditar)"} | Key: ${keyStr || "--"}`)
+            /* @__PURE__ */ React.createElement("title", null, `Track #${idx + 1}: ${p.track.title || p.track.t || "Pista"} | BPM: ${p.hasRealBpm ? p.bpm : "-- (Sin auditar)"} | Key: ${keyStr || "--"} (Clic para reproducir/pausar)`)
+          ),
+          (isSelected || isCurPlaying) && /* @__PURE__ */ React.createElement(
+            "text",
+            {
+              x: p.x,
+              y: p.y + 3,
+              fill: "#ffffff",
+              fontSize: "8",
+              fontWeight: "black",
+              fontFamily: "monospace",
+              textAnchor: "middle"
+            },
+            isCurPlaying ? "\u23F8" : "\u25B6"
           ),
           /* @__PURE__ */ React.createElement(
             "text",
             {
               x: p.x,
-              y: p.y - 12,
+              y: p.y - 13,
               fill: isSelected ? "#38bdf8" : p.hasRealBpm ? "#d4d4d8" : "#f59e0b",
               fontSize: "9.5",
               fontWeight: "bold",
@@ -9293,7 +9429,7 @@ ${text}`);
       },
       "\u2795 A\xF1adir desde Biblioteca"
     ))) : /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs font-mono text-gray-400 px-1" }, /* @__PURE__ */ React.createElement("span", null, "SECUENCIA DE LA SESI\xD3N (", setTracks.length, " PISTAS)"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "Usa las flechas \u25B2 \u25BC para reordenar pistas manualmente")), setTracks.map((track, idx) => {
-      const isCurPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(track.id) && isPlaying;
+      const isCurPlaying = isThisTrack(track) && isPlaying;
       const isSelected = selectedTrackIdx === idx;
       const nextTrack = idx < setTracks.length - 1 ? setTracks[idx + 1] : null;
       const trackBpm = getTrackBpm(track);
@@ -9340,10 +9476,10 @@ ${text}`);
             type: "button",
             onClick: (e) => {
               e.stopPropagation();
-              if (isCurPlaying) {
+              if (isThisTrack(track)) {
                 if (onTogglePlay) onTogglePlay();
               } else if (onPlayTrack) {
-                onPlayTrack(track, 0, false);
+                onPlayTrack(track, 0, true);
               }
             },
             className: `w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border transition-all cursor-pointer ${isCurPlaying ? "bg-gradient-to-br from-pink-500 to-rose-600 text-white border-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.5)]" : "bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-400 border-djzinc-700"}`
@@ -9390,24 +9526,64 @@ ${text}`);
         placeholder: "Filtrar pistas por t\xEDtulo, artista o BPM...",
         className: "w-full bg-djzinc-900 border border-djzinc-750 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-djcyan-500 font-mono"
       }
-    )), /* @__PURE__ */ React.createElement("div", { className: "p-3 overflow-y-auto flex-1 space-y-2" }, auditTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "text-center py-10 text-gray-500 text-xs font-mono" }, "No hay pistas cargadas en Auditor\xEDa. Carga una carpeta o audita temas en la pesta\xF1a Auditor\xEDa & DSP.") : auditTracks.filter((t) => {
+    )), /* @__PURE__ */ React.createElement("div", { className: "p-3 overflow-y-auto flex-1 space-y-2" }, auditTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "text-center py-10 text-gray-400 text-xs font-mono flex flex-col items-center gap-3" }, /* @__PURE__ */ React.createElement("span", null, "No hay pistas cargadas en memoria de Auditor\xEDa."), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: async () => {
+          if (window.eel && window.eel.cargar_metadatos_directorio) {
+            setExportStatus({ type: "loading", msg: 'Cargando pistas de "mi musica"...' });
+            try {
+              const res = await window.eel.cargar_metadatos_directorio("/Users/admin/Music/mi musica")();
+              if (res && res.tracks && setAuditTracks) {
+                setAuditTracks(res.tracks);
+                setExportStatus({ type: "success", msg: `\u2713 ${res.tracks.length} pistas cargadas desde "mi musica".` });
+              }
+            } catch (err) {
+              setExportStatus({ type: "error", msg: `Error: ${err.message || err}` });
+            } finally {
+              setTimeout(() => setExportStatus(null), 3500);
+            }
+          }
+        },
+        className: "px-4 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-djcyan-600 to-blue-600 hover:from-djcyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition-all cursor-pointer"
+      },
+      '\u{1F4C2} Cargar Pistas de "mi musica"'
+    )) : auditTracks.filter((t) => {
       const q = searchAddQuery.toLowerCase();
       return !q || (t.title || t.t || "").toLowerCase().includes(q) || (t.artist || t.a || "").toLowerCase().includes(q) || (t.bpm || t.b || "").toString().includes(q);
     }).map((t) => {
-      const isAlreadyInSet = setTracks.some((st) => String(st.id) === String(t.id));
+      const isAlreadyInSet = setTracks.some((st) => String(st.id) === String(t.id) || st.path && t.path && st.path === t.path);
+      const isTrkPlaying = isThisTrack(t) && isPlaying;
       return /* @__PURE__ */ React.createElement(
         "div",
         {
-          key: `audit_add_${t.id}`,
+          key: `audit_add_${t.id || t.path}`,
           className: "p-2.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800/80 flex items-center justify-between gap-3 hover:border-djzinc-700"
         },
-        /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate" }, t.title || t.t || t.filename || "Pista"), /* @__PURE__ */ React.createElement("div", { className: "text-[11px] text-gray-400 truncate" }, t.artist || t.a || "Artista", " \u2022 ", t.bpm || t.b || "--", " BPM \u2022 ", t.key || t.k || "--", " \u2022 ", t.acoustic_role || "Balanced")),
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              if (isThisTrack(t)) {
+                if (onTogglePlay) onTogglePlay();
+              } else if (onPlayTrack) {
+                onPlayTrack(t, 0, true);
+              }
+            },
+            className: `w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border text-[11px] transition-all cursor-pointer ${isTrkPlaying ? "bg-gradient-to-br from-pink-500 to-rose-600 text-white border-pink-400 shadow-[0_0_8px_rgba(236,72,153,0.5)]" : "bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border-djzinc-700"}`,
+            title: "Preescuchar pista"
+          },
+          isTrkPlaying ? "\u23F8" : "\u25B6"
+        ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate" }, t.title || t.t || t.filename || "Pista"), /* @__PURE__ */ React.createElement("div", { className: "text-[11px] text-gray-400 truncate" }, t.artist || t.a || "Artista", " \u2022 ", t.bpm || t.b || "--", " BPM \u2022 ", t.key || t.k || "--", " \u2022 ", t.acoustic_role || "Balanced"))),
         /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
             onClick: () => handleAddTrack(t),
-            className: "px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-700 transition-all cursor-pointer shadow"
+            className: "px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-700 transition-all cursor-pointer shadow shrink-0"
           },
           isAlreadyInSet ? "+ A\xF1adir Otra Vez" : "+ A\xF1adir"
         )
@@ -9829,12 +10005,74 @@ ${text}`);
       { type: "success", text: "[ OK ] Audio Engine & Stream Router Online." },
       { type: "success", text: "[ OK ] Serato Database XML Link Ready." }
     ]);
+    const synthAudioCtxRef = useRef(null);
+    const synthIntervalRef = useRef(null);
+    const stopSynthPreview = () => {
+      if (synthIntervalRef.current) {
+        clearInterval(synthIntervalRef.current);
+        synthIntervalRef.current = null;
+      }
+      if (synthAudioCtxRef.current) {
+        try {
+          synthAudioCtxRef.current.close();
+        } catch (e) {
+        }
+        synthAudioCtxRef.current = null;
+      }
+    };
+    const playSynthPreview = (track) => {
+      stopSynthPreview();
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        synthAudioCtxRef.current = ctx;
+        const bpm = parseFloat(track.bpm || track.b || 126) || 126;
+        const intervalMs = 60 / bpm * 1e3;
+        const triggerBeat = () => {
+          if (ctx.state === "suspended") ctx.resume();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(140, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(45, ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.65, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(1e-3, ctx.currentTime + 0.18);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + 0.2);
+          setTimeout(() => {
+            if (!synthAudioCtxRef.current) return;
+            const c = synthAudioCtxRef.current;
+            const hatOsc = c.createOscillator();
+            const hatGain = c.createGain();
+            hatOsc.type = "triangle";
+            hatOsc.frequency.setValueAtTime(7500, c.currentTime);
+            hatGain.gain.setValueAtTime(0.1, c.currentTime);
+            hatGain.gain.exponentialRampToValueAtTime(1e-3, c.currentTime + 0.04);
+            hatOsc.connect(hatGain);
+            hatGain.connect(c.destination);
+            hatOsc.start(c.currentTime);
+            hatOsc.stop(c.currentTime + 0.05);
+          }, intervalMs / 2);
+        };
+        triggerBeat();
+        synthIntervalRef.current = setInterval(triggerBeat, intervalMs);
+      } catch (e) {
+        console.warn("Synth preview error:", e);
+      }
+    };
     useEffect(() => {
       const audio = new Audio();
       audio.preload = "auto";
       audio.onended = () => {
         setIsPlaying(false);
         setPlayProgress(0);
+      };
+      audio.onerror = (err) => {
+        console.warn("Global audio element error:", err);
+        setIsPlaying(false);
       };
       audio.ontimeupdate = () => {
         if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
@@ -9849,12 +10087,14 @@ ${text}`);
         window.eel.expose(window.log_to_console, "log_to_console");
       }
       return () => {
+        stopSynthPreview();
         audio.pause();
         audio.src = "";
       };
     }, []);
     const handlePlayTrack = (track, seekPct = 0, autoPlay = true, startOffsetSec = null) => {
       if (!track) return;
+      stopSynthPreview();
       const resolvedCover = track.cover || (track.path ? `/cover?path=${encodeURIComponent(track.path)}` : track.f ? `/cover?path=${encodeURIComponent(track.f)}` : null);
       const trackTitle = track.title || track.t || track.displayTitle || "Audio Track";
       const trackArtist = track.artist || track.a || track.displayArtist || "Unknown Artist";
@@ -9927,6 +10167,9 @@ ${text}`);
               window.eel.reproducir_pista_mac(track.path || track.f)();
               setIsPlaying(true);
             }
+          } else {
+            playSynthPreview(track);
+            setIsPlaying(true);
           }
         }
       }
@@ -9948,6 +10191,7 @@ ${text}`);
         if (audio) {
           audio.pause();
         }
+        stopSynthPreview();
         setIsPlaying(false);
         if (window.eel && window.eel.detener_audio_mac) {
           window.eel.detener_audio_mac()();
@@ -9966,6 +10210,7 @@ ${text}`);
       }
     };
     const handleCue = () => {
+      stopSynthPreview();
       const audio = audioRef.current;
       if (audio) {
         audio.pause();
