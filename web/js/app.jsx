@@ -5040,7 +5040,7 @@ const AuditWorkspace = ({
                                 );
                             })()}
                         </div>
-                        <div className="flex gap-1.5 ml-1 flex-wrap">
+                        <div className="flex gap-1.5 ml-0 sm:ml-1 overflow-x-auto scrollbar-none pb-1 max-w-full">
                             <button onClick={() => setFiltro('todos')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'todos' ? 'bg-djcyan-600 text-white font-bold' : 'bg-djzinc-800 text-gray-300 hover:text-white'}`}>{t('filter_all') || 'Todos'} ({metrics.total || 0})</button>
                             <button 
                                 onClick={handleSelectAllBadQuality}
@@ -5553,8 +5553,8 @@ const AuditWorkspace = ({
                         </tbody>
                     </table>
 
-                    {/* VISTA MÓVIL TÁCTIL: TARJETAS RESPONSIVAS (< 768px) */}
-                    <div className="block md:hidden p-2 space-y-2.5 pb-24">
+                    {/* VISTA MÓVIL TÁCTIL: TARJETAS RESPONSIVAS (< 768px) CON PB-36 */}
+                    <div className="block md:hidden p-2 space-y-2.5 pb-36">
                         {tracksFiltrados.length === 0 && !isAuditing && (
                             <div className="py-12 text-center text-gray-500 font-mono text-xs">
                                 No hay pistas cargadas en esta vista. Selecciona una carpeta o audita pistas sueltas.
@@ -5720,7 +5720,7 @@ const AuditWorkspace = ({
             </div>
 
             {sidebarOpen && (
-                <aside key={currentTrack ? currentTrack.id : "none"} className="w-96 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-20 overflow-hidden shadow-2xl">
+                <aside key={currentTrack ? currentTrack.id : "none"} className="w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl">
                     <div className="p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
                         <div className="flex items-center gap-2"><Icons.Gear /><span className="font-bold text-xs uppercase tracking-wider text-gray-200">Inspector DJ Granular</span></div>
                         <div className="flex items-center gap-2">
@@ -7579,8 +7579,8 @@ const HotCuesWorkspace = ({
                                     </div>
                                 )}
 
-                                {/* Matriz 4x2 de los 8 Pads con Cascada de Ignición y Halos de Luz 1 a 1 */}
-                                <div className="grid grid-cols-4 gap-2">
+                                {/* Matriz Adaptativa: 2 columnas en móvil táctil, 4 en tablet/desktop */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     {activeCues.map((cue, idx) => {
                                         const padNum = cue.id !== undefined ? cue.id : (idx + 1);
                                         const isSelected = (selectedCueId === padNum);
@@ -7736,7 +7736,7 @@ const HotCuesWorkspace = ({
                 </div>
 
                     {/* BARRA DE HERRAMIENTAS DEL WAVEFORM (ZOOM HORIZONTAL, SNAP, BEATGRID, PLAYHEAD) */}
-                    <div className="flex items-center justify-between bg-djzinc-950/80 border border-djzinc-850 px-3.5 py-2 rounded-lg">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-djzinc-950/80 border border-djzinc-850 px-3 py-2 rounded-lg gap-2.5">
                         {/* Selector de Nivel de Zoom Horizontal */}
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold font-mono text-gray-300 uppercase flex items-center gap-1.5">
@@ -12790,7 +12790,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
     }, [trendsData, selectedCategory, searchQuery]);
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200">
+        <div className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8">
             {/* Header del Espacio de Tendencias */}
             <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -13663,8 +13663,8 @@ const SetBuilderWorkspace = ({
                     </div>
                 </div>
 
-                <div className="w-full min-w-[700px]">
-                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-36 overflow-visible select-none">
+                <div className="w-full overflow-hidden">
+                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-28 sm:h-36 overflow-visible select-none">
                         <defs>
                             <linearGradient id="bpmCurveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                                 <stop offset="0%" stopColor="#06b6d4" />
@@ -13764,7 +13764,7 @@ const SetBuilderWorkspace = ({
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200">
+        <div className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8">
             {/* Header del Espacio de Set-Builder */}
             <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -13896,8 +13896,8 @@ const SetBuilderWorkspace = ({
                 </div>
             </div>
 
-            {/* Contenido Principal: Lienzo SVG y Lista Secuencial de Pistas */}
-            <div className="p-4 md:p-6 flex flex-col gap-6 flex-1">
+            {/* Contenido Principal: Lienzo SVG y Lista Secuencial de Pistas con pb-36 para móvil */}
+            <div className="p-3 sm:p-4 md:p-6 flex flex-col gap-5 flex-1 pb-36 md:pb-8">
                 {/* 1. Lienzo de Curva de BPM y Energía */}
                 {renderFlowCanvas()}
 
@@ -14025,7 +14025,7 @@ const SetBuilderWorkspace = ({
                                         </div>
 
                                         {/* Metadatos Clave: BPM, Camelot Key, Rol Acústico, LUFS */}
-                                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-between md:justify-end w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-djzinc-800/60">
                                             {/* BPM */}
                                             <div className="px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[55px]">
                                                 <span className="text-gray-400 block text-[8px]">BPM</span>
@@ -14092,7 +14092,7 @@ const SetBuilderWorkspace = ({
 
                                     {/* Puente de Transición Diagnóstico (#idx -> #idx+1) */}
                                     {nextTrack && (
-                                        <div className="mx-4 md:mx-10 my-1 p-2.5 rounded-xl bg-[#0b0b12] border border-djzinc-800/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+                                        <div className="mx-1 sm:mx-4 md:mx-10 my-1 p-2 sm:p-2.5 rounded-xl bg-[#0b0b12] border border-djzinc-800/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-2.5">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <span className="text-[10px] font-mono text-gray-500 font-bold">
                                                     TRANSICIÓN #{idx + 1} ➔ #{idx + 2}:
@@ -15104,19 +15104,23 @@ const App = () => {
                         </div>
 
                         {/* RÓTULO BEATWAVE PRO DE ALTA JERARQUÍA */}
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2.5 leading-none">
-                                <span className="text-[23px] tracking-wider uppercase font-black anim-soundwave" style={{ fontFamily: "'Syne', sans-serif" }}>
+                        <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-2 sm:gap-2.5 leading-none">
+                                <span className="text-lg sm:text-[23px] tracking-wider uppercase font-black anim-soundwave truncate" style={{ fontFamily: "'Syne', sans-serif" }}>
                                     BEAT<span className="text-djcyan-400">WAVE</span>
                                 </span>
-                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md font-black tracking-widest border border-djcyan-400/80 bg-djcyan-950 text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)]">
+                                <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-md font-black tracking-widest border border-djcyan-400/80 bg-djcyan-950 text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0">
                                     PRO
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2 mt-1.5">
-                                <span className="text-[9.5px] uppercase tracking-[0.26em] font-mono font-bold flex items-center gap-1.5 text-gray-300">
+                            <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5">
+                                <span className="hidden sm:flex text-[9.5px] uppercase tracking-[0.26em] font-mono font-bold items-center gap-1.5 text-gray-300">
                                     <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 animate-pulse"></span>
                                     PRECISION AUDIO INTELLIGENCE
+                                </span>
+                                <span className="flex sm:hidden text-[8.5px] uppercase tracking-wider font-mono font-bold items-center gap-1 text-djcyan-400">
+                                    <span className="w-1 h-1 rounded-full bg-djcyan-400 animate-pulse"></span>
+                                    DJ INTELLIGENCE
                                 </span>
                             </div>
                         </div>
@@ -15397,8 +15401,8 @@ const App = () => {
                 </div>
             </main>
 
-            {/* GLOBAL DECK PLAYER (Footer) */}
-            <footer className="h-16 bg-[#0a0a0e] border-t border-djzinc-800 px-3 md:px-5 flex items-center justify-between shrink-0 glass-panel z-30 relative">
+            {/* GLOBAL DECK PLAYER (Footer) - Oculto en móvil si no hay pista sonando para ahorrar 64px */}
+            <footer className={`${!nowPlayingTrack ? 'hidden md:flex' : 'flex'} h-14 sm:h-16 bg-[#0a0a0e] border-t border-djzinc-800 px-2.5 sm:px-5 items-center justify-between shrink-0 glass-panel z-30 relative`}>
                 {/* Indicador de barra de progreso ultra-fina para móviles */}
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-djzinc-850 md:hidden overflow-hidden">
                     <div 
@@ -15496,8 +15500,8 @@ const App = () => {
                 </div>
             </footer>
 
-            {/* BARRA DE NAVEGACIÓN MÓVIL INFERIOR FIJA (< 768px) */}
-            <nav className="flex md:hidden h-14 bg-[#07070d]/95 backdrop-blur-md border-t border-djzinc-800 px-2 items-center justify-around shrink-0 z-40 select-none shadow-[0_-4px_16px_rgba(0,0,0,0.5)]">
+            {/* BARRA DE NAVEGACIÓN MÓVIL INFERIOR FIJA (< 768px) CON SOPORTE SAFE-AREA */}
+            <nav className="flex md:hidden h-14 bg-[#07070d]/95 backdrop-blur-md border-t border-djzinc-800 px-1 items-center justify-around shrink-0 z-40 select-none shadow-[0_-4px_16px_rgba(0,0,0,0.5)] safe-area-bottom">
                 <button
                     type="button"
                     onClick={() => setActiveTab('audit')}

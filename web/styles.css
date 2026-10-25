@@ -81,3 +81,26 @@ input[type=range].pitch-slider-vertical::-webkit-slider-thumb {
     cursor: ns-resize;
 }
 
+/* Soporte iOS Safe Area (Home Indicator & Notch) */
+.safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Touch optimization & fluid scrolling */
+@media (max-width: 768px) {
+    button, input, select, a {
+        touch-action: manipulation;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .custom-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
+
+
