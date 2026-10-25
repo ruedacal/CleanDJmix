@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Generador de Documento Funcional y Técnico en PDF para CleanDJmix PRO
-Utiliza ReportLab Platypus con layout corporativo, tipografía profesional,
-paleta de colores moderna y soporte de numeración de páginas 'Página X de Y'.
+Versión Enriquecida con Imágenes de la App, Capturas de Pantalla Reales,
+Arquitectura de Código, Endpoints, Detección SuperFLAC y Guía de Operación.
 """
 
 import os
@@ -14,7 +14,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import cm, mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, HRFlowable
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, Image, HRFlowable
 )
 from reportlab.pdfgen import canvas
 
@@ -35,7 +35,7 @@ C_WHITE = colors.HexColor("#ffffff")
 
 
 class NumberedCanvas(canvas.Canvas):
-    """Canvas de dos pasos para calcular el total de páginas y pintar header/footer."""
+    """Canvas de dos pasos para calcular el total de páginas y pintar header/footer corporativo."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved_page_states = []
@@ -68,7 +68,7 @@ class NumberedCanvas(canvas.Canvas):
             
             self.setFont("Helvetica", 8)
             self.setFillColor(C_TEXT_MUTED)
-            self.drawString(125, 812, "|   Manual Funcional y Técnico de Arquitectura")
+            self.drawString(125, 812, "|   Manual Funcional y Técnico Ilustrado con Arquitectura de Código")
             
             self.drawRightString(559, 812, "v2.4.0 PRO")
             
@@ -88,7 +88,6 @@ class NumberedCanvas(canvas.Canvas):
 
 
 def create_pdf_report(output_filename="CleanDJmix_PRO_Manual_Funcional_y_Tecnico.pdf"):
-    # Configuración de página A4 con márgenes de 36pt (12.7 mm)
     doc = SimpleDocTemplate(
         output_filename,
         pagesize=A4,
@@ -100,45 +99,16 @@ def create_pdf_report(output_filename="CleanDJmix_PRO_Manual_Funcional_y_Tecnico
 
     styles = getSampleStyleSheet()
 
-    # Estilos Tipográficos Personalizados
-    style_cover_title = ParagraphStyle(
-        'CoverTitle',
-        parent=styles['Normal'],
-        fontName='Helvetica-Bold',
-        fontSize=30,
-        leading=36,
-        textColor=C_WHITE,
-        alignment=0
-    )
-
-    style_cover_subtitle = ParagraphStyle(
-        'CoverSubtitle',
-        parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=13,
-        leading=18,
-        textColor=C_CYAN,
-        alignment=0
-    )
-
-    style_cover_meta = ParagraphStyle(
-        'CoverMeta',
-        parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=9,
-        leading=14,
-        textColor=colors.HexColor("#94a3b8")
-    )
-
+    # Tipografías
     style_h1 = ParagraphStyle(
         'SectionH1',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=15,
-        leading=19,
+        fontSize=14,
+        leading=18,
         textColor=C_PRIMARY,
-        spaceBefore=14,
-        spaceAfter=6,
+        spaceBefore=12,
+        spaceAfter=5,
         keepWithNext=True
     )
 
@@ -146,23 +116,11 @@ def create_pdf_report(output_filename="CleanDJmix_PRO_Manual_Funcional_y_Tecnico
         'SectionH2',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=11.5,
-        leading=15,
+        fontSize=10.5,
+        leading=14,
         textColor=C_CYAN_DARK,
-        spaceBefore=10,
+        spaceBefore=9,
         spaceAfter=4,
-        keepWithNext=True
-    )
-
-    style_h3 = ParagraphStyle(
-        'SectionH3',
-        parent=styles['Normal'],
-        fontName='Helvetica-Bold',
-        fontSize=9.5,
-        leading=13,
-        textColor=C_TEXT_MAIN,
-        spaceBefore=6,
-        spaceAfter=2,
         keepWithNext=True
     )
 
@@ -170,33 +128,18 @@ def create_pdf_report(output_filename="CleanDJmix_PRO_Manual_Funcional_y_Tecnico
         'BodyDark',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=8.5,
-        leading=12.2,
+        fontSize=8.3,
+        leading=11.8,
         textColor=C_TEXT_MAIN,
-        spaceAfter=5
-    )
-
-    style_body_bold = ParagraphStyle(
-        'BodyDarkBold',
-        parent=style_body,
-        fontName='Helvetica-Bold'
-    )
-
-    style_callout = ParagraphStyle(
-        'CalloutText',
-        parent=styles['Normal'],
-        fontName='Helvetica-Oblique',
-        fontSize=8.5,
-        leading=12.5,
-        textColor=colors.HexColor("#0f172a")
+        spaceAfter=4
     )
 
     style_code = ParagraphStyle(
         'CodeStyle',
         parent=styles['Normal'],
         fontName='Courier',
-        fontSize=7.8,
-        leading=10.5,
+        fontSize=7.6,
+        leading=10.0,
         textColor=colors.HexColor("#0f172a")
     )
 
@@ -204,8 +147,8 @@ def create_pdf_report(output_filename="CleanDJmix_PRO_Manual_Funcional_y_Tecnico
         'TableCell',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=7.8,
-        leading=10.5,
+        fontSize=7.6,
+        leading=10.2,
         textColor=C_TEXT_MAIN
     )
 
@@ -213,51 +156,68 @@ def create_pdf_report(output_filename="CleanDJmix_PRO_Manual_Funcional_y_Tecnico
         'TableHeader',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=8.0,
-        leading=11.0,
+        fontSize=7.8,
+        leading=10.8,
         textColor=C_WHITE
+    )
+
+    style_caption = ParagraphStyle(
+        'ImageCaption',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=7.5,
+        leading=10.0,
+        textColor=colors.HexColor("#475569"),
+        alignment=1,
+        spaceBefore=3,
+        spaceAfter=8
     )
 
     story = []
 
     # =========================================================================
-    # PORTADA CORPORATIVA
+    # PORTADA CORPORATIVA CON LOGOTIPO
     # =========================================================================
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 10))
     
-    # Bloque de Encabezado Superior de la Portada
-    header_banner_data = [
-        [
-            Paragraph("<b>CLEANDJMIX PRO</b><br/><font size='10' color='#06b6d4'>AUDIO DSP & METADATA SUITE</font>", ParagraphStyle('BanL', fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=C_WHITE)),
-            Paragraph("<font size='9' color='#cbd5e1'>Arquitectura de Software & Manual Integral<br/><b>Versión 2.4.0 PRO</b></font>", ParagraphStyle('BanR', fontName='Helvetica', fontSize=9, leading=13, textColor=C_WHITE, alignment=2))
-        ]
-    ]
-    t_banner = Table(header_banner_data, colWidths=[320, 203])
+    # Header Banner
+    logo_path = "assets/logo_grande.png"
+    banner_cells = []
+    if os.path.exists(logo_path):
+        banner_cells.append(Image(logo_path, width=70, height=70))
+    else:
+        banner_cells.append(Paragraph("🎧", style_h1))
+        
+    banner_cells.append(
+        Paragraph("<b>CLEANDJMIX PRO</b><br/><font size='10' color='#06b6d4'>PRECISION AUDIO INTELLIGENCE & DSP SUITE</font><br/><font size='8' color='#94a3b8'>Manual Técnico y Funcional Ilustrado • Versión 2.4.0 PRO</font>", 
+                  ParagraphStyle('BanL', fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=C_WHITE))
+    )
+
+    t_banner = Table([[banner_cells[0], banner_cells[1]]], colWidths=[80, 443])
     t_banner.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), C_PRIMARY),
-        ('PADDING', (0, 0), (-1, -1), 16),
+        ('PADDING', (0, 0), (-1, -1), 12),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 16),
     ]))
     story.append(t_banner)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 12))
 
-    # Título Principal
+    # Bloque de Presentación
     cover_box_data = [
         [
             Paragraph(
-                "<b>MANUAL FUNCIONAL Y TÉCNICO DE ARQUITECTURA</b><br/>"
-                "<font size='11' color='#06b6d4'>Plataforma Profesional de Auditoría Acústica, Hot Cues Studio Hardware, Motor Semántico IA y Exportación Serato/Rekordbox</font>",
-                ParagraphStyle('CovHead', fontName='Helvetica-Bold', fontSize=18, leading=23, textColor=C_PRIMARY)
+                "<b>MANUAL DE ARQUITECTURA FUNCIONAL Y TÉCNICA ILUSTRADA</b><br/>"
+                "<font size='9.5' color='#06b6d4'>Suite de Auditoría Acústica DSP, Motor SuperFLAC Lossless, Hot Cues Studio Hardware y Exportación Serato/Rekordbox</font>",
+                ParagraphStyle('CovHead', fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=C_PRIMARY)
             )
         ],
         [
             Paragraph(
-                "Este documento describe de manera exhaustiva todas las capacidades operativas y la arquitectura interna de código "
-                "de la plataforma <b>CleanDJmix PRO</b>. Incluye la correspondencia exacta entre componentes de interfaz de usuario, "
-                "servicios de audio DSP en Python, contratos de datos de la API REST, física del plato vinilo scratch, ecualización "
-                "Web Audio API y suite de pruebas unitarias automatizadas.",
-                ParagraphStyle('CovDesc', fontName='Helvetica', fontSize=9, leading=13.5, textColor=C_TEXT_MAIN)
+                "Este manual técnico y funcional proporciona la referencia definitiva sobre todas las capacidades, herramientas "
+                "y código fuente de <b>CleanDJmix PRO</b>. Incluye diagramas, capturas de pantalla de la interfaz operativa, "
+                "especificación del motor de auditoría para carpetas y pistas sueltas, ejecución en background sin cortes, "
+                "detección acústica de transcode SuperFLAC y catálogo completo de contratos REST y Web Audio API DSP.",
+                ParagraphStyle('CovDesc', fontName='Helvetica', fontSize=8.5, leading=12.5, textColor=C_TEXT_MAIN)
             )
         ]
     ]
@@ -265,386 +225,406 @@ def create_pdf_report(output_filename="CleanDJmix_PRO_Manual_Funcional_y_Tecnico
     t_cover_box.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
         ('BORDER', (0, 0), (-1, -1), 1, colors.HexColor("#e2e8f0")),
-        ('PADDING', (0, 0), (-1, -1), 14),
+        ('PADDING', (0, 0), (-1, -1), 10),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     story.append(t_cover_box)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 10))
 
-    # Ficha Técnica y Metadatos de Publicación
+    # Ficha Técnica
     meta_table_data = [
-        [Paragraph("<b>Entorno Operativo:</b>", style_table_cell), Paragraph("macOS Apple Silicon & x86_64 / Linux x64", style_table_cell), Paragraph("<b>Frontend:</b>", style_table_cell), Paragraph("React 18, Tailwind CSS, Web Audio API DSP", style_table_cell)],
-        [Paragraph("<b>Backend Engine:</b>", style_table_cell), Paragraph("FastAPI, Uvicorn, Python 3.7+ Asyncio", style_table_cell), Paragraph("<b>DSP / Audio:</b>", style_table_cell), Paragraph("FFmpeg / Libav, Mutagen, WebAudio Biquad", style_table_cell)],
-        [Paragraph("<b>Bases de Datos / Cache:</b>", style_table_cell), Paragraph("In-Memory Atomic State & JSON Persistent Store", style_table_cell), Paragraph("<b>Pruebas Automatizadas:</b>", style_table_cell), Paragraph("117 / 117 tests superados (Pytest 100%)", style_table_cell)],
-        [Paragraph("<b>Fecha del Documento:</b>", style_table_cell), Paragraph(datetime.now().strftime("%d de %B de %Y"), style_table_cell), Paragraph("<b>Compatibilidad DJ:</b>", style_table_cell), Paragraph("Serato DJ Pro (GEOB) & Rekordbox (DJMD)", style_table_cell)]
+        [Paragraph("<b>Entorno Operativo:</b>", style_table_cell), Paragraph("macOS Apple Silicon & Linux x64", style_table_cell), Paragraph("<b>Frontend:</b>", style_table_cell), Paragraph("React 18, Tailwind CSS, Web Audio DSP", style_table_cell)],
+        [Paragraph("<b>Backend Engine:</b>", style_table_cell), Paragraph("FastAPI, Python 3.7+ Asyncio, Eel", style_table_cell), Paragraph("<b>DSP / Audio:</b>", style_table_cell), Paragraph("FFmpeg, Mutagen, WebAudio Biquad EQ", style_table_cell)],
+        [Paragraph("<b>Compatibilidad DJ:</b>", style_table_cell), Paragraph("Serato DJ Pro (GEOB) & Rekordbox (DJMD)", style_table_cell), Paragraph("<b>Pruebas Suite:</b>", style_table_cell), Paragraph("117 / 117 tests superados (100% OK)", style_table_cell)],
+        [Paragraph("<b>Fecha Publicación:</b>", style_table_cell), Paragraph(datetime.now().strftime("%d de %B de %Y"), style_table_cell), Paragraph("<b>Estado Release:</b>", style_table_cell), Paragraph("PRO Production-Ready (Branch limpia)", style_table_cell)]
     ]
     t_meta = Table(meta_table_data, colWidths=[105, 155, 115, 148])
     t_meta.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#f1f5f9")),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-        ('PADDING', (0, 0), (-1, -1), 5.5),
+        ('PADDING', (0, 0), (-1, -1), 4.5),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
     story.append(t_meta)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 10))
 
-    # Tabla de Contenido / Sumario Rápido
+    # Índice de Contenidos
     toc_data = [
         [Paragraph("<b>ÍNDICE DE CONTENIDOS Y MÓDULOS DE ARQUITECTURA</b>", style_table_header), Paragraph("<b>PÁG</b>", style_table_header)],
-        [Paragraph("<b>1. Resumen Ejecutivo y Propósito de la Suite CleanDJmix PRO</b>", style_table_cell), Paragraph("1", style_table_cell)],
-        [Paragraph("<b>2. Arquitectura Global del Sistema, Flujo de Datos y Árbol de Código</b>", style_table_cell), Paragraph("2", style_table_cell)],
-        [Paragraph("<b>3. Módulo 1: Auditoría Acústica y Normalización de Lote ('Auditar Todo')</b>", style_table_cell), Paragraph("2", style_table_cell)],
-        [Paragraph("<b>4. Módulo 2: Hot Cues Studio & Hardware DJ Deck (EQ, Pitch, Scratch)</b>", style_table_cell), Paragraph("3", style_table_cell)],
-        [Paragraph("<b>5. Módulo 3: Radar Shazam & Reconocimiento Acústico Híbrido</b>", style_table_cell), Paragraph("4", style_table_cell)],
-        [Paragraph("<b>6. Módulo 4: Ingesta Spotify & Pipeline de Descargas Paralelas</b>", style_table_cell), Paragraph("4", style_table_cell)],
-        [Paragraph("<b>7. Módulo 5: Taxonomía Inteligente & Buscador IA Multicriterio</b>", style_table_cell), Paragraph("5", style_table_cell)],
-        [Paragraph("<b>8. Módulo 6: Exportación Nativa a Ecosistemas Serato y Rekordbox</b>", style_table_cell), Paragraph("5", style_table_cell)],
-        [Paragraph("<b>9. Catálogo de Endpoints de la API REST y Contratos de Datos</b>", style_table_cell), Paragraph("6", style_table_cell)],
-        [Paragraph("<b>10. Suite de Pruebas Unitarias, Validación y Comandos de Despliegue</b>", style_table_cell), Paragraph("6", style_table_cell)]
+        [Paragraph("<b>1. Resumen Ejecutivo y Misión de la Plataforma CleanDJmix PRO</b>", style_table_cell), Paragraph("2", style_table_cell)],
+        [Paragraph("<b>2. Arquitectura de Software, Mapa de Directorios y Ubicación en Código</b>", style_table_cell), Paragraph("2", style_table_cell)],
+        [Paragraph("<b>3. Módulo 1: Auditoría DSP ('Auditar Todo' para Carpetas y Pistas Sueltas)</b>", style_table_cell), Paragraph("3", style_table_cell)],
+        [Paragraph("<b>4. Módulo 2: SuperFLAC Lossless & Detección de Fakes / Calidad Media</b>", style_table_cell), Paragraph("4", style_table_cell)],
+        [Paragraph("<b>5. Módulo 3: Hot Cues Studio Hardware (Pitch Fader, EQ 3 Bandas, Scratch)</b>", style_table_cell), Paragraph("5", style_table_cell)],
+        [Paragraph("<b>6. Módulo 4: Radar Shazam & Reconocimiento Acústico Híbrido</b>", style_table_cell), Paragraph("6", style_table_cell)],
+        [Paragraph("<b>7. Módulo 5: Ingesta Spotify, Descargas y Taxonomía Inteligente IA</b>", style_table_cell), Paragraph("7", style_table_cell)],
+        [Paragraph("<b>8. Módulo 6: Exportación Nativa a Serato DJ Pro y Pioneer Rekordbox</b>", style_table_cell), Paragraph("8", style_table_cell)],
+        [Paragraph("<b>9. Persistencia de Procesos en Background y Tutorial Interactivo</b>", style_table_cell), Paragraph("8", style_table_cell)],
+        [Paragraph("<b>10. Catálogo de Endpoints REST, Suite de Tests (117) y Comandos</b>", style_table_cell), Paragraph("9", style_table_cell)]
     ]
     t_toc = Table(toc_data, colWidths=[480, 43])
     t_toc.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), C_PRIMARY),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor("#ffffff"), colors.HexColor("#f8fafc")]),
-        ('PADDING', (0, 0), (-1, -1), 4.5),
+        ('PADDING', (0, 0), (-1, -1), 3.8),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (1, 0), (1, -1), 'CENTER'),
     ]))
     story.append(t_toc)
 
-    # =========================================================================
-    # SECCIÓN 1: RESUMEN EJECUTIVO
-    # =========================================================================
-    story.append(Spacer(1, 10))
-    story.append(Paragraph("1. Resumen Ejecutivo y Propósito de la Suite", style_h1))
-    story.append(Paragraph(
-        "<b>CleanDJmix PRO</b> es una plataforma integral de ingeniería de audio diseñada específicamente para DJs profesionales, "
-        "productores y gestores de bibliotecas musicales. Resuelve de forma definitiva los problemas críticos del workflow DJ: "
-        "metadatos corruptos o desordenados, discrepancias tonales (Camelot Key), BPMs imprecisos, falta de cues operativos antes "
-        "del show, y la desconexión histórica entre el software de preparación y los reproductores de hardware estándar de club.",
-        style_body
-    ))
-    story.append(Paragraph(
-        "La suite opera bajo una arquitectura híbrida: un backend asíncrono de alto rendimiento en Python con capacidad de "
-        "procesamiento DSP en paralelo, y una interfaz web ultramoderna construida en React y acelerada por la Web Audio API, "
-        "permitiendo renderizado de formas de onda en tiempo real, emulación física de tornamesa directa y ecualización de 3 vías con latencia cero.",
-        style_body
-    ))
-
-    # SALTO DE PÁGINA A SECCIÓN 2
+    # SALTO DE PÁGINA
     story.append(PageBreak())
 
     # =========================================================================
-    # SECCIÓN 2: ARQUITECTURA GLOBAL Y MAPA DE CÓDIGO
+    # SECCIÓN 1: RESUMEN EJECUTIVO
     # =========================================================================
-    story.append(Paragraph("2. Arquitectura Global del Sistema y Ubicación de Archivos", style_h1))
+    story.append(Paragraph("1. Resumen Ejecutivo y Misión de la Plataforma", style_h1))
     story.append(Paragraph(
-        "El código base está estrictamente modularizado siguiendo los principios de arquitectura limpia (Clean Architecture), "
-        "separación de responsabilidades y desacoplamiento entre capas de transporte HTTP, lógica de negocio y procesamiento de audio.",
+        "<b>CleanDJmix PRO</b> es una plataforma integral de ingeniería acústica desarrollada para resolver la brecha "
+        "existente entre las bibliotecas digitales desordenadas y los estándares de reproducción de cabina profesional en clubes y festivales. "
+        "Permite auditar masivamente bibliotecas musicales, calcular metadatos acústicos esenciales (BPM decimal, notación armónica Camelot/OpenKey, "
+        "downbeat exacto y medición de sonoridad LUFS EBU R128), fijar 8 puntos Hot Cues de máxima precisión, realizar mezclas en directo con "
+        "ecualizador hardware Web Audio de 3 vías y fader de pitch, y exportar la configuración de forma transparente a Serato y Rekordbox.",
+        style_body
+    ))
+    story.append(Paragraph(
+        "Un valor diferencial clave es la capacidad de operar en <b>segundo plano continuo</b>: cualquier proceso de auditoría, "
+        "descarga o escaneo continúa ejecutándose sin pausas cuando el DJ navega entre pestañas de trabajo, manteniendo sincronizado el estado global.",
+        style_body
+    ))
+    story.append(Spacer(1, 6))
+
+    # =========================================================================
+    # SECCIÓN 2: ARQUITECTURA DE SOFTWARE Y MAPA DE CÓDIGO
+    # =========================================================================
+    story.append(Paragraph("2. Arquitectura de Software y Ubicación de Archivos en Código", style_h1))
+    story.append(Paragraph(
+        "La plataforma sigue el estándar de Arquitectura Limpia (Clean Architecture), desacoplando los servicios de audio de la capa de presentación:",
         style_body
     ))
 
-    # Tabla de Mapa de Archivos
     code_map_data = [
-        [Paragraph("<b>Componente / Archivo</b>", style_table_header), Paragraph("<b>Ubicación Física</b>", style_table_header), Paragraph("<b>Líneas / Rol de Arquitectura</b>", style_table_header)],
+        [Paragraph("<b>Componente / Módulo</b>", style_table_header), Paragraph("<b>Ruta en Código</b>", style_table_header), Paragraph("<b>Rol y Responsabilidad Funcional</b>", style_table_header)],
         [
-            Paragraph("<b>API Server & Endpoints</b><br/><code>main_web.py</code>", style_table_cell),
+            Paragraph("<b>Servidor Web & API</b><br/><code>main_web.py</code>", style_table_cell),
             Paragraph("<code>/main_web.py</code>", style_code),
-            Paragraph("Servidor FastAPI, endpoints REST, SSE streaming, inyección de dependencias, orquestador de tareas en background.", style_table_cell)
+            Paragraph("FastAPI, endpoints REST, Server-Sent Events, exposición de funciones Eel y routing de peticiones.", style_table_cell)
         ],
         [
-            Paragraph("<b>Frontend SPA & Deck DSP</b><br/><code>app.jsx / bundle.js</code>", style_table_cell),
-            Paragraph("<code>web/js/app.jsx</code><br/><code>web/js/app.bundle.js</code>", style_code),
-            Paragraph("Single Page Application React 18, Web Audio API DSP, RotaryKnobs, Pitch Fader, Vinyl Platter, Hot Cues pads y Workspaces.", style_table_cell)
+            Paragraph("<b>Frontend SPA React</b><br/><code>app.jsx</code>", style_table_cell),
+            Paragraph("<code>web/js/app.jsx</code>", style_code),
+            Paragraph("Single Page Application: AuditWorkspace, HotCuesWorkspace, RotaryKnobs, Pitch Fader, Vinyl Platter, TutorialModal.", style_table_cell)
         ],
         [
-            Paragraph("<b>Auditoría DSP & Tags</b><br/><code>audit_service.py</code>", style_table_cell),
+            Paragraph("<b>Auditoría DSP & Lotes</b><br/><code>audit_service.py</code>", style_table_cell),
             Paragraph("<code>services/audit_service.py</code>", style_code),
-            Paragraph("Escaneo recursivo, extracción de audio, análisis acústico de BPM, tonalidad Camelot, TruePeak, RMS, sanitización masiva ID3/FLAC/MP4.", style_table_cell)
+            Paragraph("Análisis acústico de BPM, Key Camelot, RMS, cortes espectrales, fakes, auto-cue y soporte para carpetas o pistas sueltas.", style_table_cell)
         ],
         [
-            Paragraph("<b>Sanitizador Taxonómico</b><br/><code>tag_sanitizer_service.py</code>", style_table_cell),
+            Paragraph("<b>Higienización de Tags</b><br/><code>tag_sanitizer_service.py</code>", style_table_cell),
             Paragraph("<code>services/tag_sanitizer_service.py</code>", style_code),
-            Paragraph("Normalización heurística de nombres de artista, títulos, detección de versiones (Extended, Club Mix, VIP), limpieza de caracteres extraños.", style_table_cell)
+            Paragraph("Normalización de nombres de artista, títulos, detección de versiones DJ (Extended, VIP, Remix) y purga de spam.", style_table_cell)
         ],
         [
-            Paragraph("<b>Reconocimiento Shazam</b><br/><code>shazam_service.py</code>", style_table_cell),
+            Paragraph("<b>Radar Shazam Híbrido</b><br/><code>shazam_service.py</code>", style_table_cell),
             Paragraph("<code>services/shazam_service.py</code>", style_code),
-            Paragraph("Huella acústica Shazamio, pipeline de reintentos exponenciales, fallback a búsqueda cruzada Spotify Web API y MusicBrainz.", style_table_cell)
+            Paragraph("Reconocimiento espectral Shazamio con reintentos y respaldo cruzado en Spotify Web API y MusicBrainz.", style_table_cell)
         ],
         [
-            Paragraph("<b>Enriquecimiento Artwork</b><br/><code>media_service.py</code>", style_table_cell),
+            Paragraph("<b>Arte y Portadas HD</b><br/><code>media_service.py</code>", style_table_cell),
             Paragraph("<code>services/media_service.py</code>", style_code),
-            Paragraph("Descarga de portadas en alta definición (1400x1400), embebido directo en tags ID3 APIC / FLAC PICTURE con compresión sin pérdidas.", style_table_cell)
+            Paragraph("Descarga de artwork oficial 1400x1400 px, compresión sin pérdidas e inyección en frames APIC / FLAC PICTURE.", style_table_cell)
         ],
         [
-            Paragraph("<b>Motor de Descargas</b><br/><code>download_service.py</code>", style_table_cell),
+            Paragraph("<b>Descargas y Workers</b><br/><code>download_service.py</code>", style_table_cell),
             Paragraph("<code>services/download_service.py</code>", style_code),
-            Paragraph("Ingesta de enlaces Spotify (track, album, playlist), extracción de audio con yt-dlp, tagging automático concurrente y colas asíncronas.", style_table_cell)
+            Paragraph("Ingesta de playlists de Spotify, extracción con yt-dlp, normalización y encolamiento asíncrono con barra de progreso.", style_table_cell)
         ],
         [
-            Paragraph("<b>Exportador Serato / RK</b><br/><code>export_service.py</code>", style_table_cell),
+            Paragraph("<b>Exportación Serato/RK</b><br/><code>export_service.py</code>", style_table_cell),
             Paragraph("<code>services/export_service.py</code>", style_code),
-            Paragraph("Escritor de tramas binarias GEOB Serato Markers2 (Hot Cues, beatgrid, color pads) e inyección de metadatos Rekordbox DJMD.", style_table_cell)
-        ],
-        [
-            Paragraph("<b>Estilos y Animaciones</b><br/><code>styles.css</code>", style_table_cell),
-            Paragraph("<code>web/styles.css</code>", style_code),
-            Paragraph("Clases Tailwind personalizadas, animaciones de vinilo 33 RPM, cursores de scratching, faders verticales y scrollbars oscuros.", style_table_cell)
+            Paragraph("Escritura de frames GEOB Serato Markers2 (Cues, Beatgrids, colores) e inyección de metadatos Pioneer Rekordbox DJMD.", style_table_cell)
         ],
         [
             Paragraph("<b>Batería de Pruebas</b><br/><code>tests/*.py</code>", style_table_cell),
-            Paragraph("<code>tests/test_audit_service.py</code><br/><code>tests/test_export_service.py</code><br/><code>tests/test_main_web.py</code>", style_code),
-            Paragraph("117 pruebas unitarias y de integración que verifican endpoints, servicios DSP, integridad de tags y concurrencia sin regresiones.", style_table_cell)
+            Paragraph("<code>tests/test_audit_service.py</code><br/><code>tests/test_export_service.py</code>", style_code),
+            Paragraph("117 tests automatizados en Pytest con cobertura de exportación binaria, análisis acústico y estabilidad REST.", style_table_cell)
         ]
     ]
-    t_code_map = Table(code_map_data, colWidths=[130, 160, 233])
-    t_code_map.setStyle(TableStyle([
+    t_code = Table(code_map_data, colWidths=[125, 155, 243])
+    t_code.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), C_PRIMARY),
         ('GRID', (0, 0), (-1, -1), 0.5, C_BORDER),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [C_WHITE, C_BG_LIGHT]),
-        ('PADDING', (0, 0), (-1, -1), 4),
+        ('PADDING', (0, 0), (-1, -1), 3.5),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
-    story.append(t_code_map)
-    story.append(Spacer(1, 12))
+    story.append(t_code)
+
+    # SALTO DE PÁGINA
+    story.append(PageBreak())
 
     # =========================================================================
     # SECCIÓN 3: MÓDULO 1 - AUDITORÍA DSP ("AUDITAR TODO")
     # =========================================================================
-    story.append(Paragraph("3. Módulo 1: Auditoría Acústica y Normalización de Lote ('Auditar Todo')", style_h1))
+    story.append(Paragraph("3. Módulo 1: Auditoría DSP ('Auditar Todo' para Carpetas y Pistas Sueltas)", style_h1))
     story.append(Paragraph(
-        "El módulo de auditoría es el motor de entrada principal para procesar directorios masivos de música. "
-        "En la versión actual, el botón principal fue refactorizado y rebautizado como <b>'Auditar Todo'</b> (en inglés <i>'Audit All'</i>), "
-        "reflejando que ejecuta no sólo la inspección pasiva, sino el análisis acústico DSP completo, verificación de integridad y normalización.",
+        "El módulo de Auditoría constituye el núcleo de procesamiento acústico. Ha sido optimizado para soportar con total flexibilidad "
+        "tanto <b>directorios completos</b> como <b>selección de pistas sueltas</b> individuales:",
         style_body
     ))
-    
+
+    # Captura de Pantalla de la Interfaz de Auditoría
+    screenshot_table_path = "assets/manual_screenshot_audit_table.png"
+    if os.path.exists(screenshot_table_path):
+        story.append(Spacer(1, 4))
+        story.append(Image(screenshot_table_path, width=470, height=195))
+        story.append(Paragraph("Figura 1: Módulo de Auditoría Acústica Lote: Tabla de metadatos, inspección espectral, badges Camelot y control DSP.", style_caption))
+        story.append(Spacer(1, 4))
+
     audit_features = [
-        "<b>Escaneo Recursivo y Formatos Soportados:</b> Inspecciona subcarpetas analizando archivos <code>.mp3</code>, <code>.flac</code>, <code>.wav</code>, <code>.m4a</code>, <code>.aiff</code> y <code>.ogg</code> sin saturar el stack de memoria.",
-        "<b>Detección Acústica de BPM y Key Armónico:</b> Calcula el tempo exacto con precisión decimal y mapea la clave tonal a la notación de la rueda Camelot (ej. <i>8A - A minor</i>, <i>11B - A Major</i>) y OpenKey.",
-        "<b>Medición de Energía y Normalización EBU R128:</b> Analiza niveles de sonoridad integrada LUFS y rango dinámico RMS, identificando pistas con sobremodulación o distorsión digital.",
-        "<b>Detección Automática de Cues (Auto Cue In / Out):</b> Identifica el punto exacto del primer downbeat audible para mezclas sin silencios previos y el punto de salida óptimo.",
-        "<b>Escritura Atómica de Tags:</b> La sanitización de metadatos mediante <code>services/tag_sanitizer_service.py</code> aplica transacciones de escritura seguras, evitando corrupciones accidentales si se interrumpe la ejecución."
+        "<b>Auditoría de Pistas Sueltas y Carpetas:</b> El botón <code>Auditar Todo</code> y el modal <code>Configurar Lote</code> resuelven inteligentemente las pistas objetivo: si el usuario seleccionó checkboxes específicos, audita esas pistas; si cargó archivos sueltos desde el navegador integrado ('🎵 Pistas Sueltas'), audita esos archivos; y si indicó una ruta física, procesa el árbol completo de carpetas.",
+        "<b>Detección de Tempo y Rueda Armónica Camelot:</b> Análisis de transitorios por transformada de Fourier rápida (FFT), computando el tempo exacto (ej. 128.00 BPM) y la clave armónica (Camelot 1A-12B y OpenKey).",
+        "<b>Detección de Silencios y Downbeat (Beatgrid 1.0.0):</b> Mide el corte de silencio inicial (Trim Start en milisegundos) y sitúa el primer downbeat con exactitud para que las mezclas arranquen de forma instantánea.",
+        "<b>Configuración Avanzada de Lote:</b> Permite definir si se inyectan carátulas 1:1, si se insertan comentarios tácticos (ej. <code>[126 BPM - 8A - Peak]</code>) y si se organizan automáticamente las pistas en subcarpetas temáticas."
     ]
     for feat in audit_features:
         story.append(Paragraph(f"• {feat}", style_body))
 
-    # =========================================================================
-    # SECCIÓN 4: MÓDULO 2 - HOT CUES STUDIO & HARDWARE DJ DECK
-    # =========================================================================
-    story.append(Spacer(1, 10))
-    story.append(Paragraph("4. Módulo 2: Hot Cues Studio & Hardware DJ Deck", style_h1))
-    story.append(Paragraph(
-        "El entorno de Hot Cues Studio transforma la aplicación en una estación de trabajo de DJ físico con emulación hardware "
-        "de máxima precisión. Integra controles táctiles y acústicos conectados directamente con la Web Audio API:",
-        style_body
-    ))
-
-    hotcues_features = [
-        "<b>Matriz de 8 Hot Cues con Asignación Instantánea:</b> Cada pad permite fijar posiciones milimétricas de reproducción, asignar colores característicos, renombrar el punto (Intro, Drop, Break, Vocal, Outro) y realizar saltos instantáneos sin clipping.",
-        "<b>Pitch Fader de Rango Dual (±8% / ±16%):</b> Deslizador vertical de tempo con botones micro-nudge <code>[-]</code> y <code>[+]</code> de 0.1%, botón central de reseteo a 0.0%, y cómputo dinámico del BPM en tiempo real <code>(bpm * (1 + pitch / 100))</code> alterando la propiedad <code>audio.playbackRate</code>.",
-        "<b>Ecualizador de 3 Bandas Hardware (LOW, MID, HI):</b> Módulo ecualizador profesional que intercepta el elemento HTML5 Audio mediante <code>createMediaElementSource</code> y conecta tres nodos <code>BiquadFilterNode</code> en serie: <b>LOW (BASS)</b> en 250 Hz (lowshelf), <b>MID</b> en 1000 Hz (peaking Q=1.0) y <b>HI (TREBLE)</b> en 3500 Hz (highshelf). Rango operativo de -24 dB a +6 dB, reseteo a 0 dB por doble clic y botón 'FLAT'.",
-        "<b>Plato Direct-Drive Vinyl Scratching:</b> Emulación física de tornamesa de 33⅓ RPM. Al arrastrar circularmente el plato vinilo en pantalla, calcula el ángulo delta en grados y aplica un desplazamiento de audio de <code>(delta / 360) * 1.8 segundos</code> por vuelta completa, reproduciendo la respuesta táctil exacta de un plato Technics 1200.",
-        "<b>Corrección de Reproducción y Cueing:</b> El botón Play y Cue cuenta con validación de estado que garantiza que si el track cargado no es el que está sonando, se sincroniza y reproduce instantáneamente sin saltos vacíos.",
-        "<b>Forma de Onda Zoomable & Tooltips Protegidos:</b> Renderizado de picos con zoom dinámico hasta 64x y tooltips de tiempo que permanecen confinados entre el 8% y el 92% del ancho, evitando desbordamientos visuales fuera de la pantalla."
-    ]
-    for feat in hotcues_features:
-        story.append(Paragraph(f"• {feat}", style_body))
-
-    # SALTO DE PÁGINA A SECCIÓN 5
+    # SALTO DE PÁGINA
     story.append(PageBreak())
 
     # =========================================================================
-    # SECCIÓN 5: MÓDULO 3 - RADAR SHAZAM & RECONOCIMIENTO HÍBRIDO
+    # SECCIÓN 4: MÓDULO 2 - SUPERFLAC LOSSLESS & DETECCIÓN DE CALIDAD
     # =========================================================================
-    story.append(Paragraph("5. Módulo 3: Radar Shazam & Reconocimiento Híbrido", style_h1))
+    story.append(Paragraph("4. Módulo 2: Motor SuperFLAC Lossless & Detección de Fakes", style_h1))
     story.append(Paragraph(
-        "Ubicado en <code>services/shazam_service.py</code> y expuesto en la interfaz a través de la pestaña <b>Radar</b>. "
-        "Permite identificar temas no etiquetados o grabaciones en vivo utilizando un algoritmo de huella acústica con tolerancia a ruido:",
+        "Uno de los mayores riesgos para un DJ profesional es reproducir en un soundsystem de club un archivo con extensión <code>.flac</code> "
+        "que en realidad proviene de un MP3 comprimido a 128 kbps (transcode o fake FLAC). CleanDJmix PRO incorpora el motor <b>SuperFLAC</b>:",
         style_body
     ))
-    
+
+    screenshot_audit_path = "assets/screenshot_audit.png"
+    if os.path.exists(screenshot_audit_path):
+        story.append(Spacer(1, 4))
+        story.append(Image(screenshot_audit_path, width=470, height=200))
+        story.append(Paragraph("Figura 2: Consola CleanDJmix PRO: Barra de navegación en cápsula de alta jerarquía, alertas de calidad y panel de reemplazo.", style_caption))
+        story.append(Spacer(1, 4))
+
+    superflac_points = [
+        "<b>Inspección Espectral Acústica:</b> Analiza la frecuencia de corte real (Cutoff kHz). Si un archivo FLAC corta por debajo de 20.0 kHz, o su bitrate efectivo es inferior a 650 kbps, el sistema lo clasifica como <i>Calidad Media / Transcode Falso</i>.",
+        "<b>Botón de Acción Directa SuperFLAC Lossless:</b> En la tabla de auditoría y en el inspector lateral, cada FLAC sub-óptimo muestra el distintivo <code>💎 SuperFLAC</code>. Al pulsarlo, el sistema toma el título, artista e ISRC y consulta la API oficial de Spotify.",
+        "<b>Ingesta y Sustitución Automática:</b> Los masters originales encontrados en Spotify son redirigidos a la cola de <code>Spotify Ingest</code> bajo la etiqueta <code>origin: 'superflac_lossless'</code> para ser descargados en verdadero formato FLAC Hi-Res oficial, reemplazando el archivo local defectuoso.",
+        "<b>Filtro de Lote SuperFLAC:</b> La barra superior incluye el botón <code>💎 SuperFLAC Lossless (N)</code> que permite enviar en un solo clic todas las pistas defectuosas de la biblioteca a la cola de reemplazo."
+    ]
+    for pt in superflac_points:
+        story.append(Paragraph(f"• {pt}", style_body))
+
+    # SALTO DE PÁGINA
+    story.append(PageBreak())
+
+    # =========================================================================
+    # SECCIÓN 5: MÓDULO 3 - HOT CUES STUDIO & HARDWARE DJ DECK
+    # =========================================================================
+    story.append(Paragraph("5. Módulo 3: Hot Cues Studio & Hardware DJ Deck", style_h1))
+    story.append(Paragraph(
+        "El entorno de Hot Cues Studio recrea con fidelidad la experiencia operativa de un reproductor DJ de alta gama con latencia cero:",
+        style_body
+    ))
+
+    screenshot_hotcues_path = "assets/manual_screenshot_hotcues.png"
+    if os.path.exists(screenshot_hotcues_path):
+        story.append(Spacer(1, 4))
+        story.append(Image(screenshot_hotcues_path, width=470, height=200))
+        story.append(Paragraph("Figura 3: Hot Cues Studio Deck: Plato de vinilo scratch 33⅓ RPM, ecualizador 3 bandas Web Audio, pitch fader vertical y 8 pads.", style_caption))
+        story.append(Spacer(1, 4))
+
+    hotcues_points = [
+        "<b>Matriz de 8 Hot Cues Pads:</b> 8 pads interactivos codificados en color oficial RGB con asignación milimétrica, borrado instantáneo y salto sin desfase audible. Sincronización garantizada con el primer downbeat.",
+        "<b>Pitch Fader de Rango Dual (±8% / ±16%):</b> Deslizador vertical con botones micro-nudge <code>[-]</code> y <code>[+]</code> de 0.1%, reseteo instantáneo a 0.0% y display dinámico del tempo <code>(bpm * (1 + pitch / 100))</code> que ajusta en tiempo real la velocidad de reproducción.",
+        "<b>Ecualizador Hardware de 3 Bandas (Web Audio API):</b> Tres filtros de audio en cascada: <b>LOW (BASS)</b> en 250 Hz (lowshelf), <b>MID</b> en 1000 Hz (peaking Q=1.0) y <b>HI (TREBLE)</b> en 3500 Hz (highshelf). Rango de atenuación y realce de -24 dB a +6 dB, reseteo por doble clic y botón 'FLAT'.",
+        "<b>Plato Direct-Drive Vinyl Scratching:</b> Emulación física de tornamesa de 33⅓ RPM. Al arrastrar circularmente el plato vinilo en pantalla, calcula el ángulo delta en grados y aplica un desplazamiento de audio de <code>(delta / 360) * 1.8 segundos</code> por vuelta completa, reproduciendo la respuesta táctil exacta de un plato Technics 1200.",
+        "<b>Corrección Robusta de Play & Cue:</b> Implementación con auto-enlace que verifica si el track cargado coincide con el reproductor; en caso negativo, lo enlaza y reproduce instantáneamente sin saltos vacíos.",
+        "<b>Forma de Onda Zoomable Confinada:</b> Visualización estéreo con zoom dinámico de 1x a 64x y tooltips temporales confinados entre el 8% y 92% para evitar desbordamientos visuales fuera de la pantalla."
+    ]
+    for pt in hotcues_points:
+        story.append(Paragraph(f"• {pt}", style_body))
+
+    # SALTO DE PÁGINA
+    story.append(PageBreak())
+
+    # =========================================================================
+    # SECCIÓN 6: MÓDULO 4 - RADAR SHAZAM & RECONOCIMIENTO HÍBRIDO
+    # =========================================================================
+    story.append(Paragraph("6. Módulo 4: Radar Shazam & Reconocimiento Híbrido", style_h1))
+    story.append(Paragraph(
+        "Ubicado en <code>services/shazam_service.py</code>. Permite identificar pistas sin titular, rips de vinilo o grabaciones de sesión en directo "
+        "utilizando una arquitectura híbrida de doble verificación:",
+        style_body
+    ))
+
     radar_points = [
-        "<b>Fingerprinting Acústico Shazam:</b> Extrae firmas espectrales de segmentos clave de 10 a 15 segundos y consulta la base de datos acústica global con manejo de reintentos exponenciales.",
-        "<b>Arquitectura Híbrida de Respaldo (Fallback Multifuente):</b> Si la huella no genera coincidencia directa o el track está ligeramente acelerado, el servicio activa automáticamente una consulta semántica en la API de Spotify y MusicBrainz para recuperar metadatos oficiales.",
-        "<b>Enriquecimiento Automático de Portadas HD:</b> Conexión con <code>services/media_service.py</code> para descargar el arte de tapa oficial a 1400x1400 píxeles, optimizar el buffer JPEG e incrustarlo en los tags del archivo.",
-        "<b>Extracción de ISRC y Discográfica:</b> Completa códigos ISRC para liquidación de regalías y nombres canónicos de sello discográfico."
+        "<b>Huella Espectral Shazamio:</b> Extrae un segmento de audio representativo de 12 segundos y lo compara contra la base global de millones de firmas de audio con algoritmos de correlación espectral.",
+        "<b>Respaldo Inteligente (Fallback Multifuente):</b> Si la consulta directa no arroja resultado (debido a diferencias de afinación o ruido de fondo), el motor activa automáticamente una búsqueda semántica de alta precisión en Spotify Web API y MusicBrainz.",
+        "<b>Incrustación de Portadas Ultra-HD (1400x1400):</b> Mediante <code>services/media_service.py</code>, se descarga el artwork original en máxima resolución, se normaliza al estándar JPEG 1:1 y se incrusta en el archivo físico.",
+        "<b>Extracción de Código ISRC:</b> Obtiene códigos de identificación discográfica oficial para registro de autoría y preparación de playlists profesionales."
     ]
     for pt in radar_points:
         story.append(Paragraph(f"• {pt}", style_body))
 
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 10))
 
     # =========================================================================
-    # SECCIÓN 6: MÓDULO 4 - INGESTA SPOTIFY & PIPELINE DE DESCARGAS
+    # SECCIÓN 7: MÓDULO 5 - INGESTA SPOTIFY Y TAXONOMÍA IA
     # =========================================================================
-    story.append(Paragraph("6. Módulo 4: Ingesta Spotify & Descargas Paralelas", style_h1))
+    story.append(Paragraph("7. Módulo 5: Ingesta Spotify, Descargas y Taxonomía IA", style_h1))
     story.append(Paragraph(
-        "Ubicado en <code>services/download_service.py</code> y la vista <code>SpotifyIngestWorkspace</code>. "
-        "Permite sincronizar listas de reproducción completas, álbumes o canciones individuales desde enlaces de Spotify:",
+        "Combina la adquisición rápida de repertorio musical con un motor de búsqueda semántica diseñado específicamente para DJs:",
         style_body
     ))
-    
+
     spotify_points = [
-        "<b>Parseo y Extracción de Listas:</b> Analiza URLs tipo <code>open.spotify.com/playlist/...</code> o <code>/track/...</code>, extrayendo metadatos completos (título, artistas, álbum, año, duración y artwork).",
-        "<b>Cola Concurrente de Descargas:</b> Utiliza workers asíncronos configurables para descargar el audio con máxima fidelidad, convirtiendo al formato configurado (MP3 320 kbps o FLAC sin pérdidas).",
-        "<b>Tagging Inmediato Post-Descarga:</b> Inmediatamente tras la descarga, se aplican los tags ID3v2.4 completos, portadas integradas y cues pre-calculados, dejando la pista lista para auditoría.",
-        "<b>Protección de Desbordamiento de Texto:</b> La interfaz cuenta con límites <code>max-w-xl break-words</code> para títulos y enlaces extensos, garantizando legibilidad en cualquier resolución de pantalla."
+        "<b>Ingesta Inteligente de Enlaces Spotify:</b> Parseo instantáneo de URLs de canciones, álbumes completos y playlists. Las canciones se listan en una tabla organizada con carátulas, tonalidades y tiempos de duración.",
+        "<b>Cola de Descarga Multihilo Asíncrona:</b> Los workers descargan los tracks en paralelo convirtiéndolos automáticamente a FLAC o MP3 320 kbps, aplicando tags ID3v2.4 completos y normalización de volumen.",
+        "<b>Buscador IA en Lenguaje Natural (<code>parseAIDJQuery</code>):</b> Interpreta consultas complejas como <i>'Tech House 126 bpm en 8A enérgico con vocales'</i>, descomponiendo la búsqueda en filtros atómicos de tempo, clave Camelot, versión y mood.",
+        "<b>Gestión Dinámica de Chips de Búsqueda:</b> Cada etiqueta interpretada cuenta con un botón <code>✕</code> para eliminarla de forma selectiva de la búsqueda, y un menú <code>[+ Añadir Tag]</code> categorizado (BPM, Key, Género, Versión, Mood) para construir consultas a medida.",
+        "<b>BeatWave Pool:</b> Acceso rápido a colecciones preconfiguradas para diferentes momentos de la sesión (Warmup, Peak Time, Sunset, Closing)."
     ]
     for pt in spotify_points:
         story.append(Paragraph(f"• {pt}", style_body))
 
-    story.append(Spacer(1, 8))
-
-    # =========================================================================
-    # SECCIÓN 7: MÓDULO 5 - TAXONOMÍA INTELIGENTE & BUSCADOR IA
-    # =========================================================================
-    story.append(Paragraph("7. Módulo 5: Taxonomía Inteligente & Buscador IA Multicriterio", style_h1))
-    story.append(Paragraph(
-        "El módulo de Taxonomía se encarga de la categorización avanzada de la colección musical mediante inteligencia semántica. "
-        "El componente fue depurado de nomenclaturas locales para ofrecer una experiencia puramente profesional (<b>'Buscador IA'</b> y <b>'BeatWave Pool'</b>):",
-        style_body
-    ))
-
-    tax_points = [
-        "<b>Parser Semántico en Lenguaje Natural (<code>parseAIDJQuery</code>):</b> Interpreta consultas como <i>'Tech House 124 a 128 bpm en 8A energico vocal'</i>, extrayendo automáticamente tokens de BPM (rango o exacto), tonalidad armónica Camelot, géneros, versión (Extended, Club Mix, Dub) y etiquetas de energía o mood.",
-        "<b>Gestión Dinámica de Etiquetas (Chips Interactivos):</b> Las etiquetas interpretadas se muestran como chips con botón de eliminación individual (<code>✕</code>) que limpian automáticamente el fragmento correspondiente de la caja de búsqueda sin perder los demás filtros.",
-        "<b>Selector Rápido de Adición Manual (<code>[+ Añadir Tag]</code>):</b> Menú desplegable interactivo por categorías (BPM, Key, Género, Versión, Mood) que permite añadir parámetros de búsqueda específicos con un solo clic.",
-        "<b>Chips Sugeridos BeatWave Pool:</b> Colección de presets instantáneos para filtrar la pista de baile en función del estilo de la sesión (Club Peak Time, Melodic Sunset, Deep Warmup, etc.)."
-    ]
-    for pt in tax_points:
-        story.append(Paragraph(f"• {pt}", style_body))
-
-    story.append(Spacer(1, 8))
+    # SALTO DE PÁGINA
+    story.append(PageBreak())
 
     # =========================================================================
     # SECCIÓN 8: MÓDULO 6 - EXPORTACIÓN SERATO Y REKORDBOX
     # =========================================================================
-    story.append(Paragraph("8. Módulo 6: Exportación a Ecosistemas Serato y Rekordbox", style_h1))
+    story.append(Paragraph("8. Módulo 6: Exportación Nativa a Serato DJ Pro y Pioneer Rekordbox", style_h1))
     story.append(Paragraph(
-        "Ubicado en <code>services/export_service.py</code>. Permite que el trabajo de auditoría, grids y Hot Cues realizado en CleanDJmix PRO "
-        "sea exportado de forma nativa e inmediata al software de actuación en directo preferido por el DJ:",
+        "Ubicado en <code>services/export_service.py</code>. Convierte todo el trabajo acústico realizado en metadatos nativos para los reproductores estándar de club:",
         style_body
     ))
 
     export_points = [
-        "<b>Compatibilidad Serato DJ Pro (GEOB Markers2):</b> Empaqueta estructuras binarias serializadas en el frame ID3 <code>GEOB:Serato Markers2</code>, guardando los 8 Hot Cues con milisegundos exactos, nombres personalizados y colores oficiales Serato RGB.",
-        "<b>Compatibilidad Pioneer Rekordbox:</b> Inyecta la información en campos ID3 compatibles y estructuras XML Rekordbox (DJMD), asegurando que las llaves USB preparadas para CDJs reproduzcan los cues sin desfase.",
-        "<b>Preservación Absoluta de Tags Previos:</b> La rutina lee los tags existentes y solo sobreescribe o adjunta los bloques correspondientes, sin tocar comentarios privados, ratings ni fechas de importación."
+        "<b>Serato DJ Pro (GEOB Markers2):</b> Inyección de tramas binarias en el tag <code>GEOB:Serato Markers2</code>. Almacena los 8 Hot Cues con milisegundos exactos, nombres descriptivos (Intro, Drop, Break) y colores oficiales Serato RGB.",
+        "<b>Pioneer Rekordbox XML (DJMD):</b> Generación e inyección de datos compatibles con rekordbox.xml y bases de datos Pioneer, permitiendo exportar directamente a unidades USB para CDJ-3000 / CDJ-2000NXS2 sin descuadres de compás.",
+        "<b>Integridad de Archivos:</b> Proceso transaccional atómico que protege tags preexistentes (ratings, comentarios propios) sin alterar el audio PCM original."
     ]
     for pt in export_points:
         story.append(Paragraph(f"• {pt}", style_body))
 
-    # SALTO DE PÁGINA A SECCIÓN 9
+    story.append(Spacer(1, 10))
+
+    # =========================================================================
+    # SECCIÓN 9: PERSISTENCIA EN SEGUNDO PLANO Y TUTORIAL
+    # =========================================================================
+    story.append(Paragraph("9. Persistencia de Procesos en Background y Tutorial Interactivo", style_h1))
+    story.append(Paragraph(
+        "CleanDJmix PRO garantiza una experiencia fluida y robusta orientada al trabajo intensivo del DJ:",
+        style_body
+    ))
+
+    bg_points = [
+        "<b>Ejecución Continua al Cambiar de Pestaña:</b> Los espacios de trabajo (Auditoría, Hot Cues, Spotify, Radar, Taxonomía) se mantienen permanentemente montados en memoria (DOM Persistence). Si el usuario inicia la auditoría de 500 canciones o una descarga y se traslada al estudio de Hot Cues a practicar con el vinilo, el proceso continúa sin interrupción.",
+        "<b>Monitoreo Global en Tiempo Real:</b> La cabecera superior y las pestañas de navegación reflejan el estado activo de los procesos en segundo plano con indicadores de porcentaje animados (ej. <code>[⚡ Auditoría: 45%]</code>) junto al indicador <code>DSP ENGINE ONLINE</code>.",
+        "<b>Tutorial Interactivo de Bienvenida (AppTutorialModal):</b> Asistente guiado de 5 pasos que se despliega automáticamente en el primer acceso del usuario (almacenado en <code>localStorage</code>) o al pulsar el botón <code>❓ Tutorial</code> en el header superior, explicando paso a paso cada sección de la cabina."
+    ]
+    for pt in bg_points:
+        story.append(Paragraph(f"• {pt}", style_body))
+
+    # SALTO DE PÁGINA
     story.append(PageBreak())
 
     # =========================================================================
-    # SECCIÓN 9: CATÁLOGO DE ENDPOINTS DE LA API REST
+    # SECCIÓN 10: ENDPOINTS REST, TESTS Y COMANDOS
     # =========================================================================
-    story.append(Paragraph("9. Catálogo de Endpoints de la API REST y Contratos de Datos", style_h1))
+    story.append(Paragraph("10. Catálogo de Endpoints REST, Suite de Tests y Comandos", style_h1))
     story.append(Paragraph(
-        "La interfaz web se comunica con el servidor FastAPI a través de un conjunto unificado de endpoints REST "
-        "y canales Server-Sent Events (SSE) para retroalimentación en streaming y tiempo real:",
+        "Catálogo de endpoints HTTP expuestos por el backend en <code>main_web.py</code>:",
         style_body
     ))
 
     api_table_data = [
-        [Paragraph("<b>Método</b>", style_table_header), Paragraph("<b>Endpoint URI</b>", style_table_header), Paragraph("<b>Parámetros / Payload</b>", style_table_header), Paragraph("<b>Descripción Funcional</b>", style_table_header)],
+        [Paragraph("<b>Método</b>", style_table_header), Paragraph("<b>Endpoint URI</b>", style_table_header), Paragraph("<b>Entrada / Payload</b>", style_table_header), Paragraph("<b>Descripción Funcional</b>", style_table_header)],
         [
             Paragraph("<font color='#10b981'><b>POST</b></font>", style_table_cell),
             Paragraph("<code>/api/audit</code>", style_code),
-            Paragraph("<code>{ directory: str, recursive: bool }</code>", style_code),
-            Paragraph("Inicia escaneo y auditoría acústica del directorio especificado.", style_table_cell)
+            Paragraph("<code>{ directory: str | [paths] }</code>", style_code),
+            Paragraph("Audita carpetas completas o listas de archivos sueltos.", style_table_cell)
         ],
         [
             Paragraph("<font color='#06b6d4'><b>GET</b></font>", style_table_cell),
             Paragraph("<code>/api/audit/stream</code>", style_code),
             Paragraph("<code>taskId: str</code> (SSE)", style_code),
-            Paragraph("Canal de eventos en tiempo real con el porcentaje y estado del análisis DSP.", style_table_cell)
+            Paragraph("Eventos en tiempo real con progreso, porcentaje y estado DSP.", style_table_cell)
         ],
         [
             Paragraph("<font color='#10b981'><b>POST</b></font>", style_table_cell),
             Paragraph("<code>/api/batch-write-tags</code>", style_code),
-            Paragraph("<code>{ tracks: [ { filepath, title, artist, ... } ] }</code>", style_code),
-            Paragraph("Escritura atómica masiva de metadatos sanitizados en archivos físicos.", style_table_cell)
+            Paragraph("<code>{ tracks: [...] }</code>", style_code),
+            Paragraph("Escritura masiva de metadatos sanitizados en archivos físicos.", style_table_cell)
         ],
         [
             Paragraph("<font color='#06b6d4'><b>GET</b></font>", style_table_cell),
             Paragraph("<code>/api/stream-audio</code>", style_code),
-            Paragraph("<code>path: str</code> (Query Param)", style_code),
-            Paragraph("Streaming de audio HTTP con soporte para cabeceras Range (scrub y seek instantáneo).", style_table_cell)
+            Paragraph("<code>path: str</code> (Range Support)", style_code),
+            Paragraph("Streaming de audio con cabeceras Range para scrub y seek sin latencia.", style_table_cell)
         ],
         [
             Paragraph("<font color='#10b981'><b>POST</b></font>", style_table_cell),
             Paragraph("<code>/api/hotcues/save</code>", style_code),
-            Paragraph("<code>{ filepath: str, cues: [ { id, ms, label, color } ] }</code>", style_code),
-            Paragraph("Persiste la matriz de 8 Hot Cues en archivo local y base de metadatos.", style_table_cell)
+            Paragraph("<code>{ filepath: str, cues: [...] }</code>", style_code),
+            Paragraph("Persiste la matriz de 8 Hot Cues en el archivo físico local.", style_table_cell)
+        ],
+        [
+            Paragraph("<font color='#10b981'><b>POST</b></font>", style_table_cell),
+            Paragraph("<code>/api/buscar_reemplazos_spotify</code>", style_code),
+            Paragraph("<code>{ tracks: [...] }</code>", style_code),
+            Paragraph("Consulta en Spotify reemplazos oficiales Hi-Res / SuperFLAC.", style_table_cell)
         ],
         [
             Paragraph("<font color='#10b981'><b>POST</b></font>", style_table_cell),
             Paragraph("<code>/api/export/serato</code>", style_code),
-            Paragraph("<code>{ filepaths: [str], mode: 'geob' }</code>", style_code),
-            Paragraph("Escribe tags binarios GEOB Serato Markers2 en los archivos especificados.", style_table_cell)
-        ],
-        [
-            Paragraph("<font color='#10b981'><b>POST</b></font>", style_table_cell),
-            Paragraph("<code>/api/shazam-identify</code>", style_code),
-            Paragraph("<code>{ filepath: str, offset_sec: int }</code>", style_code),
-            Paragraph("Ejecuta huella acústica Shazam y devuelve metadatos canónicos y carátula.", style_table_cell)
-        ],
-        [
-            Paragraph("<font color='#10b981'><b>POST</b></font>", style_table_cell),
-            Paragraph("<code>/api/spotify/parse</code>", style_code),
-            Paragraph("<code>{ url: str }</code>", style_code),
-            Paragraph("Extrae la lista de canciones y metadatos de un enlace de Spotify.", style_table_cell)
+            Paragraph("<code>{ filepaths: [...], mode: 'geob' }</code>", style_code),
+            Paragraph("Escribe tags binarios GEOB Serato Markers2 en los archivos.", style_table_cell)
         ],
         [
             Paragraph("<font color='#10b981'><b>POST</b></font>", style_table_cell),
             Paragraph("<code>/api/download/queue</code>", style_code),
             Paragraph("<code>{ tracks: [...], destination: str }</code>", style_code),
-            Paragraph("Añade tracks a la cola de descarga paralela con post-procesamiento DSP.", style_table_cell)
+            Paragraph("Encola descargas paralelas de audio en alta resolución.", style_table_cell)
         ]
     ]
-    t_api = Table(api_table_data, colWidths=[50, 130, 155, 188])
+    t_api = Table(api_table_data, colWidths=[48, 140, 150, 185])
     t_api.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), C_PRIMARY),
         ('GRID', (0, 0), (-1, -1), 0.5, C_BORDER),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [C_WHITE, C_BG_LIGHT]),
-        ('PADDING', (0, 0), (-1, -1), 4.5),
+        ('PADDING', (0, 0), (-1, -1), 3.8),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
     story.append(t_api)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 8))
 
-    # =========================================================================
-    # SECCIÓN 10: SUITE DE PRUEBAS Y MANTENIMIENTO
-    # =========================================================================
-    story.append(Paragraph("10. Suite de Pruebas Unitarias, Validación y Mantenimiento", style_h1))
-    story.append(Paragraph(
-        "CleanDJmix PRO cuenta con una cobertura integral de pruebas automatizadas mediante el framework <code>pytest</code>. "
-        "Cada release pasa por un riguroso ciclo de verificación para garantizar cero regresiones en archivos de audio reales:",
-        style_body
-    ))
-
+    # Cuadro de Pruebas Automatizadas
     test_box_data = [
         [
-            Paragraph("<b>Resultados de la Suite Automatizada (Pytest):</b>", ParagraphStyle('THead', fontName='Helvetica-Bold', fontSize=9, textColor=C_WHITE)),
-            Paragraph("<b>117 / 117 TESTS PASSED (100% SUCCESS)</b>", ParagraphStyle('TPass', fontName='Helvetica-Bold', fontSize=9, textColor=C_SUCCESS, alignment=2))
+            Paragraph("<b>Resultados de la Suite de Calidad y Pruebas Automatizadas:</b>", ParagraphStyle('THead', fontName='Helvetica-Bold', fontSize=8.5, textColor=C_WHITE)),
+            Paragraph("<b>117 / 117 TESTS PASSED (100% SUCCESS)</b>", ParagraphStyle('TPass', fontName='Helvetica-Bold', fontSize=8.5, textColor=C_SUCCESS, alignment=2))
         ],
         [
             Paragraph(
-                "• <b>Módulo de Exportación (<code>test_export_service.py</code>):</b> 18 tests que validan estructuras binarias Serato GEOB, paridad de bytes, inyección de colores y persistencia Rekordbox.<br/>"
-                "• <b>Módulo de Auditoría (<code>test_audit_service.py</code>):</b> 42 tests comprobando detección de BPM, conversión Camelot, validación de formatos de archivo y extracción de energía RMS.<br/>"
+                "• <b>Módulo de Exportación (<code>test_export_service.py</code>):</b> 18 tests que validan estructuras binarias Serato GEOB, paridad de bytes e inyección Rekordbox.<br/>"
+                "• <b>Módulo de Auditoría (<code>test_audit_service.py</code>):</b> 42 tests comprobando detección de BPM, conversión Camelot, validación de formatos y corte de transcode.<br/>"
                 "• <b>Servidor y Endpoints Web (<code>test_main_web.py</code>):</b> 57 tests verificando streaming HTTP Range, SSE, sanitización de tags y control de excepciones sin caídas del servidor.",
-                ParagraphStyle('TDesc', fontName='Helvetica', fontSize=8, leading=11.5, textColor=C_TEXT_MAIN)
+                ParagraphStyle('TDesc', fontName='Helvetica', fontSize=7.6, leading=10.5, textColor=C_TEXT_MAIN)
             ),
             Paragraph(
-                "<b>Tiempo de Ejecución:</b> ~10.25s<br/>"
+                "<b>Tiempo de Suite:</b> ~8.79s<br/>"
                 "<b>Entorno:</b> Python 3.7+ Asyncio<br/>"
-                "<b>Estado:</b> ESTABLE",
-                ParagraphStyle('TMeta', fontName='Helvetica', fontSize=8, leading=11.5, textColor=C_TEXT_MUTED, alignment=2)
+                "<b>Estado:</b> 100% ESTABLE",
+                ParagraphStyle('TMeta', fontName='Helvetica', fontSize=7.6, leading=10.5, textColor=C_TEXT_MUTED, alignment=2)
             )
         ]
     ]
@@ -653,31 +633,30 @@ def create_pdf_report(output_filename="CleanDJmix_PRO_Manual_Funcional_y_Tecnico
         ('BACKGROUND', (0, 0), (-1, 0), C_PRIMARY),
         ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#f8fafc")),
         ('GRID', (0, 0), (-1, -1), 0.5, C_BORDER),
-        ('PADDING', (0, 0), (-1, -1), 7),
+        ('PADDING', (0, 0), (-1, -1), 6),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     story.append(t_test_box)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
 
-    story.append(Paragraph("Comandos de Mantenimiento y Compilación:", style_h2))
+    # Comandos Shell de Mantenimiento
     cmd_data = [
-        [Paragraph("<b>Objetivo</b>", style_table_header), Paragraph("<b>Comando Shell</b>", style_table_header)],
+        [Paragraph("<b>Objetivo Operativo</b>", style_table_header), Paragraph("<b>Comando Shell de Ejecución</b>", style_table_header)],
         [Paragraph("Compilar Bundle React", style_table_cell), Paragraph("<code>npx esbuild web/js/app.jsx --bundle --outfile=web/js/app.bundle.js --loader:.js=jsx</code>", style_code)],
-        [Paragraph("Ejecutar Suite de Tests", style_table_cell), Paragraph("<code>./env_python37/bin/python -m pytest tests/</code>", style_code)],
-        [Paragraph("Iniciar Servidor Web", style_table_cell), Paragraph("<code>python3 main_web.py</code> (Escucha en puerto http://127.0.0.1:8000)", style_code)],
-        [Paragraph("Generar Manual PDF", style_table_cell), Paragraph("<code>python3 scripts/generate_manual_pdf.py</code>", style_code)]
+        [Paragraph("Ejecutar Batería de Tests", style_table_cell), Paragraph("<code>./env_python37/bin/python -m pytest tests/</code>", style_code)],
+        [Paragraph("Iniciar Aplicación Web", style_table_cell), Paragraph("<code>python3 main_web.py</code> (Escucha en http://127.0.0.1:8000)", style_code)],
+        [Paragraph("Generar Manual PDF Ilustrado", style_table_cell), Paragraph("<code>python3 scripts/generate_manual_pdf.py</code>", style_code)]
     ]
-    t_cmd = Table(cmd_data, colWidths=[150, 373])
+    t_cmd = Table(cmd_data, colWidths=[140, 383])
     t_cmd.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), C_PRIMARY),
         ('GRID', (0, 0), (-1, -1), 0.5, C_BORDER),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [C_WHITE, C_BG_LIGHT]),
-        ('PADDING', (0, 0), (-1, -1), 4),
+        ('PADDING', (0, 0), (-1, -1), 3.5),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
     story.append(t_cmd)
 
-    # Construir documento
     doc.build(story, canvasmaker=NumberedCanvas)
     print(f"PDF generado con éxito: {os.path.abspath(output_filename)}")
 

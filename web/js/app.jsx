@@ -3687,11 +3687,14 @@ const AuditWorkspace = ({
     lang = "es",
     t = (k) => k,
     currentFolder = "",
-    setCurrentFolder
+    setCurrentFolder,
+    audioRef,
+    onAuditProgressChange
 }) => {
     const [localRutaOrigen, setLocalRutaOrigen] = useState('');
     const rutaOrigen = currentFolder || localRutaOrigen;
     const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
+    const [selectedLooseFiles, setSelectedLooseFiles] = useState([]);
     const [isAuditing, setIsAuditing] = useState(false);
     const [isLoadingDir, setIsLoadingDir] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -3749,17 +3752,56 @@ const AuditWorkspace = ({
         }
     }, []);
 
+    // Notificar al componente raíz (App) para persistir estado y mostrar progreso entre pestañas
+    useEffect(() => {
+        if (typeof onAuditProgressChange === 'function') {
+            onAuditProgressChange({
+                isAuditing,
+                progress: batchProgress,
+                statusMsg: batchStatusMsg
+            });
+        }
+    }, [isAuditing, batchProgress, batchStatusMsg, onAuditProgressChange]);
+
     const updateCurrentTrackField = (field, val) => {
         setTracks(prev => prev.map(t => t.id === currentTrack.id ? { ...t, [field]: val } : t));
     };
 
-    // Detección Acústica de Pistas de Mala Calidad (Fakes, bitrates bajos, corte espectral prematuro)
-    const isBadQualityTrack = (t) => {
+    // Detección de FLAC que no cumple con estándares Lossless o es de calidad media/baja (SuperFLAC)
+    const isFlacUpgradeCandidate = (t) => {
         if (!t) return false;
-        // 1. FLAC Fake / Upscale o transcode detectado
-        if (Boolean(t.es_fake) || (t.format === 'FLAC' && String(t.status || '').toLowerCase().includes('fake'))) {
+        const fmt = String(t.format || '').toUpperCase();
+        if (fmt !== 'FLAC') return false;
+
+        // 1. FLAC marcado como Fake / Transcode
+        if (Boolean(t.es_fake) || String(t.status || '').toLowerCase().includes('fake')) return true;
+
+        // 2. Calidad declarada como Baja, Media, Regular, Pobre o Transcode
+        const cal = String(t.calidad || '').toLowerCase();
+        if (cal.includes('baja') || cal.includes('media') || cal.includes('regular') || cal.includes('poor') || cal.includes('bad') || cal.includes('transcode')) {
             return true;
         }
+
+        // 3. Corte espectral prematuro en FLAC (< 20.0 kHz, típico transcode desde MP3/AAC)
+        const cutoff = Number(t.cutoff_khz) || 0;
+        if (cutoff > 0 && cutoff < 20.0) return true;
+
+        // 4. Bitrate bajo para FLAC sin pérdidas (< 650 kbps)
+        const bitrate = Number(t.bitrate_kbps) || 0;
+        if (bitrate > 0 && bitrate < 650) return true;
+
+        // 5. Pérdida espectral porcentual detectable (>= 15%)
+        const perdida = Number(t.perdida_pct) || 0;
+        if (perdida >= 15.0) return true;
+
+        return false;
+    };
+
+    // Detección Acústica General de Pistas de Mala Calidad (Fakes, bitrates bajos, corte espectral prematuro)
+    const isBadQualityTrack = (t) => {
+        if (!t) return false;
+        // 1. Pistas FLAC que no cumplen estándar lossless (SuperFLAC)
+        if (isFlacUpgradeCandidate(t)) return true;
         // 2. Calidad declarada como Baja, Pobre o Transcode
         const cal = String(t.calidad || '').toLowerCase();
         if (cal.includes('baja') || cal.includes('poor') || cal.includes('bad') || cal.includes('transcode')) {
@@ -3785,6 +3827,10 @@ const AuditWorkspace = ({
 
     const badQualityTracks = useMemo(() => {
         return (tracks || []).filter(t => isBadQualityTrack(t));
+    }, [tracks]);
+
+    const flacUpgradeTracks = useMemo(() => {
+        return (tracks || []).filter(t => isFlacUpgradeCandidate(t));
     }, [tracks]);
 
     const handleToggleSelectRow = (id, e) => {
@@ -4094,6 +4140,7 @@ const AuditWorkspace = ({
 
     const handleSeleccionarCarpetaUI = async (targetPath) => {
         const finalPath = targetPath || fsCurrentPath;
+        setSelectedLooseFiles([]);
         setRutaOrigen(finalPath);
         setFsBrowserOpen(false);
         await handleCargarDirectorio(finalPath);
@@ -4101,7 +4148,8 @@ const AuditWorkspace = ({
 
     const handleSeleccionarFicherosUI = async () => {
         if (!selectedFsFiles || selectedFsFiles.length === 0) return;
-        setRutaOrigen(`${fsCurrentPath} (${selectedFsFiles.length} archivos)`);
+        setSelectedLooseFiles(selectedFsFiles);
+        setRutaOrigen(`${fsCurrentPath} (${selectedFsFiles.length} pistas seleccionadas)`);
         setFsBrowserOpen(false);
         await handleCargarDirectorio(selectedFsFiles);
     };
@@ -4127,6 +4175,36 @@ const AuditWorkspace = ({
     const handleExplorar = async () => {
         // En lugar de popup nativo intrusivo, abre el navegador de carpetas web integrado
         handleAbrirNavegadorCarpetas(rutaOrigen);
+    };
+
+    // Resuelve de forma inteligente la lista de archivos o la carpeta física objetivo (soporta carpetas y pistas sueltas)
+    const resolveAuditTargets = (pathOverride) => {
+        if (pathOverride) return pathOverride;
+        // 1. Si hay pistas seleccionadas en la tabla con checkbox:
+        if (selectedAuditIds && selectedAuditIds.size > 0) {
+            const selectedPaths = (tracks || [])
+                .filter(t => selectedAuditIds.has(t.id))
+                .map(t => t.path || t.f)
+                .filter(Boolean);
+            if (selectedPaths.length > 0) return selectedPaths;
+        }
+        // 2. Si se han seleccionado pistas sueltas desde el explorador de archivos:
+        if (selectedLooseFiles && selectedLooseFiles.length > 0) {
+            return selectedLooseFiles;
+        }
+        // 3. Si la rutaOrigen es un directorio real físico en disco:
+        if (rutaOrigen && typeof rutaOrigen === 'string') {
+            const isSynthetic = rutaOrigen.includes(' pistas') || rutaOrigen.includes(' archivos)');
+            if (!isSynthetic && (rutaOrigen.startsWith('/') || rutaOrigen.includes(':\\') || rutaOrigen.length > 2)) {
+                return rutaOrigen;
+            }
+        }
+        // 4. Si hay pistas cargadas en el listado actual (cargadas previamente o como pistas sueltas):
+        if (tracks && tracks.length > 0) {
+            const trackPaths = tracks.map(t => t.path || t.f).filter(Boolean);
+            if (trackPaths.length > 0) return trackPaths;
+        }
+        return null;
     };
 
     const handleCargarDirectorio = async (pathOverride) => {
@@ -4179,15 +4257,16 @@ const AuditWorkspace = ({
     };
 
     const handleAuditar = async (pathOverride) => {
-        const target = pathOverride || rutaOrigen;
-        if (!target) {
-            alert("Por favor selecciona o explora una carpeta primero.");
+        const target = resolveAuditTargets(pathOverride);
+        if (!target || (Array.isArray(target) && target.length === 0)) {
+            alert("Por favor selecciona una carpeta o carga pistas sueltas primero.");
             return;
         }
         if (window.eel && window.eel.iniciar_auditoria && !isAuditing) {
             setIsAuditing(true);
             setBatchProgress(5);
-            setBatchStatusMsg(`Iniciando auditoría acústica avanzada en ${target}...`);
+            const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
+            setBatchStatusMsg(`Iniciando auditoría acústica avanzada en ${targetDesc}...`);
             try {
                 const res = await window.eel.iniciar_auditoria(target)();
                 if (res && Array.isArray(res.tracks)) {
@@ -4651,7 +4730,7 @@ const AuditWorkspace = ({
         <div className="flex w-full h-full overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0">
                 <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center shrink-0">
-                    <div className="flex gap-3 items-center w-1/2">
+                    <div className="flex gap-2 items-center w-1/2">
                         <div className="flex-1 max-w-md bg-djzinc-900 rounded-md border border-djzinc-700 flex overflow-hidden">
                             <span className="bg-djzinc-800 px-3 py-1.5 text-xs text-gray-400 font-mono border-r border-djzinc-700 flex items-center">ORIGEN</span>
                             <input 
@@ -4663,13 +4742,25 @@ const AuditWorkspace = ({
                                         handleCargarDirectorio(e.target.value);
                                     }
                                 }}
-                                placeholder="Escribe o explora una ruta de carpeta..."
+                                placeholder="Escribe o explora una ruta o pistas sueltas..."
                                 className="flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono" 
                             />
                         </div>
-                        <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-3.5 py-1.5 text-xs font-bold text-gray-200 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm">
+                        <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-3.5 py-1.5 text-xs font-bold text-gray-200 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm" title="Explorar y cargar carpetas de música">
                             <span>📂</span>
                             <span>{t('btn_change_dir') || 'Explorar'}</span>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                setFsActiveTab('files');
+                                handleAbrirNavegadorCarpetas(rutaOrigen);
+                            }} 
+                            className="bg-djzinc-800 hover:bg-djzinc-700 border border-djcyan-500/50 text-djcyan-300 rounded px-3 py-1.5 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm"
+                            title="Seleccionar y cargar archivos de audio individuales (pistas sueltas)"
+                        >
+                            <span>🎵</span>
+                            <span>Pistas Sueltas</span>
                         </button>
                     </div>
                     <div className="flex flex-wrap gap-2.5 items-center">
@@ -4695,6 +4786,20 @@ const AuditWorkspace = ({
                                 <span>Limpiar Etiquetas</span>
                             </button>
                         </div>
+
+                        {/* Botón Destacado: SuperFLAC Lossless */}
+                        {flacUpgradeTracks.length > 0 && (
+                            <button 
+                                type="button"
+                                onClick={() => handleBuscarReemplazosSpotify(flacUpgradeTracks)} 
+                                disabled={isSearchingSpotifyHD || isAuditing}
+                                className="bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black px-3.5 py-1.5 rounded-lg text-xs shadow-lg shadow-cyan-950/40 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                title="Detectados archivos FLAC que no cumplen con calidad Lossless (calidad media o transcode). Buscar masters oficiales en Spotify"
+                            >
+                                <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '💎'}</span>
+                                <span>SuperFLAC Lossless ({flacUpgradeTracks.length})</span>
+                            </button>
+                        )}
 
                         {/* Botón Destacado: Reemplazos Spotify HD */}
                         <button 
@@ -5105,7 +5210,19 @@ const AuditWorkspace = ({
                                                 }`}>
                                                     {row.calidad || (isFake ? 'Baja' : 'Alta')}
                                                 </span>
-                                                {isBadQualityTrack(row) && (
+                                                {isFlacUpgradeCandidate(row) ? (
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleBuscarReemplazosSpotify([row]);
+                                                        }}
+                                                        className="px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black bg-gradient-to-r from-cyan-950 to-purple-950 hover:from-cyan-900 hover:to-purple-900 text-cyan-300 border border-cyan-500/70 cursor-pointer shadow-sm flex items-center justify-center gap-1 transition-all active:scale-95"
+                                                        title="FLAC no cumple estándares lossless o es de calidad media/fake. Buscar master oficial en Spotify (SuperFLAC)"
+                                                    >
+                                                        <span>💎</span>
+                                                        <span>SuperFLAC</span>
+                                                    </button>
+                                                ) : isBadQualityTrack(row) ? (
                                                     <button 
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -5117,7 +5234,7 @@ const AuditWorkspace = ({
                                                         <span>🔄</span>
                                                         <span>Spotify HD</span>
                                                     </button>
-                                                )}
+                                                ) : null}
                                             </div>
                                         </td>
 
@@ -5345,8 +5462,31 @@ const AuditWorkspace = ({
                         </button>
                     </div>
 
-                    {/* Alerta de Mala Calidad & Reemplazo en Inspector */}
-                    {isBadQualityTrack(currentTrack) && (
+                    {/* Alerta SuperFLAC o Mala Calidad & Reemplazo en Inspector */}
+                    {isFlacUpgradeCandidate(currentTrack) ? (
+                        <div className="p-3 bg-gradient-to-br from-cyan-950/60 via-purple-950/40 to-djzinc-900 border border-cyan-500/70 rounded-xl flex flex-col gap-2 shadow-lg shadow-cyan-950/30">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-black text-cyan-300 flex items-center gap-1.5">
+                                    <span>💎</span> SuperFLAC: No Cumple Hi-Res
+                                </span>
+                                <span className="text-[9px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-700/60 font-bold">
+                                    {currentTrack.es_fake ? 'FAKE / TRANSCODE' : (currentTrack.calidad || 'CALIDAD MEDIA')}
+                                </span>
+                            </div>
+                            <p className="text-[10px] text-gray-300 leading-tight">
+                                Este archivo FLAC presenta corte de frecuencia ({currentTrack.cutoff_khz || '--'} kHz) o bitrate insuficiente para considerarse True Lossless. Puedes buscar y descargar el master original en Spotify Ingest.
+                            </p>
+                            <button 
+                                type="button"
+                                onClick={() => handleBuscarReemplazosSpotify([currentTrack])}
+                                disabled={isSearchingSpotifyHD}
+                                className="w-full py-1.5 px-3 rounded bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 text-black font-black text-xs cursor-pointer shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                            >
+                                <span>{isSearchingSpotifyHD ? '⏳' : '💎'}</span>
+                                <span>{isSearchingSpotifyHD ? 'Buscando en Spotify...' : 'Buscar SuperFLAC Lossless en Spotify'}</span>
+                            </button>
+                        </div>
+                    ) : isBadQualityTrack(currentTrack) ? (
                         <div className="p-3 bg-amber-950/40 border border-amber-600/70 rounded-lg flex flex-col gap-2">
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
@@ -5369,7 +5509,7 @@ const AuditWorkspace = ({
                                 <span>{isSearchingSpotifyHD ? 'Buscando en Spotify...' : 'Buscar Reemplazo HD en Spotify'}</span>
                             </button>
                         </div>
-                    )}
+                    ) : null}
 
                     <RekordboxWaveform 
                         track={currentTrack} 
@@ -5786,12 +5926,18 @@ const AuditWorkspace = ({
 
             <BatchAuditorModal isOpen={batchModalOpen} onClose={() => setBatchModalOpen(false)} onRunBatch={async (opts) => {
                 setBatchModalOpen(false);
+                const target = resolveAuditTargets();
+                if (!target || (Array.isArray(target) && target.length === 0)) {
+                    alert("Por favor selecciona una carpeta o carga pistas sueltas primero.");
+                    return;
+                }
                 setIsAuditing(true);
                 setBatchProgress(5);
-                setBatchStatusMsg("Ejecutando procesamiento masivo de lote...");
+                const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
+                setBatchStatusMsg(`Ejecutando procesamiento masivo de lote en ${targetDesc}...`);
                 try {
                     if (window.eel && window.eel.ejecutar_auditoria_lote) {
-                        const res = await window.eel.ejecutar_auditoria_lote(rutaOrigen, opts)();
+                        const res = await window.eel.ejecutar_auditoria_lote(target, opts)();
                         if (res && res.tracks) {
                             setTracks(res.tracks);
                             const badDetected = res.tracks.filter(t => isBadQualityTrack(t));
@@ -12190,6 +12336,188 @@ const LogsWorkspace = ({ logs, setLogs }) => (
     </div>
 );
 
+// Pasos del Asistente y Tutorial Interactivo para Nuevos Usuarios
+const TUTORIAL_STEPS = [
+    {
+        step: 1,
+        title: "¡Bienvenido a CleanDJmix PRO!",
+        badge: "CABINA PROFESIONAL DJ",
+        icon: "🎛️",
+        subtitle: "Tu Suite Integral de Audio DSP, Inteligencia Acústica y Preparación de Sets",
+        description: "CleanDJmix PRO está diseñado para eliminar la incertidumbre en tus sesiones en directo. Con análisis de audio de alta precisión, colocación milimétrica de Hot Cues y ecualización hardware con latencia cero, tus pistas sonarán limpias y sincronizadas en cualquier soundsystem.",
+        highlights: [
+            "Auditoría acústica con detección decimal de BPM y Key armónico Camelot/OpenKey.",
+            "Estudio de 8 Hot Cues con beatgrid 1.0.0, pitch fader de rango dual y scratch.",
+            "Motor SuperFLAC para sustitución de archivos transcode por masters originales.",
+            "Exportación directa y segura a Serato DJ Pro y Pioneer Rekordbox."
+        ]
+    },
+    {
+        step: 2,
+        title: "Auditar Todo: Carpetas y Pistas Sueltas",
+        badge: "MOTOR DSP EN LOTE",
+        icon: "⚡",
+        subtitle: "Análisis acústico instantáneo de directorios completos o pistas individuales",
+        description: "El botón 'Auditar Todo' ejecuta el análisis DSP completo sobre todas las pistas cargadas o seleccionadas. Además, puedes cargar archivos individuales con el botón '🎵 Pistas Sueltas' y configurar inyección masiva de carátulas 1:1 y comentarios tácticos en 'Configurar Lote'.",
+        highlights: [
+            "Soporte transparente para carpetas enteras o pistas sueltas sin bloqueos.",
+            "Persistencia en segundo plano: ¡puedes cambiar de pestaña sin que se detenga ningún proceso!",
+            "Detección de primer downbeat para mezclas con arranque instantáneo sin silencios."
+        ]
+    },
+    {
+        step: 3,
+        title: "SuperFLAC: Detección y Reemplazo Hi-Res",
+        badge: "CALIDAD ACÚSTICA LOSSLESS",
+        icon: "💎",
+        subtitle: "Protección contra FLACs falsos, transcodes y cortes de frecuencia",
+        description: "Si una pista FLAC no cumple los estándares Hi-Res (calidad media, transcode desde MP3 o corte espectral < 20 kHz), CleanDJmix PRO la marca con '💎 SuperFLAC'. Con un solo clic, el sistema busca el master oficial en Spotify Ingest para sustituir la copia defectuosa.",
+        highlights: [
+            "Inspección espectral de frecuencia de corte real (Cutoff kHz).",
+            "Búsqueda automática en Spotify por título, artista e ISRC.",
+            "Sustitución en lote con descarga oficial en verdadera alta resolución."
+        ]
+    },
+    {
+        step: 4,
+        title: "Hot Cues Studio & Hardware DJ Deck",
+        badge: "EMULACIÓN HARDWARE DE CLUB",
+        icon: "💽",
+        subtitle: "Controles táctiles profesionales con Web Audio API DSP",
+        description: "Una auténtica cabina en tu pantalla: 8 Hot Cues pads con anclaje al beatgrid, Pitch Fader vertical con rangos seleccionables (±8% / ±16%) y micro-nudge táctil, Ecualizador Hardware de 3 Vías (LOW 250Hz, MID 1kHz, HI 3.5kHz) y plato de vinilo de 33⅓ RPM con scratch táctil.",
+        highlights: [
+            "Física de tornamesa directa con desplazamiento de audio de 1.8s por revolución.",
+            "Respuesta de ecualización de -24 dB a +6 dB con botón FLAT.",
+            "Forma de onda estéreo con zoom continuo y tooltips de tiempo confinados."
+        ]
+    },
+    {
+        step: 5,
+        title: "Radar Shazam & Buscador Semántico IA",
+        badge: "BÚSQUEDA Y TAXONOMÍA",
+        icon: "🧠",
+        subtitle: "Identificación acústica al vuelo y búsqueda por lenguaje natural",
+        description: "Utiliza el Radar Shazam para reconocer grabaciones en directo y descargar portadas en 1400x1400. En Taxonomía, escribe búsquedas naturales como 'Tech House 126 bpm en 8A vocal' y gestiona dinámicamente las etiquetas con eliminación [✕] y adición [+ Añadir Tag].",
+        highlights: [
+            "Reconocimiento híbrido Shazamio con respaldo cruzado en Spotify.",
+            "Presets rápidos BeatWave Pool para filtrar temas por momento de la noche.",
+            "Exportación nativa inmediata a Serato DJ Pro (.crate) y rekordbox.xml."
+        ]
+    }
+];
+
+const AppTutorialModal = ({ isOpen, onClose }) => {
+    const [currentStepIdx, setCurrentStepIdx] = useState(0);
+    const [dontShowAgain, setDontShowAgain] = useState(false);
+
+    if (!isOpen) return null;
+
+    const cur = TUTORIAL_STEPS[currentStepIdx];
+    const isLast = currentStepIdx === TUTORIAL_STEPS.length - 1;
+
+    const handleFinish = () => {
+        if (dontShowAgain) {
+            try {
+                localStorage.setItem('cleandjmix_tutorial_completed', 'true');
+            } catch (e) {}
+        }
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-[#0f1019] border border-djcyan-500/50 rounded-2xl max-w-xl w-full p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] flex flex-col gap-5 relative text-gray-200">
+                {/* Header Modal */}
+                <div className="flex items-center justify-between border-b border-djzinc-800 pb-3">
+                    <div className="flex items-center gap-2">
+                        <span className="text-2xl">{cur.icon}</span>
+                        <div>
+                            <span className="text-[10px] font-mono tracking-widest text-djcyan-400 font-black uppercase">
+                                {cur.badge} • PASO {cur.step} DE {TUTORIAL_STEPS.length}
+                            </span>
+                            <h2 className="text-lg font-black text-white">{cur.title}</h2>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleFinish} 
+                        className="text-gray-400 hover:text-white text-sm font-mono cursor-pointer p-1"
+                        title="Cerrar tutorial"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* Subtítulo y Descripción */}
+                <div className="space-y-3">
+                    <h3 className="text-xs font-mono font-bold text-djcyan-300">{cur.subtitle}</h3>
+                    <p className="text-xs text-gray-300 leading-relaxed">{cur.description}</p>
+                    
+                    <div className="p-3 bg-djzinc-900/90 rounded-xl border border-djzinc-800 space-y-1.5">
+                        <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider block">Puntos Clave:</span>
+                        {cur.highlights.map((h, i) => (
+                            <div key={i} className="flex items-start gap-2 text-xs text-gray-200">
+                                <span className="text-djcyan-400 font-bold">✓</span>
+                                <span>{h}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Dots de Progreso */}
+                <div className="flex items-center justify-center gap-2 pt-1">
+                    {TUTORIAL_STEPS.map((s, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => setCurrentStepIdx(idx)}
+                            className={`h-2 rounded-full transition-all cursor-pointer ${
+                                idx === currentStepIdx ? 'w-6 bg-djcyan-400' : 'w-2 bg-djzinc-700 hover:bg-gray-400'
+                            }`}
+                        />
+                    ))}
+                </div>
+
+                {/* Footer y Botones de Navegación */}
+                <div className="flex items-center justify-between pt-2 border-t border-djzinc-800">
+                    <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
+                        <input 
+                            type="checkbox" 
+                            checked={dontShowAgain} 
+                            onChange={(e) => setDontShowAgain(e.target.checked)}
+                            className="rounded bg-djzinc-900 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
+                        />
+                        <span>No volver a mostrar automáticamente</span>
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                        {currentStepIdx > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setCurrentStepIdx(prev => prev - 1)}
+                                className="px-3.5 py-1.5 rounded-lg bg-djzinc-800 hover:bg-djzinc-700 text-gray-200 font-bold text-xs cursor-pointer"
+                            >
+                                Anterior
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (isLast) {
+                                    handleFinish();
+                                } else {
+                                    setCurrentStepIdx(prev => prev + 1);
+                                }
+                            }}
+                            className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black text-xs cursor-pointer shadow-md shadow-djcyan-500/30 transition-transform active:scale-95"
+                        >
+                            {isLast ? "¡Comenzar ahora!" : "Siguiente →"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Componente Principal de la Aplicación
 const App = () => {
     const [lang, setLang] = useState(() => {
@@ -12219,6 +12547,19 @@ const App = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [playProgress, setPlayProgress] = useState(0);
     const audioRef = useRef(null);
+
+    // Estado Global de Tareas en Background & Tutorial de Bienvenida
+    const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, progress: 0, statusMsg: '' });
+    const [tutorialOpen, setTutorialOpen] = useState(false);
+
+    useEffect(() => {
+        try {
+            const hasSeen = localStorage.getItem('cleandjmix_tutorial_completed');
+            if (!hasSeen) {
+                setTutorialOpen(true);
+            }
+        } catch (e) {}
+    }, []);
 
     const handleAddTracksToSpotify = (tracksData, origin = 'taxonomy') => {
         if (!tracksData) return;
@@ -12503,6 +12844,11 @@ const App = () => {
                         }`}
                     >
                         <Icons.Library /> <span>{t('nav_audit') || 'Auditoría & DSP'}</span>
+                        {globalAuditInfo.isAuditing && (
+                            <span className="px-1.5 py-0.2 bg-amber-400 text-black rounded text-[9px] font-black animate-pulse shadow-sm">
+                                {globalAuditInfo.progress}%
+                            </span>
+                        )}
                     </button>
                     <button 
                         onClick={() => setActiveTab('hotcues')} 
@@ -12547,6 +12893,25 @@ const App = () => {
                 </nav>
 
                 <div className="flex items-center gap-3">
+                    {/* Botón de Tutorial / Guía */}
+                    <button
+                        type="button"
+                        onClick={() => setTutorialOpen(true)}
+                        className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 rounded-lg text-[11px] font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all hover:scale-105"
+                        title="Abrir Tutorial y Guía Interactiva de CleanDJmix PRO"
+                    >
+                        <span>❓</span>
+                        <span>{lang === 'en' ? 'Tutorial' : 'Tutorial'}</span>
+                    </button>
+
+                    {/* Banner de Auditoría Activa en Background */}
+                    {globalAuditInfo.isAuditing && (
+                        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-djcyan-950/90 border border-djcyan-500/60 text-[11px] font-mono text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.35)] animate-fadeIn" title={globalAuditInfo.statusMsg || 'Auditoría en proceso'}>
+                            <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-ping"></span>
+                            <span className="font-bold">Lote: {globalAuditInfo.progress}%</span>
+                        </div>
+                    )}
+
                     {/* Selector de Idioma (Español / Inglés) */}
                     <div className="flex items-center bg-djzinc-900 border border-djzinc-800 rounded-lg p-0.5 text-[11px] font-mono font-bold shadow-inner">
                         <button
@@ -12594,6 +12959,7 @@ const App = () => {
                         currentFolder={currentFolder}
                         setCurrentFolder={setCurrentFolder}
                         audioRef={audioRef}
+                        onAuditProgressChange={setGlobalAuditInfo}
                     />
                 </div>
                 <div style={{ display: activeTab === 'hotcues' ? 'flex' : 'none' }} className="w-full h-full">
@@ -12764,6 +13130,12 @@ const App = () => {
                     cues={(nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0) ? nowPlayingTrack.cues : ((currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS)} 
                 />
             </footer>
+
+            {/* TUTORIAL & ASISTENTE INTERACTIVO DE BIENVENIDA */}
+            <AppTutorialModal 
+                isOpen={tutorialOpen} 
+                onClose={() => setTutorialOpen(false)} 
+            />
         </div>
     );
 };
