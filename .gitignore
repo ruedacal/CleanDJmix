@@ -6,6 +6,7 @@ __pycache__/
 # Caches and logs
 *.log
 .coverage
+.cache
 .cache/
 .pytest_cache/
 cache_preview/

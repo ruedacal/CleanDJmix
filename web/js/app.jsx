@@ -19,6 +19,28 @@ function getValidCover(c) {
     return "https://i.scdn.co/image/" + c;
 }
 
+const CAMELOT_TO_MUSICAL = {
+    "1A": "G#m", "1B": "B",
+    "2A": "D#m", "2B": "F#",
+    "3A": "A#m", "3B": "C#",
+    "4A": "Fm",  "4B": "G#",
+    "5A": "Cm",  "5B": "D#",
+    "6A": "Gm",  "6B": "A#",
+    "7A": "Dm",  "7B": "F",
+    "8A": "Am",  "8B": "C",
+    "9A": "Em",  "9B": "G",
+    "10A": "Bm", "10B": "D",
+    "11A": "F#m","11B": "A",
+    "12A": "C#m","12B": "E"
+};
+
+function getHarmonicKeyDisplay(k) {
+    if (!k || k === '--') return '--';
+    const clean = String(k).trim().toUpperCase();
+    const mus = CAMELOT_TO_MUSICAL[clean];
+    return mus ? `${clean} (${mus})` : clean;
+}
+
 const I18N_TRANSLATIONS = {
     es: {
         nav_audit: "Auditoría & DSP",
@@ -29,17 +51,17 @@ const I18N_TRANSLATIONS = {
         nav_logs: "Consola (Logs)",
         dsp_online: "DSP ENGINE ONLINE",
         btn_audit_batch: "Configurar Lote",
-        btn_execute_audit: "Auditar Directorio",
+        btn_execute_audit: "Auditar Todo",
         btn_inject_covers: "Inyectar Carátulas",
         btn_save_all: "Guardar Todo en Ficheros",
         btn_export_xls: "Exportar Excel",
         btn_change_dir: "Cambiar Carpeta",
-        btn_cancel: "✕ Cancelar",
-        btn_cancel_audit: "✕ Detener Auditoría",
-        btn_cancel_download: "✕ Cancelar Descargas",
-        btn_inspector: "◨ Inspector",
-        btn_close_panel: "✕ Cerrar Panel",
-        btn_edit_cues_studio: "🎛️ Editar Hot Cues en Estudio →",
+        btn_cancel: "Cancelar",
+        btn_cancel_audit: "Detener Auditoría",
+        btn_cancel_download: "Cancelar Descargas",
+        btn_inspector: "Inspector",
+        btn_close_panel: "Cerrar Panel",
+        btn_edit_cues_studio: "Editar Hot Cues en Estudio →",
         search_placeholder: "Buscar por título, artista, BPM o tono...",
         track: "Pista",
         bpm: "BPM",
@@ -50,25 +72,25 @@ const I18N_TRANSLATIONS = {
         format: "Formato",
         actions: "Acciones",
         cues_summary_title: "8 Hot Cues (Resumen Táctico)",
-        cues_open_studio_btn: "🎛️ Abrir Estudio Hot Cues →",
+        cues_open_studio_btn: "Abrir Estudio Hot Cues →",
         studio_title: "Estudio Profesional de Hot Cues & Beatgrid",
         studio_desc: "Waveform con desplazamiento horizontal y zoom milimétrico para fijar puntos de mezcla y beatgrid.",
         zoom_level: "Zoom Horizontal",
         snap_to_grid: "Snap a Rejilla",
         show_beatgrid: "Ver Beatgrid",
         follow_playhead: "Seguir Reproducción",
-        auto_phrase: "⚡ Auto-Frasear 16/32b",
-        save_track_disk: "💾 Guardar Pista en Disco",
-        save_all_disk: "💾 Guardar Todo el Lote",
+        auto_phrase: "Auto-Frasear 16/32b",
+        save_track_disk: "Guardar Pista en Disco",
+        save_all_disk: "Guardar Todo el Lote",
         pad: "Pad",
         jump_cue: "Saltar",
         tactical_comment_title: "Comentario Táctico DJ",
-        regenerate_mood_btn: "✨ Regenerar Mood & Comentario IA",
+        regenerate_mood_btn: "Regenerar Mood & Comentario IA",
         shazam_radar_title: "Radar Acústico ShazamIO",
         shazam_mic_btn: "Escuchar por Micrófono",
         shazam_drop_text: "Arrastra o selecciona un archivo de audio",
-        shazam_send_spotify: "📥 Descargar en Spotify Ingest",
-        shazam_send_audit: "📋 Añadir a Auditoría DJ",
+        shazam_send_spotify: "Descargar en Spotify Ingest",
+        shazam_send_audit: "Añadir a Auditoría DJ",
         apply_track_changes: "Aplicar Cambios a este Track",
         lang_switch: "Idioma",
         metric_total: "Total Pistas",
@@ -106,7 +128,7 @@ const I18N_TRANSLATIONS = {
         fft_fake: "Falso FLAC",
         taxonomy_search_title: "Buscador Inteligente por Taxonomías & Estilos",
         taxonomy_search_prompt: "Pedile la música a la IA: Escribilo con tus palabras, como se lo dirías a otro DJ",
-        taxonomy_tab_search: "Buscador IA (Cuenca Style)",
+        taxonomy_tab_search: "Buscador IA",
         taxonomy_tab_crates: "Serato Crates & Rekordbox"
     },
     en: {
@@ -118,17 +140,17 @@ const I18N_TRANSLATIONS = {
         nav_logs: "Console (Logs)",
         dsp_online: "DSP ENGINE ONLINE",
         btn_audit_batch: "Batch Config",
-        btn_execute_audit: "Audit Directory",
+        btn_execute_audit: "Audit All",
         btn_inject_covers: "Inject Covers",
         btn_save_all: "Save All to Files",
         btn_export_xls: "Export Excel",
         btn_change_dir: "Change Folder",
-        btn_cancel: "✕ Cancel",
-        btn_cancel_audit: "✕ Stop Audit",
-        btn_cancel_download: "✕ Cancel Downloads",
-        btn_inspector: "◨ Inspector",
-        btn_close_panel: "✕ Close Panel",
-        btn_edit_cues_studio: "🎛️ Edit Hot Cues in Studio →",
+        btn_cancel: "Cancel",
+        btn_cancel_audit: "Stop Audit",
+        btn_cancel_download: "Cancel Downloads",
+        btn_inspector: "Inspector",
+        btn_close_panel: "Close Panel",
+        btn_edit_cues_studio: "Edit Hot Cues in Studio →",
         search_placeholder: "Search by title, artist, BPM or key...",
         track: "Track",
         bpm: "BPM",
@@ -139,25 +161,25 @@ const I18N_TRANSLATIONS = {
         format: "Format",
         actions: "Actions",
         cues_summary_title: "8 Hot Cues (Tactical Summary)",
-        cues_open_studio_btn: "🎛️ Open in Hot Cues Studio →",
+        cues_open_studio_btn: "Open in Hot Cues Studio →",
         studio_title: "Professional Hot Cues & Beatgrid Studio",
         studio_desc: "Expanded horizontal scroll waveform with millimetric zoom to anchor mix cues and beatgrid.",
         zoom_level: "Horizontal Zoom",
         snap_to_grid: "Snap to Grid",
         show_beatgrid: "Show Beatgrid",
         follow_playhead: "Follow Playhead",
-        auto_phrase: "⚡ Auto-Phrase 16/32b",
-        save_track_disk: "💾 Save Track to Disk",
-        save_all_disk: "💾 Save All Batch",
+        auto_phrase: "Auto-Phrase 16/32b",
+        save_track_disk: "Save Track to Disk",
+        save_all_disk: "Save All Batch",
         pad: "Pad",
         jump_cue: "Jump",
         tactical_comment_title: "Tactical DJ Comment",
-        regenerate_mood_btn: "✨ Regenerate Mood & AI Comment",
+        regenerate_mood_btn: "Regenerate Mood & AI Comment",
         shazam_radar_title: "ShazamIO Acoustic Radar",
         shazam_mic_btn: "Listen with Microphone",
         shazam_drop_text: "Drag & drop or browse an audio file",
-        shazam_send_spotify: "📥 Download in Spotify Ingest",
-        shazam_send_audit: "📋 Add to DJ Audit",
+        shazam_send_spotify: "Download in Spotify Ingest",
+        shazam_send_audit: "Add to DJ Audit",
         apply_track_changes: "Apply Changes to this Track",
         lang_switch: "Language",
         metric_total: "Total Tracks",
@@ -195,7 +217,7 @@ const I18N_TRANSLATIONS = {
         fft_fake: "Fake FLAC",
         taxonomy_search_title: "Smart Search by Taxonomy & Music Styles",
         taxonomy_search_prompt: "Ask the AI for music: Write it in your own words, like you'd say to another DJ",
-        taxonomy_tab_search: "AI Search (Cuenca Style)",
+        taxonomy_tab_search: "AI Search",
         taxonomy_tab_crates: "Serato Crates & Rekordbox"
     }
 };
@@ -346,6 +368,115 @@ function computeTrackStructuralBands(xNorm, seed) {
 
     return { bass, drums, vocals, treble, isBreak };
 }
+
+// Gestor de Ecualizador Web Audio API de 3 Bandas (BASS 250Hz, MID 1000Hz, HI 3500Hz)
+function getAudioEQNodes(audioElement) {
+    if (!audioElement) return null;
+    if (window.__bwAudioNodes && window.__bwAudioNodes.audio === audioElement) {
+        if (window.__bwAudioNodes.ctx.state === 'suspended') {
+            window.__bwAudioNodes.ctx.resume().catch(() => {});
+        }
+        return window.__bwAudioNodes;
+    }
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+        const ctx = new AudioCtx();
+        const source = ctx.createMediaElementSource(audioElement);
+        
+        const low = ctx.createBiquadFilter();
+        low.type = 'lowshelf';
+        low.frequency.value = 250;
+        low.gain.value = 0;
+
+        const mid = ctx.createBiquadFilter();
+        mid.type = 'peaking';
+        mid.frequency.value = 1000;
+        mid.Q.value = 1.0;
+        mid.gain.value = 0;
+
+        const high = ctx.createBiquadFilter();
+        high.type = 'highshelf';
+        high.frequency.value = 3500;
+        high.gain.value = 0;
+
+        source.connect(low);
+        low.connect(mid);
+        mid.connect(high);
+        high.connect(ctx.destination);
+
+        const nodes = { audio: audioElement, ctx, source, low, mid, high };
+        window.__bwAudioNodes = nodes;
+        return nodes;
+    } catch (e) {
+        console.warn("Web Audio EQ initialization note:", e);
+        return null;
+    }
+}
+
+// Potenciómetro Rotatorio Hardware DJ de Alta Precisión
+const RotaryKnob = ({ label, value = 0, min = -24, max = 6, defaultValue = 0, onChange, color = "#06b6d4" }) => {
+    const normalized = Math.max(0, Math.min(1, (value - min) / (max - min)));
+    const angle = -135 + normalized * 270;
+
+    const handlePointerDown = (e) => {
+        e.preventDefault();
+        const startY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        const startVal = value;
+
+        const onPointerMove = (me) => {
+            const currentY = me.clientY || (me.touches && me.touches[0].clientY) || 0;
+            const deltaY = startY - currentY;
+            const range = max - min;
+            const step = deltaY * (range / 120);
+            const newVal = Math.min(max, Math.max(min, Math.round((startVal + step) * 10) / 10));
+            if (onChange) onChange(newVal);
+        };
+
+        const onPointerUp = () => {
+            window.removeEventListener('mousemove', onPointerMove);
+            window.removeEventListener('mouseup', onPointerUp);
+            window.removeEventListener('touchmove', onPointerMove);
+            window.removeEventListener('touchend', onPointerUp);
+        };
+
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        window.addEventListener('touchmove', onPointerMove);
+        window.addEventListener('touchend', onPointerUp);
+    };
+
+    return (
+        <div className="flex flex-col items-center gap-1 select-none">
+            <span className="text-[9px] font-mono font-bold text-gray-400 tracking-wider uppercase">{label}</span>
+            <div 
+                onMouseDown={handlePointerDown}
+                onTouchStart={handlePointerDown}
+                onDoubleClick={() => onChange && onChange(defaultValue)}
+                className="w-10 h-10 rounded-full bg-gradient-to-b from-[#181826] to-[#0c0c14] border-2 border-djzinc-700 hover:border-gray-400 relative cursor-ns-resize shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_2px_6px_rgba(0,0,0,0.6)] flex items-center justify-center group active:scale-95 transition-transform"
+                title={`${label}: ${value > 0 ? '+' : ''}${value.toFixed(1)} dB (Doble clic para 0dB)`}
+            >
+                {/* Indicador de posición de rotación */}
+                <div 
+                    className="absolute w-full h-full rounded-full pointer-events-none"
+                    style={{ transform: `rotate(${angle}deg)` }}
+                >
+                    <div 
+                        className="w-1 h-3 rounded-full mx-auto mt-0.5 shadow-sm"
+                        style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
+                    ></div>
+                </div>
+                {/* Tapa central estriada */}
+                <div className="w-4 h-4 rounded-full bg-[#1e1e2c] border border-djzinc-600 pointer-events-none flex items-center justify-center shadow-inner">
+                    <div className="w-1 h-1 rounded-full bg-djzinc-500"></div>
+                </div>
+            </div>
+            <span className="text-[9px] font-mono text-gray-300 font-extrabold">
+                {value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1)} <span className="text-[7.5px] text-gray-500 font-normal">dB</span>
+            </span>
+        </div>
+    );
+};
 
 // Mini visualizador armónico espectral interactivo en celda de tabla
 const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
@@ -827,7 +958,7 @@ const RekordboxWaveform = ({
                 {dragInfo && (
                     <div 
                         className="absolute top-1 pointer-events-none z-50 px-2 py-0.5 bg-black/90 border border-djcyan-400 rounded shadow-xl text-center transform -translate-x-1/2 flex items-center gap-1.5"
-                        style={{ left: `${dragInfo.pct}%` }}
+                        style={{ left: `${Math.min(92, Math.max(8, dragInfo.pct))}%` }}
                     >
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: activeCues[dragInfo.idx]?.color || '#ef4444' }}></span>
                         <span className="text-[9px] font-mono font-bold text-white">Pad {activeCues[dragInfo.idx]?.id || (dragInfo.idx + 1)}:</span>
@@ -1300,17 +1431,23 @@ const ZoomableRekordboxWaveform = ({
                         <div className="w-2.5 h-2.5 -ml-[1px] bg-white rotate-45 border border-djcyan-400 shadow-[0_0_6px_#06b6d4]"></div>
                     </div>
 
-                    {/* PUNTOS HOT CUE ARRASTRABLES (1 AL 8) CON CLAVIJAS NUMERADAS Y RÓTULOS */}
+                    {/* PUNTOS HOT CUE ARRASTRABLES (1 AL 8) CON CLAVIJAS NUMERADAS Y RÓTULOS (IGNICIÓN 1 A 1) */}
                     {activeCues.map((cue, idx) => {
                         const padNum = cue.id !== undefined ? cue.id : (idx + 1);
                         const cuePct = cue.pct !== undefined ? (cue.pct * 100) : ((parseTimeToMs(cue.time || "0") / durMs) * 100);
                         const isSelected = (selectedCueId === padNum);
                         const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : '#ef4444');
+                        const staggerDelay = `${idx * 110}ms`;
 
                         return (
                             <div
-                                key={idx}
-                                style={{ left: `${cuePct}%` }}
+                                key={`${track?.id || 'trk'}_wave_cue_${idx}`}
+                                style={{ 
+                                    left: `${cuePct}%`,
+                                    animation: 'cuePointCascadeBeam 0.65s cubic-bezier(0.16, 1, 0.3, 1) both',
+                                    animationDelay: staggerDelay,
+                                    '--cue-color': color
+                                }}
                                 onMouseDown={(e) => handleCueMouseDown(e, idx)}
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -1319,22 +1456,27 @@ const ZoomableRekordboxWaveform = ({
                                 className={`absolute top-0 bottom-0 z-20 flex flex-col items-center cursor-ew-resize group select-none transition-transform duration-75`}
                                 title={`Hot Cue ${padNum}: ${cue.name || 'Cue'} (${cue.time || '00:00.00'}) - Arrastra para mover`}
                             >
-                                {/* Línea vertical del Cue con color del Pad */}
+                                {/* Línea vertical del Cue con halo y color del Pad */}
                                 <div 
-                                    className={`w-[2px] h-full transition-all ${isSelected ? 'w-[2.5px] shadow-[0_0_12px_currentColor]' : 'opacity-85 group-hover:opacity-100'}`}
-                                    style={{ backgroundColor: color, color: color }}
+                                    className={`w-[2px] h-full transition-all ${isSelected ? 'w-[2.5px]' : 'opacity-85 group-hover:opacity-100'}`}
+                                    style={{ 
+                                        backgroundColor: color, 
+                                        color: color,
+                                        boxShadow: isSelected ? `0 0 16px ${color}, 0 0 6px #ffffff` : `0 0 8px ${color}80` 
+                                    }}
                                 ></div>
 
                                 {/* Clavija superior de rendimiento DJ */}
                                 <div 
                                     className={`absolute top-1 -translate-x-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded-full font-mono text-[9px] font-bold text-white shadow-lg border cursor-ew-resize transition-all ${
                                         isSelected 
-                                        ? 'scale-110 ring-2 ring-white shadow-[0_0_12px_rgba(255,255,255,0.8)]' 
+                                        ? 'scale-110 ring-2 ring-white shadow-[0_0_14px_rgba(255,255,255,0.9)]' 
                                         : 'opacity-90 group-hover:scale-105 group-hover:opacity-100'
                                     }`}
                                     style={{ 
                                         backgroundColor: color, 
-                                        borderColor: isSelected ? '#ffffff' : 'rgba(255,255,255,0.4)' 
+                                        borderColor: isSelected ? '#ffffff' : 'rgba(255,255,255,0.4)',
+                                        boxShadow: `0 0 10px ${color}`
                                     }}
                                 >
                                     <span>P{padNum}</span>
@@ -1342,7 +1484,7 @@ const ZoomableRekordboxWaveform = ({
                                 </div>
 
                                 {/* Rótulo de tiempo inferior */}
-                                <div className="absolute bottom-1 -translate-x-1/2 bg-black/80 px-1 py-0.2 rounded border border-djzinc-700 text-[8px] font-mono text-gray-300 pointer-events-none whitespace-nowrap">
+                                <div className="absolute bottom-1 -translate-x-1/2 bg-black/85 px-1 py-0.2 rounded border border-djzinc-700 text-[8px] font-mono text-gray-300 pointer-events-none whitespace-nowrap shadow">
                                     {cue.time || "00:00.00"}
                                 </div>
                             </div>
@@ -1353,7 +1495,7 @@ const ZoomableRekordboxWaveform = ({
                     {dragInfo && (
                         <div 
                             className="absolute -top-7 -translate-x-1/2 bg-djzinc-900 text-white px-2 py-0.5 rounded border border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.5)] flex items-center gap-1.5 pointer-events-none z-30 whitespace-nowrap"
-                            style={{ left: `${dragInfo.pct}%` }}
+                            style={{ left: `${Math.min(92, Math.max(8, dragInfo.pct))}%` }}
                         >
                             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: activeCues[dragInfo.idx]?.color || '#ef4444' }}></span>
                             <span className="text-[9px] font-mono font-bold text-white">Pad {activeCues[dragInfo.idx]?.id || (dragInfo.idx + 1)}:</span>
@@ -2663,7 +2805,7 @@ const DJ_VERSIONS_LIST = [
     "Short Edit / Radio"
 ];
 
-const CUENCA_PROMPT_CHIPS = [
+const AI_PROMPT_CHIPS = [
     { label: "🔨 Hard Techno 150 BPM Caña", query: "hard techno 150 bpm a tope de caña" },
     { label: "⚡ Techno Peak Time 132 BPM", query: "techno peak time driving 132 bpm" },
     { label: "🧪 Acid Techno en 8A 140 BPM", query: "acid techno en 8A a 140 bpm" },
@@ -2675,6 +2817,7 @@ const CUENCA_PROMPT_CHIPS = [
     { label: "💥 Drum & Bass 174 BPM", query: "drum & bass neurofunk 174 bpm" },
     { label: "🎛️ Progressive House 124 BPM", query: "progressive house 124 bpm" }
 ];
+const CUENCA_PROMPT_CHIPS = AI_PROMPT_CHIPS;
 
 // Catálogo Curado de Muestra para Demostración y Descubrimiento Instantáneo
 const DJ_CURATED_CATALOG = [
@@ -2888,8 +3031,8 @@ const DJ_CURATED_CATALOG = [
     }
 ];
 
-// Parser de Lenguaje Natural DJ Estilo Cuenca Music
-function parseCuencaDJQuery(query) {
+// Parser de Lenguaje Natural DJ Inteligente
+function parseAIDJQuery(query) {
     if (!query || typeof query !== 'string') {
         return {
             raw: '',
@@ -2929,7 +3072,7 @@ function parseCuencaDJQuery(query) {
         result.minBpm = parseInt(bpmRangeMatch[1], 10);
         result.maxBpm = parseInt(bpmRangeMatch[2], 10);
         result.targetBpm = Math.round((result.minBpm + result.maxBpm) / 2);
-        result.tokens.push({ type: 'bpm', label: `${result.minBpm}-${result.maxBpm} BPM` });
+        result.tokens.push({ type: 'bpm', label: `${result.minBpm}-${result.maxBpm} BPM`, rawMatch: bpmRangeMatch[0] });
     } else {
         const singleBpmMatch = q.match(/(?:a\s+)?(\b1[0-9]{2}\b|\b[6-9][0-9]\b)\s*(?:bpm)?/);
         if (singleBpmMatch) {
@@ -2938,7 +3081,7 @@ function parseCuencaDJQuery(query) {
                 result.targetBpm = val;
                 result.minBpm = val - 3;
                 result.maxBpm = val + 3;
-                result.tokens.push({ type: 'bpm', label: `${val} BPM (±3)` });
+                result.tokens.push({ type: 'bpm', label: `${val} BPM (±3)`, rawMatch: singleBpmMatch[0] });
             }
         }
     }
@@ -2951,7 +3094,7 @@ function parseCuencaDJQuery(query) {
         if (CAMELOT_WHEEL_DATA[k]) {
             result.compatibleKeys = [k, CAMELOT_WHEEL_DATA[k].rel, CAMELOT_WHEEL_DATA[k].up, CAMELOT_WHEEL_DATA[k].down];
         }
-        result.tokens.push({ type: 'key', label: `Key ${k}` });
+        result.tokens.push({ type: 'key', label: `Key ${k}`, rawMatch: camelotMatch[0] });
     } else {
         for (const [camKey, data] of Object.entries(CAMELOT_WHEEL_DATA)) {
             const cls = data.classical.toLowerCase();
@@ -2959,7 +3102,7 @@ function parseCuencaDJQuery(query) {
             if (q.includes(`en ${cls}`) || q.includes(`en ${nm}`) || q.includes(` ${cls}`)) {
                 result.key = camKey;
                 result.compatibleKeys = [camKey, data.rel, data.up, data.down];
-                result.tokens.push({ type: 'key', label: `Key ${camKey} (${data.classical})` });
+                result.tokens.push({ type: 'key', label: `Key ${camKey} (${data.classical})`, rawMatch: cls });
                 break;
             }
         }
@@ -2968,111 +3111,116 @@ function parseCuencaDJQuery(query) {
     // 3. Versión / Tag DJ
     if (q.includes("extended") || q.includes("ext")) {
         result.version = "Extended Mix";
-        result.tokens.push({ type: 'version', label: 'Extended Mix' });
+        result.tokens.push({ type: 'version', label: 'Extended Mix', rawMatch: q.includes("extended") ? "extended" : "ext" });
     } else if (q.includes("intro") || q.includes("outro")) {
         result.version = "Intro / Outro";
-        result.tokens.push({ type: 'version', label: 'Intro / Outro' });
+        result.tokens.push({ type: 'version', label: 'Intro / Outro', rawMatch: q.includes("intro") ? "intro" : "outro" });
     } else if (q.includes("mashup") || q.includes("bootleg")) {
         result.version = "Mashup / Bootleg";
-        result.tokens.push({ type: 'version', label: 'Mashup' });
+        result.tokens.push({ type: 'version', label: 'Mashup', rawMatch: q.includes("mashup") ? "mashup" : "bootleg" });
     } else if (q.includes("remix") || q.includes("club mix")) {
         result.version = "Remix / Club Mix";
-        result.tokens.push({ type: 'version', label: 'Remix' });
+        result.tokens.push({ type: 'version', label: 'Remix', rawMatch: q.includes("remix") ? "remix" : "club mix" });
     } else if (q.includes("acapella") || q.includes("acappella")) {
         result.version = "Acapella";
-        result.tokens.push({ type: 'version', label: 'Acapella' });
+        result.tokens.push({ type: 'version', label: 'Acapella', rawMatch: q.includes("acapella") ? "acapella" : "acappella" });
     } else if (q.includes("transition") || q.includes("transicion")) {
         result.version = "Transition";
-        result.tokens.push({ type: 'version', label: 'Transition' });
+        result.tokens.push({ type: 'version', label: 'Transition', rawMatch: q.includes("transition") ? "transition" : "transicion" });
     }
 
     // 4. Mood / Momento
     if (q.includes("previa") || q.includes("warm up") || q.includes("warmup")) {
         result.mood = "Previa / Warm Up";
-        result.tokens.push({ type: 'mood', label: 'Previa / Warm Up' });
+        result.tokens.push({ type: 'mood', label: 'Previa / Warm Up', rawMatch: q.includes("warm up") ? "warm up" : (q.includes("warmup") ? "warmup" : "previa") });
     } else if (q.includes("pista") || q.includes("peak time") || q.includes("festival") || q.includes("driving") || q.includes("bailar") || q.includes("baile")) {
         result.mood = "Peak Time / Pista";
-        result.tokens.push({ type: 'mood', label: 'Peak Time / Pista' });
+        result.tokens.push({ type: 'mood', label: 'Peak Time / Pista', rawMatch: q.includes("peak time") ? "peak time" : (q.includes("pista") ? "pista" : (q.includes("driving") ? "driving" : "bailar")) });
     } else if (q.includes("sunset") || q.includes("chill") || q.includes("after") || q.includes("lounge")) {
         result.mood = "Chill / Sunset / After";
-        result.tokens.push({ type: 'mood', label: 'Chill / Sunset' });
+        result.tokens.push({ type: 'mood', label: 'Chill / Sunset', rawMatch: q.includes("sunset") ? "sunset" : (q.includes("chill") ? "chill" : (q.includes("after") ? "after" : "lounge")) });
     }
 
     // 5. Año o Época
     const yearMatch = q.match(/\b(19\d{2}|20\d{2})\b/);
     if (yearMatch) {
         result.year = parseInt(yearMatch[1], 10);
-        result.tokens.push({ type: 'year', label: `Año ${result.year}` });
+        result.tokens.push({ type: 'year', label: `Año ${result.year}`, rawMatch: yearMatch[0] });
     } else if (q.includes("retro") || q.includes("90s") || q.includes("80s") || q.includes("2000s")) {
         result.year = "Retro";
-        result.tokens.push({ type: 'year', label: 'Retro' });
+        result.tokens.push({ type: 'year', label: 'Retro', rawMatch: q.includes("retro") ? "retro" : (q.includes("90s") ? "90s" : (q.includes("80s") ? "80s" : "2000s")) });
     }
 
     // 6. Género y Subgénero
     if (q.includes("tech house")) {
         result.genre = "House";
         result.subgenre = "Tech House";
-        result.tokens.push({ type: 'genre', label: 'Tech House' });
+        result.tokens.push({ type: 'genre', label: 'Tech House', rawMatch: 'tech house' });
     } else if (q.includes("afro house") || q.includes("afro")) {
         result.genre = "House";
         result.subgenre = "Afro House";
-        result.tokens.push({ type: 'genre', label: 'Afro House' });
+        result.tokens.push({ type: 'genre', label: 'Afro House', rawMatch: q.includes("afro house") ? 'afro house' : 'afro' });
     } else if (q.includes("melodic techno")) {
         result.genre = "Techno";
         result.subgenre = "Melodic Techno";
-        result.tokens.push({ type: 'genre', label: 'Melodic Techno' });
+        result.tokens.push({ type: 'genre', label: 'Melodic Techno', rawMatch: 'melodic techno' });
     } else if (q.includes("progressive house") || q.includes("house progresivo")) {
         result.genre = "House";
         result.subgenre = "Melodic / Progressive House";
-        result.tokens.push({ type: 'genre', label: 'Progressive House' });
+        result.tokens.push({ type: 'genre', label: 'Progressive House', rawMatch: q.includes("progressive house") ? 'progressive house' : 'house progresivo' });
     } else if (q.includes("deep house")) {
         result.genre = "House";
         result.subgenre = "Deep House";
-        result.tokens.push({ type: 'genre', label: 'Deep House' });
+        result.tokens.push({ type: 'genre', label: 'Deep House', rawMatch: 'deep house' });
     } else if (q.includes("minimal") || q.includes("deep tech")) {
         result.genre = "Electro & Breaks";
         result.subgenre = "Minimal / Deep Tech";
-        result.tokens.push({ type: 'genre', label: 'Minimal / Deep Tech' });
+        result.tokens.push({ type: 'genre', label: 'Minimal / Deep Tech', rawMatch: q.includes("minimal") ? 'minimal' : 'deep tech' });
     } else if (q.includes("reggaeton") || q.includes("reggaetón")) {
         result.genre = "Latin & Urban";
         result.subgenre = "Reggaetón";
-        result.tokens.push({ type: 'genre', label: 'Reggaetón' });
+        result.tokens.push({ type: 'genre', label: 'Reggaetón', rawMatch: q.includes("reggaetón") ? 'reggaetón' : 'reggaeton' });
     } else if (q.includes("cachengue") || q.includes("rkt")) {
         result.genre = "Latin & Urban";
         result.subgenre = "Cachengue / RKT";
-        result.tokens.push({ type: 'genre', label: 'Cachengue / RKT' });
+        result.tokens.push({ type: 'genre', label: 'Cachengue / RKT', rawMatch: q.includes("cachengue") ? 'cachengue' : 'rkt' });
     } else if (q.includes("cuarteto")) {
         result.genre = "Latin & Urban";
         result.subgenre = "Cuarteto";
-        result.tokens.push({ type: 'genre', label: 'Cuarteto' });
+        result.tokens.push({ type: 'genre', label: 'Cuarteto', rawMatch: 'cuarteto' });
     } else if (q.includes("guaracha")) {
         result.genre = "Latin & Urban";
         result.subgenre = "Guaracha";
-        result.tokens.push({ type: 'genre', label: 'Guaracha' });
+        result.tokens.push({ type: 'genre', label: 'Guaracha', rawMatch: 'guaracha' });
     } else if (q.includes("cumbia")) {
         result.genre = "Latin & Urban";
         result.subgenre = "Cumbia";
-        result.tokens.push({ type: 'genre', label: 'Cumbia' });
+        result.tokens.push({ type: 'genre', label: 'Cumbia', rawMatch: 'cumbia' });
     } else if (q.includes("latin house")) {
         result.genre = "House";
         result.subgenre = "Latin House";
-        result.tokens.push({ type: 'genre', label: 'Latin House' });
+        result.tokens.push({ type: 'genre', label: 'Latin House', rawMatch: 'latin house' });
     } else if (q.includes("techno") || q.includes("tecno")) {
         result.genre = "Techno";
-        result.tokens.push({ type: 'genre', label: 'Techno' });
+        result.subgenre = "Techno";
+        result.tokens.push({ type: 'genre', label: 'Techno', rawMatch: q.includes("techno") ? 'techno' : 'tecno' });
     } else if (q.includes("house")) {
         result.genre = "House";
-        result.tokens.push({ type: 'genre', label: 'House' });
+        result.subgenre = "House";
+        result.tokens.push({ type: 'genre', label: 'House', rawMatch: 'house' });
     } else if (q.includes("trance")) {
         result.genre = "Trance";
-        result.tokens.push({ type: 'genre', label: 'Trance' });
+        result.subgenre = "Trance";
+        result.tokens.push({ type: 'genre', label: 'Trance', rawMatch: 'trance' });
     } else if (q.includes("drum & bass") || q.includes("drum and bass") || q.includes("dnb")) {
         result.genre = "Drum & Bass";
-        result.tokens.push({ type: 'genre', label: 'Drum & Bass' });
+        result.subgenre = "Drum & Bass";
+        result.tokens.push({ type: 'genre', label: 'Drum & Bass', rawMatch: q.includes("drum & bass") ? 'drum & bass' : (q.includes("drum and bass") ? 'drum and bass' : 'dnb') });
     }
 
     return result;
 }
+const parseCuencaDJQuery = parseAIDJQuery;
 
 const DJ_MOODS_LIST = [
     { id: "Peak Time", label: "🔥 Peak Time", desc: "Clímax de pista, alta pegada" },
@@ -3535,6 +3683,7 @@ const AuditWorkspace = ({
     onTogglePlay, 
     playProgress = 0,
     onNavigateTab,
+    onSendToSpotify,
     lang = "es",
     t = (k) => k,
     currentFolder = "",
@@ -3557,6 +3706,10 @@ const AuditWorkspace = ({
     const [saveFeedback, setSaveFeedback] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
+    // Selección Multitrack & Ingesta de Reemplazos HD a Spotify
+    const [selectedAuditIds, setSelectedAuditIds] = useState(new Set());
+    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState(false);
+
     const [internalTracks, setInternalTracks] = useState([]);
     const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
     const setTracks = setExternalTracks !== undefined ? setExternalTracks : setInternalTracks;
@@ -3569,6 +3722,9 @@ const AuditWorkspace = ({
     const [fsCurrentPath, setFsCurrentPath] = useState('');
     const [fsParentPath, setFsParentPath] = useState('');
     const [fsFolders, setFsFolders] = useState([]);
+    const [fsFiles, setFsFiles] = useState([]);
+    const [selectedFsFiles, setSelectedFsFiles] = useState([]);
+    const [fsActiveTab, setFsActiveTab] = useState('folders'); // 'folders' | 'files'
     const [fsLoading, setFsLoading] = useState(false);
 
     // Rueda Armónica Camelot & TAP Tempo
@@ -3595,6 +3751,157 @@ const AuditWorkspace = ({
 
     const updateCurrentTrackField = (field, val) => {
         setTracks(prev => prev.map(t => t.id === currentTrack.id ? { ...t, [field]: val } : t));
+    };
+
+    // Detección Acústica de Pistas de Mala Calidad (Fakes, bitrates bajos, corte espectral prematuro)
+    const isBadQualityTrack = (t) => {
+        if (!t) return false;
+        // 1. FLAC Fake / Upscale o transcode detectado
+        if (Boolean(t.es_fake) || (t.format === 'FLAC' && String(t.status || '').toLowerCase().includes('fake'))) {
+            return true;
+        }
+        // 2. Calidad declarada como Baja, Pobre o Transcode
+        const cal = String(t.calidad || '').toLowerCase();
+        if (cal.includes('baja') || cal.includes('poor') || cal.includes('bad') || cal.includes('transcode')) {
+            return true;
+        }
+        // 3. MP3 con bitrate bajo (< 310 kbps)
+        const bitrate = Number(t.bitrate_kbps) || 0;
+        if (t.format === 'MP3' && bitrate > 0 && bitrate < 310) {
+            return true;
+        }
+        // 4. Corte espectral bajo (< 18.0 kHz) en pistas auditadas
+        const cutoff = Number(t.cutoff_khz) || 0;
+        if (cutoff > 0 && cutoff < 18.0) {
+            return true;
+        }
+        // 5. Pérdida porcentual alta (>= 20%)
+        const perdida = Number(t.perdida_pct) || 0;
+        if (perdida >= 20.0) {
+            return true;
+        }
+        return false;
+    };
+
+    const badQualityTracks = useMemo(() => {
+        return (tracks || []).filter(t => isBadQualityTrack(t));
+    }, [tracks]);
+
+    const handleToggleSelectRow = (id, e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        setSelectedAuditIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const handleSelectAllBadQuality = () => {
+        const badIds = badQualityTracks.map(t => t.id);
+        if (badIds.length === 0) {
+            alert("No se han detectado pistas de mala calidad en la lista actual.");
+            return;
+        }
+        const allBadAlreadySelected = badIds.every(id => selectedAuditIds.has(id));
+        if (allBadAlreadySelected) {
+            setSelectedAuditIds(new Set());
+        } else {
+            setSelectedAuditIds(new Set(badIds));
+        }
+    };
+
+    const handleBuscarReemplazosSpotify = async (customTracks = null) => {
+        let targetTracks = customTracks;
+        if (!targetTracks || targetTracks.length === 0) {
+            if (selectedAuditIds.size > 0) {
+                targetTracks = (tracks || []).filter(t => selectedAuditIds.has(t.id));
+            } else if (badQualityTracks.length > 0) {
+                targetTracks = badQualityTracks;
+            }
+        }
+        if (!targetTracks || targetTracks.length === 0) {
+            alert("No hay pistas seleccionadas ni pistas de baja calidad detectadas para buscar en Spotify.");
+            return;
+        }
+
+        setIsSearchingSpotifyHD(true);
+        setBatchProgress(20);
+        setBatchStatusMsg(`Buscando reemplazos oficiales en Spotify HD para ${targetTracks.length} pista(s)...`);
+
+        try {
+            let rawRes = null;
+            if (window.eel && window.eel.buscar_reemplazos_spotify_batch) {
+                rawRes = await window.eel.buscar_reemplazos_spotify_batch(targetTracks)();
+            } else {
+                const res = await fetch('/api/buscar_reemplazos_spotify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tracks: targetTracks })
+                });
+                rawRes = await res.json();
+            }
+
+            const results = rawRes && Array.isArray(rawRes.tracks) ? rawRes.tracks : (Array.isArray(rawRes) ? rawRes : []);
+
+            if (!results || results.length === 0) {
+                setBatchStatusMsg("No se encontraron coincidencias en Spotify.");
+                alert("No se encontraron pistas oficiales en Spotify para los títulos/artistas seleccionados.");
+                return;
+            }
+
+            setBatchProgress(90);
+            setBatchStatusMsg(`✓ ${results.length} pistas encontradas en Spotify HD. Redirigiendo a Spotify Ingest...`);
+
+            const formattedTracks = results.map((r, i) => ({
+                id: `sp_hd_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
+                title: r.title,
+                artist: r.artist,
+                album: r.album || 'Oficial Spotify HD',
+                bpm: parseFloat(r.bpm) || 128,
+                key: (r.key || '8A').toUpperCase(),
+                cover: r.cover || null,
+                duration: r.duration || '03:45',
+                origin: 'audit_upgrade',
+                reemplazo_de: r.reemplazo_de || r.filename || null,
+                original_file: r.original_file || r.filename || null,
+                original_path: r.original_path || null,
+                downloaded: false,
+                selected: true,
+                format: 'FLAC',
+                calidad: 'Oficial Spotify HD',
+                status: 'Pendiente Descarga',
+                spotify_id: r.spotify_id || null,
+                spotify_url: r.spotify_url || null,
+                isrc: r.isrc || null,
+                preview_url: r.preview_url || null,
+                energy: r.energy || 80,
+                danceability: r.danceability || 80,
+                fase_badge: r.fase_badge || null,
+                comment: `Reemplazo HD para: ${r.reemplazo_de || r.filename || 'Pista local'}`
+            }));
+
+            if (typeof onSendToSpotify === 'function') {
+                onSendToSpotify(formattedTracks, 'audit_upgrade');
+            } else if (typeof onNavigateTab === 'function') {
+                onNavigateTab('spotify');
+            }
+
+            setBatchProgress(100);
+        } catch (err) {
+            console.error("Error buscando reemplazos en Spotify:", err);
+            setBatchStatusMsg("Error al conectar con el servicio de Spotify.");
+            alert("Ocurrió un error al buscar reemplazos en Spotify: " + (err.message || err));
+        } finally {
+            setTimeout(() => {
+                setIsSearchingSpotifyHD(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 1000);
+        }
     };
 
     const handleTapTempo = () => {
@@ -3738,6 +4045,7 @@ const AuditWorkspace = ({
     const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
         setFsBrowserOpen(true);
         setFsLoading(true);
+        setSelectedFsFiles([]);
         const startPath = initialPath || rutaOrigen || "";
         if (window.eel && window.eel.listar_subcarpetas_sistema) {
             try {
@@ -3746,6 +4054,10 @@ const AuditWorkspace = ({
                     setFsCurrentPath(res.current || "");
                     setFsParentPath(res.parent || "");
                     setFsFolders(res.folders || []);
+                    setFsFiles(res.files || []);
+                    if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
+                        setFsActiveTab('files');
+                    }
                 }
             } catch (err) {
                 console.error("Error al listar carpetas:", err);
@@ -3759,6 +4071,7 @@ const AuditWorkspace = ({
 
     const handleNavegarACarpeta = async (targetPath) => {
         setFsLoading(true);
+        setSelectedFsFiles([]);
         if (window.eel && window.eel.listar_subcarpetas_sistema) {
             try {
                 const res = await window.eel.listar_subcarpetas_sistema(targetPath)();
@@ -3766,6 +4079,10 @@ const AuditWorkspace = ({
                     setFsCurrentPath(res.current || "");
                     setFsParentPath(res.parent || "");
                     setFsFolders(res.folders || []);
+                    setFsFiles(res.files || []);
+                    if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
+                        setFsActiveTab('files');
+                    }
                 }
             } catch (err) {
                 console.error("Error navegando:", err);
@@ -3782,6 +4099,31 @@ const AuditWorkspace = ({
         await handleCargarDirectorio(finalPath);
     };
 
+    const handleSeleccionarFicherosUI = async () => {
+        if (!selectedFsFiles || selectedFsFiles.length === 0) return;
+        setRutaOrigen(`${fsCurrentPath} (${selectedFsFiles.length} archivos)`);
+        setFsBrowserOpen(false);
+        await handleCargarDirectorio(selectedFsFiles);
+    };
+
+    const toggleSelectFsFile = (filePath) => {
+        setSelectedFsFiles(prev => {
+            if (prev.includes(filePath)) {
+                return prev.filter(p => p !== filePath);
+            } else {
+                return [...prev, filePath];
+            }
+        });
+    };
+
+    const toggleSelectAllFsFiles = () => {
+        if (selectedFsFiles.length === fsFiles.length) {
+            setSelectedFsFiles([]);
+        } else {
+            setSelectedFsFiles(fsFiles.map(f => f.path));
+        }
+    };
+
     const handleExplorar = async () => {
         // En lugar de popup nativo intrusivo, abre el navegador de carpetas web integrado
         handleAbrirNavegadorCarpetas(rutaOrigen);
@@ -3793,7 +4135,8 @@ const AuditWorkspace = ({
         if (window.eel && window.eel.cargar_metadatos_directorio) {
             setIsLoadingDir(true);
             setBatchProgress(5);
-            setBatchStatusMsg(`Leyendo metadatos de archivos en ${target}...`);
+            const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : `archivos en ${target}`;
+            setBatchStatusMsg(`Leyendo metadatos de ${targetDesc}...`);
             // Limpiar selección previa para evitar track residual de otra carpeta
             setSelectedTrack(null);
             try {
@@ -3851,6 +4194,10 @@ const AuditWorkspace = ({
                     setTracks(res.tracks);
                     if (res.tracks.length > 0) {
                         setSelectedTrack(res.tracks[0].id);
+                    }
+                    const badDetected = res.tracks.filter(t => isBadQualityTrack(t));
+                    if (badDetected.length > 0) {
+                        setSelectedAuditIds(new Set(badDetected.map(t => t.id)));
                     }
                     setMetrics({
                         total: res.total || 0,
@@ -4071,6 +4418,51 @@ const AuditWorkspace = ({
         }
     };
 
+    const handleSanitizarMetadatos = async () => {
+        if (!tracks || tracks.length === 0) {
+            alert("No hay pistas cargadas para sanitizar.");
+            return;
+        }
+        setIsInjecting(true);
+        setBatchProgress(10);
+        setBatchStatusMsg(`Higienizando metadatos, eliminando spam promocional y normalizando feats en ${tracks.length} pistas...`);
+        try {
+            let res = null;
+            if (window.eel && window.eel.sanitizar_metadatos_pistas) {
+                res = await window.eel.sanitizar_metadatos_pistas(tracks, false)();
+            } else {
+                const resp = await fetch('/api/sanitizar_metadatos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tracks, guardar_en_disco: false })
+                });
+                if (resp.ok) res = await resp.json();
+            }
+
+            if (res && res.status === 'ok') {
+                if (res.tracks && res.tracks.length > 0) {
+                    setTracks(res.tracks);
+                }
+                setBatchProgress(100);
+                const msg = `✓ Higienización DJ completada: ${res.modificados} pista(s) corregidas (spam eliminado, feats normalizados, versiones etiquetadas).`;
+                setBatchStatusMsg(msg);
+                setSaveFeedback(msg);
+                setTimeout(() => setSaveFeedback(''), 5000);
+            } else {
+                setBatchStatusMsg("No se detectó spam o modificaciones pendientes.");
+            }
+        } catch (e) {
+            console.error("Error al sanitizar etiquetas:", e);
+            setBatchStatusMsg("Fallo durante la higienización de etiquetas.");
+        } finally {
+            setTimeout(() => {
+                setIsInjecting(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 1200);
+        }
+    };
+
     const handleGuardarTodoEnFicheros = async () => {
         if (!tracks || tracks.length === 0) {
             alert("No hay pistas cargadas para guardar.");
@@ -4106,6 +4498,9 @@ const AuditWorkspace = ({
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
 
     const handleCancelarProceso = async () => {
+        try {
+            fetch('/api/cancelar_procesos', { method: 'POST' }).catch(() => {});
+        } catch (e) {}
         if (window.eel && window.eel.cancelar_procesos_activos) {
             try {
                 await window.eel.cancelar_procesos_activos()();
@@ -4152,6 +4547,7 @@ const AuditWorkspace = ({
             if (filtro === 'missing_artist') return Boolean(t?.missing_artist || !t?.artist || t?.artist.toLowerCase().trim() === 'desconocido');
             if (filtro === 'missing_cover') return Boolean(t?.missing_cover || !t?.cover);
             if (filtro === 'error') return Boolean(t?.es_fake) || (t?.format === 'FLAC' && String(t?.status || '').includes('Fake'));
+            if (filtro === 'bad_quality') return isBadQualityTrack(t);
 
             // Filtros de Cabecera
             if (filterHeaderSearch) {
@@ -4232,6 +4628,25 @@ const AuditWorkspace = ({
         return result;
     }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, auditSortField, auditSortDir]);
 
+    const handleToggleSelectAllVisible = () => {
+        const visibleIds = (tracksFiltrados || []).map(t => t.id);
+        if (visibleIds.length === 0) return;
+        const allVisibleSelected = visibleIds.every(id => selectedAuditIds.has(id));
+        if (allVisibleSelected) {
+            setSelectedAuditIds(prev => {
+                const next = new Set(prev);
+                visibleIds.forEach(id => next.delete(id));
+                return next;
+            });
+        } else {
+            setSelectedAuditIds(prev => {
+                const next = new Set(prev);
+                visibleIds.forEach(id => next.add(id));
+                return next;
+            });
+        }
+    };
+
     return (
         <div className="flex w-full h-full overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0">
@@ -4252,21 +4667,45 @@ const AuditWorkspace = ({
                                 className="flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono" 
                             />
                         </div>
-                        <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-4 py-1.5 text-xs font-bold text-gray-300 cursor-pointer transition-colors">{t('btn_change_dir') || 'Explorar'}</button>
+                        <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-3.5 py-1.5 text-xs font-bold text-gray-200 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm">
+                            <span>📂</span>
+                            <span>{t('btn_change_dir') || 'Explorar'}</span>
+                        </button>
                     </div>
                     <div className="flex flex-wrap gap-2.5 items-center">
                         {/* Grupo 1: Auditoría & DSP */}
-                        <div className="flex items-center gap-1 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
+                        <div className="flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
                             <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
                                 <Icons.Sliders /> {t('btn_audit_batch') || 'Configurar Lote'}
                             </button>
-                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djzinc-800 hover:bg-djzinc-700 text-white px-3 py-1.5 rounded-md font-semibold text-xs border border-djzinc-650 flex items-center gap-1.5 cursor-pointer transition-colors">
-                                <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Directorio')}
+                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djcyan-500 hover:bg-djcyan-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-md font-extrabold text-xs shadow-md shadow-djcyan-500/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95">
+                                <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Todo')}
                             </button>
-                            <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-amber-400 border border-amber-600/60 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
-                                🖼️ {t('btn_inject_covers') || 'Inyectar Carátulas'}
+                            <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-750 text-amber-400 border border-amber-600/60 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
+                                <span>🖼️</span>
+                                <span>{t('btn_inject_covers') || 'Inyectar Carátulas'}</span>
+                            </button>
+                            <button 
+                                onClick={handleSanitizarMetadatos} 
+                                disabled={isInjecting || tracks.length === 0} 
+                                className="bg-djzinc-800 hover:bg-djzinc-750 text-teal-300 border border-teal-600/60 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors" 
+                                title="Higieniza etiquetas: elimina spam [Free Download], URLs, calidades y normaliza feats y versiones DJ"
+                            >
+                                <span>🧹</span>
+                                <span>Limpiar Etiquetas</span>
                             </button>
                         </div>
+
+                        {/* Botón Destacado: Reemplazos Spotify HD */}
+                        <button 
+                            onClick={() => handleBuscarReemplazosSpotify()} 
+                            disabled={isSearchingSpotifyHD || isAuditing || (selectedAuditIds.size === 0 && badQualityTracks.length === 0)}
+                            className="bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black px-3.5 py-1.5 rounded-lg text-xs shadow-lg shadow-emerald-950/40 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                            title="Buscar versiones oficiales en Spotify Ingest para sustituir pistas de baja calidad o transcodes"
+                        >
+                            <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '📥'}</span>
+                            <span>{isSearchingSpotifyHD ? 'Buscando en Spotify HD...' : `Buscar Reemplazos Spotify (${selectedAuditIds.size > 0 ? selectedAuditIds.size : badQualityTracks.length})`}</span>
+                        </button>
 
                         {/* Grupo 2: Exportación Oficial */}
                         <div className="flex items-center gap-1 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
@@ -4274,10 +4713,10 @@ const AuditWorkspace = ({
                                 <Icons.Excel /> XLS
                             </button>
                             <button onClick={handleExportarSeratoCrates} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-purple-400 border border-purple-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Exportar archivos .crate oficiales a Serato DJ Pro">
-                                💽 Crates
+                                <span>💽</span> Crates
                             </button>
                             <button onClick={handleExportarRekordboxXml} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-blue-400 border border-blue-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Exportar rekordbox.xml estándar Pioneer DJ">
-                                📋 Rekordbox
+                                <span>📋</span> Rekordbox
                             </button>
                         </div>
 
@@ -4288,17 +4727,19 @@ const AuditWorkspace = ({
                             className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-lg shadow-emerald-500/25 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                             title="Guarda y persiste todos los metadatos editados directamente en los archivos físicos de audio en disco"
                         >
-                            💾 {t('btn_save_all') || 'Guardar Todo en Ficheros'} ({tracks.length})
+                            <span>💾</span>
+                            <span>{t('btn_save_all') || 'Guardar Todo en Ficheros'} ({tracks.length})</span>
                         </button>
 
                         {/* Grupo 4: Cancelación & Toggle de Inspector */}
                         {(isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && (
                             <button 
                                 onClick={handleCancelarProceso}
-                                className="bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95"
+                                className="bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95"
                                 title="Detener el proceso actual inmediatamente"
                             >
-                                {t('btn_cancel') || '✕ Cancelar'}
+                                <span>✕</span>
+                                <span>{t('btn_cancel') || 'Cancelar'}</span>
                             </button>
                         )}
 
@@ -4328,9 +4769,10 @@ const AuditWorkspace = ({
                                 <span className="text-gray-300 font-bold">{batchProgress}%</span>
                                 <button
                                     onClick={handleCancelarProceso}
-                                    className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 cursor-pointer transition-colors shadow"
+                                    className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 cursor-pointer transition-colors shadow flex items-center gap-1"
                                 >
-                                    {t('btn_cancel') || '✕ Cancelar'}
+                                    <span>✕</span>
+                                    <span>{t('btn_cancel') || 'Cancelar'}</span>
                                 </button>
                             </div>
                         </div>
@@ -4343,10 +4785,19 @@ const AuditWorkspace = ({
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-px bg-djzinc-800 border-b border-djzinc-800 shrink-0">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-px bg-djzinc-800 border-b border-djzinc-800 shrink-0">
                     <div onClick={() => setFiltro('todos')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'todos' ? 'bg-djcyan-950/40 border-b-2 border-djcyan-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
                         <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">{t('metric_total') || 'Total Pistas'}</span>
                         <span className="text-xl font-mono text-white font-bold">{(metrics.total || 0).toLocaleString()}</span>
+                    </div>
+                    <div onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'bad_quality' ? 'bg-amber-950/50 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase">Mala Calidad</span>
+                            {badQualityTracks.length > 0 && <span className="text-[8px] bg-amber-900 text-amber-200 px-1 rounded font-mono font-bold">HD</span>}
+                        </div>
+                        <span className={`text-xl font-mono font-bold ${badQualityTracks.length > 0 ? 'text-amber-400 animate-pulse' : 'text-gray-400'}`}>
+                            {badQualityTracks.length.toLocaleString()}
+                        </span>
                     </div>
                     <div onClick={() => setFiltro('missing')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
                         <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta BPM/Key</span>
@@ -4393,6 +4844,24 @@ const AuditWorkspace = ({
                         />
                         <div className="flex gap-1.5 ml-1 flex-wrap">
                             <button onClick={() => setFiltro('todos')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'todos' ? 'bg-djcyan-600 text-white font-bold' : 'bg-djzinc-800 text-gray-300 hover:text-white'}`}>{t('filter_all') || 'Todos'} ({metrics.total || 0})</button>
+                            <button 
+                                onClick={handleSelectAllBadQuality}
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1 shadow ${
+                                    badQualityTracks.length > 0 
+                                        ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/20 active:scale-95' 
+                                        : 'bg-djzinc-800 text-gray-500 border border-djzinc-700 cursor-not-allowed'
+                                }`}
+                                title="Seleccionar o deseleccionar todas las pistas de mala calidad"
+                            >
+                                <span>⚡</span>
+                                <span>Mala Calidad ({badQualityTracks.length})</span>
+                                {selectedAuditIds.size > 0 && (
+                                    <span className="bg-black/30 text-white text-[9px] px-1 rounded-full font-mono ml-0.5">
+                                        {selectedAuditIds.size} selec.
+                                    </span>
+                                )}
+                            </button>
+                            <button onClick={() => setFiltro('bad_quality')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'bad_quality' ? 'bg-amber-600 text-white font-bold' : 'bg-amber-950/40 text-amber-400 border border-amber-800/40'}`}>Ver Solo Malas ({badQualityTracks.length})</button>
                             <button onClick={() => setFiltro('missing')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'missing' ? 'bg-amber-600 text-white font-bold' : 'bg-amber-950/40 text-amber-400 border border-amber-800/40'}`}>Falta BPM/Key ({metrics.missing || 0})</button>
                             <button onClick={() => setFiltro('missing_title')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'missing_title' ? 'bg-amber-600 text-white font-bold' : 'bg-amber-950/40 text-amber-300 border border-amber-800/40'}`}>Falta Título ({metrics.missing_title || 0})</button>
                             <button onClick={() => setFiltro('missing_artist')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'missing_artist' ? 'bg-amber-600 text-white font-bold' : 'bg-amber-950/40 text-amber-300 border border-amber-800/40'}`}>Falta Artista ({metrics.missing_artist || 0})</button>
@@ -4410,7 +4879,19 @@ const AuditWorkspace = ({
                     <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                         <thead className="sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400">
                             <tr>
-                                <th onClick={() => handleSortAudit('id')} className="py-2.5 px-2 w-7 text-center cursor-pointer hover:text-white transition-colors">{t('th_num') || '#'} {renderSortArrowAudit('id')}</th>
+                                <th className="py-2.5 px-2 w-12 text-center">
+                                    <div className="flex items-center justify-center gap-1">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={tracksFiltrados.length > 0 && tracksFiltrados.every(t => selectedAuditIds.has(t.id))}
+                                            onChange={handleToggleSelectAllVisible}
+                                            className="accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded"
+                                            title="Seleccionar / deseleccionar todas las pistas visibles"
+                                        />
+                                        <span onClick={() => handleSortAudit('id')} className="cursor-pointer hover:text-white text-[9px] font-mono">#</span>
+                                        {renderSortArrowAudit('id')}
+                                    </div>
+                                </th>
                                 <th className="py-2.5 px-2 w-28 text-center text-djcyan-400">{t('th_waveform') || 'Waveform'}</th>
                                 <th onClick={() => handleSortAudit('title')} className="py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'Archivo / Título'} {renderSortArrowAudit('title')}</th>
                                 <th onClick={() => handleSortAudit('artist')} className="py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'Artista'} {renderSortArrowAudit('artist')}</th>
@@ -4420,6 +4901,7 @@ const AuditWorkspace = ({
                                 <th onClick={() => handleSortAudit('calidad')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_quality') || 'Calidad'} {renderSortArrowAudit('calidad')}</th>
                                 <th onClick={() => handleSortAudit('perdida_pct')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors">{t('th_loss') || 'Pérdida / Compresión'} {renderSortArrowAudit('perdida_pct')}</th>
                                 <th onClick={() => handleSortAudit('cutoff_khz')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_fft') || 'Cert. FFT'} {renderSortArrowAudit('cutoff_khz')}</th>
+                                <th onClick={() => handleSortAudit('lufs')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" title="Sonoridad integrada LUFS (EBU R128) y pico True Peak (dBFS)">LUFS / Peak {renderSortArrowAudit('lufs')}</th>
                                 <th onClick={() => handleSortAudit('duration')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_duration') || 'Time'} {renderSortArrowAudit('duration')}</th>
                                 <th onClick={() => handleSortAudit('bpm')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowAudit('bpm')}</th>
                                 <th onClick={() => handleSortAudit('key')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">Key {renderSortArrowAudit('key')}</th>
@@ -4493,6 +4975,7 @@ const AuditWorkspace = ({
                                 <th className="p-1"></th>
                                 <th className="p-1"></th>
                                 <th className="p-1"></th>
+                                <th className="p-1"></th>
                                 <th className="p-1 text-center">
                                     <select 
                                         value={filterHeaderEnergy} 
@@ -4536,8 +5019,8 @@ const AuditWorkspace = ({
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracksFiltrados.length === 0 && !isAuditing && (
                                 <tr>
-                                    <td colSpan="19" className="py-12 text-center text-gray-500 font-mono text-xs">
-                                        No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Directorio".
+                                    <td colSpan="20" className="py-12 text-center text-gray-500 font-mono text-xs">
+                                        No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".
                                     </td>
                                 </tr>
                             )}
@@ -4547,7 +5030,17 @@ const AuditWorkspace = ({
                                 const isFake = Boolean(row.es_fake || (row.format === 'FLAC' && String(row.status || '').includes('Fake')));
                                 return (
                                     <tr key={row.id} onClick={() => { setSelectedTrack(row.id); setSidebarOpen(true); if (onPlayTrack) onPlayTrack(row, 0, false); }} className={`cursor-pointer select-none transition-colors ${selectedTrack === row.id ? 'bg-djcyan-950/40 border-l-2 border-djcyan-400' : 'hover:bg-djzinc-850/40'}`}>
-                                        <td className="py-2 px-2 text-center text-djzinc-500 font-mono">{row.id}</td>
+                                        <td className="py-2 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedAuditIds.has(row.id)}
+                                                    onChange={(e) => handleToggleSelectRow(row.id, e)}
+                                                    className="accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded"
+                                                />
+                                                <span className="text-djzinc-500 font-mono text-[10px] w-4 text-right">{row.id}</span>
+                                            </div>
+                                        </td>
                                         <td className="py-2 px-2 text-center">
                                             <TableHarmonicWaveform 
                                                 track={row} 
@@ -4567,8 +5060,13 @@ const AuditWorkspace = ({
                                                     onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
                                                 />
                                                 <div className="flex flex-col min-w-0 text-left">
-                                                    <span className="font-semibold text-djcyan-400 text-xs truncate max-w-[210px]" title={row.t || row.title || row.f}>
-                                                        {row.t || row.title || row.f || 'Desconocido'}
+                                                    <span className="font-semibold text-djcyan-400 text-xs truncate max-w-[210px] flex items-center gap-1.5" title={row.t || row.title || row.f}>
+                                                        <span className="truncate">{row.t || row.title || row.f || 'Desconocido'}</span>
+                                                        {row.version_type && row.version_type !== 'standard' && (
+                                                            <span className="px-1 py-0.2 rounded text-[8px] font-mono font-black uppercase bg-purple-950 text-purple-300 border border-purple-700/60 shrink-0">
+                                                                {row.version_type}
+                                                            </span>
+                                                        )}
                                                     </span>
                                                     <span className="text-[10px] text-gray-500 font-mono truncate max-w-[210px]" title={row.f}>
                                                         {row.f || ''}
@@ -4597,15 +5095,30 @@ const AuditWorkspace = ({
 
                                         {/* CALIDAD */}
                                         <td className="py-2 px-2 text-center">
-                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
-                                                isFake ? 'bg-red-950 text-red-400 border-red-800' :
-                                                (String(row.calidad || '').includes('Alta') || String(row.calidad || '').includes('Hi-Res')) ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800' :
-                                                String(row.calidad || '').includes('Media') ? 'bg-amber-950/80 text-amber-400 border-amber-800' :
-                                                (row.calidad && row.calidad !== 'Pendiente Auditoría') ? 'bg-red-950/80 text-red-400 border-red-800' :
-                                                'bg-djzinc-850 text-gray-400 border-djzinc-750'
-                                            }`}>
-                                                {row.calidad || (isFake ? 'Baja' : 'Alta')}
-                                            </span>
+                                            <div className="flex flex-col items-center justify-center gap-1">
+                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
+                                                    isFake ? 'bg-red-950 text-red-400 border-red-800' :
+                                                    (String(row.calidad || '').includes('Alta') || String(row.calidad || '').includes('Hi-Res')) ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800' :
+                                                    String(row.calidad || '').includes('Media') ? 'bg-amber-950/80 text-amber-400 border-amber-800' :
+                                                    (row.calidad && row.calidad !== 'Pendiente Auditoría') ? 'bg-red-950/80 text-red-400 border-red-800' :
+                                                    'bg-djzinc-850 text-gray-400 border-djzinc-750'
+                                                }`}>
+                                                    {row.calidad || (isFake ? 'Baja' : 'Alta')}
+                                                </span>
+                                                {isBadQualityTrack(row) && (
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleBuscarReemplazosSpotify([row]);
+                                                        }}
+                                                        className="px-1.5 py-0.5 rounded text-[8px] font-mono font-black bg-amber-950/90 hover:bg-amber-900 text-amber-300 border border-amber-600/70 cursor-pointer shadow flex items-center justify-center gap-1 transition-all active:scale-95"
+                                                        title="Buscar versión oficial en Spotify Ingest para sustituir este track"
+                                                    >
+                                                        <span>🔄</span>
+                                                        <span>Spotify HD</span>
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
 
                                         {/* PÉRDIDA / COMPRESIÓN */}
@@ -4632,9 +5145,25 @@ const AuditWorkspace = ({
                                             </span>
                                         </td>
 
+                                        {/* LUFS & TRUE PEAK */}
+                                        <td className="py-2 px-1.5 text-center font-mono">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <span className={`text-[10px] font-bold ${row.lufs > -7 ? 'text-amber-400' : (row.lufs && row.lufs <= -14) ? 'text-cyan-400' : 'text-emerald-400'}`}>
+                                                    {row.lufs !== undefined ? `${row.lufs} LUFS` : '-9.0 LUFS'}
+                                                </span>
+                                                <span className={`text-[9px] ${row.clipping ? 'text-red-400 font-black animate-pulse' : 'text-gray-500'}`} title={row.clipping ? 'Clipping detectado: pico real supera 0.0 dBFS' : 'Pico inter-sample en rango'}>
+                                                    {row.clipping ? '⚠️ CLIP' : `${row.true_peak !== undefined ? (row.true_peak > 0 ? `+${row.true_peak}` : row.true_peak) : '-0.1'}dB`}
+                                                </span>
+                                            </div>
+                                        </td>
+
                                         <td className="py-2 px-1.5 text-center text-gray-400 font-mono">{row.duration}</td>
                                         <td className="py-2 px-1.5 text-center"><span className="bg-djzinc-850 text-gray-200 px-1.5 py-0.5 rounded font-mono border border-djzinc-750">{row.b}</span></td>
-                                        <td className="py-2 px-1.5 text-center"><span className="px-1.5 py-0.5 rounded font-mono font-bold bg-djcyan-950 text-djcyan-400 border border-djcyan-800/50">{row.k}</span></td>
+                                        <td className="py-2 px-1.5 text-center">
+                                            <span className="px-1.5 py-0.5 rounded font-mono font-bold bg-djcyan-950 text-djcyan-400 border border-djcyan-800/50" title={getHarmonicKeyDisplay(row.k)}>
+                                                {getHarmonicKeyDisplay(row.k)}
+                                            </span>
+                                        </td>
                                         <td className="py-2 px-1.5 text-center">
                                             <button
                                                 type="button"
@@ -4816,6 +5345,32 @@ const AuditWorkspace = ({
                         </button>
                     </div>
 
+                    {/* Alerta de Mala Calidad & Reemplazo en Inspector */}
+                    {isBadQualityTrack(currentTrack) && (
+                        <div className="p-3 bg-amber-950/40 border border-amber-600/70 rounded-lg flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+                                    <span>⚠️</span> Calidad Sub-óptima Detectada
+                                </span>
+                                <span className="text-[9px] font-mono text-red-400 bg-red-950 px-1.5 py-0.5 rounded border border-red-800 font-bold">
+                                    {currentTrack.es_fake ? 'FLAC FAKE' : currentTrack.calidad || 'Baja Calidad'}
+                                </span>
+                            </div>
+                            <p className="text-[10px] text-gray-300 leading-tight">
+                                Esta pista presenta compresión lossy o corte espectral ({currentTrack.cutoff_khz || '--'} kHz). Puedes reemplazarla automáticamente por su versión oficial en FLAC.
+                            </p>
+                            <button 
+                                type="button"
+                                onClick={() => handleBuscarReemplazosSpotify([currentTrack])}
+                                disabled={isSearchingSpotifyHD}
+                                className="w-full py-1.5 px-3 rounded bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-black font-black text-xs cursor-pointer shadow transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                            >
+                                <span>🔄</span>
+                                <span>{isSearchingSpotifyHD ? 'Buscando en Spotify...' : 'Buscar Reemplazo HD en Spotify'}</span>
+                            </button>
+                        </div>
+                    )}
+
                     <RekordboxWaveform 
                         track={currentTrack} 
                         cues={(currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS} 
@@ -4889,6 +5444,39 @@ const AuditWorkspace = ({
                                 </div>
                             </div>
                         )}
+
+                        {/* Medidor EBU R128: Sonoridad LUFS & True Peak */}
+                        <div className="bg-djzinc-900/80 p-2.5 rounded border border-djzinc-800 space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-300 font-bold flex items-center gap-1">
+                                    <span>🔊 Sonoridad & Dinámica (EBU R128)</span>
+                                    <InfoTip title="Sonoridad LUFS y True Peak" text="Mide el volumen percibido para evitar saltos en cabina. -8 a -11 LUFS es el estándar de club moderno. True Peak > 0.0 dBFS indica clipping y distorsión." />
+                                </span>
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${currentTrack.clipping ? 'bg-red-950 text-red-400 border border-red-700 animate-pulse' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'}`}>
+                                    {currentTrack.clipping ? '⚠️ CLIPPING' : '✓ CLEAN PEAK'}
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1.5 text-center font-mono">
+                                <div className="bg-djzinc-950 p-1.5 rounded border border-djzinc-800/80">
+                                    <span className="text-[9px] text-gray-500 block">LUFS Int.</span>
+                                    <span className={`font-bold text-xs ${currentTrack.lufs > -7 ? 'text-amber-400' : (currentTrack.lufs && currentTrack.lufs <= -14) ? 'text-cyan-400' : 'text-emerald-400'}`}>
+                                        {currentTrack.lufs !== undefined ? `${currentTrack.lufs} LUFS` : '-9.0 LUFS'}
+                                    </span>
+                                </div>
+                                <div className="bg-djzinc-950 p-1.5 rounded border border-djzinc-800/80">
+                                    <span className="text-[9px] text-gray-500 block">True Peak</span>
+                                    <span className={`font-bold text-xs ${currentTrack.clipping ? 'text-red-400 font-black' : 'text-gray-200'}`}>
+                                        {currentTrack.true_peak !== undefined ? `${currentTrack.true_peak > 0 ? '+' : ''}${currentTrack.true_peak} dB` : '-0.1 dB'}
+                                    </span>
+                                </div>
+                                <div className="bg-djzinc-950 p-1.5 rounded border border-djzinc-800/80">
+                                    <span className="text-[9px] text-gray-500 block">Rango (LRA)</span>
+                                    <span className="font-bold text-xs text-gray-300">
+                                        {currentTrack.lra ? `${currentTrack.lra} LU` : '3.5 LU'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                         {/* Alineación Temporal: Trim Zero-Crossing */}
                         <div className="pt-2 border-t border-djzinc-850 flex flex-col gap-1.5">
                             <div className="flex items-center justify-between">
@@ -5206,6 +5794,10 @@ const AuditWorkspace = ({
                         const res = await window.eel.ejecutar_auditoria_lote(rutaOrigen, opts)();
                         if (res && res.tracks) {
                             setTracks(res.tracks);
+                            const badDetected = res.tracks.filter(t => isBadQualityTrack(t));
+                            if (badDetected.length > 0) {
+                                setSelectedAuditIds(new Set(badDetected.map(t => t.id)));
+                            }
                             setMetrics({ total: res.total, missing: res.sin_meta, ready: res.ready, errors: res.errors || 0 });
                             if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
                                 setBatchStatusMsg("Inyectando carátulas 1:1 en archivos físicos...");
@@ -5367,67 +5959,183 @@ const AuditWorkspace = ({
                 </div>
             )}
 
-            {/* Modal Navegador de Carpetas Web Integrado (Zero Popups SO) */}
+            {/* Modal Navegador de Carpetas y Selección de Archivos Web Integrado */}
             {fsBrowserOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans">
-                    <div className="bg-[#0c0c12] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans animate-fadeIn">
+                    <div className="bg-[#0c0c12] border border-djzinc-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
                         <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
                             <div className="flex items-center gap-2.5">
                                 <span className="text-djcyan-400 font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2">
-                                    <Icons.Library /> Seleccionar Carpeta de Música
+                                    <Icons.Library /> Explorador de Biblioteca & Selección de Archivos
                                 </span>
                             </div>
-                            <button onClick={() => setFsBrowserOpen(false)} className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs">✕</button>
+                            <button onClick={() => setFsBrowserOpen(false)} className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer">✕</button>
                         </div>
 
                         <div className="px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono">
-                            <span className="text-gray-400">Ruta:</span>
-                            <span className="text-djcyan-400 font-semibold truncate flex-1">{fsCurrentPath || "Cargando..."}</span>
+                            <span className="text-gray-400 shrink-0">Ruta:</span>
+                            <span className="text-djcyan-400 font-semibold truncate flex-1" title={fsCurrentPath}>{fsCurrentPath || "Cargando..."}</span>
                             {fsParentPath && fsParentPath !== fsCurrentPath && (
-                                <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded text-[11px] border border-djzinc-700 cursor-pointer">
+                                <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded text-[11px] border border-djzinc-700 cursor-pointer shrink-0">
                                     ▲ Subir Nivel
                                 </button>
                             )}
                         </div>
 
+                        {/* Pestañas de Vista: Subcarpetas / Archivos de Audio */}
+                        <div className="flex border-b border-djzinc-800 bg-[#07070a] px-4 pt-2 gap-2 text-xs font-mono">
+                            <button
+                                onClick={() => setFsActiveTab('folders')}
+                                className={`px-3 py-1.5 rounded-t font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    fsActiveTab === 'folders'
+                                        ? 'bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                <span>📁 Subcarpetas</span>
+                                <span className="px-1.5 py-0.2 bg-djzinc-800 text-[10px] rounded-full text-gray-300">{fsFolders.length}</span>
+                            </button>
+                            <button
+                                onClick={() => setFsActiveTab('files')}
+                                className={`px-3 py-1.5 rounded-t font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    fsActiveTab === 'files'
+                                        ? 'bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                <span>🎵 Archivos de Audio</span>
+                                <span className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
+                                    selectedFsFiles.length > 0 ? 'bg-djcyan-500 text-black' : 'bg-djzinc-800 text-gray-300'
+                                }`}>
+                                    {selectedFsFiles.length > 0 ? `${selectedFsFiles.length}/${fsFiles.length}` : fsFiles.length}
+                                </span>
+                            </button>
+                        </div>
+
                         <div className="flex-1 overflow-y-auto p-3 space-y-1 bg-[#07070a]">
                             {fsLoading ? (
-                                <div className="py-12 text-center text-gray-400 text-xs font-mono flex flex-col items-center gap-2">
+                                <div className="py-14 text-center text-gray-400 text-xs font-mono flex flex-col items-center gap-2">
                                     <div className="w-6 h-6 border-2 border-djcyan-400 border-t-transparent rounded-full animate-spin"></div>
-                                    <span>Explorando carpetas...</span>
+                                    <span>Leyendo directorio y pistas de audio...</span>
                                 </div>
-                            ) : fsFolders.length === 0 ? (
-                                <div className="py-12 text-center text-gray-500 text-xs font-mono">
-                                    No hay subcarpetas en este directorio.
-                                </div>
-                            ) : (
-                                fsFolders.map((f, idx) => (
-                                    <div 
-                                        key={idx} 
-                                        onClick={() => handleNavegarACarpeta(f.path)}
-                                        className="p-2.5 rounded-lg bg-djzinc-900/60 hover:bg-djcyan-950/40 border border-djzinc-800/80 hover:border-djcyan-500/50 flex items-center justify-between cursor-pointer group transition-all"
-                                    >
-                                        <div className="flex items-center gap-2.5 min-w-0">
-                                            <span className="text-amber-400 text-base">📁</span>
-                                            <span className="text-xs text-gray-200 group-hover:text-white font-medium truncate">{f.name}</span>
-                                        </div>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); handleSeleccionarCarpetaUI(f.path); }}
-                                            className="px-3 py-1 bg-djzinc-800 hover:bg-djcyan-600 hover:text-black text-gray-300 text-[10px] font-mono font-bold rounded border border-djzinc-700 cursor-pointer transition-colors"
-                                        >
-                                            Seleccionar
-                                        </button>
+                            ) : fsActiveTab === 'folders' ? (
+                                fsFolders.length === 0 ? (
+                                    <div className="py-12 text-center text-gray-500 text-xs font-mono">
+                                        No hay subcarpetas en este directorio.
                                     </div>
-                                ))
+                                ) : (
+                                    fsFolders.map((f, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            onClick={() => handleNavegarACarpeta(f.path)}
+                                            className="p-2.5 rounded-lg bg-djzinc-900/60 hover:bg-djcyan-950/40 border border-djzinc-800/80 hover:border-djcyan-500/50 flex items-center justify-between cursor-pointer group transition-all"
+                                        >
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <span className="text-amber-400 text-base">📁</span>
+                                                <span className="text-xs text-gray-200 group-hover:text-white font-medium truncate">{f.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); handleSeleccionarCarpetaUI(f.path); }}
+                                                    className="px-2.5 py-1 bg-djzinc-800 hover:bg-djcyan-600 hover:text-black text-gray-300 text-[10px] font-mono font-bold rounded border border-djzinc-700 cursor-pointer transition-colors"
+                                                    title="Auditar toda esta subcarpeta"
+                                                >
+                                                    Cargar Carpeta
+                                                </button>
+                                                <span className="text-gray-500 text-xs group-hover:text-djcyan-400 font-mono">➔</span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )
+                            ) : (
+                                /* Pestaña de Archivos de Audio */
+                                <div>
+                                    {fsFiles.length > 0 && (
+                                        <div className="flex items-center justify-between p-2 mb-2 bg-djzinc-900/80 rounded border border-djzinc-800 text-xs font-mono">
+                                            <label className="flex items-center gap-2 text-gray-300 cursor-pointer select-none">
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={fsFiles.length > 0 && selectedFsFiles.length === fsFiles.length}
+                                                    onChange={toggleSelectAllFsFiles}
+                                                    className="rounded bg-djzinc-950 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
+                                                />
+                                                <span className="font-bold">Seleccionar todos los archivos ({fsFiles.length})</span>
+                                            </label>
+                                            {selectedFsFiles.length > 0 && (
+                                                <span className="text-djcyan-400 text-[11px] font-bold">
+                                                    ✓ {selectedFsFiles.length} seleccionado(s)
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {fsFiles.length === 0 ? (
+                                        <div className="py-12 text-center text-gray-500 text-xs font-mono">
+                                            No se encontraron archivos de audio directos (.flac, .mp3, .wav, etc.) en este nivel.
+                                            <br />
+                                            <span className="text-gray-400 mt-1 inline-block">Navega a una subcarpeta o pulsa "Cargar Toda la Carpeta".</span>
+                                        </div>
+                                    ) : (
+                                        fsFiles.map((fileItem, idx) => {
+                                            const isSelected = selectedFsFiles.includes(fileItem.path);
+                                            return (
+                                                <div 
+                                                    key={idx}
+                                                    onClick={() => toggleSelectFsFile(fileItem.path)}
+                                                    className={`p-2 rounded flex items-center justify-between cursor-pointer border transition-colors ${
+                                                        isSelected 
+                                                            ? 'bg-djcyan-950/40 border-djcyan-500/60 text-white' 
+                                                            : 'bg-djzinc-900/40 hover:bg-djzinc-800/60 border-djzinc-800 text-gray-300'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => {}}
+                                                            className="rounded bg-djzinc-950 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
+                                                        />
+                                                        <span className="text-djcyan-400 text-sm">🎵</span>
+                                                        <span className="text-xs truncate font-mono">{fileItem.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0 text-[10px] font-mono">
+                                                        <span className="px-1.5 py-0.5 rounded bg-djzinc-800 text-djcyan-300 font-bold border border-djzinc-700">
+                                                            {fileItem.ext || 'AUDIO'}
+                                                        </span>
+                                                        <span className="text-gray-400">{fileItem.size_mb ? `${fileItem.size_mb} MB` : ''}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
                             )}
                         </div>
 
-                        <div className="p-3 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center">
-                            <span className="text-[11px] font-mono text-gray-500">{fsFolders.length} carpetas disponibles</span>
-                            <div className="flex gap-2">
-                                <button onClick={() => setFsBrowserOpen(false)} className="px-4 py-1.5 bg-djzinc-800 text-gray-300 rounded text-xs">Cancelar</button>
-                                <button onClick={() => handleSeleccionarCarpetaUI(fsCurrentPath)} className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded shadow">
-                                    Cargar Esta Carpeta
+                        <div className="p-3 bg-djzinc-950 border-t border-djzinc-800 flex flex-wrap justify-between items-center gap-2">
+                            <span className="text-[11px] font-mono text-gray-400">
+                                {fsFolders.length} subcarpetas • {fsFiles.length} archivos de audio
+                                {selectedFsFiles.length > 0 && (
+                                    <span className="text-djcyan-400 font-bold ml-1">({selectedFsFiles.length} seleccionados)</span>
+                                )}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setFsBrowserOpen(false)} className="px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded text-xs cursor-pointer">
+                                    Cancelar
+                                </button>
+                                {selectedFsFiles.length > 0 && (
+                                    <button 
+                                        onClick={handleSeleccionarFicherosUI}
+                                        className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs rounded shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5"
+                                    >
+                                        <span>🎵 Cargar Ficheros Seleccionados ({selectedFsFiles.length})</span>
+                                    </button>
+                                )}
+                                <button 
+                                    onClick={() => handleSeleccionarCarpetaUI(fsCurrentPath)} 
+                                    className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5"
+                                >
+                                    <span>📁 Cargar Toda la Carpeta</span>
                                 </button>
                             </div>
                         </div>
@@ -5487,7 +6195,8 @@ const HotCuesWorkspace = ({
     lang = "es",
     t = (k) => k,
     currentFolder = "/Users/admin/Music/mi musica",
-    setCurrentFolder
+    setCurrentFolder,
+    audioRef
 }) => {
     const currentTrack = (tracks && tracks.length > 0)
         ? (tracks.find(t => String(t.id) === String(selectedTrack)) || tracks[0])
@@ -5507,6 +6216,131 @@ const HotCuesWorkspace = ({
     const [rutaNavegacion, setRutaNavegacion] = useState(currentFolder || "/Users/admin/Music/mi musica");
     const [isLoadingDir, setIsLoadingDir] = useState(false);
     const [showTrackListDrawer, setShowTrackListDrawer] = useState(false);
+
+    // Estado de Pitch Fader y Rango Tempo DJ
+    const [pitchPercent, setPitchPercent] = useState(0.0);
+    const [pitchRange, setPitchRange] = useState(8); // ±8% o ±16%
+
+    // Estado del Ecualizador Hardware DJ de 3 Bandas (dB)
+    const [eqBass, setEqBass] = useState(0.0);
+    const [eqMid, setEqMid] = useState(0.0);
+    const [eqTreble, setEqTreble] = useState(0.0);
+
+    // Estado de Scratching Interactivo sobre el Vinilo DJ
+    const vinylPlatterRef = useRef(null);
+    const isScratchingRef = useRef(false);
+    const lastAngleRef = useRef(0);
+    const [vinylRotDeg, setVinylRotDeg] = useState(0);
+
+    // Ajuste en tiempo real de velocidad y tono (Pitch Shifting)
+    const handlePitchChange = (newPitch) => {
+        const clamped = Math.max(-pitchRange, Math.min(pitchRange, Math.round(newPitch * 100) / 100));
+        setPitchPercent(clamped);
+        const rate = 1.0 + (clamped / 100);
+        const audio = audioRef?.current || window.__bwGlobalAudio;
+        if (audio) {
+            audio.playbackRate = Math.max(0.2, Math.min(2.0, rate));
+        }
+    };
+
+    const handleNudgePitch = (delta) => {
+        handlePitchChange(pitchPercent + delta);
+    };
+
+    // Ajuste en tiempo real de ecualización Web Audio API
+    const handleEqChange = (band, val) => {
+        const audio = audioRef?.current || window.__bwGlobalAudio;
+        const nodes = getAudioEQNodes(audio);
+        if (band === 'bass') {
+            setEqBass(val);
+            if (nodes && nodes.low) nodes.low.gain.value = val;
+        } else if (band === 'mid') {
+            setEqMid(val);
+            if (nodes && nodes.mid) nodes.mid.gain.value = val;
+        } else if (band === 'treble') {
+            setEqTreble(val);
+            if (nodes && nodes.high) nodes.high.gain.value = val;
+        }
+    };
+
+    const handleResetEQ = () => {
+        handleEqChange('bass', 0);
+        handleEqChange('mid', 0);
+        handleEqChange('treble', 0);
+    };
+
+    // Scratching y Scrubbing sobre el Plato Giradiscos
+    const getAngleFromPlatterCenter = (clientX, clientY) => {
+        if (!vinylPlatterRef.current) return 0;
+        const rect = vinylPlatterRef.current.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        return Math.atan2(clientY - cy, clientX - cx) * (180 / Math.PI);
+    };
+
+    const handleVinylPointerDown = (e) => {
+        e.preventDefault();
+        isScratchingRef.current = true;
+        const cx = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const cy = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        lastAngleRef.current = getAngleFromPlatterCenter(cx, cy);
+
+        const onPointerMove = (me) => {
+            if (!isScratchingRef.current) return;
+            const mx = me.clientX || (me.touches && me.touches[0].clientX) || 0;
+            const my = me.clientY || (me.touches && me.touches[0].clientY) || 0;
+            const currentAngle = getAngleFromPlatterCenter(mx, my);
+            let delta = currentAngle - lastAngleRef.current;
+            if (delta > 180) delta -= 360;
+            if (delta < -180) delta += 360;
+            lastAngleRef.current = currentAngle;
+
+            setVinylRotDeg(prev => prev + delta);
+
+            // Física de tocadiscos: 1 rotación (360°) = 1.8 segundos (33.3 RPM)
+            const deltaSeconds = (delta / 360) * 1.8;
+            const audio = audioRef?.current || window.__bwGlobalAudio;
+            if (audio && audio.duration && !isNaN(audio.duration)) {
+                const nextTime = Math.max(0, Math.min(audio.duration, audio.currentTime + deltaSeconds));
+                audio.currentTime = nextTime;
+            }
+        };
+
+        const onPointerUp = () => {
+            isScratchingRef.current = false;
+            window.removeEventListener('mousemove', onPointerMove);
+            window.removeEventListener('mouseup', onPointerUp);
+            window.removeEventListener('touchmove', onPointerMove);
+            window.removeEventListener('touchend', onPointerUp);
+        };
+
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        window.addEventListener('touchmove', onPointerMove);
+        window.addEventListener('touchend', onPointerUp);
+    };
+
+    // Control Seguro y Robusto de Reproducción en Deck Hot Cues
+    const handleDeckTogglePlay = () => {
+        if (!currentTrack) return;
+        if (isCurrentPlayingThis) {
+            if (onTogglePlay) onTogglePlay();
+        } else {
+            if (onPlayTrack) {
+                onPlayTrack(currentTrack, playProgress > 0 ? playProgress : 0, true);
+            }
+        }
+    };
+
+    const handleDeckCue = () => {
+        if (!currentTrack) return;
+        const firstCue = activeCues[0] || {};
+        const cueMs = firstCue.pos_ms !== undefined ? firstCue.pos_ms : (downbeatMs || 0);
+        const cuePct = durMs > 0 ? (cueMs / durMs) : 0;
+        if (onPlayTrack) {
+            onPlayTrack(currentTrack, cuePct, false);
+        }
+    };
 
     // Asegura que activeCues SIEMPRE contenga los 8 Hot Cues (Pads 1 al 8)
     const activeCues = Array.from({ length: 8 }, (_, idx) => {
@@ -6025,93 +6859,191 @@ const HotCuesWorkspace = ({
                         {/* Bisel Metálico Superior */}
                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-djcyan-500/40 to-transparent"></div>
 
-                        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-                            {/* LADO IZQUIERDO: CARÁTULA COMPLETA CUADRADA INTACTA + BOTONES CUE & PLAY + METADATOS */}
-                            <div className="flex items-center gap-4 shrink-0">
-                                {/* Carátula Oficial Cuadrada Completa (Sin recorte superior) */}
-                                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-djzinc-950 border-2 border-djzinc-700 p-1 flex items-center justify-center shadow-2xl shrink-0 group">
-                                    <img 
-                                        src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
-                                        alt="Cover Art"
-                                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
-                                        className="w-full h-full object-cover rounded-lg"
-                                    />
-                                    <div className="absolute bottom-1.5 right-1.5 bg-black/85 backdrop-blur px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-djcyan-400 border border-djzinc-750">
-                                        {currentTrack.format || 'FLAC'}
+                        <div className="flex flex-col xl:flex-row items-center justify-between gap-6">
+                            {/* LADO IZQUIERDO: DECK DE TOCADISCOS DJ PROFESIONAL CON VINILO GIRATORIO DE ALTA RESOLUCIÓN */}
+                            <div className="flex flex-wrap sm:flex-nowrap items-center gap-5 shrink-0">
+                                {/* PLATO GIRADISCOS DJ DIRECT DRIVE CON VINILO 12" A GRAN TAMAÑO */}
+                                <div className="relative group shrink-0">
+                                    {/* Chasis Metálico Exterior del Plato con Bisel Estroboscópico */}
+                                    <div className="w-44 h-44 sm:w-52 sm:h-52 md:w-56 md:h-56 rounded-full bg-gradient-to-tr from-[#0a0a0f] via-[#161622] to-[#0c0c14] border-4 border-[#2c2c3e] shadow-[0_12px_40px_rgba(0,0,0,0.85),inset_0_2px_6px_rgba(255,255,255,0.18)] p-2.5 flex items-center justify-center relative select-none">
+                                        
+                                        {/* Puntos de Luz Estroboscópica del Borde Technics 1200 */}
+                                        <div className="absolute inset-1 rounded-full border border-dashed border-djzinc-650/40 pointer-events-none"></div>
+
+                                        {/* Disco de Vinilo 12" con Surcos Microacústicos, Giro Continuo en Play & Scratching Táctil */}
+                                        <div 
+                                            ref={vinylPlatterRef}
+                                            onMouseDown={handleVinylPointerDown}
+                                            onTouchStart={handleVinylPointerDown}
+                                            className="w-full h-full rounded-full relative overflow-hidden flex items-center justify-center shadow-2xl select-none cursor-grab active:cursor-grabbing"
+                                            title="Plato de Vinilo Direct-Drive: Arrastra en círculo para hacer scratch y mover la pista"
+                                            style={{
+                                                background: 'radial-gradient(circle, #22222a 0%, #121217 38%, #1a1a24 49%, #0d0d12 62%, #161620 78%, #08080c 100%)',
+                                                boxShadow: 'inset 0 0 18px rgba(0,0,0,0.95), 0 0 15px rgba(0,0,0,0.8)',
+                                                animation: isCurrentPlayingThis ? 'spinVinylContinuous 3s linear infinite' : 'none',
+                                                transform: `rotate(${vinylRotDeg}deg)`
+                                            }}
+                                        >
+                                            {/* Surcos de Pistas de Audio en Vinilo (Grooves) */}
+                                            <div 
+                                                className="absolute inset-0 rounded-full pointer-events-none opacity-40"
+                                                style={{
+                                                    background: 'repeating-radial-gradient(circle, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 3.5px)'
+                                                }}
+                                            ></div>
+
+                                            {/* Brillo Óptico de Refracción de Luz en el Vinilo */}
+                                            <div 
+                                                className="absolute inset-0 rounded-full pointer-events-none opacity-25"
+                                                style={{
+                                                    background: 'conic-gradient(from 45deg, transparent 0deg, rgba(255,255,255,0.12) 60deg, transparent 120deg, transparent 180deg, rgba(255,255,255,0.12) 240deg, transparent 300deg)'
+                                                }}
+                                            ></div>
+
+                                            {/* Galleta Central del Vinilo con Carátula Oficial a Gran Tamaño */}
+                                            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 rounded-full border-2 border-djzinc-500/80 shadow-[0_0_12px_rgba(0,0,0,0.8),inset_0_0_8px_rgba(0,0,0,0.6)] relative overflow-hidden flex items-center justify-center z-10 bg-black">
+                                                <img 
+                                                    src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
+                                                    alt="Vinyl Label Cover"
+                                                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                                    className="w-full h-full object-cover rounded-full"
+                                                />
+                                                
+                                                {/* Anillo Central y Agujero del Eje de Bronce (Spindle Hole) */}
+                                                <div className="absolute w-4 h-4 rounded-full bg-gradient-to-tr from-amber-700 via-amber-400 to-amber-200 border border-black shadow-[inset_0_1px_3px_rgba(0,0,0,0.9),0_0_4px_rgba(0,0,0,0.8)] z-20 flex items-center justify-center">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Brazo de Aguja DJ (Stylus Tone-Arm Indicator) */}
+                                        <div 
+                                            className={`absolute -top-1 -right-1 pointer-events-none transition-transform duration-700 origin-top-right ${
+                                                isCurrentPlayingThis ? 'rotate-[-6deg]' : 'rotate-[-28deg]'
+                                            }`}
+                                            title="Aguja DJ Fonocaptora"
+                                        >
+                                            <div className="relative w-12 h-16">
+                                                {/* Pivote del brazo */}
+                                                <div className="absolute top-0 right-0 w-4 h-4 rounded-full bg-[#323244] border border-djzinc-600 shadow-md"></div>
+                                                {/* Barra metálica */}
+                                                <div className="absolute top-3 right-1.5 w-0.5 h-12 bg-gradient-to-b from-gray-400 to-gray-200 rotate-[18deg]"></div>
+                                                {/* Cápsula fonocaptora / aguja */}
+                                                <div className={`absolute bottom-0 left-0 w-2.5 h-4 bg-djcyan-500 rounded-sm shadow-md border border-djcyan-300 ${isCurrentPlayingThis ? 'shadow-[0_0_8px_#06b6d4]' : ''}`}></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Badge de Velocidad 33 RPM & Motor Direct Drive */}
+                                        <div className="absolute bottom-1.5 left-2 bg-black/85 backdrop-blur px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-gray-300 border border-djzinc-750 flex items-center gap-1.5 shadow-lg">
+                                            <span className={`w-1.5 h-1.5 rounded-full ${isCurrentPlayingThis ? 'bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse' : 'bg-gray-500'}`}></span>
+                                            <span>33⅓ RPM</span>
+                                        </div>
+
+                                        {/* Formato del Archivo */}
+                                        <div className="absolute bottom-1.5 right-2 bg-black/85 backdrop-blur px-2 py-0.5 rounded-full text-[9px] font-mono font-black text-djcyan-400 border border-djzinc-750 shadow-lg">
+                                            {currentTrack.format || 'FLAC'}
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Botones Circulares Metálicos Oficiales: CUE (Ámbar) & PLAY/PAUSE (Verde Neón) */}
-                                <div className="flex flex-col gap-2.5 shrink-0">
-                                    {/* Botón Circular CUE (Pulsación Ámbar en Pausa / Sincro) */}
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const firstCue = activeCues[0] || {};
-                                            const cueMs = firstCue.pos_ms !== undefined ? firstCue.pos_ms : (downbeatMs || 0);
-                                            const cuePct = durMs > 0 ? (cueMs / durMs) : 0;
-                                            if (onPlayTrack) {
-                                                onPlayTrack(currentTrack, cuePct, false);
-                                            }
-                                        }}
-                                        className={`w-12 h-12 rounded-full border-2 flex items-center justify-center font-mono font-black text-xs cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
-                                            !isCurrentPlayingThis
-                                                ? 'bg-amber-500/25 border-amber-400 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.6)] animate-pulse'
-                                                : 'bg-[#181824] border-amber-700/60 text-amber-500 hover:border-amber-400 hover:text-amber-300'
-                                        }`}
-                                        title="CUE: Regresar al punto de inicio maestro"
-                                    >
-                                        <span className="tracking-wider">CUE</span>
-                                    </button>
+                                {/* BOTONES CUE & PLAY TÁCTILES + METADATOS COMPLETOS DEL DECK */}
+                                <div className="flex flex-col gap-3 min-w-0">
+                                    <div className="flex items-center gap-3">
+                                        {/* Botón Circular CUE (Pulsación Ámbar en Pausa / Sincro) */}
+                                        <button
+                                            type="button"
+                                            onClick={handleDeckCue}
+                                            className={`w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center font-mono font-black text-xs cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
+                                                !isCurrentPlayingThis
+                                                    ? 'bg-amber-500/25 border-amber-400 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.6)] animate-pulse'
+                                                    : 'bg-[#181824] border-amber-700/60 text-amber-500 hover:border-amber-400 hover:text-amber-300'
+                                            }`}
+                                            title="CUE: Regresar al punto de inicio maestro"
+                                        >
+                                            <span className="tracking-wider text-xs">CUE</span>
+                                        </button>
 
-                                    {/* Botón Circular PLAY/PAUSE (Verde Neón Brillante en Reproducción) */}
-                                    <button
-                                        type="button"
-                                        onClick={() => onTogglePlay && onTogglePlay()}
-                                        className={`w-12 h-12 rounded-full border-2 flex items-center justify-center text-sm cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
-                                            isCurrentPlayingThis
-                                                ? 'bg-emerald-500 border-white text-black font-black shadow-[0_0_22px_rgba(16,185,129,0.9)]'
-                                                : 'bg-emerald-950/40 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse'
-                                        }`}
-                                        title="PLAY/PAUSE: Iniciar o pausar reproducción"
-                                    >
-                                        {isCurrentPlayingThis ? (
-                                            <span className="text-black font-black text-sm">❚❚</span>
-                                        ) : (
-                                            <span className="text-emerald-400 font-black text-base ml-0.5">▶</span>
-                                        )}
-                                    </button>
+                                        {/* Botón Circular PLAY/PAUSE (Verde Neón Brillante en Reproducción) */}
+                                        <button
+                                            type="button"
+                                            onClick={handleDeckTogglePlay}
+                                            className={`w-12 h-12 rounded-full border-2 flex items-center justify-center cursor-pointer shadow-xl transition-all active:scale-90 select-none ${
+                                                isCurrentPlayingThis
+                                                    ? 'bg-emerald-500 border-white text-black font-black shadow-[0_0_25px_rgba(16,185,129,0.9)]'
+                                                    : 'bg-emerald-950/40 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse'
+                                            }`}
+                                            title="PLAY/PAUSE: Iniciar o pausar reproducción"
+                                        >
+                                            {isCurrentPlayingThis ? (
+                                                <span className="text-black font-black text-base">❚❚</span>
+                                            ) : (
+                                                <span className="text-emerald-400 font-black text-lg ml-0.5">▶</span>
+                                            )}
+                                        </button>
+
+                                        {/* Badge Master Deck */}
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-600/50 text-[10px] font-mono font-black uppercase tracking-wider w-fit">
+                                                DECK 1 • MASTER
+                                            </span>
+                                            <span className="text-[10px] font-mono text-gray-400">
+                                                {isCurrentPlayingThis ? '● REPRODUCIENDO' : '○ EN ESPERA'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Metadatos Rápidos del Deck */}
+                                    <div className="flex flex-col min-w-0 max-w-[240px]">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-mono text-djcyan-400 font-extrabold bg-[#0d0d16] px-2 py-0.5 rounded border border-djzinc-750">
+                                                {bpm.toFixed(1)} BPM
+                                            </span>
+                                            <span className="text-xs font-mono text-purple-300 font-extrabold bg-[#130d1e] px-2 py-0.5 rounded border border-purple-800/60">
+                                                {currentTrack.key || '8A'}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-sm sm:text-base font-black text-white truncate mt-1.5" title={currentTrack.title || currentTrack.t}>
+                                            {currentTrack.title || currentTrack.t || 'Track'}
+                                        </h3>
+                                        <p className="text-xs text-djcyan-400 font-bold truncate" title={currentTrack.artist || currentTrack.a}>
+                                            {currentTrack.artist || currentTrack.a || 'Artista'}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-1.5 text-xs font-mono font-bold">
+                                            <span className="text-djcyan-300 bg-djcyan-950/60 px-2 py-0.5 rounded border border-djcyan-800/40">
+                                                {formatMsToTime(playProgress * durMs)}
+                                            </span>
+                                            <span className="text-gray-500">/</span>
+                                            <span className="text-gray-400">
+                                                -{formatMsToTime(Math.max(0, durMs - (playProgress * durMs)))}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Metadatos Rápidos del Deck */}
-                                <div className="flex flex-col min-w-0 max-w-[210px]">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-600/50 text-[9px] font-mono font-black uppercase">
-                                            DECK 1 • MASTER
-                                        </span>
-                                        <span className="text-[10px] font-mono text-djcyan-400 font-bold">{bpm.toFixed(1)} BPM</span>
-                                        <span className="text-[10px] font-mono text-purple-400 font-bold">{currentTrack.key || '8A'}</span>
+                                {/* MÓDULO HARDWARE EQ DE 3 BANDAS (BASS, MID, TREBLE) */}
+                                <div className="flex flex-col items-center justify-between bg-[#080811] p-2 rounded-xl border border-djzinc-800 shadow-inner shrink-0">
+                                    <div className="flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1 text-[9px] font-mono font-bold">
+                                        <span className="text-gray-400">EQ 3-BAND</span>
+                                        <button
+                                            type="button"
+                                            onClick={handleResetEQ}
+                                            className="text-[8px] font-mono text-gray-400 hover:text-djcyan-400 px-1 py-0.5 rounded hover:bg-djzinc-800 transition-colors"
+                                            title="Resetear EQ a 0.0 dB"
+                                        >
+                                            FLAT
+                                        </button>
                                     </div>
-                                    <h3 className="text-sm font-black text-white truncate mt-1" title={currentTrack.title || currentTrack.t}>
-                                        {currentTrack.title || currentTrack.t || 'Track'}
-                                    </h3>
-                                    <p className="text-xs text-djcyan-400 font-semibold truncate" title={currentTrack.artist || currentTrack.a}>
-                                        {currentTrack.artist || currentTrack.a || 'Artista'}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1.5 text-xs font-mono font-bold">
-                                        <span className="text-djcyan-300">
-                                            {formatMsToTime(playProgress * durMs)}
-                                        </span>
-                                        <span className="text-gray-600">/</span>
-                                        <span className="text-gray-400">
-                                            -{formatMsToTime(Math.max(0, durMs - (playProgress * durMs)))}
-                                        </span>
+                                    <div className="flex items-center gap-2">
+                                        <RotaryKnob label="HI" value={eqTreble} onChange={(v) => handleEqChange('treble', v)} color="#06b6d4" />
+                                        <RotaryKnob label="MID" value={eqMid} onChange={(v) => handleEqChange('mid', v)} color="#f59e0b" />
+                                        <RotaryKnob label="LOW" value={eqBass} onChange={(v) => handleEqChange('bass', v)} color="#ef4444" />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* LADO DERECHO: PIONEER DDJ 8-PERFORMANCE PAD MATRIX CON DINÁMICA DE ENCENDIDO/APAGADO */}
-                            <div className="flex-1 min-w-0 max-w-2xl bg-[#09090f] p-3 rounded-xl border border-djzinc-800 shadow-inner">
+                            {/* LADO DERECHO: PIONEER DDJ 8-PADS + PITCH FADER HARDWARE */}
+                            <div className="flex-1 min-w-0 max-w-3xl flex items-stretch gap-3">
+                                <div className="flex-1 min-w-0 bg-[#09090f] p-3 rounded-xl border border-djzinc-800 shadow-inner">
                                 {/* Barra Superior del Pad Mode */}
                                 <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-2.5">
                                     <div className="flex items-center gap-2">
@@ -6122,7 +7054,7 @@ const HotCuesWorkspace = ({
                                             </span>
                                         </div>
                                         <span className="text-[10px] font-mono text-gray-400">
-                                            8 Multi-Color Performance Pads • Fraseo & Beatgrid
+                                            8 Multi-Color Performance Pads • Halos RGB 1 a 1
                                         </span>
                                     </div>
                                     <span className="text-[10px] font-mono text-djcyan-400 font-bold">
@@ -6130,7 +7062,7 @@ const HotCuesWorkspace = ({
                                     </span>
                                 </div>
 
-                                {/* Matriz 4x2 de los 8 Pads (Fila Superior 1-4 y Fila Inferior 5-8 100% VISIBLES) */}
+                                {/* Matriz 4x2 de los 8 Pads con Cascada de Ignición y Halos de Luz 1 a 1 */}
                                 <div className="grid grid-cols-4 gap-2">
                                     {activeCues.map((cue, idx) => {
                                         const padNum = cue.id !== undefined ? cue.id : (idx + 1);
@@ -6139,59 +7071,152 @@ const HotCuesWorkspace = ({
                                         const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : '#ef4444');
                                         const cueMs = cue.pos_ms !== undefined ? cue.pos_ms : parseTimeToMs(cue.time || '00:00.00');
                                         const barNum = Math.max(1, Math.floor((cueMs - downbeatMs) / barMs) + 1);
+                                        const staggerDelay = `${idx * 110}ms`;
 
                                         return (
                                             <div
-                                                key={idx}
+                                                key={`${currentTrack?.id || 'cue'}_pad_${idx}`}
                                                 onClick={() => {
                                                     setSelectedCueId(padNum);
                                                     handleJumpToCue(cue);
                                                 }}
-                                                className={`p-2 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group min-h-[66px] ${
+                                                className={`p-2 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group min-h-[68px] ${
                                                     isPlayingThisCue
-                                                        ? 'bg-[#181824] scale-[1.03] ring-2 ring-white/90 shadow-lg'
+                                                        ? 'bg-[#1a1a2c] scale-[1.04] ring-2 ring-white/90 shadow-xl'
                                                         : isSelected
-                                                            ? 'bg-[#14141f] border-white shadow-md'
-                                                            : 'bg-[#0f0f18] hover:bg-[#14141e] border-djzinc-800'
+                                                            ? 'bg-[#141420] border-white shadow-lg'
+                                                            : 'bg-[#0e0e16] hover:bg-[#141420] border-djzinc-800'
                                                 }`}
                                                 style={{
-                                                    borderColor: isPlayingThisCue ? color : (isSelected ? '#ffffff' : `${color}60`),
-                                                    boxShadow: isPlayingThisCue ? `0 0 20px ${color}90` : (isSelected ? '0 0 10px rgba(255,255,255,0.4)' : `0 0 6px ${color}30`)
+                                                    borderColor: isPlayingThisCue ? color : (isSelected ? '#ffffff' : `${color}75`),
+                                                    animation: 'padHaloIgnite 0.65s cubic-bezier(0.16, 1, 0.3, 1) both',
+                                                    animationDelay: staggerDelay,
+                                                    '--cue-color': color,
+                                                    '--cue-color-alpha': `${color}75`,
+                                                    '--cue-color-alpha2': `${color}35`,
+                                                    boxShadow: isPlayingThisCue 
+                                                        ? `0 0 28px ${color}, 0 0 10px #ffffff, inset 0 0 12px ${color}80` 
+                                                        : (isSelected ? `0 0 20px #ffffff, 0 0 10px ${color}` : `0 0 16px ${color}55, inset 0 0 8px ${color}20`)
                                                 }}
                                             >
                                                 {/* Halo Superior de Iluminación LED del Pad */}
                                                 <div 
-                                                    className={`absolute top-0 left-0 right-0 h-1 transition-all ${isPlayingThisCue ? 'opacity-100 animate-pulse' : 'opacity-60'}`}
+                                                    className={`absolute top-0 left-0 right-0 h-1.5 transition-all ${isPlayingThisCue ? 'opacity-100 shadow-[0_0_12px_currentColor]' : 'opacity-75'}`}
+                                                    style={{ backgroundColor: color, color: color }}
+                                                ></div>
+
+                                                {/* Resplandor ambiental de fondo del color del Cue */}
+                                                <div 
+                                                    className="absolute -top-4 -right-4 w-12 h-12 rounded-full pointer-events-none opacity-20 blur-md group-hover:opacity-40 transition-opacity"
                                                     style={{ backgroundColor: color }}
                                                 ></div>
 
-                                                <div className="flex items-center justify-between mt-0.5">
-                                                    <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${isPlayingThisCue ? 'bg-white text-black' : 'bg-black/60 text-white'}`}>
+                                                <div className="flex items-center justify-between mt-0.5 relative z-10">
+                                                    <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded shadow ${isPlayingThisCue ? 'bg-white text-black' : 'bg-black/70 text-white'}`}>
                                                         PAD {padNum}
                                                     </span>
                                                     <span 
-                                                        className={`w-2 h-2 rounded-full transition-all ${isPlayingThisCue ? 'scale-125 animate-ping' : ''}`}
-                                                        style={{ backgroundColor: color }}
+                                                        className={`w-2.5 h-2.5 rounded-full transition-all ${isPlayingThisCue ? 'scale-125 animate-ping' : 'shadow-[0_0_8px_currentColor]'}`}
+                                                        style={{ backgroundColor: color, color: color }}
                                                     ></span>
                                                 </div>
 
-                                                <div className="my-1 truncate">
+                                                <div className="my-1 truncate relative z-10">
                                                     <span className="text-[11px] font-bold text-gray-200 block truncate group-hover:text-white" title={cue.name || cue.short_name}>
                                                         {cue.name || cue.short_name || `Cue ${padNum}`}
                                                     </span>
                                                 </div>
 
-                                                <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-djzinc-800/80">
-                                                    <span className="font-bold text-djcyan-300">{cue.time || "00:00.00"}</span>
-                                                    <span className="text-gray-400 text-[9px]">Bar {barNum}</span>
+                                                <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-djzinc-800/80 relative z-10">
+                                                    <span className="font-extrabold text-djcyan-300">{cue.time || "00:00.00"}</span>
+                                                    <span className="text-gray-400 text-[9px] font-semibold">Bar {barNum}</span>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
                             </div>
+
+                            {/* PITCH FADER HARDWARE PROFESIONAL CON NUDGE Y REGULACIÓN LIVE */}
+                            <div className="flex flex-col items-center bg-[#07070c] p-2.5 rounded-xl border border-djzinc-800 shadow-inner shrink-0 justify-between w-28">
+                                <div className="flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1 text-[9px] font-mono font-bold">
+                                    <span className="text-gray-400">TEMPO</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPitchRange(r => r === 8 ? 16 : 8)}
+                                        className="text-[8px] px-1 rounded bg-[#151522] border border-djzinc-700 text-djcyan-400 hover:text-white cursor-pointer"
+                                        title="Alternar rango de pitch"
+                                    >
+                                        ±{pitchRange}%
+                                    </button>
+                                </div>
+
+                                {/* Pitch Offset & Live Dynamic BPM */}
+                                <div className="text-center my-0.5">
+                                    <div className="text-[11px] font-mono font-black text-djcyan-300 tracking-tight">
+                                        {pitchPercent > 0 ? `+${pitchPercent.toFixed(2)}` : pitchPercent.toFixed(2)}%
+                                    </div>
+                                    <div className="text-[10px] font-mono font-extrabold text-amber-400">
+                                        {(bpm * (1 + pitchPercent / 100)).toFixed(1)} <span className="text-[7.5px] text-gray-500 font-normal">BPM</span>
+                                    </div>
+                                </div>
+
+                                {/* Vertical Fader Track & Slider */}
+                                <div className="relative flex items-center justify-center my-1 h-24">
+                                    {/* Marcador Central 0% Detent */}
+                                    <div className="absolute w-5 h-0.5 bg-djcyan-500/60 top-1/2 -translate-y-1/2 pointer-events-none z-10 shadow-[0_0_6px_#06b6d4]"></div>
+                                    <input
+                                        type="range"
+                                        min={-pitchRange}
+                                        max={pitchRange}
+                                        step={0.05}
+                                        value={pitchPercent}
+                                        onChange={(e) => handlePitchChange(parseFloat(e.target.value))}
+                                        className="pitch-slider-vertical"
+                                        style={{
+                                            writingMode: 'vertical-lr',
+                                            direction: 'rtl',
+                                            WebkitAppearance: 'slider-vertical',
+                                            height: '95px',
+                                            width: '18px',
+                                            accentColor: '#06b6d4',
+                                            cursor: 'pointer'
+                                        }}
+                                        title="Pitch Fader: Ajusta velocidad y tempo dinámicamente"
+                                    />
+                                </div>
+
+                                {/* Micro-Nudge & Reset Buttons */}
+                                <div className="flex items-center gap-1 w-full pt-1.5 border-t border-djzinc-800/80 justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgePitch(-0.1)}
+                                        className="w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer"
+                                        title="Nudge BPM -"
+                                    >
+                                        -
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handlePitchChange(0)}
+                                        className="px-1.5 h-5 rounded bg-[#141420] hover:bg-djcyan-950 text-gray-400 hover:text-djcyan-300 font-mono font-bold text-[8px] flex items-center justify-center border border-djzinc-750 active:scale-95 shadow cursor-pointer"
+                                        title="Reset Tempo (0.0%)"
+                                    >
+                                        0%
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgePitch(+0.1)}
+                                        className="w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer"
+                                        title="Nudge BPM +"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
 
                     {/* BARRA DE HERRAMIENTAS DEL WAVEFORM (ZOOM HORIZONTAL, SNAP, BEATGRID, PLAYHEAD) */}
                     <div className="flex items-center justify-between bg-djzinc-950/80 border border-djzinc-850 px-3.5 py-2 rounded-lg">
@@ -6230,52 +7255,53 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => setSnapToGrid(prev => !prev)}
-                                className={`px-2.5 py-1 text-xs font-mono font-bold rounded border cursor-pointer transition-all flex items-center gap-1.5 ${
+                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow ${
                                     snapToGrid
-                                    ? 'bg-emerald-950 text-emerald-400 border-emerald-700/80 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-800 hover:text-white'
+                                    ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-500 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
                                 }`}
                                 title="Alinear marcadores automáticamente a los tiempos del compás"
                             >
-                                <span>{snapToGrid ? '✓' : '○'}</span>
-                                <span>{t('snap_to_grid') || 'Snap a Rejilla'}</span>
+                                <span>🧲</span>
+                                <span>{snapToGrid ? 'Snap: ON' : 'Snap: OFF'}</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => setShowBeatgrid(prev => !prev)}
-                                className={`px-2.5 py-1 text-xs font-mono font-bold rounded border cursor-pointer transition-all flex items-center gap-1.5 ${
+                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow ${
                                     showBeatgrid
-                                    ? 'bg-blue-950 text-blue-400 border-blue-700/80 shadow-[0_0_8px_rgba(59,130,246,0.3)]'
-                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-800 hover:text-white'
+                                    ? 'bg-blue-950 text-blue-300 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
+                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
                                 }`}
                                 title="Mostrar líneas de compás y frases de 16 compases"
                             >
-                                <span>{showBeatgrid ? '✓' : '○'}</span>
-                                <span>{t('show_beatgrid') || 'Ver Beatgrid'}</span>
+                                <span>🔲</span>
+                                <span>{showBeatgrid ? 'Beatgrid: ON' : 'Beatgrid: OFF'}</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => setFollowPlayhead(prev => !prev)}
-                                className={`px-2.5 py-1 text-xs font-mono font-bold rounded border cursor-pointer transition-all flex items-center gap-1.5 ${
+                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow ${
                                     followPlayhead
-                                    ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700/80 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
-                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-800 hover:text-white'
+                                    ? 'bg-purple-950 text-purple-300 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
                                 }`}
                                 title="Centrar automáticamente el scroll horizontal en la aguja de reproducción"
                             >
-                                <span>{followPlayhead ? '✓' : '○'}</span>
-                                <span>{t('follow_playhead') || 'Seguir Playhead'}</span>
+                                <span>🎯</span>
+                                <span>{followPlayhead ? 'Seguir: ON' : 'Seguir: OFF'}</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={handleAutoPhraseCues}
-                                className="px-3 py-1 bg-djcyan-500/20 hover:bg-djcyan-500 text-djcyan-300 hover:text-black font-mono font-bold text-xs rounded border border-djcyan-500/40 cursor-pointer shadow transition-all active:scale-95"
+                                className="px-3.5 py-1 bg-djcyan-500/20 hover:bg-djcyan-500 text-djcyan-300 hover:text-black font-mono font-extrabold text-xs rounded-lg border border-djcyan-500/50 cursor-pointer shadow-md transition-all active:scale-95 flex items-center gap-1.5"
                                 title="Calcular automáticamente 8 Hot Cues por frases musicales (16/32 compases)"
                             >
-                                {t('auto_phrase') || '⚡ Auto-Frasear 16/32b'}
+                                <span>⚡</span>
+                                <span>{t('auto_phrase') || 'Auto-Frasear 16/32b'}</span>
                             </button>
                         </div>
                     </div>
@@ -6339,11 +7365,11 @@ const HotCuesWorkspace = ({
 
                         {/* Botones de Micro-Ajuste Nudge */}
                         <div className="flex items-center gap-1 font-mono text-xs">
-                            <span className="text-[10px] text-gray-400 uppercase mr-1">Nudge:</span>
+                            <span className="text-[10px] text-gray-400 font-bold uppercase mr-1">Nudge:</span>
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(-barMs)}
-                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                className="px-2 py-1 bg-red-950/40 hover:bg-red-900/60 text-red-300 rounded border border-red-800/60 font-bold cursor-pointer shadow active:scale-95"
                                 title="Retroceder 1 compás (4 beats)"
                             >
                                 -1c
@@ -6351,7 +7377,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(-beatMs)}
-                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                className="px-2 py-1 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 rounded border border-amber-800/60 font-bold cursor-pointer shadow active:scale-95"
                                 title="Retroceder 1 beat (negra)"
                             >
                                 -1b
@@ -6359,7 +7385,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(-10)}
-                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 font-bold cursor-pointer shadow active:scale-95"
                                 title="Retroceder 10 milisegundos"
                             >
                                 -10ms
@@ -6367,7 +7393,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(10)}
-                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 font-bold cursor-pointer shadow active:scale-95"
                                 title="Avanzar 10 milisegundos"
                             >
                                 +10ms
@@ -6375,7 +7401,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(beatMs)}
-                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                className="px-2 py-1 bg-teal-950/40 hover:bg-teal-900/60 text-teal-300 rounded border border-teal-800/60 font-bold cursor-pointer shadow active:scale-95"
                                 title="Avanzar 1 beat (negra)"
                             >
                                 +1b
@@ -6383,7 +7409,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(barMs)}
-                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer shadow active:scale-95"
+                                className="px-2 py-1 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 rounded border border-emerald-800/60 font-bold cursor-pointer shadow active:scale-95"
                                 title="Avanzar 1 compás (4 beats)"
                             >
                                 +1c
@@ -6738,7 +7764,7 @@ const SpotifyWorkspace = ({
     lang = "es", 
     t = (k) => k 
 }) => {
-    const [spotifyUrl, setSpotifyUrl] = useState('https://open.spotify.com/intl-es/artist/23zJj2W0TQ0SvF4Fwo7mZK');
+    const [spotifyUrl, setSpotifyUrl] = useState('');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [destDir, setDestDir] = useState('/Users/admin/Music/mi musica');
     const [selectedFormat, setSelectedFormat] = useState('flac');
@@ -6748,8 +7774,11 @@ const SpotifyWorkspace = ({
     const [isAuditingFft, setIsAuditingFft] = useState(false);
     const [fftProgress, setFftProgress] = useState(0);
     const [fftMsg, setFftMsg] = useState('');
-    const [selectedId, setSelectedId] = useState("10");
+    const [selectedId, setSelectedId] = useState(null);
     const [spInspectorOpen, setSpInspectorOpen] = useState(false);
+    const [downloadSession, setDownloadSession] = useState({ downloaded: [], failed: [] });
+    const [isExportingXls, setIsExportingXls] = useState(false);
+    const [xlsToast, setXlsToast] = useState('');
 
     const [internalTracks, setInternalTracks] = useState([]);
     const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
@@ -6776,37 +7805,68 @@ const SpotifyWorkspace = ({
             };
             const notifyFftResult = (res) => {
                 if (res && res.id) {
-                    setTracks(prev => prev.map(t => {
-                        if (String(t.id) === String(res.id)) {
-                            return {
-                                ...t,
-                                cutoff_khz: res.cutoff_khz,
-                                corte: res.corte,
-                                status: res.status || res.estado || (res.cutoff_khz >= 20.0 ? 'FLAC VERDADERO' : 'FLAC FAKE'),
-                                estado: res.estado || res.status,
-                                calidad: res.calidad || (res.cutoff_khz >= 20.0 ? 'Alta' : 'Baja'),
-                                perdida: res.perdida || 'Sin Pérdida',
-                                perdida_pct: res.perdida_pct !== undefined ? res.perdida_pct : 0,
-                                compresion: res.compresion || '',
+                    setTracks(prev => {
+                        const trk = prev.find(t => String(t.id) === String(res.id));
+                        if (trk) {
+                            const completedItem = {
+                                id: res.id,
+                                title: trk.title || res.name || 'Desconocido',
+                                artist: trk.artist || res.artist || 'Desconocido',
+                                album: trk.album || '',
                                 format: res.format || (selectedFormat ? selectedFormat.toUpperCase() : 'FLAC'),
+                                cutoff_khz: res.cutoff_khz,
+                                calidad: res.calidad || 'Alta',
+                                status: res.status || res.estado || 'Lossless OK',
                                 sample_rate_khz: res.sample_rate_khz || 44.1,
                                 bitrate_kbps: res.bitrate_kbps || 0,
-                                bit_depth: res.bit_depth || 16,
-                                es_fake: Boolean(res.es_fake),
-                                badge_color: res.badge_color || (res.es_fake ? 'red' : 'green'),
-                                audit_msg: res.audit_msg || '',
-                                spectrum: res.spectrum || [],
-                                downloaded: true,
-                                local_path: res.path
+                                perdida: res.perdida || 'Sin Pérdida',
+                                path: res.path || trk.path || ''
                             };
+                            setDownloadSession(sPrev => ({
+                                ...sPrev,
+                                downloaded: [...sPrev.downloaded.filter(x => String(x.id) !== String(res.id)), completedItem]
+                            }));
                         }
-                        return t;
-                    }));
+                        // Eliminar la pista descargada de la lista activa para dejar solo pendientes / fallidas
+                        return prev.filter(t => String(t.id) !== String(res.id));
+                    });
                     if (res.audit_msg) {
                         setFftMsg(res.audit_msg);
                     }
                 }
             };
+
+            const notifyDownloadFailure = (errData) => {
+                if (errData && errData.id) {
+                    setTracks(prev => {
+                        const trk = prev.find(t => String(t.id) === String(errData.id));
+                        if (trk) {
+                            setDownloadSession(sPrev => ({
+                                ...sPrev,
+                                failed: [...sPrev.failed.filter(x => String(x.id) !== String(errData.id)), {
+                                    ...trk,
+                                    error: errData.error || 'Error en descarga',
+                                    title: errData.title || trk.title,
+                                    artist: errData.artist || trk.artist
+                                }]
+                            }));
+                        }
+                        return prev.map(t => {
+                            if (String(t.id) === String(errData.id)) {
+                                return {
+                                    ...t,
+                                    status: 'Fallo de Descarga',
+                                    badge_color: 'red',
+                                    download_error: errData.error,
+                                    selected: true
+                                };
+                            }
+                            return t;
+                        });
+                    });
+                }
+            };
+
             const finishBatch = (msg) => {
                 setIsDownloading(false);
                 setIsAuditingFft(false);
@@ -6824,31 +7884,86 @@ const SpotifyWorkspace = ({
             window.actualizar_progreso_descarga = updateDownload;
             window.actualizar_estado_fft = updateFft;
             window.notificar_resultado_auditoria = notifyFftResult;
+            window.notificar_fallo_descarga = notifyDownloadFailure;
             window.notificar_fin_lote = finishBatch;
 
             window.eel.expose(window.actualizar_estado_descarga, "actualizar_estado_descarga");
             window.eel.expose(window.actualizar_progreso_descarga, "actualizar_progreso_descarga");
             window.eel.expose(window.actualizar_estado_fft, "actualizar_estado_fft");
             window.eel.expose(window.notificar_resultado_auditoria, "notificar_resultado_auditoria");
+            window.eel.expose(window.notificar_fallo_descarga, "notificar_fallo_descarga");
             window.eel.expose(window.notificar_fin_lote, "notificar_fin_lote");
         }
-        handleAnalizar();
     }, []);
 
     const handleCancelarDescargas = async () => {
+        try {
+            fetch('/api/cancelar_procesos', { method: 'POST' }).catch(() => {});
+        } catch (e) {}
         if (window.eel && window.eel.cancelar_procesos_activos) {
             try {
                 await window.eel.cancelar_procesos_activos()();
             } catch (e) {
-                console.error("Error al cancelar descargas:", e);
+                console.error("Error al cancelar procesos:", e);
             }
         }
+        setIsAnalyzing(false);
         setIsDownloading(false);
         setIsAuditingFft(false);
         setDownloadProgress(0);
         setFftProgress(0);
-        setDownloadingMsg(lang === 'en' ? '[CANCELLED] Downloads and FFT audit stopped by user.' : '[CANCELADO] Descargas y auditoría FFT detenidas por el usuario.');
+        setDownloadingMsg(lang === 'en' ? '[CANCELLED] Process stopped by user.' : '[CANCELADO] Proceso detenido por el usuario.');
         setTimeout(() => setDownloadingMsg(''), 3000);
+    };
+
+    const handleDescargarReporteXLS = async () => {
+        if (downloadSession.downloaded.length === 0 && downloadSession.failed.length === 0) {
+            alert("No hay descargas ni fallos registrados en esta sesión todavía para exportar.");
+            return;
+        }
+        setIsExportingXls(true);
+        try {
+            let res = null;
+            if (window.eel && window.eel.exportar_reporte_descargas_xls) {
+                res = await window.eel.exportar_reporte_descargas_xls(downloadSession, destDir)();
+            } else {
+                const resp = await fetch('/api/descargar_reporte_xls', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ report_data: downloadSession, destino_dir: destDir })
+                });
+                res = await resp.json();
+            }
+
+            if (res && res.status === 'ok') {
+                if (res.b64) {
+                    const byteChars = atob(res.b64);
+                    const byteNums = new Array(byteChars.length);
+                    for (let i = 0; i < byteChars.length; i++) {
+                        byteNums[i] = byteChars.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNums);
+                    const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = res.filename || `Reporte_Descargas_Spotify_${Date.now()}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+                setXlsToast(`✓ Reporte Excel generado (${res.descargadas} descargadas, ${res.fallidas} fallidas) en: ${res.path}`);
+                setTimeout(() => setXlsToast(''), 6000);
+            } else {
+                alert(`Error al generar reporte: ${res?.msg || 'Error desconocido'}`);
+            }
+        } catch (err) {
+            console.error("Error exportando reporte XLS:", err);
+            alert(`Error de comunicación al generar XLS: ${err.message || err}`);
+        } finally {
+            setIsExportingXls(false);
+        }
     };
 
     const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
@@ -7051,33 +8166,62 @@ const SpotifyWorkspace = ({
         setDownloadProgress(20);
         setDownloadingMsg("[ANALIZANDO] Extrayendo metadatos y carátulas de alta resolución en Spotify...");
         try {
+            setDownloadProgress(45);
+            let res = null;
+
+            // 1. Intento primario vía Eel con timeout de seguridad (8 segundos)
             if (window.eel && window.eel.analizar_catalogo_spotify) {
-                setDownloadProgress(45);
-                const res = await window.eel.analizar_catalogo_spotify(spotifyUrl)();
-                setDownloadProgress(95);
-                if (res && res.tracks && res.tracks.length > 0) {
-                    const mapped = res.tracks.map((t, i) => ({ 
-                        ...t, 
-                        selected: i === 0,
-                        origin: t.origin || 'spotify',
-                        energy: t.energy || 80,
-                        danceability: t.danceability || 80
-                    }));
-                    setTracks(prev => {
-                        const existingTax = (prev || []).filter(item => item.origin === 'taxonomy');
-                        return [...existingTax, ...mapped];
-                    });
-                    setSelectedId(mapped[0].id);
-                    setDownloadProgress(100);
-                    setDownloadingMsg(`[LISTO] ${mapped.length} pistas cargadas con carátulas oficiales.`);
-                } else {
-                    setDownloadProgress(0);
-                    setDownloadingMsg("[AVISO] No se encontraron pistas para este enlace.");
+                try {
+                    const eelCall = window.eel.analizar_catalogo_spotify(spotifyUrl)();
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Eel timeout")), 8000)
+                    );
+                    res = await Promise.race([eelCall, timeoutPromise]);
+                } catch (eelErr) {
+                    console.warn("[SPOTIFY] Llamada Eel lenta o con error, usando fallback HTTP:", eelErr);
                 }
+            }
+
+            // 2. Fallback HTTP directo si Eel no respondió o falló
+            if (!res || !res.tracks) {
+                setDownloadProgress(65);
+                try {
+                    const resp = await fetch('/api/analizar_spotify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: spotifyUrl })
+                    });
+                    if (resp.ok) {
+                        res = await resp.json();
+                    }
+                } catch (httpErr) {
+                    console.error("[SPOTIFY] Fallback HTTP también falló:", httpErr);
+                }
+            }
+
+            setDownloadProgress(95);
+            if (res && res.tracks && res.tracks.length > 0) {
+                const mapped = res.tracks.map((t, i) => ({ 
+                    ...t, 
+                    selected: i === 0,
+                    origin: t.origin || 'spotify',
+                    energy: t.energy || 80,
+                    danceability: t.danceability || 80
+                }));
+                setTracks(prev => {
+                    const existingTax = (prev || []).filter(item => item.origin === 'taxonomy' || item.origin === 'audit_upgrade');
+                    return [...existingTax, ...mapped];
+                });
+                setSelectedId(mapped[0].id);
+                setDownloadProgress(100);
+                setDownloadingMsg(`[LISTO] ${mapped.length} pistas cargadas con carátulas oficiales.`);
+            } else {
+                setDownloadProgress(0);
+                setDownloadingMsg("[AVISO] No se encontraron pistas para este enlace o búsqueda.");
             }
         } catch (e) {
             setDownloadProgress(0);
-            setDownloadingMsg(`[ERROR] Fallo al analizar catálogo: ${e}`);
+            setDownloadingMsg(`[ERROR] Fallo al analizar catálogo: ${e.message || e}`);
         } finally {
             setTimeout(() => {
                 setIsAnalyzing(false);
@@ -7143,9 +8287,21 @@ const SpotifyWorkspace = ({
                         >
                             {isAnalyzing ? 'Buscando...' : '🔍 Buscar / Analizar'}
                         </button>
+
+                        {(isAnalyzing || isDownloading || isAuditingFft || downloadProgress > 0) && (
+                            <button 
+                                type="button"
+                                onClick={handleCancelarDescargas} 
+                                className="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 rounded font-bold font-mono text-xs flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 shrink-0"
+                                title="Detener y cancelar la búsqueda o descarga activa inmediatamente"
+                            >
+                                <span>✕</span>
+                                <span>{lang === 'en' ? 'Cancel Processes' : 'Cancelar Procesos'}</span>
+                            </button>
+                        )}
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                         {/* Botón de Descarga Seleccionadas en la Barra Superior */}
                         <button 
                             onClick={() => {
@@ -7164,6 +8320,40 @@ const SpotifyWorkspace = ({
                             }`}
                         >
                             <span>⬇ Descargar Seleccionadas ({selectedCount})</span>
+                        </button>
+
+                        {/* Botón Reintentar Pendientes si ya se descargaron algunas y quedan pendientes */}
+                        {tracks.length > 0 && (downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0) && (
+                            <button
+                                onClick={() => lanzarDescargaReal(tracks)}
+                                disabled={isDownloading}
+                                className="px-3 py-1.5 rounded text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                                title="Reintentar descarga de todas las pistas pendientes/fallidas restantes"
+                            >
+                                <span>🔄 Reintentar Pendientes ({tracks.length})</span>
+                            </button>
+                        )}
+
+                        {/* Botón de Descargar Reporte XLS */}
+                        <button
+                            onClick={handleDescargarReporteXLS}
+                            disabled={isExportingXls || (downloadSession.downloaded.length === 0 && downloadSession.failed.length === 0)}
+                            className={`px-3 py-1.5 rounded text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${
+                                (downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0)
+                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.35)]'
+                                    : 'bg-djzinc-900 text-gray-500 border border-djzinc-800 cursor-not-allowed'
+                            }`}
+                            title="Descargar informe Excel con las pistas descargadas con certificación FFT y las que fallaron"
+                        >
+                            <span>📊</span>
+                            <span>
+                                {isExportingXls 
+                                    ? 'Generando XLS...' 
+                                    : (downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0)
+                                        ? `Reporte XLS (${downloadSession.downloaded.length}✓ | ${downloadSession.failed.length}✕)`
+                                        : 'Reporte XLS'
+                                }
+                            </span>
                         </button>
 
                         <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
@@ -7187,10 +8377,21 @@ const SpotifyWorkspace = ({
                             title={spInspectorOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}
                         >
                             <span>◨</span>
-                            <span>{spInspectorOpen ? "✕ Inspector" : "Inspector"}</span>
+                            <span>{t('btn_inspector') || 'Inspector'}</span>
                         </button>
                     </div>
                 </div>
+
+                {/* Banner de Confirmación Descarga Reporte XLS */}
+                {xlsToast && (
+                    <div className="mx-4 mt-2 p-2.5 bg-emerald-950/80 border border-emerald-500/60 rounded-lg text-emerald-300 text-xs font-mono flex items-center justify-between shadow-lg animate-fadeIn">
+                        <div className="flex items-center gap-2">
+                            <span>📊</span>
+                            <span>{xlsToast}</span>
+                        </div>
+                        <button onClick={() => setXlsToast('')} className="text-emerald-400 hover:text-white px-2 py-0.5 rounded bg-emerald-900/60 border border-emerald-700 text-[10px] cursor-pointer">✕</button>
+                    </div>
+                )}
 
                 {/* Franja de Estado y Barras de Progreso Dinámicas (Descarga + Auditoría FFT Independientes) */}
                 <div className="px-4 py-2.5 bg-[#09090c] border-b border-djzinc-850 flex flex-col gap-2 shrink-0">
@@ -7198,20 +8399,21 @@ const SpotifyWorkspace = ({
                     <div className="flex flex-col gap-1.5">
                         <div className="flex justify-between items-center text-xs font-mono">
                             <span className="text-djcyan-400 font-semibold flex items-center gap-1.5 truncate">
-                                <span className={`w-2 h-2 rounded-full ${isAnalyzing || isDownloading ? 'bg-djcyan-400 animate-pulse' : 'bg-djgreen-400'}`}></span>
-                                <span>{downloadingMsg || `[LISTO] Introduce un enlace de Spotify o pulsa Analizar Enlace.`}</span>
+                                <span className={`w-2 h-2 rounded-full ${isAnalyzing || isDownloading ? 'bg-djcyan-400 animate-pulse' : tracks.length > 0 ? 'bg-djgreen-400' : 'bg-gray-500'}`}></span>
+                                <span>{downloadingMsg || (tracks.length === 0 ? '[STANDBY] Listo para buscar o importar pistas desde Auditoría DJ.' : `[LISTO] ${tracks.length} pista(s) en catálogo.`)}</span>
                             </span>
                             <div className="flex items-center gap-3">
                                 {(isDownloading || isAnalyzing || downloadProgress > 0) && (
                                     <span className="text-djcyan-300 font-mono font-bold text-xs">{downloadProgress}%</span>
                                 )}
-                                {(isDownloading || isAuditingFft) && (
+                                {(isAnalyzing || isDownloading || isAuditingFft || downloadProgress > 0) && (
                                     <button
                                         onClick={handleCancelarDescargas}
                                         className="px-2 py-0.5 rounded bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 text-[10px] font-mono font-bold cursor-pointer transition-colors shadow flex items-center gap-1"
-                                        title="Cancelar descarga y procesos activos"
+                                        title="Cancelar búsqueda, descarga y procesos activos"
                                     >
-                                        ✕ {t('btn_cancel') || 'Cancelar'}
+                                        <span>✕</span>
+                                        <span>{t('btn_cancel') || 'Cancelar'}</span>
                                     </button>
                                 )}
                                 <span className="text-gray-500 text-[11px] font-bold">{tracks.length} Pistas detectadas</span>
@@ -7252,6 +8454,21 @@ const SpotifyWorkspace = ({
                         </div>
                     )}
                 </div>
+
+                {/* Banner de Pistas Importadas para Reemplazo HD */}
+                {tracks.some(t => t.origin === 'audit_upgrade') && (
+                    <div className="px-4 py-2 bg-gradient-to-r from-amber-950/70 via-emerald-950/40 to-djzinc-950 border-b border-amber-600/40 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                            <span className="text-amber-400 font-bold text-sm">🔄</span>
+                            <span className="text-gray-200">
+                                <strong className="text-amber-300 font-semibold">{tracks.filter(t => t.origin === 'audit_upgrade').length} reemplazo(s) HD</strong> importado(s) desde Auditoría para sustituir pistas de baja calidad.
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-gray-400 font-mono">Formato seleccionado: <strong className="text-djcyan-400 font-bold">{selectedFormat.toUpperCase()}</strong></span>
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex-1 overflow-auto bg-[#08080b]">
                     <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
@@ -7310,6 +8527,7 @@ const SpotifyWorkspace = ({
                                         className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
                                     >
                                         <option value="ALL">Todos</option>
+                                        <option value="audit_upgrade">🔄 Reemplazo HD</option>
                                         <option value="taxonomy">🏷️ Taxonomía</option>
                                         <option value="spotify">🎧 Spotify</option>
                                         <option value="shazam">⚡ Shazam</option>
@@ -7387,8 +8605,28 @@ const SpotifyWorkspace = ({
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracksFiltradosSp.length === 0 && !isAnalyzing && (
                                 <tr>
-                                    <td colSpan="16" className="py-12 text-center text-gray-500 font-mono text-xs">
-                                        {tracks.length === 0 ? 'Pega una URL de Spotify o escribe una búsqueda por texto arriba y haz clic en "Buscar / Analizar".' : 'No hay pistas que coincidan con los filtros aplicados.'}
+                                    <td colSpan="16" className="py-16 text-center select-none">
+                                        {tracks.length === 0 ? (
+                                            <div className="max-w-xl mx-auto flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-[#0c0c12] border border-djzinc-800 shadow-xl">
+                                                <div className="w-14 h-14 rounded-full bg-emerald-950/70 border border-emerald-500/60 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                                                    <Icons.Spotify />
+                                                </div>
+                                                <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">
+                                                    Spotify Ingest • Modo Standby
+                                                </h3>
+                                                <p className="text-xs text-gray-400 max-w-lg w-full text-center leading-relaxed break-words px-2">
+                                                    Escribe una búsqueda (artista, tema o género) o pega un enlace de Spotify en la barra superior. También puedes importar pistas de baja calidad desde <strong className="text-amber-400 font-semibold">Auditoría & DSP</strong> usando el botón "Buscar Reemplazos Spotify".
+                                                </p>
+                                                <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-gray-500">
+                                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                                    <span>Descargas Lossless FLAC / WAV • Certificación Espectral FFT</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="py-8 text-gray-500 font-mono text-xs">
+                                                No hay pistas que coincidan con los filtros aplicados.
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             )}
@@ -7397,6 +8635,7 @@ const SpotifyWorkspace = ({
                                 const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
                                 const isFake = Boolean(row.es_fake || String(row.status || '').includes('Fake'));
                                 const isTaxonomy = row.origin === 'taxonomy';
+                                const isAuditUpgrade = row.origin === 'audit_upgrade';
                                 const isPendingTaxonomy = isTaxonomy && !row.downloaded;
 
                                 return (
@@ -7405,8 +8644,8 @@ const SpotifyWorkspace = ({
                                         onClick={() => { setSelectedId(row.id); setSpInspectorOpen(true); }} 
                                         className={`cursor-pointer select-none transition-colors ${
                                             isSelectedRow 
-                                                ? (isPendingTaxonomy ? 'bg-emerald-950/40 border-l-2 border-emerald-400' : 'bg-djcyan-950/35 border-l-2 border-djcyan-400') 
-                                                : (isPendingTaxonomy ? 'bg-emerald-950/15 border-l-2 border-emerald-500/50 hover:bg-emerald-950/30' : 'hover:bg-[#101015]')
+                                                ? (isAuditUpgrade ? 'bg-amber-950/50 border-l-2 border-amber-400' : isTaxonomy ? 'bg-emerald-950/50 border-l-2 border-emerald-400' : 'bg-djcyan-950/35 border-l-2 border-djcyan-400') 
+                                                : (isAuditUpgrade ? 'bg-amber-950/20 border-l-2 border-amber-500/60 hover:bg-amber-950/40' : isTaxonomy ? 'bg-emerald-950/20 border-l-2 border-emerald-500/60 hover:bg-emerald-950/40' : 'hover:bg-[#101015]')
                                         }`}
                                     >
                                         <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={row.selected} onChange={() => handleToggleRow(row.id)} className="accent-djcyan-500 cursor-pointer" /></td>
@@ -7420,19 +8659,32 @@ const SpotifyWorkspace = ({
                                                 <img src={getValidCover(row.cover)} alt="Cover" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} className="w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" />
                                                 <div className="flex flex-col min-w-0">
                                                     <div className="flex items-center gap-1.5 min-w-0">
-                                                        {isPendingTaxonomy && (
-                                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" title="Pendiente de descarga desde Taxonomía"></span>
+                                                        {isAuditUpgrade && (
+                                                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" title="Pista de reemplazo HD para audio de baja calidad"></span>
                                                         )}
-                                                        <span className={`text-xs truncate max-w-sm ${isPendingTaxonomy ? 'font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]' : 'font-semibold text-djcyan-400'}`} title={row.title}>
+                                                        {isTaxonomy && (
+                                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" title="Pista importada desde Taxonomía"></span>
+                                                        )}
+                                                        <span className={`text-xs truncate max-w-sm ${isAuditUpgrade ? 'font-bold text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.35)]' : isTaxonomy ? 'font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]' : 'font-semibold text-djcyan-400'}`} title={row.title}>
                                                             {row.title}
                                                         </span>
-                                                        {isPendingTaxonomy && (
+                                                        {isAuditUpgrade && (
+                                                            <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-900/90 text-amber-200 border border-amber-600/80 shrink-0">
+                                                                REEMPLAZO HD
+                                                            </span>
+                                                        )}
+                                                        {isTaxonomy && (
                                                             <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-600/70 shrink-0">
                                                                 TAXONOMÍA
                                                             </span>
                                                         )}
                                                     </div>
                                                     <span className="text-[10px] text-gray-500 font-mono truncate max-w-sm" title={row.album}>{row.album}</span>
+                                                    {row.reemplazo_de && (
+                                                        <span className="text-[9px] text-amber-400/90 font-mono truncate max-w-sm flex items-center gap-1">
+                                                            <span>Sustituye a:</span> <span className="underline decoration-amber-500/50">{row.reemplazo_de}</span>
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
@@ -7440,7 +8692,12 @@ const SpotifyWorkspace = ({
 
                                         {/* ORIGEN */}
                                         <td className="py-2 px-2.5 text-center">
-                                            {row.origin === 'taxonomy' ? (
+                                            {row.origin === 'audit_upgrade' ? (
+                                                <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-600/80 shadow-[0_0_8px_rgba(245,158,11,0.35)] inline-flex items-center gap-1">
+                                                    <span>🔄</span>
+                                                    <span>Reemplazo HD</span>
+                                                </span>
+                                            ) : row.origin === 'taxonomy' ? (
                                                 <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/80 shadow-[0_0_8px_rgba(16,185,129,0.35)] inline-flex items-center gap-1">
                                                     <span>🏷️</span>
                                                     <span>Taxonomía</span>
@@ -7559,6 +8816,19 @@ const SpotifyWorkspace = ({
                                                             {row.status || 'FLAC VERDADERO'}
                                                         </span>
                                                     )
+                                                ) : row.download_error ? (
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <span className="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-rose-950 text-rose-300 border border-rose-800" title={row.download_error}>
+                                                            ⚠️ Error
+                                                        </span>
+                                                        <button 
+                                                            onClick={() => lanzarDescargaReal([row])} 
+                                                            className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black cursor-pointer shadow"
+                                                            title="Reintentar descarga de esta pista"
+                                                        >
+                                                            Reintentar
+                                                        </button>
+                                                    </div>
                                                 ) : (
                                                     <button 
                                                         onClick={() => lanzarDescargaReal([row])} 
@@ -7706,7 +8976,8 @@ const TaxonomyWorkspace = ({
     onTogglePlay = () => {},
     onSelectTrackForCues,
     onSendToSpotify,
-    onAddTrackToSpotify
+    onAddTrackToSpotify,
+    onAddTracksToSpotify
 }) => {
     // Sub-pestaña activa: 'search' (Buscador Cuenca Music IA) o 'routing' (Serato Crates)
     const [activeSubView, setActiveSubView] = useState('search');
@@ -7717,6 +8988,9 @@ const TaxonomyWorkspace = ({
     const [onlineResults, setOnlineResults] = useState([]);
     const [searchLocalResults, setSearchLocalResults] = useState([]);
     const [hasExecutedSearch, setHasExecutedSearch] = useState(false);
+
+    // Selección múltiple para enviar a descargas
+    const [selectedTaxIds, setSelectedTaxIds] = useState(new Set());
 
     // Estado de Tabla & Filtros de Cabecera en Taxonomía
     const [displayMode, setDisplayMode] = useState('table'); // 'table' o 'grid'
@@ -7750,6 +9024,34 @@ const TaxonomyWorkspace = ({
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [feedbackMsg, setFeedbackMsg] = useState('');
 
+    // Estado del Menú de Añadir Tags y Filtros Manuales
+    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState(false);
+    const [activeTagTab, setActiveTagTab] = useState('bpm');
+
+    // Manejo de eliminación de tokens interpretados
+    const handleRemoveToken = (tok) => {
+        if (!tok) return;
+        let newQuery = aiQuery;
+        const matchStr = tok.rawMatch || tok.label;
+        if (matchStr) {
+            newQuery = newQuery.replace(new RegExp(`\\b${matchStr.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i'), '');
+            if (newQuery === aiQuery) {
+                newQuery = newQuery.replace(new RegExp(matchStr.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'), 'i'), '');
+            }
+        }
+        newQuery = newQuery.replace(/\s+/g, ' ').trim();
+        setAiQuery(newQuery);
+        handleEjecutarBusqueda(newQuery);
+    };
+
+    // Manejo de incorporación de tags directos
+    const handleAddTagToQuery = (tagStr) => {
+        const newQuery = (aiQuery ? `${aiQuery} ${tagStr}` : tagStr).trim();
+        setAiQuery(newQuery);
+        setIsAddTagMenuOpen(false);
+        handleEjecutarBusqueda(newQuery);
+    };
+
     // Estado de Ruteo Físico y Exportación Serato / Rekordbox
     const [rutaBase, setRutaBase] = useState('/Users/admin/Music/mi musica');
     const [modo, setModo] = useState('copy'); // 'copy' o 'move'
@@ -7767,7 +9069,7 @@ const TaxonomyWorkspace = ({
     }, []);
 
     // Parseo en tiempo real de la consulta con el motor de IA DJ
-    const parsedQuery = useMemo(() => parseCuencaDJQuery(aiQuery), [aiQuery]);
+    const parsedQuery = useMemo(() => parseAIDJQuery(aiQuery), [aiQuery]);
 
     // Combinación de pistas locales de auditoría + catálogo curado de pool
     const localTracks = useMemo(() => {
@@ -8093,30 +9395,116 @@ const TaxonomyWorkspace = ({
         return scored;
     }, [allPoolTracks, aiQuery, parsedQuery, selectedGenreFilter, selectedSubgenreFilterUI, selectedVersionFilter, selectedBpmFilter, selectedKeyFilter, selectedMoodFilter, taxFilterSearch, taxFilterGenre, taxFilterOrigin, taxFilterEnergy, taxFilterDance, taxSortField, taxSortDir]);
 
-    // Añadir a Cola de Descargas (Spotify Ingest)
+    // Gestión de Selección Múltiple en Tabla de Taxonomía
+    const handleToggleTaxRow = (id) => {
+        setSelectedTaxIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const allTaxSelected = searchResults.length > 0 && searchResults.every(t => selectedTaxIds.has(t.id));
+
+    const handleToggleSelectAllTax = () => {
+        if (allTaxSelected) {
+            setSelectedTaxIds(new Set());
+        } else {
+            setSelectedTaxIds(new Set(searchResults.map(t => t.id)));
+        }
+    };
+
+    // Añadir a Cola de Descargas (Spotify Ingest) - Individual
     const handleAnadirADescargas = (trk) => {
         if (!trk) return;
-        if (onAddTrackToSpotify) {
-            onAddTrackToSpotify(trk, 'taxonomy');
-            setFeedbackMsg(`✓ "${trk.displayTitle}" añadido a Descargas (Spotify Ingest). Redirigiendo a descargas...`);
+        const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
+        if (addFn) {
+            addFn([trk], 'taxonomy');
+            setFeedbackMsg(`✓ "${trk.displayTitle || trk.title}" añadido a Descargas (Spotify Ingest). Redirigiendo a descargas...`);
         } else if (onSendToSpotify) {
-            onSendToSpotify(trk.displayTitle);
+            onSendToSpotify(trk.displayTitle || trk.title);
         } else if (onNavigateTab) {
             onNavigateTab('spotify');
         }
     };
 
-    // Manejador de pre-escucha / Cargar en Deck 1
-    const handleCargarEnDeck = (trk) => {
+    // Añadir Seleccionadas a Cola de Descargas (Spotify Ingest)
+    const handleAnadirSeleccionadasADescargas = () => {
+        const seleccionadas = searchResults.filter(t => selectedTaxIds.has(t.id));
+        if (seleccionadas.length === 0) return;
+        const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
+        if (addFn) {
+            addFn(seleccionadas, 'taxonomy');
+            setFeedbackMsg(`✓ ${seleccionadas.length} pista(s) seleccionadas añadidas a Descargas (Spotify Ingest). Redirigiendo a descargas...`);
+        } else if (onNavigateTab) {
+            onNavigateTab('spotify');
+        }
+    };
+
+    // Añadir Todas las pistas del listado actual a Cola de Descargas
+    const handleAnadirTodasADescargas = () => {
+        if (searchResults.length === 0) return;
+        const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
+        if (addFn) {
+            addFn(searchResults, 'taxonomy');
+            setFeedbackMsg(`✓ ${searchResults.length} pista(s) añadidas a Descargas (Spotify Ingest). Redirigiendo a descargas...`);
+        } else if (onNavigateTab) {
+            onNavigateTab('spotify');
+        }
+    };
+
+    // Manejador de pre-escucha / Cargar en Deck 1 con resolución dinámica de streaming
+    const handleCargarEnDeck = async (trk) => {
         if (!trk) return;
-        const isCurrent = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || (nowPlayingTrack.path && nowPlayingTrack.path === trk.path) || nowPlayingTrack.title === trk.displayTitle);
+        const isCurrent = isPlaying && nowPlayingTrack && (
+            String(nowPlayingTrack.id) === String(trk.id) || 
+            (nowPlayingTrack.path && nowPlayingTrack.path === trk.path) || 
+            (nowPlayingTrack.title && (nowPlayingTrack.title === trk.displayTitle || nowPlayingTrack.title === trk.title))
+        );
         if (isCurrent && onTogglePlay) {
             onTogglePlay();
             return;
         }
+
+        let streamUrl = trk.preview_url || trk.previewUrl || (trk.path && (trk.path.startsWith('http://') || trk.path.startsWith('https://')) ? trk.path : "");
+        let coverHd = trk.displayCover || trk.cover;
+
+        // Si es una pista de catálogo online o no tiene ruta local ni URL directa, resolver stream
+        if (!streamUrl && !trk.path && !trk.f && window.eel && window.eel.resolver_stream_preescucha) {
+            try {
+                setFeedbackMsg(`[PRE-ESCUCHA] Resolviendo audio para: ${trk.displayArtist || trk.artist} - ${trk.displayTitle || trk.title}...`);
+                const res = await window.eel.resolver_stream_preescucha(trk.displayTitle || trk.title, trk.displayArtist || trk.artist)();
+                if (res && res.stream_url) {
+                    streamUrl = res.stream_url;
+                    if (res.cover) coverHd = res.cover;
+                }
+            } catch (err) {
+                console.warn("Fallo al resolver preescucha en taxonomía:", err);
+            }
+        }
+
+        const trackToPlay = {
+            ...trk,
+            id: trk.id || `tax_${Date.now()}`,
+            t: trk.displayTitle || trk.title || trk.t || 'Audio Track',
+            title: trk.displayTitle || trk.title || trk.t || 'Audio Track',
+            a: trk.displayArtist || trk.artist || trk.a || 'Artista',
+            artist: trk.displayArtist || trk.artist || trk.a || 'Artista',
+            album: trk.displayAlbum || trk.album || '',
+            b: trk.displayBpm || trk.bpm || trk.b || 128,
+            bpm: trk.displayBpm || trk.bpm || trk.b || 128,
+            k: trk.displayKey || trk.key || trk.k || '8A',
+            key: trk.displayKey || trk.key || trk.k || '8A',
+            cover: coverHd,
+            path: trk.path || trk.f || streamUrl || "",
+            f: trk.path || trk.f || "",
+            preview_url: streamUrl
+        };
+
         if (onPlayTrack) {
-            onPlayTrack(trk, 0, true);
-            setFeedbackMsg(`✓ "${trk.displayTitle}" cargado y reproduciendo en Deck 1`);
+            onPlayTrack(trackToPlay, 0, true);
+            setFeedbackMsg(`✓ "${trackToPlay.title}" reproduciendo en Deck 1`);
             setTimeout(() => setFeedbackMsg(''), 3500);
         }
     };
@@ -8333,12 +9721,12 @@ const TaxonomyWorkspace = ({
                                 Centro de Taxonomía Musical & Crates
                             </h2>
                             <p className="text-gray-400 text-xs">
-                                Buscador inteligente en lenguaje natural inspirado en Cuenca Music y ruteo jerárquico a crates de Serato / Rekordbox.
+                                Buscador inteligente en lenguaje natural y ruteo jerárquico a crates de Serato / Rekordbox.
                             </p>
                         </div>
                     </div>
 
-                    {/* SELECTOR DE MODO: BUSCADOR IA CUENCA VS RUTEO CRATES */}
+                    {/* SELECTOR DE MODO: BUSCADOR IA VS RUTEO CRATES */}
                     <div className="inline-flex rounded-xl border border-djzinc-700/80 p-1 bg-djzinc-900/90 shadow">
                         <button
                             type="button"
@@ -8349,7 +9737,7 @@ const TaxonomyWorkspace = ({
                                     : 'text-gray-400 hover:text-white'
                             }`}
                         >
-                            <span>🔍 Buscador IA Cuenca Style</span>
+                            <span>🔍 Buscador IA</span>
                             <span className="text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black">
                                 {searchResults.length}
                             </span>
@@ -8494,26 +9882,159 @@ const TaxonomyWorkspace = ({
                             </button>
                         </div>
 
-                        {/* DESGLOSE EN TIEMPO REAL DE TOKENS INTERPRETADOS POR LA IA */}
-                        {parsedQuery.tokens && parsedQuery.tokens.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                                <span className="text-[10px] font-mono text-gray-400 mr-1">IA Interpretó:</span>
-                                {parsedQuery.tokens.map((tok, idx) => (
-                                    <span
-                                        key={idx}
-                                        className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-djcyan-950/80 text-djcyan-300 border border-djcyan-600/70 shadow-sm flex items-center gap-1"
-                                    >
-                                        <span>✓</span>
-                                        <span>{tok.label}</span>
-                                    </span>
-                                ))}
-                            </div>
-                        )}
+                        {/* DESGLOSE EN TIEMPO REAL DE TOKENS INTERPRETADOS POR LA IA + BOTÓN AÑADIR TAG */}
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                            {parsedQuery.tokens && parsedQuery.tokens.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-[10px] font-mono text-gray-400 mr-0.5">Filtros Activos:</span>
+                                    {parsedQuery.tokens.map((tok, idx) => (
+                                        <span
+                                            key={idx}
+                                            className="text-[10.5px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-djcyan-950/90 text-djcyan-300 border border-djcyan-600/80 shadow-sm flex items-center gap-1.5 group"
+                                        >
+                                            <span>✓</span>
+                                            <span>{tok.label}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveToken(tok)}
+                                                className="w-3.5 h-3.5 rounded-full hover:bg-red-500 hover:text-white text-djcyan-400 flex items-center justify-center text-[9px] font-black cursor-pointer transition-colors ml-0.5"
+                                                title={`Eliminar filtro ${tok.label}`}
+                                            >
+                                                ✕
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
 
-                        {/* CHIPS DE PROMPT RÁPIDO (INSPIRADOS EN CUENCA MUSIC) */}
+                            {/* BOTÓN DESPLEGABLE: + AÑADIR TAG / FILTRO */}
+                            <div className="relative inline-block">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddTagMenuOpen(prev => !prev)}
+                                    className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg bg-[#12121f] hover:bg-djcyan-950 text-djcyan-400 hover:text-djcyan-300 border border-djcyan-700/60 shadow flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                                    title="Añadir manualmente filtros de BPM, Tono, Género, Versión o Mood"
+                                >
+                                    <span className="font-black text-xs">+</span>
+                                    <span>Añadir Tag</span>
+                                    <span className="text-[8px] text-gray-500">{isAddTagMenuOpen ? '▲' : '▼'}</span>
+                                </button>
+
+                                {isAddTagMenuOpen && (
+                                    <div className="absolute top-full left-0 mt-1.5 w-84 bg-[#0a0a14] border-2 border-djcyan-500/70 rounded-xl p-3 shadow-2xl z-50 animate-fadeIn text-xs font-mono">
+                                        <div className="flex items-center justify-between border-b border-djzinc-800 pb-1.5 mb-2">
+                                            <span className="text-[10px] font-black text-white uppercase tracking-wider">Añadir Tag a la Búsqueda</span>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setIsAddTagMenuOpen(false)}
+                                                className="text-gray-400 hover:text-white text-xs font-bold cursor-pointer"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+
+                                        {/* Pestañas de Categoría */}
+                                        <div className="flex items-center gap-1 mb-2 border-b border-djzinc-800/80 pb-1">
+                                            {[
+                                                { id: 'bpm', label: 'BPM' },
+                                                { id: 'key', label: 'Key' },
+                                                { id: 'genre', label: 'Género' },
+                                                { id: 'version', label: 'Versión' },
+                                                { id: 'mood', label: 'Mood' }
+                                            ].map(cat => (
+                                                <button
+                                                    key={cat.id}
+                                                    type="button"
+                                                    onClick={() => setActiveTagTab(cat.id)}
+                                                    className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${
+                                                        activeTagTab === cat.id
+                                                            ? 'bg-djcyan-500 text-black shadow'
+                                                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
+                                                    }`}
+                                                >
+                                                    {cat.label}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Chips por Categoría */}
+                                        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto custom-scrollbar p-0.5">
+                                            {activeTagTab === 'bpm' && [
+                                                '120 bpm', '124 bpm', '126 bpm', '128 bpm', '130 bpm', '132 bpm', '138 bpm', '140 bpm', '145 bpm', '150 bpm', '160 bpm', '174 bpm'
+                                            ].map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    type="button"
+                                                    onClick={() => handleAddTagToQuery(tag)}
+                                                    className="px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+                                                >
+                                                    + {tag}
+                                                </button>
+                                            ))}
+
+                                            {activeTagTab === 'key' && [
+                                                '1A', '2A', '3A', '4A', '5A', '6A', '7A', '8A', '9A', '10A', '11A', '12A',
+                                                '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B', '9B', '10B', '11B', '12B'
+                                            ].map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    type="button"
+                                                    onClick={() => handleAddTagToQuery(tag)}
+                                                    className="px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+                                                >
+                                                    + {tag}
+                                                </button>
+                                            ))}
+
+                                            {activeTagTab === 'genre' && [
+                                                'Tech House', 'Afro House', 'Melodic Techno', 'Progressive House', 'Deep House',
+                                                'Minimal / Deep Tech', 'Hard Techno', 'Psy-Trance', 'Drum & Bass', 'Reggaetón', 'Latin House'
+                                            ].map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    type="button"
+                                                    onClick={() => handleAddTagToQuery(tag)}
+                                                    className="px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+                                                >
+                                                    + {tag}
+                                                </button>
+                                            ))}
+
+                                            {activeTagTab === 'version' && [
+                                                'Extended Mix', 'Intro', 'Outro', 'Remix', 'Club Mix', 'Acapella', 'Transition', 'Mashup'
+                                            ].map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    type="button"
+                                                    onClick={() => handleAddTagToQuery(tag)}
+                                                    className="px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+                                                >
+                                                    + {tag}
+                                                </button>
+                                            ))}
+
+                                            {activeTagTab === 'mood' && [
+                                                'Peak Time', 'Warm Up', 'Chill', 'Sunset', 'Retro'
+                                            ].map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    type="button"
+                                                    onClick={() => handleAddTagToQuery(tag)}
+                                                    className="px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+                                                >
+                                                    + {tag}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* CHIPS DE PROMPT RÁPIDO */}
                         <div className="flex flex-wrap items-center gap-1.5 pt-1">
                             <span className="text-[10px] font-mono text-gray-500 mr-1 shrink-0">Sugerencias Rápidas:</span>
-                            {CUENCA_PROMPT_CHIPS.map((chip, cIdx) => (
+                            {AI_PROMPT_CHIPS.map((chip, cIdx) => (
                                 <button
                                     key={cIdx}
                                     type="button"
@@ -8678,6 +10199,34 @@ const TaxonomyWorkspace = ({
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">
+                                {/* Botones para enviar varias o todas a Spotify Ingest / Descargas */}
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        disabled={selectedTaxIds.size === 0}
+                                        onClick={handleAnadirSeleccionadasADescargas}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${
+                                            selectedTaxIds.size > 0 
+                                                ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.4)] active:scale-95' 
+                                                : 'bg-djzinc-850 text-gray-500 border border-djzinc-750 cursor-not-allowed opacity-40'
+                                        }`}
+                                        title="Añadir pistas seleccionadas a la cola de descargas en Spotify Ingest"
+                                    >
+                                        <span>📥</span>
+                                        <span>Añadir Seleccionadas ({selectedTaxIds.size})</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={searchResults.length === 0}
+                                        onClick={handleAnadirTodasADescargas}
+                                        className="px-3 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white border border-emerald-500 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                                        title="Añadir todas las pistas de esta búsqueda a la cola de descargas en Spotify Ingest"
+                                    >
+                                        <span>📥</span>
+                                        <span>Añadir Todas ({searchResults.length})</span>
+                                    </button>
+                                </div>
+
                                 <span className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-djcyan-400"></span>
                                     <span>Biblioteca ({localTracks.length + searchLocalResults.length})</span>
@@ -8753,7 +10302,15 @@ const TaxonomyWorkspace = ({
                                 <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                                     <thead className="sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400">
                                         <tr>
-                                            <th className="py-2.5 px-3 w-8 text-center">#</th>
+                                            <th className="py-2.5 px-3 w-8 text-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={allTaxSelected} 
+                                                    onChange={handleToggleSelectAllTax} 
+                                                    className="accent-djcyan-500 cursor-pointer" 
+                                                    title="Seleccionar / Deseleccionar todas las pistas" 
+                                                />
+                                            </th>
                                             <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
                                             <th onClick={() => handleSortTax('title')} className="py-2.5 px-3 min-w-[240px] cursor-pointer hover:text-white transition-colors">TÍTULO / ÁLBUM {renderSortArrowTax('title')}</th>
                                             <th onClick={() => handleSortTax('artist')} className="py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors">ARTISTA {renderSortArrowTax('artist')}</th>
@@ -8862,10 +10419,25 @@ const TaxonomyWorkspace = ({
                                             const keyData = CAMELOT_WHEEL_DATA[trk.displayKey] || CAMELOT_WHEEL_DATA['8A'];
                                             const isLocal = Boolean(trk.isLocal || trk.is_local);
                                             const isOnline = Boolean(trk.isOnlinePool || trk.is_online);
-                                            const isPlayingRow = nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.title === trk.displayTitle) && isPlaying;
+                                            const isPlayingRow = nowPlayingTrack && (
+                                                String(nowPlayingTrack.id) === String(trk.id) || 
+                                                (nowPlayingTrack.title && (nowPlayingTrack.title === trk.displayTitle || nowPlayingTrack.title === trk.title)) ||
+                                                (nowPlayingTrack.path && nowPlayingTrack.path === trk.path)
+                                            ) && isPlaying;
+                                            const isSelected = selectedTaxIds.has(trk.id);
                                             return (
-                                                <tr key={trk.id || idx} className="hover:bg-[#101016] transition-colors cursor-pointer select-none">
-                                                    <td className="py-2 px-3 text-center text-gray-500 font-mono text-[10px]">{idx + 1}</td>
+                                                <tr 
+                                                    key={trk.id || idx} 
+                                                    className={`hover:bg-[#101016] transition-colors cursor-pointer select-none ${isSelected ? 'bg-[#0f172a]/50 border-l-2 border-djcyan-400' : ''}`}
+                                                >
+                                                    <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={isSelected} 
+                                                            onChange={() => handleToggleTaxRow(trk.id)} 
+                                                            className="accent-djcyan-500 cursor-pointer" 
+                                                        />
+                                                    </td>
                                                     <td className="py-2 px-2 text-center" onClick={(e) => { e.stopPropagation(); handleCargarEnDeck(trk); }}>
                                                         <button className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isPlayingRow ? 'bg-djcyan-500 text-black font-bold shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-[#181820] text-gray-400 hover:text-white hover:bg-djzinc-800'}`}>
                                                             {isPlayingRow ? '❚❚' : '▶'}
@@ -8900,7 +10472,7 @@ const TaxonomyWorkspace = ({
                                                             isLocal ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-700/60' :
                                                             (isOnline ? 'bg-purple-950 text-purple-300 border-purple-700/60' : 'bg-emerald-950 text-emerald-300 border-emerald-700/60')
                                                         }`}>
-                                                            {isLocal ? '📁 Local' : (isOnline ? '☁️ Record Pool' : '🌟 Cuenca Pool')}
+                                                            {isLocal ? '📁 Local' : (isOnline ? '☁️ Record Pool' : '🌟 BeatWave Pool')}
                                                         </span>
                                                     </td>
                                                     <td className="py-2 px-2.5 text-center font-mono text-xs font-bold text-emerald-400">
@@ -9027,10 +10599,14 @@ const TaxonomyWorkspace = ({
                                     const isLocal = Boolean(trk.isLocal || trk.is_local);
                                     const isOnline = Boolean(trk.isOnlinePool || trk.is_online);
 
+                                    const isSelected = selectedTaxIds.has(trk.id);
+
                                     return (
                                         <div
                                             key={trk.id || idx}
-                                            className="p-3.5 bg-[#0a0a0f] rounded-xl border border-djzinc-850 hover:border-djcyan-500/50 transition-all shadow-md hover:shadow-cyan-500/10 flex flex-col justify-between gap-3 group"
+                                            className={`p-3.5 bg-[#0a0a0f] rounded-xl border transition-all shadow-md hover:shadow-cyan-500/10 flex flex-col justify-between gap-3 group ${
+                                                isSelected ? 'border-djcyan-400 bg-djcyan-950/20' : 'border-djzinc-850 hover:border-djcyan-500/50'
+                                            }`}
                                         >
                                             {/* CABECERA DE LA PISTA */}
                                             <div className="flex items-start gap-3 min-w-0">
@@ -9047,21 +10623,30 @@ const TaxonomyWorkspace = ({
                                                         className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-base transition-opacity cursor-pointer shadow"
                                                         title="Cargar y Reproducir en Deck 1"
                                                     >
-                                                        {isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || (nowPlayingTrack.path && nowPlayingTrack.path === trk.path) || nowPlayingTrack.title === trk.displayTitle) ? '❚❚' : '▶'}
+                                                        {isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || (nowPlayingTrack.path && nowPlayingTrack.path === trk.path) || (nowPlayingTrack.title && (nowPlayingTrack.title === trk.displayTitle || nowPlayingTrack.title === trk.title))) ? '❚❚' : '▶'}
                                                     </button>
                                                 </div>
 
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${
-                                                            isLocal
-                                                                ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-700/60'
-                                                                : (isOnline 
-                                                                    ? 'bg-purple-950 text-purple-300 border-purple-700/60'
-                                                                    : 'bg-emerald-950 text-emerald-300 border-emerald-700/60')
-                                                        }`}>
-                                                            {isLocal ? '📁 Local' : (isOnline ? '☁️ Online Pool' : '🌟 Cuenca Pool')}
-                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={isSelected} 
+                                                                onChange={() => handleToggleTaxRow(trk.id)} 
+                                                                className="accent-djcyan-500 cursor-pointer" 
+                                                                title="Marcar pista"
+                                                            />
+                                                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${
+                                                                isLocal
+                                                                    ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-700/60'
+                                                                    : (isOnline 
+                                                                        ? 'bg-purple-950 text-purple-300 border-purple-700/60'
+                                                                        : 'bg-emerald-950 text-emerald-300 border-emerald-700/60')
+                                                            }`}>
+                                                                {isLocal ? '📁 Local' : (isOnline ? '☁️ Online Pool' : '🌟 BeatWave Pool')}
+                                                            </span>
+                                                        </div>
                                                         <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-700/60 px-1.5 py-0.2 rounded shadow-sm">
                                                             ⚡ {trk.matchScore}% Match
                                                         </span>
@@ -9557,17 +11142,35 @@ const TaxonomyWorkspace = ({
 // Espacio de Trabajo: Shazam Audio Intelligence (Reconocimiento por Micrófono y Subida de Archivos)
 const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const [isListening, setIsListening] = useState(false);
-    const [countdown, setCountdown] = useState(5);
+    const [countdown, setCountdown] = useState(10);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [statusMsg, setStatusMsg] = useState("");
     const [identifiedTrack, setIdentifiedTrack] = useState(null);
     const [history, setHistory] = useState([]);
     const [previewPlaying, setPreviewPlaying] = useState(false);
+    const [micLevel, setMicLevel] = useState(0);
     const audioRef = useRef(new Audio());
     const mediaRecorderRef = useRef(null);
     const audioStreamRef = useRef(null);
     const fileInputRef = useRef(null);
     const [dragOver, setDragOver] = useState(false);
+
+    // Selector de motor acústico: 'hybrid' (recomendado), 'shazamio', 'audd'
+    const [selectedEngine, setSelectedEngine] = useState(() => {
+        try { return localStorage.getItem('bw_radar_engine') || 'hybrid'; } catch(e) { return 'hybrid'; }
+    });
+    const [auddToken, setAuddToken] = useState(() => {
+        try { return localStorage.getItem('bw_audd_token') || ''; } catch(e) { return ''; }
+    });
+    const [showConfig, setShowConfig] = useState(false);
+
+    useEffect(() => {
+        try { localStorage.setItem('bw_radar_engine', selectedEngine); } catch(e) {}
+    }, [selectedEngine]);
+
+    useEffect(() => {
+        try { localStorage.setItem('bw_audd_token', auddToken); } catch(e) {}
+    }, [auddToken]);
 
     // Libreta Digital de Apuntes DJ (Persistida en LocalStorage)
     const [notebookTracks, setNotebookTracks] = useState(() => {
@@ -9732,13 +11335,65 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         setStatusMsg("Solicitando acceso al micrófono...");
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // macOS / Safari / Chrome: Desactivar cancelación de eco y supresión de ruido
+            // para evitar que el algoritmo trate la música de los altavoces como ruido de fondo.
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                        channelCount: 2,
+                        sampleRate: 44100
+                    }
+                });
+            } catch (errStrict) {
+                console.warn("Fallback a getUserMedia básico:", errStrict);
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+
             audioStreamRef.current = stream;
             setIsListening(true);
-            setCountdown(5);
-            setStatusMsg("Escuchando audio ambiental (5s)...");
+            setCountdown(10);
+            setStatusMsg("Escuchando audio ambiental (10s)...");
 
-            const mediaRecorder = new MediaRecorder(stream);
+            // Web Audio API para VU Meter en vivo
+            let audioCtx = null;
+            let analyser = null;
+            let animFrameId = null;
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContextClass();
+                const source = audioCtx.createMediaStreamSource(stream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 64;
+                source.connect(analyser);
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                const updateMeter = () => {
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for (let i = 0; i < dataArray.length; i++) {
+                        sum += dataArray[i];
+                    }
+                    const avg = sum / dataArray.length;
+                    setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+                    animFrameId = requestAnimationFrame(updateMeter);
+                };
+                updateMeter();
+            } catch (e) {
+                console.warn("Web Audio VU meter no disponible:", e);
+            }
+
+            let recorderOptions = { audioBitsPerSecond: 192000 };
+            if (typeof MediaRecorder.isTypeSupported === 'function') {
+                if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                    recorderOptions.mimeType = 'audio/webm;codecs=opus';
+                }
+            }
+
+            const mediaRecorder = new MediaRecorder(stream, recorderOptions);
             mediaRecorderRef.current = mediaRecorder;
             const chunks = [];
 
@@ -9747,18 +11402,22 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             };
 
             mediaRecorder.onstop = async () => {
+                if (animFrameId) cancelAnimationFrame(animFrameId);
+                if (audioCtx) { try { audioCtx.close(); } catch(e) {} }
+                setMicLevel(0);
                 stream.getTracks().forEach(t => t.stop());
                 setIsListening(false);
                 setIsAnalyzing(true);
-                setStatusMsg("Consultando huella acústica en ShazamIO...");
+                const engineLabel = selectedEngine === 'hybrid' ? 'Modo Híbrido' : selectedEngine === 'audd' ? 'AudD API' : 'ShazamIO Smart';
+                setStatusMsg(`Consultando huella acústica en [${engineLabel}]...`);
 
-                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                const audioBlob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' });
                 const reader = new FileReader();
                 reader.onloadend = async () => {
                     const base64Data = reader.result;
                     try {
                         if (window.eel && window.eel.identificar_audio_base64) {
-                            const res = await window.eel.identificar_audio_base64(base64Data)();
+                            const res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, "mic_sample.webm")();
                             handleRecognitionResponse(res);
                         } else {
                             setStatusMsg("Backend Shazam no disponible.");
@@ -9766,7 +11425,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         }
                     } catch (err) {
                         console.error("Error Shazam:", err);
-                        setStatusMsg("Error de comunicación con el motor Shazam.");
+                        setStatusMsg("Error de comunicación con el motor de reconocimiento.");
                         setIsAnalyzing(false);
                     }
                 };
@@ -9775,7 +11434,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
 
             mediaRecorder.start();
 
-            let timeLeft = 5;
+            let timeLeft = 10;
             const timer = setInterval(() => {
                 timeLeft -= 1;
                 setCountdown(timeLeft);
@@ -9797,15 +11456,16 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const handleFileSelect = (file) => {
         if (!file) return;
         setIsAnalyzing(true);
+        const engineLabel = selectedEngine === 'hybrid' ? 'Modo Híbrido' : selectedEngine === 'audd' ? 'AudD API' : 'ShazamIO Smart';
         setStatusMsg(`Leyendo archivo "${file.name}"...`);
 
         const reader = new FileReader();
         reader.onloadend = async () => {
             const base64Data = reader.result;
-            setStatusMsg(`Generando huella acústica de "${file.name}" en ShazamIO...`);
+            setStatusMsg(`Generando huella acústica de "${file.name}" en [${engineLabel}]...`);
             try {
                 if (window.eel && window.eel.identificar_audio_base64) {
-                    const res = await window.eel.identificar_audio_base64(base64Data)();
+                    const res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, file.name)();
                     handleRecognitionResponse(res);
                 } else {
                     setStatusMsg("Backend Shazam no disponible.");
@@ -9813,7 +11473,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 }
             } catch (err) {
                 console.error("Error en Shazam:", err);
-                setStatusMsg("Error al procesar el archivo en Shazam.");
+                setStatusMsg("Error al procesar el archivo en el motor.");
                 setIsAnalyzing(false);
             }
         };
@@ -9823,7 +11483,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const handleRecognitionResponse = (res) => {
         setIsAnalyzing(false);
         if (res && res.status === 'ok') {
-            setStatusMsg(`✓ Identificado: "${res.title}" por ${res.artist}`);
+            const engineTag = res.motor_usado ? ` [vía ${res.motor_usado}]` : '';
+            setStatusMsg(`✓ Identificado${engineTag}: "${res.title}" por ${res.artist}`);
             setIdentifiedTrack(res);
             setHistory(prev => [res, ...prev.filter(item => item.title !== res.title || item.artist !== res.artist)]);
             if (res.preview_url) {
@@ -9885,10 +11546,10 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                     <div>
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-black text-white tracking-wide">
-                                RADAR ACÚSTICO SHAZAMIO
+                                RADAR ACÚSTICO BEATWAVE
                             </h2>
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold bg-blue-950 text-blue-400 border border-blue-800 rounded">
-                                Engine Oficial ShazamIO
+                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold bg-gradient-to-r from-blue-950 to-indigo-950 text-djcyan-400 border border-djcyan-800/80 rounded shadow">
+                                {selectedEngine === 'hybrid' ? '⚡ Modo Híbrido Pro (Shazam + AudD)' : selectedEngine === 'audd' ? '🟣 AudD Music API' : '🔵 ShazamIO Smart Drop'}
                             </span>
                         </div>
                         <p className="text-xs text-gray-400">
@@ -9905,6 +11566,93 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 )}
             </div>
 
+            {/* Barra de Selección de Motores Acústicos y Configuración */}
+            <div className="bg-[#08080f] border border-djzinc-800 rounded-2xl p-3.5 shadow-xl space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-mono font-bold text-gray-400 uppercase tracking-wider">
+                            Motor Activo:
+                        </span>
+                        <div className="flex flex-wrap items-center gap-1 bg-djzinc-900 p-1 rounded-xl border border-djzinc-750">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedEngine('hybrid')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    selectedEngine === 'hybrid'
+                                        ? 'bg-gradient-to-r from-emerald-500 to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                                title="Combina ShazamIO con escaneo de drop y respaldo automático en AudD API para máxima precisión"
+                            >
+                                <span>⚡</span>
+                                <span>Híbrido Pro (Recomendado)</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedEngine('shazamio')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    selectedEngine === 'shazamio'
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                                title="ShazamIO nativo con escaneo multi-segmento de drops y breakdowns para pistas de DJ"
+                            >
+                                <span>🔵</span>
+                                <span>ShazamIO Smart Drop</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedEngine('audd')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    selectedEngine === 'audd'
+                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                                title="AudD Music Recognition API (ISRC, Spotify, Apple Music)"
+                            >
+                                <span>🟣</span>
+                                <span>AudD Music API</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => setShowConfig(!showConfig)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            showConfig || auddToken 
+                                ? 'bg-purple-950/60 border-purple-700 text-purple-300' 
+                                : 'bg-djzinc-900 border-djzinc-750 text-gray-400 hover:text-white'
+                        }`}
+                        title="Configurar claves de API o token personalizado"
+                    >
+                        <span>⚙️</span>
+                        <span>{showConfig ? 'Ocultar Opciones' : 'Opciones API'}</span>
+                        {auddToken && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+                    </button>
+                </div>
+
+                {showConfig && (
+                    <div className="bg-[#05050a] p-3 rounded-xl border border-djzinc-800 text-xs font-mono space-y-2 animate-fadeIn">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div>
+                                <span className="text-gray-200 font-bold block">Token de AudD Music API:</span>
+                                <span className="text-[10px] text-gray-400">
+                                    Por defecto BeatWave usa el token público comunitario ("test"). Si posees tu propio token de audd.io, ingrésalo aquí para consultas comerciales ilimitadas.
+                                </span>
+                            </div>
+                            <input
+                                type="text"
+                                value={auddToken}
+                                onChange={(e) => setAuddToken(e.target.value)}
+                                placeholder="test (predeterminado)"
+                                className="w-full sm:w-64 px-2.5 py-1.5 bg-djzinc-900 border border-djzinc-750 rounded-lg text-xs text-white font-mono focus:border-purple-500 outline-none"
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* Dos Módulos de Entrada: Micrófono & Carga de Archivo */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Módulo 1: Micrófono en Directo */}
@@ -9915,29 +11663,53 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         </span>
                         <h3 className="text-base font-bold text-white">Escucha en Directo por Micrófono</h3>
                         <p className="text-xs text-gray-400 max-w-xs mx-auto">
-                            Captura 5 segundos de música sonando en tus monitores o altavoces y consulta los servidores de Shazam.
+                            Captura 10 segundos de música sonando en tus monitores o altavoces y consulta los servidores acústicos.
                         </p>
                     </div>
 
-                    <div className="my-3 relative flex items-center justify-center">
+                    <div className="my-3 relative flex flex-col items-center justify-center">
+                        <div className="relative flex items-center justify-center">
+                            {isListening && (
+                                <div className="absolute w-36 h-36 rounded-full bg-djcyan-500/20 animate-ping pointer-events-none"></div>
+                            )}
+                            <button
+                                type="button"
+                                onClick={startMicrophoneListening}
+                                disabled={isListening || isAnalyzing}
+                                className={`w-28 h-28 rounded-full flex flex-col items-center justify-center transition-all cursor-pointer shadow-2xl relative z-10 ${
+                                    isListening 
+                                        ? 'bg-gradient-to-tr from-red-600 to-pink-600 text-white scale-110 shadow-red-500/40' 
+                                        : 'bg-gradient-to-tr from-blue-600 to-djcyan-400 text-black hover:scale-105 shadow-djcyan-500/30'
+                                }`}
+                            >
+                                <Icons.Mic />
+                                <span className="text-xs font-mono font-black mt-1">
+                                    {isListening ? `${countdown}s...` : 'ESCUCHAR'}
+                                </span>
+                            </button>
+                        </div>
+
                         {isListening && (
-                            <div className="absolute w-36 h-36 rounded-full bg-djcyan-500/20 animate-ping pointer-events-none"></div>
+                            <div className="w-52 mt-3.5 flex flex-col items-center gap-1.5 animate-fadeIn">
+                                <div className="flex items-center justify-between w-full text-[10px] font-mono">
+                                    <span className="text-gray-400">SEÑAL DE MICRÓFONO</span>
+                                    <span className={micLevel > 15 ? "text-djcyan-400 font-bold" : "text-amber-400"}>{micLevel}%</span>
+                                </div>
+                                <div className="w-full h-2 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800 p-0.5">
+                                    <div 
+                                        className={`h-full transition-all duration-75 rounded-full ${
+                                            micLevel > 70 ? 'bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500' :
+                                            micLevel > 20 ? 'bg-gradient-to-r from-cyan-500 to-emerald-400' :
+                                            'bg-djcyan-500'
+                                        }`}
+                                        style={{ width: `${Math.max(4, micLevel)}%` }}
+                                    />
+                                </div>
+                                <span className="text-[10px] font-mono text-gray-500">
+                                    {micLevel > 10 ? "✓ Captando audio ambiental" : "Acerca el altavoz o sube el volumen"}
+                                </span>
+                            </div>
                         )}
-                        <button
-                            type="button"
-                            onClick={startMicrophoneListening}
-                            disabled={isListening || isAnalyzing}
-                            className={`w-28 h-28 rounded-full flex flex-col items-center justify-center transition-all cursor-pointer shadow-2xl relative z-10 ${
-                                isListening 
-                                    ? 'bg-gradient-to-tr from-red-600 to-pink-600 text-white scale-110 shadow-red-500/40' 
-                                    : 'bg-gradient-to-tr from-blue-600 to-djcyan-400 text-black hover:scale-105 shadow-djcyan-500/30'
-                            }`}
-                        >
-                            <Icons.Mic />
-                            <span className="text-xs font-mono font-black mt-1">
-                                {isListening ? `${countdown}s...` : 'ESCUCHAR'}
-                            </span>
-                        </button>
                     </div>
 
                     <div className="text-[11px] font-mono text-gray-400">
@@ -9946,7 +11718,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         ) : isAnalyzing ? (
                             <span className="text-djcyan-400 font-bold">● Analizando huella acústica...</span>
                         ) : (
-                            <span>Haz clic para iniciar la escucha de 5 segundos</span>
+                            <span>Haz clic para iniciar la escucha de 10 segundos</span>
                         )}
                     </div>
                 </div>
@@ -10007,8 +11779,13 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse"></span>
                             <span className="text-xs font-mono font-black text-djcyan-400 uppercase tracking-wider">
-                                PISTA IDENTIFICADA POR SHAZAM
+                                PISTA IDENTIFICADA
                             </span>
+                            {identifiedTrack.motor_usado && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gradient-to-r from-blue-950 to-indigo-950 text-djcyan-300 border border-djcyan-700/60 shadow">
+                                    ⚡ {identifiedTrack.motor_usado}
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-2">
                             {identifiedTrack.isrc && (
@@ -10443,37 +12220,51 @@ const App = () => {
     const [playProgress, setPlayProgress] = useState(0);
     const audioRef = useRef(null);
 
-    const handleAddTrackToSpotify = (trackData, origin = 'taxonomy') => {
-        if (!trackData) return;
-        const newTrack = {
-            id: `tax_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    const handleAddTracksToSpotify = (tracksData, origin = 'taxonomy') => {
+        if (!tracksData) return;
+        const list = Array.isArray(tracksData) ? tracksData : [tracksData];
+        if (list.length === 0) return;
+
+        const newTracks = list.map((trackData, idx) => ({
+            id: trackData.id || `tax_${Date.now()}_${idx}_${Math.floor(Math.random() * 1000)}`,
             title: trackData.displayTitle || trackData.title || trackData.t || 'Pista Taxonomía',
             artist: trackData.displayArtist || trackData.artist || trackData.a || 'Artista',
-            album: trackData.displayAlbum || trackData.album || 'Taxonomía AI',
+            album: trackData.displayAlbum || trackData.album || (origin === 'audit_upgrade' || trackData.origin === 'audit_upgrade' ? 'Oficial Spotify HD' : 'Taxonomía AI'),
             bpm: parseFloat(trackData.displayBpm || trackData.bpm || trackData.b || 128),
             key: (trackData.displayKey || trackData.key || trackData.k || '8A').toUpperCase(),
             cover: trackData.displayCover || trackData.cover || null,
             duration: trackData.duration || '04:00',
-            origin: origin,
+            origin: trackData.origin || origin,
+            reemplazo_de: trackData.reemplazo_de || null,
+            original_file: trackData.original_file || null,
+            original_path: trackData.original_path || null,
             downloaded: false,
             selected: true,
-            format: 'FLAC',
+            format: trackData.format || 'FLAC',
             energy: trackData.energy || trackData.e || 80,
             danceability: trackData.danceability || trackData.dance || 80,
             fase_badge: trackData.fase_badge || null,
             comment: trackData.comment || null,
-            calidad: 'Pendiente',
-            status: 'Pendiente Descarga'
-        };
+            calidad: trackData.calidad || (origin === 'audit_upgrade' || trackData.origin === 'audit_upgrade' ? 'Oficial Spotify HD' : 'Pendiente'),
+            status: trackData.status || 'Pendiente Descarga',
+            spotify_id: trackData.spotify_id || null,
+            spotify_url: trackData.spotify_url || null,
+            isrc: trackData.isrc || null,
+            preview_url: trackData.preview_url || null
+        }));
+
         setSpotifyTracks(prev => {
-            const filtered = (prev || []).filter(t => !(
-                (t.title || '').toLowerCase() === newTrack.title.toLowerCase() && 
-                (t.artist || '').toLowerCase() === newTrack.artist.toLowerCase()
+            const current = prev || [];
+            const filteredNew = newTracks.filter(nt => !current.some(c => 
+                (c.title || '').toLowerCase() === nt.title.toLowerCase() && 
+                (c.artist || '').toLowerCase() === nt.artist.toLowerCase()
             ));
-            return [newTrack, ...filtered];
+            return [...filteredNew, ...current];
         });
         setActiveTab('spotify');
     };
+    const handleAddTrackToSpotify = handleAddTracksToSpotify;
+
     const [logs, setLogs] = useState([
         { type: 'info', text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
         { type: 'divider', text: "--------------------------------------------------" },
@@ -10483,7 +12274,6 @@ const App = () => {
 
     useEffect(() => {
         const audio = new Audio();
-        audio.crossOrigin = "anonymous";
         audio.preload = "auto";
 
         audio.onended = () => {
@@ -10515,7 +12305,16 @@ const App = () => {
     const handlePlayTrack = (track, seekPct = 0, autoPlay = true, startOffsetSec = null) => {
         if (!track) return;
         const resolvedCover = track.cover || (track.path ? `/cover?path=${encodeURIComponent(track.path)}` : (track.f ? `/cover?path=${encodeURIComponent(track.f)}` : null));
-        const trackWithCover = { ...track, cover: resolvedCover };
+        const trackTitle = track.title || track.t || track.displayTitle || 'Audio Track';
+        const trackArtist = track.artist || track.a || track.displayArtist || 'Unknown Artist';
+        const trackWithCover = { 
+            ...track, 
+            cover: resolvedCover,
+            title: trackTitle,
+            t: trackTitle,
+            artist: trackArtist,
+            a: trackArtist
+        };
         setNowPlayingTrack(trackWithCover);
         window.__bwCurrentTrack = trackWithCover;
 
@@ -10525,8 +12324,10 @@ const App = () => {
                 let targetSrc = "";
                 if (track.path && (track.path.startsWith("http://") || track.path.startsWith("https://"))) {
                     targetSrc = track.path;
-                } else if (track.preview_url && track.preview_url.startsWith("http")) {
+                } else if (track.preview_url && (track.preview_url.startsWith("http://") || track.preview_url.startsWith("https://"))) {
                     targetSrc = track.preview_url;
+                } else if (track.previewUrl && (track.previewUrl.startsWith("http://") || track.previewUrl.startsWith("https://"))) {
+                    targetSrc = track.previewUrl;
                 } else if (track.path) {
                     targetSrc = `/stream_audio?path=${encodeURIComponent(track.path)}`;
                 } else if (track.f) {
@@ -10549,7 +12350,15 @@ const App = () => {
 
                     if (isSameSrc) {
                         applyPosition();
-                        audio.play().then(() => setIsPlaying(true)).catch(() => {});
+                        audio.play().then(() => setIsPlaying(true)).catch((err) => {
+                            console.warn("Audio HTML5 play error:", err);
+                            if (track.path || track.f) {
+                                if (window.eel && window.eel.reproducir_pista_mac) {
+                                    window.eel.reproducir_pista_mac(track.path || track.f)();
+                                    setIsPlaying(true);
+                                }
+                            }
+                        });
                     } else {
                         audio.src = targetSrc;
                         audio.play().then(() => {
@@ -10627,8 +12436,8 @@ const App = () => {
 
     return (
         <div className="flex flex-col h-screen w-screen bg-djzinc-950 text-gray-300 overflow-hidden font-sans select-none">
-            {/* TOP NAVIGATION BAR */}
-            <header className="h-14 border-b border-djzinc-800 bg-djzinc-950/90 backdrop-blur px-4 flex items-center justify-between shrink-0 select-none z-30 relative">
+            {/* TOP NAVIGATION BAR CON MÁXIMA JERARQUÍA VISUAL & CAPSULE DOCK */}
+            <header className="h-16 border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md">
                 {/* MOTOR DE DISTORSIÓN FRACTAL (5 Iteraciones de 8 Segundos) */}
                 <svg width="0" height="0" className="absolute pointer-events-none">
                     <defs>
@@ -10650,10 +12459,10 @@ const App = () => {
                     </defs>
                 </svg>
 
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-4 select-none">
-                        {/* ISOTIPO */}
-                        <div className="w-11 h-11 rounded-xl bg-[#08080e] border border-djcyan-500/50 flex items-center justify-center relative overflow-hidden shrink-0 shadow-[0_0_18px_rgba(6,182,212,0.35)]">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3.5 select-none">
+                        {/* ISOTIPO FLAGSHIP */}
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0e0e18] via-[#080810] to-[#040408] border-2 border-djcyan-400/60 flex items-center justify-center relative overflow-hidden shrink-0 shadow-[0_0_22px_rgba(6,182,212,0.45)] group">
                             <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
                                 <rect className="svg-bar b1-epic" x="2.5" y="6" width="3" rx="1.5" height="22" />
                                 <rect className="svg-bar b2-epic" x="8" y="2" width="3.5" rx="1.75" height="28" />
@@ -10663,18 +12472,18 @@ const App = () => {
                             </svg>
                         </div>
 
-                        {/* RÓTULO BEATWAVE COREOGRAFIADO */}
-                        <div className="flex flex-col pt-1">
-                            <div className="flex items-center gap-3 leading-none h-6">
-                                <span className="text-[22px] tracking-wider uppercase font-black anim-soundwave" style={{ fontFamily: "'Syne', sans-serif" }}>
+                        {/* RÓTULO BEATWAVE PRO DE ALTA JERARQUÍA */}
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-2.5 leading-none">
+                                <span className="text-[23px] tracking-wider uppercase font-black anim-soundwave" style={{ fontFamily: "'Syne', sans-serif" }}>
                                     BEAT<span className="text-djcyan-400">WAVE</span>
                                 </span>
-                                <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-wider border shadow-md ml-1 bg-djcyan-950/90 text-djcyan-300 border-djcyan-500/80 shadow-[0_0_10px_rgba(6,182,212,0.4)]">
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md font-black tracking-widest border border-djcyan-400/80 bg-djcyan-950 text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)]">
                                     PRO
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2 mt-2">
-                                <span className="text-[9px] uppercase tracking-[0.28em] font-mono font-bold flex items-center gap-1.5 text-gray-300">
+                            <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-[9.5px] uppercase tracking-[0.26em] font-mono font-bold flex items-center gap-1.5 text-gray-300">
                                     <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 animate-pulse"></span>
                                     PRECISION AUDIO INTELLIGENCE
                                 </span>
@@ -10683,57 +12492,57 @@ const App = () => {
                     </div>
                 </div>
 
-                {/* Pestañas de Navegación: Auditoría, Estudio Hot Cues, Spotify Ingest, Radar Shazam, Taxonomía, Consola */}
-                <nav className="flex space-x-1.5 h-full absolute left-1/2 -translate-x-1/2 items-center">
+                {/* CAPSULE DOCK DE PESTAÑAS: ALTA JERARQUÍA VISUAL HARDWARE */}
+                <nav className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-[#090912]/95 border border-djzinc-800/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-md absolute left-1/2 -translate-x-1/2">
                     <button 
                         onClick={() => setActiveTab('audit')} 
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
                             activeTab === 'audit' 
-                            ? 'bg-djcyan-500 text-black shadow-lg shadow-djcyan-500/20 font-bold' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-900'
+                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Library /> {t('nav_audit') || 'Auditoría & DSP'}
+                        <Icons.Library /> <span>{t('nav_audit') || 'Auditoría & DSP'}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('hotcues')} 
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
                             activeTab === 'hotcues' 
-                            ? 'bg-djcyan-500 text-black shadow-lg shadow-djcyan-500/20 font-bold' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-900'
+                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Cue /> {t('nav_hotcues') || 'Estudio Hot Cues'}
+                        <Icons.Cue /> <span>{t('nav_hotcues') || 'Estudio Hot Cues'}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('spotify')} 
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
                             activeTab === 'spotify' 
-                            ? 'bg-djcyan-500 text-black shadow-lg shadow-djcyan-500/20 font-bold' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-900'
+                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Spotify /> {t('nav_spotify') || 'Spotify Ingest'}
+                        <Icons.Spotify /> <span>{t('nav_spotify') || 'Spotify Ingest'}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('shazam')} 
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
                             activeTab === 'shazam' 
-                            ? 'bg-djcyan-500 text-black shadow-lg shadow-djcyan-500/20 font-bold' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-900'
+                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Radar /> {t('nav_shazam') || 'Radar Shazam'}
+                        <Icons.Radar /> <span>{t('nav_shazam') || 'Radar Shazam'}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('taxonomy')} 
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
                             activeTab === 'taxonomy' 
-                            ? 'bg-djcyan-500 text-black shadow-lg shadow-djcyan-500/20 font-bold' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-900'
+                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Routing /> {t('nav_taxonomy') || 'Taxonomía'}
+                        <Icons.Routing /> <span>{t('nav_taxonomy') || 'Taxonomía'}</span>
                     </button>
                 </nav>
 
@@ -10779,10 +12588,12 @@ const App = () => {
                         isPlaying={isPlaying} 
                         playProgress={playProgress} 
                         onNavigateTab={setActiveTab}
+                        onSendToSpotify={handleAddTracksToSpotify}
                         lang={lang}
                         t={t}
                         currentFolder={currentFolder}
                         setCurrentFolder={setCurrentFolder}
+                        audioRef={audioRef}
                     />
                 </div>
                 <div style={{ display: activeTab === 'hotcues' ? 'flex' : 'none' }} className="w-full h-full">
@@ -10797,10 +12608,12 @@ const App = () => {
                         isPlaying={isPlaying} 
                         playProgress={playProgress} 
                         onNavigateTab={setActiveTab}
+                        onSendToSpotify={handleAddTracksToSpotify}
                         lang={lang}
                         t={t}
                         currentFolder={currentFolder}
                         setCurrentFolder={setCurrentFolder}
+                        audioRef={audioRef}
                     />
                 </div>
                 <div style={{ display: activeTab === 'spotify' ? 'flex' : 'none' }} className="w-full h-full">
@@ -10857,7 +12670,8 @@ const App = () => {
                         onSendToSpotify={(query) => {
                             setActiveTab('spotify');
                         }}
-                        onAddTrackToSpotify={handleAddTrackToSpotify}
+                        onAddTrackToSpotify={handleAddTracksToSpotify}
+                        onAddTracksToSpotify={handleAddTracksToSpotify}
                     />
                 </div>
             </main>

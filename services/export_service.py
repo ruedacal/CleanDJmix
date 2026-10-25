@@ -118,7 +118,8 @@ class ExportService:
         self,
         tracks: List[Dict[str, Any]],
         destino_dir: str = "/Users/admin/Music/mi musica",
-        nombre_archivo: str = "rekordbox.xml"
+        nombre_archivo: str = "rekordbox.xml",
+        incluir_memory_cues: bool = False
     ) -> Dict[str, Any]:
         """Genera un archivo rekordbox.xml estándar Pioneer DJ con metadatos completos y Hot Cues."""
         if not tracks or not isinstance(tracks, list):
@@ -185,7 +186,7 @@ class ExportService:
                     SampleRate="44100"
                 )
 
-                # Hot Cues
+                # Hot Cues oficiales Pioneer (Type="1", Num="0".."7") y Memory Cues (Type="0", Num="-1")
                 cues = t.get("cues") or []
                 for c_idx, cue in enumerate(cues):
                     if not isinstance(cue, dict):
@@ -203,16 +204,29 @@ class ExportService:
                     except Exception:
                         pass
 
-                    ET.SubElement(
-                        track_el, "POSITION_MARK",
-                        Name=str(c_name),
-                        Type="0",
-                        Start=f"{start_sec:.3f}",
-                        Num=str(c_idx),
-                        Red=str(r),
-                        Green=str(g),
-                        Blue=str(b)
-                    )
+                    # 1. Hot Cue A-H para pads físicos (Type="1", Num=0..7)
+                    if c_idx < 8:
+                        ET.SubElement(
+                            track_el, "POSITION_MARK",
+                            Name=str(c_name),
+                            Type="1",
+                            Start=f"{start_sec:.3f}",
+                            Num=str(c_idx),
+                            Red=str(r),
+                            Green=str(g),
+                            Blue=str(b)
+                        )
+
+                    # 2. Memory Cue oficial Pioneer (Type="0", Num="-1")
+                    # Activa la cuenta atrás de compases (Bar Countdown) en la pantalla de CDJ-2000NXS2 / CDJ-3000
+                    if incluir_memory_cues and c_idx in (0, 2, 3, 5, 6, 7):
+                        ET.SubElement(
+                            track_el, "POSITION_MARK",
+                            Name=f"MEM: {c_name}",
+                            Type="0",
+                            Start=f"{start_sec:.3f}",
+                            Num="-1"
+                        )
 
                 # Organizar en árbol de playlists
                 if gen not in arbol_playlists:
@@ -273,5 +287,246 @@ class ExportService:
                     for t in tracks:
                         writer.writerow({k: t.get(k, "") for k in campos})
                 return {"status": "ok", "path": csv_path}
+        except Exception as e:
+            return {"status": "error", "msg": str(e)}
+
+    def exportar_reporte_descargas_xls(self, report_data: Dict[str, Any], destino_dir: str = "/Users/admin/Music/mi musica") -> Dict[str, Any]:
+        """
+        Genera un informe Excel (.xlsx) exhaustivo y formateado con diseño profesional de DJ,
+        detallando pistas descargadas con certificación FFT, pistas fallidas y métricas de sesión.
+        """
+        import datetime
+        import io
+        import base64
+
+        try:
+            downloaded = report_data.get("downloaded", []) if isinstance(report_data, dict) else []
+            failed = report_data.get("failed", []) if isinstance(report_data, dict) else []
+
+            total = len(downloaded) + len(failed)
+            tasa_exito = round((len(downloaded) / total * 100), 1) if total > 0 else 0.0
+            timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            fecha_legible = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+            filename = f"Reporte_Descargas_Spotify_{timestamp_str}.xlsx"
+            os.makedirs(destino_dir, exist_ok=True)
+            out_file_path = os.path.join(destino_dir, filename)
+
+            try:
+                import openpyxl
+                from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+                from openpyxl.utils import get_column_letter
+
+                wb = openpyxl.Workbook()
+
+                # Estilos estándar BeatWave PRO
+                font_title = Font(name="Arial", size=14, bold=True, color="FFFFFF")
+                font_subtitle = Font(name="Arial", size=10, italic=True, color="CCCCCC")
+                font_header = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+                font_bold = Font(name="Arial", size=10, bold=True)
+                font_regular = Font(name="Arial", size=10)
+                font_mono = Font(name="Courier New", size=9)
+
+                fill_header_green = PatternFill(start_color="0F5132", end_color="0F5132", fill_type="solid")
+                fill_header_red = PatternFill(start_color="842029", end_color="842029", fill_type="solid")
+                fill_header_blue = PatternFill(start_color="084298", end_color="084298", fill_type="solid")
+                fill_accent = PatternFill(start_color="06B6D4", end_color="06B6D4", fill_type="solid")
+                fill_zebra = PatternFill(start_color="F8F9FA", end_color="F8F9FA", fill_type="solid")
+                fill_green_soft = PatternFill(start_color="D1E7DD", end_color="D1E7DD", fill_type="solid")
+                fill_red_soft = PatternFill(start_color="F8D7DA", end_color="F8D7DA", fill_type="solid")
+
+                border_thin = Side(border_style="thin", color="CCCCCC")
+                border_box = Border(left=border_thin, right=border_thin, top=border_thin, bottom=border_thin)
+
+                # ==========================================
+                # HOJA 1: RESUMEN DE SESIÓN
+                # ==========================================
+                ws_res = wb.active
+                ws_res.title = "Resumen de Sesión"
+                ws_res.views.sheetView[0].showGridLines = True
+
+                ws_res.merge_cells("A1:D1")
+                ws_res["A1"] = "BEATWAVE PRO • INFORME AUDITORÍA Y DESCARGAS SPOTIFY"
+                ws_res["A1"].font = font_title
+                ws_res["A1"].fill = fill_accent
+                ws_res["A1"].alignment = Alignment(horizontal="center", vertical="center")
+                ws_res.row_dimensions[1].height = 35
+
+                ws_res.merge_cells("A2:D2")
+                ws_res["A2"] = f"Generado: {fecha_legible} | Destino: {destino_dir}"
+                ws_res["A2"].font = font_subtitle
+                ws_res["A2"].fill = PatternFill(start_color="0B0B10", end_color="0B0B10", fill_type="solid")
+                ws_res["A2"].alignment = Alignment(horizontal="center", vertical="center")
+                ws_res.row_dimensions[2].height = 20
+
+                metricas = [
+                    ("Fecha y Hora de Sesión", fecha_legible),
+                    ("Carpeta de Almacenamiento", destino_dir),
+                    ("Total Pistas Procesadas", total),
+                    ("Descargas Exitosas y Certificadas", len(downloaded)),
+                    ("Pistas Fallidas / Pendientes", len(failed)),
+                    ("Tasa de Efectividad", f"{tasa_exito}%")
+                ]
+
+                ws_res["A4"] = "MÉTRICA AUDITADA"
+                ws_res["B4"] = "VALOR"
+                ws_res["A4"].font = font_header
+                ws_res["A4"].fill = fill_header_blue
+                ws_res["B4"].font = font_header
+                ws_res["B4"].fill = fill_header_blue
+
+                for idx, (label, val) in enumerate(metricas, start=5):
+                    ws_res[f"A{idx}"] = label
+                    ws_res[f"B{idx}"] = val
+                    ws_res[f"A{idx}"].font = font_bold
+                    ws_res[f"B{idx}"].font = font_regular
+                    ws_res[f"A{idx}"].border = border_box
+                    ws_res[f"B{idx}"].border = border_box
+                    if "Exitosas" in label:
+                        ws_res[f"B{idx}"].fill = fill_green_soft
+                        ws_res[f"B{idx}"].font = font_bold
+                    elif "Fallidas" in label and len(failed) > 0:
+                        ws_res[f"B{idx}"].fill = fill_red_soft
+                        ws_res[f"B{idx}"].font = font_bold
+
+                ws_res.column_dimensions["A"].width = 38
+                ws_res.column_dimensions["B"].width = 50
+
+                # ==========================================
+                # HOJA 2: PISTAS DESCARGADAS (CON FFT)
+                # ==========================================
+                ws_ok = wb.create_sheet(title="Descargas Exitosas")
+                ws_ok.views.sheetView[0].showGridLines = True
+
+                headers_ok = [
+                    "#", "Título", "Artista", "Álbum", "Formato", 
+                    "Corte kHz", "Calidad FFT", "Estado", "Sample Rate (kHz)", 
+                    "Bitrate (kbps)", "Pérdida", "Ruta Archivo en Disco"
+                ]
+
+                ws_ok.append(headers_ok)
+                ws_ok.row_dimensions[1].height = 26
+                for col_num in range(1, len(headers_ok) + 1):
+                    cell = ws_ok.cell(row=1, column=col_num)
+                    cell.font = font_header
+                    cell.fill = fill_header_green
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+
+                for idx, t in enumerate(downloaded, start=1):
+                    row_data = [
+                        idx,
+                        t.get("title") or t.get("name") or "Desconocido",
+                        t.get("artist") or "Desconocido",
+                        t.get("album") or "",
+                        t.get("format") or "FLAC",
+                        t.get("cutoff_khz", 22.0),
+                        t.get("calidad") or "Alta",
+                        t.get("status") or t.get("estado") or "OK",
+                        t.get("sample_rate_khz", 44.1),
+                        t.get("bitrate_kbps", 0),
+                        t.get("perdida") or "Sin Pérdida",
+                        t.get("path") or t.get("local_path") or ""
+                    ]
+                    ws_ok.append(row_data)
+                    row_idx = idx + 1
+                    ws_ok.row_dimensions[row_idx].height = 20
+                    for c_num in range(1, len(headers_ok) + 1):
+                        c = ws_ok.cell(row=row_idx, column=c_num)
+                        c.font = font_regular if c_num != 12 else font_mono
+                        c.border = border_box
+                        if idx % 2 == 0:
+                            c.fill = fill_zebra
+                        if c_num in [1, 5, 6, 7, 8, 9, 10]:
+                            c.alignment = Alignment(horizontal="center", vertical="center")
+
+                for col in ws_ok.columns:
+                    max_len = max(len(str(cell.value or '')) for cell in col)
+                    col_letter = get_column_letter(col[0].column)
+                    ws_ok.column_dimensions[col_letter].width = min(60, max(12, max_len + 3))
+
+                # ==========================================
+                # HOJA 3: PISTAS FALLIDAS
+                # ==========================================
+                ws_err = wb.create_sheet(title="Descargas Fallidas")
+                ws_err.views.sheetView[0].showGridLines = True
+
+                headers_err = ["#", "Título", "Artista", "Álbum", "Motivo de Fallo / Error", "ID Spotify"]
+                ws_err.append(headers_err)
+                ws_err.row_dimensions[1].height = 26
+                for col_num in range(1, len(headers_err) + 1):
+                    cell = ws_err.cell(row=1, column=col_num)
+                    cell.font = font_header
+                    cell.fill = fill_header_red
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+
+                for idx, t in enumerate(failed, start=1):
+                    row_data = [
+                        idx,
+                        t.get("title") or t.get("name") or "Desconocido",
+                        t.get("artist") or "Desconocido",
+                        t.get("album") or "",
+                        t.get("error") or "Fallo de servidor o fuente de streaming no disponible",
+                        t.get("id") or t.get("spotify_id") or ""
+                    ]
+                    ws_err.append(row_data)
+                    row_idx = idx + 1
+                    ws_err.row_dimensions[row_idx].height = 20
+                    for c_num in range(1, len(headers_err) + 1):
+                        c = ws_err.cell(row=row_idx, column=c_num)
+                        c.font = font_regular
+                        c.border = border_box
+                        if c_num == 5:
+                            c.fill = fill_red_soft
+                            c.font = font_bold
+                        elif idx % 2 == 0:
+                            c.fill = fill_zebra
+
+                for col in ws_err.columns:
+                    max_len = max(len(str(cell.value or '')) for cell in col)
+                    col_letter = get_column_letter(col[0].column)
+                    ws_err.column_dimensions[col_letter].width = min(65, max(12, max_len + 3))
+
+                # Guardar archivo físico en disco
+                wb.save(out_file_path)
+
+                # Generar buffer en memoria para descarga directa en el navegador
+                buf = io.BytesIO()
+                wb.save(buf)
+                b64_content = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+                return {
+                    "status": "ok",
+                    "path": out_file_path,
+                    "filename": filename,
+                    "b64": b64_content,
+                    "descargadas": len(downloaded),
+                    "fallidas": len(failed),
+                    "total": total,
+                    "tasa_exito": tasa_exito
+                }
+            except Exception as openpyxl_err:
+                print(f"[EXPORT XLS WARN] openpyxl falló, usando fallback CSV: {openpyxl_err}")
+                csv_filename = f"Reporte_Descargas_Spotify_{timestamp_str}.csv"
+                csv_path = os.path.join(destino_dir, csv_filename)
+                with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+                    import csv as py_csv
+                    writer = py_csv.writer(f)
+                    writer.writerow(["SECCIÓN", "ESTADO", "TÍTULO", "ARTISTA", "ÁLBUM", "FORMATO", "DETALLES"])
+                    for t in downloaded:
+                        writer.writerow(["DESCARGADO", t.get("status", "OK"), t.get("title", ""), t.get("artist", ""), t.get("album", ""), t.get("format", "FLAC"), t.get("path", "")])
+                    for t in failed:
+                        writer.writerow(["FALLIDO", "ERROR", t.get("title", ""), t.get("artist", ""), t.get("album", ""), "", t.get("error", "")])
+                with open(csv_path, "rb") as f:
+                    csv_b64 = base64.b64encode(f.read()).decode("utf-8")
+                return {
+                    "status": "ok",
+                    "path": csv_path,
+                    "filename": csv_filename,
+                    "b64": csv_b64,
+                    "descargadas": len(downloaded),
+                    "fallidas": len(failed),
+                    "total": total,
+                    "tasa_exito": tasa_exito
+                }
         except Exception as e:
             return {"status": "error", "msg": str(e)}

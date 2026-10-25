@@ -152,3 +152,42 @@ def test_exportar_tracks_xls(tmp_path):
     res = svc.exportar_tracks_xls([{"title": "Test Track", "bpm": 128}], destino_dir=str(tmp_path))
     assert res["status"] == "ok"
     assert os.path.exists(res["path"])
+
+def test_exportar_reporte_descargas_xls(tmp_path):
+    svc = ExportService()
+    report = {
+        "downloaded": [
+            {
+                "id": "trk_1",
+                "title": "Be Free",
+                "artist": "Marco Bailey",
+                "album": "Wavesong",
+                "format": "FLAC",
+                "cutoff_khz": 22.0,
+                "status": "Lossless OK",
+                "calidad": "Alta",
+                "path": "/Music/test.flac"
+            }
+        ],
+        "failed": [
+            {
+                "id": "trk_2",
+                "title": "Unknown Song",
+                "artist": "Secret Artist",
+                "error": "Error 404 stream no encontrado"
+            }
+        ]
+    }
+    res = svc.exportar_reporte_descargas_xls(report, destino_dir=str(tmp_path))
+    assert res["status"] == "ok"
+    assert os.path.exists(res["path"])
+    assert res["descargadas"] == 1
+    assert res["fallidas"] == 1
+    assert "b64" in res and len(res["b64"]) > 100
+
+    # Verificar hojas en el Excel generado
+    import openpyxl
+    wb = openpyxl.load_workbook(res["path"])
+    assert "Resumen de Sesión" in wb.sheetnames
+    assert "Descargas Exitosas" in wb.sheetnames
+    assert "Descargas Fallidas" in wb.sheetnames

@@ -171,3 +171,38 @@ def test_eliminar_pistas_duplicadas_exposed(mock_del):
     assert res["status"] == "ok"
     assert res["eliminados"] == 1
 
+@patch.object(main_web.media_svc, 'buscar_reemplazos_spotify_batch', return_value={"status": "ok", "tracks": [{"title": "Titanium", "artist": "David Guetta"}], "count": 1})
+def test_buscar_reemplazos_spotify_batch_exposed(mock_batch):
+    res = main_web.buscar_reemplazos_spotify_batch([{"title": "Titanium", "artist": "David Guetta"}])
+    assert res["status"] == "ok"
+    assert res["count"] == 1
+    assert res["tracks"][0]["title"] == "Titanium"
+
+def test_cargar_metadatos_directorio_con_lista_archivos(tmp_path):
+    f1 = tmp_path / "Artist 1 - Song 1.mp3"
+    f1.write_bytes(b"\x00" * 500)
+    f2 = tmp_path / "Artist 2 - Song 2.flac"
+    f2.write_bytes(b"\x00" * 500)
+
+    res = main_web.cargar_metadatos_directorio([str(f1), str(f2)])
+    assert res["total"] == 2
+    assert len(res["tracks"]) == 2
+
+def test_exportar_reporte_descargas_xls_exposed(tmp_path):
+    report_data = {
+        "downloaded": [{"title": "Track 1", "artist": "DJ 1", "format": "FLAC", "status": "Lossless OK"}],
+        "failed": [{"title": "Track 2", "artist": "DJ 2", "error": "Not Found"}]
+    }
+    res = main_web.exportar_reporte_descargas_xls(report_data, destino_dir=str(tmp_path))
+    assert res["status"] == "ok"
+    assert res["descargadas"] == 1
+    assert res["fallidas"] == 1
+    assert os.path.exists(res["path"])
+
+@patch.object(main_web.shazam_svc, 'reconocer_base64', return_value={"status": "ok", "title": "Horny Tiger", "artist": "Marco Bailey"})
+def test_identificar_audio_base64_con_filename(mock_rec):
+    res = main_web.identificar_audio_base64("b64dummydata", motor="hybrid", filename="Marco Bailey - Horny Tiger.mp3")
+    assert res["status"] == "ok"
+    assert res["title"] == "Horny Tiger"
+    mock_rec.assert_called_once_with("b64dummydata", motor="hybrid", audd_token="", filename="Marco Bailey - Horny Tiger.mp3")
+

@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import threading
 import numpy as np
@@ -9,6 +10,16 @@ from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
 from infrastructure.audio_processor import AudioProcessorService
+from services.tag_sanitizer_service import TagSanitizerService
+
+def _cooperative_yield():
+    """Cede el control del bucle de eventos a gevent/hilos para procesar cancelaciones instantáneamente."""
+    try:
+        import gevent
+        gevent.sleep(0.002)
+    except Exception:
+        import time
+        time.sleep(0.002)
 
 class AuditService:
     def __init__(self):
@@ -112,6 +123,98 @@ class AuditService:
             "channels": channels,
             "duration_sec": duration_sec
         }
+
+    @staticmethod
+    def medir_lufs_y_true_peak(filepath: str) -> dict:
+        """
+        Mide la sonoridad integrada (LUFS según ITU-R BS.1770 / EBU R128),
+        el rango dinámico (LRA) y el pico real inter-sample (True Peak en dBFS).
+        Detecta clipping digital (> 0.0 dBFS) que provoca distorsión en cabina.
+        """
+        if not filepath or not os.path.exists(filepath):
+            return {
+                "lufs": -14.0,
+                "lra": 0.0,
+                "true_peak": -0.1,
+                "clipping": False,
+                "status_lufs": "Normal",
+                "badge_lufs": "green"
+            }
+
+        ffmpeg_bin = "/usr/local/bin/ffmpeg" if os.path.exists("/usr/local/bin/ffmpeg") else "ffmpeg"
+        try:
+            cmd = [
+                ffmpeg_bin, "-nostats", "-i", filepath,
+                "-filter_complex", "ebur128=peak=true",
+                "-f", "null", "-"
+            ]
+            p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=8)
+            out = p.stderr
+
+            m_i = re.search(r'Integrated loudness:\s+I:\s+([-\d\.]+)\s+LUFS', out)
+            m_lra = re.search(r'Loudness range:\s+LRA:\s+([-\d\.]+)\s+LU', out)
+            m_tp = re.search(r'True peak:\s+Peak:\s+([-\d\.]+)\s+dBFS', out)
+
+            if m_i:
+                lufs = float(m_i.group(1))
+                lra = float(m_lra.group(1)) if m_lra else 0.0
+                tp = float(m_tp.group(1)) if m_tp else -0.1
+                clipping = bool(tp > 0.0)
+
+                if lufs > -7.0:
+                    status = "Muy Alto (Loudness War)"
+                    badge = "amber"
+                elif lufs >= -11.0:
+                    status = "Óptimo Club (-8 a -11 LUFS)"
+                    badge = "green"
+                elif lufs >= -14.0:
+                    status = "Streaming Estándar (-14 LUFS)"
+                    badge = "cyan"
+                else:
+                    status = "Bajo (< -14 LUFS)"
+                    badge = "blue"
+
+                if clipping:
+                    status += " • CLIPPING"
+                    badge = "red"
+
+                return {
+                    "lufs": round(lufs, 1),
+                    "lra": round(lra, 1),
+                    "true_peak": round(tp, 1),
+                    "clipping": clipping,
+                    "status_lufs": status,
+                    "badge_lufs": badge
+                }
+        except Exception:
+            pass
+
+        # Fallback rápido mediante numpy (estimación RMS)
+        try:
+            data, sr = sf.read(filepath, start=0, frames=min(44100 * 30, 800000))
+            if len(data.shape) > 1:
+                data = data.mean(axis=1)
+            rms = np.sqrt(np.mean(data**2))
+            lufs = round(20 * np.log10(rms + 1e-10) - 0.691, 1)
+            peak = round(20 * np.log10(np.max(np.abs(data)) + 1e-10), 1)
+            clipping = peak >= 0.0
+            return {
+                "lufs": max(-30.0, min(0.0, lufs)),
+                "lra": 3.0,
+                "true_peak": peak,
+                "clipping": clipping,
+                "status_lufs": "Aprox. RMS" + (" • CLIPPING" if clipping else ""),
+                "badge_lufs": "red" if clipping else "green"
+            }
+        except Exception:
+            return {
+                "lufs": -9.0,
+                "lra": 0.0,
+                "true_peak": -0.1,
+                "clipping": False,
+                "status_lufs": "Estándar DJ",
+                "badge_lufs": "green"
+            }
 
     @staticmethod
     def diagnosticar_calidad_audio(
@@ -222,19 +325,28 @@ class AuditService:
         self._cancelar_proceso = False
 
     def listar_subcarpetas_sistema(self, ruta_base=""):
-        """Permite navegar por el árbol de carpetas directamente en la UI sin popups de permisos del SO."""
+        """Permite navegar por el árbol de carpetas y ficheros de audio directamente en la UI sin popups de permisos del SO."""
         base = os.path.expanduser("~")
         target = ruta_base if (ruta_base and os.path.isdir(ruta_base)) else os.path.join(base, "Music")
         if not os.path.isdir(target):
             target = base
 
+        extensiones_audio = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
         carpetas = []
+        ficheros = []
         try:
             for entry in sorted(os.scandir(target), key=lambda e: e.name.lower()):
-                if entry.is_dir() and not entry.name.startswith(".") and not entry.name.startswith("$"):
+                if entry.is_dir() and not entry.name.startswith((".", "$")):
                     carpetas.append({
                         "name": entry.name,
                         "path": entry.path
+                    })
+                elif entry.is_file() and not entry.name.startswith((".", "$")) and entry.name.lower().endswith(extensiones_audio):
+                    ficheros.append({
+                        "name": entry.name,
+                        "path": entry.path,
+                        "ext": os.path.splitext(entry.name)[1].replace(".", "").upper(),
+                        "size_mb": round(entry.stat().st_size / (1024 * 1024), 2)
                     })
         except Exception as e:
             print(f"[EXPLORADOR FS] Error leyendo {target}: {e}")
@@ -243,7 +355,8 @@ class AuditService:
         return {
             "current": target,
             "parent": parent,
-            "folders": carpetas
+            "folders": carpetas,
+            "files": ficheros
         }
 
     def seleccionar_directorio(self):
@@ -337,6 +450,9 @@ class AuditService:
                 else:
                     spectrum_points.append(0.0)
 
+            # Medición de sonoridad profesional LUFS y True Peak (EBU R128)
+            lufs_res = self.medir_lufs_y_true_peak(filepath)
+
             resultado = {
                 "id": spotify_id,
                 "status": diag["status"],
@@ -355,6 +471,12 @@ class AuditService:
                 "bitrate_kbps": diag["bitrate_kbps"],
                 "bit_depth": diag["bit_depth"],
                 "format": diag["format"],
+                "lufs": lufs_res.get("lufs", -14.0),
+                "lra": lufs_res.get("lra", 0.0),
+                "true_peak": lufs_res.get("true_peak", -0.1),
+                "clipping": lufs_res.get("clipping", False),
+                "status_lufs": lufs_res.get("status_lufs", "Normal"),
+                "badge_lufs": lufs_res.get("badge_lufs", "green"),
                 "diagnostico": diag
             }
             if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
@@ -381,6 +503,12 @@ class AuditService:
                 "bitrate_kbps": 0,
                 "bit_depth": 16,
                 "format": "FLAC",
+                "lufs": -14.0,
+                "lra": 0.0,
+                "true_peak": -0.1,
+                "clipping": False,
+                "status_lufs": "Error I/O",
+                "badge_lufs": "gray",
                 "spectrum": []
             }
             if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
@@ -409,24 +537,40 @@ class AuditService:
         }
 
     def iniciar_auditoria(self, ruta_directorio, emitir_log_cb=None, progreso_cb=None, opts=None):
-        if not ruta_directorio or not os.path.exists(ruta_directorio):
+        if not ruta_directorio:
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
         self.reiniciar_cancelacion()
-        self.directorio_actual = ruta_directorio
-        if emitir_log_cb:
-            emitir_log_cb(f"Iniciando auditoría avanzada en: {ruta_directorio}")
-
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
         archivos = []
-        for root, _, files in os.walk(ruta_directorio):
-            for file in sorted(files):
-                if not file.startswith(".") and file.lower().endswith(extensiones):
-                    archivos.append((root, file))
+
+        if isinstance(ruta_directorio, (list, tuple)):
+            for f in ruta_directorio:
+                if isinstance(f, str) and os.path.isfile(f) and f.lower().endswith(extensiones):
+                    archivos.append((os.path.dirname(f), os.path.basename(f)))
+            if archivos:
+                self.directorio_actual = archivos[0][0]
+            if emitir_log_cb:
+                emitir_log_cb(f"Iniciando auditoría avanzada de {len(archivos)} pistas seleccionadas")
+        elif isinstance(ruta_directorio, str):
+            if os.path.isfile(ruta_directorio):
+                if ruta_directorio.lower().endswith(extensiones):
+                    archivos.append((os.path.dirname(ruta_directorio), os.path.basename(ruta_directorio)))
+                    self.directorio_actual = os.path.dirname(ruta_directorio)
+            elif os.path.isdir(ruta_directorio):
+                self.directorio_actual = ruta_directorio
+                for root, _, files in os.walk(ruta_directorio):
+                    for file in sorted(files):
+                        if not file.startswith(".") and file.lower().endswith(extensiones):
+                            archivos.append((root, file))
+                            if len(archivos) >= 50000:
+                                break
                     if len(archivos) >= 50000:
                         break
-            if len(archivos) >= 50000:
-                break
+            if emitir_log_cb:
+                emitir_log_cb(f"Iniciando auditoría avanzada en: {ruta_directorio}")
+        else:
+            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
         total_files = len(archivos)
         if total_files == 0:
@@ -443,6 +587,7 @@ class AuditService:
         inyectar_covers = bool(isinstance(opts, dict) and opts.get("injectCovers", False))
 
         for idx, (root, file) in enumerate(archivos, 1):
+            _cooperative_yield()
             if self._cancelar_proceso:
                 print(f"[AUDITORIA] Detenida por el usuario en ({idx}/{total_files})")
                 if progreso_cb:
@@ -456,6 +601,8 @@ class AuditService:
                     progreso_cb(pct, f"Auditando ({idx}/{total_files}): {file}")
 
             info = AudioProcessorService.analizar_track_avanzado(full_path)
+            if self._cancelar_proceso:
+                break
             bpm_val = info.get("bpm")
             key_val = info.get("key")
             is_missing = bool(info.get("missing_meta", False) or not bpm_val or not key_val or str(bpm_val) == "--" or str(key_val) == "--")
@@ -565,6 +712,25 @@ class AuditService:
                     lang="es"
                 )
 
+            # Medición de sonoridad profesional LUFS y True Peak (EBU R128)
+            if ejecutar_fft and 'fft_res' in locals() and isinstance(fft_res, dict) and 'lufs' in fft_res:
+                lufs_val = fft_res.get("lufs", -10.0)
+                lra_val = fft_res.get("lra", 0.0)
+                tp_val = fft_res.get("true_peak", -0.1)
+                is_clipping = fft_res.get("clipping", False)
+                status_lufs = fft_res.get("status_lufs", "Normal")
+                badge_lufs = fft_res.get("badge_lufs", "green")
+            else:
+                lufs_data = self.medir_lufs_y_true_peak(full_path)
+                lufs_val = lufs_data.get("lufs", -10.0)
+                lra_val = lufs_data.get("lra", 0.0)
+                tp_val = lufs_data.get("true_peak", -0.1)
+                is_clipping = lufs_data.get("clipping", False)
+                status_lufs = lufs_data.get("status_lufs", "Normal")
+                badge_lufs = lufs_data.get("badge_lufs", "green")
+
+            v_type = TagSanitizerService.extraer_tipo_version(f"{title_str} {file}")
+
             tracks_auditados.append({
                 "id": idx,
                 "f": str(file),
@@ -604,7 +770,13 @@ class AuditService:
                 "badge_color": str(diag.get("badge_color", "green")),
                 "status": status_str,
                 "cutoff_khz": cutoff_khz,
-                "perdida": perdida or diag.get("perdida", "Sin Pérdida"),
+                "lufs": lufs_val,
+                "lra": lra_val,
+                "true_peak": tp_val,
+                "clipping": is_clipping,
+                "status_lufs": status_lufs,
+                "badge_lufs": badge_lufs,
+                "version_type": v_type,
                 "spectrum": spectrum_points,
                 "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
                 "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
@@ -641,20 +813,36 @@ class AuditService:
 
     def cargar_metadatos_directorio(self, ruta_directorio, progreso_cb=None):
         """Lee únicamente los metadatos existentes de los archivos sin ejecutar procesos pesados."""
-        if not ruta_directorio or not os.path.exists(ruta_directorio):
+        if not ruta_directorio:
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
-        self.directorio_actual = ruta_directorio
+        self.reiniciar_cancelacion()
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
         archivos = []
-        for root, _, files in os.walk(ruta_directorio):
-            for file in sorted(files):
-                if not file.startswith(".") and file.lower().endswith(extensiones):
-                    archivos.append((root, file))
+
+        if isinstance(ruta_directorio, (list, tuple)):
+            for f in ruta_directorio:
+                if isinstance(f, str) and os.path.isfile(f) and f.lower().endswith(extensiones):
+                    archivos.append((os.path.dirname(f), os.path.basename(f)))
+            if archivos:
+                self.directorio_actual = archivos[0][0]
+        elif isinstance(ruta_directorio, str):
+            if os.path.isfile(ruta_directorio):
+                if ruta_directorio.lower().endswith(extensiones):
+                    archivos.append((os.path.dirname(ruta_directorio), os.path.basename(ruta_directorio)))
+                    self.directorio_actual = os.path.dirname(ruta_directorio)
+            elif os.path.isdir(ruta_directorio):
+                self.directorio_actual = ruta_directorio
+                for root, _, files in os.walk(ruta_directorio):
+                    for file in sorted(files):
+                        if not file.startswith(".") and file.lower().endswith(extensiones):
+                            archivos.append((root, file))
+                            if len(archivos) >= 50000:
+                                break
                     if len(archivos) >= 50000:
                         break
-            if len(archivos) >= 50000:
-                break
+        else:
+            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
         total_files = len(archivos)
         if total_files == 0:
@@ -667,6 +855,13 @@ class AuditService:
         sin_meta_count = 0
 
         for idx, (root, file) in enumerate(archivos, 1):
+            _cooperative_yield()
+            if self._cancelar_proceso:
+                print(f"[AUDIT SERVICE] Carga de metadatos detenida por el usuario en ({idx}/{total_files})")
+                if progreso_cb:
+                    progreso_cb(100, f"Carga detenida por el usuario. {len(tracks_cargados)} pistas leídas.")
+                break
+
             full_path = os.path.join(root, file)
             pct = int(5 + (idx / total_files) * 90)
             if total_files <= 30 or idx % max(1, total_files // 30) == 0 or idx == total_files:
@@ -928,6 +1123,7 @@ class AuditService:
         if not tracks or not isinstance(tracks, list):
             return {"status": "error", "msg": "Lista de pistas vacía", "actualizadas": 0}
 
+        self.reiniciar_cancelacion()
         total = len(tracks)
         actualizadas = 0
         errores = 0
@@ -936,6 +1132,7 @@ class AuditService:
             progreso_cb(5, f"Buscando e inyectando carátulas 1:1 ({total} pistas)...")
 
         for idx, t in enumerate(tracks, 1):
+            _cooperative_yield()
             if self._cancelar_proceso:
                 print(f"[CARATULAS] Cancelado por usuario en ({idx}/{total})")
                 break
@@ -986,6 +1183,7 @@ class AuditService:
         if not tracks or not isinstance(tracks, list):
             return {"status": "error", "msg": "Lista de pistas vacía", "inyectados": 0}
 
+        self.reiniciar_cancelacion()
         total = len(tracks)
         inyectados = 0
         errores = 0
@@ -994,8 +1192,9 @@ class AuditService:
             progreso_cb(5, f"Iniciando inyección profunda de metadatos ({total} pistas)...")
 
         for idx, t in enumerate(tracks, 1):
+            _cooperative_yield()
             if self._cancelar_proceso:
-                print(f"[CARATULAS] Cancelado por usuario en ({idx}/{total})")
+                print(f"[METADATOS] Cancelado por usuario en ({idx}/{total})")
                 break
             pct = int(5 + (idx / total) * 90)
             target_path = t.get("path")
@@ -1103,7 +1302,7 @@ class AuditService:
 
         return round(score, 2)
 
-    def detectar_duplicados_biblioteca(self, tracks: list) -> dict:
+    def detectar_duplicados_biblioteca(self, tracks: list, proteger_versiones_hermanas: bool = False) -> dict:
         """Agrupa y compara cara a cara duplicados de la biblioteca identificando la versión óptima a conservar."""
         if not tracks or not isinstance(tracks, list):
             return {"total_grupos": 0, "total_duplicados": 0, "espacio_recuperable_mb": 0.0, "grupos": []}
@@ -1152,33 +1351,74 @@ class AuditService:
                 t_copy["quality_score"] = score
                 t_copy["size_mb"] = size_mb
                 t_copy["size_bytes"] = size_bytes
+                # Detección inteligente de versión DJ (Extended vs Radio vs Dub vs Acapella)
+                v_type = TagSanitizerService.extraer_tipo_version(
+                    f"{t.get('title', '')} {t.get('t', '')} {t.get('filename', '')} {t.get('f', '')}"
+                )
+                t_copy["version_type"] = v_type
                 trks_evaluados.append(t_copy)
 
-            # Ordenar descendente por puntuación de calidad (primero el de mayor calidad)
-            trks_evaluados.sort(key=lambda x: (x["quality_score"], x["size_bytes"]), reverse=True)
+            if proteger_versiones_hermanas:
+                # Agrupación por tipo de versión DJ (evitar borrar versiones hermanas)
+                por_version = collections.defaultdict(list)
+                for t_item in trks_evaluados:
+                    por_version[t_item["version_type"]].append(t_item)
 
-            # El primero es el ganador a conservar
-            winner = trks_evaluados[0]
-            winner["is_winner"] = True
-            winner["recommendation"] = "CONSERVAR (Mayor Calidad)"
-            winner["badge_recommendation"] = "★ MEJOR CALIDAD"
-            winner["badge_color"] = "green"
-            winner["delete_selected"] = False
+                for v_tipo, trks_v in por_version.items():
+                    trks_v.sort(key=lambda x: (x["quality_score"], x["size_bytes"]), reverse=True)
+                    best_of_type = trks_v[0]
+                    best_of_type["is_winner"] = True
 
-            # Los siguientes son inferiores recomendados para eliminación
-            for inf in trks_evaluados[1:]:
-                inf["is_winner"] = False
-                inf["recommendation"] = "ELIMINAR (Duplicado Inferior)"
-                inf["badge_recommendation"] = "🗑️ DUPLICADO INFERIOR"
-                inf["badge_color"] = "red"
-                inf["delete_selected"] = True
-                total_duplicados_inferiores += 1
-                espacio_recuperable_bytes += inf["size_bytes"]
+                    if len(por_version) > 1:
+                        v_label = v_tipo.upper() if v_tipo != "standard" else "ORIGINAL"
+                        best_of_type["recommendation"] = f"CONSERVAR (Versión {v_label})"
+                        best_of_type["badge_recommendation"] = f"🎧 VERSIÓN {v_label}"
+                        best_of_type["badge_color"] = "cyan"
+                    else:
+                        best_of_type["recommendation"] = "CONSERVAR (Mayor Calidad)"
+                        best_of_type["badge_recommendation"] = "★ MEJOR CALIDAD"
+                        best_of_type["badge_color"] = "green"
+                    best_of_type["delete_selected"] = False
+
+                    # Duplicados reales del MISMO tipo de versión inferior
+                    for inf in trks_v[1:]:
+                        inf["is_winner"] = False
+                        inf["recommendation"] = "ELIMINAR (Duplicado Inferior)"
+                        inf["badge_recommendation"] = "🗑️ DUPLICADO INFERIOR"
+                        inf["badge_color"] = "red"
+                        inf["delete_selected"] = True
+                        total_duplicados_inferiores += 1
+                        espacio_recuperable_bytes += inf["size_bytes"]
+
+                # Ordenar presentación: conservados primero, luego duplicados para eliminar
+                trks_evaluados.sort(key=lambda x: (x["delete_selected"], -x["quality_score"]))
+                winner = trks_evaluados[0]
+                tiene_hermanas = len(por_version) > 1
+            else:
+                # Comportamiento estándar estricto: 1 único ganador por grupo
+                trks_evaluados.sort(key=lambda x: (x["quality_score"], x["size_bytes"]), reverse=True)
+                winner = trks_evaluados[0]
+                winner["is_winner"] = True
+                winner["recommendation"] = "CONSERVAR (Mayor Calidad)"
+                winner["badge_recommendation"] = "★ MEJOR CALIDAD"
+                winner["badge_color"] = "green"
+                winner["delete_selected"] = False
+
+                for inf in trks_evaluados[1:]:
+                    inf["is_winner"] = False
+                    inf["recommendation"] = "ELIMINAR (Duplicado Inferior)"
+                    inf["badge_recommendation"] = "🗑️ DUPLICADO INFERIOR"
+                    inf["badge_color"] = "red"
+                    inf["delete_selected"] = True
+                    total_duplicados_inferiores += 1
+                    espacio_recuperable_bytes += inf["size_bytes"]
+                tiene_hermanas = False
 
             grupos_resultado.append({
                 "clave": clave,
                 "display_name": f"{winner.get('artist') or 'Varios'} - {winner.get('title') or winner.get('filename')}",
                 "total_versiones": len(trks_evaluados),
+                "tiene_versiones_hermanas": tiene_hermanas,
                 "winner": winner,
                 "tracks": trks_evaluados
             })

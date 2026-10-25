@@ -11,6 +11,7 @@ from services.download_service import DownloadService
 from services.export_service import ExportService
 from application.taxonomy_service import TaxonomyService
 from services.shazam_service import ShazamRecognitionService
+from services.tag_sanitizer_service import TagSanitizerService
 
 def compilar_frontend_si_necesario():
     jsx_path = os.path.join("web", "js", "app.jsx")
@@ -41,6 +42,11 @@ shazam_svc = ShazamRecognitionService()
 
 @bottle.route('/cover')
 def get_cover():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+    if bottle.request.method == 'OPTIONS':
+        return ""
     file_path = bottle.request.query.get('path', '')
     real_path = audio_playback_svc._resolver_ruta(file_path) if file_path else ''
     target = real_path if real_path else file_path
@@ -52,6 +58,11 @@ def get_cover():
 
 @bottle.route('/stream_audio')
 def stream_audio():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+    if bottle.request.method == 'OPTIONS':
+        return ""
     file_path = bottle.request.query.get('path', '')
     if file_path:
         real_path = audio_playback_svc._resolver_ruta(file_path)
@@ -100,17 +111,26 @@ def listar_subcarpetas_sistema(ruta_base=""):
 
 @eel.expose
 def cargar_metadatos_directorio(ruta_directorio):
-    audio_playback_svc.establecer_directorio(ruta_directorio)
+    if isinstance(ruta_directorio, (list, tuple)) and len(ruta_directorio) > 0:
+        audio_playback_svc.establecer_directorio(os.path.dirname(ruta_directorio[0]))
+    elif isinstance(ruta_directorio, str):
+        audio_playback_svc.establecer_directorio(ruta_directorio)
     return audit_svc.cargar_metadatos_directorio(ruta_directorio, _emitir_progreso_batch)
 
 @eel.expose
 def iniciar_auditoria(ruta_directorio, opts=None):
-    audio_playback_svc.establecer_directorio(ruta_directorio)
+    if isinstance(ruta_directorio, (list, tuple)) and len(ruta_directorio) > 0:
+        audio_playback_svc.establecer_directorio(os.path.dirname(ruta_directorio[0]))
+    elif isinstance(ruta_directorio, str):
+        audio_playback_svc.establecer_directorio(ruta_directorio)
     return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui, _emitir_progreso_batch, opts=opts)
 
 @eel.expose
 def ejecutar_auditoria_lote(ruta_directorio, opts=None):
-    audio_playback_svc.establecer_directorio(ruta_directorio)
+    if isinstance(ruta_directorio, (list, tuple)) and len(ruta_directorio) > 0:
+        audio_playback_svc.establecer_directorio(os.path.dirname(ruta_directorio[0]))
+    elif isinstance(ruta_directorio, str):
+        audio_playback_svc.establecer_directorio(ruta_directorio)
     return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui, _emitir_progreso_batch, opts=opts)
 
 @eel.expose
@@ -201,12 +221,12 @@ def log_to_console(msg):
     print(f"[UI] {msg}")
 
 @eel.expose
-def identificar_archivo_shazam(filepath):
-    return shazam_svc.reconocer_archivo(filepath)
+def identificar_archivo_shazam(filepath, motor="hybrid", audd_token=""):
+    return shazam_svc.reconocer_archivo(filepath, motor=motor, audd_token=audd_token)
 
 @eel.expose
-def identificar_audio_base64(b64_data):
-    return shazam_svc.reconocer_base64(b64_data)
+def identificar_audio_base64(b64_data, motor="hybrid", audd_token="", filename=""):
+    return shazam_svc.reconocer_base64(b64_data, motor=motor, audd_token=audd_token, filename=filename)
 
 @eel.expose
 def regenerar_mood_y_comentario(track, lang="es"):
@@ -246,10 +266,112 @@ def regenerar_mood_y_comentario(track, lang="es"):
         "comment": comment
     }
 
+@bottle.route('/api/cancelar_procesos', method=['GET', 'POST', 'OPTIONS'])
+def api_cancelar_procesos():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    audit_svc.cancelar_proceso()
+    download_svc.cancelar_descarga()
+    media_svc.cancelar_busqueda()
+    print("[SERVER] Cancelación solicitada y ejecutada vía HTTP /api/cancelar_procesos")
+    return {"status": "ok", "msg": "Procesos cancelados"}
+
+@bottle.route('/api/analizar_spotify', method=['GET', 'POST', 'OPTIONS'])
+def api_analizar_spotify():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    q = bottle.request.query.get('query', '')
+    if not q and bottle.request.json:
+        q = bottle.request.json.get('query', '')
+    if not q:
+        q = bottle.request.forms.get('query', '')
+    res = media_svc.analizar_catalogo_spotify(q or "")
+    return res
+
+@bottle.route('/api/sanitizar_metadatos', method=['POST', 'OPTIONS'])
+def api_sanitizar_metadatos():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    data = bottle.request.json or {}
+    tracks = data.get('tracks', [])
+    guardar = bool(data.get('guardar_en_disco', False))
+    return sanitizar_metadatos_pistas(tracks, guardar)
+
+@eel.expose
+def sanitizar_metadatos_pistas(tracks, guardar_en_disco=False):
+    """Higieniza masivamente títulos, artistas y versiones eliminando spam promocional y estandarizando feats."""
+    if not tracks or not isinstance(tracks, list):
+        return {"status": "error", "msg": "Lista de pistas vacía", "modificados": 0, "tracks": []}
+    
+    modificados = 0
+    nuevos_tracks = []
+    from infrastructure.audio_processor import AudioProcessorService
+    
+    for t in tracks:
+        t_copy = dict(t)
+        orig_title = t.get("title") or t.get("t") or ""
+        orig_artist = t.get("artist") or t.get("a") or ""
+        orig_album = t.get("album") or ""
+        
+        san = TagSanitizerService.sanitizar_track(orig_title, orig_artist, orig_album)
+        if san.get("cleaned"):
+            modificados += 1
+            t_copy["title"] = san["title"]
+            t_copy["t"] = san["title"]
+            t_copy["artist"] = san["artist"]
+            t_copy["a"] = san["artist"]
+            t_copy["album"] = san["album"]
+            t_copy["version_type"] = san["version_type"]
+            t_copy["cleaned"] = True
+            
+            # Guardar opcionalmente en archivo físico ID3 / FLAC
+            p = t.get("path") or t.get("f")
+            if guardar_en_disco and p and os.path.exists(p):
+                try:
+                    AudioProcessorService.escribir_metadatos_pro(p, t_copy)
+                except Exception as err:
+                    print(f"[SANITIZER ERROR ESCRITURA] {err}")
+        else:
+            t_copy["version_type"] = san.get("version_type", "standard")
+            
+        nuevos_tracks.append(t_copy)
+        
+    return {
+        "status": "ok",
+        "total": len(nuevos_tracks),
+        "modificados": modificados,
+        "tracks": nuevos_tracks
+    }
+
+@bottle.route('/api/buscar_reemplazos_spotify', method=['POST', 'OPTIONS'])
+def api_buscar_reemplazos_spotify():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    data = bottle.request.json or {}
+    tracks = data.get('tracks', [])
+    return media_svc.buscar_reemplazos_spotify_batch(tracks)
+
+@eel.expose
+def buscar_reemplazos_spotify_batch(tracks):
+    """Busca en paralelo versiones oficiales HD en Spotify para una lista de pistas de baja calidad o FLAC fake."""
+    return media_svc.buscar_reemplazos_spotify_batch(tracks)
+
 @eel.expose
 def cancelar_procesos_activos():
     audit_svc.cancelar_proceso()
     download_svc.cancelar_descarga()
+    media_svc.cancelar_busqueda()
+    print("[SERVER] Cancelación solicitada y ejecutada vía Eel cancelar_procesos_activos")
     return {"status": "ok", "msg": "Procesos cancelados"}
 
 @eel.expose
@@ -327,7 +449,23 @@ def exportar_serato_crates(tracks, destino_serato_dir=None):
 
 @eel.expose
 def exportar_rekordbox_xml(tracks, destino_dir="/Users/admin/Music/mi musica", nombre_archivo="rekordbox.xml"):
-    return export_svc.exportar_rekordbox_xml(tracks, destino_dir, nombre_archivo)
+    return export_svc.exportar_rekordbox_xml(tracks, destino_dir, nombre_archivo, incluir_memory_cues=True)
+
+@eel.expose
+def exportar_reporte_descargas_xls(report_data, destino_dir="/Users/admin/Music/mi musica"):
+    return export_svc.exportar_reporte_descargas_xls(report_data, destino_dir)
+
+@bottle.route('/api/descargar_reporte_xls', method=['POST', 'OPTIONS'])
+def api_descargar_reporte_xls():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    data = bottle.request.json or {}
+    report_data = data.get("report_data", data)
+    destino = data.get("destino_dir", "/Users/admin/Music/mi musica")
+    return export_svc.exportar_reporte_descargas_xls(report_data, destino)
 
 @eel.expose
 def exportar_apuntes_shazam(tracks, formato="xls", destino_dir="/Users/admin/Music/mi musica"):

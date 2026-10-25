@@ -1,20 +1,54 @@
 import os
+import re
 import json
 import ssl
+import time
 import subprocess
 import urllib.request
 import urllib.parse
+import concurrent.futures
 from mutagen import File as MutagenFile
+
+try:
+    import spotipy
+    from spotipy.oauth2 import SpotifyClientCredentials
+except ImportError:
+    spotipy = None
+
 
 class MediaService:
     def __init__(self):
-        pass
+        self._cancelar_busqueda = False
+        self._sp = self._inicializar_spotipy()
+
+    def cancelar_busqueda(self):
+        """Activa la bandera de cancelación para abortar búsquedas en curso."""
+        self._cancelar_busqueda = True
+        print("[MEDIA SERVICE] Cancelación de búsqueda activada.")
 
     def _ssl_context(self):
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
         return ctx
+
+    def _inicializar_spotipy(self):
+        """Inicializa el cliente oficial de Spotify (Spotipy) a partir de config_ingest.json."""
+        if not spotipy:
+            return None
+        try:
+            cfg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config_ingest.json")
+            if os.path.exists(cfg_path):
+                with open(cfg_path, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                cid = cfg.get("spotify_client_id", "").strip()
+                sec = cfg.get("spotify_client_secret", "").strip()
+                if cid and sec:
+                    auth_mgr = SpotifyClientCredentials(client_id=cid, client_secret=sec)
+                    return spotipy.Spotify(auth_manager=auth_mgr, requests_timeout=10)
+        except Exception as e:
+            print(f"[MEDIA SERVICE] Error inicializando Spotipy: {e}")
+        return None
 
     def obtener_caratula_binaria(self, file_path: str):
         if os.path.exists(file_path):
@@ -31,19 +65,105 @@ class MediaService:
                 pass
         return None, None
 
-    def buscar_metadata_itunes(self, termino, limit=10):
+    def buscar_metadata_itunes(self, termino, limit=30):
+        if self._cancelar_busqueda or not termino:
+            return []
         try:
             q = urllib.parse.quote(termino)
             url = f"https://itunes.apple.com/search?term={q}&entity=song&limit={limit}"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, context=self._ssl_context(), timeout=5) as res:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'})
+            with urllib.request.urlopen(req, context=self._ssl_context(), timeout=6) as res:
+                if self._cancelar_busqueda:
+                    return []
                 data = json.loads(res.read().decode('utf-8'))
                 return data.get("results", [])
         except Exception as e:
-            print(f"[WARN] Error consultando API de metadatos: {e}")
+            print(f"[MEDIA SERVICE WARN] Error consultando API de iTunes: {e}")
             return []
 
+    def _buscar_tracks_por_spotify_artist_id(self, artist_id: str) -> list:
+        """Obtiene hasta 30 pistas destacadas y carátulas HD a partir del ID de artista en Spotify."""
+        keys_camelot = ["8A", "11A", "4A", "6B", "9A", "2A", "1A", "5B", "10A", "7A", "3B", "12A"]
+        bpms_tech = ["134.00", "136.00", "132.00", "135.00", "130.00", "133.00", "135.00", "138.00", "131.00", "137.00", "134.00", "136.00"]
+
+        if not self._sp:
+            self._sp = self._inicializar_spotipy()
+
+        if self._sp:
+            try:
+                art_info = self._sp.artist(artist_id)
+                artist_name = art_info.get("name", "Artista")
+                genres = art_info.get("genres", [])
+                genre_name = genres[0].title() if genres else "Pop / Electronic"
+
+                albums = self._sp.artist_albums(artist_id, album_type="album,single", limit=6).get("items", [])
+                all_tracks = []
+                seen_titles = set()
+
+                for alb in albums:
+                    if self._cancelar_busqueda:
+                        break
+                    alb_name = alb.get("name", "")
+                    alb_imgs = alb.get("images", [])
+                    cover = alb_imgs[0]["url"] if alb_imgs else ""
+                    alb_tracks = self._sp.album_tracks(alb["id"], limit=10).get("items", [])
+                    for t in alb_tracks:
+                        t_name = t.get("name", "").strip()
+                        if t_name.lower() not in seen_titles:
+                            seen_titles.add(t_name.lower())
+                            dur_sec = (t.get("duration_ms") or 210000) // 1000
+                            idx = len(all_tracks)
+                            all_tracks.append({
+                                "id": str(t.get("id") or f"sp_{idx}"),
+                                "title": t_name,
+                                "artist": artist_name,
+                                "album": alb_name,
+                                "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
+                                "bpm": bpms_tech[idx % len(bpms_tech)],
+                                "key": keys_camelot[idx % len(keys_camelot)],
+                                "cover": cover,
+                                "preview_url": t.get("preview_url") or "",
+                                "genre": genre_name
+                            })
+                        if len(all_tracks) >= 30:
+                            break
+                    if len(all_tracks) >= 30:
+                        break
+
+                if all_tracks:
+                    return all_tracks
+            except Exception as e:
+                print(f"[MEDIA SERVICE] Error extrayendo artista de Spotify: {e}")
+
+        return []
+
+    def _buscar_tracks_por_nombre_artista_spotify(self, artist_name: str) -> list:
+        """Busca el artista por nombre en Spotify y devuelve su discografía."""
+        if not self._sp:
+            self._sp = self._inicializar_spotipy()
+        if not self._sp or not artist_name:
+            return []
+
+        try:
+            res = self._sp.search(q=f'artist:"{artist_name}"', type='artist', limit=1)
+            artists = res.get('artists', {}).get('items', [])
+            if not artists:
+                res = self._sp.search(q=artist_name, type='artist', limit=1)
+                artists = res.get('artists', {}).get('items', [])
+
+            if artists:
+                artist_id = artists[0]['id']
+                return self._buscar_tracks_por_spotify_artist_id(artist_id)
+        except Exception as e:
+            print(f"[MEDIA SERVICE WARN] Búsqueda de artista en Spotipy falló: {e}")
+        return []
+
     def analizar_catalogo_spotify(self, spotify_url):
+        """
+        Analiza e ingesta un término de búsqueda, URL de artista, playlist o álbum de Spotify.
+        Devuelve lista estandarizada de pistas con carátulas HD y metadatos.
+        """
+        self._cancelar_busqueda = False
         clean_input = str(spotify_url or "").strip()
         keys_camelot = ["8A", "11A", "4A", "6B", "9A", "2A", "1A", "5B", "10A", "7A", "3B", "12A"]
         bpms_tech = ["134.00", "136.00", "132.00", "135.00", "130.00", "133.00", "135.00", "138.00", "131.00", "137.00", "134.00", "136.00"]
@@ -51,10 +171,31 @@ class MediaService:
         if not clean_input:
             return {"status": "error", "msg": "Término o URL vacía", "tracks": []}
 
-        # CASO 1: Búsqueda por Texto Libre Directo (Artista, Álbum, Nombre de Canción, Género)
-        if not clean_input.startswith("http://") and not clean_input.startswith("https://"):
-            print(f"[SPOTIFY INGEST] Búsqueda por texto libre / artista / álbum / género: '{clean_input}'")
-            resultados = self.buscar_metadata_itunes(clean_input, limit=30)
+        # CASO 1: Enlace o URI directo de Artista en Spotify
+        m_artist = re.search(r'(?:artist/|spotify:artist:)([a-zA-Z0-9]{15,30})', clean_input)
+        if m_artist:
+            artist_id = m_artist.group(1)
+            print(f"[SPOTIFY INGEST] Enlace de Artista detectado: ID '{artist_id}'")
+            sp_tracks = self._buscar_tracks_por_spotify_artist_id(artist_id)
+            if sp_tracks:
+                return {"status": "ok", "tracks": sp_tracks, "count": len(sp_tracks), "query": clean_input}
+
+        # CASO 2: Limpieza de prefijos de búsqueda avanzada (ej. "artist:dani fernandez", "track:...")
+        search_query = re.sub(r'^(?:artist|track|album|genre)\s*:\s*', '', clean_input, flags=re.I).strip()
+
+        # CASO 3: Búsqueda por Texto Libre Directo (Artista o Canción)
+        if not search_query.startswith("http://") and not search_query.startswith("https://"):
+            print(f"[SPOTIFY INGEST] Búsqueda por artista o texto libre: '{search_query}'")
+
+            # 3.1 Intentar primero a través de la API oficial de Spotify (Spotipy)
+            sp_tracks = self._buscar_tracks_por_nombre_artista_spotify(search_query)
+            if sp_tracks and len(sp_tracks) > 0:
+                return {"status": "ok", "tracks": sp_tracks, "count": len(sp_tracks), "query": search_query}
+
+            # 3.2 Respaldo de alta velocidad en iTunes Search API
+            resultados = self.buscar_metadata_itunes(search_query, limit=30)
+            if self._cancelar_busqueda:
+                return {"status": "cancelled", "msg": "Búsqueda cancelada", "tracks": []}
             tracks = []
             for idx, item in enumerate(resultados):
                 millis = item.get("trackTimeMillis") or 240000
@@ -64,29 +205,27 @@ class MediaService:
                 tracks.append({
                     "id": str(item.get("trackId") or f"trk_{idx}"),
                     "title": item.get("trackName", "Unknown Track"),
-                    "artist": item.get("artistName", clean_input),
+                    "artist": item.get("artistName", search_query),
                     "album": item.get("collectionName", "Single / EP"),
                     "duration": dur_str,
                     "bpm": bpms_tech[idx % len(bpms_tech)],
                     "key": keys_camelot[idx % len(keys_camelot)],
                     "cover": art,
                     "preview_url": item.get("previewUrl", ""),
-                    "genre": item.get("primaryGenreName", "Electronic")
+                    "genre": item.get("primaryGenreName", "Pop / Electronic")
                 })
-            return {"status": "ok", "tracks": tracks, "query": clean_input}
+            return {"status": "ok", "tracks": tracks, "count": len(tracks), "query": search_query}
 
         clean_url = clean_input.split('?')[0].strip()
 
-        # CASO 2: Extracción a través del Embed JSON de Spotify (playlists, albums, tracks, artists)
+        # CASO 4: Extracción a través del Embed JSON de Spotify (playlists, albums, tracks)
         try:
-            import re
             embed_url = re.sub(r'open\.spotify\.com/(?:[a-zA-Z]{2,4}-[a-zA-Z]{2,4}/|intl-[a-z]{2}/)?', 'open.spotify.com/embed/', clean_url)
             req = urllib.request.Request(embed_url, headers={
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             })
             with urllib.request.urlopen(req, context=self._ssl_context(), timeout=5) as res:
                 html = res.read().decode('utf-8')
-                import re
                 m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html)
                 if m:
                     d = json.loads(m.group(1))
@@ -99,7 +238,6 @@ class MediaService:
                             cover_default = best.get('url', '')
 
                         trackList = entity.get('trackList', [])
-                        # Si es un track individual
                         if not trackList and entity.get('title'):
                             millis = entity.get('duration') or 210000
                             secs = int(millis // 1000)
@@ -114,73 +252,9 @@ class MediaService:
                                 "key": "8A",
                                 "cover": cover_default,
                                 "preview_url": prev_url
-                            }]}
+                            }], "count": 1}
 
                         if trackList:
-                            from concurrent.futures import ThreadPoolExecutor
-
-                            def clean_title_for_search(raw_t):
-                                return re.sub(r'\s*-\s*(Original Mix|Remix|Rework|Radio Edit|Extended Mix|Club Mix|Edit).*$', '', raw_t, flags=re.I).strip()
-
-                            def resolver_cover_y_album_track(t_item):
-                                tid = str(t_item.get('uri', '')).split(':')[-1]
-                                t_title = t_item.get('title', 'Unknown Track')
-                                t_artist = t_item.get('subtitle', entity.get('name', 'Artista'))
-                                t_cover = ""
-                                t_album = "Single / EP"
-
-                                # 1. Si la entidad padre es un álbum completo, todos los tracks heredan la portada oficial del álbum
-                                if entity.get('type') == 'album' and cover_default:
-                                    t_cover = cover_default
-                                    t_album = entity.get('name') or entity.get('title') or t_album
-
-                                # 2. Obtener la carátula ORIGINAL de Spotify (640x640) directamente del embed individual del track
-                                if not t_cover and tid and len(tid) > 10:
-                                    try:
-                                        t_url = f"https://open.spotify.com/embed/track/{tid}"
-                                        rq_t = urllib.request.Request(t_url, headers={
-                                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                                        })
-                                        with urllib.request.urlopen(rq_t, context=self._ssl_context(), timeout=3) as res_t:
-                                            html_t = res_t.read().decode('utf-8')
-                                            m_t = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html_t)
-                                            if m_t:
-                                                d_t = json.loads(m_t.group(1))
-                                                ent_t = d_t.get('props', {}).get('pageProps', {}).get('state', {}).get('data', {}).get('entity', {})
-                                                imgs_t = ent_t.get('visualIdentity', {}).get('image', [])
-                                                if imgs_t:
-                                                    best_img = max(imgs_t, key=lambda x: x.get('maxWidth', 0))
-                                                    t_cover = best_img.get('url', '')
-                                    except Exception:
-                                        pass
-
-                                # 3. Enriquecer con nombre de Álbum o fallback de carátula mediante iTunes Search API
-                                try:
-                                    ct = clean_title_for_search(t_title)
-                                    main_art = t_artist.split(',')[0].strip()
-                                    q = urllib.parse.quote(f"{main_art} {ct}")
-                                    rq_it = urllib.request.Request(
-                                        f"https://itunes.apple.com/search?term={q}&entity=song&limit=1",
-                                        headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
-                                    )
-                                    with urllib.request.urlopen(rq_it, context=self._ssl_context(), timeout=2.5) as res_it:
-                                        d_it = json.loads(res_it.read().decode('utf-8')).get('results', [])
-                                        if d_it:
-                                            if t_album == 'Single / EP' and d_it[0].get('collectionName'):
-                                                t_album = d_it[0].get('collectionName')
-                                            if not t_cover and d_it[0].get('artworkUrl100'):
-                                                t_cover = (d_it[0].get('artworkUrl100') or '').replace('100x100bb', '600x600bb')
-                                except Exception:
-                                    pass
-
-                                if not t_cover:
-                                    t_cover = cover_default
-
-                                return t_cover, t_album
-
-                            with ThreadPoolExecutor(max_workers=min(12, len(trackList))) as executor:
-                                meta_extra = list(executor.map(resolver_cover_y_album_track, trackList))
-
                             tracks = []
                             for idx, t in enumerate(trackList):
                                 millis = t.get('duration') or 210000
@@ -188,54 +262,50 @@ class MediaService:
                                 dur_str = f"{secs // 60}:{secs % 60:02d}"
                                 prev_obj = t.get('audioPreview')
                                 prev_url = prev_obj.get('url', '') if isinstance(prev_obj, dict) else ''
-                                t_cov, t_alb = meta_extra[idx] if idx < len(meta_extra) else (cover_default, 'Single / EP')
-
                                 tracks.append({
-                                    "id": str(t.get('uid') or t.get('uri') or f"sp_{idx}"),
+                                    "id": str(t.get('uri', '').split(':')[-1] or f"trk_{idx}"),
                                     "title": t.get('title', 'Unknown Track'),
                                     "artist": t.get('subtitle', entity.get('name', 'Artista')),
-                                    "album": t_alb,
+                                    "album": entity.get('name', 'Single / EP'),
                                     "duration": dur_str,
                                     "bpm": bpms_tech[idx % len(bpms_tech)],
                                     "key": keys_camelot[idx % len(keys_camelot)],
-                                    "cover": t_cov,
+                                    "cover": cover_default,
                                     "preview_url": prev_url
                                 })
-                            return {"status": "ok", "tracks": tracks}
+                            return {"status": "ok", "tracks": tracks, "count": len(tracks)}
         except Exception as e:
-            print(f"[SPOTIFY EMBED WARN] Fallback a búsqueda secundaria: {e}")
+            print(f"[SPOTIFY EMBED WARN] Extracción embed falló: {e}")
 
-        # 2. Fallback por oEmbed + iTunes Search
-        search_term = "Marco Bailey"
-        try:
-            oembed_url = f"https://open.spotify.com/oembed?url={urllib.parse.quote(clean_url)}"
-            req = urllib.request.Request(oembed_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, context=self._ssl_context(), timeout=4) as res:
-                oem = json.loads(res.read().decode('utf-8'))
-                if oem.get("title"):
-                    search_term = oem.get("title")
-        except Exception:
-            pass
+        # Respaldo dinámico (nunca fijo a un artista hardcodeado)
+        url_parts = [p for p in clean_url.strip("/").split("/") if p]
+        fallback_query = url_parts[-1] if url_parts else ""
+        if len(fallback_query) > 20 and not ' ' in fallback_query:
+            fallback_query = "" # es un ID alfanumérico sin nombre
 
-        resultados = self.buscar_metadata_itunes(search_term, limit=15)
-        tracks = []
-        for idx, item in enumerate(resultados):
-            millis = item.get("trackTimeMillis") or 360000
-            secs = int(millis // 1000)
-            dur_str = f"{secs // 60}:{secs % 60:02d}"
-            art = (item.get("artworkUrl100") or "").replace("100x100bb", "300x300bb")
-            tracks.append({
-                "id": str(item.get("trackId") or f"trk_{idx}"),
-                "title": item.get("trackName", "Unknown Track"),
-                "artist": item.get("artistName", search_term),
-                "album": item.get("collectionName", "Single / EP"),
-                "duration": dur_str,
-                "bpm": bpms_tech[idx % len(bpms_tech)],
-                "key": keys_camelot[idx % len(keys_camelot)],
-                "cover": art,
-                "preview_url": item.get("previewUrl", "")
-            })
-        return {"status": "ok", "tracks": tracks}
+        if fallback_query:
+            resultados = self.buscar_metadata_itunes(fallback_query, limit=15)
+            tracks = []
+            for idx, item in enumerate(resultados):
+                millis = item.get("trackTimeMillis") or 240000
+                secs = int(millis // 1000)
+                dur_str = f"{secs // 60}:{secs % 60:02d}"
+                art = (item.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
+                tracks.append({
+                    "id": str(item.get("trackId") or f"trk_{idx}"),
+                    "title": item.get("trackName", "Unknown Track"),
+                    "artist": item.get("artistName", fallback_query),
+                    "album": item.get("collectionName", "Single / EP"),
+                    "duration": dur_str,
+                    "bpm": bpms_tech[idx % len(bpms_tech)],
+                    "key": keys_camelot[idx % len(keys_camelot)],
+                    "cover": art,
+                    "preview_url": item.get("previewUrl", "")
+                })
+            if tracks:
+                return {"status": "ok", "tracks": tracks, "count": len(tracks)}
+
+        return {"status": "error", "msg": "No se encontraron pistas para este enlace o búsqueda en Spotify.", "tracks": []}
 
     def resolver_stream_preescucha(self, titulo, artista):
         res = self.buscar_metadata_itunes(f"{artista} {titulo}", limit=1)
@@ -252,3 +322,107 @@ class MediaService:
         except Exception as e:
             print(f"[ERROR] Fallback yt-dlp falló: {e}")
         return {"status": "error", "stream_url": ""}
+
+    def buscar_reemplazos_spotify_batch(self, tracks: list) -> dict:
+        """
+        Toma una lista de pistas (ej. identificadas como FLAC Fake o baja calidad en auditoría)
+        y busca en paralelo sus versiones oficiales de alta calidad en Spotify / iTunes.
+        Devuelve la lista estandarizada para ingesta directa en la tabla de Spotify.
+        """
+        if not tracks or not isinstance(tracks, list):
+            return {"status": "error", "msg": "Lista de pistas vacía", "tracks": [], "count": 0}
+
+        keys_camelot = ["8A", "11A", "4A", "6B", "9A", "2A", "1A", "5B", "10A", "7A", "3B", "12A"]
+        bpms_tech = ["126.00", "128.00", "125.00", "127.00", "124.00", "130.00"]
+
+        if not self._sp:
+            self._sp = self._inicializar_spotipy()
+
+        def _buscar_un_reemplazo(idx_track_tuple):
+            idx, t = idx_track_tuple
+            orig_artist = str(t.get("artist") or t.get("a") or "").strip()
+            orig_title = str(t.get("title") or t.get("t") or "").strip()
+            orig_file = str(t.get("filename") or t.get("f") or "")
+            reemplazo_de = f"{orig_artist} - {orig_title}" if orig_artist and orig_title else (orig_title or orig_file)
+
+            # Limpiar nombre para la búsqueda (quitar corchetes de calidad/spam)
+            q = f"{orig_artist} {orig_title}".strip()
+            if not q or q == "-":
+                q = os.path.splitext(orig_file)[0]
+            q_clean = re.sub(r'\[.*?\]|\(.*?\)', '', q).strip()
+            q_clean = re.sub(r'\s+', ' ', q_clean)
+
+            # 1. Intento primario vía Spotipy
+            if self._sp:
+                try:
+                    r = self._sp.search(q=q_clean, type='track', limit=1)
+                    items = r.get('tracks', {}).get('items', [])
+                    if items:
+                        it = items[0]
+                        dur_sec = it.get('duration_ms', 240000) // 1000
+                        imgs = it.get('album', {}).get('images', [])
+                        cover = imgs[0]['url'] if imgs else ''
+                        prev_url = it.get('preview_url') or ''
+                        return {
+                            "id": str(it['id']),
+                            "title": it['name'],
+                            "artist": ", ".join(a['name'] for a in it.get('artists', [])) or orig_artist,
+                            "album": it.get('album', {}).get('name', 'Single / EP'),
+                            "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
+                            "bpm": str(t.get("bpm") or t.get("b") or bpms_tech[idx % len(bpms_tech)]),
+                            "key": str(t.get("key") or t.get("k") or keys_camelot[idx % len(keys_camelot)]),
+                            "cover": cover,
+                            "preview_url": prev_url,
+                            "selected": True,
+                            "origin": "audit_upgrade",
+                            "reemplazo_de": reemplazo_de,
+                            "format": "FLAC",
+                            "energy": int(t.get("energy") or t.get("e") or 80),
+                            "danceability": int(t.get("danceability") or t.get("dance") or 80),
+                            "status": "Listo para Descarga"
+                        }
+                except Exception as e:
+                    print(f"[REEMPLAZO SPOTIFY WARN] Fallo búsqueda Spotipy '{q_clean}': {e}")
+
+            # 2. Respaldo rápido vía iTunes
+            try:
+                res_it = self.buscar_metadata_itunes(q_clean, limit=1)
+                if res_it:
+                    it = res_it[0]
+                    dur_ms = it.get("trackTimeMillis", 240000)
+                    dur_sec = int(dur_ms // 1000)
+                    cover = (it.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
+                    return {
+                        "id": str(it.get("trackId") or f"rep_{idx}_{int(time.time())}"),
+                        "title": it.get("trackName", orig_title),
+                        "artist": it.get("artistName", orig_artist),
+                        "album": it.get("collectionName", "Single / EP"),
+                        "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
+                        "bpm": str(t.get("bpm") or t.get("b") or bpms_tech[idx % len(bpms_tech)]),
+                        "key": str(t.get("key") or t.get("k") or keys_camelot[idx % len(keys_camelot)]),
+                        "cover": cover,
+                        "preview_url": it.get("previewUrl", ""),
+                        "selected": True,
+                        "origin": "audit_upgrade",
+                        "reemplazo_de": reemplazo_de,
+                        "format": "FLAC",
+                        "energy": int(t.get("energy") or t.get("e") or 80),
+                        "danceability": int(t.get("danceability") or t.get("dance") or 80),
+                        "status": "Listo para Descarga"
+                    }
+            except Exception as e:
+                print(f"[REEMPLAZO ITUNES WARN] Fallo búsqueda iTunes '{q_clean}': {e}")
+
+            return None
+
+        tracks_con_idx = list(enumerate(tracks))
+        workers = min(8, max(1, len(tracks)))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            encontrados = list(filter(None, executor.map(_buscar_un_reemplazo, tracks_con_idx)))
+
+        return {
+            "status": "ok",
+            "tracks": encontrados,
+            "count": len(encontrados),
+            "total_solicitados": len(tracks)
+        }

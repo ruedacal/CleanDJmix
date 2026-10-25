@@ -121,6 +121,14 @@ class DownloadService:
                                 f"[DESCARGANDO] ({procesadas}/{total}) ⚠ Fallo: {artista} - {nombre}"
                             )()
                             eel_ref.log_to_console(f"❌ Error en {nombre}: {msg_error}")()
+                            if hasattr(eel_ref, "notificar_fallo_descarga"):
+                                eel_ref.notificar_fallo_descarga({
+                                    "id": spotify_id,
+                                    "title": nombre,
+                                    "name": nombre,
+                                    "artist": artista,
+                                    "error": msg_error or "Fallo de descarga en servidor o fuente inaccesible"
+                                })()
                         except Exception:
                             pass
 
@@ -204,7 +212,11 @@ class DownloadService:
                 eel_ref.actualizar_estado_descarga(100, resumen_msg)()
                 if hasattr(eel_ref, "actualizar_estado_fft"):
                     eel_ref.actualizar_estado_fft(100, f"✅ [AUDITORÍA FINALIZADA] {completadas} pistas certificadas por FFT.")()
-                eel_ref.notificar_fin_lote(resumen_msg)()
+                stats = {"total": total, "completadas": completadas, "fallidas": fallidas}
+                try:
+                    eel_ref.notificar_fin_lote(resumen_msg, stats)()
+                except Exception:
+                    eel_ref.notificar_fin_lote(resumen_msg)()
             except Exception:
                 pass
 
