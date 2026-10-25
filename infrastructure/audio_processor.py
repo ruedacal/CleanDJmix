@@ -403,6 +403,88 @@ class AudioProcessorService:
         return result
 
     @staticmethod
+    def generar_hot_cues_plantilla_club(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0) -> list:
+        """Motor de Auto-Mapping con Plantilla Club Extended (16/32 compases).
+        Asigna los 8 Hot Cues con cuantización exacta al BeatGrid:
+        Pad 1: Intro / Downbeat (0 compases / Downbeat)
+        Pad 2: First Beat / Percussion In (compás 16 o 32)
+        Pad 3: Breakdown Principal (bajada melódica antes del clímax)
+        Pad 4: Drop Clímax (explosión del tema)
+        Pad 5: Loop Rítmico (16 compases sin melodía)
+        Pad 6: Loop Rítmico (32 compases para mezcla larga)
+        Pad 7: Outro Mix Point (inicio de salida)
+        Pad 8: Outro End (cola final)
+        """
+        try:
+            bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
+        except Exception:
+            bpm_clean = 128.0
+
+        try:
+            dur_clean = int(duration_ms) if duration_ms and int(duration_ms) > 1000 else 300000
+        except Exception:
+            dur_clean = 300000
+
+        try:
+            downbeat_clean = max(0, int(downbeat_ms))
+        except Exception:
+            downbeat_clean = 0
+
+        beat_ms = 60000.0 / bpm_clean
+        bar_ms = beat_ms * 4.0
+        usable_dur = max(1000, dur_clean - downbeat_clean)
+        total_bars = max(8.0, usable_dur / bar_ms)
+
+        if total_bars >= 128:
+            bar_offsets = [0, 32, 64, 80, 96, 112, max(116, int(total_bars - 32)), max(124, int(total_bars - 8))]
+        elif total_bars >= 64:
+            bar_offsets = [0, 16, 32, 40, 48, 56, max(58, int(total_bars - 16)), max(62, int(total_bars - 4))]
+        else:
+            step = max(1.0, total_bars / 8.0)
+            bar_offsets = [int(i * step) for i in range(8)]
+
+        template_configs = [
+            {"id": 1, "name": "Intro / Downbeat", "color": "#ef4444", "rgb": (239, 68, 68)},
+            {"id": 2, "name": "First Beat (Percussion)", "color": "#f97316", "rgb": (249, 115, 22)},
+            {"id": 3, "name": "Breakdown Principal", "color": "#eab308", "rgb": (234, 179, 8)},
+            {"id": 4, "name": "Drop (Climax)", "color": "#06b6d4", "rgb": (6, 182, 212)},
+            {"id": 5, "name": "Loop Rítmico (16 Compases)", "color": "#22c55e", "rgb": (34, 197, 94)},
+            {"id": 6, "name": "Loop Rítmico (32 Compases)", "color": "#3b82f6", "rgb": (59, 130, 246)},
+            {"id": 7, "name": "Outro Mix Point", "color": "#a855f7", "rgb": (168, 85, 247)},
+            {"id": 8, "name": "Outro End", "color": "#ec4899", "rgb": (236, 72, 153)}
+        ]
+
+        result = []
+        for idx in range(8):
+            cfg = template_configs[idx]
+            b_off = bar_offsets[idx] if idx < len(bar_offsets) else (idx * 16)
+            compas = b_off + 1
+            pos_ms = int(downbeat_clean + (b_off * bar_ms))
+            if pos_ms >= dur_clean:
+                pos_ms = max(0, dur_clean - int((8 - idx) * 1000))
+
+            sec = pos_ms / 1000.0
+            m = int(sec // 60)
+            s = sec % 60
+            time_str = f"{m:02d}:{s:04.1f}"
+            pct = round(pos_ms / dur_clean, 4) if dur_clean > 0 else 0.0
+
+            result.append({
+                "id": cfg["id"],
+                "bar": compas,
+                "bar_str": f"Bar {compas}",
+                "name": f"{cfg['name']} (Bar {compas})",
+                "short_name": cfg["name"],
+                "pos_ms": pos_ms,
+                "time": time_str,
+                "pct": pct,
+                "color": cfg["color"],
+                "rgb": cfg["rgb"]
+            })
+
+        return result
+
+    @staticmethod
     def generar_serato_markers2(duration_ms: int = 300000, bpm: float = 128.0, cues: list = None, downbeat_ms: int = 0) -> bytes:
         """Construye el bloque binario base64 compatible con Serato Markers2 (Pads 1-8 Numark/Pioneer)."""
         out = bytearray(b"\x01\x01")

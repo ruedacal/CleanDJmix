@@ -530,3 +530,62 @@ class ExportService:
                 }
         except Exception as e:
             return {"status": "error", "msg": str(e)}
+
+    def exportar_set_m3u(
+        self,
+        tracks: List[Dict[str, Any]],
+        destino_dir: str = "/Users/admin/Music/mi musica",
+        nombre_set: str = "BeatWave_DJ_Set"
+    ) -> Dict[str, Any]:
+        """Exporta una lista secuencial de pistas a un archivo estándar M3U8 para Rekordbox, Serato, Traktor o VirtualDJ."""
+        if not tracks or not isinstance(tracks, list):
+            return {"status": "error", "msg": "No hay pistas en el set para exportar."}
+
+        try:
+            import datetime
+            import re
+            os.makedirs(destino_dir, exist_ok=True)
+            sanitized_name = re.sub(r'[^\w\s-]', '', nombre_set).strip().replace(' ', '_') or "BeatWave_DJ_Set"
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{sanitized_name}_{timestamp}.m3u8"
+            filepath = os.path.join(destino_dir, filename)
+
+            lines = [
+                "#EXTM3U",
+                f"#PLAYLIST:{nombre_set}",
+                f"#EXTENC:UTF-8",
+                f"#GENERATOR:BeatWave Pro Set-Builder Canvas",
+                f"#DATE:{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                ""
+            ]
+
+            for trk in tracks:
+                dur_sec = -1
+                dur_raw = trk.get("duration") or trk.get("duration_sec") or trk.get("d")
+                if dur_raw:
+                    try:
+                        dur_sec = int(float(dur_raw))
+                    except (ValueError, TypeError):
+                        dur_sec = -1
+
+                artist = trk.get("artist") or trk.get("a") or "Desconocido"
+                title = trk.get("title") or trk.get("t") or trk.get("filename") or "Pista"
+                path = trk.get("path") or trk.get("filepath") or trk.get("f") or trk.get("filename") or ""
+
+                lines.append(f"#EXTINF:{dur_sec},{artist} - {title}")
+                lines.append(str(path))
+
+            m3u_content = "\n".join(lines) + "\n"
+
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(m3u_content)
+
+            return {
+                "status": "ok",
+                "path": filepath,
+                "filename": filename,
+                "total_tracks": len(tracks),
+                "content": m3u_content
+            }
+        except Exception as e:
+            return {"status": "error", "msg": f"Error exportando M3U8: {str(e)}"}

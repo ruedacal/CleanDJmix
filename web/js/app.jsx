@@ -47,6 +47,7 @@ const I18N_TRANSLATIONS = {
         nav_hotcues: "Estudio Hot Cues",
         nav_trends: "Tendencias",
         nav_knowledge: "Conocimiento",
+        nav_setbuilder: "Set-Builder & Flow",
         nav_spotify: "Spotify Ingest",
         nav_shazam: "Radar Shazam",
         nav_taxonomy: "Taxonomía",
@@ -138,6 +139,7 @@ const I18N_TRANSLATIONS = {
         nav_hotcues: "Hot Cues Studio",
         nav_trends: "Trends",
         nav_knowledge: "Knowledge",
+        nav_setbuilder: "Set-Builder & Flow",
         nav_spotify: "Spotify Ingest",
         nav_shazam: "Radar Shazam",
         nav_taxonomy: "Taxonomy",
@@ -245,6 +247,7 @@ const Icons = {
     Radar: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle><line x1="12" y1="2" x2="12" y2="12"></line></svg>,
     Mic: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>,
     Trends: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>,
+        Flow: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>,
     Knowledge: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>,
     Menu: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
     Close: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -3159,6 +3162,27 @@ function parseAIDJQuery(query) {
         result.tokens.push({ type: 'year', label: 'Retro', rawMatch: q.includes("retro") ? "retro" : (q.includes("90s") ? "90s" : (q.includes("80s") ? "80s" : "2000s")) });
     }
 
+    // 7. Rol Acústico de Cabina (Anti-Muddy)
+    if (q.includes("bass driver") || q.includes("subgrave") || q.includes("bombo") || q.includes("sub-bass") || q.includes("sub bass")) {
+        result.acousticRole = "Bass Driver";
+        result.tokens.push({ type: 'role', label: 'Rol: Bass Driver (Graves)', rawMatch: 'bass driver' });
+    } else if (q.includes("vocal") || q.includes("vocales") || q.includes("lead") || q.includes("melodia") || q.includes("melódico") || q.includes("melodica")) {
+        result.acousticRole = "Vocal / Lead";
+        result.tokens.push({ type: 'role', label: 'Rol: Vocal / Lead (Medios)', rawMatch: 'vocal' });
+    } else if (q.includes("percussive") || q.includes("percusivo") || q.includes("percursion") || q.includes("tool") || q.includes("hats") || q.includes("platos")) {
+        result.acousticRole = "Percussive Tool";
+        result.tokens.push({ type: 'role', label: 'Rol: Percussive Tool (Agudos)', rawMatch: 'percussive' });
+    }
+
+    // 8. Rango Dinámico y Energía
+    if (q.includes("energico") || q.includes("enérgico") || q.includes("alta energia") || q.includes("alta energía") || q.includes("high energy")) {
+        result.minEnergy = 80;
+        result.tokens.push({ type: 'energy', label: 'Energía > 80%', rawMatch: 'enérgico' });
+    } else if (q.includes("chill") || q.includes("baja energia") || q.includes("baja energía") || q.includes("suave")) {
+        result.maxEnergy = 65;
+        result.tokens.push({ type: 'energy', label: 'Energía < 65%', rawMatch: 'chill' });
+    }
+
     // 6. Género y Subgénero
     if (q.includes("tech house")) {
         result.genre = "House";
@@ -3691,6 +3715,7 @@ const AuditWorkspace = ({
     onTogglePlay, 
     playProgress = 0,
     onNavigateTab,
+    onAddTrackToSet,
     onSendToSpotify,
     lang = "es",
     t = (k) => k,
@@ -3710,6 +3735,7 @@ const AuditWorkspace = ({
     const [metrics, setMetrics] = useState({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
     const [filtro, setFiltro] = useState('todos');
     const [busqueda, setBusqueda] = useState('');
+    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState('ALL');
     const [batchModalOpen, setBatchModalOpen] = useState(false);
     const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
     const [batchProgress, setBatchProgress] = useState(0);
@@ -4625,10 +4651,51 @@ const AuditWorkspace = ({
     };
 
     const tracksFiltrados = useMemo(() => {
+        const parsed = (busqueda && busqueda.length > 2) ? parseAIDJQuery(busqueda) : null;
+
         let result = tracks.filter(t => {
             const term = busqueda.toLowerCase();
-            const m = (t?.t || t?.title || '').toLowerCase().includes(term) || (t?.a || t?.artist || '').toLowerCase().includes(term) || (t?.f || t?.filename || '').toLowerCase().includes(term);
-            if (!m) return false;
+
+            // Filtrado determinista en memoria mediante parseAIDJQuery
+            if (parsed && parsed.tokens && parsed.tokens.length > 0) {
+                // 1. Matching de BPM con rango ±3
+                if (parsed.targetBpm) {
+                    const trkBpm = parseFloat(t?.bpm || t?.b) || 0;
+                    if (trkBpm > 0 && Math.abs(trkBpm - parsed.targetBpm) > 4.5) return false;
+                } else if (parsed.minBpm && parsed.maxBpm) {
+                    const trkBpm = parseFloat(t?.bpm || t?.b) || 0;
+                    if (trkBpm < parsed.minBpm || trkBpm > parsed.maxBpm) return false;
+                }
+                // 2. Matching de Tonalidad Camelot
+                if (parsed.key) {
+                    const trkKey = (t?.key || t?.k || '').toUpperCase();
+                    if (trkKey !== parsed.key && !parsed.compatibleKeys.includes(trkKey)) return false;
+                }
+                // 3. Matching de Rol Acústico
+                if (parsed.acousticRole) {
+                    if (t?.acoustic_role !== parsed.acousticRole) return false;
+                }
+                // 4. Matching de Energía
+                if (parsed.minEnergy) {
+                    const trkE = Number(t?.e || t?.energy || 80);
+                    if (trkE < parsed.minEnergy) return false;
+                }
+                if (parsed.maxEnergy) {
+                    const trkE = Number(t?.e || t?.energy || 80);
+                    if (trkE > parsed.maxEnergy) return false;
+                }
+                // 5. Matching de Género / Versión
+                if (parsed.subgenre) {
+                    const sub = (t?.subgenre || t?.genre || '').toLowerCase();
+                    if (!sub.includes(parsed.subgenre.toLowerCase())) return false;
+                } else if (parsed.genre) {
+                    const g = (t?.genre || '').toLowerCase();
+                    if (!g.includes(parsed.genre.toLowerCase())) return false;
+                }
+            } else {
+                const m = (t?.t || t?.title || '').toLowerCase().includes(term) || (t?.a || t?.artist || '').toLowerCase().includes(term) || (t?.f || t?.filename || '').toLowerCase().includes(term);
+                if (!m) return false;
+            }
             if (filtro === 'missing') return (t?.b === '--' || t?.k === '--');
             if (filtro === 'missing_title') return Boolean(t?.missing_title || !t?.title || t?.title.toLowerCase().trim() === 'untitled');
             if (filtro === 'missing_artist') return Boolean(t?.missing_artist || !t?.artist || t?.artist.toLowerCase().trim() === 'desconocido');
@@ -4665,6 +4732,9 @@ const AuditWorkspace = ({
                 if (filterHeaderDance === 'HIGH' && dVal < 80) return false;
                 if (filterHeaderDance === 'MED' && (dVal < 65 || dVal >= 80)) return false;
                 if (filterHeaderDance === 'LOW' && dVal >= 65) return false;
+            }
+            if (filterHeaderAcousticRole !== 'ALL') {
+                if (t?.acoustic_role !== filterHeaderAcousticRole) return false;
             }
             return true;
         });
@@ -4948,13 +5018,28 @@ const AuditWorkspace = ({
 
                 <div className="px-4 py-2 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2 flex-1 flex-wrap">
-                        <input 
-                            type="text" 
-                            value={busqueda} 
-                            onChange={(e) => setBusqueda(e.target.value)} 
-                            placeholder={t('search_placeholder') || "Buscar por track, artista o clave..."} 
-                            className="w-56 bg-djzinc-950 border border-djzinc-700 rounded-full px-4 py-1.5 text-xs text-gray-300 focus:border-djcyan-500 outline-none" 
-                        />
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="text" 
+                                value={busqueda} 
+                                onChange={(e) => setBusqueda(e.target.value)} 
+                                placeholder={t('search_placeholder') || "Buscar (ej: Tech House 126 bpm 8A enérgico con vocales)..."} 
+                                className="w-72 bg-djzinc-950 border border-djzinc-700 rounded-full px-4 py-1.5 text-xs text-gray-300 focus:border-djcyan-500 outline-none font-mono" 
+                            />
+                            {(() => {
+                                const p = (busqueda && busqueda.length > 2) ? parseAIDJQuery(busqueda) : null;
+                                if (!p || !p.tokens || p.tokens.length === 0) return null;
+                                return (
+                                    <div className="hidden lg:flex items-center gap-1.5 flex-wrap">
+                                        {p.tokens.map((tok, tIdx) => (
+                                            <span key={tIdx} className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-500/50 shadow-sm animate-fadeIn">
+                                                {tok.label}
+                                            </span>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+                        </div>
                         <div className="flex gap-1.5 ml-1 flex-wrap">
                             <button onClick={() => setFiltro('todos')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'todos' ? 'bg-djcyan-600 text-white font-bold' : 'bg-djzinc-800 text-gray-300 hover:text-white'}`}>{t('filter_all') || 'Todos'} ({metrics.total || 0})</button>
                             <button 
@@ -5022,6 +5107,7 @@ const AuditWorkspace = ({
                                 <th onClick={() => handleSortAudit('e')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">⚡ Energía {renderSortArrowAudit('e')}</th>
                                 <th onClick={() => handleSortAudit('dance')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">🕺 Dance {renderSortArrowAudit('dance')}</th>
                                 <th onClick={() => handleSortAudit('fase_badge')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">Fase DJ {renderSortArrowAudit('fase_badge')}</th>
+                                <th onClick={() => handleSortAudit('acoustic_role')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-Muddy">Rol Acústico & Anti-Muddy {renderSortArrowAudit('acoustic_role')}</th>
                                 <th onClick={() => handleSortAudit('comment')} className="py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors">Comentario Pro DJ {renderSortArrowAudit('comment')}</th>
                                 <th onClick={() => handleSortAudit('status')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_status') || 'Estado'} {renderSortArrowAudit('status')}</th>
                             </tr>
@@ -5114,6 +5200,19 @@ const AuditWorkspace = ({
                                     </select>
                                 </th>
                                 <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={filterHeaderAcousticRole} 
+                                        onChange={(e) => setFilterHeaderAcousticRole(e.target.value)}
+                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[9.5px] text-djcyan-300 outline-none font-mono"
+                                    >
+                                        <option value="ALL">Todos Roles</option>
+                                        <option value="Bass Driver">🔴 Bass Driver</option>
+                                        <option value="Vocal / Lead">🟡 Vocal / Lead</option>
+                                        <option value="Percussive Tool">🟢 Percussive</option>
+                                        <option value="Balanced Full-Range">🔵 Balanced</option>
+                                    </select>
+                                </th>
                                 <th className="p-1"></th>
                                 <th className="p-1 text-center">
                                     <select 
@@ -5306,6 +5405,19 @@ const AuditWorkspace = ({
                                             >
                                                 🎛️ 8 Cues
                                             </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (onAddTrackToSet) {
+                                                        onAddTrackToSet(row);
+                                                    }
+                                                }}
+                                                className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-800/60 transition-all shadow active:scale-95 cursor-pointer ml-1"
+                                                title="Añadir pista a Set-Builder & Energy Flow Canvas"
+                                            >
+                                                ➕ Set
+                                            </button>
                                         </td>
 
                                         {/* ENERGÍA */}
@@ -5365,6 +5477,45 @@ const AuditWorkspace = ({
                                                     </span>
                                                 );
                                             })()}
+                                        </td>
+
+                                        {/* ROL ACÚSTICO & ANTI-MUDDY */}
+                                        <td className="py-2 px-2 text-center">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className={`px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${
+                                                    row.acoustic_role === 'Bass Driver' 
+                                                        ? 'bg-rose-950/80 text-rose-300 border-rose-700/80' 
+                                                        : row.acoustic_role === 'Vocal / Lead'
+                                                            ? 'bg-amber-950/80 text-amber-300 border-amber-700/80'
+                                                            : row.acoustic_role === 'Percussive Tool'
+                                                                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/80'
+                                                                : 'bg-djzinc-850 text-gray-300 border-djzinc-700'
+                                                }`} title={`Ratio Espectral: Low ${row.low_ratio || 33}% | Mid ${row.mid_ratio || 33}% | High ${row.high_ratio || 34}%`}>
+                                                    {row.acoustic_role === 'Bass Driver' ? '🔴 Bass Driver' : row.acoustic_role === 'Vocal / Lead' ? '🟡 Vocal / Lead' : row.acoustic_role === 'Percussive Tool' ? '🟢 Percussive' : '🔵 Balanced'}
+                                                </span>
+
+                                                {/* Indicador Anti-Muddy dinámico frente a pista seleccionada */}
+                                                {currentTrack && String(currentTrack.id) !== String(row.id) && (
+                                                    (() => {
+                                                        const isCurBass = (currentTrack.low_ratio || 33) >= 45 || currentTrack.acoustic_role === 'Bass Driver';
+                                                        const isRowBass = (row.low_ratio || 33) >= 45 || row.acoustic_role === 'Bass Driver';
+                                                        if (isCurBass && isRowBass) {
+                                                            return (
+                                                                <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-red-950 text-red-300 border border-red-700/80 animate-pulse" title="Riesgo de colisión en subgraves 30-80 Hz">
+                                                                    ⚠️ Colisión Bass
+                                                                </span>
+                                                            );
+                                                        } else if ((isCurBass && (row.acoustic_role === 'Vocal / Lead' || row.acoustic_role === 'Percussive Tool')) || (isRowBass && (currentTrack.acoustic_role === 'Vocal / Lead' || currentTrack.acoustic_role === 'Percussive Tool'))) {
+                                                            return (
+                                                                <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/80" title="Frecuencias complementarias: Mezcla limpia garantizada">
+                                                                    🟢 Anti-Muddy Compl.
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()
+                                                )}
+                                            </div>
                                         </td>
 
                                         {/* COMENTARIO PRO DJ */}
@@ -5509,6 +5660,27 @@ const AuditWorkspace = ({
                                                 ⚡ {row.e}%
                                             </span>
                                         )}
+                                        <div className="ml-auto flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedTrack(row.id);
+                                                    if (onNavigateTab) onNavigateTab('hotcues');
+                                                }}
+                                                className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-pink-950/80 text-pink-300 border border-pink-800/60 cursor-pointer"
+                                            >
+                                                🎛️ Cues
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (onAddTrackToSet) onAddTrackToSet(row);
+                                                }}
+                                                className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950/80 text-djcyan-300 border border-djcyan-800/60 cursor-pointer"
+                                            >
+                                                ➕ Set
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {/* Botón de SuperFLAC si es de baja/media calidad */}
@@ -6523,12 +6695,77 @@ const HotCuesWorkspace = ({
     const [eqMid, setEqMid] = useState(0.0);
     const [eqTreble, setEqTreble] = useState(0.0);
 
-    // Estado de Scratching Interactivo sobre el Vinilo DJ
-    const vinylPlatterRef = useRef(null);
-    const isScratchingRef = useRef(false);
-    const lastAngleRef = useRef(0);
-    const [vinylRotDeg, setVinylRotDeg] = useState(0);
+    // Modo de visualización móvil de la consola
     const [mobileDeckMode, setMobileDeckMode] = useState('pads'); // 'pads', 'eq_pitch', 'vinyl'
+    const [autoMappingStatus, setAutoMappingStatus] = useState('');
+
+    // Motor de Auto-Mapping con Plantillas de Estructura: Template A (Club Extended)
+    const handleAutoGenerateClubTemplate = () => {
+        if (!currentTrack) return;
+        const durClean = durMs > 1000 ? durMs : 300000;
+        const bpmClean = bpm > 20 ? bpm : 128.0;
+        const beatMs = 60000.0 / bpmClean;
+        const barMsCalc = beatMs * 4.0;
+        const downbeatClean = downbeatMs || 0;
+        const totalBars = Math.max(8.0, (durClean - downbeatClean) / barMsCalc);
+
+        // Template A (Club Extended):
+        // Pad 1 (Intro/Downbeat), Pad 2 (First Beat/Percussion 16/32b), Pad 3 (Breakdown principal),
+        // Pad 4 (Drop Clímax), Pad 5/6 (Loop rítmico 16/32b sin melodía), Pad 7/8 (Outro mix & End)
+        let barOffsets = [];
+        if (totalBars >= 128) {
+            barOffsets = [0, 32, 64, 80, 96, 112, Math.max(116, Math.floor(totalBars - 32)), Math.max(124, Math.floor(totalBars - 8))];
+        } else if (totalBars >= 64) {
+            barOffsets = [0, 16, 32, 40, 48, 56, Math.max(58, Math.floor(totalBars - 16)), Math.max(62, Math.floor(totalBars - 4))];
+        } else {
+            const step = Math.max(1.0, totalBars / 8.0);
+            barOffsets = [0, 1, 2, 3, 4, 5, 6, 7].map(i => Math.floor(i * step));
+        }
+
+        const templateNames = [
+            "Intro / Downbeat",
+            "First Beat (Percussion)",
+            "Breakdown Principal",
+            "Drop (Climax)",
+            "Loop Rítmico (16 Compases)",
+            "Loop Rítmico (32 Compases)",
+            "Outro Mix Point",
+            "Outro End"
+        ];
+
+        const generatedCues = NV2_COLORS.map((cfg, idx) => {
+            const bOffset = barOffsets[idx] !== undefined ? barOffsets[idx] : (idx * 16);
+            const compas = bOffset + 1;
+            const pMs = Math.min(durClean - 1000, Math.floor(downbeatClean + (bOffset * barMsCalc)));
+            const sec = pMs / 1000.0;
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            const timeStr = `${String(m).padStart(2, '0')}:${s.toFixed(1).padStart(4, '0')}`;
+            const pctVal = durClean > 0 ? (pMs / durClean) : 0;
+
+            return {
+                id: idx + 1,
+                name: `${templateNames[idx]} (Bar ${compas})`,
+                short_name: templateNames[idx],
+                time: timeStr,
+                pos_ms: pMs,
+                pct: pctVal,
+                color: cfg.color,
+                rgb: cfg.rgb,
+                text: cfg.text,
+                border: cfg.border,
+                bg: cfg.bg
+            };
+        });
+
+        // Actualizar pista actual en memoria y propagar
+        const updatedTrack = { ...currentTrack, cues: generatedCues };
+        if (setTracks) {
+            setTracks(prev => prev.map(t => String(t.id) === String(currentTrack.id) ? updatedTrack : t));
+        }
+        setAutoMappingStatus("¡Plantilla Club Extended auto-generada con éxito en los 8 pads!");
+        setTimeout(() => setAutoMappingStatus(''), 4000);
+    };
 
     // Ajuste en tiempo real de velocidad y tono (Pitch Shifting)
     const handlePitchChange = (newPitch) => {
@@ -6565,57 +6802,6 @@ const HotCuesWorkspace = ({
         handleEqChange('bass', 0);
         handleEqChange('mid', 0);
         handleEqChange('treble', 0);
-    };
-
-    // Scratching y Scrubbing sobre el Plato Giradiscos
-    const getAngleFromPlatterCenter = (clientX, clientY) => {
-        if (!vinylPlatterRef.current) return 0;
-        const rect = vinylPlatterRef.current.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        return Math.atan2(clientY - cy, clientX - cx) * (180 / Math.PI);
-    };
-
-    const handleVinylPointerDown = (e) => {
-        e.preventDefault();
-        isScratchingRef.current = true;
-        const cx = e.clientX || (e.touches && e.touches[0].clientX) || 0;
-        const cy = e.clientY || (e.touches && e.touches[0].clientY) || 0;
-        lastAngleRef.current = getAngleFromPlatterCenter(cx, cy);
-
-        const onPointerMove = (me) => {
-            if (!isScratchingRef.current) return;
-            const mx = me.clientX || (me.touches && me.touches[0].clientX) || 0;
-            const my = me.clientY || (me.touches && me.touches[0].clientY) || 0;
-            const currentAngle = getAngleFromPlatterCenter(mx, my);
-            let delta = currentAngle - lastAngleRef.current;
-            if (delta > 180) delta -= 360;
-            if (delta < -180) delta += 360;
-            lastAngleRef.current = currentAngle;
-
-            setVinylRotDeg(prev => prev + delta);
-
-            // Física de tocadiscos: 1 rotación (360°) = 1.8 segundos (33.3 RPM)
-            const deltaSeconds = (delta / 360) * 1.8;
-            const audio = audioRef?.current || window.__bwGlobalAudio;
-            if (audio && audio.duration && !isNaN(audio.duration)) {
-                const nextTime = Math.max(0, Math.min(audio.duration, audio.currentTime + deltaSeconds));
-                audio.currentTime = nextTime;
-            }
-        };
-
-        const onPointerUp = () => {
-            isScratchingRef.current = false;
-            window.removeEventListener('mousemove', onPointerMove);
-            window.removeEventListener('mouseup', onPointerUp);
-            window.removeEventListener('touchmove', onPointerMove);
-            window.removeEventListener('touchend', onPointerUp);
-        };
-
-        window.addEventListener('mousemove', onPointerMove);
-        window.addEventListener('mouseup', onPointerUp);
-        window.addEventListener('touchmove', onPointerMove);
-        window.addEventListener('touchend', onPointerUp);
     };
 
     // Control Seguro y Robusto de Reproducción en Deck Hot Cues
@@ -7205,18 +7391,14 @@ const HotCuesWorkspace = ({
                                         {/* Puntos de Luz Estroboscópica del Borde Technics 1200 */}
                                         <div className="absolute inset-1 rounded-full border border-dashed border-djzinc-650/40 pointer-events-none"></div>
 
-                                        {/* Disco de Vinilo 12" con Surcos Microacústicos, Giro Continuo en Play & Scratching Táctil */}
+                                        {/* Disco de Vinilo 12" con Surcos Microacústicos y Giro Continuo Ultraligero (Sin Scratch ni Aguja) */}
                                         <div 
-                                            ref={vinylPlatterRef}
-                                            onMouseDown={handleVinylPointerDown}
-                                            onTouchStart={handleVinylPointerDown}
-                                            className="w-full h-full rounded-full relative overflow-hidden flex items-center justify-center shadow-2xl select-none cursor-grab active:cursor-grabbing"
-                                            title="Plato de Vinilo Direct-Drive: Arrastra en círculo para hacer scratch y mover la pista"
+                                            className="w-full h-full rounded-full relative overflow-hidden flex items-center justify-center shadow-2xl select-none pointer-events-none"
+                                            title="Plato de Vinilo Direct-Drive (Visual)"
                                             style={{
                                                 background: 'radial-gradient(circle, #22222a 0%, #121217 38%, #1a1a24 49%, #0d0d12 62%, #161620 78%, #08080c 100%)',
                                                 boxShadow: 'inset 0 0 18px rgba(0,0,0,0.95), 0 0 15px rgba(0,0,0,0.8)',
-                                                animation: isCurrentPlayingThis ? 'spinVinylContinuous 3s linear infinite' : 'none',
-                                                transform: `rotate(${vinylRotDeg}deg)`
+                                                animation: isCurrentPlayingThis ? 'spinVinylContinuous 3s linear infinite' : 'none'
                                             }}
                                         >
                                             {/* Surcos de Pistas de Audio en Vinilo (Grooves) */}
@@ -7248,23 +7430,6 @@ const HotCuesWorkspace = ({
                                                 <div className="absolute w-4 h-4 rounded-full bg-gradient-to-tr from-amber-700 via-amber-400 to-amber-200 border border-black shadow-[inset_0_1px_3px_rgba(0,0,0,0.9),0_0_4px_rgba(0,0,0,0.8)] z-20 flex items-center justify-center">
                                                     <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
                                                 </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Brazo de Aguja DJ (Stylus Tone-Arm Indicator) */}
-                                        <div 
-                                            className={`absolute -top-1 -right-1 pointer-events-none transition-transform duration-700 origin-top-right ${
-                                                isCurrentPlayingThis ? 'rotate-[-6deg]' : 'rotate-[-28deg]'
-                                            }`}
-                                            title="Aguja DJ Fonocaptora"
-                                        >
-                                            <div className="relative w-12 h-16">
-                                                {/* Pivote del brazo */}
-                                                <div className="absolute top-0 right-0 w-4 h-4 rounded-full bg-[#323244] border border-djzinc-600 shadow-md"></div>
-                                                {/* Barra metálica */}
-                                                <div className="absolute top-3 right-1.5 w-0.5 h-12 bg-gradient-to-b from-gray-400 to-gray-200 rotate-[18deg]"></div>
-                                                {/* Cápsula fonocaptora / aguja */}
-                                                <div className={`absolute bottom-0 left-0 w-2.5 h-4 bg-djcyan-500 rounded-sm shadow-md border border-djcyan-300 ${isCurrentPlayingThis ? 'shadow-[0_0_8px_#06b6d4]' : ''}`}></div>
                                             </div>
                                         </div>
 
@@ -7392,10 +7557,27 @@ const HotCuesWorkspace = ({
                                             8 Multi-Color Performance Pads • Halos RGB 1 a 1
                                         </span>
                                     </div>
-                                    <span className="text-[10px] font-mono text-djcyan-400 font-bold">
-                                        {isCurrentPlayingThis ? `● EN SECCIÓN: CUE ${activePlayingCueId}` : 'PAUSA'}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleAutoGenerateClubTemplate}
+                                            className="px-2.5 py-1 bg-gradient-to-r from-djcyan-400 to-emerald-400 hover:from-djcyan-300 hover:to-emerald-300 text-black rounded-lg text-[10px] font-mono font-black flex items-center gap-1 shadow-md cursor-pointer transition-transform active:scale-95"
+                                            title="Auto-mapear los 8 pads con la Plantilla Club Extended (Intro, Beat, Break, Drop, Loops, Outro) cuantizados al beatgrid"
+                                        >
+                                            <span>⚡</span>
+                                            <span>Auto-Generate Cues (Club Template)</span>
+                                        </button>
+                                        <span className="text-[10px] font-mono text-djcyan-400 font-bold">
+                                            {isCurrentPlayingThis ? `● EN SECCIÓN: CUE ${activePlayingCueId}` : 'PAUSA'}
+                                        </span>
+                                    </div>
                                 </div>
+                                {autoMappingStatus && (
+                                    <div className="mb-2 px-3 py-1 bg-emerald-950/80 border border-emerald-500/60 rounded text-[10px] font-mono text-emerald-300 font-bold flex items-center gap-2 animate-fadeIn">
+                                        <span>✓</span>
+                                        <span>{autoMappingStatus}</span>
+                                    </div>
+                                )}
 
                                 {/* Matriz 4x2 de los 8 Pads con Cascada de Ignición y Halos de Luz 1 a 1 */}
                                 <div className="grid grid-cols-4 gap-2">
@@ -12875,6 +13057,957 @@ const TrendsWorkspace = ({ lang = "es" }) => {
 // =========================================================================
 // ESPACIO DE TRABAJO: CONOCIMIENTO (CURSOS, VÍDEOS Y MANUALES DJ)
 // =========================================================================
+
+// =========================================================================
+// ESPACIO DE TRABAJO: SET-BUILDER & ENERGY FLOW CANVAS
+// =========================================================================
+
+function parseCamelotKey(keyStr) {
+    if (!keyStr) return null;
+    const match = String(keyStr).trim().toUpperCase().match(/^(\d{1,2})([AB])$/);
+    if (match) {
+        return { num: parseInt(match[1], 10), letter: match[2] };
+    }
+    return null;
+}
+
+function evaluateHarmonicTransition(keyA, keyB) {
+    const kA = parseCamelotKey(keyA);
+    const kB = parseCamelotKey(keyB);
+    if (!kA || !kB) {
+        return {
+            type: 'UNKNOWN',
+            badge: '❓ Tonalidad N/D',
+            color: 'bg-djzinc-800 text-gray-400 border-djzinc-700',
+            score: 50,
+            desc: 'Una de las pistas no tiene tonalidad Camelot identificada.'
+        };
+    }
+
+    if (kA.num === kB.num && kA.letter === kB.letter) {
+        return {
+            type: 'EXACT',
+            badge: '🟢 Misma Clave (0)',
+            color: 'bg-emerald-950/90 text-emerald-300 border-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.3)]',
+            score: 100,
+            desc: 'Armonía idéntica: Tonalidades emparejadas al 100%. Mezcla transparente y fluida.'
+        };
+    }
+
+    if (kA.num === kB.num && kA.letter !== kB.letter) {
+        return {
+            type: 'MODAL',
+            badge: '🟣 Cambio Modal (A↔B)',
+            color: 'bg-purple-950/90 text-purple-300 border-purple-600 shadow-[0_0_8px_rgba(168,85,247,0.3)]',
+            score: 95,
+            desc: 'Giro emocional: Transición entre relativo menor y mayor sin disonancias.'
+        };
+    }
+
+    const diff = (kB.num - kA.num + 12) % 12;
+
+    if (diff === 1 && kA.letter === kB.letter) {
+        return {
+            type: 'BOOST_PLUS_1',
+            badge: '⚡ Subida de Energía (+1)',
+            color: 'bg-amber-950/90 text-amber-300 border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]',
+            score: 90,
+            desc: 'Inyección de energía natural en pista: Incremento de tensión armónica.'
+        };
+    }
+
+    if (diff === 11 && kA.letter === kB.letter) {
+        return {
+            type: 'DROP_MINUS_1',
+            badge: '🔵 Descenso Suave (-1)',
+            color: 'bg-cyan-950/90 text-cyan-300 border-cyan-600 shadow-[0_0_8px_rgba(6,182,212,0.3)]',
+            score: 85,
+            desc: 'Transición profunda: Relajación de tensión armónica hacia notas más oscuras.'
+        };
+    }
+
+    if (diff === 2 && kA.letter === kB.letter) {
+        return {
+            type: 'BOOST_PLUS_2',
+            badge: '🔥 Salto Doble (+2)',
+            color: 'bg-orange-950/90 text-orange-300 border-orange-500',
+            score: 75,
+            desc: 'Subidón dramático: Recomendado soltar en el drop o durante un corte de compás.'
+        };
+    }
+
+    if ((diff === 1 || diff === 11) && kA.letter !== kB.letter) {
+        return {
+            type: 'DIAGONAL',
+            badge: '🔷 Transición Diagonal',
+            color: 'bg-blue-950/90 text-blue-300 border-blue-600',
+            score: 70,
+            desc: 'Modulación cruzada aceptable con buen flujo melódico en fraseo largo.'
+        };
+    }
+
+    return {
+        type: 'CLASH',
+        badge: '⚠️ Choque Disonante',
+        color: 'bg-rose-950/90 text-rose-300 border-rose-600 shadow-[0_0_8px_rgba(225,29,72,0.3)]',
+        score: 30,
+        desc: 'Conflicto tonal: No solapar melodías o sintes; mezclar en secciones percusivas limpias.'
+    };
+}
+
+function evaluateLufsTransition(lufsA, lufsB) {
+    const vA = (lufsA !== undefined && lufsA !== null) ? parseFloat(lufsA) : -9.0;
+    const vB = (lufsB !== undefined && lufsB !== null) ? parseFloat(lufsB) : -9.0;
+    const delta = Math.round((vB - vA) * 10) / 10;
+    const absDelta = Math.abs(delta);
+
+    if (absDelta > 2.5) {
+        const sign = delta > 0 ? `+${delta}` : `${delta}`;
+        const advice = delta > 0 
+            ? `Bajar Trim/Ganancia ~${absDelta} dB en la mesa antes de abrir el fader.`
+            : `Subir Trim/Ganancia ~${absDelta} dB para evitar caída de pegada en pista.`;
+        return {
+            isAlert: true,
+            delta,
+            badge: `⚠️ Salto LUFS ${sign} dB`,
+            color: 'bg-amber-950/90 text-amber-300 border-amber-600',
+            advice
+        };
+    }
+
+    return {
+        isAlert: false,
+        delta,
+        badge: `🟢 LUFS Equilibrado (${delta > 0 ? '+' : ''}${delta} dB)`,
+        color: 'bg-djzinc-850 text-emerald-400 border-djzinc-700',
+        advice: 'Niveles de sonoridad uniforme sin sorpresas de volumen.'
+    };
+}
+
+function evaluateAntiMuddyTransition(trackA, trackB) {
+    const isBassA = (trackA?.low_ratio || 33) >= 45 || trackA?.acoustic_role === 'Bass Driver';
+    const isBassB = (trackB?.low_ratio || 33) >= 45 || trackB?.acoustic_role === 'Bass Driver';
+
+    if (isBassA && isBassB) {
+        return {
+            isCollision: true,
+            badge: '⚠️ Colisión Bass (30-80 Hz)',
+            color: 'bg-red-950/90 text-red-300 border-red-700 animate-pulse',
+            advice: 'Ambos temas son Bass Drivers. Cortar EQ Low (-inf a -6dB) del tema saliente antes del drop para evitar cancelación de fase y saturación en master.'
+        };
+    }
+
+    const isCompA = isBassA && (trackB?.acoustic_role === 'Vocal / Lead' || trackB?.acoustic_role === 'Percussive Tool');
+    const isCompB = isBassB && (trackA?.acoustic_role === 'Vocal / Lead' || trackA?.acoustic_role === 'Percussive Tool');
+
+    if (isCompA || isCompB) {
+        return {
+            isCollision: false,
+            badge: '🟢 Espectros Complementarios',
+            color: 'bg-emerald-950/90 text-emerald-300 border-emerald-700',
+            advice: 'Mezcla limpia garantizada: Una pista aporta el cuerpo subgrave y la otra rellena medios/agudos sin empastar.'
+        };
+    }
+
+    return {
+        isCollision: false,
+        badge: '🔵 Espectro Neutro',
+        color: 'bg-djzinc-850 text-gray-300 border-djzinc-700',
+        advice: 'Distribución de frecuencias equilibrada.'
+    };
+}
+
+const SetBuilderWorkspace = ({
+    setTracks = [],
+    setSetTracks,
+    auditTracks = [],
+    onPlayTrack,
+    nowPlayingTrack,
+    isPlaying,
+    onTogglePlay,
+    lang = "es"
+}) => {
+    const [setName, setSetName] = useState("BeatWave_Mainstage_Set");
+    const [selectedTrackIdx, setSelectedTrackIdx] = useState(null);
+    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
+    const [searchAddQuery, setSearchAddQuery] = useState("");
+    const [exportStatus, setExportStatus] = useState(null);
+    const [isExporting, setIsExporting] = useState(false);
+
+    // Calcular estadísticas globales del Set
+    const stats = useMemo(() => {
+        if (!setTracks || setTracks.length === 0) {
+            return { totalDurationSec: 0, minBpm: 0, maxBpm: 0, avgBpm: 0, avgLufs: 0, harmonicScore: 100 };
+        }
+
+        let totalSec = 0;
+        let bpms = [];
+        let lufsVals = [];
+
+        setTracks.forEach(t => {
+            const d = parseFloat(t.duration_sec || t.duration || 0);
+            totalSec += (d > 0 ? d : 240);
+            const b = parseFloat(t.bpm || t.b || 0);
+            if (b > 0) bpms.push(b);
+            const l = parseFloat(t.lufs || t.integrated_lufs || -9.0);
+            lufsVals.push(l);
+        });
+
+        const minBpm = bpms.length > 0 ? Math.min(...bpms) : 124;
+        const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 128;
+        const avgBpm = bpms.length > 0 ? Math.round((bpms.reduce((a, b) => a + b, 0) / bpms.length) * 10) / 10 : 126;
+        const avgLufs = lufsVals.length > 0 ? Math.round((lufsVals.reduce((a, b) => a + b, 0) / lufsVals.length) * 10) / 10 : -8.5;
+
+        // Calcular puntuación armónica global (% de transiciones armónicas)
+        let totalScore = 0;
+        let transitionsCount = Math.max(1, setTracks.length - 1);
+        for (let i = 0; i < setTracks.length - 1; i++) {
+            const trkA = setTracks[i];
+            const trkB = setTracks[i + 1];
+            const harm = evaluateHarmonicTransition(trkA.key || trkA.k, trkB.key || trkB.k);
+            totalScore += harm.score;
+        }
+        const harmonicScore = setTracks.length <= 1 ? 100 : Math.round(totalScore / transitionsCount);
+
+        return { totalDurationSec: totalSec, minBpm, maxBpm, avgBpm, avgLufs, harmonicScore };
+    }, [setTracks]);
+
+    // Formatear duración en HH:MM:SS
+    const formattedDuration = useMemo(() => {
+        const s = stats.totalDurationSec;
+        const hrs = Math.floor(s / 3600);
+        const mins = Math.floor((s % 3600) / 60);
+        const secs = Math.floor(s % 60);
+        if (hrs > 0) {
+            return `${hrs}h ${mins < 10 ? '0' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+        }
+        return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+    }, [stats.totalDurationSec]);
+
+    // Reordenar pista arriba/abajo
+    const handleMoveTrack = (index, direction) => {
+        const newIdx = index + direction;
+        if (newIdx < 0 || newIdx >= setTracks.length) return;
+        const updated = [...setTracks];
+        const [moved] = updated.splice(index, 1);
+        updated.splice(newIdx, 0, moved);
+        setSetTracks(updated);
+        setSelectedTrackIdx(newIdx);
+    };
+
+    // Eliminar pista del set
+    const handleRemoveTrack = (index) => {
+        const updated = setTracks.filter((_, i) => i !== index);
+        setSetTracks(updated);
+        if (selectedTrackIdx === index) setSelectedTrackIdx(null);
+    };
+
+    // Añadir pista al set
+    const handleAddTrack = (track) => {
+        if (!track) return;
+        setSetTracks(prev => [...prev, track]);
+    };
+
+    // Limpiar todo el set
+    const handleClearSet = () => {
+        if (window.confirm("¿Seguro que deseas vaciar todas las pistas de este set?")) {
+            setSetTracks([]);
+            setSelectedTrackIdx(null);
+        }
+    };
+
+    // Cargar Set de Demostración si está vacío
+    const handleLoadDemoSet = () => {
+        if (auditTracks && auditTracks.length >= 3) {
+            setSetTracks([...auditTracks.slice(0, 8)]);
+            return;
+        }
+        const demo = [
+            { id: 101, title: "Solaris (Extended Mix)", artist: "Artbat & CamelPhat", bpm: 124, key: "8A", duration_sec: 390, lufs: -8.8, acoustic_role: "Bass Driver", low_ratio: 48, mid_ratio: 32, high_ratio: 20 },
+            { id: 102, title: "Hyperdrive (Club Mix)", artist: "Tale of Us", bpm: 125, key: "9A", duration_sec: 360, lufs: -8.5, acoustic_role: "Vocal / Lead", low_ratio: 30, mid_ratio: 46, high_ratio: 24 },
+            { id: 103, title: "Frequency Tool (Original)", artist: "Chris Liebing", bpm: 126, key: "9A", duration_sec: 330, lufs: -8.4, acoustic_role: "Percussive Tool", low_ratio: 25, mid_ratio: 40, high_ratio: 35 },
+            { id: 104, title: "Echoes of Eternity (Peak Mix)", artist: "Anyma", bpm: 127, key: "10A", duration_sec: 375, lufs: -7.9, acoustic_role: "Bass Driver", low_ratio: 49, mid_ratio: 31, high_ratio: 20 },
+            { id: 105, title: "Resonance (Festival Mix)", artist: "Enrico Sangiuliano", bpm: 128, key: "10A", duration_sec: 420, lufs: -7.5, acoustic_role: "Bass Driver", low_ratio: 52, mid_ratio: 30, high_ratio: 18 },
+            { id: 106, title: "Starlight Anthem (Outro Mix)", artist: "Maceo Plex", bpm: 126, key: "9A", duration_sec: 345, lufs: -8.9, acoustic_role: "Balanced Full-Range", low_ratio: 35, mid_ratio: 35, high_ratio: 30 }
+        ];
+        setSetTracks(demo);
+    };
+
+    // Auto-Optimizar Pro: Algoritmo de Flujo Armónico y Progresión de BPM
+    const handleOptimizeHarmonicFlow = () => {
+        if (!setTracks || setTracks.length < 2) return;
+
+        // Comenzar con la pista con menor BPM (para construcción natural de set)
+        let remaining = [...setTracks];
+        remaining.sort((a, b) => (parseFloat(a.bpm || a.b || 126) - parseFloat(b.bpm || b.b || 126)));
+
+        const optimized = [remaining.shift()];
+
+        while (remaining.length > 0) {
+            const current = optimized[optimized.length - 1];
+            const curBpm = parseFloat(current.bpm || current.b || 126);
+            const curKey = current.key || current.k || '';
+
+            // Puntuación de afinidad para cada candidato
+            let bestIdx = 0;
+            let bestScore = -999;
+
+            for (let i = 0; i < remaining.length; i++) {
+                const candidate = remaining[i];
+                const candBpm = parseFloat(candidate.bpm || candidate.b || 126);
+                const candKey = candidate.key || candidate.k || '';
+
+                const harm = evaluateHarmonicTransition(curKey, candKey);
+                const bpmDiff = Math.abs(candBpm - curBpm);
+
+                // Penalizar grandes saltos de BPM (> 4 BPM)
+                const bpmScore = Math.max(0, 100 - bpmDiff * 15);
+
+                // Anti-Muddy complementariedad
+                const isCurBass = (current.low_ratio || 33) >= 45 || current.acoustic_role === 'Bass Driver';
+                const isCandBass = (candidate.low_ratio || 33) >= 45 || candidate.acoustic_role === 'Bass Driver';
+                const antiMuddyScore = (isCurBass && isCandBass) ? -20 : (isCurBass || isCandBass ? 20 : 0);
+
+                const totalAffinity = (harm.score * 0.6) + (bpmScore * 0.3) + antiMuddyScore;
+
+                if (totalAffinity > bestScore) {
+                    bestScore = totalAffinity;
+                    bestIdx = i;
+                }
+            }
+
+            optimized.push(remaining.splice(bestIdx, 1)[0]);
+        }
+
+        setSetTracks(optimized);
+        setExportStatus({ type: 'success', msg: '¡Set auto-optimizado! Progresión armónica y de BPM calculada sin choques tonales.' });
+        setTimeout(() => setExportStatus(null), 4500);
+    };
+
+    // Exportar Set M3U8
+    const handleExportM3U = async () => {
+        if (!setTracks || setTracks.length === 0) {
+            alert("No hay pistas en el set para exportar.");
+            return;
+        }
+        setIsExporting(true);
+        setExportStatus({ type: 'loading', msg: 'Generando archivo M3U8...' });
+
+        try {
+            let res = null;
+            if (window.eel && window.eel.exportar_set_m3u) {
+                res = await window.eel.exportar_set_m3u(setTracks, setName, "/Users/admin/Music/mi musica")();
+            } else {
+                const resp = await fetch('/api/setbuilder/export_m3u', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tracks: setTracks, nombre_set: setName, destino_dir: "/Users/admin/Music/mi musica" })
+                });
+                if (resp.ok) res = await resp.json();
+            }
+
+            // Descarga de respaldo en el navegador mediante Blob
+            const lines = ["#EXTM3U", `#PLAYLIST:${setName}`, `#EXTENC:UTF-8`, ""];
+            setTracks.forEach(t => {
+                const dur = parseInt(t.duration_sec || t.duration || 240, 10);
+                const art = t.artist || t.a || 'Desconocido';
+                const tit = t.title || t.t || 'Pista';
+                const pth = t.path || t.filepath || t.f || t.filename || '';
+                lines.push(`#EXTINF:${dur},${art} - ${tit}`);
+                lines.push(pth);
+            });
+            const blob = new Blob([lines.join('\n')], { type: 'audio/x-mpegurl;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${setName.replace(/\s+/g, '_')}.m3u8`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            const savedPath = res && res.path ? res.path : 'Descargado en tu navegador';
+            setExportStatus({ type: 'success', msg: `Set exportado con éxito (${setTracks.length} pistas): ${savedPath}` });
+        } catch (e) {
+            setExportStatus({ type: 'error', msg: `Error al exportar set: ${e.message || e}` });
+        } finally {
+            setIsExporting(false);
+            setTimeout(() => setExportStatus(null), 6000);
+        }
+    };
+
+    // Render del Canvas de Flujo de Energía & BPM (SVG Interactivo)
+    const renderFlowCanvas = () => {
+        if (!setTracks || setTracks.length < 2) {
+            return (
+                <div className="h-32 flex flex-col items-center justify-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl">
+                    <span>Añade al menos 2 pistas para visualizar la curva de BPM y flujo de energía.</span>
+                </div>
+            );
+        }
+
+        const width = 900;
+        const height = 140;
+        const padX = 50;
+        const padY = 25;
+
+        const bpms = setTracks.map(t => parseFloat(t.bpm || t.b || 126));
+        const minB = Math.max(60, Math.min(...bpms) - 2);
+        const maxB = Math.min(180, Math.max(...bpms) + 2);
+        const bpmRange = Math.max(1, maxB - minB);
+
+        const points = setTracks.map((t, idx) => {
+            const x = padX + (idx / (setTracks.length - 1)) * (width - 2 * padX);
+            const bpm = parseFloat(t.bpm || t.b || 126);
+            const y = height - padY - ((bpm - minB) / bpmRange) * (height - 2 * padY);
+            return { x, y, bpm, track: t, idx };
+        });
+
+        // Crear string de puntos polyline
+        const polylinePoints = points.map(p => `${p.x},${p.y}`).join(' ');
+
+        // Crear polígono de relleno de energía
+        const areaPoints = `${padX},${height - padY} ` + polylinePoints + ` ${width - padX},${height - padY}`;
+
+        return (
+            <div className="relative w-full bg-gradient-to-b from-djzinc-900/90 to-[#07070a] border border-djzinc-800 rounded-2xl p-4 shadow-xl overflow-x-auto">
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-ping"></span>
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-djcyan-300">
+                            Lienzo de Curva de BPM & Flujo de Tensión Armónica
+                        </h4>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] font-mono text-gray-400">
+                        <span className="flex items-center gap-1">
+                            <span className="w-2.5 h-0.5 bg-djcyan-400 inline-block"></span> Progresión BPM ({stats.minBpm} → {stats.maxBpm})
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span> Tonalidad Camelot
+                        </span>
+                        <span className="text-emerald-400 font-bold">
+                            Score Armónico: {stats.harmonicScore}%
+                        </span>
+                    </div>
+                </div>
+
+                <div className="w-full min-w-[700px]">
+                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-36 overflow-visible">
+                        <defs>
+                            <linearGradient id="bpmCurveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#06b6d4" />
+                                <stop offset="50%" stopColor="#a855f7" />
+                                <stop offset="100%" stopColor="#ec4899" />
+                            </linearGradient>
+                            <linearGradient id="areaFillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.25" />
+                                <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
+                            </linearGradient>
+                        </defs>
+
+                        {/* Líneas de referencia horizontales de BPM */}
+                        {[0, 0.5, 1].map((ratio, i) => {
+                            const val = Math.round(minB + ratio * bpmRange);
+                            const yPos = height - padY - ratio * (height - 2 * padY);
+                            return (
+                                <g key={i}>
+                                    <line x1={padX} y1={yPos} x2={width - padX} y2={yPos} stroke="#27272a" strokeDasharray="3 3" />
+                                    <text x={padX - 8} y={yPos + 3} fill="#71717a" fontSize="9" fontFamily="monospace" textAnchor="end">{val}</text>
+                                </g>
+                            );
+                        })}
+
+                        {/* Relleno bajo la curva */}
+                        <polygon points={areaPoints} fill="url(#areaFillGrad)" />
+
+                        {/* Curva de BPM */}
+                        <polyline
+                            points={polylinePoints}
+                            fill="none"
+                            stroke="url(#bpmCurveGrad)"
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+
+                        {/* Nodos interactivos de pistas */}
+                        {points.map((p, idx) => {
+                            const isSelected = selectedTrackIdx === idx;
+                            const isCurPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(p.track.id) && isPlaying;
+                            return (
+                                <g 
+                                    key={idx} 
+                                    className="cursor-pointer group"
+                                    onClick={() => setSelectedTrackIdx(idx)}
+                                >
+                                    {/* Halo resplandeciente en hover/select */}
+                                    <circle
+                                        cx={p.x}
+                                        cy={p.y}
+                                        r={isSelected || isCurPlaying ? "10" : "6"}
+                                        fill={isCurPlaying ? "#ec4899" : isSelected ? "#06b6d4" : "#18181b"}
+                                        stroke={isCurPlaying ? "#ffffff" : isSelected ? "#38bdf8" : "#a855f7"}
+                                        strokeWidth={isSelected || isCurPlaying ? "3" : "2"}
+                                        className="transition-all duration-200 group-hover:r-8"
+                                    />
+                                    {/* Etiqueta de Track # */}
+                                    <text
+                                        x={p.x}
+                                        y={p.y - 12}
+                                        fill={isSelected ? "#38bdf8" : "#d4d4d8"}
+                                        fontSize="9.5"
+                                        fontWeight="bold"
+                                        fontFamily="monospace"
+                                        textAnchor="middle"
+                                    >
+                                        #{idx + 1}
+                                    </text>
+                                    {/* Badge de Tonalidad Camelot bajo el nodo */}
+                                    <text
+                                        x={p.x}
+                                        y={height - padY + 14}
+                                        fill="#a855f7"
+                                        fontSize="9"
+                                        fontWeight="black"
+                                        fontFamily="monospace"
+                                        textAnchor="middle"
+                                    >
+                                        {p.track.key || p.track.k || '--'}
+                                    </text>
+                                </g>
+                            );
+                        })}
+                    </svg>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200">
+            {/* Header del Espacio de Set-Builder */}
+            <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2.5">
+                            <span className="p-1.5 rounded-lg bg-gradient-to-br from-djcyan-500/20 to-purple-500/20 text-djcyan-400 border border-djcyan-500/30">
+                                <Icons.Flow />
+                            </span>
+                            <h2 className="text-xl font-mono font-black tracking-tight text-white uppercase flex items-center gap-2">
+                                <span>Set-Builder & Energy Flow Canvas</span>
+                                <span className="text-[10px] bg-djcyan-950 text-djcyan-400 border border-djcyan-800 px-2 py-0.5 rounded-full font-mono font-normal">
+                                    PRO DJ SET ENGINE
+                                </span>
+                            </h2>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1 max-w-2xl font-sans">
+                            Estructura la progresión de tu sesión en vivo. Visualiza curvas de BPM, saltos armónicos Camelot (+1, -1, cambios modales), saltos de volumen LUFS y alertas Anti-Muddy en transiciones.
+                        </p>
+                    </div>
+
+                    {/* Acciones principales */}
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                        <button
+                            type="button"
+                            onClick={handleOptimizeHarmonicFlow}
+                            disabled={setTracks.length < 2}
+                            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
+                            title="Calcula el orden perfecto de BPM y compatibilidad Camelot sin choques tonales"
+                        >
+                            <span>⚡</span>
+                            <span>Auto-Optimizar Pro (Flow Armónico)</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleExportM3U}
+                            disabled={isExporting || setTracks.length === 0}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
+                            title="Exportar archivo de lista de reproducción compatible con Pioneer Rekordbox, Serato DJ Pro, Traktor Pro y VirtualDJ"
+                        >
+                            <span>💾</span>
+                            <span>{isExporting ? 'Exportando...' : 'Exportar Set (.M3U8)'}</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setIsAddDrawerOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 transition-all cursor-pointer"
+                        >
+                            <span>➕ Añadir Pistas</span>
+                        </button>
+
+                        {setTracks.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleClearSet}
+                                className="px-2.5 py-2 rounded-xl text-xs font-mono text-rose-400 hover:bg-rose-950/50 border border-rose-900/40 transition-all cursor-pointer"
+                                title="Vaciar set"
+                            >
+                                🗑️
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Banner de Estado de Exportación */}
+                {exportStatus && (
+                    <div className={`p-3 rounded-xl border text-xs font-mono flex items-center justify-between animate-fadeIn ${
+                        exportStatus.type === 'success' 
+                            ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300' 
+                            : exportStatus.type === 'error'
+                                ? 'bg-rose-950/80 border-rose-700 text-rose-300'
+                                : 'bg-djcyan-950/80 border-djcyan-700 text-djcyan-300'
+                    }`}>
+                        <span>{exportStatus.msg}</span>
+                        <button type="button" onClick={() => setExportStatus(null)} className="text-gray-400 hover:text-white">✕</button>
+                    </div>
+                )}
+
+                {/* Barra de Estadísticas del Set y Nombre */}
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-2 border-t border-djzinc-800/60">
+                    <div className="col-span-2 flex items-center gap-2 bg-djzinc-900/80 border border-djzinc-800 rounded-xl px-3 py-1.5">
+                        <span className="text-[10px] font-mono text-gray-400 uppercase">Nombre:</span>
+                        <input
+                            type="text"
+                            value={setName}
+                            onChange={(e) => setSetName(e.target.value)}
+                            className="bg-transparent text-xs font-mono text-white font-bold outline-none flex-1 focus:text-djcyan-300"
+                            placeholder="Nombre del Set..."
+                        />
+                    </div>
+                    <div className="bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center">
+                        <span className="text-[9.5px] font-mono text-gray-400 uppercase">Pistas</span>
+                        <span className="text-sm font-mono font-black text-djcyan-400">{setTracks.length}</span>
+                    </div>
+                    <div className="bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center">
+                        <span className="text-[9.5px] font-mono text-gray-400 uppercase">Duración</span>
+                        <span className="text-sm font-mono font-black text-purple-300">{formattedDuration}</span>
+                    </div>
+                    <div className="bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center">
+                        <span className="text-[9.5px] font-mono text-gray-400 uppercase">Rango BPM</span>
+                        <span className="text-sm font-mono font-black text-amber-300">{stats.minBpm} - {stats.maxBpm}</span>
+                    </div>
+                    <div className="bg-djzinc-900/60 border border-djzinc-800 rounded-xl p-2.5 flex flex-col items-center justify-center">
+                        <span className="text-[9.5px] font-mono text-gray-400 uppercase">Score Armónico</span>
+                        <span className={`text-sm font-mono font-black ${stats.harmonicScore >= 85 ? 'text-emerald-400' : stats.harmonicScore >= 70 ? 'text-amber-400' : 'text-rose-400'}`}>
+                            {stats.harmonicScore}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Contenido Principal: Lienzo SVG y Lista Secuencial de Pistas */}
+            <div className="p-4 md:p-6 flex flex-col gap-6 flex-1">
+                {/* 1. Lienzo de Curva de BPM y Energía */}
+                {renderFlowCanvas()}
+
+                {/* 2. Lista Secuencial con Tarjetas Puente de Transición */}
+                {setTracks.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center py-16 text-center border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-950/40 p-6">
+                        <div className="w-14 h-14 rounded-2xl bg-djzinc-900 flex items-center justify-center text-djcyan-400 mb-4 border border-djzinc-800">
+                            <Icons.Flow />
+                        </div>
+                        <h3 className="text-base font-mono font-bold text-gray-300">Tu Set está vacío</h3>
+                        <p className="text-xs text-gray-500 max-w-md mt-1 mb-5 font-sans">
+                            Agrega pistas desde el botón superior, o haz clic en "Cargar Demostración" para explorar cómo funciona el análisis armónico Camelot y de colisión Anti-Muddy.
+                        </p>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={handleLoadDemoSet}
+                                className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-700/60 transition-all cursor-pointer shadow"
+                            >
+                                🎵 Cargar Set de Demostración
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsAddDrawerOpen(true)}
+                                className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 transition-all cursor-pointer"
+                            >
+                                ➕ Añadir desde Biblioteca
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between text-xs font-mono text-gray-400 px-1">
+                            <span>SECUENCIA DE LA SESIÓN ({setTracks.length} PISTAS)</span>
+                            <span className="text-[10px] text-gray-500">Usa las flechas ▲ ▼ para reordenar pistas manualmente</span>
+                        </div>
+
+                        {setTracks.map((track, idx) => {
+                            const isCurPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(track.id) && isPlaying;
+                            const isSelected = selectedTrackIdx === idx;
+                            const nextTrack = (idx < setTracks.length - 1) ? setTracks[idx + 1] : null;
+
+                            // Evaluaciones de transición frente a la siguiente pista
+                            const harmTrans = nextTrack ? evaluateHarmonicTransition(track.key || track.k, nextTrack.key || nextTrack.k) : null;
+                            const lufsTrans = nextTrack ? evaluateLufsTransition(track.lufs || track.integrated_lufs, nextTrack.lufs || nextTrack.integrated_lufs) : null;
+                            const antiMuddyTrans = nextTrack ? evaluateAntiMuddyTransition(track, nextTrack) : null;
+
+                            return (
+                                <React.Fragment key={`set_trk_${track.id || idx}_${idx}`}>
+                                    {/* Fila de la Pista */}
+                                    <div 
+                                        onClick={() => setSelectedTrackIdx(idx)}
+                                        className={`p-3 md:p-3.5 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                                            isSelected 
+                                                ? 'bg-gradient-to-r from-[#141422] to-djzinc-900 border-djcyan-500/80 shadow-[0_0_18px_rgba(6,182,212,0.2)]' 
+                                                : isCurPlaying
+                                                    ? 'bg-gradient-to-r from-pink-950/40 to-djzinc-900 border-pink-500 shadow-[0_0_18px_rgba(236,72,153,0.25)]'
+                                                    : 'bg-djzinc-900/80 border-djzinc-800 hover:border-djzinc-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                                            {/* Reordenador Vertical ▲ ▼ */}
+                                            <div className="flex flex-col items-center gap-0.5">
+                                                <button
+                                                    type="button"
+                                                    disabled={idx === 0}
+                                                    onClick={(e) => { e.stopPropagation(); handleMoveTrack(idx, -1); }}
+                                                    className="w-5 h-5 flex items-center justify-center rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 disabled:opacity-20 text-[10px] cursor-pointer"
+                                                    title="Mover arriba"
+                                                >
+                                                    ▲
+                                                </button>
+                                                <span className="text-[10px] font-mono font-bold text-gray-500">#{idx + 1}</span>
+                                                <button
+                                                    type="button"
+                                                    disabled={idx === setTracks.length - 1}
+                                                    onClick={(e) => { e.stopPropagation(); handleMoveTrack(idx, 1); }}
+                                                    className="w-5 h-5 flex items-center justify-center rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 disabled:opacity-20 text-[10px] cursor-pointer"
+                                                    title="Mover abajo"
+                                                >
+                                                    ▼
+                                                </button>
+                                            </div>
+
+                                            {/* Play button */}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (isCurPlaying) {
+                                                        if (onTogglePlay) onTogglePlay();
+                                                    } else if (onPlayTrack) {
+                                                        onPlayTrack(track, 0, false);
+                                                    }
+                                                }}
+                                                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border transition-all cursor-pointer ${
+                                                    isCurPlaying 
+                                                        ? 'bg-gradient-to-br from-pink-500 to-rose-600 text-white border-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.5)]' 
+                                                        : 'bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-400 border-djzinc-700'
+                                                }`}
+                                            >
+                                                {isCurPlaying ? '⏸' : '▶'}
+                                            </button>
+
+                                            {/* Info de la pista */}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="text-xs font-mono font-bold text-white truncate">
+                                                        {track.title || track.t || track.filename || 'Pista sin título'}
+                                                    </h4>
+                                                    {track.format && (
+                                                        <span className="text-[9px] font-mono px-1 rounded bg-djzinc-800 text-gray-400">
+                                                            {track.format}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] text-gray-400 truncate font-sans">
+                                                    {track.artist || track.a || 'Artista desconocido'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Metadatos Clave: BPM, Camelot Key, Rol Acústico, LUFS */}
+                                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                                            {/* BPM */}
+                                            <div className="px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[55px]">
+                                                <span className="text-gray-400 block text-[8px]">BPM</span>
+                                                <span className="font-bold text-white">{track.bpm || track.b || '--'}</span>
+                                            </div>
+
+                                            {/* Camelot Key */}
+                                            <div className="px-2 py-1 rounded-lg bg-purple-950/60 border border-purple-800/80 font-mono text-[11px] text-center min-w-[50px]">
+                                                <span className="text-purple-300 block text-[8px]">KEY</span>
+                                                <span className="font-black text-purple-200">{track.key || track.k || '--'}</span>
+                                            </div>
+
+                                            {/* Rol Acústico (Anti-Muddy) */}
+                                            <div className={`px-2 py-1 rounded-lg border font-mono text-[10px] text-center min-w-[80px] ${
+                                                track.acoustic_role === 'Bass Driver'
+                                                    ? 'bg-rose-950/60 text-rose-300 border-rose-800/80'
+                                                    : track.acoustic_role === 'Vocal / Lead'
+                                                        ? 'bg-amber-950/60 text-amber-300 border-amber-800/80'
+                                                        : track.acoustic_role === 'Percussive Tool'
+                                                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/80'
+                                                            : 'bg-djzinc-950 text-gray-300 border-djzinc-800'
+                                            }`}>
+                                                <span className="text-gray-400 block text-[8px]">ROL DSP</span>
+                                                <span className="font-bold">
+                                                    {track.acoustic_role === 'Bass Driver' ? '🔴 Bass Driver' : track.acoustic_role === 'Vocal / Lead' ? '🟡 Vocal / Lead' : track.acoustic_role === 'Percussive Tool' ? '🟢 Percussive' : '🔵 Balanced'}
+                                                </span>
+                                            </div>
+
+                                            {/* LUFS integrado */}
+                                            <div className="px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[65px]">
+                                                <span className="text-gray-400 block text-[8px]">LUFS</span>
+                                                <span className="font-bold text-djcyan-400">
+                                                    {track.lufs || track.integrated_lufs ? `${track.lufs || track.integrated_lufs} dB` : '-8.5 dB'}
+                                                </span>
+                                            </div>
+
+                                            {/* Botón Eliminar */}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); handleRemoveTrack(idx); }}
+                                                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-rose-400 hover:bg-rose-950/30 transition-all cursor-pointer ml-1"
+                                                title="Quitar pista del set"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Puente de Transición Diagnóstico (#idx -> #idx+1) */}
+                                    {nextTrack && (
+                                        <div className="mx-4 md:mx-10 my-1 p-2.5 rounded-xl bg-[#0b0b12] border border-djzinc-800/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-[10px] font-mono text-gray-500 font-bold">
+                                                    TRANSICIÓN #{idx + 1} ➔ #{idx + 2}:
+                                                </span>
+
+                                                {/* Badge Armónico Camelot */}
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${harmTrans.color}`} title={harmTrans.desc}>
+                                                    {harmTrans.badge}
+                                                </span>
+
+                                                {/* Badge Alerta LUFS */}
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${lufsTrans.color}`} title={lufsTrans.advice}>
+                                                    {lufsTrans.badge}
+                                                </span>
+
+                                                {/* Badge Anti-Muddy */}
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${antiMuddyTrans.color}`} title={antiMuddyTrans.advice}>
+                                                    {antiMuddyTrans.badge}
+                                                </span>
+                                            </div>
+
+                                            {/* Consejos Proactivos para el DJ en Cabina */}
+                                            <div className="text-[9.5px] font-mono text-gray-400 flex items-center gap-2">
+                                                {antiMuddyTrans.isCollision && (
+                                                    <span className="text-red-400 font-bold flex items-center gap-1">
+                                                        <span>⚠️</span> <span>Cortar EQ Low canal saliente</span>
+                                                    </span>
+                                                )}
+                                                {lufsTrans.isAlert && (
+                                                    <span className="text-amber-400 font-bold flex items-center gap-1">
+                                                        <span>🎚️</span> <span>{lufsTrans.delta > 0 ? `Bajar Trim ~${Math.abs(lufsTrans.delta)}dB` : `Subir Trim ~${Math.abs(lufsTrans.delta)}dB`}</span>
+                                                    </span>
+                                                )}
+                                                {!antiMuddyTrans.isCollision && !lufsTrans.isAlert && (
+                                                    <span className="text-emerald-400">
+                                                        ✨ Mezcla fluida garantizada
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Modal / Cajón Lateral: Añadir Pistas desde Auditoría */}
+            {isAddDrawerOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#0e0e16] border border-djzinc-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+                        <div className="p-4 border-b border-djzinc-800 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="text-djcyan-400">➕</span>
+                                <h3 className="text-sm font-mono font-bold text-white uppercase">Añadir Pistas de Auditoría al Set</h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsAddDrawerOpen(false)}
+                                className="text-gray-400 hover:text-white text-sm"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Barra de Búsqueda rápida */}
+                        <div className="p-3 border-b border-djzinc-800/80 bg-djzinc-950">
+                            <input
+                                type="text"
+                                value={searchAddQuery}
+                                onChange={(e) => setSearchAddQuery(e.target.value)}
+                                placeholder="Filtrar pistas por título, artista o BPM..."
+                                className="w-full bg-djzinc-900 border border-djzinc-750 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-djcyan-500 font-mono"
+                            />
+                        </div>
+
+                        {/* Lista de Pistas Disponibles */}
+                        <div className="p-3 overflow-y-auto flex-1 space-y-2">
+                            {auditTracks.length === 0 ? (
+                                <div className="text-center py-10 text-gray-500 text-xs font-mono">
+                                    No hay pistas cargadas en Auditoría. Carga una carpeta o audita temas en la pestaña Auditoría & DSP.
+                                </div>
+                            ) : (
+                                auditTracks
+                                    .filter(t => {
+                                        const q = searchAddQuery.toLowerCase();
+                                        return !q || (t.title || t.t || '').toLowerCase().includes(q) || (t.artist || t.a || '').toLowerCase().includes(q) || (t.bpm || t.b || '').toString().includes(q);
+                                    })
+                                    .map(t => {
+                                        const isAlreadyInSet = setTracks.some(st => String(st.id) === String(t.id));
+                                        return (
+                                            <div
+                                                key={`audit_add_${t.id}`}
+                                                className="p-2.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800/80 flex items-center justify-between gap-3 hover:border-djzinc-700"
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-xs font-mono font-bold text-white truncate">
+                                                        {t.title || t.t || t.filename || 'Pista'}
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-400 truncate">
+                                                        {t.artist || t.a || 'Artista'} • {t.bpm || t.b || '--'} BPM • {t.key || t.k || '--'} • {t.acoustic_role || 'Balanced'}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAddTrack(t)}
+                                                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-700 transition-all cursor-pointer shadow"
+                                                >
+                                                    {isAlreadyInSet ? '+ Añadir Otra Vez' : '+ Añadir'}
+                                                </button>
+                                            </div>
+                                        );
+                                    })
+                            )}
+                        </div>
+
+                        <div className="p-3 border-t border-djzinc-800 bg-djzinc-950 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setIsAddDrawerOpen(false)}
+                                className="px-4 py-1.5 rounded-xl text-xs font-mono font-bold bg-djzinc-800 text-gray-200 hover:bg-djzinc-700 cursor-pointer"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 const KnowledgeWorkspace = ({ lang = "es" }) => {
     const [activeSection, setActiveSection] = useState("courses"); // 'courses' | 'videos' | 'manuals' | 'glossary'
     const [knowledgeData, setKnowledgeData] = useState({
@@ -13466,6 +14599,7 @@ const App = () => {
     const [activeTab, setActiveTab] = useState('audit');
     const [currentFolder, setCurrentFolder] = useState('/Users/admin/Music/mi musica');
     const [auditTracks, setAuditTracks] = useState([]);
+    const [setBuilderTracks, setSetBuilderTracks] = useState([]);
     const [spotifyTracks, setSpotifyTracks] = useState([]);
     const [selectedTrack, setSelectedTrack] = useState(null);
     const currentTrack = selectedTrack ? (auditTracks.find(t => t.id === selectedTrack) || null) : null;
@@ -13798,6 +14932,16 @@ const App = () => {
                         <Icons.Trends /> <span>{t('nav_trends') || 'Tendencias'}</span>
                     </button>
                     <button 
+                        onClick={() => setActiveTab('setbuilder')} 
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            activeTab === 'setbuilder' 
+                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                        }`}
+                    >
+                        <Icons.Flow /> <span>{t('nav_setbuilder') || 'Set-Builder & Flow'}</span>
+                    </button>
+                    <button 
                         onClick={() => setActiveTab('knowledge')} 
                         className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
                             activeTab === 'knowledge' 
@@ -13993,12 +15137,29 @@ const App = () => {
                         onSendToSpotify={(query) => {
                             setActiveTab('spotify');
                         }}
+                        onAddTrackToSet={(track) => {
+                            if (!track) return;
+                            setSetBuilderTracks(prev => [...prev, track]);
+                            setActiveTab('setbuilder');
+                        }}
                         onAddTrackToSpotify={handleAddTracksToSpotify}
                         onAddTracksToSpotify={handleAddTracksToSpotify}
                     />
                 </div>
                 <div style={{ display: activeTab === 'trends' ? 'flex' : 'none' }} className="w-full h-full">
                     <TrendsWorkspace lang={lang} />
+                </div>
+                <div style={{ display: activeTab === 'setbuilder' ? 'flex' : 'none' }} className="w-full h-full">
+                    <SetBuilderWorkspace 
+                        setTracks={setBuilderTracks}
+                        setSetTracks={setSetBuilderTracks}
+                        auditTracks={auditTracks}
+                        onPlayTrack={handlePlayTrack}
+                        nowPlayingTrack={nowPlayingTrack}
+                        isPlaying={isPlaying}
+                        onTogglePlay={togglePlayPause}
+                        lang={lang}
+                    />
                 </div>
                 <div style={{ display: activeTab === 'knowledge' ? 'flex' : 'none' }} className="w-full h-full">
                     <KnowledgeWorkspace lang={lang} />
@@ -14128,6 +15289,16 @@ const App = () => {
                 </button>
                 <button
                     type="button"
+                    onClick={() => setActiveTab('setbuilder')}
+                    className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
+                        activeTab === 'setbuilder' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
+                    }`}
+                >
+                    <Icons.Flow />
+                    <span className="text-[9.5px] font-mono mt-0.5">Set-Flow</span>
+                </button>
+                <button
+                    type="button"
                     onClick={() => setActiveTab('trends')}
                     className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
                         activeTab === 'trends' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
@@ -14197,6 +15368,7 @@ const App = () => {
                                 { id: 'audit', icon: <Icons.Library />, label: t('nav_audit') || 'Auditoría & DSP' },
                                 { id: 'hotcues', icon: <Icons.Cue />, label: t('nav_hotcues') || 'Estudio Hot Cues' },
                                 { id: 'trends', icon: <Icons.Trends />, label: t('nav_trends') || 'Tendencias Electrónica' },
+                                { id: 'setbuilder', icon: <Icons.Flow />, label: t('nav_setbuilder') || 'Set-Builder & Flow' },
                                 { id: 'knowledge', icon: <Icons.Knowledge />, label: t('nav_knowledge') || 'Academia & Conocimiento' },
                                 { id: 'spotify', icon: <Icons.Spotify />, label: t('nav_spotify') || 'Spotify Ingest' },
                                 { id: 'shazam', icon: <Icons.Radar />, label: t('nav_shazam') || 'Radar Shazam' },

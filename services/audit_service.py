@@ -2,6 +2,9 @@ import os
 import re
 import subprocess
 import threading
+import hashlib
+import sqlite3
+import json
 import numpy as np
 import soundfile as sf
 import eel
@@ -21,11 +24,166 @@ def _cooperative_yield():
         import time
         time.sleep(0.002)
 
+
+class AuditCacheDB:
+    """Motor de persistencia y caché SQLite para perfiles espectrales, LUFS y huellas acústicas."""
+    def __init__(self, db_path="data/audit_cache.db"):
+        self.db_path = db_path
+        os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
+        self._lock = threading.Lock()
+        self._init_db()
+
+    def _get_conn(self):
+        conn = sqlite3.connect(self.db_path, timeout=10)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _init_db(self):
+        with self._lock:
+            with self._get_conn() as conn:
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS audit_cache (
+                        filepath TEXT PRIMARY KEY,
+                        file_hash TEXT,
+                        mtime REAL,
+                        filesize INTEGER,
+                        cutoff_khz REAL,
+                        lufs REAL,
+                        true_peak REAL,
+                        low_ratio REAL,
+                        mid_ratio REAL,
+                        high_ratio REAL,
+                        acoustic_role TEXT,
+                        format TEXT,
+                        bitrate_kbps INTEGER,
+                        sample_rate_khz REAL,
+                        calidad TEXT,
+                        status TEXT,
+                        es_fake INTEGER,
+                        acoustic_fp TEXT,
+                        spectrum_json TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_fp ON audit_cache(acoustic_fp)")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_hash ON audit_cache(file_hash)")
+
+    def get(self, filepath: str, mtime: float = None, filesize: int = None):
+        if not filepath:
+            return None
+        with self._lock:
+            try:
+                with self._get_conn() as conn:
+                    cur = conn.cursor()
+                    cur.execute("SELECT * FROM audit_cache WHERE filepath = ?", (filepath,))
+                    row = cur.fetchone()
+                    if not row:
+                        return None
+                    if mtime is not None and abs(float(row["mtime"]) - float(mtime)) > 1.0:
+                        return None
+                    if filesize is not None and int(row["filesize"]) != int(filesize):
+                        return None
+                    return dict(row)
+            except Exception as e:
+                print(f"[CACHE DB GET ERROR] {e}")
+                return None
+
+    def set(self, data: dict):
+        if not data or not data.get("filepath"):
+            return
+        with self._lock:
+            try:
+                with self._get_conn() as conn:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO audit_cache (
+                            filepath, file_hash, mtime, filesize, cutoff_khz, lufs, true_peak,
+                            low_ratio, mid_ratio, high_ratio, acoustic_role, format,
+                            bitrate_kbps, sample_rate_khz, calidad, status, es_fake,
+                            acoustic_fp, spectrum_json, updated_at
+                        ) VALUES (
+                            ?, ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?,
+                            ?, ?, CURRENT_TIMESTAMP
+                        )
+                    """, (
+                        data.get("filepath"),
+                        data.get("file_hash", ""),
+                        float(data.get("mtime", 0.0)),
+                        int(data.get("filesize", 0)),
+                        float(data.get("cutoff_khz", 22.0)),
+                        float(data.get("lufs", -14.0)),
+                        float(data.get("true_peak", -0.1)),
+                        float(data.get("low_ratio", 33.3)),
+                        float(data.get("mid_ratio", 33.3)),
+                        float(data.get("high_ratio", 33.4)),
+                        data.get("acoustic_role", "Balanced Full-Range"),
+                        data.get("format", ""),
+                        int(data.get("bitrate_kbps", 0)),
+                        float(data.get("sample_rate_khz", 44.1)),
+                        data.get("calidad", "Alta"),
+                        data.get("status", "Lossless OK"),
+                        1 if data.get("es_fake") else 0,
+                        data.get("acoustic_fp", ""),
+                        data.get("spectrum_json", "")
+                    ))
+            except Exception as e:
+                print(f"[CACHE DB SET ERROR] {e}")
+
+
+def calcular_huella_acustica(data, samplerate):
+    """Genera una huella acústica perceptual resistente a variaciones de ganancia y transcodes."""
+    try:
+        if data is None or len(data) == 0:
+            return ""
+        sr = int(samplerate) if samplerate else 44100
+        step = max(1, sr // 11025)
+        mono_sub = data[::step]
+        target_len = min(len(mono_sub), 11025 * 30)
+        start_idx = max(0, (len(mono_sub) - target_len) // 2)
+        segment = mono_sub[start_idx : start_idx + target_len]
+        n_fft = 2048
+        hop = 1024
+        num_frames = (len(segment) - n_fft) // hop
+        if num_frames < 4:
+            return hashlib.md5(segment[:1000].tobytes()).hexdigest()
+        freq_bins = np.logspace(np.log10(100), np.log10(5000), num=17)
+        freqs = np.fft.rfftfreq(n_fft, 1.0 / 11025)
+        band_energies = []
+        for i in range(min(num_frames, 40)):
+            window = segment[i * hop : i * hop + n_fft] * np.hanning(n_fft)
+            spectrum = np.abs(np.fft.rfft(window))
+            frame_bands = []
+            for b in range(16):
+                mask = (freqs >= freq_bins[b]) & (freqs < freq_bins[b+1])
+                band_energy = float(np.sum(spectrum[mask])) if np.any(mask) else 0.0
+                frame_bands.append(band_energy)
+            band_energies.append(frame_bands)
+        band_energies = np.array(band_energies)
+        bits = []
+        for t in range(len(band_energies) - 1):
+            for b in range(15):
+                diff_f = band_energies[t, b+1] - band_energies[t, b]
+                diff_t = band_energies[t+1, b] - band_energies[t, b]
+                bits.append('1' if (diff_f + diff_t) > 0 else '0')
+        bitstring = ''.join(bits)
+        h = hashlib.sha256(bitstring.encode('utf-8')).hexdigest()[:32]
+        summary_hash = hashlib.md5(np.round(band_energies.mean(axis=0), 1).tobytes()).hexdigest()[:16]
+        return f"{h}_{summary_hash}"
+    except Exception as e:
+        print(f"[FINGERPRINT ERROR] {e}")
+        return ""
+
 class AuditService:
     def __init__(self):
         self.directorio_actual = "/Users/admin/Music/mi musica"
         self._lock = threading.Lock()
         self._cancelar_proceso = False
+        try:
+            self.db_cache = AuditCacheDB()
+        except Exception as e:
+            print(f"[CACHE DB INIT ERROR] {e}")
+            self.db_cache = None
 
     @staticmethod
     def extraer_info_tecnica_audio(filepath: str) -> dict:
@@ -379,12 +537,69 @@ class AuditService:
 
     def analizar_espectro_fft(self, filepath, spotify_id=None):
         if not filepath:
-            return {"id": spotify_id, "estado": "Error I/O", "corte": "N/A", "cutoff_khz": 22.0, "perdida": 0, "spectrum": []}
+            return {"id": spotify_id, "estado": "Error I/O", "corte": "N/A", "cutoff_khz": 22.0, "perdida": 0, "spectrum": [], "low_ratio": 33.3, "mid_ratio": 33.3, "high_ratio": 33.4, "acoustic_role": "Balanced Full-Range", "acoustic_fp": ""}
         if not os.path.exists(filepath):
             if self.directorio_actual and os.path.basename(filepath):
                 cand = os.path.join(self.directorio_actual, os.path.basename(filepath))
                 if os.path.exists(cand):
                     filepath = cand
+
+        # Verificación en Caché SQLite previa a procesamiento intensivo
+        mtime = None
+        fsize = None
+        if os.path.exists(filepath):
+            try:
+                mtime = os.path.getmtime(filepath)
+                fsize = os.path.getsize(filepath)
+            except Exception:
+                pass
+
+        if hasattr(self, "db_cache") and self.db_cache:
+            cached = self.db_cache.get(filepath, mtime, fsize)
+            if cached:
+                spec = []
+                if cached.get("spectrum_json"):
+                    try:
+                        spec = json.loads(cached["spectrum_json"])
+                    except Exception:
+                        pass
+                res = {
+                    "id": spotify_id,
+                    "status": cached.get("status", "Lossless OK"),
+                    "estado": cached.get("status", "Lossless OK"),
+                    "calidad": cached.get("calidad", "Alta"),
+                    "perdida": "Sin Pérdida" if not cached.get("es_fake") else "Compresión",
+                    "perdida_pct": 0.0 if not cached.get("es_fake") else 35.0,
+                    "compresion": "Ninguna" if not cached.get("es_fake") else "Lossy Transcode",
+                    "es_fake": bool(cached.get("es_fake")),
+                    "badge_color": "red" if cached.get("es_fake") else "green",
+                    "corte": f"{cached.get('cutoff_khz', 22.0):.1f} kHz",
+                    "cutoff_khz": round(float(cached.get("cutoff_khz", 22.0)), 1),
+                    "spectrum": spec,
+                    "samplerate": int(float(cached.get("sample_rate_khz", 44.1)) * 1000),
+                    "sample_rate_khz": float(cached.get("sample_rate_khz", 44.1)),
+                    "bitrate_kbps": int(cached.get("bitrate_kbps", 0)),
+                    "bit_depth": 16,
+                    "format": cached.get("format", "FLAC"),
+                    "lufs": float(cached.get("lufs", -14.0)),
+                    "lra": 0.0,
+                    "true_peak": float(cached.get("true_peak", -0.1)),
+                    "clipping": float(cached.get("true_peak", -0.1)) > 0.0,
+                    "status_lufs": "Normal",
+                    "badge_lufs": "green",
+                    "low_ratio": float(cached.get("low_ratio", 33.3)),
+                    "mid_ratio": float(cached.get("mid_ratio", 33.3)),
+                    "high_ratio": float(cached.get("high_ratio", 33.4)),
+                    "acoustic_role": cached.get("acoustic_role", "Balanced Full-Range"),
+                    "acoustic_fp": cached.get("acoustic_fp", "")
+                }
+                if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
+                    try:
+                        eel.notificar_resultado_auditoria(res)()
+                    except Exception:
+                        pass
+                return res
+
         print(f"[AUDITORIA FFT] Analizando espectro de: {os.path.basename(filepath)}")
         try:
             fs = 44100
@@ -453,6 +668,68 @@ class AuditService:
             # Medición de sonoridad profesional LUFS y True Peak (EBU R128)
             lufs_res = self.medir_lufs_y_true_peak(filepath)
 
+            # Cálculo de Ratio Espectral Tri-Banda (Anti-Muddy / Densidad Espectral)
+            # Low: 20 - 250 Hz (Subgrave y pegada de bombo)
+            # Mid: 250 - 4.000 Hz (Cuerpo, leads y presencia vocal)
+            # High: 4.000 - 20.000 Hz (Agudos, platos y aire)
+            low_mask = (xf >= 20) & (xf < 250)
+            mid_mask = (xf >= 250) & (xf < 4000)
+            high_mask = (xf >= 4000) & (xf <= 20000)
+
+            power = (np.abs(yf) ** 2)
+            low_energy = float(np.sum(power[low_mask])) if np.any(low_mask) else 0.0
+            mid_energy = float(np.sum(power[mid_mask])) if np.any(mid_mask) else 0.0
+            high_energy = float(np.sum(power[high_mask])) if np.any(high_mask) else 0.0
+            total_tri_energy = low_energy + mid_energy + high_energy
+
+            if total_tri_energy > 0:
+                low_ratio = round((low_energy / total_tri_energy) * 100.0, 1)
+                mid_ratio = round((mid_energy / total_tri_energy) * 100.0, 1)
+                high_ratio = round(max(0.0, 100.0 - (low_ratio + mid_ratio)), 1)
+            else:
+                low_ratio, mid_ratio, high_ratio = 33.3, 33.3, 33.4
+
+            # Determinación determinista del Rol Acústico de Cabina
+            if low_ratio >= 45.0:
+                acoustic_role = "Bass Driver"
+            elif mid_ratio >= 45.0:
+                acoustic_role = "Vocal / Lead"
+            elif high_ratio >= 30.0 or low_ratio <= 30.0:
+                acoustic_role = "Percussive Tool"
+            else:
+                acoustic_role = "Balanced Full-Range"
+
+            # Huella acústica perceptual para deduplicación transparente
+            acoustic_fp = calcular_huella_acustica(data, samplerate)
+
+            # Persistencia en Caché SQLite
+            if hasattr(self, "db_cache") and self.db_cache and filepath and os.path.exists(filepath):
+                try:
+                    f_hash = hashlib.md5(f"{os.path.basename(filepath)}_{fsize}".encode("utf-8")).hexdigest()
+                    self.db_cache.set({
+                        "filepath": filepath,
+                        "file_hash": f_hash,
+                        "mtime": mtime or 0.0,
+                        "filesize": fsize or 0,
+                        "cutoff_khz": float(cutoff_khz),
+                        "lufs": float(lufs_res.get("lufs", -14.0)),
+                        "true_peak": float(lufs_res.get("true_peak", -0.1)),
+                        "low_ratio": low_ratio,
+                        "mid_ratio": mid_ratio,
+                        "high_ratio": high_ratio,
+                        "acoustic_role": acoustic_role,
+                        "format": diag["format"],
+                        "bitrate_kbps": int(diag["bitrate_kbps"]),
+                        "sample_rate_khz": float(diag["sample_rate_khz"]),
+                        "calidad": diag["calidad"],
+                        "status": diag["status"],
+                        "es_fake": diag["es_fake"],
+                        "acoustic_fp": acoustic_fp,
+                        "spectrum_json": json.dumps(spectrum_points)
+                    })
+                except Exception as e_cache:
+                    print(f"[CACHE DB SAVE ERROR] {e_cache}")
+
             resultado = {
                 "id": spotify_id,
                 "status": diag["status"],
@@ -477,6 +754,11 @@ class AuditService:
                 "clipping": lufs_res.get("clipping", False),
                 "status_lufs": lufs_res.get("status_lufs", "Normal"),
                 "badge_lufs": lufs_res.get("badge_lufs", "green"),
+                "low_ratio": low_ratio,
+                "mid_ratio": mid_ratio,
+                "high_ratio": high_ratio,
+                "acoustic_role": acoustic_role,
+                "acoustic_fp": acoustic_fp,
                 "diagnostico": diag
             }
             if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
@@ -509,7 +791,12 @@ class AuditService:
                 "clipping": False,
                 "status_lufs": "Error I/O",
                 "badge_lufs": "gray",
-                "spectrum": []
+                "spectrum": [],
+                "low_ratio": 33.3,
+                "mid_ratio": 33.3,
+                "high_ratio": 33.4,
+                "acoustic_role": "Balanced Full-Range",
+                "acoustic_fp": "" 
             }
             if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
                 try:
@@ -783,7 +1070,12 @@ class AuditService:
                 "comment": tactical_comment,
                 "genre": str(info.get("genre") or "Tech House"),
                 "subgenre": str(info.get("subgenre") or "Tech House"),
-                "cues": info.get("cues") or []
+                "cues": info.get("cues") or [],
+                "low_ratio": float(fft_res.get("low_ratio", 33.3)) if 'fft_res' in locals() and isinstance(fft_res, dict) else 33.3,
+                "mid_ratio": float(fft_res.get("mid_ratio", 33.3)) if 'fft_res' in locals() and isinstance(fft_res, dict) else 33.3,
+                "high_ratio": float(fft_res.get("high_ratio", 33.4)) if 'fft_res' in locals() and isinstance(fft_res, dict) else 33.4,
+                "acoustic_role": str(fft_res.get("acoustic_role", "Balanced Full-Range")) if 'fft_res' in locals() and isinstance(fft_res, dict) else "Balanced Full-Range",
+                "acoustic_fp": str(fft_res.get("acoustic_fp", "")) if 'fft_res' in locals() and isinstance(fft_res, dict) else ""
             })
 
         total = len(tracks_auditados)
@@ -1283,6 +1575,14 @@ class AuditService:
             else:
                 score = 20.0
 
+        # Rango dinámico y preservación de True Peak sin distorsión (EBU R128)
+        tp = float(track.get("true_peak") or -0.1)
+        clipping = bool(track.get("clipping", False)) or tp > 0.0
+        if clipping:
+            score -= 12.0  # Penalización severa por distorsión inter-sample (clipping digital)
+        elif cutoff >= 20.0 and tp <= -0.1:
+            score += 6.0   # Masterización profesional limpia con headroom
+
         # Tamaño en disco como desempate técnico fidedigno
         p = track.get("path")
         if p and os.path.exists(p):
@@ -1302,6 +1602,47 @@ class AuditService:
 
         return round(score, 2)
 
+    @staticmethod
+    def evaluar_compatibilidad_antimuddy(track_a: dict, track_b: dict) -> dict:
+        """Evalúa la compatibilidad de densidad espectral tri-banda entre dos pistas
+        para prevenir mezclas saturadas/embarradas (Anti-Muddy DSP)."""
+        if not track_a or not track_b:
+            return {"compatible": True, "status": "Unknown", "badge": "N/A", "badge_color": "gray", "detalles": ""}
+
+        low_a = float(track_a.get("low_ratio") or 33.3)
+        low_b = float(track_b.get("low_ratio") or 33.3)
+        role_a = str(track_a.get("acoustic_role") or "Balanced Full-Range")
+        role_b = str(track_b.get("acoustic_role") or "Balanced Full-Range")
+
+        # Alerta de colisión si ambos tracks tienen low_ratio >= 45% (ambos Bass Drivers)
+        if low_a >= 45.0 and low_b >= 45.0:
+            return {
+                "compatible": False,
+                "is_collision": True,
+                "status": "Muddy Sub-Bass Collision Risk",
+                "badge": "⚠️ Colisión Subgrave (30-80 Hz)",
+                "badge_color": "bg-red-950/80 text-red-300 border-red-700/80",
+                "detalles": f"Ambos temas son Bass Drivers ({low_a}% y {low_b}% en graves). Saturación inminente en 30-80 Hz si se mezclan sin BASS swap total."
+            }
+        elif (low_a >= 45.0 and role_b in ("Vocal / Lead", "Percussive Tool")) or (low_b >= 45.0 and role_a in ("Vocal / Lead", "Percussive Tool")):
+            return {
+                "compatible": True,
+                "is_collision": False,
+                "status": "Complementary Acoustic Pairing",
+                "badge": "🟢 Frecuencias Complementarias",
+                "badge_color": "bg-emerald-950/80 text-emerald-300 border-emerald-700/80",
+                "detalles": f"Emparejamiento perfecto: {role_a} + {role_b}. El balance de graves y medios evita enmascaramiento."
+            }
+        else:
+            return {
+                "compatible": True,
+                "is_collision": False,
+                "status": "Balanced Mix",
+                "badge": "🔵 Mezcla Equilibrada",
+                "badge_color": "bg-blue-950/80 text-blue-300 border-blue-700/80",
+                "detalles": f"Densidad espectral balanceada ({low_a}% vs {low_b}% en graves)."
+            }
+
     def detectar_duplicados_biblioteca(self, tracks: list, proteger_versiones_hermanas: bool = False) -> dict:
         """Agrupa y compara cara a cara duplicados de la biblioteca identificando la versión óptima a conservar."""
         if not tracks or not isinstance(tracks, list):
@@ -1315,8 +1656,13 @@ class AuditService:
             art_norm = self._normalizar_para_deduplicacion(trk.get("artist") or trk.get("a") or "")
             tit_norm = self._normalizar_para_deduplicacion(trk.get("title") or trk.get("t") or "")
 
-            # Si faltan artista o título, extraer del nombre de archivo
-            if not art_norm or not tit_norm:
+            # Deduplicación por Huella Acústica (Acoustic Fingerprinting Chromaprint/AcoustID)
+            fp = str(trk.get("acoustic_fp") or "")
+            fp_prefix = fp.split("_")[0] if ("_" in fp and len(fp.split("_")[0]) >= 16) else ""
+
+            if fp_prefix:
+                clave = f"fp__{fp_prefix}"
+            elif not art_norm or not tit_norm:
                 fname = os.path.splitext(os.path.basename(trk.get("path") or trk.get("f") or ""))[0]
                 fname_norm = self._normalizar_para_deduplicacion(fname)
                 clave = fname_norm if fname_norm else f"track_{trk.get('id')}"

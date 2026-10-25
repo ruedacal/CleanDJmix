@@ -454,6 +454,23 @@ def exportar_rekordbox_xml(tracks, destino_dir="/Users/admin/Music/mi musica", n
     return export_svc.exportar_rekordbox_xml(tracks, destino_dir, nombre_archivo, incluir_memory_cues=True)
 
 @eel.expose
+def exportar_set_m3u(tracks, nombre_set="BeatWave_DJ_Set", destino_dir="/Users/admin/Music/mi musica"):
+    return export_svc.exportar_set_m3u(tracks, destino_dir, nombre_set)
+
+@bottle.route('/api/setbuilder/export_m3u', method=['POST', 'OPTIONS'])
+def api_exportar_set_m3u():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    data = bottle.request.json or {}
+    tracks = data.get("tracks", [])
+    nombre_set = data.get("nombre_set", "BeatWave_DJ_Set")
+    destino_dir = data.get("destino_dir", "/Users/admin/Music/mi musica")
+    return export_svc.exportar_set_m3u(tracks, destino_dir, nombre_set)
+
+@eel.expose
 def exportar_reporte_descargas_xls(report_data, destino_dir="/Users/admin/Music/mi musica"):
     return export_svc.exportar_reporte_descargas_xls(report_data, destino_dir)
 
