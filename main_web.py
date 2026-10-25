@@ -12,6 +12,8 @@ from services.export_service import ExportService
 from application.taxonomy_service import TaxonomyService
 from services.shazam_service import ShazamRecognitionService
 from services.tag_sanitizer_service import TagSanitizerService
+from services.trends_service import trends_service
+from services.knowledge_service import knowledge_service
 
 def compilar_frontend_si_necesario():
     jsx_path = os.path.join("web", "js", "app.jsx")
@@ -533,6 +535,55 @@ def exportar_apuntes_shazam(tracks, formato="xls", destino_dir="/Users/admin/Mus
                 return {"status": "ok", "path": filepath, "filename": filename, "total": len(tracks)}
     except Exception as e:
         return {"status": "error", "msg": str(e)}
+
+# =========================================================================
+# MÓDULOS DE TENDENCIAS Y CONOCIMIENTO (API & EEL)
+# =========================================================================
+
+@eel.expose
+def obtener_tendencias_web():
+    return trends_service.obtener_tendencias()
+
+@eel.expose
+def ejecutar_crawler_tendencias():
+    return trends_service.ejecutar_crawler(forzar=True)
+
+@eel.expose
+def obtener_recursos_conocimiento():
+    return knowledge_service.obtener_recursos()
+
+@bottle.route('/api/trends', method=['GET', 'OPTIONS'])
+def api_trends():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    return trends_service.obtener_tendencias()
+
+@bottle.route('/api/trends/crawl', method=['POST', 'OPTIONS'])
+def api_trends_crawl():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    return trends_service.ejecutar_crawler(forzar=True)
+
+@bottle.route('/api/knowledge', method=['GET', 'OPTIONS'])
+def api_knowledge():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    return knowledge_service.obtener_recursos()
+
+@bottle.route('/api/manual/pdf', method=['GET'])
+def api_download_manual_pdf():
+    pdf_filename = "CleanDJmix_PRO_Manual_Funcional_y_Tecnico.pdf"
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    return bottle.static_file(pdf_filename, root=root_dir, download=pdf_filename, mimetype='application/pdf')
 
 if __name__ == "__main__":
     try:
