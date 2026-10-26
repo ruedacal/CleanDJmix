@@ -314,6 +314,23 @@ def api_analizar_spotify():
     res = media_svc.analizar_catalogo_spotify(q or "")
     return res
 
+@bottle.route('/api/identificar_audio', method=['POST', 'OPTIONS'])
+def api_identificar_audio():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    try:
+        data = bottle.request.json or {}
+        b64 = data.get('audio_b64', '')
+        motor = data.get('motor', 'hybrid')
+        token = data.get('audd_token', '')
+        filename = data.get('filename', '')
+        return shazam_svc.reconocer_base64(b64, motor=motor, audd_token=token, filename=filename)
+    except Exception as e:
+        return {"status": "error", "msg": f"Error en /api/identificar_audio: {e}"}
+
 @bottle.route('/api/sanitizar_metadatos', method=['POST', 'OPTIONS'])
 def api_sanitizar_metadatos():
     bottle.response.set_header("Access-Control-Allow-Origin", "*")

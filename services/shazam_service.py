@@ -6,6 +6,8 @@ import asyncio
 import tempfile
 import subprocess
 import concurrent.futures
+import threading
+import hashlib
 import uuid
 import time
 import urllib.request
@@ -57,14 +59,74 @@ class ShazamRecognitionService:
     """
 
     def __init__(self):
-        pass
+        # Pool de hilos persistente para evitar creación/destrucción repetida de pools en consultas consecutivas
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="ShazamWorker")
+        # Caché en memoria para respuestas acústicas de huellas ya procesadas (clave: md5_hash)
+        self._cache = {}
+        self._lock = threading.Lock()
+
+    def __del__(self):
+        try:
+            if hasattr(self, '_executor') and self._executor:
+                self._executor.shutdown(wait=False)
+        except Exception:
+            pass
+
+    def _obtener_audio_hash(self, target: Any) -> Optional[str]:
+        """Calcula un hash MD5 de los primeros bytes de audio para consulta instantánea en caché."""
+        try:
+            if isinstance(target, (bytes, bytearray)):
+                sample = target[:32768]
+                return hashlib.md5(sample).hexdigest()
+            elif isinstance(target, str) and os.path.exists(target):
+                with open(target, 'rb') as f:
+                    sample = f.read(32768)
+                return hashlib.md5(sample).hexdigest()
+        except Exception:
+            pass
+        return None
+
+    def _consultar_cache(self, audio_hash: Optional[str]) -> Optional[Dict[str, Any]]:
+        """Recupera el resultado acústico previamente analizado si sigue vigente en caché."""
+        if not audio_hash:
+            return None
+        with self._lock:
+            if audio_hash in self._cache:
+                ts, res = self._cache[audio_hash]
+                # Válido durante 1 hora (3600 segundos)
+                if time.time() - ts < 3600:
+                    cached_copy = dict(res)
+                    cached_copy["de_cache"] = True
+                    return cached_copy
+                else:
+                    del self._cache[audio_hash]
+        return None
+
+    def _guardar_cache(self, audio_hash: Optional[str], result: Dict[str, Any]):
+        """Almacena el resultado exitoso en caché acotando la memoria a un máximo de 100 entradas."""
+        if not audio_hash or not result or result.get("status") != "ok":
+            return
+        with self._lock:
+            if len(self._cache) > 100:
+                ordenados = sorted(self._cache.items(), key=lambda x: x[1][0])
+                for k, _ in ordenados[:20]:
+                    self._cache.pop(k, None)
+            self._cache[audio_hash] = (time.time(), result)
 
     def _ejecutar_async(self, coro_func, *args, **kwargs):
-        """Ejecuta una función asíncrona de manera segura y completamente aislada en su propio thread y event loop."""
+        """Ejecuta una corrutina de manera segura reutilizando el pool de workers persistente."""
         def runner():
-            return asyncio.run(coro_func(*args, **kwargs))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            return pool.submit(runner).result()
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(coro_func(*args, **kwargs))
+            finally:
+                try:
+                    loop.close()
+                except Exception:
+                    pass
+        future = self._executor.submit(runner)
+        return future.result(timeout=25.0)
 
     def _obtener_duracion_archivo(self, filepath: str) -> float:
         """Obtiene la duración en segundos de un archivo de audio con mutagen o ffprobe."""
@@ -132,7 +194,8 @@ class ShazamRecognitionService:
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as f_out:
                 out_path = f_out.name
 
-            cmd = ['ffmpeg', '-y', '-i', in_path, '-ar', '44100', '-ac', '2', out_path]
+            # Acotar a un máximo de 45s con '-t 45' para que la conversión sea casi instantánea
+            cmd = ['ffmpeg', '-y', '-t', '45', '-i', in_path, '-ar', '44100', '-ac', '2', out_path]
             res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if res.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 1000:
                 return out_path
@@ -153,7 +216,7 @@ class ShazamRecognitionService:
         Reconocimiento acústico Shazam con motor anti-bloqueo:
         - Normalización a 16kHz mono 16-bit
         - Generador de huellas Shazam Landmark
-        - Rotación de User-Agents modernos y gestión de backoff ante 429
+        - Rotación de User-Agents modernos y respuesta inmediata ante 429 para no bloquear
         """
         try:
             if isinstance(target, (str, bytes, bytearray)):
@@ -195,7 +258,7 @@ class ShazamRecognitionService:
                 str(uuid.uuid4()).upper(), str(uuid.uuid4()).upper()
             )
 
-            for attempt, ua in enumerate(USER_AGENTS_POOL):
+            for attempt, ua in enumerate(USER_AGENTS_POOL[:2]):
                 headers = {
                     'User-Agent': ua,
                     'X-Shazam-Platform': 'IPHONE',
@@ -205,14 +268,14 @@ class ShazamRecognitionService:
                 }
                 try:
                     async with ClientSession() as session:
-                        async with session.post(clean_url, headers=headers, json=data, timeout=8) as resp:
+                        async with session.post(clean_url, headers=headers, json=data, timeout=4.5) as resp:
                             if resp.status == 200:
                                 return await resp.json()
                             elif resp.status == 429:
-                                await asyncio.sleep(0.4 + (attempt * 0.3))
-                                continue
-                except Exception as net_err:
-                    await asyncio.sleep(0.2)
+                                # Detección de rate limit: salir inmediatamente para conmutar a motor alternativo
+                                return {"matches": [], "rate_limited": True}
+                except Exception:
+                    await asyncio.sleep(0.15)
             return {"matches": []}
         except Exception as e:
             # Fallback al shazamio tradicional si la generación manual diera excepción
@@ -470,7 +533,6 @@ class ShazamRecognitionService:
         except Exception as e:
             print(f"[ITUNES FALLBACK ERR] {e}")
         return None
-        return None
 
     def reconocer_shazamio(self, target: Any, filepath_context: Optional[str] = None) -> Dict[str, Any]:
         """Ejecuta el reconocimiento acústico nativo mediante Shazam con escaneo inteligente multi-segmento."""
@@ -480,6 +542,10 @@ class ShazamRecognitionService:
         try:
             # 1. Escaneo primario del inicio (Offset 0)
             raw = self._ejecutar_async(self._shazam_recognize_async, target)
+            if raw and raw.get("rate_limited"):
+                # Salir inmediatamente sin intentar drop/breakdown para no demorar la respuesta
+                return {"status": "rate_limited", "msg": "Servidor Shazam con límite de tasa (429). Conmutando a motor alternativo."}
+
             norm = self.normalizar_resultado_shazam(raw)
             if norm.get("status") == "ok":
                 norm["motor_usado"] = "Radar Acústico Shazam"
@@ -495,6 +561,8 @@ class ShazamRecognitionService:
                     if slice_drop:
                         try:
                             raw_drop = self._ejecutar_async(self._shazam_recognize_async, slice_drop)
+                            if raw_drop and raw_drop.get("rate_limited"):
+                                return {"status": "rate_limited", "msg": "Servidor Shazam con límite de tasa (429)."}
                             norm_drop = self.normalizar_resultado_shazam(raw_drop)
                             if norm_drop.get("status") == "ok":
                                 norm_drop["motor_usado"] = "Shazam (Drop Acústico)"
@@ -509,6 +577,8 @@ class ShazamRecognitionService:
                     if slice_break:
                         try:
                             raw_break = self._ejecutar_async(self._shazam_recognize_async, slice_break)
+                            if raw_break and raw_break.get("rate_limited"):
+                                return {"status": "rate_limited", "msg": "Servidor Shazam con límite de tasa (429)."}
                             norm_break = self.normalizar_resultado_shazam(raw_break)
                             if norm_break.get("status") == "ok":
                                 norm_break["motor_usado"] = "Shazam (Breakdown Melódico)"
@@ -575,25 +645,38 @@ class ShazamRecognitionService:
         if not filepath or not os.path.exists(filepath):
             return {"status": "error", "msg": "Archivo no encontrado"}
 
+        # Verificar respuesta en caché para consultas consecutivas instantáneas
+        audio_hash = self._obtener_audio_hash(filepath)
+        cached = self._consultar_cache(audio_hash)
+        if cached:
+            return cached
+
         motor = (motor or "hybrid").lower().strip()
 
         if motor == "audd":
-            return self.reconocer_audd(filepath, audd_token=audd_token)
+            token_to_use = audd_token.strip() if (audd_token and audd_token.strip()) else "test"
+            res = self.reconocer_audd(filepath, audd_token=token_to_use)
+            if res.get("status") == "ok":
+                self._guardar_cache(audio_hash, res)
+            return res
 
         # 1. Reconocimiento acústico por huella Shazam con escaneo multi-segmento
         res_shazam = self.reconocer_shazamio(filepath, filepath_context=filepath)
         if res_shazam.get("status") == "ok":
+            self._guardar_cache(audio_hash, res_shazam)
             return res_shazam
 
-        # 2. Respaldo AudD si el usuario configuró token
-        if audd_token and audd_token.strip():
-            res_audd = self.reconocer_audd(filepath, audd_token=audd_token)
-            if res_audd.get("status") == "ok":
-                return res_audd
+        # 2. Respaldo AudD (con token de usuario o token de respaldo 'test')
+        token_to_use = audd_token.strip() if (audd_token and audd_token.strip()) else "test"
+        res_audd = self.reconocer_audd(filepath, audd_token=token_to_use)
+        if res_audd.get("status") == "ok":
+            self._guardar_cache(audio_hash, res_audd)
+            return res_audd
 
         # 3. Respaldo de Inteligencia Acústica por Metadatos y Catálogo Apple Music
         res_itunes = self.buscar_metadatos_itunes_fallback(filepath, original_filename=os.path.basename(filepath))
         if res_itunes and res_itunes.get("status") == "ok":
+            self._guardar_cache(audio_hash, res_itunes)
             return res_itunes
 
         return {
@@ -606,6 +689,12 @@ class ShazamRecognitionService:
         if not audio_bytes or len(audio_bytes) < 300:
             return {"status": "error", "msg": "Datos de audio insuficientes"}
 
+        # Verificar respuesta en caché para consultas consecutivas instantáneas
+        audio_hash = self._obtener_audio_hash(audio_bytes)
+        cached = self._consultar_cache(audio_hash)
+        if cached:
+            return cached
+
         motor = (motor or "hybrid").lower().strip()
 
         # Convertir a WAV limpio para compatibilidad de codecs de navegador (WebM, Opus, MP3, etc.)
@@ -614,22 +703,29 @@ class ShazamRecognitionService:
 
         try:
             if motor == "audd":
-                return self.reconocer_audd(target, audd_token=audd_token)
+                token_to_use = audd_token.strip() if (audd_token and audd_token.strip()) else "test"
+                res = self.reconocer_audd(target, audd_token=token_to_use)
+                if res.get("status") == "ok":
+                    self._guardar_cache(audio_hash, res)
+                return res
 
             # 1. Reconocimiento primario con Shazam y escaneo de drops si es archivo largo
             res_shazam = self.reconocer_shazamio(target, filepath_context=wav_path)
             if res_shazam.get("status") == "ok":
+                self._guardar_cache(audio_hash, res_shazam)
                 return res_shazam
 
-            # 2. Respaldo AudD si hay token
-            if audd_token and audd_token.strip():
-                res_audd = self.reconocer_audd(target, audd_token=audd_token)
-                if res_audd.get("status") == "ok":
-                    return res_audd
+            # 2. Respaldo AudD (con token de usuario o token de respaldo 'test')
+            token_to_use = audd_token.strip() if (audd_token and audd_token.strip()) else "test"
+            res_audd = self.reconocer_audd(target, audd_token=token_to_use)
+            if res_audd.get("status") == "ok":
+                self._guardar_cache(audio_hash, res_audd)
+                return res_audd
 
             # 3. Respaldo de Inteligencia Acústica en metadatos y nombre original del archivo subido
             res_itunes = self.buscar_metadatos_itunes_fallback(wav_path if (wav_path and os.path.exists(wav_path)) else "", original_filename=filename)
             if res_itunes and res_itunes.get("status") == "ok":
+                self._guardar_cache(audio_hash, res_itunes)
                 return res_itunes
 
             return {

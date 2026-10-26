@@ -11838,6 +11838,9 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const mediaRecorderRef = useRef(null);
     const audioStreamRef = useRef(null);
     const fileInputRef = useRef(null);
+    const timerRef = useRef(null);
+    const animFrameRef = useRef(null);
+    const audioCtxRef = useRef(null);
     const [dragOver, setDragOver] = useState(false);
 
     // Selector de motor acústico: 'hybrid' (recomendado), 'shazamio', 'audd'
@@ -12000,6 +12003,19 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             audio.removeEventListener("ended", handleEnded);
             audio.removeEventListener("pause", handlePause);
             audio.pause();
+            if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+            if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+            if (audioCtxRef.current) {
+                try { audioCtxRef.current.close(); } catch(e) {}
+                audioCtxRef.current = null;
+            }
+            if (audioStreamRef.current) {
+                try { audioStreamRef.current.getTracks().forEach(t => t.stop()); } catch(e) {}
+                audioStreamRef.current = null;
+            }
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                try { mediaRecorderRef.current.stop(); } catch(e) {}
+            }
         };
     }, []);
 
@@ -12015,8 +12031,89 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         }
     };
 
+    const cancelListening = () => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+        if (animFrameRef.current) {
+            cancelAnimationFrame(animFrameRef.current);
+            animFrameRef.current = null;
+        }
+        if (audioCtxRef.current) {
+            try { audioCtxRef.current.close(); } catch(e) {}
+            audioCtxRef.current = null;
+        }
+        if (audioStreamRef.current) {
+            try { audioStreamRef.current.getTracks().forEach(t => t.stop()); } catch(e) {}
+            audioStreamRef.current = null;
+        }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.ondataavailable = null;
+            mediaRecorderRef.current.onstop = null;
+            try { mediaRecorderRef.current.stop(); } catch(e) {}
+        }
+        setIsListening(false);
+        setIsAnalyzing(false);
+        setMicLevel(0);
+        setStatusMsg("Escucha cancelada. Listo para una nueva consulta.");
+        setTimeout(() => setStatusMsg(""), 3000);
+    };
+
+    const stopMicrophoneListeningEarly = () => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+        }
+    };
+
+    const executeRecognition = async (base64Data, filename) => {
+        setIsAnalyzing(true);
+        const engineLabel = selectedEngine === 'hybrid' ? 'Modo Híbrido' : selectedEngine === 'audd' ? 'AudD API' : 'ShazamIO Smart';
+        setStatusMsg(`Consultando huella acústica en [${engineLabel}]...`);
+
+        try {
+            let res = null;
+            // 1. Intento primario vía puente Eel WebSockets
+            if (window.eel && window.eel.identificar_audio_base64) {
+                try {
+                    res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, filename)();
+                } catch (eelErr) {
+                    console.warn("Eel RPC falló o cerró conexión, recurriendo a endpoint HTTP:", eelErr);
+                }
+            }
+
+            // 2. Respaldo directo vía HTTP /api/identificar_audio si Eel no responde o no está disponible
+            if (!res) {
+                const response = await fetch('/api/identificar_audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        audio_b64: base64Data,
+                        motor: selectedEngine,
+                        audd_token: auddToken,
+                        filename: filename
+                    })
+                });
+                if (response.ok) {
+                    res = await response.json();
+                }
+            }
+
+            handleRecognitionResponse(res);
+        } catch (err) {
+            console.error("Error en reconocimiento acústico:", err);
+            setStatusMsg("Error de comunicación con el motor de reconocimiento acústico.");
+            setIsAnalyzing(false);
+        }
+    };
+
     const startMicrophoneListening = async () => {
         if (isListening || isAnalyzing) return;
+        cancelListening();
         setStatusMsg("Solicitando acceso al micrófono...");
 
         try {
@@ -12044,14 +12141,12 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             setStatusMsg("Escuchando audio ambiental (10s)...");
 
             // Web Audio API para VU Meter en vivo
-            let audioCtx = null;
-            let analyser = null;
-            let animFrameId = null;
             try {
                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContextClass();
+                const audioCtx = new AudioContextClass();
+                audioCtxRef.current = audioCtx;
                 const source = audioCtx.createMediaStreamSource(stream);
-                analyser = audioCtx.createAnalyser();
+                const analyser = audioCtx.createAnalyser();
                 analyser.fftSize = 64;
                 source.connect(analyser);
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -12064,7 +12159,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                     }
                     const avg = sum / dataArray.length;
                     setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
-                    animFrameId = requestAnimationFrame(updateMeter);
+                    animFrameRef.current = requestAnimationFrame(updateMeter);
                 };
                 updateMeter();
             } catch (e) {
@@ -12087,32 +12182,25 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             };
 
             mediaRecorder.onstop = async () => {
-                if (animFrameId) cancelAnimationFrame(animFrameId);
-                if (audioCtx) { try { audioCtx.close(); } catch(e) {} }
+                if (animFrameRef.current) {
+                    cancelAnimationFrame(animFrameRef.current);
+                    animFrameRef.current = null;
+                }
+                if (audioCtxRef.current) {
+                    try { audioCtxRef.current.close(); } catch(e) {}
+                    audioCtxRef.current = null;
+                }
                 setMicLevel(0);
-                stream.getTracks().forEach(t => t.stop());
+                if (audioStreamRef.current) {
+                    try { audioStreamRef.current.getTracks().forEach(t => t.stop()); } catch(e) {}
+                    audioStreamRef.current = null;
+                }
                 setIsListening(false);
-                setIsAnalyzing(true);
-                const engineLabel = selectedEngine === 'hybrid' ? 'Modo Híbrido' : selectedEngine === 'audd' ? 'AudD API' : 'ShazamIO Smart';
-                setStatusMsg(`Consultando huella acústica en [${engineLabel}]...`);
 
                 const audioBlob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' });
                 const reader = new FileReader();
-                reader.onloadend = async () => {
-                    const base64Data = reader.result;
-                    try {
-                        if (window.eel && window.eel.identificar_audio_base64) {
-                            const res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, "mic_sample.webm")();
-                            handleRecognitionResponse(res);
-                        } else {
-                            setStatusMsg("Backend Shazam no disponible.");
-                            setIsAnalyzing(false);
-                        }
-                    } catch (err) {
-                        console.error("Error Shazam:", err);
-                        setStatusMsg("Error de comunicación con el motor de reconocimiento.");
-                        setIsAnalyzing(false);
-                    }
+                reader.onloadend = () => {
+                    executeRecognition(reader.result, "mic_sample.webm");
                 };
                 reader.readAsDataURL(audioBlob);
             };
@@ -12120,11 +12208,14 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             mediaRecorder.start();
 
             let timeLeft = 10;
-            const timer = setInterval(() => {
+            timerRef.current = setInterval(() => {
                 timeLeft -= 1;
                 setCountdown(timeLeft);
                 if (timeLeft <= 0) {
-                    clearInterval(timer);
+                    if (timerRef.current) {
+                        clearInterval(timerRef.current);
+                        timerRef.current = null;
+                    }
                     if (mediaRecorder.state !== 'inactive') {
                         mediaRecorder.stop();
                     }
@@ -12141,35 +12232,24 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const handleFileSelect = (file) => {
         if (!file) return;
         setIsAnalyzing(true);
-        const engineLabel = selectedEngine === 'hybrid' ? 'Modo Híbrido' : selectedEngine === 'audd' ? 'AudD API' : 'ShazamIO Smart';
-        setStatusMsg(`Leyendo archivo "${file.name}"...`);
+        setStatusMsg(`Leyendo "${file.name}"...`);
+
+        // Slicing de archivo a un máximo de 8MB en el navegador para transferencias ultrarrápidas
+        const fileToRead = file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file;
 
         const reader = new FileReader();
-        reader.onloadend = async () => {
-            const base64Data = reader.result;
-            setStatusMsg(`Generando huella acústica de "${file.name}" en [${engineLabel}]...`);
-            try {
-                if (window.eel && window.eel.identificar_audio_base64) {
-                    const res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, file.name)();
-                    handleRecognitionResponse(res);
-                } else {
-                    setStatusMsg("Backend Shazam no disponible.");
-                    setIsAnalyzing(false);
-                }
-            } catch (err) {
-                console.error("Error en Shazam:", err);
-                setStatusMsg("Error al procesar el archivo en el motor.");
-                setIsAnalyzing(false);
-            }
+        reader.onloadend = () => {
+            executeRecognition(reader.result, file.name);
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(fileToRead);
     };
 
     const handleRecognitionResponse = (res) => {
         setIsAnalyzing(false);
         if (res && res.status === 'ok') {
             const engineTag = res.motor_usado ? ` [vía ${res.motor_usado}]` : '';
-            setStatusMsg(`✓ Identificado${engineTag}: "${res.title}" por ${res.artist}`);
+            const cacheTag = res.de_cache ? ' ⚡(Caché)' : '';
+            setStatusMsg(`✓ Identificado${engineTag}${cacheTag}: "${res.title}" por ${res.artist}`);
             setIdentifiedTrack(res);
             setHistory(prev => [res, ...prev.filter(item => item.title !== res.title || item.artist !== res.artist)]);
             if (res.preview_url) {
@@ -12395,6 +12475,28 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 </span>
                             </div>
                         )}
+
+                        {isListening && (
+                            <div className="flex items-center gap-2 mt-3 z-10">
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); stopMicrophoneListeningEarly(); }}
+                                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 cursor-pointer flex items-center gap-1 transition-all"
+                                    title="Enviar grabación inmediatamente sin esperar al final de los 10 segundos"
+                                >
+                                    <span>⚡</span>
+                                    <span>Identificar Ya</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); cancelListening(); }}
+                                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-800 hover:bg-red-950 text-gray-300 hover:text-red-300 border border-djzinc-700 cursor-pointer transition-all"
+                                    title="Cancelar la captura actual"
+                                >
+                                    ✕ Cancelar
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="text-[11px] font-mono text-gray-400">
@@ -12439,7 +12541,9 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         ref={fileInputRef} 
                         onChange={(e) => {
                             if (e.target.files && e.target.files.length > 0) {
-                                handleFileSelect(e.target.files[0]);
+                                const selected = e.target.files[0];
+                                e.target.value = ''; // Permite volver a seleccionar el mismo archivo en consultas consecutivas
+                                handleFileSelect(selected);
                             }
                         }} 
                         accept="audio/*" 
