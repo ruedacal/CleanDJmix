@@ -60,8 +60,8 @@
 
 /* Fader de Pitch Vertical Pioneer DJ */
 input[type=range].pitch-slider-vertical {
-    -webkit-appearance: slider-vertical;
-    writing-mode: bt-lr;
+    writing-mode: vertical-lr;
+    direction: rtl;
     width: 22px;
     height: 110px;
     background: #111119;

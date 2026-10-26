@@ -23,7 +23,7 @@ DJ_COURSES = [
         "duration": "1h 45m",
         "lessons_count": 6,
         "instructor": "Victor R. (BeatWave Academy)",
-        "image_url": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80",
+        "image_url": "https://images.unsplash.com/photo-1563841930606-67e2bce48b78?w=800&auto=format&fit=crop&q=80",
         "description": "Aprende a contar la música electrónica en bloques de 4, 8, 16 y 32 compases (phrasing), comprender el primer downbeat y realizar el ajuste de tempo mediante el Pitch Fader sin depender del botón Sync.",
         "modules": [
             {"title": "1. Anatomía de una pista: Intro, Buildup, Drop, Breakdown y Outro", "duration": "15 min"},
@@ -43,7 +43,7 @@ DJ_COURSES = [
         "duration": "2h 15m",
         "lessons_count": 7,
         "instructor": "Marc S. (Harmonic DJ Lab)",
-        "image_url": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop&q=80",
+        "image_url": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&auto=format&fit=crop&q=80",
         "description": "Domina el sistema Camelot (1A a 12B) para realizar mezclas continuas sin colisiones tonales en bajos y sintetizadores. Técnicas para subir la energía (+1 o +2 números) y modulación emotiva (cambio de A a B).",
         "modules": [
             {"title": "1. ¿Por qué chocan dos pistas aunque estén a compás?", "duration": "15 min"},
@@ -115,7 +115,7 @@ DJ_VIDEOS = [
         "duration": "18:45",
         "views": "28.9K",
         "category": "Tornamesa & Scratch",
-        "thumbnail": "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?w=600&auto=format&fit=crop&q=80",
+        "thumbnail": "https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?w=600&auto=format&fit=crop&q=80",
         "url": "https://www.youtube.com/results?search_query=turntable+scratching+techniques+baby+scratch+chirp",
         "tags": ["Scratch", "33 RPM", "Technics 1200", "Latencia Cero"]
     },
@@ -126,7 +126,7 @@ DJ_VIDEOS = [
         "duration": "15:30",
         "views": "9.8K",
         "category": "Ingeniería de Audio",
-        "thumbnail": "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80",
+        "thumbnail": "https://images.unsplash.com/photo-1518972559570-7cc1309f3229?w=600&auto=format&fit=crop&q=80",
         "url": "https://www.youtube.com/results?search_query=flac+fake+lossless+spectrogram+analysis+audio",
         "tags": ["SuperFLAC", "Cutoff kHz", "True Lossless", "Spotify Ingest"]
     },

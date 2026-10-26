@@ -206,3 +206,56 @@ def test_identificar_audio_base64_con_filename(mock_rec):
     assert res["title"] == "Horny Tiger"
     mock_rec.assert_called_once_with("b64dummydata", motor="hybrid", audd_token="", filename="Marco Bailey - Horny Tiger.mp3")
 
+# --- NUEVAS RUTAS HTTP SPOTIFY INGEST & TENDENCIAS ---
+@patch.object(main_web.download_svc, 'ejecutar_lote_descarga', return_value={"status": "ok", "total": 1})
+@patch('main_web.bottle.request')
+def test_api_descargar_spotify(mock_req, mock_dl):
+    mock_req.method = 'POST'
+    mock_req.json = {'tracks': [{'title': 'Track 1'}], 'formato': 'flac', 'custom_dir': '/tmp'}
+    res = main_web.api_descargar_spotify()
+    assert res["status"] == "ok"
+    mock_dl.assert_called_once()
+
+@patch.object(main_web.audit_svc, 'listar_subcarpetas_sistema', return_value={"current": "/Music", "parent": "/", "folders": []})
+@patch('main_web.bottle.request')
+def test_api_listar_subcarpetas(mock_req, mock_sub):
+    mock_req.method = 'GET'
+    mock_req.query.get.return_value = "/Music"
+    mock_req.json = None
+    res = main_web.api_listar_subcarpetas()
+    assert res["current"] == "/Music"
+    mock_sub.assert_called_once_with("/Music")
+
+@patch.object(main_web.download_svc, 'obtener_directorio_actual', return_value="/Users/admin/Music")
+@patch('main_web.bottle.request')
+def test_api_directorio_descarga(mock_req, mock_dir):
+    mock_req.method = 'GET'
+    mock_req.json = None
+    res = main_web.api_directorio_descarga()
+    assert res["status"] == "ok"
+    assert res["path"] == "/Users/admin/Music"
+
+@patch.object(main_web.media_svc, 'resolver_stream_preescucha', return_value={"stream_url": "http://stream.mp3", "cover": "http://img.jpg"})
+@patch('main_web.bottle.request')
+def test_api_resolver_stream_preescucha(mock_req, mock_resolve):
+    mock_req.method = 'GET'
+    mock_req.query.get.side_effect = lambda k, default='': 'Song' if k == 'titulo' else ('Artist' if k == 'artista' else default)
+    mock_req.json = None
+    res = main_web.api_resolver_stream_preescucha()
+    assert res["stream_url"] == "http://stream.mp3"
+    mock_resolve.assert_called_once_with('Song', 'Artist')
+
+def test_trends_service_enriched_sections():
+    from services.trends_service import trends_service
+    data = trends_service.obtener_tendencias()
+    assert "items" in data
+    assert "festivals_calendar" in data
+    assert len(data["festivals_calendar"]) >= 5
+    assert "set_breakdowns" in data
+    assert len(data["set_breakdowns"]) >= 3
+    assert "interviews" in data
+    assert len(data["interviews"]) >= 3
+    assert "trends_radar" in data
+    assert len(data["trends_radar"]) >= 3
+
+

@@ -6826,20 +6826,63 @@ const HotCuesWorkspace = ({
         }
     };
 
-    // Asegura que activeCues SIEMPRE contenga los 8 Hot Cues (Pads 1 al 8)
+    const audioDurMs = (audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5)
+        ? Math.round(audioRef.current.duration * 1000)
+        : null;
+    const durMs = audioDurMs || parseDurationMs(currentTrack?.duration || "05:00");
+    const bpm = (currentTrack && (currentTrack.bpm || currentTrack.b)) ? Math.max(30.0, parseFloat(currentTrack.bpm || currentTrack.b) || 128.0) : 128.0;
+    const beatMs = 60000.0 / bpm;
+    const barMs = beatMs * 4.0;
+    const downbeatMs = currentTrack && currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
+
+    const CLUB_CUE_RATIOS = [0.005, 0.12, 0.25, 0.40, 0.55, 0.70, 0.85, 0.94];
+    const CLUB_CUE_NAMES = [
+        "Intro / Downbeat",
+        "Percussion / Beat",
+        "Bassline Groove",
+        "Breakdown 1",
+        "Drop 1 (Climax)",
+        "Mid Breakdown",
+        "Drop 2 (Re-Kick)",
+        "Outro Mix Point"
+    ];
+
+    // Asegura que activeCues SIEMPRE contenga los 8 Hot Cues proporcionados a la duración real de la pista
     const activeCues = Array.from({ length: 8 }, (_, idx) => {
         const padNum = idx + 1;
         const existing = (currentTrack && currentTrack.cues && currentTrack.cues[idx]) ? currentTrack.cues[idx] : null;
-        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
+        const defaultColor = NV2_COLORS[idx] ? NV2_COLORS[idx].color : '#06b6d4';
+        const defaultName = CLUB_CUE_NAMES[idx] || `Cue ${padNum}`;
+        const defaultPosMs = Math.round(durMs * CLUB_CUE_RATIOS[idx]);
+        const defaultTime = formatMsToTime(defaultPosMs);
+
         if (existing) {
+            let cuePos = existing.pos_ms !== undefined ? existing.pos_ms : parseTimeToMs(existing.time || defaultTime);
+            // Si la posición de este cue guardado excede la duración real del archivo, recalcular proporcionalmente
+            if (cuePos >= durMs - 250) {
+                cuePos = defaultPosMs;
+            }
             return {
-                ...defaultPreset,
-                ...existing,
                 id: padNum,
-                color: existing.color || defaultPreset.color
+                name: existing.name || defaultName,
+                color: existing.color || defaultColor,
+                time: formatMsToTime(cuePos),
+                pos_ms: cuePos,
+                pct: durMs > 0 ? (cuePos / durMs) : CLUB_CUE_RATIOS[idx],
+                bar: existing.bar || Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1),
+                bar_str: existing.bar_str || `Bar ${Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1)}`
             };
         }
-        return defaultPreset;
+        return {
+            id: padNum,
+            name: defaultName,
+            color: defaultColor,
+            time: defaultTime,
+            pos_ms: defaultPosMs,
+            pct: CLUB_CUE_RATIOS[idx],
+            bar: Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1),
+            bar_str: `Bar ${Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1)}`
+        };
     });
     const currentCue = activeCues.find(c => (c.id !== undefined ? c.id : 1) === selectedCueId) || activeCues[0] || {};
 
@@ -6857,12 +6900,6 @@ const HotCuesWorkspace = ({
         setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
         setCueTimeInput(currentCue.time || "00:00.00");
     }, [selectedCueId, currentCue.time, currentCue.name]);
-
-    const durMs = parseDurationMs(currentTrack?.duration || "05:00");
-    const bpm = (currentTrack && (currentTrack.bpm || currentTrack.b)) ? Math.max(30.0, parseFloat(currentTrack.bpm || currentTrack.b) || 128.0) : 128.0;
-    const beatMs = 60000.0 / bpm;
-    const barMs = beatMs * 4.0;
-    const downbeatMs = currentTrack && currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
 
     // Cálculo del Hot Cue activo dinámicamente según la posición de reproducción (Estilo Pioneer FLX10)
     const currentMs = playProgress * durMs;
@@ -6945,12 +6982,22 @@ const HotCuesWorkspace = ({
         });
     };
 
-    // Salto directo en reproducción al Hot Cue pulsado
+    // Salto directo en reproducción al Hot Cue pulsado con protección de duración
     const handleJumpToCue = (cue) => {
         if (!currentTrack || !onPlayTrack) return;
-        const posMs = cue.pos_ms !== undefined ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
-        const pct = durMs > 0 ? (posMs / durMs) : 0;
-        onPlayTrack(currentTrack, pct, true);
+        const audioDur = (audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5)
+            ? audioRef.current.duration
+            : (durMs / 1000.0);
+        let posMs = cue.pos_ms !== undefined ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
+        const maxMs = Math.max(500, (audioDur * 1000) - 250);
+        if (posMs >= maxMs) {
+            const padIdx = (cue.id ? cue.id - 1 : 0);
+            posMs = Math.round(maxMs * CLUB_CUE_RATIOS[padIdx]);
+        }
+        posMs = Math.max(0, Math.min(maxMs, posMs));
+        const targetSec = posMs / 1000.0;
+        const pct = audioDur > 0 ? (targetSec / audioDur) : 0;
+        onPlayTrack(currentTrack, pct, true, targetSec);
     };
 
     // Fijar el Hot Cue seleccionado exactamente en la aguja de reproducción actual
@@ -6976,17 +7023,37 @@ const HotCuesWorkspace = ({
         setTimeout(() => setSaveStatus(''), 2500);
     };
 
-    // Auto-Frasear 16/32b anclado al Beatgrid Rekordbox
+    // Auto-Frasear 16/32b anclado al Beatgrid Rekordbox (Plantilla Club Extended)
     const handleAutoPhraseCues = async () => {
         if (!currentTrack) return;
         try {
+            let calculated = null;
             if (window.eel && window.eel.calcular_hot_cues_fraseo) {
-                const calculated = await window.eel.calcular_hot_cues_fraseo(durMs, bpm, Math.round(downbeatMs))();
-                if (calculated && Array.isArray(calculated)) {
-                    updateCues(calculated);
-                    setSaveStatus("✓ 8 Hot Cues auto-fraseados (16/32 compases)");
-                    setTimeout(() => setSaveStatus(''), 2500);
-                }
+                try {
+                    calculated = await window.eel.calcular_hot_cues_fraseo(durMs, bpm, Math.round(downbeatMs))();
+                } catch (_) {}
+            }
+            if (!calculated || !Array.isArray(calculated) || calculated.length === 0) {
+                calculated = CLUB_CUE_RATIOS.map((ratio, idx) => {
+                    const padNum = idx + 1;
+                    const posMs = Math.round(durMs * ratio);
+                    const barNum = Math.max(1, Math.floor((posMs - downbeatMs) / barMs) + 1);
+                    return {
+                        id: padNum,
+                        name: CLUB_CUE_NAMES[idx] || `Cue ${padNum}`,
+                        color: NV2_COLORS[idx] ? NV2_COLORS[idx].color : '#06b6d4',
+                        time: formatMsToTime(posMs),
+                        pos_ms: posMs,
+                        pct: ratio,
+                        bar: barNum,
+                        bar_str: `Bar ${barNum}`
+                    };
+                });
+            }
+            if (calculated && Array.isArray(calculated)) {
+                updateCues(calculated);
+                setSaveStatus("✓ 8 Hot Cues auto-mapeados (Plantilla Club Extended)");
+                setTimeout(() => setSaveStatus(''), 2500);
             }
         } catch (e) {
             console.error("Error auto-fraseando:", e);
@@ -7693,7 +7760,6 @@ const HotCuesWorkspace = ({
                                         style={{
                                             writingMode: 'vertical-lr',
                                             direction: 'rtl',
-                                            WebkitAppearance: 'slider-vertical',
                                             height: '95px',
                                             width: '18px',
                                             accentColor: '#06b6d4',
@@ -8487,46 +8553,68 @@ const SpotifyWorkspace = ({
         setFsBrowserOpen(true);
         setFsLoading(true);
         const startPath = initialPath || destDir || "";
+        let res = null;
         if (window.eel && window.eel.listar_subcarpetas_sistema) {
             try {
-                const res = await window.eel.listar_subcarpetas_sistema(startPath)();
-                if (res) {
-                    setFsCurrentPath(res.current || "");
-                    setFsParentPath(res.parent || "");
-                    setFsFolders(res.folders || []);
-                }
+                res = await window.eel.listar_subcarpetas_sistema(startPath)();
             } catch (err) {
-                console.error("Error al listar carpetas:", err);
-            } finally {
-                setFsLoading(false);
+                console.warn("[EXPLORADOR] Fallo llamada Eel, recurriendo a HTTP:", err);
             }
-        } else {
-            setFsLoading(false);
         }
+        if (!res) {
+            try {
+                const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(startPath)}`);
+                if (resp.ok) res = await resp.json();
+            } catch (httpErr) {
+                console.error("[EXPLORADOR] Fallo HTTP al listar carpetas:", httpErr);
+            }
+        }
+        if (res) {
+            setFsCurrentPath(res.current || "");
+            setFsParentPath(res.parent || "");
+            setFsFolders(res.folders || []);
+        }
+        setFsLoading(false);
     };
 
     const handleNavegarACarpeta = async (targetPath) => {
         setFsLoading(true);
+        let res = null;
         if (window.eel && window.eel.listar_subcarpetas_sistema) {
             try {
-                const res = await window.eel.listar_subcarpetas_sistema(targetPath)();
-                if (res) {
-                    setFsCurrentPath(res.current || "");
-                    setFsParentPath(res.parent || "");
-                    setFsFolders(res.folders || []);
-                }
+                res = await window.eel.listar_subcarpetas_sistema(targetPath)();
             } catch (err) {
-                console.error("Error navegando:", err);
-            } finally {
-                setFsLoading(false);
+                console.warn("[EXPLORADOR] Fallo llamada Eel al navegar:", err);
             }
         }
+        if (!res) {
+            try {
+                const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(targetPath)}`);
+                if (resp.ok) res = await resp.json();
+            } catch (httpErr) {
+                console.error("[EXPLORADOR] Fallo HTTP al navegar:", httpErr);
+            }
+        }
+        if (res) {
+            setFsCurrentPath(res.current || "");
+            setFsParentPath(res.parent || "");
+            setFsFolders(res.folders || []);
+        }
+        setFsLoading(false);
     };
 
     const handleSeleccionarCarpetaDestino = (targetPath) => {
         const finalPath = targetPath || fsCurrentPath;
         setDestDir(finalPath);
         setFsBrowserOpen(false);
+        // Notificar al backend la actualización del directorio de descargas
+        try {
+            fetch('/api/directorio_descarga', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: finalPath })
+            }).catch(() => {});
+        } catch (_) {}
     };
 
     // Ordenación y Filtros de Cabecera en Spotify Workspace
@@ -8637,11 +8725,16 @@ const SpotifyWorkspace = ({
         setTracks(prev => prev.map(t => t.id === id ? ({ ...t, selected: !t.selected }) : t));
     };
 
-    const handlePlayPreview = async (track, e) => {
-        if (e) e.stopPropagation();
+    const handlePlayPreview = async (track, e, seekPct = null) => {
+        if (e && e.stopPropagation) e.stopPropagation();
         setSelectedId(track.id);
 
         if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(track.id) || nowPlayingTrack.title === track.title)) {
+            if (seekPct !== null && onPlayTrack) {
+                const durSec = parseDurationToSeconds(track.duration || 210);
+                onPlayTrack(nowPlayingTrack, seekPct, true, seekPct * durSec);
+                return;
+            }
             if (onTogglePlay) {
                 onTogglePlay();
                 return;
@@ -8650,17 +8743,33 @@ const SpotifyWorkspace = ({
 
         let streamUrl = track.preview_url;
         let coverHd = track.cover;
-        if (!streamUrl && window.eel && window.eel.resolver_stream_preescucha) {
-            try {
-                setDownloadingMsg(`[PRE-ESCUCHA] Resolviendo stream para: ${track.artist} - ${track.title}...`);
-                const res = await window.eel.resolver_stream_preescucha(track.title, track.artist)();
-                if (res && res.stream_url) {
-                    streamUrl = res.stream_url;
-                    if (res.cover) coverHd = res.cover;
-                }
-            } catch (err) {}
+        if (!streamUrl) {
+            setDownloadingMsg(`[PRE-ESCUCHA] Resolviendo stream para: ${track.artist} - ${track.title}...`);
+            if (window.eel && window.eel.resolver_stream_preescucha) {
+                try {
+                    const res = await window.eel.resolver_stream_preescucha(track.title, track.artist)();
+                    if (res && res.stream_url) {
+                        streamUrl = res.stream_url;
+                        if (res.cover) coverHd = res.cover;
+                    }
+                } catch (err) {}
+            }
+            if (!streamUrl) {
+                try {
+                    const resp = await fetch(`/api/resolver_stream_preescucha?titulo=${encodeURIComponent(track.title)}&artista=${encodeURIComponent(track.artist)}`);
+                    if (resp.ok) {
+                        const res = await resp.json();
+                        if (res && res.stream_url) {
+                            streamUrl = res.stream_url;
+                            if (res.cover) coverHd = res.cover;
+                        }
+                    }
+                } catch (httpErr) {}
+            }
         }
         if (onPlayTrack) {
+            const durSec = parseDurationToSeconds(track.duration || 210);
+            const startSec = (seekPct !== null && seekPct > 0) ? seekPct * durSec : 0;
             onPlayTrack({ 
                 id: track.id, 
                 t: track.title, 
@@ -8673,15 +8782,23 @@ const SpotifyWorkspace = ({
                 duration: track.duration, 
                 cover: coverHd, 
                 path: streamUrl || "" 
-            }, 0, true);
+            }, seekPct || 0, true, startSec);
         }
     };
 
-    const handleAnalizar = async () => {
-        if (!spotifyUrl || isAnalyzing) return;
+    const handleAnalizar = async (queryOverride = null) => {
+        const queryToSearch = (typeof queryOverride === 'string' ? queryOverride : spotifyUrl).trim();
+        if (!queryToSearch) {
+            setDownloadingMsg("[AVISO] Introduce un artista, tema o URL de Spotify, o pulsa en una de las sugerencias rápidas.");
+            return;
+        }
+        if (typeof queryOverride === 'string') {
+            setSpotifyUrl(queryOverride);
+        }
+        if (isAnalyzing) return;
         setIsAnalyzing(true);
         setDownloadProgress(20);
-        setDownloadingMsg("[ANALIZANDO] Extrayendo metadatos y carátulas de alta resolución en Spotify...");
+        setDownloadingMsg(`[ANALIZANDO] Extrayendo metadatos para: "${queryToSearch}"...`);
         try {
             setDownloadProgress(45);
             let res = null;
@@ -8689,7 +8806,7 @@ const SpotifyWorkspace = ({
             // 1. Intento primario vía Eel con timeout de seguridad (8 segundos)
             if (window.eel && window.eel.analizar_catalogo_spotify) {
                 try {
-                    const eelCall = window.eel.analizar_catalogo_spotify(spotifyUrl)();
+                    const eelCall = window.eel.analizar_catalogo_spotify(queryToSearch)();
                     const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error("Eel timeout")), 8000)
                     );
@@ -8706,7 +8823,7 @@ const SpotifyWorkspace = ({
                     const resp = await fetch('/api/analizar_spotify', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query: spotifyUrl })
+                        body: JSON.stringify({ query: queryToSearch })
                     });
                     if (resp.ok) {
                         res = await resp.json();
@@ -8752,13 +8869,40 @@ const SpotifyWorkspace = ({
         setIsDownloading(true);
         setDownloadProgress(10);
         setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${listaPistas.length} pista(s) en formato .${selectedFormat.toUpperCase()}...`);
+        let descargadoVíaEel = false;
         if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
             try {
                 await window.eel.descargar_pistas_spotify_seleccionadas(listaPistas, selectedFormat, destDir)();
+                descargadoVíaEel = true;
             } catch (e) {
+                console.warn("[SPOTIFY] Error en llamada Eel de descarga, recurriendo a HTTP:", e);
+            }
+        }
+        if (!descargadoVíaEel) {
+            try {
+                const resp = await fetch('/api/descargar_spotify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tracks: listaPistas,
+                        formato: selectedFormat,
+                        custom_dir: destDir
+                    })
+                });
+                const res = await resp.json();
+                if (res && (res.status === 'ok' || res.status === 'iniciado')) {
+                    setDownloadingMsg(`[DESCARGANDO] Lote en segundo plano (${listaPistas.length} pistas) hacia: ${res.dest || destDir}`);
+                    setDownloadProgress(35);
+                } else {
+                    setDownloadingMsg(`[ERROR] ${res?.msg || 'Error al iniciar descarga'}`);
+                    setIsDownloading(false);
+                    setDownloadProgress(0);
+                }
+            } catch (httpErr) {
+                console.error("[SPOTIFY] Fallo HTTP de descarga:", httpErr);
                 setIsDownloading(false);
                 setDownloadProgress(0);
-                setDownloadingMsg(`[ERROR] Fallo en la descarga: ${e}`);
+                setDownloadingMsg(`[ERROR] Conexión fallida: ${httpErr.message || httpErr}`);
             }
         }
     };
@@ -8770,52 +8914,76 @@ const SpotifyWorkspace = ({
     return (
         <div className="flex w-full h-full bg-[#09090c] text-gray-300 font-sans select-none overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0">
-                <div className="p-3.5 border-b border-djzinc-800 bg-[#0c0c10] flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2 flex-1 max-w-xl">
-                        <div className="flex-1 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded flex items-center overflow-hidden">
-                            <span className="px-2.5 py-1.5 text-[11px] font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-semibold shrink-0">BÚSQUEDA / SPOTIFY</span>
-                            <input 
-                                type="text" 
-                                value={spotifyUrl} 
-                                onChange={(e) => setSpotifyUrl(e.target.value)} 
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleAnalizar();
-                                    }
-                                }}
-                                placeholder="Pega enlace de Spotify o busca por artista, álbum, canción, género..." 
-                                className="bg-transparent px-3 py-1.5 text-xs text-white placeholder-gray-500 outline-none flex-1 font-mono" 
-                            />
-                            {spotifyUrl && (
-                                <button
+                <div className="p-3.5 border-b border-djzinc-800 bg-[#0c0c10] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shrink-0">
+                    <div className="flex flex-col gap-1.5 flex-1 max-w-2xl w-full">
+                        <div className="flex items-center gap-2 w-full">
+                            <div className="flex-1 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded flex items-center overflow-hidden">
+                                <span className="px-2.5 py-1.5 text-[11px] font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-semibold shrink-0">BÚSQUEDA / SPOTIFY</span>
+                                <input 
+                                    type="text" 
+                                    value={spotifyUrl} 
+                                    onChange={(e) => setSpotifyUrl(e.target.value)} 
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleAnalizar();
+                                        }
+                                    }}
+                                    placeholder="Pega enlace de Spotify o busca por artista, álbum, canción, género..." 
+                                    className="bg-transparent px-3 py-1.5 text-xs text-white placeholder-gray-500 outline-none flex-1 font-mono" 
+                                />
+                                {spotifyUrl && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSpotifyUrl('')}
+                                        className="px-2 text-gray-500 hover:text-white text-xs cursor-pointer"
+                                        title="Borrar texto"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+                            <button 
+                                onClick={() => handleAnalizar()} 
+                                disabled={isAnalyzing} 
+                                className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono rounded text-xs font-bold cursor-pointer transition-colors shadow flex items-center gap-1.5 disabled:opacity-50 shrink-0"
+                            >
+                                {isAnalyzing ? 'Buscando...' : '🔍 Buscar / Analizar'}
+                            </button>
+
+                            {(isAnalyzing || isDownloading || isAuditingFft || downloadProgress > 0) && (
+                                <button 
                                     type="button"
-                                    onClick={() => setSpotifyUrl('')}
-                                    className="px-2 text-gray-500 hover:text-white text-xs cursor-pointer"
-                                    title="Borrar texto"
+                                    onClick={handleCancelarDescargas} 
+                                    className="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 rounded font-bold font-mono text-xs flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 shrink-0"
+                                    title="Detener y cancelar la búsqueda o descarga activa inmediatamente"
                                 >
-                                    ✕
+                                    <span>✕</span>
+                                    <span>{lang === 'en' ? 'Cancel Processes' : 'Cancelar Procesos'}</span>
                                 </button>
                             )}
                         </div>
-                        <button 
-                            onClick={handleAnalizar} 
-                            disabled={isAnalyzing} 
-                            className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono rounded text-xs font-bold cursor-pointer transition-colors shadow flex items-center gap-1.5 disabled:opacity-50 shrink-0"
-                        >
-                            {isAnalyzing ? 'Buscando...' : '🔍 Buscar / Analizar'}
-                        </button>
 
-                        {(isAnalyzing || isDownloading || isAuditingFft || downloadProgress > 0) && (
-                            <button 
-                                type="button"
-                                onClick={handleCancelarDescargas} 
-                                className="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 rounded font-bold font-mono text-xs flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 shrink-0"
-                                title="Detener y cancelar la búsqueda o descarga activa inmediatamente"
-                            >
-                                <span>✕</span>
-                                <span>{lang === 'en' ? 'Cancel Processes' : 'Cancelar Procesos'}</span>
-                            </button>
-                        )}
+                        {/* Pills de Búsqueda Rápida Determinista */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-mono text-gray-500">Sugerencias:</span>
+                            {[
+                                "Marco Bailey", 
+                                "Charlotte de Witte", 
+                                "Tech House Peak", 
+                                "Melodic Techno 126", 
+                                "Amelie Lens", 
+                                "Carl Cox"
+                            ].map(sug => (
+                                <button
+                                    key={sug}
+                                    type="button"
+                                    onClick={() => handleAnalizar(sug)}
+                                    className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#14141d] hover:bg-djcyan-950 text-gray-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-700/60 transition-colors cursor-pointer"
+                                >
+                                    + {sug}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2.5 flex-wrap">
@@ -9403,7 +9571,7 @@ const SpotifyWorkspace = ({
                         </div>
 
                         {/* Waveform Rekordbox Estructural en Spotify Ingest */}
-                        <RekordboxWaveform track={currentTrack} duration={currentTrack.duration || "03:30"} onSeekTrack={(trk, pct) => handlePlayPreview(trk)} />
+                        <RekordboxWaveform track={currentTrack} duration={currentTrack.duration || "03:30"} onSeekTrack={(trk, pct) => handlePlayPreview(trk, null, pct)} />
 
                         <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                             <div className="bg-[#050508] p-2.5 rounded border border-djzinc-800">
@@ -12708,27 +12876,34 @@ const LogsWorkspace = ({ logs, setLogs }) => (
 );
 
 // =========================================================================
-// ESPACIO DE TRABAJO: TENDENCIAS (CRAWLER SEMANAL MARTES NOCHE)
+// ESPACIO DE TRABAJO: TENDENCIAS (CRAWLER SEMANAL MARTES NOCHE & RADAR DJ)
 // =========================================================================
 const TrendsWorkspace = ({ lang = "es" }) => {
     const [trendsData, setTrendsData] = useState({
         last_crawled_at: "Sincronizando...",
         next_scheduled_run: "Martes 23:00",
-        items: []
+        items: [],
+        festivals_calendar: [],
+        set_breakdowns: [],
+        interviews: [],
+        trends_radar: []
     });
     const [loading, setLoading] = useState(true);
     const [isCrawling, setIsCrawling] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("todas");
     const [searchQuery, setSearchQuery] = useState("");
     const [readingArticle, setReadingArticle] = useState(null);
+    const [copiedRef, setCopiedRef] = useState(false);
 
     const categories = [
-        { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades" },
-        { id: "Tendencias", label: lang === "en" ? "Trends & Sounds" : "Tendencias Globales" },
-        { id: "Festivales & Eventos", label: lang === "en" ? "Festivals & Clubs" : "Festivales & Clubs" },
-        { id: "Entrevistas", label: lang === "en" ? "Interviews" : "Entrevistas" },
-        { id: "Tecnología & Hardware", label: lang === "en" ? "Tech & Audio DSP" : "Tecnología & Hardware" },
-        { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Lanzamientos & Charts" }
+        { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "🌐" },
+        { id: "Tendencias", label: lang === "en" ? "Trends & Sounds" : "Tendencias Globales", icon: "🔥" },
+        { id: "Festivales & Eventos", label: lang === "en" ? "Festivals & Clubs (Calendar)" : "Festivales & Clubs (Calendario)", icon: "🎪" },
+        { id: "SetBreakdowns", label: lang === "en" ? "Set Breakdowns" : "Análisis de Sesiones Pasadas", icon: "🎛️" },
+        { id: "Entrevistas", label: lang === "en" ? "Interviews" : "Entrevistas Exclusivas", icon: "🎙️" },
+        { id: "Radar", label: lang === "en" ? "Tech Radar & DSP" : "Radar Nuevos Temas & DSP", icon: "📡" },
+        { id: "Tecnología & Hardware", label: lang === "en" ? "Tech & Audio DSP" : "Tecnología & Hardware", icon: "🔧" },
+        { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Lanzamientos & Charts", icon: "📈" }
     ];
 
     const fetchTrends = async () => {
@@ -12775,6 +12950,15 @@ const TrendsWorkspace = ({ lang = "es" }) => {
         }
     };
 
+    const handleCopyReference = (refText) => {
+        if (!refText) return;
+        try {
+            navigator.clipboard.writeText(refText);
+            setCopiedRef(true);
+            setTimeout(() => setCopiedRef(false), 2500);
+        } catch (_) {}
+    };
+
     const filteredItems = useMemo(() => {
         const items = trendsData.items || [];
         return items.filter(item => {
@@ -12788,6 +12972,50 @@ const TrendsWorkspace = ({ lang = "es" }) => {
             return matchCat && matchSearch;
         });
     }, [trendsData, selectedCategory, searchQuery]);
+
+    const festivals = useMemo(() => {
+        const list = trendsData.festivals_calendar || [];
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return list;
+        return list.filter(f => 
+            (f.name || "").toLowerCase().includes(q) || 
+            (f.city || "").toLowerCase().includes(q) || 
+            (f.venue || "").toLowerCase().includes(q) ||
+            (f.headliners || []).some(h => h.toLowerCase().includes(q))
+        );
+    }, [trendsData, searchQuery]);
+
+    const setBreakdowns = useMemo(() => {
+        const list = trendsData.set_breakdowns || [];
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return list;
+        return list.filter(s => 
+            (s.artist || "").toLowerCase().includes(q) || 
+            (s.event || "").toLowerCase().includes(q) || 
+            (s.tactical_breakdown || "").toLowerCase().includes(q)
+        );
+    }, [trendsData, searchQuery]);
+
+    const interviews = useMemo(() => {
+        const list = trendsData.interviews || [];
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return list;
+        return list.filter(it => 
+            (it.artist || "").toLowerCase().includes(q) || 
+            (it.headline || "").toLowerCase().includes(q) || 
+            (it.quote || "").toLowerCase().includes(q)
+        );
+    }, [trendsData, searchQuery]);
+
+    const radarItems = useMemo(() => {
+        const list = trendsData.trends_radar || [];
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return list;
+        return list.filter(r => 
+            (r.topic || "").toLowerCase().includes(q) || 
+            (r.description || "").toLowerCase().includes(q)
+        );
+    }, [trendsData, searchQuery]);
 
     return (
         <div className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8">
@@ -12803,11 +13031,11 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                 <h1 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2">
                                     <span>TENDENCIAS DE MÚSICA ELECTRÓNICA</span>
                                     <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-djcyan-950 border border-djcyan-500/50 text-djcyan-300">
-                                        RADAR WEB
+                                        RADAR WEB & FESTIVALES
                                     </span>
                                 </h1>
                                 <p className="text-xs text-gray-400 mt-0.5">
-                                    Nuevas corrientes, festivales, entrevistas exclusivas y charts de club recopilados automáticamente.
+                                    Nuevas corrientes, calendario oficial de festivales, análisis de sesiones de DJ y entrevistas exclusivas con referencias bibliográficas.
                                 </p>
                             </div>
                         </div>
@@ -12842,9 +13070,14 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
                         {categories.map(cat => {
                             const isSelected = selectedCategory === cat.id;
-                            const count = cat.id === "todas" 
-                                ? (trendsData.items || []).length 
-                                : (trendsData.items || []).filter(i => i.category === cat.id).length;
+                            let count = 0;
+                            if (cat.id === "todas") count = (trendsData.items || []).length;
+                            else if (cat.id === "Festivales & Eventos") count = (trendsData.festivals_calendar || []).length;
+                            else if (cat.id === "SetBreakdowns") count = (trendsData.set_breakdowns || []).length;
+                            else if (cat.id === "Entrevistas") count = (trendsData.interviews || []).length;
+                            else if (cat.id === "Radar") count = (trendsData.trends_radar || []).length;
+                            else count = (trendsData.items || []).filter(i => i.category === cat.id).length;
+
                             return (
                                 <button
                                     key={cat.id}
@@ -12856,6 +13089,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                             : "bg-djzinc-900/80 text-gray-400 hover:text-white hover:bg-djzinc-800 border border-djzinc-800"
                                     }`}
                                 >
+                                    <span>{cat.icon}</span>
                                     <span>{cat.label}</span>
                                     <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
                                         isSelected ? "bg-black text-djcyan-300 font-bold" : "bg-djzinc-800 text-gray-400"
@@ -12889,105 +13123,436 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 </div>
             </div>
 
-            {/* Grid de Artículos de Tendencias */}
-            <div className="flex-1 p-4 md:p-6">
-                {loading ? (
-                    <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
-                        <span className="w-8 h-8 border-2 border-djcyan-500 border-t-transparent rounded-full animate-spin"></span>
-                        <span className="text-xs font-mono">Cargando radar de tendencias...</span>
+            {/* SECCIÓN 1: CALENDARIO DE FESTIVALES & CLUBS (Cuando está en la pestaña Festivales & Eventos) */}
+            {selectedCategory === "Festivales & Eventos" && (
+                <div className="p-4 md:p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">🎪</span>
+                            <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                                Calendario Oficial de Festivales & Clubs (Temporada 2026 - 2027)
+                            </h2>
+                        </div>
+                        <span className="text-xs font-mono text-djcyan-400">
+                            {festivals.length} Eventos Confirmados
+                        </span>
                     </div>
-                ) : filteredItems.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-500">
-                        <span className="text-3xl">📡</span>
-                        <span className="text-xs font-mono font-bold text-gray-400">No se encontraron noticias con los filtros actuales</span>
-                        <button
-                            type="button"
-                            onClick={() => { setSelectedCategory("todas"); setSearchQuery(""); }}
-                            className="text-xs text-djcyan-400 underline cursor-pointer"
-                        >
-                            Restablecer filtros
-                        </button>
-                    </div>
-                ) : (
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {filteredItems.map(item => (
-                            <div
-                                key={item.id}
-                                className="bg-[#0e0e16] border border-djzinc-800/90 hover:border-djcyan-500/50 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(6,182,212,0.15)] hover:-translate-y-0.5 flex flex-col group cursor-pointer"
-                                onClick={() => setReadingArticle(item)}
+                        {festivals.map(fest => (
+                            <div 
+                                key={fest.id}
+                                className="bg-[#0e0e16] border border-djzinc-800/90 hover:border-amber-500/50 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(245,158,11,0.15)] flex flex-col group cursor-pointer"
+                                onClick={() => setReadingArticle({
+                                    id: fest.id,
+                                    title: `${fest.name} (${fest.city}, ${fest.country})`,
+                                    category: "Festivales & Clubs",
+                                    category_badge: "🎪 FESTIVAL OFICIAL",
+                                    source: "Tour Calendar Global",
+                                    author: fest.venue,
+                                    date: fest.dates,
+                                    read_time: "Guía de Cabina",
+                                    image_url: fest.image_url,
+                                    summary: fest.description,
+                                    content: `${fest.name} se celebra en ${fest.venue}. Sistema de sonido oficial: ${fest.sound_system}. Line-up confirmado: ${fest.headliners.join(", ")}. Se recomienda a los DJs preparar sus pistas en rangos de ${fest.recommended_bpm} con mastering certificado sin cortes lossy.`,
+                                    takeaways: [
+                                        `Fechas: ${fest.dates} en ${fest.city} (${fest.country})`,
+                                        `Sistema de Sonido: ${fest.sound_system}`,
+                                        `BPM Recomendado: ${fest.recommended_bpm}`,
+                                        `Line-up: ${fest.headliners.join(" • ")}`
+                                    ],
+                                    reference: fest.reference,
+                                    url: fest.ticket_url,
+                                    key_tags: [fest.city, fest.country, "Festival 2026", fest.sound_system.split(" ")[0]]
+                                })}
                             >
-                                {/* Imagen de Cabecera con Badge de Categoría */}
                                 <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
-                                    <img
-                                        src={item.image_url}
-                                        alt={item.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80";
-                                        }}
+                                    <img 
+                                        src={fest.image_url} 
+                                        alt={fest.name} 
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30"></div>
-                                    <div className="absolute top-3 left-3">
-                                        <span className={`px-2.5 py-1 rounded-md text-[9.5px] font-mono font-black uppercase tracking-wider border backdrop-blur-md ${item.badge_color || "bg-djcyan-950/80 text-djcyan-300 border-djcyan-500/50"}`}>
-                                            {item.category_badge || item.category}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/40"></div>
+                                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                                        <span className="text-xl">{fest.flag}</span>
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-black/80 text-amber-300 border border-amber-500/50">
+                                            {fest.dates}
                                         </span>
                                     </div>
-                                    <div className="absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur border border-djzinc-800">
-                                        ⏱️ {item.read_time || "4 min"}
+                                    <div className="absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-200 bg-black/80 px-2 py-0.5 rounded border border-djzinc-750">
+                                        📍 {fest.city}
                                     </div>
                                 </div>
 
-                                {/* Contenido de la Tarjeta */}
                                 <div className="p-4 flex-1 flex flex-col justify-between gap-3">
                                     <div className="space-y-2">
-                                        <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
-                                            <span className="text-djcyan-400 font-bold">{item.source}</span>
-                                            <span>{item.date}</span>
-                                        </div>
-                                        <h3 className="text-sm font-bold text-white group-hover:text-djcyan-300 transition-colors line-clamp-2 leading-snug">
-                                            {item.title}
+                                        <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
+                                            {fest.name}
                                         </h3>
-                                        <p className="text-xs text-gray-400 line-clamp-3 leading-relaxed">
-                                            {item.summary}
+                                        <p className="text-xs text-gray-400 line-clamp-2">
+                                            {fest.description}
                                         </p>
+
+                                        <div className="p-2 bg-[#12121c] rounded-lg border border-djzinc-800 space-y-1 text-[11px] font-mono">
+                                            <div className="flex items-center justify-between text-gray-400">
+                                                <span>🔊 Sistema:</span>
+                                                <span className="text-djcyan-400 font-bold truncate max-w-[170px]" title={fest.sound_system}>{fest.sound_system}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-gray-400">
+                                                <span>🎛️ BPM Óptimo:</span>
+                                                <span className="text-amber-400 font-bold">{fest.recommended_bpm}</span>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {/* Tags y Botón de Enlace */}
-                                    <div className="pt-2 border-t border-djzinc-800/80 flex items-center justify-between gap-2">
+                                    <div className="space-y-2">
                                         <div className="flex flex-wrap gap-1">
-                                            {(item.key_tags || []).slice(0, 2).map((tg, idx) => (
-                                                <span key={idx} className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-djzinc-900 text-gray-400 border border-djzinc-800">
-                                                    #{tg}
+                                            {fest.headliners.slice(0, 3).map((hl, i) => (
+                                                <span key={i} className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-gray-300 border border-djzinc-800">
+                                                    ★ {hl}
                                                 </span>
                                             ))}
+                                            {fest.headliners.length > 3 && (
+                                                <span className="text-[9px] font-mono text-gray-500 self-center">
+                                                    +{fest.headliners.length - 3} más
+                                                </span>
+                                            )}
                                         </div>
-                                        <a
-                                            href={item.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="px-2.5 py-1 bg-djzinc-900 hover:bg-djcyan-950 text-djcyan-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-500/60 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 transition-colors"
-                                        >
-                                            <span>Leer</span>
-                                            <span>↗</span>
-                                        </a>
+
+                                        <div className="pt-2 border-t border-djzinc-800/80 flex items-center justify-between">
+                                            <span className="text-[9.5px] font-mono text-gray-400 truncate max-w-[140px]" title={fest.venue}>
+                                                🏛️ {fest.venue}
+                                            </span>
+                                            <a
+                                                href={fest.ticket_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black rounded text-[10px] font-mono font-black flex items-center gap-1 transition-colors"
+                                            >
+                                                <span>Entradas</span>
+                                                <span>↗</span>
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
-            {/* Modal de Lectura Completa */}
+            {/* SECCIÓN 2: ANÁLISIS DE SESIONES PASADAS (Set Breakdowns) */}
+            {selectedCategory === "SetBreakdowns" && (
+                <div className="p-4 md:p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">🎛️</span>
+                            <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                                Desglose Técnico de Sesiones Históricas (Harmonic & Energy Flow)
+                            </h2>
+                        </div>
+                        <span className="text-xs font-mono text-purple-400">
+                            {setBreakdowns.length} Sesiones Auditadas
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        {setBreakdowns.map(sb => (
+                            <div 
+                                key={sb.id}
+                                className="bg-[#0e0e16] border border-djzinc-800 hover:border-purple-500/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between gap-4 transition-all hover:shadow-[0_4px_24px_rgba(168,85,247,0.15)] group cursor-pointer"
+                                onClick={() => setReadingArticle({
+                                    id: sb.id,
+                                    title: `${sb.artist} • ${sb.event}`,
+                                    category: "Set Breakdowns",
+                                    category_badge: "🎛️ ANÁLISIS DE SESIÓN",
+                                    source: "BeatWave Audio Forensics",
+                                    author: sb.artist,
+                                    date: sb.duration,
+                                    read_time: "5 min análisis",
+                                    image_url: sb.image_url,
+                                    summary: `Desglose armónico y de sonoridad del set de ${sb.artist} en ${sb.event}.`,
+                                    content: `${sb.tactical_breakdown} Transición clave: ${sb.key_transition}`,
+                                    takeaways: [
+                                        `Flujo de BPM: ${sb.bpm_flow}`,
+                                        `Viaje Camelot: ${sb.camelot_journey}`,
+                                        `Sonoridad Integrada: ${sb.lufs_integrated} (Rango dinámico: ${sb.dynamic_range})`,
+                                        `Balance Tri-Banda: ${sb.acoustic_profile}`
+                                    ],
+                                    reference: sb.reference,
+                                    url: "https://www.bbc.co.uk/programmes/b006wkfp",
+                                    key_tags: [sb.artist, "Set Analysis", "Camelot", "LUFS"]
+                                })}
+                            >
+                                <div className="flex items-start gap-4">
+                                    <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 border border-djzinc-700 bg-djzinc-900">
+                                        <img src={sb.image_url} alt={sb.artist} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 text-[10px] font-mono text-purple-400 font-bold mb-1">
+                                            <span>⏱️ {sb.duration}</span>
+                                            <span>•</span>
+                                            <span>{sb.event}</span>
+                                        </div>
+                                        <h3 className="text-base font-black text-white group-hover:text-purple-300 transition-colors">
+                                            {sb.artist}
+                                        </h3>
+                                        <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                                            {sb.tactical_breakdown}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                                    <div className="bg-[#12121c] p-2 rounded-lg border border-djzinc-800">
+                                        <span className="text-[9px] text-gray-500 block uppercase">Flujo BPM</span>
+                                        <span className="text-emerald-400 font-bold text-[11px] truncate block" title={sb.bpm_flow}>{sb.bpm_flow}</span>
+                                    </div>
+                                    <div className="bg-[#12121c] p-2 rounded-lg border border-djzinc-800">
+                                        <span className="text-[9px] text-gray-500 block uppercase">Viaje Camelot</span>
+                                        <span className="text-djcyan-400 font-bold text-[11px] truncate block" title={sb.camelot_journey}>{sb.camelot_journey}</span>
+                                    </div>
+                                    <div className="bg-[#12121c] p-2 rounded-lg border border-djzinc-800">
+                                        <span className="text-[9px] text-gray-500 block uppercase">Sonoridad LUFS</span>
+                                        <span className="text-amber-400 font-bold text-[11px]">{sb.lufs_integrated}</span>
+                                    </div>
+                                    <div className="bg-[#12121c] p-2 rounded-lg border border-djzinc-800">
+                                        <span className="text-[9px] text-gray-500 block uppercase">Tri-Banda %</span>
+                                        <span className="text-purple-300 font-bold text-[10px] truncate block" title={sb.acoustic_profile}>{sb.acoustic_profile.split('(')[0]}</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-2.5 bg-[#141420] rounded-xl border border-djzinc-800 text-xs">
+                                    <div className="text-[10px] font-mono text-gray-400 mb-0.5">⚡ Transición Maestra:</div>
+                                    <p className="text-xs text-gray-200 italic font-medium">"{sb.key_transition}"</p>
+                                </div>
+
+                                <div className="pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400">
+                                    <span className="truncate max-w-xs">📚 Ref: {sb.reference}</span>
+                                    <span className="text-purple-400 font-bold group-hover:translate-x-1 transition-transform">Ver Desglose →</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* SECCIÓN 3: ENTREVISTAS EXCLUSIVAS (Cuando está en la pestaña Entrevistas) */}
+            {selectedCategory === "Entrevistas" && (
+                <div className="p-4 md:p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">🎙️</span>
+                            <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                                Entrevistas de Cabina & Filosofía de Mezcla
+                            </h2>
+                        </div>
+                        <span className="text-xs font-mono text-rose-400">
+                            {interviews.length} Entrevistas Técnicas
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {interviews.map(it => (
+                            <div 
+                                key={it.id}
+                                className="bg-[#0e0e16] border border-djzinc-800 hover:border-rose-500/50 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group cursor-pointer transition-all hover:shadow-[0_4px_24px_rgba(244,63,94,0.15)]"
+                                onClick={() => setReadingArticle({
+                                    id: it.id,
+                                    title: `${it.artist}: "${it.headline}"`,
+                                    category: "Entrevistas",
+                                    category_badge: "🎙️ ENTREVISTA EXCLUSIVA",
+                                    source: it.role,
+                                    author: it.artist,
+                                    date: it.date,
+                                    read_time: it.read_time,
+                                    image_url: it.image_url,
+                                    summary: it.quote,
+                                    content: (it.q_and_a || []).map(qa => `Pregunta: ${qa.q}\n\nRespuesta: ${qa.a}`).join("\n\n"),
+                                    takeaways: [
+                                        `Artista: ${it.artist} (${it.role})`,
+                                        `Cita Destacada: ${it.quote}`,
+                                        `Referencia Editorial: ${it.reference}`
+                                    ],
+                                    reference: it.reference,
+                                    url: "https://djmag.com/features",
+                                    key_tags: [it.artist, "Interview", "Studio Secrets"]
+                                })}
+                            >
+                                <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
+                                    <img src={it.image_url} alt={it.artist} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30"></div>
+                                    <div className="absolute top-3 left-3">
+                                        <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase bg-black/80 text-rose-300 border border-rose-500/50">
+                                            {it.read_time}
+                                        </span>
+                                    </div>
+                                    <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                                        <div className="text-base font-black drop-shadow">{it.artist}</div>
+                                        <div className="text-[10px] font-mono text-gray-300 drop-shadow truncate">{it.role}</div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                                    <div className="space-y-2">
+                                        <h4 className="text-xs font-bold text-white group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug">
+                                            {it.headline}
+                                        </h4>
+                                        <div className="p-3 bg-[#13131e] rounded-xl border border-djzinc-800 text-xs italic text-gray-300 line-clamp-3 leading-relaxed">
+                                            {it.quote}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400">
+                                        <span className="truncate max-w-[160px]" title={it.reference}>📖 {it.reference}</span>
+                                        <span className="text-rose-400 font-bold group-hover:translate-x-1 transition-transform">Leer Q&A →</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* SECCIÓN 4: RADAR DE NUEVOS TEMAS & METODOLOGÍA DSP (Cuando está en Radar) */}
+            {selectedCategory === "Radar" && (
+                <div className="p-4 md:p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">📡</span>
+                            <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                                Radar Acústico & Nuevas Metodologías de Cabina
+                            </h2>
+                        </div>
+                        <span className="text-xs font-mono text-djcyan-400">
+                            {radarItems.length} Puntos Clave
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {radarItems.map((rad, rIdx) => (
+                            <div key={rad.id || rIdx} className="bg-[#0e0e16] border border-djzinc-800 hover:border-djcyan-500/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between gap-3">
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 uppercase">
+                                        METODOLOGÍA #{rIdx + 1}
+                                    </span>
+                                    <h3 className="text-sm font-black text-white">{rad.topic}</h3>
+                                    <p className="text-xs text-gray-400 leading-relaxed">{rad.description}</p>
+                                </div>
+                                <div className="p-2.5 bg-[#12121c] rounded-xl border border-djzinc-800 text-xs font-mono space-y-1">
+                                    <div className="text-djcyan-400 font-bold">Emparejamiento:</div>
+                                    <div className="text-gray-300">{rad.recommended_pairing}</div>
+                                    <div className="text-[10px] text-gray-500 pt-1 border-t border-djzinc-850">Benchmark: {rad.ratio_benchmark}</div>
+                                </div>
+                                <div className="text-[10px] font-mono text-gray-500 pt-1 border-t border-djzinc-850">
+                                    Fuente: {rad.reference}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* SECCIÓN 5: GRID DE ARTÍCULOS GENERALES DE TENDENCIAS */}
+            {(selectedCategory === "todas" || selectedCategory === "Tendencias" || selectedCategory === "Tecnología & Hardware" || selectedCategory === "Lanzamientos & Charts") && (
+                <div className="flex-1 p-4 md:p-6">
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
+                            <span className="w-8 h-8 border-2 border-djcyan-500 border-t-transparent rounded-full animate-spin"></span>
+                            <span className="text-xs font-mono">Cargando radar de tendencias...</span>
+                        </div>
+                    ) : filteredItems.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-500">
+                            <span className="text-3xl">📡</span>
+                            <span className="text-xs font-mono font-bold text-gray-400">No se encontraron noticias con los filtros actuales</span>
+                            <button
+                                type="button"
+                                onClick={() => { setSelectedCategory("todas"); setSearchQuery(""); }}
+                                className="text-xs text-djcyan-400 underline cursor-pointer"
+                            >
+                                Restablecer filtros
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {filteredItems.map(item => (
+                                <div
+                                    key={item.id}
+                                    className="bg-[#0e0e16] border border-djzinc-800/90 hover:border-djcyan-500/50 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(6,182,212,0.15)] hover:-translate-y-0.5 flex flex-col group cursor-pointer"
+                                    onClick={() => setReadingArticle(item)}
+                                >
+                                    {/* Imagen de Cabecera con Badge de Categoría */}
+                                    <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
+                                        <img
+                                            src={item.image_url}
+                                            alt={item.title}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80";
+                                            }}
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30"></div>
+                                        <div className="absolute top-3 left-3">
+                                            <span className={`px-2.5 py-1 rounded-md text-[9.5px] font-mono font-black uppercase tracking-wider border backdrop-blur-md ${item.badge_color || "bg-djcyan-950/80 text-djcyan-300 border-djcyan-500/50"}`}>
+                                                {item.category_badge || item.category}
+                                            </span>
+                                        </div>
+                                        <div className="absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur border border-djzinc-800">
+                                            ⏱️ {item.read_time || "4 min"}
+                                        </div>
+                                    </div>
+
+                                    {/* Contenido de la Tarjeta */}
+                                    <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                                                <span className="text-djcyan-400 font-bold">{item.source}</span>
+                                                <span>{item.date}</span>
+                                            </div>
+                                            <h3 className="text-sm font-bold text-white group-hover:text-djcyan-300 transition-colors line-clamp-2 leading-snug">
+                                                {item.title}
+                                            </h3>
+                                            <p className="text-xs text-gray-400 line-clamp-3 leading-relaxed">
+                                                {item.summary}
+                                            </p>
+                                        </div>
+
+                                        {/* Tags y Botón de Enlace */}
+                                        <div className="pt-2 border-t border-djzinc-800/80 flex items-center justify-between gap-2">
+                                            <div className="flex flex-wrap gap-1">
+                                                {(item.key_tags || []).slice(0, 2).map((tg, idx) => (
+                                                    <span key={idx} className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-djzinc-900 text-gray-400 border border-djzinc-800">
+                                                        #{tg}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); setReadingArticle(item); }}
+                                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djcyan-950 text-djcyan-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-500/60 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 transition-colors"
+                                            >
+                                                <span>Leer En App</span>
+                                                <span>→</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* MODAL DE LECTURA COMPLETA INTEGRADA EN LA APP CON REFERENCIA Y ENLACE EXTERNO */}
             {readingArticle && (
                 <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
                     <div className="bg-[#0f1019] border border-djcyan-500/50 rounded-2xl max-w-2xl w-full p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] flex flex-col gap-4 relative text-gray-200 max-h-[90vh] overflow-y-auto">
                         <button
                             type="button"
                             onClick={() => setReadingArticle(null)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-base font-mono cursor-pointer p-1"
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-base font-mono cursor-pointer p-1 rounded-full bg-djzinc-900 border border-djzinc-750"
                         >
                             ✕
                         </button>
@@ -12999,7 +13564,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                 className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-[#0f1019] via-transparent to-black/30"></div>
-                            <span className="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase tracking-wider bg-black/70 text-djcyan-300 border border-djcyan-500/50">
+                            <span className="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase tracking-wider bg-black/80 text-djcyan-300 border border-djcyan-500/50">
                                 {readingArticle.category_badge || readingArticle.category}
                             </span>
                         </div>
@@ -13015,16 +13580,37 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                             <h2 className="text-xl font-black text-white">{readingArticle.title}</h2>
                         </div>
 
+                        {/* Extracto / Resumen Ejecutivo */}
                         <div className="p-3 bg-djzinc-900/90 border border-djzinc-800 rounded-xl">
                             <p className="text-xs font-medium text-djcyan-300 leading-relaxed italic">
                                 "{readingArticle.summary}"
                             </p>
                         </div>
 
-                        <div className="text-xs text-gray-300 leading-relaxed space-y-3">
-                            <p>{readingArticle.content}</p>
+                        {/* Puntos Clave de Cabina / Takeaways */}
+                        {readingArticle.takeaways && readingArticle.takeaways.length > 0 && (
+                            <div className="p-3.5 bg-[#12121e] border border-djcyan-500/30 rounded-xl space-y-2">
+                                <h4 className="text-xs font-mono font-black text-djcyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>🎯</span>
+                                    <span>Puntos Clave & Especificaciones Técnicas:</span>
+                                </h4>
+                                <ul className="space-y-1.5 text-xs text-gray-300 font-mono">
+                                    {readingArticle.takeaways.map((tk, idx) => (
+                                        <li key={idx} className="flex items-start gap-2">
+                                            <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                                            <span>{tk}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* Contenido Completo del Artículo */}
+                        <div className="text-xs text-gray-300 leading-relaxed space-y-3 whitespace-pre-line font-sans">
+                            {readingArticle.content}
                         </div>
 
+                        {/* Etiquetas */}
                         <div className="flex flex-wrap gap-1.5 pt-2 border-t border-djzinc-800">
                             {(readingArticle.key_tags || []).map((tg, idx) => (
                                 <span key={idx} className="text-[10px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-djcyan-300 border border-djzinc-800">
@@ -13033,19 +13619,40 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                             ))}
                         </div>
 
-                        <div className="pt-3 border-t border-djzinc-800 flex items-center justify-between">
-                            <span className="text-xs font-mono text-gray-400">
-                                Redacción original por {readingArticle.author || readingArticle.source}
-                            </span>
-                            <a
-                                href={readingArticle.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-4 py-1.5 bg-gradient-to-r from-djcyan-500 to-djcyan-400 text-black font-black text-xs rounded-lg shadow cursor-pointer flex items-center gap-1.5"
-                            >
-                                <span>Abrir Fuente Original</span>
-                                <span>↗</span>
-                            </a>
+                        {/* Pie de Referencia Bibliográfica y Enlace Externo */}
+                        <div className="pt-3 border-t border-djzinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div className="flex flex-col text-xs font-mono text-gray-400">
+                                <span>Redacción: {readingArticle.author || readingArticle.source}</span>
+                                {readingArticle.reference && (
+                                    <span className="text-[10px] text-gray-500 italic mt-0.5">
+                                        📚 Ref: {readingArticle.reference}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {readingArticle.reference && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCopyReference(readingArticle.reference)}
+                                        className="px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 text-xs font-mono rounded-lg border border-djzinc-700 transition-colors flex items-center gap-1"
+                                        title="Copiar cita bibliográfica al portapapeles"
+                                    >
+                                        <span>{copiedRef ? "✓ Copiado" : "📋 Citar"}</span>
+                                    </button>
+                                )}
+                                {readingArticle.url && (
+                                    <a
+                                        href={readingArticle.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-1.5 bg-gradient-to-r from-djcyan-500 to-djcyan-400 text-black font-black text-xs rounded-lg shadow cursor-pointer flex items-center gap-1.5 transition-transform active:scale-95"
+                                    >
+                                        <span>Abrir Enlace Web</span>
+                                        <span>↗</span>
+                                    </a>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -15225,14 +15832,24 @@ const App = () => {
                 if (targetSrc) {
                     const isSameSrc = (audio.src === targetSrc || audio.src.endsWith(targetSrc));
                     const applyPosition = () => {
+                        const dur = audio.duration;
                         if (startOffsetSec !== null && !isNaN(startOffsetSec)) {
-                            audio.currentTime = Math.max(0, startOffsetSec);
-                            if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
-                                setPlayProgress(startOffsetSec / audio.duration);
+                            const safeOffset = (dur && !isNaN(dur) && dur > 0.5)
+                                ? Math.max(0, Math.min(dur - 0.25, startOffsetSec))
+                                : Math.max(0, startOffsetSec);
+                            try { audio.currentTime = safeOffset; } catch (_) {}
+                            if (dur && !isNaN(dur) && dur > 0) {
+                                setPlayProgress(safeOffset / dur);
                             }
-                        } else if (seekPct > 0 && audio.duration && !isNaN(audio.duration)) {
-                            audio.currentTime = audio.duration * seekPct;
-                            setPlayProgress(seekPct);
+                        } else if (seekPct > 0) {
+                            const safePct = Math.min(0.99, Math.max(0, seekPct));
+                            if (dur && !isNaN(dur) && dur > 0.5) {
+                                const targetSec = Math.max(0, Math.min(dur - 0.25, dur * safePct));
+                                try { audio.currentTime = targetSec; } catch (_) {}
+                                setPlayProgress(targetSec / dur);
+                            } else {
+                                setPlayProgress(safePct);
+                            }
                         }
                     };
 
@@ -15249,6 +15866,11 @@ const App = () => {
                         });
                     } else {
                         audio.src = targetSrc;
+                        const onMeta = () => {
+                            applyPosition();
+                            audio.removeEventListener('loadedmetadata', onMeta);
+                        };
+                        audio.addEventListener('loadedmetadata', onMeta);
                         audio.play().then(() => {
                             setIsPlaying(true);
                             applyPosition();

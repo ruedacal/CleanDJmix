@@ -404,6 +404,62 @@ def seleccionar_directorio_descarga():
 def obtener_directorio_descarga_actual():
     return download_svc.obtener_directorio_actual()
 
+@bottle.route('/api/descargar_spotify', method=['POST', 'OPTIONS'])
+def api_descargar_spotify():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    try:
+        data = bottle.request.json or {}
+        tracks = data.get('tracks', [])
+        formato = data.get('formato', 'flac')
+        custom_dir = data.get('custom_dir', '')
+        res = download_svc.ejecutar_lote_descarga(tracks, formato, custom_dir, audit_svc, eel)
+        return res or {"status": "ok", "msg": f"Descarga iniciada para {len(tracks)} pistas"}
+    except Exception as e:
+        return {"status": "error", "msg": str(e)}
+
+@bottle.route('/api/listar_subcarpetas', method=['GET', 'POST', 'OPTIONS'])
+def api_listar_subcarpetas():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    ruta = bottle.request.query.get('ruta', '')
+    if not ruta and bottle.request.json:
+        ruta = bottle.request.json.get('ruta', '')
+    return audit_svc.listar_subcarpetas_sistema(ruta)
+
+@bottle.route('/api/directorio_descarga', method=['GET', 'POST', 'OPTIONS'])
+def api_directorio_descarga():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    if bottle.request.method == 'POST' and bottle.request.json:
+        nueva_ruta = bottle.request.json.get('path', '')
+        if nueva_ruta and os.path.isdir(nueva_ruta):
+            download_svc.directorio_descargas = nueva_ruta
+    return {"status": "ok", "path": download_svc.obtener_directorio_actual()}
+
+@bottle.route('/api/resolver_stream_preescucha', method=['GET', 'POST', 'OPTIONS'])
+def api_resolver_stream_preescucha():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    titulo = bottle.request.query.get('titulo', '')
+    artista = bottle.request.query.get('artista', '')
+    if not titulo and bottle.request.json:
+        titulo = bottle.request.json.get('titulo') or bottle.request.json.get('title', '')
+        artista = bottle.request.json.get('artista') or bottle.request.json.get('artist', '')
+    return media_svc.resolver_stream_preescucha(titulo, artista)
+
 @eel.expose
 def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir=""):
     return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audit_svc, eel)

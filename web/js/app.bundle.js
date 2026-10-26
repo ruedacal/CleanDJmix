@@ -4614,19 +4614,56 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         onPlayTrack(currentTrack, cuePct, false);
       }
     };
+    const audioDurMs = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
+    const durMs = audioDurMs || parseDurationMs(currentTrack?.duration || "05:00");
+    const bpm = currentTrack && (currentTrack.bpm || currentTrack.b) ? Math.max(30, parseFloat(currentTrack.bpm || currentTrack.b) || 128) : 128;
+    const beatMs = 6e4 / bpm;
+    const barMs = beatMs * 4;
+    const downbeatMs = currentTrack && currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
+    const CLUB_CUE_RATIOS = [5e-3, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85, 0.94];
+    const CLUB_CUE_NAMES = [
+      "Intro / Downbeat",
+      "Percussion / Beat",
+      "Bassline Groove",
+      "Breakdown 1",
+      "Drop 1 (Climax)",
+      "Mid Breakdown",
+      "Drop 2 (Re-Kick)",
+      "Outro Mix Point"
+    ];
     const activeCues = Array.from({ length: 8 }, (_, idx) => {
       const padNum = idx + 1;
       const existing = currentTrack && currentTrack.cues && currentTrack.cues[idx] ? currentTrack.cues[idx] : null;
-      const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: "#06b6d4", time: "00:00.00" };
+      const defaultColor = NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#06b6d4";
+      const defaultName = CLUB_CUE_NAMES[idx] || `Cue ${padNum}`;
+      const defaultPosMs = Math.round(durMs * CLUB_CUE_RATIOS[idx]);
+      const defaultTime = formatMsToTime(defaultPosMs);
       if (existing) {
+        let cuePos = existing.pos_ms !== void 0 ? existing.pos_ms : parseTimeToMs(existing.time || defaultTime);
+        if (cuePos >= durMs - 250) {
+          cuePos = defaultPosMs;
+        }
         return {
-          ...defaultPreset,
-          ...existing,
           id: padNum,
-          color: existing.color || defaultPreset.color
+          name: existing.name || defaultName,
+          color: existing.color || defaultColor,
+          time: formatMsToTime(cuePos),
+          pos_ms: cuePos,
+          pct: durMs > 0 ? cuePos / durMs : CLUB_CUE_RATIOS[idx],
+          bar: existing.bar || Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1),
+          bar_str: existing.bar_str || `Bar ${Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1)}`
         };
       }
-      return defaultPreset;
+      return {
+        id: padNum,
+        name: defaultName,
+        color: defaultColor,
+        time: defaultTime,
+        pos_ms: defaultPosMs,
+        pct: CLUB_CUE_RATIOS[idx],
+        bar: Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1),
+        bar_str: `Bar ${Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1)}`
+      };
     });
     const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
     const [cueNameInput, setCueNameInput] = useState(currentCue.name || "");
@@ -4641,11 +4678,6 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
       setCueTimeInput(currentCue.time || "00:00.00");
     }, [selectedCueId, currentCue.time, currentCue.name]);
-    const durMs = parseDurationMs(currentTrack?.duration || "05:00");
-    const bpm = currentTrack && (currentTrack.bpm || currentTrack.b) ? Math.max(30, parseFloat(currentTrack.bpm || currentTrack.b) || 128) : 128;
-    const beatMs = 6e4 / bpm;
-    const barMs = beatMs * 4;
-    const downbeatMs = currentTrack && currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
     const currentMs = playProgress * durMs;
     let activePlayingCueId = 1;
     if (activeCues && activeCues.length > 0) {
@@ -4717,9 +4749,17 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     };
     const handleJumpToCue = (cue) => {
       if (!currentTrack || !onPlayTrack) return;
-      const posMs = cue.pos_ms !== void 0 ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
-      const pct = durMs > 0 ? posMs / durMs : 0;
-      onPlayTrack(currentTrack, pct, true);
+      const audioDur = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? audioRef.current.duration : durMs / 1e3;
+      let posMs = cue.pos_ms !== void 0 ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
+      const maxMs = Math.max(500, audioDur * 1e3 - 250);
+      if (posMs >= maxMs) {
+        const padIdx = cue.id ? cue.id - 1 : 0;
+        posMs = Math.round(maxMs * CLUB_CUE_RATIOS[padIdx]);
+      }
+      posMs = Math.max(0, Math.min(maxMs, posMs));
+      const targetSec = posMs / 1e3;
+      const pct = audioDur > 0 ? targetSec / audioDur : 0;
+      onPlayTrack(currentTrack, pct, true, targetSec);
     };
     const handleSetCueAtPlayhead = () => {
       if (!currentTrack) return;
@@ -4745,13 +4785,34 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const handleAutoPhraseCues = async () => {
       if (!currentTrack) return;
       try {
+        let calculated = null;
         if (window.eel && window.eel.calcular_hot_cues_fraseo) {
-          const calculated = await window.eel.calcular_hot_cues_fraseo(durMs, bpm, Math.round(downbeatMs))();
-          if (calculated && Array.isArray(calculated)) {
-            updateCues(calculated);
-            setSaveStatus("\u2713 8 Hot Cues auto-fraseados (16/32 compases)");
-            setTimeout(() => setSaveStatus(""), 2500);
+          try {
+            calculated = await window.eel.calcular_hot_cues_fraseo(durMs, bpm, Math.round(downbeatMs))();
+          } catch (_) {
           }
+        }
+        if (!calculated || !Array.isArray(calculated) || calculated.length === 0) {
+          calculated = CLUB_CUE_RATIOS.map((ratio, idx) => {
+            const padNum = idx + 1;
+            const posMs = Math.round(durMs * ratio);
+            const barNum = Math.max(1, Math.floor((posMs - downbeatMs) / barMs) + 1);
+            return {
+              id: padNum,
+              name: CLUB_CUE_NAMES[idx] || `Cue ${padNum}`,
+              color: NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#06b6d4",
+              time: formatMsToTime(posMs),
+              pos_ms: posMs,
+              pct: ratio,
+              bar: barNum,
+              bar_str: `Bar ${barNum}`
+            };
+          });
+        }
+        if (calculated && Array.isArray(calculated)) {
+          updateCues(calculated);
+          setSaveStatus("\u2713 8 Hot Cues auto-mapeados (Plantilla Club Extended)");
+          setTimeout(() => setSaveStatus(""), 2500);
         }
       } catch (e) {
         console.error("Error auto-fraseando:", e);
@@ -5178,7 +5239,6 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         style: {
           writingMode: "vertical-lr",
           direction: "rtl",
-          WebkitAppearance: "slider-vertical",
           height: "95px",
           width: "18px",
           accentColor: "#06b6d4",
@@ -5744,44 +5804,67 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setFsBrowserOpen(true);
       setFsLoading(true);
       const startPath = initialPath || destDir || "";
+      let res = null;
       if (window.eel && window.eel.listar_subcarpetas_sistema) {
         try {
-          const res = await window.eel.listar_subcarpetas_sistema(startPath)();
-          if (res) {
-            setFsCurrentPath(res.current || "");
-            setFsParentPath(res.parent || "");
-            setFsFolders(res.folders || []);
-          }
+          res = await window.eel.listar_subcarpetas_sistema(startPath)();
         } catch (err) {
-          console.error("Error al listar carpetas:", err);
-        } finally {
-          setFsLoading(false);
+          console.warn("[EXPLORADOR] Fallo llamada Eel, recurriendo a HTTP:", err);
         }
-      } else {
-        setFsLoading(false);
       }
+      if (!res) {
+        try {
+          const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(startPath)}`);
+          if (resp.ok) res = await resp.json();
+        } catch (httpErr) {
+          console.error("[EXPLORADOR] Fallo HTTP al listar carpetas:", httpErr);
+        }
+      }
+      if (res) {
+        setFsCurrentPath(res.current || "");
+        setFsParentPath(res.parent || "");
+        setFsFolders(res.folders || []);
+      }
+      setFsLoading(false);
     };
     const handleNavegarACarpeta = async (targetPath) => {
       setFsLoading(true);
+      let res = null;
       if (window.eel && window.eel.listar_subcarpetas_sistema) {
         try {
-          const res = await window.eel.listar_subcarpetas_sistema(targetPath)();
-          if (res) {
-            setFsCurrentPath(res.current || "");
-            setFsParentPath(res.parent || "");
-            setFsFolders(res.folders || []);
-          }
+          res = await window.eel.listar_subcarpetas_sistema(targetPath)();
         } catch (err) {
-          console.error("Error navegando:", err);
-        } finally {
-          setFsLoading(false);
+          console.warn("[EXPLORADOR] Fallo llamada Eel al navegar:", err);
         }
       }
+      if (!res) {
+        try {
+          const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(targetPath)}`);
+          if (resp.ok) res = await resp.json();
+        } catch (httpErr) {
+          console.error("[EXPLORADOR] Fallo HTTP al navegar:", httpErr);
+        }
+      }
+      if (res) {
+        setFsCurrentPath(res.current || "");
+        setFsParentPath(res.parent || "");
+        setFsFolders(res.folders || []);
+      }
+      setFsLoading(false);
     };
     const handleSeleccionarCarpetaDestino = (targetPath) => {
       const finalPath = targetPath || fsCurrentPath;
       setDestDir(finalPath);
       setFsBrowserOpen(false);
+      try {
+        fetch("/api/directorio_descarga", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: finalPath })
+        }).catch(() => {
+        });
+      } catch (_) {
+      }
     };
     const [spSortField, setSpSortField] = useState("title");
     const [spSortDir, setSpSortDir] = useState("asc");
@@ -5876,10 +5959,15 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setSelectedId(id);
       setTracks((prev) => prev.map((t2) => t2.id === id ? { ...t2, selected: !t2.selected } : t2));
     };
-    const handlePlayPreview = async (track, e) => {
-      if (e) e.stopPropagation();
+    const handlePlayPreview = async (track, e, seekPct = null) => {
+      if (e && e.stopPropagation) e.stopPropagation();
       setSelectedId(track.id);
       if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(track.id) || nowPlayingTrack.title === track.title)) {
+        if (seekPct !== null && onPlayTrack) {
+          const durSec = parseDurationToSeconds(track.duration || 210);
+          onPlayTrack(nowPlayingTrack, seekPct, true, seekPct * durSec);
+          return;
+        }
         if (onTogglePlay) {
           onTogglePlay();
           return;
@@ -5887,18 +5975,35 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       }
       let streamUrl = track.preview_url;
       let coverHd = track.cover;
-      if (!streamUrl && window.eel && window.eel.resolver_stream_preescucha) {
-        try {
-          setDownloadingMsg(`[PRE-ESCUCHA] Resolviendo stream para: ${track.artist} - ${track.title}...`);
-          const res = await window.eel.resolver_stream_preescucha(track.title, track.artist)();
-          if (res && res.stream_url) {
-            streamUrl = res.stream_url;
-            if (res.cover) coverHd = res.cover;
+      if (!streamUrl) {
+        setDownloadingMsg(`[PRE-ESCUCHA] Resolviendo stream para: ${track.artist} - ${track.title}...`);
+        if (window.eel && window.eel.resolver_stream_preescucha) {
+          try {
+            const res = await window.eel.resolver_stream_preescucha(track.title, track.artist)();
+            if (res && res.stream_url) {
+              streamUrl = res.stream_url;
+              if (res.cover) coverHd = res.cover;
+            }
+          } catch (err) {
           }
-        } catch (err) {
+        }
+        if (!streamUrl) {
+          try {
+            const resp = await fetch(`/api/resolver_stream_preescucha?titulo=${encodeURIComponent(track.title)}&artista=${encodeURIComponent(track.artist)}`);
+            if (resp.ok) {
+              const res = await resp.json();
+              if (res && res.stream_url) {
+                streamUrl = res.stream_url;
+                if (res.cover) coverHd = res.cover;
+              }
+            }
+          } catch (httpErr) {
+          }
         }
       }
       if (onPlayTrack) {
+        const durSec = parseDurationToSeconds(track.duration || 210);
+        const startSec = seekPct !== null && seekPct > 0 ? seekPct * durSec : 0;
         onPlayTrack({
           id: track.id,
           t: track.title,
@@ -5911,20 +6016,28 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           duration: track.duration,
           cover: coverHd,
           path: streamUrl || ""
-        }, 0, true);
+        }, seekPct || 0, true, startSec);
       }
     };
-    const handleAnalizar = async () => {
-      if (!spotifyUrl || isAnalyzing) return;
+    const handleAnalizar = async (queryOverride = null) => {
+      const queryToSearch = (typeof queryOverride === "string" ? queryOverride : spotifyUrl).trim();
+      if (!queryToSearch) {
+        setDownloadingMsg("[AVISO] Introduce un artista, tema o URL de Spotify, o pulsa en una de las sugerencias r\xE1pidas.");
+        return;
+      }
+      if (typeof queryOverride === "string") {
+        setSpotifyUrl(queryOverride);
+      }
+      if (isAnalyzing) return;
       setIsAnalyzing(true);
       setDownloadProgress(20);
-      setDownloadingMsg("[ANALIZANDO] Extrayendo metadatos y car\xE1tulas de alta resoluci\xF3n en Spotify...");
+      setDownloadingMsg(`[ANALIZANDO] Extrayendo metadatos para: "${queryToSearch}"...`);
       try {
         setDownloadProgress(45);
         let res = null;
         if (window.eel && window.eel.analizar_catalogo_spotify) {
           try {
-            const eelCall = window.eel.analizar_catalogo_spotify(spotifyUrl)();
+            const eelCall = window.eel.analizar_catalogo_spotify(queryToSearch)();
             const timeoutPromise = new Promise(
               (_, reject) => setTimeout(() => reject(new Error("Eel timeout")), 8e3)
             );
@@ -5939,7 +6052,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             const resp = await fetch("/api/analizar_spotify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ query: spotifyUrl })
+              body: JSON.stringify({ query: queryToSearch })
             });
             if (resp.ok) {
               res = await resp.json();
@@ -5983,20 +6096,47 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setIsDownloading(true);
       setDownloadProgress(10);
       setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${listaPistas.length} pista(s) en formato .${selectedFormat.toUpperCase()}...`);
+      let descargadoV\u00EDaEel = false;
       if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
         try {
           await window.eel.descargar_pistas_spotify_seleccionadas(listaPistas, selectedFormat, destDir)();
+          descargadoV\u00EDaEel = true;
         } catch (e) {
+          console.warn("[SPOTIFY] Error en llamada Eel de descarga, recurriendo a HTTP:", e);
+        }
+      }
+      if (!descargadoV\u00EDaEel) {
+        try {
+          const resp = await fetch("/api/descargar_spotify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tracks: listaPistas,
+              formato: selectedFormat,
+              custom_dir: destDir
+            })
+          });
+          const res = await resp.json();
+          if (res && (res.status === "ok" || res.status === "iniciado")) {
+            setDownloadingMsg(`[DESCARGANDO] Lote en segundo plano (${listaPistas.length} pistas) hacia: ${res.dest || destDir}`);
+            setDownloadProgress(35);
+          } else {
+            setDownloadingMsg(`[ERROR] ${res?.msg || "Error al iniciar descarga"}`);
+            setIsDownloading(false);
+            setDownloadProgress(0);
+          }
+        } catch (httpErr) {
+          console.error("[SPOTIFY] Fallo HTTP de descarga:", httpErr);
           setIsDownloading(false);
           setDownloadProgress(0);
-          setDownloadingMsg(`[ERROR] Fallo en la descarga: ${e}`);
+          setDownloadingMsg(`[ERROR] Conexi\xF3n fallida: ${httpErr.message || httpErr}`);
         }
       }
     };
     const handleCambiarCarpeta = () => {
       handleAbrirNavegadorCarpetas(destDir);
     };
-    return /* @__PURE__ */ React.createElement("div", { className: "flex w-full h-full bg-[#09090c] text-gray-300 font-sans select-none overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "p-3.5 border-b border-djzinc-800 bg-[#0c0c10] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-1 max-w-xl" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded flex items-center overflow-hidden" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1.5 text-[11px] font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-semibold shrink-0" }, "B\xDASQUEDA / SPOTIFY"), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "flex w-full h-full bg-[#09090c] text-gray-300 font-sans select-none overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "p-3.5 border-b border-djzinc-800 bg-[#0c0c10] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1.5 flex-1 max-w-2xl w-full" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 w-full" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded flex items-center overflow-hidden" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1.5 text-[11px] font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-semibold shrink-0" }, "B\xDASQUEDA / SPOTIFY"), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
@@ -6022,7 +6162,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     )), /* @__PURE__ */ React.createElement(
       "button",
       {
-        onClick: handleAnalizar,
+        onClick: () => handleAnalizar(),
         disabled: isAnalyzing,
         className: "px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono rounded text-xs font-bold cursor-pointer transition-colors shadow flex items-center gap-1.5 disabled:opacity-50 shrink-0"
       },
@@ -6037,7 +6177,24 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       },
       /* @__PURE__ */ React.createElement("span", null, "\u2715"),
       /* @__PURE__ */ React.createElement("span", null, lang === "en" ? "Cancel Processes" : "Cancelar Procesos")
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "Sugerencias:"), [
+      "Marco Bailey",
+      "Charlotte de Witte",
+      "Tech House Peak",
+      "Melodic Techno 126",
+      "Amelie Lens",
+      "Carl Cox"
+    ].map((sug) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: sug,
+        type: "button",
+        onClick: () => handleAnalizar(sug),
+        className: "px-2 py-0.5 rounded text-[10px] font-mono bg-[#14141d] hover:bg-djcyan-950 text-gray-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-700/60 transition-colors cursor-pointer"
+      },
+      "+ ",
+      sug
+    )))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => {
@@ -6269,7 +6426,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "w-full aspect-video bg-[#050508] rounded-lg border border-djzinc-800 overflow-hidden relative shadow-inner flex items-center justify-center" }, /* @__PURE__ */ React.createElement("img", { src: getValidCover(currentTrack.cover), alt: "Cover", onError: (e) => {
       e.target.onerror = null;
       e.target.src = DEFAULT_VINYL_SVG;
-    }, className: "w-full h-full object-cover" }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono border border-djzinc-700" }, "HD Cover 640px")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-sm text-djcyan-400 truncate", title: currentTrack.title }, currentTrack.title || "Selecciona una pista"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 truncate" }, currentTrack.artist || "--")), /* @__PURE__ */ React.createElement("button", { onClick: (e) => handlePlayPreview(currentTrack, e), className: "px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0" }, nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.title === currentTrack.title) && isPlaying ? "\u275A\u275A PAUSE" : "\u25B6 PRE-ESCUCHA")), /* @__PURE__ */ React.createElement(RekordboxWaveform, { track: currentTrack, duration: currentTrack.duration || "03:30", onSeekTrack: (trk, pct) => handlePlayPreview(trk) }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Tempo"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, currentTrack.bpm ? `${currentTrack.bpm} BPM` : "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Clave Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, currentTrack.key || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xC1lbum:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[200px]" }, currentTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "ISRC:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-300" }, currentTrack.isrc || "Auto-Tag")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Formato Destino:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-djcyan-400 font-bold uppercase" }, ".", selectedFormat, " Lossless")))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800" }, /* @__PURE__ */ React.createElement("button", { onClick: () => lanzarDescargaReal(selectedCount > 0 ? tracks.filter((t2) => t2.selected) : [currentTrack]), className: "w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Descargar ", selectedCount > 1 ? `Seleccionadas (${selectedCount})` : "Pista Actual", " .", selectedFormat.toUpperCase()))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0b10] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white uppercase tracking-wider font-mono" }, "Seleccionar Carpeta de Destino")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer" }, "\u2715 Cerrar")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 truncate flex-1" }, fsCurrentPath || "/"), fsParentPath && /* @__PURE__ */ React.createElement("button", { onClick: () => handleNavegarACarpeta(fsParentPath), className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 cursor-pointer text-xs" }, "\u2B06 Subir nivel")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-3 space-y-1 min-h-[250px] max-h-[400px]" }, fsLoading ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-djcyan-400 animate-pulse" }, "Explorando directorios...") : fsFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-gray-500" }, "No se encontraron subdirectorios") : fsFolders.map((f, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, onDoubleClick: () => handleNavegarACarpeta(f.path), className: "flex items-center justify-between p-2 rounded hover:bg-djzinc-900 cursor-pointer border border-transparent hover:border-djzinc-800 transition-colors" }, /* @__PURE__ */ React.createElement("div", { onClick: () => handleNavegarACarpeta(f.path), className: "flex items-center gap-2.5 flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 text-sm" }, "\u{1F4C1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-300 truncate" }, f.name)), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(f.path), className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] rounded cursor-pointer shrink-0" }, "Seleccionar")))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "px-3 py-1.5 rounded text-xs bg-djzinc-900 border border-djzinc-800 text-gray-400 hover:text-white cursor-pointer" }, "Cancelar"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(fsCurrentPath), className: "px-4 py-1.5 rounded text-xs font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black cursor-pointer shadow" }, "Usar esta Carpeta")))));
+    }, className: "w-full h-full object-cover" }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono border border-djzinc-700" }, "HD Cover 640px")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-sm text-djcyan-400 truncate", title: currentTrack.title }, currentTrack.title || "Selecciona una pista"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 truncate" }, currentTrack.artist || "--")), /* @__PURE__ */ React.createElement("button", { onClick: (e) => handlePlayPreview(currentTrack, e), className: "px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0" }, nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.title === currentTrack.title) && isPlaying ? "\u275A\u275A PAUSE" : "\u25B6 PRE-ESCUCHA")), /* @__PURE__ */ React.createElement(RekordboxWaveform, { track: currentTrack, duration: currentTrack.duration || "03:30", onSeekTrack: (trk, pct) => handlePlayPreview(trk, null, pct) }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Tempo"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, currentTrack.bpm ? `${currentTrack.bpm} BPM` : "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Clave Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, currentTrack.key || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xC1lbum:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[200px]" }, currentTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "ISRC:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-300" }, currentTrack.isrc || "Auto-Tag")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Formato Destino:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-djcyan-400 font-bold uppercase" }, ".", selectedFormat, " Lossless")))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800" }, /* @__PURE__ */ React.createElement("button", { onClick: () => lanzarDescargaReal(selectedCount > 0 ? tracks.filter((t2) => t2.selected) : [currentTrack]), className: "w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Descargar ", selectedCount > 1 ? `Seleccionadas (${selectedCount})` : "Pista Actual", " .", selectedFormat.toUpperCase()))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0b10] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white uppercase tracking-wider font-mono" }, "Seleccionar Carpeta de Destino")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer" }, "\u2715 Cerrar")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 truncate flex-1" }, fsCurrentPath || "/"), fsParentPath && /* @__PURE__ */ React.createElement("button", { onClick: () => handleNavegarACarpeta(fsParentPath), className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 cursor-pointer text-xs" }, "\u2B06 Subir nivel")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-3 space-y-1 min-h-[250px] max-h-[400px]" }, fsLoading ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-djcyan-400 animate-pulse" }, "Explorando directorios...") : fsFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-gray-500" }, "No se encontraron subdirectorios") : fsFolders.map((f, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, onDoubleClick: () => handleNavegarACarpeta(f.path), className: "flex items-center justify-between p-2 rounded hover:bg-djzinc-900 cursor-pointer border border-transparent hover:border-djzinc-800 transition-colors" }, /* @__PURE__ */ React.createElement("div", { onClick: () => handleNavegarACarpeta(f.path), className: "flex items-center gap-2.5 flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 text-sm" }, "\u{1F4C1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-300 truncate" }, f.name)), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(f.path), className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] rounded cursor-pointer shrink-0" }, "Seleccionar")))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "px-3 py-1.5 rounded text-xs bg-djzinc-900 border border-djzinc-800 text-gray-400 hover:text-white cursor-pointer" }, "Cancelar"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(fsCurrentPath), className: "px-4 py-1.5 rounded text-xs font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black cursor-pointer shadow" }, "Usar esta Carpeta")))));
   };
   var TaxonomyWorkspace = ({
     tracks = [],
@@ -8484,20 +8641,27 @@ ${text}`);
     const [trendsData, setTrendsData] = useState({
       last_crawled_at: "Sincronizando...",
       next_scheduled_run: "Martes 23:00",
-      items: []
+      items: [],
+      festivals_calendar: [],
+      set_breakdowns: [],
+      interviews: [],
+      trends_radar: []
     });
     const [loading, setLoading] = useState(true);
     const [isCrawling, setIsCrawling] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("todas");
     const [searchQuery, setSearchQuery] = useState("");
     const [readingArticle, setReadingArticle] = useState(null);
+    const [copiedRef, setCopiedRef] = useState(false);
     const categories = [
-      { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades" },
-      { id: "Tendencias", label: lang === "en" ? "Trends & Sounds" : "Tendencias Globales" },
-      { id: "Festivales & Eventos", label: lang === "en" ? "Festivals & Clubs" : "Festivales & Clubs" },
-      { id: "Entrevistas", label: lang === "en" ? "Interviews" : "Entrevistas" },
-      { id: "Tecnolog\xEDa & Hardware", label: lang === "en" ? "Tech & Audio DSP" : "Tecnolog\xEDa & Hardware" },
-      { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Lanzamientos & Charts" }
+      { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "\u{1F310}" },
+      { id: "Tendencias", label: lang === "en" ? "Trends & Sounds" : "Tendencias Globales", icon: "\u{1F525}" },
+      { id: "Festivales & Eventos", label: lang === "en" ? "Festivals & Clubs (Calendar)" : "Festivales & Clubs (Calendario)", icon: "\u{1F3AA}" },
+      { id: "SetBreakdowns", label: lang === "en" ? "Set Breakdowns" : "An\xE1lisis de Sesiones Pasadas", icon: "\u{1F39B}\uFE0F" },
+      { id: "Entrevistas", label: lang === "en" ? "Interviews" : "Entrevistas Exclusivas", icon: "\u{1F399}\uFE0F" },
+      { id: "Radar", label: lang === "en" ? "Tech Radar & DSP" : "Radar Nuevos Temas & DSP", icon: "\u{1F4E1}" },
+      { id: "Tecnolog\xEDa & Hardware", label: lang === "en" ? "Tech & Audio DSP" : "Tecnolog\xEDa & Hardware", icon: "\u{1F527}" },
+      { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Lanzamientos & Charts", icon: "\u{1F4C8}" }
     ];
     const fetchTrends = async () => {
       try {
@@ -8540,6 +8704,15 @@ ${text}`);
         setIsCrawling(false);
       }
     };
+    const handleCopyReference = (refText) => {
+      if (!refText) return;
+      try {
+        navigator.clipboard.writeText(refText);
+        setCopiedRef(true);
+        setTimeout(() => setCopiedRef(false), 2500);
+      } catch (_) {
+      }
+    };
     const filteredItems = useMemo(() => {
       const items = trendsData.items || [];
       return items.filter((item) => {
@@ -8549,7 +8722,39 @@ ${text}`);
         return matchCat && matchSearch;
       });
     }, [trendsData, selectedCategory, searchQuery]);
-    return /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "p-2 bg-gradient-to-br from-djcyan-500/20 to-purple-500/20 border border-djcyan-500/40 rounded-xl text-djcyan-400" }, /* @__PURE__ */ React.createElement(Icons.Trends, null)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { className: "text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "TENDENCIAS DE M\xDASICA ELECTR\xD3NICA"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-djcyan-950 border border-djcyan-500/50 text-djcyan-300" }, "RADAR WEB")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-0.5" }, "Nuevas corrientes, festivales, entrevistas exclusivas y charts de club recopilados autom\xE1ticamente.")))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-3 bg-[#0d0d15] p-2 rounded-xl border border-djzinc-800 shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col text-right px-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 flex items-center gap-1.5 justify-end" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "Crawler semanal: ", /* @__PURE__ */ React.createElement("strong", null, "Martes noche (23:00)"))), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-500" }, "\xDAltima sync: ", trendsData.last_crawled_at || "Reciente")), /* @__PURE__ */ React.createElement(
+    const festivals = useMemo(() => {
+      const list = trendsData.festivals_calendar || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (f) => (f.name || "").toLowerCase().includes(q) || (f.city || "").toLowerCase().includes(q) || (f.venue || "").toLowerCase().includes(q) || (f.headliners || []).some((h) => h.toLowerCase().includes(q))
+      );
+    }, [trendsData, searchQuery]);
+    const setBreakdowns = useMemo(() => {
+      const list = trendsData.set_breakdowns || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (s) => (s.artist || "").toLowerCase().includes(q) || (s.event || "").toLowerCase().includes(q) || (s.tactical_breakdown || "").toLowerCase().includes(q)
+      );
+    }, [trendsData, searchQuery]);
+    const interviews = useMemo(() => {
+      const list = trendsData.interviews || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (it) => (it.artist || "").toLowerCase().includes(q) || (it.headline || "").toLowerCase().includes(q) || (it.quote || "").toLowerCase().includes(q)
+      );
+    }, [trendsData, searchQuery]);
+    const radarItems = useMemo(() => {
+      const list = trendsData.trends_radar || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (r) => (r.topic || "").toLowerCase().includes(q) || (r.description || "").toLowerCase().includes(q)
+      );
+    }, [trendsData, searchQuery]);
+    return /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "p-2 bg-gradient-to-br from-djcyan-500/20 to-purple-500/20 border border-djcyan-500/40 rounded-xl text-djcyan-400" }, /* @__PURE__ */ React.createElement(Icons.Trends, null)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { className: "text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "TENDENCIAS DE M\xDASICA ELECTR\xD3NICA"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-djcyan-950 border border-djcyan-500/50 text-djcyan-300" }, "RADAR WEB & FESTIVALES")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-0.5" }, "Nuevas corrientes, calendario oficial de festivales, an\xE1lisis de sesiones de DJ y entrevistas exclusivas con referencias bibliogr\xE1ficas.")))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-3 bg-[#0d0d15] p-2 rounded-xl border border-djzinc-800 shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col text-right px-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 flex items-center gap-1.5 justify-end" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "Crawler semanal: ", /* @__PURE__ */ React.createElement("strong", null, "Martes noche (23:00)"))), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-500" }, "\xDAltima sync: ", trendsData.last_crawled_at || "Reciente")), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -8562,7 +8767,13 @@ ${text}`);
       /* @__PURE__ */ React.createElement("span", null, isCrawling ? "Rastreando la Web..." : "Sincronizar Crawler")
     ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none" }, categories.map((cat) => {
       const isSelected = selectedCategory === cat.id;
-      const count = cat.id === "todas" ? (trendsData.items || []).length : (trendsData.items || []).filter((i) => i.category === cat.id).length;
+      let count = 0;
+      if (cat.id === "todas") count = (trendsData.items || []).length;
+      else if (cat.id === "Festivales & Eventos") count = (trendsData.festivals_calendar || []).length;
+      else if (cat.id === "SetBreakdowns") count = (trendsData.set_breakdowns || []).length;
+      else if (cat.id === "Entrevistas") count = (trendsData.interviews || []).length;
+      else if (cat.id === "Radar") count = (trendsData.trends_radar || []).length;
+      else count = (trendsData.items || []).filter((i) => i.category === cat.id).length;
       return /* @__PURE__ */ React.createElement(
         "button",
         {
@@ -8571,6 +8782,7 @@ ${text}`);
           onClick: () => setSelectedCategory(cat.id),
           className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5 ${isSelected ? "bg-gradient-to-r from-djcyan-500 to-djcyan-400 text-black shadow-md font-black" : "bg-djzinc-900/80 text-gray-400 hover:text-white hover:bg-djzinc-800 border border-djzinc-800"}`
         },
+        /* @__PURE__ */ React.createElement("span", null, cat.icon),
         /* @__PURE__ */ React.createElement("span", null, cat.label),
         /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded-full text-[9px] font-mono ${isSelected ? "bg-black text-djcyan-300 font-bold" : "bg-djzinc-800 text-gray-400"}` }, count)
       );
@@ -8591,7 +8803,118 @@ ${text}`);
         className: "absolute right-2.5 top-1.5 text-gray-500 hover:text-white text-xs cursor-pointer"
       },
       "\u2715"
-    )))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 p-4 md:p-6" }, loading ? /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center h-64 gap-3 text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 border-2 border-djcyan-500 border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono" }, "Cargando radar de tendencias...")) : filteredItems.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center h-64 gap-3 text-gray-500" }, /* @__PURE__ */ React.createElement("span", { className: "text-3xl" }, "\u{1F4E1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-400" }, "No se encontraron noticias con los filtros actuales"), /* @__PURE__ */ React.createElement(
+    )))), selectedCategory === "Festivales & Eventos" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F3AA}"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Calendario Oficial de Festivales & Clubs (Temporada 2026 - 2027)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djcyan-400" }, festivals.length, " Eventos Confirmados")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, festivals.map((fest) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: fest.id,
+        className: "bg-[#0e0e16] border border-djzinc-800/90 hover:border-amber-500/50 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(245,158,11,0.15)] flex flex-col group cursor-pointer",
+        onClick: () => setReadingArticle({
+          id: fest.id,
+          title: `${fest.name} (${fest.city}, ${fest.country})`,
+          category: "Festivales & Clubs",
+          category_badge: "\u{1F3AA} FESTIVAL OFICIAL",
+          source: "Tour Calendar Global",
+          author: fest.venue,
+          date: fest.dates,
+          read_time: "Gu\xEDa de Cabina",
+          image_url: fest.image_url,
+          summary: fest.description,
+          content: `${fest.name} se celebra en ${fest.venue}. Sistema de sonido oficial: ${fest.sound_system}. Line-up confirmado: ${fest.headliners.join(", ")}. Se recomienda a los DJs preparar sus pistas en rangos de ${fest.recommended_bpm} con mastering certificado sin cortes lossy.`,
+          takeaways: [
+            `Fechas: ${fest.dates} en ${fest.city} (${fest.country})`,
+            `Sistema de Sonido: ${fest.sound_system}`,
+            `BPM Recomendado: ${fest.recommended_bpm}`,
+            `Line-up: ${fest.headliners.join(" \u2022 ")}`
+          ],
+          reference: fest.reference,
+          url: fest.ticket_url,
+          key_tags: [fest.city, fest.country, "Festival 2026", fest.sound_system.split(" ")[0]]
+        })
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement(
+        "img",
+        {
+          src: fest.image_url,
+          alt: fest.name,
+          className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        }
+      ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/40" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, fest.flag), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-black/80 text-amber-300 border border-amber-500/50" }, fest.dates)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-200 bg-black/80 px-2 py-0.5 rounded border border-djzinc-750" }, "\u{1F4CD} ", fest.city)),
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-amber-300 transition-colors" }, fest.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 line-clamp-2" }, fest.description), /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-[#12121c] rounded-lg border border-djzinc-800 space-y-1 text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F50A} Sistema:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold truncate max-w-[170px]", title: fest.sound_system }, fest.sound_system)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F BPM \xD3ptimo:"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold" }, fest.recommended_bpm)))), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, fest.headliners.slice(0, 3).map((hl, i) => /* @__PURE__ */ React.createElement("span", { key: i, className: "text-[9.5px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-gray-300 border border-djzinc-800" }, "\u2605 ", hl)), fest.headliners.length > 3 && /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-gray-500 self-center" }, "+", fest.headliners.length - 3, " m\xE1s")), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800/80 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 truncate max-w-[140px]", title: fest.venue }, "\u{1F3DB}\uFE0F ", fest.venue), /* @__PURE__ */ React.createElement(
+        "a",
+        {
+          href: fest.ticket_url,
+          target: "_blank",
+          rel: "noopener noreferrer",
+          onClick: (e) => e.stopPropagation(),
+          className: "px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black rounded text-[10px] font-mono font-black flex items-center gap-1 transition-colors"
+        },
+        /* @__PURE__ */ React.createElement("span", null, "Entradas"),
+        /* @__PURE__ */ React.createElement("span", null, "\u2197")
+      ))))
+    )))), selectedCategory === "SetBreakdowns" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Desglose T\xE9cnico de Sesiones Hist\xF3ricas (Harmonic & Energy Flow)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-purple-400" }, setBreakdowns.length, " Sesiones Auditadas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-5" }, setBreakdowns.map((sb) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: sb.id,
+        className: "bg-[#0e0e16] border border-djzinc-800 hover:border-purple-500/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between gap-4 transition-all hover:shadow-[0_4px_24px_rgba(168,85,247,0.15)] group cursor-pointer",
+        onClick: () => setReadingArticle({
+          id: sb.id,
+          title: `${sb.artist} \u2022 ${sb.event}`,
+          category: "Set Breakdowns",
+          category_badge: "\u{1F39B}\uFE0F AN\xC1LISIS DE SESI\xD3N",
+          source: "BeatWave Audio Forensics",
+          author: sb.artist,
+          date: sb.duration,
+          read_time: "5 min an\xE1lisis",
+          image_url: sb.image_url,
+          summary: `Desglose arm\xF3nico y de sonoridad del set de ${sb.artist} en ${sb.event}.`,
+          content: `${sb.tactical_breakdown} Transici\xF3n clave: ${sb.key_transition}`,
+          takeaways: [
+            `Flujo de BPM: ${sb.bpm_flow}`,
+            `Viaje Camelot: ${sb.camelot_journey}`,
+            `Sonoridad Integrada: ${sb.lufs_integrated} (Rango din\xE1mico: ${sb.dynamic_range})`,
+            `Balance Tri-Banda: ${sb.acoustic_profile}`
+          ],
+          reference: sb.reference,
+          url: "https://www.bbc.co.uk/programmes/b006wkfp",
+          key_tags: [sb.artist, "Set Analysis", "Camelot", "LUFS"]
+        })
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "w-24 h-24 rounded-xl overflow-hidden shrink-0 border border-djzinc-700 bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: sb.image_url, alt: sb.artist, className: "w-full h-full object-cover group-hover:scale-105 transition-transform" })), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[10px] font-mono text-purple-400 font-bold mb-1" }, /* @__PURE__ */ React.createElement("span", null, "\u23F1\uFE0F ", sb.duration), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, sb.event)), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-black text-white group-hover:text-purple-300 transition-colors" }, sb.artist), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-1 line-clamp-2" }, sb.tactical_breakdown))),
+      /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Flujo BPM"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold text-[11px] truncate block", title: sb.bpm_flow }, sb.bpm_flow)), /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Viaje Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold text-[11px] truncate block", title: sb.camelot_journey }, sb.camelot_journey)), /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Sonoridad LUFS"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold text-[11px]" }, sb.lufs_integrated)), /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Tri-Banda %"), /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 font-bold text-[10px] truncate block", title: sb.acoustic_profile }, sb.acoustic_profile.split("(")[0]))),
+      /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#141420] rounded-xl border border-djzinc-800 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-400 mb-0.5" }, "\u26A1 Transici\xF3n Maestra:"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-200 italic font-medium" }, '"', sb.key_transition, '"')),
+      /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-xs" }, "\u{1F4DA} Ref: ", sb.reference), /* @__PURE__ */ React.createElement("span", { className: "text-purple-400 font-bold group-hover:translate-x-1 transition-transform" }, "Ver Desglose \u2192"))
+    )))), selectedCategory === "Entrevistas" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F399}\uFE0F"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Entrevistas de Cabina & Filosof\xEDa de Mezcla")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-rose-400" }, interviews.length, " Entrevistas T\xE9cnicas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, interviews.map((it) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: it.id,
+        className: "bg-[#0e0e16] border border-djzinc-800 hover:border-rose-500/50 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group cursor-pointer transition-all hover:shadow-[0_4px_24px_rgba(244,63,94,0.15)]",
+        onClick: () => setReadingArticle({
+          id: it.id,
+          title: `${it.artist}: "${it.headline}"`,
+          category: "Entrevistas",
+          category_badge: "\u{1F399}\uFE0F ENTREVISTA EXCLUSIVA",
+          source: it.role,
+          author: it.artist,
+          date: it.date,
+          read_time: it.read_time,
+          image_url: it.image_url,
+          summary: it.quote,
+          content: (it.q_and_a || []).map((qa) => `Pregunta: ${qa.q}
+
+Respuesta: ${qa.a}`).join("\n\n"),
+          takeaways: [
+            `Artista: ${it.artist} (${it.role})`,
+            `Cita Destacada: ${it.quote}`,
+            `Referencia Editorial: ${it.reference}`
+          ],
+          reference: it.reference,
+          url: "https://djmag.com/features",
+          key_tags: [it.artist, "Interview", "Studio Secrets"]
+        })
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: it.image_url, alt: it.artist, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase bg-black/80 text-rose-300 border border-rose-500/50" }, it.read_time)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 left-3 right-3 text-white" }, /* @__PURE__ */ React.createElement("div", { className: "text-base font-black drop-shadow" }, it.artist), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-300 drop-shadow truncate" }, it.role))),
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug" }, it.headline), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#13131e] rounded-xl border border-djzinc-800 text-xs italic text-gray-300 line-clamp-3 leading-relaxed" }, it.quote)), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[160px]", title: it.reference }, "\u{1F4D6} ", it.reference), /* @__PURE__ */ React.createElement("span", { className: "text-rose-400 font-bold group-hover:translate-x-1 transition-transform" }, "Leer Q&A \u2192")))
+    )))), selectedCategory === "Radar" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F4E1}"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Radar Ac\xFAstico & Nuevas Metodolog\xEDas de Cabina")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djcyan-400" }, radarItems.length, " Puntos Clave")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-5" }, radarItems.map((rad, rIdx) => /* @__PURE__ */ React.createElement("div", { key: rad.id || rIdx, className: "bg-[#0e0e16] border border-djzinc-800 hover:border-djcyan-500/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 uppercase" }, "METODOLOG\xCDA #", rIdx + 1), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white" }, rad.topic), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, rad.description)), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#12121c] rounded-xl border border-djzinc-800 text-xs font-mono space-y-1" }, /* @__PURE__ */ React.createElement("div", { className: "text-djcyan-400 font-bold" }, "Emparejamiento:"), /* @__PURE__ */ React.createElement("div", { className: "text-gray-300" }, rad.recommended_pairing), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 pt-1 border-t border-djzinc-850" }, "Benchmark: ", rad.ratio_benchmark)), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-500 pt-1 border-t border-djzinc-850" }, "Fuente: ", rad.reference))))), (selectedCategory === "todas" || selectedCategory === "Tendencias" || selectedCategory === "Tecnolog\xEDa & Hardware" || selectedCategory === "Lanzamientos & Charts") && /* @__PURE__ */ React.createElement("div", { className: "flex-1 p-4 md:p-6" }, loading ? /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center h-64 gap-3 text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 border-2 border-djcyan-500 border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono" }, "Cargando radar de tendencias...")) : filteredItems.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center h-64 gap-3 text-gray-500" }, /* @__PURE__ */ React.createElement("span", { className: "text-3xl" }, "\u{1F4E1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-400" }, "No se encontraron noticias con los filtros actuales"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -8622,23 +8945,24 @@ ${text}`);
         }
       ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: `px-2.5 py-1 rounded-md text-[9.5px] font-mono font-black uppercase tracking-wider border backdrop-blur-md ${item.badge_color || "bg-djcyan-950/80 text-djcyan-300 border-djcyan-500/50"}` }, item.category_badge || item.category)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur border border-djzinc-800" }, "\u23F1\uFE0F ", item.read_time || "4 min")),
       /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, item.source), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white group-hover:text-djcyan-300 transition-colors line-clamp-2 leading-snug" }, item.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 line-clamp-3 leading-relaxed" }, item.summary)), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800/80 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, (item.key_tags || []).slice(0, 2).map((tg, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "text-[9px] font-mono px-1.5 py-0.2 rounded bg-djzinc-900 text-gray-400 border border-djzinc-800" }, "#", tg))), /* @__PURE__ */ React.createElement(
-        "a",
+        "button",
         {
-          href: item.url,
-          target: "_blank",
-          rel: "noopener noreferrer",
-          onClick: (e) => e.stopPropagation(),
+          type: "button",
+          onClick: (e) => {
+            e.stopPropagation();
+            setReadingArticle(item);
+          },
           className: "px-2.5 py-1 bg-djzinc-900 hover:bg-djcyan-950 text-djcyan-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-500/60 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 transition-colors"
         },
-        /* @__PURE__ */ React.createElement("span", null, "Leer"),
-        /* @__PURE__ */ React.createElement("span", null, "\u2197")
+        /* @__PURE__ */ React.createElement("span", null, "Leer En App"),
+        /* @__PURE__ */ React.createElement("span", null, "\u2192")
       )))
     )))), readingArticle && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0f1019] border border-djcyan-500/50 rounded-2xl max-w-2xl w-full p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] flex flex-col gap-4 relative text-gray-200 max-h-[90vh] overflow-y-auto" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setReadingArticle(null),
-        className: "absolute top-4 right-4 text-gray-400 hover:text-white text-base font-mono cursor-pointer p-1"
+        className: "absolute top-4 right-4 text-gray-400 hover:text-white text-base font-mono cursor-pointer p-1 rounded-full bg-djzinc-900 border border-djzinc-750"
       },
       "\u2715"
     ), /* @__PURE__ */ React.createElement("div", { className: "h-56 w-full rounded-xl overflow-hidden relative" }, /* @__PURE__ */ React.createElement(
@@ -8648,17 +8972,26 @@ ${text}`);
         alt: readingArticle.title,
         className: "w-full h-full object-cover"
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0f1019] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("span", { className: "absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase tracking-wider bg-black/70 text-djcyan-300 border border-djcyan-500/50" }, readingArticle.category_badge || readingArticle.category)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-xs font-mono text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, readingArticle.source), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, readingArticle.date), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, readingArticle.read_time)), /* @__PURE__ */ React.createElement("h2", { className: "text-xl font-black text-white" }, readingArticle.title)), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900/90 border border-djzinc-800 rounded-xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-xs font-medium text-djcyan-300 leading-relaxed italic" }, '"', readingArticle.summary, '"')), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-gray-300 leading-relaxed space-y-3" }, /* @__PURE__ */ React.createElement("p", null, readingArticle.content)), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1.5 pt-2 border-t border-djzinc-800" }, (readingArticle.key_tags || []).map((tg, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "text-[10px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-djcyan-300 border border-djzinc-800" }, "#", tg))), /* @__PURE__ */ React.createElement("div", { className: "pt-3 border-t border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, "Redacci\xF3n original por ", readingArticle.author || readingArticle.source), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0f1019] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("span", { className: "absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase tracking-wider bg-black/80 text-djcyan-300 border border-djcyan-500/50" }, readingArticle.category_badge || readingArticle.category)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-xs font-mono text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, readingArticle.source), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, readingArticle.date), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, readingArticle.read_time)), /* @__PURE__ */ React.createElement("h2", { className: "text-xl font-black text-white" }, readingArticle.title)), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900/90 border border-djzinc-800 rounded-xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-xs font-medium text-djcyan-300 leading-relaxed italic" }, '"', readingArticle.summary, '"')), readingArticle.takeaways && readingArticle.takeaways.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-[#12121e] border border-djcyan-500/30 rounded-xl space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black text-djcyan-400 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3AF}"), /* @__PURE__ */ React.createElement("span", null, "Puntos Clave & Especificaciones T\xE9cnicas:")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1.5 text-xs text-gray-300 font-mono" }, readingArticle.takeaways.map((tk, idx) => /* @__PURE__ */ React.createElement("li", { key: idx, className: "flex items-start gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold shrink-0" }, "\u2713"), /* @__PURE__ */ React.createElement("span", null, tk))))), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-gray-300 leading-relaxed space-y-3 whitespace-pre-line font-sans" }, readingArticle.content), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1.5 pt-2 border-t border-djzinc-800" }, (readingArticle.key_tags || []).map((tg, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "text-[10px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-djcyan-300 border border-djzinc-800" }, "#", tg))), /* @__PURE__ */ React.createElement("div", { className: "pt-3 border-t border-djzinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col text-xs font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Redacci\xF3n: ", readingArticle.author || readingArticle.source), readingArticle.reference && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 italic mt-0.5" }, "\u{1F4DA} Ref: ", readingArticle.reference)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, readingArticle.reference && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCopyReference(readingArticle.reference),
+        className: "px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 text-xs font-mono rounded-lg border border-djzinc-700 transition-colors flex items-center gap-1",
+        title: "Copiar cita bibliogr\xE1fica al portapapeles"
+      },
+      /* @__PURE__ */ React.createElement("span", null, copiedRef ? "\u2713 Copiado" : "\u{1F4CB} Citar")
+    ), readingArticle.url && /* @__PURE__ */ React.createElement(
       "a",
       {
         href: readingArticle.url,
         target: "_blank",
         rel: "noopener noreferrer",
-        className: "px-4 py-1.5 bg-gradient-to-r from-djcyan-500 to-djcyan-400 text-black font-black text-xs rounded-lg shadow cursor-pointer flex items-center gap-1.5"
+        className: "px-4 py-1.5 bg-gradient-to-r from-djcyan-500 to-djcyan-400 text-black font-black text-xs rounded-lg shadow cursor-pointer flex items-center gap-1.5 transition-transform active:scale-95"
       },
-      /* @__PURE__ */ React.createElement("span", null, "Abrir Fuente Original"),
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Enlace Web"),
       /* @__PURE__ */ React.createElement("span", null, "\u2197")
-    )))));
+    ))))));
   };
   function parseCamelotKey(keyStr) {
     if (!keyStr || keyStr === "--" || keyStr === "?") return null;
@@ -10126,14 +10459,28 @@ ${text}`);
           if (targetSrc) {
             const isSameSrc = audio.src === targetSrc || audio.src.endsWith(targetSrc);
             const applyPosition = () => {
+              const dur = audio.duration;
               if (startOffsetSec !== null && !isNaN(startOffsetSec)) {
-                audio.currentTime = Math.max(0, startOffsetSec);
-                if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
-                  setPlayProgress(startOffsetSec / audio.duration);
+                const safeOffset = dur && !isNaN(dur) && dur > 0.5 ? Math.max(0, Math.min(dur - 0.25, startOffsetSec)) : Math.max(0, startOffsetSec);
+                try {
+                  audio.currentTime = safeOffset;
+                } catch (_) {
                 }
-              } else if (seekPct > 0 && audio.duration && !isNaN(audio.duration)) {
-                audio.currentTime = audio.duration * seekPct;
-                setPlayProgress(seekPct);
+                if (dur && !isNaN(dur) && dur > 0) {
+                  setPlayProgress(safeOffset / dur);
+                }
+              } else if (seekPct > 0) {
+                const safePct = Math.min(0.99, Math.max(0, seekPct));
+                if (dur && !isNaN(dur) && dur > 0.5) {
+                  const targetSec = Math.max(0, Math.min(dur - 0.25, dur * safePct));
+                  try {
+                    audio.currentTime = targetSec;
+                  } catch (_) {
+                  }
+                  setPlayProgress(targetSec / dur);
+                } else {
+                  setPlayProgress(safePct);
+                }
               }
             };
             if (isSameSrc) {
@@ -10149,6 +10496,11 @@ ${text}`);
               });
             } else {
               audio.src = targetSrc;
+              const onMeta = () => {
+                applyPosition();
+                audio.removeEventListener("loadedmetadata", onMeta);
+              };
+              audio.addEventListener("loadedmetadata", onMeta);
               audio.play().then(() => {
                 setIsPlaying(true);
                 applyPosition();
