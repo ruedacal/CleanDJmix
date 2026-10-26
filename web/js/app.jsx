@@ -16180,7 +16180,7 @@ const CommercialTeaserModal = ({ isOpen, onClose, onOpenTour }) => {
                                     onClick={onClose}
                                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black font-black text-xs cursor-pointer shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
                                 >
-                                    🔥 ¡Comenzar a Mezclar!
+                                    🎧 Entrar a la Aplicación
                                 </button>
                             </div>
                         </div>
@@ -16423,7 +16423,7 @@ const SpotlightTourOverlay = ({ isOpen, onClose, activeTab, setActiveTab, onOpen
                             }}
                             className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black text-xs cursor-pointer shadow-md shadow-djcyan-500/30 transition-transform active:scale-95"
                         >
-                            {isLast ? "¡A mezclar!" : "Siguiente →"}
+                            {isLast ? "✓ Finalizar Tour" : "Siguiente →"}
                         </button>
                     </div>
                 </div>
@@ -16519,7 +16519,7 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
                         onClick={handleSkip} 
                         className="text-gray-400 hover:text-white font-mono text-xs cursor-pointer"
                     >
-                        Saltar a la cabina
+                        Entrar directamente a la aplicación
                     </button>
                 </div>
             </div>
@@ -16528,8 +16528,14 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
 };
 
 // Componente Wrapper Orquestador del Tutorial
-const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab }) => {
-    const [viewMode, setViewMode] = useState('launcher'); // 'launcher' | 'teaser' | 'tour'
+const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = 'launcher' }) => {
+    const [viewMode, setViewMode] = useState(initialMode); // 'launcher' | 'teaser' | 'tour'
+
+    useEffect(() => {
+        if (isOpen) {
+            setViewMode(initialMode || 'launcher');
+        }
+    }, [isOpen, initialMode]);
 
     if (!isOpen) return null;
 
@@ -16605,9 +16611,14 @@ const App = () => {
     // Estado Global de Tareas en Background & Tutorial de Bienvenida
     const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, progress: 0, statusMsg: '' });
     const [tutorialOpen, setTutorialOpen] = useState(false);
+    const [tutorialInitialMode, setTutorialInitialMode] = useState('launcher');
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
     useEffect(() => {
+        window.abrirTutorial = (mode = 'launcher') => {
+            setTutorialInitialMode(mode);
+            setTutorialOpen(true);
+        };
         try {
             const hasSeen = localStorage.getItem('cleandjmix_tutorial_completed');
             if (!hasSeen) {
@@ -17089,8 +17100,8 @@ const App = () => {
                     <button
                         type="button"
                         onClick={() => setTutorialOpen(true)}
-                        className="hidden sm:flex px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 rounded-lg text-[11px] font-mono font-bold items-center gap-1.5 cursor-pointer shadow-sm transition-all hover:scale-105"
-                        title="Abrir Tutorial y Guía Interactiva de CleanDJmix PRO"
+                        className="flex px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 rounded-lg text-[11px] font-mono font-bold items-center gap-1.5 cursor-pointer shadow-sm transition-all hover:scale-105"
+                        title="Abrir Selector de Tutoriales (Teaser 60s o Tour Spotlight en Cabina)"
                     >
                         <span>❓</span>
                         <span>{lang === 'en' ? 'Tutorial' : 'Tutorial'}</span>
@@ -17550,6 +17561,7 @@ const App = () => {
                 onClose={() => setTutorialOpen(false)} 
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
+                initialMode={tutorialInitialMode}
             />
         </div>
     );

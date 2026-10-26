@@ -10732,7 +10732,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onClick: onClose,
         className: "px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black font-black text-xs cursor-pointer shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
       },
-      "\u{1F525} \xA1Comenzar a Mezclar!"
+      "\u{1F3A7} Entrar a la Aplicaci\xF3n"
     )))))));
   };
   var SpotlightTourOverlay = ({ isOpen, onClose, activeTab, setActiveTab, onOpenTeaser }) => {
@@ -10912,7 +10912,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           },
           className: "px-4 py-1.5 rounded-lg bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black text-xs cursor-pointer shadow-md shadow-djcyan-500/30 transition-transform active:scale-95"
         },
-        isLast ? "\xA1A mezclar!" : "Siguiente \u2192"
+        isLast ? "\u2713 Finalizar Tour" : "Siguiente \u2192"
       )))
     ));
   };
@@ -10959,11 +10959,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onClick: handleSkip,
         className: "text-gray-400 hover:text-white font-mono text-xs cursor-pointer"
       },
-      "Saltar a la cabina"
+      "Entrar directamente a la aplicaci\xF3n"
     ))));
   };
-  var AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab }) => {
-    const [viewMode, setViewMode] = useState("launcher");
+  var AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = "launcher" }) => {
+    const [viewMode, setViewMode] = useState(initialMode);
+    useEffect(() => {
+      if (isOpen) {
+        setViewMode(initialMode || "launcher");
+      }
+    }, [isOpen, initialMode]);
     if (!isOpen) return null;
     if (viewMode === "teaser") {
       return /* @__PURE__ */ React.createElement(
@@ -11032,8 +11037,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const audioRef = useRef(null);
     const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, progress: 0, statusMsg: "" });
     const [tutorialOpen, setTutorialOpen] = useState(false);
+    const [tutorialInitialMode, setTutorialInitialMode] = useState("launcher");
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
     useEffect(() => {
+      window.abrirTutorial = (mode = "launcher") => {
+        setTutorialInitialMode(mode);
+        setTutorialOpen(true);
+      };
       try {
         const hasSeen = localStorage.getItem("cleandjmix_tutorial_completed");
         if (!hasSeen) {
@@ -11423,8 +11433,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       {
         type: "button",
         onClick: () => setTutorialOpen(true),
-        className: "hidden sm:flex px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 rounded-lg text-[11px] font-mono font-bold items-center gap-1.5 cursor-pointer shadow-sm transition-all hover:scale-105",
-        title: "Abrir Tutorial y Gu\xEDa Interactiva de CleanDJmix PRO"
+        className: "flex px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 rounded-lg text-[11px] font-mono font-bold items-center gap-1.5 cursor-pointer shadow-sm transition-all hover:scale-105",
+        title: "Abrir Selector de Tutoriales (Teaser 60s o Tour Spotlight en Cabina)"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u2753"),
       /* @__PURE__ */ React.createElement("span", null, lang === "en" ? "Tutorial" : "Tutorial")
@@ -11754,7 +11764,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         isOpen: tutorialOpen,
         onClose: () => setTutorialOpen(false),
         activeTab,
-        setActiveTab
+        setActiveTab,
+        initialMode: tutorialInitialMode
       }
     ));
   };
