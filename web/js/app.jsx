@@ -8816,6 +8816,7 @@ const SpotifyWorkspace = ({
     const [spFilterSearch, setSpFilterSearch] = useState('');
     const [spFilterFormat, setSpFilterFormat] = useState('ALL');
     const [spFilterQuality, setSpFilterQuality] = useState('ALL');
+    const [spFilterPreQuality, setSpFilterPreQuality] = useState('ALL');
     const [spFilterStatus, setSpFilterStatus] = useState('ALL');
     const [spFilterOrigin, setSpFilterOrigin] = useState('ALL');
     const [spFilterEnergy, setSpFilterEnergy] = useState('ALL');
@@ -8850,6 +8851,11 @@ const SpotifyWorkspace = ({
             }
             if (spFilterQuality !== 'ALL') {
                 if (!String(t.calidad || '').toLowerCase().includes(spFilterQuality.toLowerCase())) return false;
+            }
+            if (spFilterPreQuality !== 'ALL') {
+                if (spFilterPreQuality === 'RECOMMENDED' && t.pre_worth_it === false) return false;
+                if (spFilterPreQuality === 'HI_RES' && t.pre_quality_tier !== 'HI_RES_24B') return false;
+                if (spFilterPreQuality === 'LOSSLESS' && !['HI_RES_24B', 'LOSSLESS_16B'].includes(t.pre_quality_tier)) return false;
             }
             if (spFilterStatus !== 'ALL') {
                 const isFake = Boolean(t.es_fake || String(t.status || '').includes('Fake'));
@@ -8901,7 +8907,7 @@ const SpotifyWorkspace = ({
         });
 
         return result;
-    }, [tracks, spFilterSearch, spFilterOrigin, spFilterFormat, spFilterQuality, spFilterStatus, spFilterEnergy, spFilterDance, spSortField, spSortDir, selectedFormat]);
+    }, [tracks, spFilterSearch, spFilterOrigin, spFilterFormat, spFilterQuality, spFilterPreQuality, spFilterStatus, spFilterEnergy, spFilterDance, spSortField, spSortDir, selectedFormat]);
 
     const currentTrack = tracks.find(t => t.id === selectedId) || tracks[0] || {};
     const selectedCount = tracks.filter(t => t.selected).length;
@@ -9200,6 +9206,23 @@ const SpotifyWorkspace = ({
                             <span>⬇ Descargar Seleccionadas ({selectedCount})</span>
                         </button>
 
+                        {/* Botón Seleccionar Solo Recomendadas (Hi-Res & Lossless) */}
+                        {tracks.length > 0 && (
+                            <button
+                                onClick={() => {
+                                    setTracks(prev => prev.map(t => ({
+                                        ...t,
+                                        selected: t.pre_worth_it !== false
+                                    })));
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-300 hover:text-white border border-djcyan-700/60 flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95"
+                                title="Marcar automáticamente solo las pistas con Master Hi-Res 24b o Lossless 16b y desmarcar las que no merecen la pena"
+                            >
+                                <span>⭐</span>
+                                <span>Recomendadas ({tracks.filter(t => t.pre_worth_it !== false).length})</span>
+                            </button>
+                        )}
+
                         {/* Botón Reintentar Pendientes si ya se descargaron algunas y quedan pendientes */}
                         {tracks.length > 0 && (downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0) && (
                             <button
@@ -9212,13 +9235,13 @@ const SpotifyWorkspace = ({
                             </button>
                         )}
 
-                        {/* Botón de Descargar Reporte XLS */}
+                        {/* Botón de Descargar Reporte Excel */}
                         <button
                             onClick={handleDescargarReporteXLS}
                             disabled={isExportingXls || (downloadSession.downloaded.length === 0 && downloadSession.failed.length === 0)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 ${
+                            className={`px-3.5 py-1.5 rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 whitespace-nowrap ${
                                 (downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0)
-                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20'
+                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20 font-black'
                                     : 'bg-djzinc-900 text-gray-500 border border-djzinc-800 cursor-not-allowed'
                             }`}
                             title="Descargar informe Excel con las pistas descargadas con certificación FFT y las que fallaron"
@@ -9226,10 +9249,10 @@ const SpotifyWorkspace = ({
                             <span>📊</span>
                             <span>
                                 {isExportingXls 
-                                    ? 'Generando XLS...' 
+                                    ? 'Generando Excel...' 
                                     : (downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0)
-                                        ? `Reporte XLS (${downloadSession.downloaded.length}✓ | ${downloadSession.failed.length}✕)`
-                                        : 'Reporte XLS'
+                                        ? `Reporte Excel (${downloadSession.downloaded.length}✓ | ${downloadSession.failed.length}✕)`
+                                        : 'Reporte Excel'
                                 }
                             </span>
                         </button>
@@ -9313,7 +9336,12 @@ const SpotifyWorkspace = ({
                                         <span>{t('btn_cancel') || 'Cancelar'}</span>
                                     </button>
                                 )}
-                                <span className="text-gray-500 text-[11px] font-bold">{tracks.length} Pistas detectadas</span>
+                                <span className="text-gray-400 text-[11px] font-mono font-bold">
+                                    {downloadSession.downloaded.length > 0 
+                                        ? `${downloadSession.downloaded.length} descargadas (${tracks.length} pendientes)` 
+                                        : `${tracks.length} Pistas detectadas`
+                                    }
+                                </span>
                             </div>
                         </div>
                         {(downloadProgress > 0 || isAnalyzing || isDownloading) && (
@@ -9376,6 +9404,7 @@ const SpotifyWorkspace = ({
                                 <th onClick={() => handleSortSp('title')} className="py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'} {renderSortArrowSp('title')}</th>
                                 <th onClick={() => handleSortSp('artist')} className="py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'ARTISTA'} {renderSortArrowSp('artist')}</th>
                                 <th onClick={() => handleSortSp('origin')} className="py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors">ORIGEN {renderSortArrowSp('origin')}</th>
+                                <th onClick={() => handleSortSp('pre_quality_tier')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" title="Pre-Auditoría de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena">💎 PRE-AUDITORÍA (VALOR) {renderSortArrowSp('pre_quality_tier')}</th>
                                 <th onClick={() => handleSortSp('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'FORMATO'} {renderSortArrowSp('format')}</th>
                                 <th onClick={() => handleSortSp('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'KHZ'} {renderSortArrowSp('sample_rate_khz')}</th>
                                 <th onClick={() => handleSortSp('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'KBPS'} {renderSortArrowSp('bitrate_kbps')}</th>
@@ -9428,6 +9457,19 @@ const SpotifyWorkspace = ({
                                         <option value="taxonomy">🏷️ Taxonomía</option>
                                         <option value="spotify">🎧 Spotify</option>
                                         <option value="shazam">⚡ Shazam</option>
+                                    </select>
+                                </th>
+                                <th className="p-1 text-center">
+                                    <select 
+                                        value={spFilterPreQuality} 
+                                        onChange={(e) => setSpFilterPreQuality(e.target.value)}
+                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        title="Filtrar por pre-calificación de valor acústico"
+                                    >
+                                        <option value="ALL">Todas</option>
+                                        <option value="RECOMMENDED">⭐ Recomendadas</option>
+                                        <option value="HI_RES">💎 Solo 24b Hi-Res</option>
+                                        <option value="LOSSLESS">💽 Lossless (16/24b)</option>
                                     </select>
                                 </th>
                                 <th className="p-1 text-center">
@@ -9511,8 +9553,8 @@ const SpotifyWorkspace = ({
                                                 <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">
                                                     Spotify Ingest • Modo Standby
                                                 </h3>
-                                                <p className="text-xs text-gray-400 max-w-lg w-full text-center leading-relaxed break-words px-2">
-                                                    Escribe una búsqueda (artista, tema o género) o pega un enlace de Spotify en la barra superior. También puedes importar pistas de baja calidad desde <strong className="text-amber-400 font-semibold">Auditoría & DSP</strong> usando el botón "Buscar Reemplazos Spotify".
+                                                <p className="text-xs text-gray-400 max-w-xl w-full text-center leading-relaxed break-words px-2">
+                                                    Escribe una búsqueda (artista, tema o género) o pega un enlace de Spotify en la barra superior. También puedes importar pistas de baja calidad desde <strong className="text-amber-400 font-semibold">Auditoría & DSP</strong> usando el botón "📥 Reemplazos HD".
                                                 </p>
                                                 <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-gray-500">
                                                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -9612,6 +9654,27 @@ const SpotifyWorkspace = ({
                                             )}
                                         </td>
                                         
+                                        {/* PRE-AUDITORÍA Y DICTAMEN DE DESCARGA */}
+                                        <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex flex-col items-center justify-center gap-1 max-w-[170px] mx-auto" title={row.pre_detail || 'Diagnóstico preventivo de calidad acústica'}>
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border inline-flex items-center gap-1 shadow-sm ${
+                                                    (row.pre_quality_tier === 'HI_RES_24B' || (!row.pre_quality_tier && String(row.title || '').toLowerCase().includes('extended')))
+                                                        ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-500/70 shadow-[0_0_8px_rgba(6,182,212,0.35)]'
+                                                        : (row.pre_quality_tier === 'LOW_RES' || row.pre_worth_it === false)
+                                                            ? 'bg-red-950/70 text-red-300 border-red-800'
+                                                            : 'bg-emerald-950/70 text-emerald-300 border-emerald-600/70'
+                                                }`}>
+                                                    <span>{row.pre_badge || (String(row.title || '').toLowerCase().includes('extended') ? '💎 Hi-Res 24b' : '💽 Lossless 16b')}</span>
+                                                </span>
+                                                <span className={`text-[9.5px] font-mono font-bold flex items-center gap-1 ${
+                                                    row.pre_worth_it === false ? 'text-amber-400' : 'text-emerald-400'
+                                                }`}>
+                                                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: row.pre_worth_it === false ? '#f59e0b' : '#10b981' }}></span>
+                                                    <span>{row.pre_verdict_short || (row.pre_worth_it === false ? 'No vale la pena' : '¡Vale la pena!')}</span>
+                                                </span>
+                                            </div>
+                                        </td>
+
                                         {/* FORMATO */}
                                         <td className="py-2 px-2 text-center">
                                             <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-djcyan-400 border border-djzinc-750">
@@ -9794,6 +9857,38 @@ const SpotifyWorkspace = ({
                                 <span className="text-[10px] text-gray-500 block uppercase">Clave Camelot</span>
                                 <span className="text-djcyan-400 font-bold">{currentTrack.key || '--'}</span>
                             </div>
+                        </div>
+
+                        {/* Pre-Auditoría de Calidad y Dictamen de Descarga */}
+                        <div className="bg-[#050508] p-3 rounded-xl border border-djzinc-800 space-y-2 text-xs">
+                            <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-1.5">
+                                <span className="font-mono font-bold text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>💎</span> Pre-Auditoría Acústica
+                                </span>
+                                <span className={`px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${
+                                    (currentTrack.pre_quality_tier === 'HI_RES_24B' || (!currentTrack.pre_quality_tier && String(currentTrack.title || '').toLowerCase().includes('extended')))
+                                        ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-500 shadow-[0_0_8px_rgba(6,182,212,0.35)]'
+                                        : currentTrack.pre_worth_it === false
+                                            ? 'bg-red-950/70 text-red-300 border-red-800'
+                                            : 'bg-emerald-950/70 text-emerald-300 border-emerald-600/70'
+                                }`}>
+                                    {currentTrack.pre_badge || (String(currentTrack.title || '').toLowerCase().includes('extended') ? '💎 Hi-Res 24b' : '💽 Lossless 16b')}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center text-[11px] font-mono">
+                                <span className="text-gray-400">¿Vale la pena?:</span>
+                                <span className={`font-bold flex items-center gap-1 ${currentTrack.pre_worth_it === false ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                    <span>{currentTrack.pre_worth_it === false ? '🟡' : '🟢'}</span>
+                                    <span>{currentTrack.pre_verdict || (currentTrack.pre_worth_it === false ? 'Calidad estándar' : '⭐ IMPRESCINDIBLE')}</span>
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-[11px] font-mono">
+                                <span className="text-gray-400">Corte Previsto:</span>
+                                <span className="text-djcyan-300 font-bold">{currentTrack.pre_cutoff_est || '> 24.0 kHz (FLAC)'}</span>
+                            </div>
+                            <p className="text-[10px] text-gray-400 leading-relaxed font-sans pt-1 border-t border-djzinc-850">
+                                {currentTrack.pre_detail || 'Master de estudio oficial sin pérdidas destructivas. 100% apto para directo y sistemas de alta potencia.'}
+                            </p>
                         </div>
 
                         <div className="bg-[#050508] p-3 rounded border border-djzinc-800 space-y-2 text-xs">
@@ -17081,22 +17176,86 @@ const App = () => {
 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3.5 select-none">
-                        {/* ISOTIPO FLAGSHIP */}
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0e0e18] via-[#080810] to-[#040408] border-2 border-djcyan-400/60 flex items-center justify-center relative overflow-hidden shrink-0 shadow-[0_0_22px_rgba(6,182,212,0.45)] group">
-                            <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
-                                <rect className="svg-bar b1-epic" x="2.5" y="6" width="3" rx="1.5" height="22" />
-                                <rect className="svg-bar b2-epic" x="8" y="2" width="3.5" rx="1.75" height="28" />
-                                <rect className="svg-bar b3-epic" x="14" y="4" width="3" rx="1.5" height="26" />
-                                <rect className="svg-bar b4-epic" x="19.5" y="2" width="3.5" rx="1.75" height="28" />
-                                <rect className="svg-bar b5-epic" x="25.5" y="8" width="3" rx="1.5" height="20" />
+                        {/* ISOTIPO FLAGSHIP: ALTAVOZ SUBWOOFER CON MEMBRANA VIBRANTE EN CIAN */}
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0c0c16] via-[#07070e] to-[#030306] border-2 border-djcyan-400/70 flex items-center justify-center relative overflow-hidden shrink-0 shadow-[0_0_24px_rgba(6,182,212,0.5)] group select-none cursor-pointer" title="BeatWave Subwoofer Acústico">
+                            {/* Resplandor ambiental de fondo */}
+                            <div className="absolute inset-0 bg-radial from-djcyan-500/20 via-transparent to-transparent pointer-events-none"></div>
+
+                            <svg className="w-9 h-9 relative z-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    {/* Gradiente radial del cono de la membrana */}
+                                    <radialGradient id="coneGrad" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stopColor="#040407" />
+                                        <stop offset="45%" stopColor="#0e1726" />
+                                        <stop offset="85%" stopColor="#083344" />
+                                        <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.8" />
+                                    </radialGradient>
+                                    
+                                    {/* Gradiente del Dust Cap central */}
+                                    <radialGradient id="capGrad" cx="40%" cy="35%" r="60%">
+                                        <stop offset="0%" stopColor="#67e8f9" />
+                                        <stop offset="35%" stopColor="#06b6d4" />
+                                        <stop offset="75%" stopColor="#082f49" />
+                                        <stop offset="100%" stopColor="#020617" />
+                                    </radialGradient>
+
+                                    {/* Gradiente de la suspensión de goma exterior */}
+                                    <radialGradient id="surroundGrad" cx="50%" cy="50%" r="50%">
+                                        <stop offset="70%" stopColor="#181824" />
+                                        <stop offset="88%" stopColor="#2c2c3e" />
+                                        <stop offset="96%" stopColor="#0a0a10" />
+                                        <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.6" />
+                                    </radialGradient>
+
+                                    {/* Filtro de Resplandor Neón Cian */}
+                                    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                                        <feMerge>
+                                            <feMergeNode in="blur" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+
+                                {/* 1. Anillo de onda acústica expansiva */}
+                                <circle cx="24" cy="24" r="21" stroke="#06b6d4" strokeWidth="1" strokeDasharray="3 3" className="anim-woofer-ring" />
+
+                                {/* 2. Chasis exterior metálico con tornillos de fijación */}
+                                <circle cx="24" cy="24" r="22.5" stroke="#334155" strokeWidth="1.5" fill="#090910" />
+                                <circle cx="24" cy="24" r="20" stroke="#06b6d4" strokeWidth="0.8" strokeOpacity="0.4" />
+                                
+                                {/* 4 Pernos / Tornillos Allen en los bordes */}
+                                <circle cx="7" cy="7" r="1.2" fill="#06b6d4" opacity="0.85" />
+                                <circle cx="41" cy="7" r="1.2" fill="#06b6d4" opacity="0.85" />
+                                <circle cx="7" cy="41" r="1.2" fill="#06b6d4" opacity="0.85" />
+                                <circle cx="41" cy="41" r="1.2" fill="#06b6d4" opacity="0.85" />
+
+                                {/* 3. Suspensión de Goma (Surround Ring) */}
+                                <circle cx="24" cy="24" r="18" fill="url(#surroundGrad)" stroke="#06b6d4" strokeWidth="1.2" className="anim-woofer-surround" />
+                                
+                                {/* 4. Cono del Altavoz (Membrana en vibración) */}
+                                <g className="anim-woofer-cone">
+                                    <circle cx="24" cy="24" r="14.5" fill="url(#coneGrad)" />
+                                    {/* Estrías y textura concéntrica del cono */}
+                                    <circle cx="24" cy="24" r="12.5" stroke="#06b6d4" strokeWidth="0.5" strokeOpacity="0.35" fill="none" />
+                                    <circle cx="24" cy="24" r="10" stroke="#22d3ee" strokeWidth="0.6" strokeOpacity="0.5" fill="none" />
+                                    
+                                    {/* Anillo de la bobina móvil (Voice Coil Ring Cian) */}
+                                    <circle cx="24" cy="24" r="7.5" stroke="#06b6d4" strokeWidth="1.2" fill="none" filter="url(#cyanGlow)" />
+                                    
+                                    {/* 5. Cúpula Central (Dust Cap / Domo Cóncavo) */}
+                                    <circle cx="24" cy="24" r="5.5" fill="url(#capGrad)" stroke="#67e8f9" strokeWidth="0.8" className="anim-woofer-dustcap" />
+                                    {/* Punto de luz / brillo especular de la cúpula */}
+                                    <ellipse cx="22.5" cy="22" rx="1.5" ry="0.9" fill="#ffffff" opacity="0.75" />
+                                </g>
                             </svg>
                         </div>
 
-                        {/* RÓTULO BEATWAVE PRO DE ALTA JERARQUÍA */}
+                        {/* RÓTULO BEATWAVE PRO CON VIBRACIÓN ACÚSTICA SINCRONIZADA */}
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2 sm:gap-2.5 leading-none">
-                                <span className="text-lg sm:text-[23px] tracking-wider uppercase font-black anim-soundwave truncate" style={{ fontFamily: "'Syne', sans-serif" }}>
-                                    BEAT<span className="text-djcyan-400">WAVE</span>
+                                <span className="text-lg sm:text-[23px] tracking-wider uppercase font-black anim-bass-vibrating-logo truncate select-none cursor-pointer" style={{ fontFamily: "'Syne', sans-serif" }}>
+                                    BEAT<span className="anim-wave-bass-pulse">WAVE</span>
                                 </span>
                                 <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-md font-black tracking-widest border border-djcyan-400/80 bg-djcyan-950 text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0">
                                     PRO

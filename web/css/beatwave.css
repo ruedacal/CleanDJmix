@@ -1,29 +1,163 @@
-/* --- BEATWAVE PRO: DEFINITIVE MOTION ENGINE --- */
-        
-        /* CHROMATIC BARS (Estrictamente Cian y Blanco) */
-        @keyframes chroma1 { 0%, 100% { fill: #22d3ee; } 50% { fill: #ffffff; } }
-        @keyframes chroma2 { 0%, 100% { fill: #ffffff; } 50% { fill: #22d3ee; } }
-        @keyframes chroma3 { 0%, 100% { fill: #22d3ee; } 50% { fill: #ffffff; } }
-        @keyframes chroma4 { 0%, 100% { fill: #ffffff; } 50% { fill: #22d3ee; } }
-        @keyframes chroma5 { 0%, 100% { fill: #22d3ee; } 50% { fill: #ffffff; } }
+/* --- BEATWAVE PRO: MOTOR DE BOMBEO ACÚSTICO DE SUBWOOFER & VIBRACIÓN DE TIPOGRAFÍA --- */
 
-        /* BALÍSTICA BARRAS */
-        @keyframes bounce1 { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(0.85); } }
-        @keyframes bounce2 { 0%, 100% { transform: scaleY(0.6); } 50% { transform: scaleY(1.0); } }
-        @keyframes bounce3 { 0%, 100% { transform: scaleY(0.9); } 50% { transform: scaleY(0.45); } }
-        @keyframes bounce4 { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(0.95); } }
-        @keyframes bounce5 { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(0.75); } }
+/* Membrana cónica del altavoz (Woofer Cone Excursion) */
+@keyframes wooferConeExcursion {
+    0% {
+        transform: scale(0.96);
+        filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.4));
+    }
+    14% {
+        /* Impacto del bombo: excursión máxima hacia adelante */
+        transform: scale(1.22);
+        filter: drop-shadow(0 0 16px rgba(6, 182, 212, 0.95)) drop-shadow(0 0 28px rgba(6, 182, 212, 0.6));
+    }
+    24% {
+        transform: scale(1.09);
+    }
+    38% {
+        /* Retroceso elástico de la suspensión */
+        transform: scale(0.92);
+        filter: drop-shadow(0 0 4px rgba(6, 182, 212, 0.3));
+    }
+    55% {
+        transform: scale(1.03);
+    }
+    72% {
+        transform: scale(0.97);
+    }
+    100% {
+        transform: scale(0.96);
+        filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.4));
+    }
+}
 
-        .svg-bar { transform-box: fill-box; transform-origin: bottom; }
-        .b1-epic { animation: bounce1 0.85s infinite cubic-bezier(0.16,1,0.3,1), chroma1 2.4s infinite; }
-        .b2-epic { animation: bounce2 0.72s infinite cubic-bezier(0.16,1,0.3,1), chroma2 1.8s infinite; filter: drop-shadow(0 0 6px rgba(255,255,255,0.8)); }
-        .b3-epic { animation: bounce3 0.96s infinite cubic-bezier(0.16,1,0.3,1), chroma3 2.8s infinite; }
-        .b4-epic { animation: bounce4 0.65s infinite cubic-bezier(0.16,1,0.3,1), chroma4 1.2s infinite; filter: drop-shadow(0 0 8px rgba(6,182,212,0.6)); } /* Brillo Cian */
-        .b5-epic { animation: bounce5 0.88s infinite cubic-bezier(0.16,1,0.3,1), chroma5 2.6s infinite; }
+/* Suspensión exterior de goma (Surround Ring) */
+@keyframes wooferSurroundRing {
+    0%, 100% {
+        transform: scale(1);
+        stroke-opacity: 0.7;
+    }
+    14% {
+        transform: scale(1.08);
+        stroke-opacity: 1;
+        stroke: #22d3ee;
+        filter: drop-shadow(0 0 8px #06b6d4);
+    }
+    38% {
+        transform: scale(0.96);
+        stroke-opacity: 0.6;
+    }
+}
 
-        /* SOUNDWAVE MORPH BASE STYLE */
-        .anim-soundwave {
-            color: #ffffff;
-            display: inline-block;
-            filter: url(#waveDistortion);
-        }
+/* Cúpula central (Dust Cap) */
+@keyframes wooferDustCap {
+    0%, 100% {
+        transform: scale(0.94);
+    }
+    14% {
+        transform: scale(1.28);
+        filter: drop-shadow(0 0 12px #67e8f9);
+    }
+    38% {
+        transform: scale(0.90);
+    }
+    60% {
+        transform: scale(1.04);
+    }
+}
+
+/* Ondas de presión sonora que escapan del altavoz */
+@keyframes wooferSoundRings {
+    0% {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+    14% {
+        transform: scale(1.05);
+        opacity: 0.9;
+        stroke: #22d3ee;
+    }
+    50% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1.7);
+        opacity: 0;
+    }
+}
+
+/* Las letras de BEATWAVE vibran y retumban al recibir el golpe de aire del altavoz */
+@keyframes speakerBassShakeText {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1);
+        text-shadow: 0 0 0 rgba(6, 182, 212, 0);
+    }
+    14% {
+        /* Impacto directo de la onda acústica del altavoz */
+        transform: translate3d(2.5px, -0.5px, 0) scale(1.035);
+        text-shadow: 0 0 18px rgba(6, 182, 212, 0.95), 0 0 35px rgba(6, 182, 212, 0.6);
+    }
+    20% {
+        transform: translate3d(-1.5px, 0.5px, 0) scale(1.02);
+    }
+    28% {
+        transform: translate3d(1.2px, 0, 0) scale(1.01);
+        text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+    }
+    40% {
+        transform: translate3d(-0.6px, 0, 0) scale(0.995);
+    }
+    55% {
+        transform: translate3d(0.3px, 0, 0) scale(1.002);
+    }
+    70% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+/* Resplandor neón sincronizado en la palabra WAVE */
+@keyframes waveNeonBassPulse {
+    0%, 100% {
+        color: #06b6d4;
+        text-shadow: 0 0 4px rgba(6, 182, 212, 0.35);
+    }
+    14% {
+        color: #67e8f9;
+        text-shadow: 0 0 16px #06b6d4, 0 0 32px #06b6d4, 0 0 45px rgba(6, 182, 212, 0.85);
+    }
+    35% {
+        color: #22d3ee;
+        text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+    }
+}
+
+.anim-woofer-cone {
+    transform-origin: 24px 24px;
+    animation: wooferConeExcursion 0.85s infinite cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.anim-woofer-surround {
+    transform-origin: 24px 24px;
+    animation: wooferSurroundRing 0.85s infinite cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.anim-woofer-dustcap {
+    transform-origin: 24px 24px;
+    animation: wooferDustCap 0.85s infinite cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.anim-woofer-ring {
+    transform-origin: 24px 24px;
+    animation: wooferSoundRings 0.85s infinite cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.anim-bass-vibrating-logo {
+    display: inline-block;
+    animation: speakerBassShakeText 0.85s infinite cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, text-shadow;
+}
+
+.anim-wave-bass-pulse {
+    animation: waveNeonBassPulse 0.85s infinite cubic-bezier(0.22, 1, 0.36, 1);
+}

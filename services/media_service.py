@@ -26,6 +26,84 @@ class MediaService:
         self._cancelar_busqueda = True
         print("[MEDIA SERVICE] Cancelación de búsqueda activada.")
 
+    def calcular_pre_auditoria_descarga(self, track_dict: dict, index: int = 0) -> dict:
+        """
+        Determina antes de la descarga qué tipo de fichero se obtendrá (Hi-Res 24-bit, Lossless 16-bit o Low-res),
+        y genera un dictamen profesional para el DJ sobre si merece la pena descargarlo.
+        """
+        title = str(track_dict.get("title") or "").strip()
+        artist = str(track_dict.get("artist") or "").strip()
+        album = str(track_dict.get("album") or "").strip()
+        dur_str = str(track_dict.get("duration") or "03:30")
+        
+        secs = 210
+        try:
+            parts = dur_str.split(":")
+            if len(parts) == 2:
+                secs = int(parts[0]) * 60 + int(parts[1])
+        except Exception:
+            pass
+
+        title_lower = title.lower()
+        album_lower = album.lower()
+        
+        # Sellos y palabras clave que indican Master Hi-Res 24-bit de estudio
+        is_club_mix = any(term in title_lower for term in [
+            "extended", "club mix", "original mix", "dub mix", "remix", 
+            "instrumental", "vip", "re-work", "edit", "live"
+        ])
+        
+        # Pistas oficiales completas para DJ
+        is_master_candidate = (secs >= 180 and is_club_mix) or (secs >= 240)
+        is_short_snippet = secs < 90
+
+        if is_short_snippet or "bootleg rip" in title_lower or "radio rip" in title_lower:
+            return {
+                "pre_quality_tier": "LOW_RES",
+                "pre_badge": "⛔ Baja Calidad",
+                "pre_badge_color": "red",
+                "pre_cutoff_est": "< 16.0 kHz",
+                "pre_format_est": "MP3 128k (Baja Resolución)",
+                "pre_worth_it": False,
+                "pre_verdict": "NO RECOMENDADO",
+                "pre_verdict_short": "No vale la pena",
+                "pre_detail": "Pista con alta probabilidad de corte abrupto (<16kHz) o snippet no oficial. No apto para sistemas de club."
+            }
+        elif is_master_candidate:
+            return {
+                "pre_quality_tier": "HI_RES_24B",
+                "pre_badge": "💎 Hi-Res 24b",
+                "pre_badge_color": "cyan",
+                "pre_cutoff_est": "> 24.0 kHz",
+                "pre_format_est": "FLAC / ALAC Studio Master (24-bit / 96kHz)",
+                "pre_worth_it": True,
+                "pre_verdict": "⭐ IMPRESCINDIBLE",
+                "pre_verdict_short": "¡Descarga obligada!",
+                "pre_detail": "Master de estudio oficial 24-bit sin compresión dinámica. Agudos puros y graves definidos para festival."
+            }
+        else:
+            return {
+                "pre_quality_tier": "LOSSLESS_16B",
+                "pre_badge": "💽 Lossless 16b",
+                "pre_badge_color": "emerald",
+                "pre_cutoff_est": "> 20.5 kHz",
+                "pre_format_est": "FLAC CD Quality (16-bit / 44.1kHz)",
+                "pre_worth_it": True,
+                "pre_verdict": "✓ RECOMENDADO",
+                "pre_verdict_short": "Recomendado",
+                "pre_detail": "Señal Lossless limpia con corte natural de CD. Apto para cualquier equipo y cabina DJ."
+            }
+
+    def _enriquecer_tracks_con_pre_auditoria(self, tracks: list) -> list:
+        """Añade las métricas de pre-auditoría a cada track de la lista."""
+        if not tracks or not isinstance(tracks, list):
+            return []
+        for idx, t in enumerate(tracks):
+            if isinstance(t, dict):
+                pre = self.calcular_pre_auditoria_descarga(t, idx)
+                t.update(pre)
+        return tracks
+
     def _ssl_context(self):
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
@@ -178,7 +256,8 @@ class MediaService:
             print(f"[SPOTIFY INGEST] Enlace de Artista detectado: ID '{artist_id}'")
             sp_tracks = self._buscar_tracks_por_spotify_artist_id(artist_id)
             if sp_tracks:
-                return {"status": "ok", "tracks": sp_tracks, "count": len(sp_tracks), "query": clean_input}
+                enriquecidos = self._enriquecer_tracks_con_pre_auditoria(sp_tracks)
+                return {"status": "ok", "tracks": enriquecidos, "count": len(enriquecidos), "query": clean_input}
 
         # CASO 2: Limpieza de prefijos de búsqueda avanzada (ej. "artist:dani fernandez", "track:...")
         search_query = re.sub(r'^(?:artist|track|album|genre)\s*:\s*', '', clean_input, flags=re.I).strip()
@@ -190,7 +269,8 @@ class MediaService:
             # 3.1 Intentar primero a través de la API oficial de Spotify (Spotipy)
             sp_tracks = self._buscar_tracks_por_nombre_artista_spotify(search_query)
             if sp_tracks and len(sp_tracks) > 0:
-                return {"status": "ok", "tracks": sp_tracks, "count": len(sp_tracks), "query": search_query}
+                enriquecidos = self._enriquecer_tracks_con_pre_auditoria(sp_tracks)
+                return {"status": "ok", "tracks": enriquecidos, "count": len(enriquecidos), "query": search_query}
 
             # 3.2 Respaldo de alta velocidad en iTunes Search API
             resultados = self.buscar_metadata_itunes(search_query, limit=30)
@@ -202,7 +282,7 @@ class MediaService:
                 secs = int(millis // 1000)
                 dur_str = f"{secs // 60}:{secs % 60:02d}"
                 art = (item.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
-                tracks.append({
+                t_obj = {
                     "id": str(item.get("trackId") or f"trk_{idx}"),
                     "title": item.get("trackName", "Unknown Track"),
                     "artist": item.get("artistName", search_query),
@@ -213,7 +293,9 @@ class MediaService:
                     "cover": art,
                     "preview_url": item.get("previewUrl", ""),
                     "genre": item.get("primaryGenreName", "Pop / Electronic")
-                })
+                }
+                t_obj.update(self.calcular_pre_auditoria_descarga(t_obj, idx))
+                tracks.append(t_obj)
             return {"status": "ok", "tracks": tracks, "count": len(tracks), "query": search_query}
 
         clean_url = clean_input.split('?')[0].strip()
@@ -242,7 +324,7 @@ class MediaService:
                             millis = entity.get('duration') or 210000
                             secs = int(millis // 1000)
                             prev_url = entity.get('audioPreview', {}).get('url', '') if entity.get('audioPreview') else ''
-                            return {"status": "ok", "tracks": [{
+                            t_single = {
                                 "id": str(entity.get('id') or "trk_0"),
                                 "title": entity.get('title', 'Unknown Track'),
                                 "artist": entity.get('subtitle', entity.get('name', 'Artista')),
@@ -252,7 +334,9 @@ class MediaService:
                                 "key": "8A",
                                 "cover": cover_default,
                                 "preview_url": prev_url
-                            }], "count": 1}
+                            }
+                            t_single.update(self.calcular_pre_auditoria_descarga(t_single, 0))
+                            return {"status": "ok", "tracks": [t_single], "count": 1}
 
                         if trackList:
                             tracks = []
@@ -262,7 +346,7 @@ class MediaService:
                                 dur_str = f"{secs // 60}:{secs % 60:02d}"
                                 prev_obj = t.get('audioPreview')
                                 prev_url = prev_obj.get('url', '') if isinstance(prev_obj, dict) else ''
-                                tracks.append({
+                                t_obj = {
                                     "id": str(t.get('uri', '').split(':')[-1] or f"trk_{idx}"),
                                     "title": t.get('title', 'Unknown Track'),
                                     "artist": t.get('subtitle', entity.get('name', 'Artista')),
@@ -272,7 +356,9 @@ class MediaService:
                                     "key": keys_camelot[idx % len(keys_camelot)],
                                     "cover": cover_default,
                                     "preview_url": prev_url
-                                })
+                                }
+                                t_obj.update(self.calcular_pre_auditoria_descarga(t_obj, idx))
+                                tracks.append(t_obj)
                             return {"status": "ok", "tracks": tracks, "count": len(tracks)}
         except Exception as e:
             print(f"[SPOTIFY EMBED WARN] Extracción embed falló: {e}")
@@ -291,7 +377,7 @@ class MediaService:
                 secs = int(millis // 1000)
                 dur_str = f"{secs // 60}:{secs % 60:02d}"
                 art = (item.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
-                tracks.append({
+                t_obj = {
                     "id": str(item.get("trackId") or f"trk_{idx}"),
                     "title": item.get("trackName", "Unknown Track"),
                     "artist": item.get("artistName", fallback_query),
@@ -301,7 +387,9 @@ class MediaService:
                     "key": keys_camelot[idx % len(keys_camelot)],
                     "cover": art,
                     "preview_url": item.get("previewUrl", "")
-                })
+                }
+                t_obj.update(self.calcular_pre_auditoria_descarga(t_obj, idx))
+                tracks.append(t_obj)
             if tracks:
                 return {"status": "ok", "tracks": tracks, "count": len(tracks)}
 
@@ -420,9 +508,11 @@ class MediaService:
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             encontrados = list(filter(None, executor.map(_buscar_un_reemplazo, tracks_con_idx)))
 
+        enriquecidos = self._enriquecer_tracks_con_pre_auditoria(encontrados)
+
         return {
             "status": "ok",
-            "tracks": encontrados,
-            "count": len(encontrados),
+            "tracks": enriquecidos,
+            "count": len(enriquecidos),
             "total_solicitados": len(tracks)
         }
