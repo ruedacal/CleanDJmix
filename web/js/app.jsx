@@ -5419,7 +5419,7 @@ const AuditWorkspace = ({
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracksFiltrados.length === 0 && !isAuditing && (
                                 <tr>
-                                    <td colSpan="20" className="py-12 text-center text-gray-500 font-mono text-xs">
+                                    <td colSpan="20" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4">
                                         No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".
                                     </td>
                                 </tr>
@@ -9410,7 +9410,7 @@ const SpotifyWorkspace = ({
 
                         <button 
                             onClick={() => setSpInspectorOpen(prev => !prev)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                 spInspectorOpen 
                                     ? 'bg-djzinc-800 text-white border-djcyan-500 shadow-sm' 
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
@@ -9516,180 +9516,179 @@ const SpotifyWorkspace = ({
                     </div>
                 )}
 
-                <div className="flex-1 overflow-auto bg-[#08080b]">
-                    <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
-                        <thead className="sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400">
-                            <tr>
-                                <th className="py-2.5 px-3 w-8 text-center"><input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} className="accent-djcyan-500 cursor-pointer" /></th>
-                                <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
-                                <th onClick={() => handleSortSp('title')} className="py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'} {renderSortArrowSp('title')}</th>
-                                <th onClick={() => handleSortSp('artist')} className="py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'ARTISTA'} {renderSortArrowSp('artist')}</th>
-                                <th onClick={() => handleSortSp('origin')} className="py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors">ORIGEN {renderSortArrowSp('origin')}</th>
-                                <th onClick={() => handleSortSp('pre_quality_tier')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" title="Pre-Auditoría de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena">💎 PRE-AUDITORÍA (VALOR) {renderSortArrowSp('pre_quality_tier')}</th>
-                                <th onClick={() => handleSortSp('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'FORMATO'} {renderSortArrowSp('format')}</th>
-                                <th onClick={() => handleSortSp('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'KHZ'} {renderSortArrowSp('sample_rate_khz')}</th>
-                                <th onClick={() => handleSortSp('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'KBPS'} {renderSortArrowSp('bitrate_kbps')}</th>
-                                <th onClick={() => handleSortSp('calidad')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_quality') || 'CALIDAD'} {renderSortArrowSp('calidad')}</th>
-                                <th onClick={() => handleSortSp('cutoff_khz')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors">{t('th_loss') || 'PÉRDIDA / CORTE'} {renderSortArrowSp('cutoff_khz')}</th>
-                                <th onClick={() => handleSortSp('duration')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_duration') || 'DURACIÓN'} {renderSortArrowSp('duration')}</th>
-                                <th onClick={() => handleSortSp('bpm')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowSp('bpm')}</th>
-                                <th onClick={() => handleSortSp('key')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">KEY {renderSortArrowSp('key')}</th>
-                                <th onClick={() => handleSortSp('energy')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">⚡ ENERGÍA {renderSortArrowSp('energy')}</th>
-                                <th onClick={() => handleSortSp('danceability')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">🕺 DANCE {renderSortArrowSp('danceability')}</th>
-                                <th onClick={() => handleSortSp('status')} className="py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'} {renderSortArrowSp('status')}</th>
-                            </tr>
-                            <tr className="bg-[#07070a] border-b border-djzinc-800 text-[10px] lowercase font-sans">
-                                <th className="p-1 text-center font-mono text-[9px] text-gray-500">
-                                    {(spFilterSearch || spFilterOrigin !== 'ALL' || spFilterFormat !== 'ALL' || spFilterQuality !== 'ALL' || spFilterStatus !== 'ALL' || spFilterEnergy !== 'ALL' || spFilterDance !== 'ALL') ? (
-                                        <button 
-                                            onClick={() => {
-                                                setSpFilterSearch('');
-                                                setSpFilterOrigin('ALL');
-                                                setSpFilterFormat('ALL');
-                                                setSpFilterQuality('ALL');
-                                                setSpFilterStatus('ALL');
-                                                setSpFilterEnergy('ALL');
-                                                setSpFilterDance('ALL');
-                                            }}
-                                            title="Limpiar filtros"
-                                            className="text-amber-400 hover:text-white cursor-pointer"
-                                        >✕</button>
-                                    ) : 'filtro'}
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1">
-                                    <input 
-                                        type="text" 
-                                        value={spFilterSearch} 
-                                        onChange={(e) => setSpFilterSearch(e.target.value)} 
-                                        placeholder="Filtrar por título o álbum..." 
-                                        className="w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
-                                    />
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={spFilterOrigin} 
-                                        onChange={(e) => setSpFilterOrigin(e.target.value)}
-                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todos</option>
-                                        <option value="audit_upgrade">🔄 Reemplazo HD</option>
-                                        <option value="taxonomy">🏷️ Taxonomía</option>
-                                        <option value="spotify">🎧 Spotify</option>
-                                        <option value="shazam">⚡ Shazam</option>
-                                    </select>
-                                </th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={spFilterPreQuality} 
-                                        onChange={(e) => setSpFilterPreQuality(e.target.value)}
-                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                        title="Filtrar por pre-calificación de valor acústico"
-                                    >
-                                        <option value="ALL">Todas</option>
-                                        <option value="RECOMMENDED">⭐ Recomendadas</option>
-                                        <option value="HI_RES">💎 Solo 24b Hi-Res</option>
-                                        <option value="LOSSLESS">💽 Lossless (16/24b)</option>
-                                    </select>
-                                </th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={spFilterFormat} 
-                                        onChange={(e) => setSpFilterFormat(e.target.value)}
-                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todos</option>
-                                        <option value="FLAC">FLAC</option>
-                                        <option value="MP3">MP3</option>
-                                        <option value="WAV">WAV</option>
-                                    </select>
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={spFilterQuality} 
-                                        onChange={(e) => setSpFilterQuality(e.target.value)}
-                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todas</option>
-                                        <option value="Alta">Alta</option>
-                                        <option value="Media">Media</option>
-                                        <option value="Baja">Baja</option>
-                                    </select>
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={spFilterEnergy} 
-                                        onChange={(e) => setSpFilterEnergy(e.target.value)}
-                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todas</option>
-                                        <option value="HIGH">&gt;80% Alta</option>
-                                        <option value="MED">65-80% Media</option>
-                                        <option value="LOW">&lt;65% Baja</option>
-                                    </select>
-                                </th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={spFilterDance} 
-                                        onChange={(e) => setSpFilterDance(e.target.value)}
-                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todas</option>
-                                        <option value="HIGH">&gt;80% Alta</option>
-                                        <option value="MED">65-80% Media</option>
-                                        <option value="LOW">&lt;65% Baja</option>
-                                    </select>
-                                </th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={spFilterStatus} 
-                                        onChange={(e) => setSpFilterStatus(e.target.value)}
-                                        className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todos</option>
-                                        <option value="DOWNLOADED">Descargado</option>
-                                        <option value="PENDING">Pendiente</option>
-                                        <option value="LOSSLESS">Lossless</option>
-                                        <option value="FAKE">FLAC Fake</option>
-                                    </select>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-djzinc-850/60 font-sans">
-                            {tracksFiltradosSp.length === 0 && !isAnalyzing && (
+                {tracks.length === 0 && !isAnalyzing ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#08080b] select-none overflow-y-auto">
+                        <div className="max-w-xl w-full mx-auto flex flex-col items-center justify-center gap-3.5 p-6 sm:p-8 rounded-2xl bg-[#0c0c12] border border-djzinc-800 shadow-2xl text-center">
+                            <div className="w-14 h-14 rounded-full bg-emerald-950/70 border border-emerald-500/60 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                                <Icons.Spotify />
+                            </div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">
+                                Spotify Ingest • Modo Standby
+                            </h3>
+                            <p className="text-xs text-gray-400 max-w-lg mx-auto text-center leading-relaxed whitespace-normal break-words px-2">
+                                Escribe una búsqueda (artista, tema o género) o pega un enlace de Spotify en la barra superior. También puedes importar pistas de baja calidad desde <strong className="text-amber-400 font-semibold">Auditoría & DSP</strong> usando el botón "📥 Reemplazos HD".
+                            </p>
+                            <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-gray-500 whitespace-normal">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                <span>Descargas Lossless FLAC / WAV • Certificación Espectral FFT</span>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex-1 overflow-auto bg-[#08080b]">
+                        <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
+                            <thead className="sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400">
                                 <tr>
-                                    <td colSpan="16" className="py-16 text-center select-none">
-                                        {tracks.length === 0 ? (
-                                            <div className="max-w-xl mx-auto flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-[#0c0c12] border border-djzinc-800 shadow-xl">
-                                                <div className="w-14 h-14 rounded-full bg-emerald-950/70 border border-emerald-500/60 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                                                    <Icons.Spotify />
-                                                </div>
-                                                <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">
-                                                    Spotify Ingest • Modo Standby
-                                                </h3>
-                                                <p className="text-xs text-gray-400 max-w-xl w-full text-center leading-relaxed break-words px-2">
-                                                    Escribe una búsqueda (artista, tema o género) o pega un enlace de Spotify en la barra superior. También puedes importar pistas de baja calidad desde <strong className="text-amber-400 font-semibold">Auditoría & DSP</strong> usando el botón "📥 Reemplazos HD".
-                                                </p>
-                                                <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-gray-500">
-                                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                                    <span>Descargas Lossless FLAC / WAV • Certificación Espectral FFT</span>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="py-8 text-gray-500 font-mono text-xs">
-                                                No hay pistas que coincidan con los filtros aplicados.
-                                            </div>
-                                        )}
-                                    </td>
+                                    <th className="py-2.5 px-3 w-8 text-center"><input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} className="accent-djcyan-500 cursor-pointer" /></th>
+                                    <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
+                                    <th onClick={() => handleSortSp('title')} className="py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'} {renderSortArrowSp('title')}</th>
+                                    <th onClick={() => handleSortSp('artist')} className="py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'ARTISTA'} {renderSortArrowSp('artist')}</th>
+                                    <th onClick={() => handleSortSp('origin')} className="py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors">ORIGEN {renderSortArrowSp('origin')}</th>
+                                    <th onClick={() => handleSortSp('pre_quality_tier')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" title="Pre-Auditoría de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena">💎 PRE-AUDITORÍA (VALOR) {renderSortArrowSp('pre_quality_tier')}</th>
+                                    <th onClick={() => handleSortSp('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'FORMATO'} {renderSortArrowSp('format')}</th>
+                                    <th onClick={() => handleSortSp('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'KHZ'} {renderSortArrowSp('sample_rate_khz')}</th>
+                                    <th onClick={() => handleSortSp('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'KBPS'} {renderSortArrowSp('bitrate_kbps')}</th>
+                                    <th onClick={() => handleSortSp('calidad')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_quality') || 'CALIDAD'} {renderSortArrowSp('calidad')}</th>
+                                    <th onClick={() => handleSortSp('cutoff_khz')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors">{t('th_loss') || 'PÉRDIDA / CORTE'} {renderSortArrowSp('cutoff_khz')}</th>
+                                    <th onClick={() => handleSortSp('duration')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_duration') || 'DURACIÓN'} {renderSortArrowSp('duration')}</th>
+                                    <th onClick={() => handleSortSp('bpm')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowSp('bpm')}</th>
+                                    <th onClick={() => handleSortSp('key')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">KEY {renderSortArrowSp('key')}</th>
+                                    <th onClick={() => handleSortSp('energy')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">⚡ ENERGÍA {renderSortArrowSp('energy')}</th>
+                                    <th onClick={() => handleSortSp('danceability')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">🕺 DANCE {renderSortArrowSp('danceability')}</th>
+                                    <th onClick={() => handleSortSp('status')} className="py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'} {renderSortArrowSp('status')}</th>
                                 </tr>
-                            )}
+                                <tr className="bg-[#07070a] border-b border-djzinc-800 text-[10px] lowercase font-sans">
+                                    <th className="p-1 text-center font-mono text-[9px] text-gray-500">
+                                        {(spFilterSearch || spFilterOrigin !== 'ALL' || spFilterFormat !== 'ALL' || spFilterQuality !== 'ALL' || spFilterStatus !== 'ALL' || spFilterEnergy !== 'ALL' || spFilterDance !== 'ALL') ? (
+                                            <button 
+                                                onClick={() => {
+                                                    setSpFilterSearch('');
+                                                    setSpFilterOrigin('ALL');
+                                                    setSpFilterFormat('ALL');
+                                                    setSpFilterQuality('ALL');
+                                                    setSpFilterStatus('ALL');
+                                                    setSpFilterEnergy('ALL');
+                                                    setSpFilterDance('ALL');
+                                                }}
+                                                title="Limpiar filtros"
+                                                className="text-amber-400 hover:text-white cursor-pointer"
+                                            >✕</button>
+                                        ) : 'filtro'}
+                                    </th>
+                                    <th className="p-1"></th>
+                                    <th className="p-1">
+                                        <input 
+                                            type="text" 
+                                            value={spFilterSearch} 
+                                            onChange={(e) => setSpFilterSearch(e.target.value)} 
+                                            placeholder="Filtrar por título o álbum..." 
+                                            className="w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
+                                        />
+                                    </th>
+                                    <th className="p-1"></th>
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={spFilterOrigin} 
+                                            onChange={(e) => setSpFilterOrigin(e.target.value)}
+                                            className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Todos</option>
+                                            <option value="audit_upgrade">🔄 Reemplazo HD</option>
+                                            <option value="taxonomy">🏷️ Taxonomía</option>
+                                            <option value="spotify">🎧 Spotify</option>
+                                            <option value="shazam">⚡ Shazam</option>
+                                        </select>
+                                    </th>
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={spFilterPreQuality} 
+                                            onChange={(e) => setSpFilterPreQuality(e.target.value)}
+                                            className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                            title="Filtrar por pre-calificación de valor acústico"
+                                        >
+                                            <option value="ALL">Todas</option>
+                                            <option value="RECOMMENDED">⭐ Recomendadas</option>
+                                            <option value="HI_RES">💎 Solo 24b Hi-Res</option>
+                                            <option value="LOSSLESS">💽 Lossless (16/24b)</option>
+                                        </select>
+                                    </th>
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={spFilterFormat} 
+                                            onChange={(e) => setSpFilterFormat(e.target.value)}
+                                            className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Todos</option>
+                                            <option value="FLAC">FLAC</option>
+                                            <option value="MP3">MP3</option>
+                                            <option value="WAV">WAV</option>
+                                        </select>
+                                    </th>
+                                    <th className="p-1"></th>
+                                    <th className="p-1"></th>
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={spFilterQuality} 
+                                            onChange={(e) => setSpFilterQuality(e.target.value)}
+                                            className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Todas</option>
+                                            <option value="Alta">Alta</option>
+                                            <option value="Media">Media</option>
+                                            <option value="Baja">Baja</option>
+                                        </select>
+                                    </th>
+                                    <th className="p-1"></th>
+                                    <th className="p-1"></th>
+                                    <th className="p-1"></th>
+                                    <th className="p-1"></th>
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={spFilterEnergy} 
+                                            onChange={(e) => setSpFilterEnergy(e.target.value)}
+                                            className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Todas</option>
+                                            <option value="HIGH">&gt;80% Alta</option>
+                                            <option value="MED">65-80% Media</option>
+                                            <option value="LOW">&lt;65% Baja</option>
+                                        </select>
+                                    </th>
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={spFilterDance} 
+                                            onChange={(e) => setSpFilterDance(e.target.value)}
+                                            className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Todas</option>
+                                            <option value="HIGH">&gt;80% Alta</option>
+                                            <option value="MED">65-80% Media</option>
+                                            <option value="LOW">&lt;65% Baja</option>
+                                        </select>
+                                    </th>
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={spFilterStatus} 
+                                            onChange={(e) => setSpFilterStatus(e.target.value)}
+                                            className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Todos</option>
+                                            <option value="DOWNLOADED">Descargado</option>
+                                            <option value="PENDING">Pendiente</option>
+                                            <option value="LOSSLESS">Lossless</option>
+                                            <option value="FAKE">FLAC Fake</option>
+                                        </select>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-djzinc-850/60 font-sans">
+                                {tracksFiltradosSp.length === 0 && (
+                                    <tr>
+                                        <td colSpan="17" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal">
+                                            No hay pistas que coincidan con los filtros aplicados.
+                                        </td>
+                                    </tr>
+                                )}
                             {tracksFiltradosSp.map((row) => {
                                 const isSelectedRow = row.id === selectedId;
                                 const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
@@ -9930,6 +9929,7 @@ const SpotifyWorkspace = ({
                         </tbody>
                     </table>
                 </div>
+                )}
             </div>
 
             {spInspectorOpen && currentTrack && (
