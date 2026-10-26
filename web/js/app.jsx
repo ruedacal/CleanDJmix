@@ -17297,21 +17297,23 @@ const App = () => {
         <div className="flex flex-col h-screen w-screen bg-djzinc-950 text-gray-300 overflow-hidden font-sans select-none">
             {/* TOP NAVIGATION BAR CON MÁXIMA JERARQUÍA VISUAL & CAPSULE DOCK */}
             <header className="h-16 border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md">
-                {/* MOTOR DE DISTORSIÓN FRACTAL (5 Iteraciones de 8 Segundos) */}
+                {/* MOTOR DE DISTORSIÓN FRACTAL VERTICAL SINCRONIZADA CON EL GOLPE DE SUBWOOFER (0.8s) */}
                 <svg width="0" height="0" className="absolute pointer-events-none">
                     <defs>
-                        <filter id="waveDistortion" x="-20%" y="-20%" width="140%" height="140%">
-                            <feTurbulence type="fractalNoise" baseFrequency="0 0.25" numOctaves="2" result="warp">
-                                <animate attributeName="baseFrequency" values="0 0.05; 0 0.45; 0 0.05" dur="0.4s" repeatCount="indefinite" />
+                        <filter id="waveDistortion" x="-20%" y="-40%" width="140%" height="180%">
+                            {/* Ruido turbulento continuo estrictamente vertical (baseFrequency en X=0) */}
+                            <feTurbulence type="fractalNoise" baseFrequency="0 0.32" numOctaves="2" result="warp">
+                                <animate attributeName="baseFrequency" values="0 0.08; 0 0.48; 0 0.08" dur="0.8s" repeatCount="indefinite" />
                             </feTurbulence>
+                            
+                            {/* Mapa de Desplazamiento sincronizado exactamente con la explosión del altavoz (0.8s) */}
                             <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="0" in="SourceGraphic" in2="warp">
                                 <animate 
                                     attributeName="scale" 
-                                    values="0; 0; 60; 25; 75; 0; 0" 
-                                    keyTimes="0; 0.25; 0.3; 0.5; 0.7; 0.75; 1" 
-                                    dur="8s" 
-                                    repeatCount="5" 
-                                    fill="freeze"
+                                    values="0; 24; 4; 0; 0" 
+                                    keyTimes="0; 0.07; 0.16; 0.38; 1" 
+                                    dur="0.8s" 
+                                    repeatCount="indefinite"
                                 />
                             </feDisplacementMap>
                         </filter>
@@ -17320,87 +17322,141 @@ const App = () => {
 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3.5 select-none">
-                        {/* ISOTIPO FLAGSHIP: ALTAVOZ SUBWOOFER CLUB PRO (SIN BORDE EXTERIOR, EXCURSIÓN BRUSCA) */}
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center relative shrink-0 select-none cursor-pointer" title="BeatWave Subwoofer Acústico">
-                            <svg className="w-11 h-11 relative z-10 overflow-visible" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* ISOTIPO FLAGSHIP: SUBWOOFER CLUB 3D BASADO EN FOTO (ORIENTADO A LA DERECHA, DISPARO BRUTAL HACIA EL TEXTO) */}
+                        <div className="w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group" title="BeatWave Subwoofer Acústico Pro">
+                            <svg className="w-12 h-12 relative z-10 overflow-visible" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
-                                    {/* Gradiente del cono de carbono/polipropileno de club */}
-                                    <radialGradient id="proConeGrad" cx="50%" cy="50%" r="50%">
-                                        <stop offset="0%" stopColor="#050508" />
-                                        <stop offset="40%" stopColor="#0d0e14" />
-                                        <stop offset="78%" stopColor="#151620" />
-                                        <stop offset="100%" stopColor="#0a0a0f" />
+                                    {/* Gradiente metálico de la estructura del motor / imán doble posterior */}
+                                    <linearGradient id="subMagnetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stopColor="#252836" />
+                                        <stop offset="45%" stopColor="#151722" />
+                                        <stop offset="85%" stopColor="#0d0e15" />
+                                        <stop offset="100%" stopColor="#050609" />
+                                    </linearGradient>
+
+                                    {/* Gradiente cromado para placa posterior, polo ventilado y bornes de conexión */}
+                                    <linearGradient id="subChromeGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+                                        <stop offset="0%" stopColor="#f8fafc" />
+                                        <stop offset="35%" stopColor="#94a3b8" />
+                                        <stop offset="70%" stopColor="#334155" />
+                                        <stop offset="100%" stopColor="#0f172a" />
+                                    </linearGradient>
+
+                                    {/* Chasis de fundición de aluminio negro mate (Basket Rim) */}
+                                    <linearGradient id="subBasketGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stopColor="#2a2c3a" />
+                                        <stop offset="50%" stopColor="#181a24" />
+                                        <stop offset="100%" stopColor="#0c0d13" />
+                                    </linearGradient>
+
+                                    {/* Suspensión de goma sobredimensionada High-Roll (Surround Torus 3D) */}
+                                    <radialGradient id="subSurround3dGrad" cx="42%" cy="38%" r="62%">
+                                        <stop offset="0%" stopColor="#353748" />
+                                        <stop offset="35%" stopColor="#222432" />
+                                        <stop offset="75%" stopColor="#111219" />
+                                        <stop offset="100%" stopColor="#07070b" />
                                     </radialGradient>
 
-                                    {/* Gradiente de suspensión toroidal sobredimensionada (High-Roll Surround) */}
-                                    <radialGradient id="proSurroundGrad" cx="45%" cy="40%" r="60%">
-                                        <stop offset="0%" stopColor="#252634" />
-                                        <stop offset="45%" stopColor="#181822" />
-                                        <stop offset="80%" stopColor="#0e0e14" />
-                                        <stop offset="100%" stopColor="#060609" />
+                                    {/* Cono profundo de polipropileno/carbono (Deep Cone Diaphragm) */}
+                                    <radialGradient id="subCone3dGrad" cx="48%" cy="45%" r="55%">
+                                        <stop offset="0%" stopColor="#05060a" />
+                                        <stop offset="35%" stopColor="#0e1017" />
+                                        <stop offset="75%" stopColor="#181a25" />
+                                        <stop offset="100%" stopColor="#0a0b10" />
                                     </radialGradient>
 
-                                    {/* Gradiente cóncavo del Dust Cap invertido */}
-                                    <radialGradient id="proCapGrad" cx="42%" cy="38%" r="58%">
-                                        <stop offset="0%" stopColor="#1a1c26" />
-                                        <stop offset="35%" stopColor="#0e0f15" />
-                                        <stop offset="85%" stopColor="#050508" />
+                                    {/* Cúpula central invertida (Dust Cap) */}
+                                    <radialGradient id="subCap3dGrad" cx="44%" cy="40%" r="58%">
+                                        <stop offset="0%" stopColor="#222533" />
+                                        <stop offset="30%" stopColor="#12131b" />
+                                        <stop offset="75%" stopColor="#06070a" />
                                         <stop offset="100%" stopColor="#020204" />
-                                    </radialGradient>
-
-                                    {/* Chasis de montaje en fundición de aluminio negro mate */}
-                                    <radialGradient id="proChassisGrad" cx="50%" cy="50%" r="50%">
-                                        <stop offset="75%" stopColor="#111218" />
-                                        <stop offset="92%" stopColor="#1a1b24" />
-                                        <stop offset="100%" stopColor="#090a0e" />
                                     </radialGradient>
                                 </defs>
 
-                                {/* 1. Aro exterior de montaje metálico con bisel oscuro */}
-                                <circle cx="24" cy="24" r="23" fill="url(#proChassisGrad)" stroke="#222430" strokeWidth="0.8" />
-                                <circle cx="24" cy="24" r="21" stroke="#161720" strokeWidth="1" />
-
-                                {/* 6 Pernos Allen industriales de fijación en acero grafito */}
-                                <circle cx="42.2" cy="34.5" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
-                                <circle cx="24" cy="45" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
-                                <circle cx="5.8" cy="34.5" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
-                                <circle cx="5.8" cy="13.5" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
-                                <circle cx="24" cy="3" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
-                                <circle cx="42.2" cy="13.5" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
-
-                                {/* 2. Suspensión de goma sobredimensionada (High-Roll Surround) */}
-                                <circle cx="24" cy="24" r="18" fill="url(#proSurroundGrad)" stroke="#12131a" strokeWidth="1.2" className="anim-woofer-surround" />
-
-                                {/* 3. Cono del Subwoofer con Excursión Brutal (anim-woofer-cone) */}
-                                <g className="anim-woofer-cone">
-                                    <circle cx="24" cy="24" r="15" fill="url(#proConeGrad)" stroke="#1a1b26" strokeWidth="0.6" />
+                                {/* 1. BLOQUE POSTERIOR: DOBLE IMÁN DE FERRITA PESADO & PLACA CROMADA TRASERA (A LA IZQUIERDA) */}
+                                <g id="subwoofer-motor-assembly">
+                                    {/* Sombra proyectada del imán */}
+                                    <ellipse cx="14" cy="38" rx="10" ry="14" fill="#000000" opacity="0.6" transform="rotate(-14 14 38)" />
                                     
-                                    {/* Nervaduras radiales de refuerzo estructural (carácter acústico pro) */}
-                                    <line x1="24" y1="9.5" x2="24" y2="16.5" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
-                                    <line x1="24" y1="31.5" x2="24" y2="38.5" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
-                                    <line x1="9.5" y1="24" x2="16.5" y2="24" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
-                                    <line x1="31.5" y1="24" x2="38.5" y2="24" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
-                                    <line x1="13.8" y1="13.8" x2="18.7" y2="18.7" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
-                                    <line x1="29.3" y1="29.3" x2="34.2" y2="34.2" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
-                                    <line x1="34.2" y1="13.8" x2="29.3" y2="18.7" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
-                                    <line x1="18.7" y1="29.3" x2="13.8" y2="34.2" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
+                                    {/* Cilindro del bloque de imán de competición */}
+                                    <path d="M 8 23 C 13 21, 20 23, 22 28 L 22 41 C 20 46, 13 47, 8 43 Z" fill="url(#subMagnetGrad)" stroke="#1a1c26" strokeWidth="0.8" />
+                                    
+                                    {/* Placa trasera mecanizada con orificio de ventilación del polo central */}
+                                    <ellipse cx="9" cy="33" rx="4.5" ry="10" fill="url(#subChromeGrad)" stroke="#1e293b" strokeWidth="0.6" transform="rotate(-14 9 33)" />
+                                    <ellipse cx="8.8" cy="33" rx="1.6" ry="3.8" fill="#050608" stroke="#334155" strokeWidth="0.5" transform="rotate(-14 8.8 33)" />
 
-                                    {/* Único detalle en azul cian corporativo: Anillo fino de bobina móvil */}
-                                    <circle cx="24" cy="24" r="7.8" stroke="#06b6d4" strokeWidth="0.9" fill="none" opacity="0.9" />
+                                    {/* Bornes de conexión push-pin cromados en el lateral con detalle azul cian corporativo */}
+                                    <rect x="14" y="44" width="3" height="4.5" rx="1" fill="url(#subChromeGrad)" stroke="#0f172a" strokeWidth="0.4" />
+                                    <rect x="18" y="45.5" width="3" height="4.5" rx="1" fill="url(#subChromeGrad)" stroke="#0f172a" strokeWidth="0.4" />
+                                    <circle cx="15.5" cy="48" r="0.7" fill="#06b6d4" />
+                                    <circle cx="19.5" cy="49.5" r="0.7" fill="#06b6d4" />
 
-                                    {/* 4. Cúpula Central Invertida (Inverted Dust Cap) */}
-                                    <circle cx="24" cy="24" r="6.2" fill="url(#proCapGrad)" stroke="#161822" strokeWidth="0.8" className="anim-woofer-dustcap" />
-                                    {/* Sutil micro-arco de luz en la concavidad */}
-                                    <path d="M 21.2 21 Q 24 19.5 26.8 21" stroke="#ffffff" strokeWidth="0.6" strokeLinecap="round" opacity="0.3" fill="none" />
+                                    {/* Brazos estructurales del chasis de fundición (Basket Struts) con ventanas */}
+                                    <path d="M 18 24 L 28 14 L 32 17 L 21 27 Z" fill="url(#subBasketGrad)" stroke="#222432" strokeWidth="0.6" />
+                                    <path d="M 16 41 L 27 49 L 31 46 L 19 38 Z" fill="url(#subBasketGrad)" stroke="#222432" strokeWidth="0.6" />
+                                    <path d="M 17 32 L 25 32 L 26 35 L 18 35 Z" fill="#13141c" />
+                                </g>
+
+                                {/* 2. ONDAS DE CHOQUE SÓNICAS DISPARADAS HACIA LA DERECHA (DIRECTO HACIA EL TEXTO BEATWAVE) */}
+                                <g id="subwoofer-sound-blastwaves" className="pointer-events-none">
+                                    <path d="M 44 14 C 54 20, 54 38, 44 44" stroke="#06b6d4" strokeWidth="1.6" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="0.9" />
+                                    <path d="M 49 10 C 61 18, 61 40, 49 48" stroke="#22d3ee" strokeWidth="1.2" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="0.6" style={{ animationDelay: '0.07s' }} />
+                                </g>
+
+                                {/* 3. ARO FRONTAL EXTERIOR DE FUNDICIÓN (BASKET RIM EN PERSPECTIVA 3D TILTED) */}
+                                <g id="subwoofer-front-rim">
+                                    {/* Aro exterior de aluminio */}
+                                    <ellipse cx="36" cy="29" rx="18" ry="23" fill="url(#subBasketGrad)" stroke="#2f3244" strokeWidth="1.2" transform="rotate(-14 36 29)" />
+                                    <ellipse cx="36" cy="29" rx="16" ry="20.8" fill="none" stroke="#161720" strokeWidth="1" transform="rotate(-14 36 29)" />
+                                    
+                                    {/* Pernos Allen de montaje en acero perimetral */}
+                                    <circle cx="37" cy="7" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                    <circle cx="51.5" cy="18" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                    <circle cx="53" cy="35" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                    <circle cx="39" cy="51" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                    <circle cx="23" cy="44" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                    <circle cx="20.5" cy="20" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                </g>
+
+                                {/* 4. SUSPENSIÓN TOROIDAL DE GOMA SOBREDIMENSIONADA (HIGH-ROLL SURROUND 3D) */}
+                                <g className="anim-woofer-surround-3d">
+                                    <ellipse cx="36" cy="29" rx="14.8" ry="19.2" fill="url(#subSurround3dGrad)" stroke="#0e0f15" strokeWidth="1.4" transform="rotate(-14 36 29)" />
+                                    {/* Arco de luz especular 3D a lo largo del toroide de goma */}
+                                    <path d="M 28 13 C 39 8, 48 18, 50 31" stroke="#474b60" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.45" />
+                                </g>
+
+                                {/* 5. CONO PROFUNDO CON EXCURSIÓN BRUTAL 3D (MEMBRANA QUE CASI ESTALLA HACIA LA DERECHA) */}
+                                <g className="anim-woofer-cone-3d">
+                                    {/* Cono cónico profundo de carbono/polipropileno */}
+                                    <ellipse cx="36" cy="29" rx="12.2" ry="16" fill="url(#subCone3dGrad)" stroke="#1a1c26" strokeWidth="0.8" transform="rotate(-14 36 29)" />
+
+                                    {/* Nervaduras radiales de refuerzo acústico en la membrana */}
+                                    <line x1="36" y1="14" x2="36" y2="21" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
+                                    <line x1="36" y1="37" x2="36" y2="44" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
+                                    <line x1="25" y1="29" x2="30" y2="29" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
+                                    <line x1="42" y1="29" x2="47" y2="29" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
+
+                                    {/* Detalle en azul cian corporativo: Anillo de bobina móvil de alta temperatura */}
+                                    <ellipse cx="36" cy="29" rx="7.4" ry="9.8" stroke="#06b6d4" strokeWidth="0.9" fill="none" opacity="0.95" transform="rotate(-14 36 29)" />
+
+                                    {/* 6. CÚPULA CENTRAL INVERTIDA (DUST CAP 3D) */}
+                                    <ellipse cx="36" cy="29" rx="5.8" ry="7.6" fill="url(#subCap3dGrad)" stroke="#161822" strokeWidth="0.8" className="anim-woofer-dustcap-3d" transform="rotate(-14 36 29)" />
+                                    
+                                    {/* Micro-arco de luz en la concavidad del Dust Cap */}
+                                    <path d="M 33 25 Q 36 23 39 26" stroke="#ffffff" strokeWidth="0.6" strokeLinecap="round" opacity="0.4" fill="none" />
+                                    
+                                    {/* Detalle central en azul cian corporativo en la cúpula */}
+                                    <circle cx="36" cy="29" r="1.2" fill="#06b6d4" opacity="0.9" />
                                 </g>
                             </svg>
                         </div>
 
-                        {/* RÓTULO BEATWAVE PRO DE ALTA JERARQUÍA (ANIMACIÓN ORIGINAL) */}
+                        {/* RÓTULO BEATWAVE PRO CON DISTORSIÓN VERTICAL SINCRONIZADA */}
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2 sm:gap-2.5 leading-none">
                                 <span className="text-lg sm:text-[23px] tracking-wider uppercase font-black anim-soundwave truncate select-none cursor-pointer" style={{ fontFamily: "'Syne', sans-serif" }}>
-                                    BEAT<span className="text-djcyan-400">WAVE</span>
+                                    BEAT<span className="anim-wave-bass-pulse">WAVE</span>
                                 </span>
                                 <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-md font-black tracking-widest border border-djcyan-400/80 bg-djcyan-950 text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0">
                                     PRO

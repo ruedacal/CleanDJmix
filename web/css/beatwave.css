@@ -1,113 +1,175 @@
-/* --- BEATWAVE PRO: MOTOR DE EXCURSIÓN BRUSCA DE SUBWOOFER (PUNCH DE CLUB) --- */
+/* --- BEATWAVE PRO: MOTOR DE EXCURSIÓN BRUSCA DE SUBWOOFER 3D (PUNCH DE CLUB BRUTAL) --- */
 
-/* Excursión brutal del cono de la membrana: disparo ultra-rápido y retroceso elástico */
-@keyframes wooferBrutalPunch {
+/* Excursión brutal 3D del cono hacia la derecha (hacia el texto BEATWAVE): disparo ultra-rápido y retroceso elástico */
+@keyframes wooferBrutalPunch3D {
     0% {
-        transform: scale(0.95);
-        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.8));
+        transform: translate3d(0, 0, 0) scale(0.95);
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
     }
-    6% {
-        /* Disparo violento e instantáneo del bombo: excursión máxima hacia adelante */
-        transform: scale(1.38);
-        filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.65)) drop-shadow(0 0 20px rgba(6, 182, 212, 0.4));
+    7% {
+        /* ¡EXPLOSIÓN! La membrana casi estalla saliendo del chasis hacia adelante/derecha */
+        transform: translate3d(5.5px, -1.8px, 0) scale(1.44);
+        filter: drop-shadow(0 0 14px rgba(6, 182, 212, 0.95)) drop-shadow(0 0 24px rgba(6, 182, 212, 0.6));
     }
-    13% {
-        /* Retroceso elástico súbito hacia el fondo de la cavidad */
-        transform: scale(0.85);
+    14% {
+        /* Retroceso elástico violento hacia el interior del entrehierro */
+        transform: translate3d(-2.8px, 1px, 0) scale(0.82);
         filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.95));
     }
-    21% {
+    22% {
         /* Rebote secundario elástico */
-        transform: scale(1.08);
-        filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.3));
+        transform: translate3d(1.8px, -0.6px, 0) scale(1.10);
+        filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.4));
     }
-    30% {
-        transform: scale(0.97);
+    32% {
+        transform: translate3d(-0.6px, 0.2px, 0) scale(0.97);
     }
-    38% {
-        transform: scale(1.01);
+    42% {
+        transform: translate3d(0.4px, -0.1px, 0) scale(1.01);
     }
-    48%, 100% {
+    52%, 100% {
         /* Reposo en posición neutra esperando el siguiente impacto */
-        transform: scale(0.95);
-        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.8));
+        transform: translate3d(0, 0, 0) scale(0.95);
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
     }
 }
 
-/* Suspensión exterior de goma (High-Roll Surround): acompaña el impacto */
-@keyframes wooferSurroundBrutal {
+/* Suspensión exterior de goma (High-Roll Surround): acompaña el impacto elástico */
+@keyframes wooferSurroundBrutal3D {
     0% {
-        transform: scale(0.98);
+        transform: translate3d(0, 0, 0) scale(0.97);
         opacity: 0.85;
     }
-    6% {
-        transform: scale(1.15);
+    7% {
+        transform: translate3d(3px, -1px, 0) scale(1.24);
         opacity: 1;
+        filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.65));
     }
-    13% {
-        transform: scale(0.92);
+    14% {
+        transform: translate3d(-1.5px, 0.5px, 0) scale(0.90);
         opacity: 0.75;
     }
-    21% {
-        transform: scale(1.05);
+    22% {
+        transform: translate3d(1px, -0.3px, 0) scale(1.06);
         opacity: 0.95;
     }
-    30% {
-        transform: scale(0.99);
+    32% {
+        transform: translate3d(0, 0, 0) scale(0.98);
     }
-    48%, 100% {
-        transform: scale(0.98);
+    52%, 100% {
+        transform: translate3d(0, 0, 0) scale(0.97);
         opacity: 0.85;
     }
 }
 
-/* Cúpula central invertida (Dust Cap): golpe concentrado en el eje acústico */
-@keyframes wooferDustCapBrutal {
+/* Cúpula central invertida (Dust Cap): golpe concentrado en el eje acústico en 3D */
+@keyframes wooferDustCapBrutal3D {
     0% {
-        transform: scale(0.94);
+        transform: translate3d(0, 0, 0) scale(0.94);
     }
-    6% {
-        transform: scale(1.44);
-        filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.5));
+    7% {
+        transform: translate3d(7px, -2.2px, 0) scale(1.54);
+        filter: drop-shadow(0 0 16px rgba(6, 182, 212, 0.95));
     }
-    13% {
-        transform: scale(0.82);
+    14% {
+        transform: translate3d(-3.5px, 1.2px, 0) scale(0.78);
     }
-    21% {
-        transform: scale(1.10);
+    22% {
+        transform: translate3d(2px, -0.7px, 0) scale(1.14);
     }
-    30% {
-        transform: scale(0.97);
+    32% {
+        transform: translate3d(-0.8px, 0.3px, 0) scale(0.96);
     }
-    48%, 100% {
-        transform: scale(0.94);
+    52%, 100% {
+        transform: translate3d(0, 0, 0) scale(0.94);
+    }
+}
+
+/* Ondas de choque sónicas proyectadas del altavoz hacia las letras BEATWAVE */
+@keyframes wooferBlastWaveRings {
+    0% {
+        transform: translate3d(0, 0, 0) scale(0.65);
+        opacity: 0;
+    }
+    7% {
+        transform: translate3d(4px, -1px, 0) scale(0.95);
+        opacity: 0.95;
+        stroke: #22d3ee;
+    }
+    28% {
+        transform: translate3d(14px, -3px, 0) scale(1.55);
+        opacity: 0.4;
+        stroke: #06b6d4;
+    }
+    45% {
+        transform: translate3d(22px, -5px, 0) scale(1.95);
+        opacity: 0;
+    }
+    100% {
+        transform: translate3d(24px, -5px, 0) scale(2.1);
+        opacity: 0;
     }
 }
 
 /* Clases activas de animación del altavoz con balística agresiva */
-.anim-woofer-cone {
-    transform-origin: 24px 24px;
-    animation: wooferBrutalPunch 0.75s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+.anim-woofer-cone,
+.anim-woofer-cone-3d {
+    transform-origin: 36px 28px;
+    animation: wooferBrutalPunch3D 0.8s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
     will-change: transform, filter;
 }
 
-.anim-woofer-surround {
-    transform-origin: 24px 24px;
-    animation: wooferSurroundBrutal 0.75s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+.anim-woofer-surround,
+.anim-woofer-surround-3d {
+    transform-origin: 36px 28px;
+    animation: wooferSurroundBrutal3D 0.8s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
     will-change: transform, opacity;
 }
 
-.anim-woofer-dustcap {
-    transform-origin: 24px 24px;
-    animation: wooferDustCapBrutal 0.75s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
-    will-change: transform;
+.anim-woofer-dustcap,
+.anim-woofer-dustcap-3d {
+    transform-origin: 36px 28px;
+    animation: wooferDustCapBrutal3D 0.8s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    will-change: transform, filter;
 }
 
-/* --- ANIMACIÓN ORIGINAL DEL RÓTULO BEATWAVE (RESTABLECIDA LIMPIA) --- */
+.anim-woofer-blastwave {
+    transform-origin: 36px 28px;
+    animation: wooferBlastWaveRings 0.8s infinite cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
+}
+
+/* --- ANIMACIÓN DEL RÓTULO BEATWAVE CON DISTORSIÓN VERTICAL SINCRONIZADA --- */
 .anim-soundwave {
     color: #ffffff;
     display: inline-block;
-    transition: opacity 0.2s ease;
+    filter: url(#waveDistortion);
+    will-change: filter, transform;
+}
+
+/* Resplandor neón sincronizado en la palabra WAVE */
+@keyframes waveNeonBassPulse {
+    0%, 100% {
+        color: #06b6d4;
+        text-shadow: 0 0 4px rgba(6, 182, 212, 0.35);
+    }
+    7% {
+        color: #67e8f9;
+        text-shadow: 0 0 18px #06b6d4, 0 0 35px #06b6d4, 0 0 50px rgba(6, 182, 212, 0.9);
+    }
+    22% {
+        color: #22d3ee;
+        text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+    }
+    45% {
+        color: #06b6d4;
+        text-shadow: 0 0 4px rgba(6, 182, 212, 0.35);
+    }
+}
+
+.anim-wave-bass-pulse {
+    animation: waveNeonBassPulse 0.8s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    display: inline-block;
 }
 
 /* CHROMATIC BARS (Barras de ecualizador para micro-widgets) */
