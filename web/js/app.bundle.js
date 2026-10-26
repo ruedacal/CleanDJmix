@@ -1010,12 +1010,38 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }, [draggingCueIdx, durMs, downbeatMs, beatMs, barMs, snapToGrid, activeCues, onUpdateCues, totalWidth]);
+    const [isScrubbing, setIsScrubbing] = useState(false);
+    const handleSeekToX = (clientX) => {
+      if (!canvasRef.current || !onSeekTrack) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const rawX = clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, rawX / totalWidth));
+      const targetSec = durMs * pct / 1e3;
+      onSeekTrack(track, pct, true, targetSec);
+    };
+    const handleCanvasMouseDown = (e) => {
+      if (draggingCueIdx !== null) return;
+      setIsScrubbing(true);
+      handleSeekToX(e.clientX);
+    };
+    useEffect(() => {
+      if (!isScrubbing) return;
+      const handleMouseMove = (e) => {
+        handleSeekToX(e.clientX);
+      };
+      const handleMouseUp = () => {
+        setIsScrubbing(false);
+      };
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+    }, [isScrubbing, totalWidth, durMs, track, onSeekTrack]);
     const handleCanvasClick = (e) => {
       if (!canvasRef.current || !onSeekTrack || draggingCueIdx !== null) return;
-      const rect = canvasRef.current.getBoundingClientRect();
-      const rawX = e.clientX - rect.left;
-      const pct = Math.max(0, Math.min(1, rawX / totalWidth));
-      onSeekTrack(track, pct, true);
+      handleSeekToX(e.clientX);
     };
     useEffect(() => {
       const canvas = minimapCanvasRef.current;
@@ -1052,6 +1078,10 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       const pct = clickX / rect.width;
       const targetScroll = pct * totalWidth - containerWidth / 2;
       scrollContainerRef.current.scrollLeft = Math.max(0, Math.min(totalWidth - containerWidth, targetScroll));
+      if (onSeekTrack && track) {
+        const targetSec = durMs * pct / 1e3;
+        onSeekTrack(track, pct, true, targetSec);
+      }
     };
     useEffect(() => {
       const canvas = canvasRef.current;
@@ -1189,6 +1219,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         "div",
         {
           style: { width: `${totalWidth}px`, height: `${height}px`, position: "relative" },
+          onMouseDown: handleCanvasMouseDown,
           onClick: handleCanvasClick
         },
         /* @__PURE__ */ React.createElement(
@@ -1236,6 +1267,11 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
               onClick: (e) => {
                 e.stopPropagation();
                 if (onSelectCue) onSelectCue(padNum);
+                if (onSeekTrack && track) {
+                  const cuePctRatio = cue.pct !== void 0 ? cue.pct : parseTimeToMs(cue.time || "0") / durMs;
+                  const targetSec = durMs * cuePctRatio / 1e3;
+                  onSeekTrack(track, cuePctRatio, true, targetSec);
+                }
               },
               className: `absolute top-0 bottom-0 z-20 flex flex-col items-center cursor-ew-resize group select-none transition-transform duration-75`,
               title: `Hot Cue ${padNum}: ${cue.name || "Cue"} (${cue.time || "00:00.00"}) - Arrastra para mover`
@@ -4877,17 +4913,24 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     };
     const handleJumpToCue = (cue) => {
       if (!currentTrack || !onPlayTrack) return;
-      const audioDur = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? audioRef.current.duration : durMs / 1e3;
+      const audio = audioRef?.current;
+      const audioDur = audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0.5 ? audio.duration : durMs / 1e3;
       let posMs = cue.pos_ms !== void 0 ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
-      const maxMs = Math.max(500, audioDur * 1e3 - 250);
-      if (posMs >= maxMs) {
-        const padIdx = cue.id ? cue.id - 1 : 0;
-        posMs = Math.round(maxMs * CLUB_CUE_RATIOS[padIdx]);
+      let targetSec = posMs / 1e3;
+      if (audioDur > 0 && targetSec >= audioDur - 0.25) {
+        const cuePct = cue.pct !== void 0 ? cue.pct : Math.min(0.95, posMs / (durMs || 3e5));
+        targetSec = Math.max(0, Math.min(audioDur - 0.25, audioDur * cuePct));
       }
-      posMs = Math.max(0, Math.min(maxMs, posMs));
-      const targetSec = posMs / 1e3;
       const pct = audioDur > 0 ? targetSec / audioDur : 0;
       onPlayTrack(currentTrack, pct, true, targetSec);
+      if (audio) {
+        try {
+          audio.currentTime = targetSec;
+          audio.play().catch(() => {
+          });
+        } catch (_) {
+        }
+      }
     };
     const handleSetCueAtPlayhead = () => {
       if (!currentTrack) return;
@@ -8451,7 +8494,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             audio: {
               echoCancellation: false,
               noiseSuppression: false,
-              autoGainControl: false,
+              autoGainControl: true,
               channelCount: 2,
               sampleRate: 44100
             }
@@ -8464,6 +8507,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         setIsListening(true);
         setCountdown(10);
         setStatusMsg("Escuchando audio ambiental (10s)...");
+        let maxRecordedLevel = 0;
+        let sumRecordedLevel = 0;
+        let samplesRecordedCount = 0;
         try {
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
           const audioCtx = new AudioContextClass();
@@ -8480,7 +8526,11 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
               sum += dataArray[i];
             }
             const avg = sum / dataArray.length;
-            setMicLevel(Math.min(100, Math.round(avg / 128 * 100)));
+            const curLvl = Math.min(100, Math.round(avg / 128 * 100));
+            setMicLevel(curLvl);
+            if (curLvl > maxRecordedLevel) maxRecordedLevel = curLvl;
+            sumRecordedLevel += curLvl;
+            samplesRecordedCount += 1;
             animFrameRef.current = requestAnimationFrame(updateMeter);
           };
           updateMeter();
@@ -8533,8 +8583,11 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           }
           setIsListening(false);
           if (chunks.length === 0) {
-            setStatusMsg("El micr\xF3fono no captur\xF3 se\xF1al de audio. Verifica los permisos del navegador.");
+            setStatusMsg("\u26A0\uFE0F El micr\xF3fono no captur\xF3 se\xF1al de audio. Verifica los permisos del navegador.");
             return;
+          }
+          if (maxRecordedLevel < 3 && samplesRecordedCount > 5) {
+            console.warn("Nivel de micro ambiental pr\xE1cticamente nulo");
           }
           const actualMime = chunks[0]?.type || selectedMime || "audio/webm";
           const ext = actualMime.includes("mp4") ? "m4a" : actualMime.includes("ogg") ? "ogg" : "webm";
@@ -8588,6 +8641,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         if (res.preview_url) {
           togglePlayPreview(res.preview_url);
         }
+      } else if (res && res.status === "silence") {
+        setStatusMsg(res.msg || "\u26A0\uFE0F Micr\xF3fono en silencio o inaudible. Acerca la fuente de sonido y revisa Ajustes de macOS > Privacidad > Micr\xF3fono.");
       } else {
         setStatusMsg(res?.msg || "No se encontraron coincidencias para este fragmento de audio.");
       }
@@ -11483,7 +11538,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Library, null),
       " ",
-      /* @__PURE__ */ React.createElement("span", null, t("nav_audit") || "Auditor\xEDa & DSP"),
+      /* @__PURE__ */ React.createElement("span", null, "Auditar"),
       globalAuditInfo.isAuditing && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-amber-400 text-black rounded text-[9px] font-black animate-pulse shadow-sm" }, globalAuditInfo.progress, "%")
     ), /* @__PURE__ */ React.createElement(
       "button",
@@ -11493,16 +11548,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Cue, null),
       " ",
-      /* @__PURE__ */ React.createElement("span", null, t("nav_hotcues") || "Estudio Hot Cues")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => setActiveTab("trends"),
-        className: `flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${activeTab === "trends" ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]" : "text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold"}`
-      },
-      /* @__PURE__ */ React.createElement(Icons.Trends, null),
-      " ",
-      /* @__PURE__ */ React.createElement("span", null, t("nav_trends") || "Tendencias")
+      /* @__PURE__ */ React.createElement("span", null, "Cues")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -11511,16 +11557,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Flow, null),
       " ",
-      /* @__PURE__ */ React.createElement("span", null, t("nav_setbuilder") || "Set-Builder & Flow")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => setActiveTab("knowledge"),
-        className: `flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${activeTab === "knowledge" ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]" : "text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold"}`
-      },
-      /* @__PURE__ */ React.createElement(Icons.Knowledge, null),
-      " ",
-      /* @__PURE__ */ React.createElement("span", null, t("nav_knowledge") || "Conocimiento")
+      /* @__PURE__ */ React.createElement("span", null, "Set Builder")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -11529,7 +11566,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Spotify, null),
       " ",
-      /* @__PURE__ */ React.createElement("span", null, t("nav_spotify") || "Spotify Ingest")
+      /* @__PURE__ */ React.createElement("span", null, "Download")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -11538,7 +11575,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Radar, null),
       " ",
-      /* @__PURE__ */ React.createElement("span", null, t("nav_shazam") || "Radar Shazam")
+      /* @__PURE__ */ React.createElement("span", null, "Radar")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -11547,7 +11584,25 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Routing, null),
       " ",
-      /* @__PURE__ */ React.createElement("span", null, t("nav_taxonomy") || "Taxonom\xEDa")
+      /* @__PURE__ */ React.createElement("span", null, "Taxonomia")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setActiveTab("trends"),
+        className: `flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${activeTab === "trends" ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]" : "text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold"}`
+      },
+      /* @__PURE__ */ React.createElement(Icons.Trends, null),
+      " ",
+      /* @__PURE__ */ React.createElement("span", null, "Tendencias")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setActiveTab("knowledge"),
+        className: `flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${activeTab === "knowledge" ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]" : "text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold"}`
+      },
+      /* @__PURE__ */ React.createElement(Icons.Knowledge, null),
+      " ",
+      /* @__PURE__ */ React.createElement("span", null, "Conocimiento")
     )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 sm:gap-3" }, /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -11764,7 +11819,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         className: `flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${activeTab === "audit" ? "text-djcyan-400 font-bold scale-105" : "text-gray-400 hover:text-white"}`
       },
       /* @__PURE__ */ React.createElement(Icons.Library, null),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Auditor\xEDa")
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Auditar")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -11773,7 +11828,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         className: `flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${activeTab === "hotcues" ? "text-djcyan-400 font-bold scale-105" : "text-gray-400 hover:text-white"}`
       },
       /* @__PURE__ */ React.createElement(Icons.Cue, null),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Deck Cues")
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Cues")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -11782,25 +11837,25 @@ Respuesta: ${qa.a}`).join("\n\n"),
         className: `flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${activeTab === "setbuilder" ? "text-djcyan-400 font-bold scale-105" : "text-gray-400 hover:text-white"}`
       },
       /* @__PURE__ */ React.createElement(Icons.Flow, null),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Set-Flow")
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Set Builder")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
-        onClick: () => setActiveTab("trends"),
-        className: `flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${activeTab === "trends" ? "text-djcyan-400 font-bold scale-105" : "text-gray-400 hover:text-white"}`
+        onClick: () => setActiveTab("spotify"),
+        className: `flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${activeTab === "spotify" ? "text-djcyan-400 font-bold scale-105" : "text-gray-400 hover:text-white"}`
       },
-      /* @__PURE__ */ React.createElement(Icons.Trends, null),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Tendencias")
+      /* @__PURE__ */ React.createElement(Icons.Spotify, null),
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Download")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
-        onClick: () => setActiveTab("knowledge"),
-        className: `flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${activeTab === "knowledge" ? "text-djcyan-400 font-bold scale-105" : "text-gray-400 hover:text-white"}`
+        onClick: () => setActiveTab("shazam"),
+        className: `flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${activeTab === "shazam" ? "text-djcyan-400 font-bold scale-105" : "text-gray-400 hover:text-white"}`
       },
-      /* @__PURE__ */ React.createElement(Icons.Knowledge, null),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Academia")
+      /* @__PURE__ */ React.createElement(Icons.Radar, null),
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono mt-0.5" }, "Radar")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -11825,14 +11880,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Close, null)
     )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1.5 py-4 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono uppercase tracking-widest text-gray-500 px-2 mb-1" }, "M\xF3dulos Principales"), [
-      { id: "audit", icon: /* @__PURE__ */ React.createElement(Icons.Library, null), label: t("nav_audit") || "Auditor\xEDa & DSP" },
-      { id: "hotcues", icon: /* @__PURE__ */ React.createElement(Icons.Cue, null), label: t("nav_hotcues") || "Estudio Hot Cues" },
-      { id: "trends", icon: /* @__PURE__ */ React.createElement(Icons.Trends, null), label: t("nav_trends") || "Tendencias Electr\xF3nica" },
-      { id: "setbuilder", icon: /* @__PURE__ */ React.createElement(Icons.Flow, null), label: t("nav_setbuilder") || "Set-Builder & Flow" },
-      { id: "knowledge", icon: /* @__PURE__ */ React.createElement(Icons.Knowledge, null), label: t("nav_knowledge") || "Academia & Conocimiento" },
-      { id: "spotify", icon: /* @__PURE__ */ React.createElement(Icons.Spotify, null), label: t("nav_spotify") || "Spotify Ingest" },
-      { id: "shazam", icon: /* @__PURE__ */ React.createElement(Icons.Radar, null), label: t("nav_shazam") || "Radar Shazam" },
-      { id: "taxonomy", icon: /* @__PURE__ */ React.createElement(Icons.Routing, null), label: t("nav_taxonomy") || "Taxonom\xEDa AI" }
+      { id: "audit", icon: /* @__PURE__ */ React.createElement(Icons.Library, null), label: "Auditar" },
+      { id: "hotcues", icon: /* @__PURE__ */ React.createElement(Icons.Cue, null), label: "Cues" },
+      { id: "setbuilder", icon: /* @__PURE__ */ React.createElement(Icons.Flow, null), label: "Set Builder" },
+      { id: "spotify", icon: /* @__PURE__ */ React.createElement(Icons.Spotify, null), label: "Download" },
+      { id: "shazam", icon: /* @__PURE__ */ React.createElement(Icons.Radar, null), label: "Radar" },
+      { id: "taxonomy", icon: /* @__PURE__ */ React.createElement(Icons.Routing, null), label: "Taxonomia" },
+      { id: "trends", icon: /* @__PURE__ */ React.createElement(Icons.Trends, null), label: "Tendencias" },
+      { id: "knowledge", icon: /* @__PURE__ */ React.createElement(Icons.Knowledge, null), label: "Conocimiento" }
     ].map((item) => {
       const isActive = activeTab === item.id;
       return /* @__PURE__ */ React.createElement(

@@ -240,19 +240,17 @@ class ShazamRecognitionService:
                 shz = Shazam()
                 return await shz.recognize_song(target)
 
-            if len(audio) > 16000:
-                audio = audio[:15000]
-
-            # Normalizar ganancia para capturas de micrófono ambiental con bajo volumen
+            # Normalizar ganancia agresivamente para capturas de micrófono ambiental con bajo volumen
             try:
                 from pydub.effects import normalize
-                audio = normalize(audio)
+                audio = normalize(audio, headroom=0.1)
             except Exception:
                 pass
 
-            audio = audio.set_sample_width(2).set_frame_rate(16000).set_channels(1)
+            audio_proc = audio[:15000] if len(audio) > 16000 else audio
+            audio_proc = audio_proc.set_sample_width(2).set_frame_rate(16000).set_channels(1)
             sig_gen = SignatureGenerator()
-            sig_gen.feed_input(audio.get_array_of_samples())
+            sig_gen.feed_input(audio_proc.get_array_of_samples())
             sig_gen.MAX_TIME_SECONDS = 8
             sig = sig_gen.get_next_signature()
             sig_retries = 0
@@ -286,12 +284,40 @@ class ShazamRecognitionService:
                     async with ClientSession() as session:
                         async with session.post(clean_url, headers=headers, json=data, timeout=4.5) as resp:
                             if resp.status == 200:
-                                return await resp.json()
+                                res_json = await resp.json()
+                                if res_json.get("matches"):
+                                    return res_json
                             elif resp.status == 429:
-                                # Detección de rate limit: salir inmediatamente para conmutar a motor alternativo
                                 return {"matches": [], "rate_limited": True}
                 except Exception:
                     await asyncio.sleep(0.15)
+
+            # Si el pase inicial no dio match y disponemos de suficiente audio, intentar un segundo segmento (offset 2.5s)
+            if len(audio) >= 6500:
+                audio_slice2 = audio[2500:15500].set_sample_width(2).set_frame_rate(16000).set_channels(1)
+                sig_gen2 = SignatureGenerator()
+                sig_gen2.feed_input(audio_slice2.get_array_of_samples())
+                sig_gen2.MAX_TIME_SECONDS = 8
+                sig2 = sig_gen2.get_next_signature()
+                if sig2:
+                    data2 = Converter.data_search(
+                        'Europe/Madrid',
+                        sig2.encode_to_uri(),
+                        int(sig2.number_samples / sig2.sample_rate_hz * 1000),
+                        int(time.time() * 1000)
+                    )
+                    clean_url2 = 'https://amp.shazam.com/discovery/v5/es/ES/iphone/-/tag/{}/{}?sync=true&webv3=true&sampling=true&connected=&shazamapiversion=v3&sharehub=true&hubv5minorversion=v5.1&hidelb=true&video=v3'.format(
+                        str(uuid.uuid4()).upper(), str(uuid.uuid4()).upper()
+                    )
+                    try:
+                        async with ClientSession() as session:
+                            async with session.post(clean_url2, headers={'User-Agent': USER_AGENTS_POOL[0], 'X-Shazam-Platform': 'IPHONE', 'Accept': 'application/json'}, json=data2, timeout=4.5) as resp2:
+                                if resp2.status == 200:
+                                    res2_json = await resp2.json()
+                                    if res2_json.get("matches"):
+                                        return res2_json
+                    except Exception:
+                        pass
             return {"matches": []}
         except Exception as e:
             # Fallback al shazamio tradicional si la generación manual diera excepción
@@ -487,7 +513,13 @@ class ShazamRecognitionService:
                 artist = file_path_or_tags.get("artist")
 
             # Si no se extrajo de tags, intentar desde original_filename
-            if (not title or not artist) and original_filename:
+            # PROTEGER: Excluir nombres genéricos de grabaciones de micro o blobs temporales
+            fn_lower = (original_filename or '').lower()
+            es_nombre_generico = any(gen in fn_lower for gen in [
+                'mic_sample', 'recording', 'grabacion', 'grabación', 'audio_chunk',
+                'blob', 'input_mic', 'sample_temp', 'mic.', 'mic_test', 'captura'
+            ])
+            if (not title or not artist) and original_filename and not es_nombre_generico:
                 base = os.path.splitext(os.path.basename(original_filename))[0]
                 for s in ['[FREE DOWNLOAD]', '[FREE]', '(OFFICIAL AUDIO)', '(OFFICIAL VIDEO)', '320KBPS', '128KBPS', 'FLAC', 'MP3']:
                     base = base.replace(s, '').replace(s.lower(), '')
@@ -495,7 +527,7 @@ class ShazamRecognitionService:
                     parts = base.split(' - ', 1)
                     artist = parts[0].strip()
                     title = parts[1].strip()
-                elif not title:
+                elif len(base.strip()) > 3:
                     title = base.strip()
 
             if not title:
@@ -716,6 +748,18 @@ class ShazamRecognitionService:
         # Convertir a WAV limpio para compatibilidad de codecs de navegador (WebM, Opus, MP3, etc.)
         wav_path = self._convertir_bytes_a_wav(audio_bytes, filename=filename)
         target = wav_path if wav_path else audio_bytes
+
+        # Detección preventiva de silencio o volumen casi nulo en capturas de micrófono
+        if wav_path and os.path.exists(wav_path):
+            try:
+                check_seg = AudioSegment.from_file(wav_path)
+                if check_seg.dBFS < -44.0 or check_seg.rms < 120:
+                    return {
+                        "status": "silence",
+                        "msg": "⚠️ Señal de micrófono inaudible o en silencio ({:.1f} dBFS). Acerca la fuente de sonido o verifica los permisos y nivel de entrada de audio en Ajustes de macOS > Privacidad > Micrófono.".format(check_seg.dBFS)
+                    }
+            except Exception:
+                pass
 
         try:
             if motor == "audd":

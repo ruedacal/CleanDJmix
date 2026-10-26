@@ -1207,13 +1207,43 @@ const ZoomableRekordboxWaveform = ({
         };
     }, [draggingCueIdx, durMs, downbeatMs, beatMs, barMs, snapToGrid, activeCues, onUpdateCues, totalWidth]);
 
-    // Click en Canvas Zoomed para Salto/Seek
+    // Click o Arrastre (Scrubbing) en Canvas Zoomed para situar la aguja de reproducción (Playhead)
+    const [isScrubbing, setIsScrubbing] = useState(false);
+
+    const handleSeekToX = (clientX) => {
+        if (!canvasRef.current || !onSeekTrack) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        const rawX = clientX - rect.left;
+        const pct = Math.max(0, Math.min(1, rawX / totalWidth));
+        const targetSec = (durMs * pct) / 1000.0;
+        onSeekTrack(track, pct, true, targetSec);
+    };
+
+    const handleCanvasMouseDown = (e) => {
+        if (draggingCueIdx !== null) return;
+        setIsScrubbing(true);
+        handleSeekToX(e.clientX);
+    };
+
+    useEffect(() => {
+        if (!isScrubbing) return;
+        const handleMouseMove = (e) => {
+            handleSeekToX(e.clientX);
+        };
+        const handleMouseUp = () => {
+            setIsScrubbing(false);
+        };
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isScrubbing, totalWidth, durMs, track, onSeekTrack]);
+
     const handleCanvasClick = (e) => {
         if (!canvasRef.current || !onSeekTrack || draggingCueIdx !== null) return;
-        const rect = canvasRef.current.getBoundingClientRect();
-        const rawX = e.clientX - rect.left;
-        const pct = Math.max(0, Math.min(1, rawX / totalWidth));
-        onSeekTrack(track, pct, true);
+        handleSeekToX(e.clientX);
     };
 
     // Render del Minimapa Overview (Pista Completa con Ventana de Viewport)
@@ -1251,7 +1281,7 @@ const ZoomableRekordboxWaveform = ({
         });
     }, [containerWidth, seed, durMs, activeCues]);
 
-    // Navegación por click/arrastre en el Minimapa
+    // Navegación y Salto por click/arrastre en el Minimapa
     const handleMinimapInteraction = (e) => {
         if (!minimapCanvasRef.current || !scrollContainerRef.current) return;
         const rect = minimapCanvasRef.current.getBoundingClientRect();
@@ -1259,6 +1289,10 @@ const ZoomableRekordboxWaveform = ({
         const pct = clickX / rect.width;
         const targetScroll = (pct * totalWidth) - (containerWidth / 2);
         scrollContainerRef.current.scrollLeft = Math.max(0, Math.min(totalWidth - containerWidth, targetScroll));
+        if (onSeekTrack && track) {
+            const targetSec = (durMs * pct) / 1000.0;
+            onSeekTrack(track, pct, true, targetSec);
+        }
     };
 
     // Render del Canvas Principal Zoomed con Beatgrid Ampliado y Formas de Onda HD
@@ -1413,6 +1447,7 @@ const ZoomableRekordboxWaveform = ({
             >
                 <div 
                     style={{ width: `${totalWidth}px`, height: `${height}px`, position: "relative" }}
+                    onMouseDown={handleCanvasMouseDown}
                     onClick={handleCanvasClick}
                 >
                     <canvas 
@@ -1463,6 +1498,11 @@ const ZoomableRekordboxWaveform = ({
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (onSelectCue) onSelectCue(padNum);
+                                    if (onSeekTrack && track) {
+                                        const cuePctRatio = cue.pct !== undefined ? cue.pct : (parseTimeToMs(cue.time || '0') / durMs);
+                                        const targetSec = (durMs * cuePctRatio) / 1000.0;
+                                        onSeekTrack(track, cuePctRatio, true, targetSec);
+                                    }
                                 }}
                                 className={`absolute top-0 bottom-0 z-20 flex flex-col items-center cursor-ew-resize group select-none transition-transform duration-75`}
                                 title={`Hot Cue ${padNum}: ${cue.name || 'Cue'} (${cue.time || '00:00.00'}) - Arrastra para mover`}
@@ -7175,22 +7215,31 @@ const HotCuesWorkspace = ({
         });
     };
 
-    // Salto directo en reproducción al Hot Cue pulsado con protección de duración
+    // Salto directo en reproducción al Hot Cue pulsado con protección de duración y arranque instantáneo
     const handleJumpToCue = (cue) => {
         if (!currentTrack || !onPlayTrack) return;
-        const audioDur = (audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5)
-            ? audioRef.current.duration
+        const audio = audioRef?.current;
+        const audioDur = (audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0.5)
+            ? audio.duration
             : (durMs / 1000.0);
         let posMs = cue.pos_ms !== undefined ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
-        const maxMs = Math.max(500, (audioDur * 1000) - 250);
-        if (posMs >= maxMs) {
-            const padIdx = (cue.id ? cue.id - 1 : 0);
-            posMs = Math.round(maxMs * CLUB_CUE_RATIOS[padIdx]);
+        let targetSec = posMs / 1000.0;
+        // Si el archivo en reproducción es un preview corto o dura menos que posMs,
+        // escalar proporcionalmente al ratio del pad para evitar salto fuera de rango (EOF)
+        if (audioDur > 0 && targetSec >= (audioDur - 0.25)) {
+            const cuePct = cue.pct !== undefined ? cue.pct : Math.min(0.95, posMs / (durMs || 300000));
+            targetSec = Math.max(0, Math.min(audioDur - 0.25, audioDur * cuePct));
         }
-        posMs = Math.max(0, Math.min(maxMs, posMs));
-        const targetSec = posMs / 1000.0;
         const pct = audioDur > 0 ? (targetSec / audioDur) : 0;
         onPlayTrack(currentTrack, pct, true, targetSec);
+
+        // Disparo forzado e instantáneo de reproducción en el motor de audio
+        if (audio) {
+            try {
+                audio.currentTime = targetSec;
+                audio.play().catch(() => {});
+            } catch (_) {}
+        }
     };
 
     // Fijar el Hot Cue seleccionado exactamente en la aguja de reproducción actual
@@ -12426,15 +12475,15 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         setStatusMsg("Solicitando acceso al micrófono...");
 
         try {
-            // macOS / Safari / Chrome: Desactivar cancelación de eco y supresión de ruido
-            // para evitar que el algoritmo trate la música de los altavoces como ruido de fondo.
+            // macOS / Safari / Chrome: autoGainControl en true para asegurar captación de música ambiental
+            // desactivando cancelación de eco y supresión de ruido para que no recorte frecuencias musicales.
             let stream;
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: false,
                         noiseSuppression: false,
-                        autoGainControl: false,
+                        autoGainControl: true,
                         channelCount: 2,
                         sampleRate: 44100
                     }
@@ -12448,6 +12497,10 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             setIsListening(true);
             setCountdown(10);
             setStatusMsg("Escuchando audio ambiental (10s)...");
+
+            let maxRecordedLevel = 0;
+            let sumRecordedLevel = 0;
+            let samplesRecordedCount = 0;
 
             // Web Audio API para VU Meter en vivo
             try {
@@ -12467,7 +12520,11 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         sum += dataArray[i];
                     }
                     const avg = sum / dataArray.length;
-                    setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+                    const curLvl = Math.min(100, Math.round((avg / 128) * 100));
+                    setMicLevel(curLvl);
+                    if (curLvl > maxRecordedLevel) maxRecordedLevel = curLvl;
+                    sumRecordedLevel += curLvl;
+                    samplesRecordedCount += 1;
                     animFrameRef.current = requestAnimationFrame(updateMeter);
                 };
                 updateMeter();
@@ -12519,8 +12576,12 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 setIsListening(false);
 
                 if (chunks.length === 0) {
-                    setStatusMsg("El micrófono no capturó señal de audio. Verifica los permisos del navegador.");
+                    setStatusMsg("⚠️ El micrófono no capturó señal de audio. Verifica los permisos del navegador.");
                     return;
+                }
+
+                if (maxRecordedLevel < 3 && samplesRecordedCount > 5) {
+                    console.warn("Nivel de micro ambiental prácticamente nulo");
                 }
 
                 const actualMime = chunks[0]?.type || selectedMime || 'audio/webm';
@@ -12584,6 +12645,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             if (res.preview_url) {
                 togglePlayPreview(res.preview_url);
             }
+        } else if (res && res.status === 'silence') {
+            setStatusMsg(res.msg || "⚠️ Micrófono en silencio o inaudible. Acerca la fuente de sonido y revisa Ajustes de macOS > Privacidad > Micrófono.");
         } else {
             setStatusMsg(res?.msg || "No se encontraron coincidencias para este fragmento de audio.");
         }
@@ -17285,7 +17348,7 @@ const App = () => {
                             : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Library /> <span>{t('nav_audit') || 'Auditoría & DSP'}</span>
+                        <Icons.Library /> <span>Auditar</span>
                         {globalAuditInfo.isAuditing && (
                             <span className="px-1.5 py-0.2 bg-amber-400 text-black rounded text-[9px] font-black animate-pulse shadow-sm">
                                 {globalAuditInfo.progress}%
@@ -17300,17 +17363,7 @@ const App = () => {
                             : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Cue /> <span>{t('nav_hotcues') || 'Estudio Hot Cues'}</span>
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('trends')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'trends' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Trends /> <span>{t('nav_trends') || 'Tendencias'}</span>
+                        <Icons.Cue /> <span>Cues</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('setbuilder')} 
@@ -17320,17 +17373,7 @@ const App = () => {
                             : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Flow /> <span>{t('nav_setbuilder') || 'Set-Builder & Flow'}</span>
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('knowledge')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'knowledge' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Knowledge /> <span>{t('nav_knowledge') || 'Conocimiento'}</span>
+                        <Icons.Flow /> <span>Set Builder</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('spotify')} 
@@ -17340,7 +17383,7 @@ const App = () => {
                             : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Spotify /> <span>{t('nav_spotify') || 'Spotify Ingest'}</span>
+                        <Icons.Spotify /> <span>Download</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('shazam')} 
@@ -17350,7 +17393,7 @@ const App = () => {
                             : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Radar /> <span>{t('nav_shazam') || 'Radar Shazam'}</span>
+                        <Icons.Radar /> <span>Radar</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('taxonomy')} 
@@ -17360,7 +17403,27 @@ const App = () => {
                             : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                         }`}
                     >
-                        <Icons.Routing /> <span>{t('nav_taxonomy') || 'Taxonomía'}</span>
+                        <Icons.Routing /> <span>Taxonomia</span>
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('trends')} 
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            activeTab === 'trends' 
+                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                        }`}
+                    >
+                        <Icons.Trends /> <span>Tendencias</span>
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('knowledge')} 
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            activeTab === 'knowledge' 
+                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                        }`}
+                    >
+                        <Icons.Knowledge /> <span>Conocimiento</span>
                     </button>
                 </nav>
 
@@ -17658,7 +17721,7 @@ const App = () => {
                     }`}
                 >
                     <Icons.Library />
-                    <span className="text-[9.5px] font-mono mt-0.5">Auditoría</span>
+                    <span className="text-[9.5px] font-mono mt-0.5">Auditar</span>
                 </button>
                 <button
                     type="button"
@@ -17668,7 +17731,7 @@ const App = () => {
                     }`}
                 >
                     <Icons.Cue />
-                    <span className="text-[9.5px] font-mono mt-0.5">Deck Cues</span>
+                    <span className="text-[9.5px] font-mono mt-0.5">Cues</span>
                 </button>
                 <button
                     type="button"
@@ -17678,27 +17741,27 @@ const App = () => {
                     }`}
                 >
                     <Icons.Flow />
-                    <span className="text-[9.5px] font-mono mt-0.5">Set-Flow</span>
+                    <span className="text-[9.5px] font-mono mt-0.5">Set Builder</span>
                 </button>
                 <button
                     type="button"
-                    onClick={() => setActiveTab('trends')}
+                    onClick={() => setActiveTab('spotify')}
                     className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
-                        activeTab === 'trends' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
+                        activeTab === 'spotify' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
                     }`}
                 >
-                    <Icons.Trends />
-                    <span className="text-[9.5px] font-mono mt-0.5">Tendencias</span>
+                    <Icons.Spotify />
+                    <span className="text-[9.5px] font-mono mt-0.5">Download</span>
                 </button>
                 <button
                     type="button"
-                    onClick={() => setActiveTab('knowledge')}
+                    onClick={() => setActiveTab('shazam')}
                     className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
-                        activeTab === 'knowledge' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
+                        activeTab === 'shazam' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
                     }`}
                 >
-                    <Icons.Knowledge />
-                    <span className="text-[9.5px] font-mono mt-0.5">Academia</span>
+                    <Icons.Radar />
+                    <span className="text-[9.5px] font-mono mt-0.5">Radar</span>
                 </button>
                 <button
                     type="button"
@@ -17748,14 +17811,14 @@ const App = () => {
                             <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 px-2 mb-1">Módulos Principales</span>
                             
                             {[
-                                { id: 'audit', icon: <Icons.Library />, label: t('nav_audit') || 'Auditoría & DSP' },
-                                { id: 'hotcues', icon: <Icons.Cue />, label: t('nav_hotcues') || 'Estudio Hot Cues' },
-                                { id: 'trends', icon: <Icons.Trends />, label: t('nav_trends') || 'Tendencias Electrónica' },
-                                { id: 'setbuilder', icon: <Icons.Flow />, label: t('nav_setbuilder') || 'Set-Builder & Flow' },
-                                { id: 'knowledge', icon: <Icons.Knowledge />, label: t('nav_knowledge') || 'Academia & Conocimiento' },
-                                { id: 'spotify', icon: <Icons.Spotify />, label: t('nav_spotify') || 'Spotify Ingest' },
-                                { id: 'shazam', icon: <Icons.Radar />, label: t('nav_shazam') || 'Radar Shazam' },
-                                { id: 'taxonomy', icon: <Icons.Routing />, label: t('nav_taxonomy') || 'Taxonomía AI' },
+                                { id: 'audit', icon: <Icons.Library />, label: 'Auditar' },
+                                { id: 'hotcues', icon: <Icons.Cue />, label: 'Cues' },
+                                { id: 'setbuilder', icon: <Icons.Flow />, label: 'Set Builder' },
+                                { id: 'spotify', icon: <Icons.Spotify />, label: 'Download' },
+                                { id: 'shazam', icon: <Icons.Radar />, label: 'Radar' },
+                                { id: 'taxonomy', icon: <Icons.Routing />, label: 'Taxonomia' },
+                                { id: 'trends', icon: <Icons.Trends />, label: 'Tendencias' },
+                                { id: 'knowledge', icon: <Icons.Knowledge />, label: 'Conocimiento' },
                             ].map(item => {
                                 const isActive = activeTab === item.id;
                                 return (
