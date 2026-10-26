@@ -172,21 +172,30 @@ class ShazamRecognitionService:
             print(f"[RECOGNITION] Error al extraer fragmento WAV: {e}")
         return None
 
-    def _convertir_bytes_a_wav(self, raw_bytes: bytes) -> Optional[str]:
-        """Convierte cualquier flujo de bytes de audio (WebM, OGG, MP3, etc.) a archivo WAV temporal limpio."""
+    def _convertir_bytes_a_wav(self, raw_bytes: bytes, filename: str = "") -> Optional[str]:
+        """Convierte cualquier flujo de bytes de audio (WebM, OGG, MP3, AAC, MP4, etc.) a archivo WAV temporal limpio."""
         in_path = None
         out_path = None
         try:
-            # Detectar formato por magic bytes o usar sufijo genérico
+            # Detectar formato por magic bytes o sugerencia de nombre de archivo
             suffix = '.bin'
-            if raw_bytes.startswith(b'ID3') or raw_bytes.startswith(b'\xff\xfb') or raw_bytes.startswith(b'\xff\xf3'):
+            fn_lower = (filename or "").lower()
+            if raw_bytes.startswith(b'ID3') or raw_bytes.startswith(b'\xff\xfb') or raw_bytes.startswith(b'\xff\xf3') or fn_lower.endswith('.mp3'):
                 suffix = '.mp3'
-            elif raw_bytes.startswith(b'fLaC'):
+            elif raw_bytes.startswith(b'fLaC') or fn_lower.endswith('.flac'):
                 suffix = '.flac'
-            elif raw_bytes.startswith(b'RIFF'):
+            elif raw_bytes.startswith(b'RIFF') or fn_lower.endswith('.wav'):
                 suffix = '.wav'
-            elif b'webm' in raw_bytes[:64] or raw_bytes.startswith(b'\x1a\x45\xdf\xa3'):
+            elif b'webm' in raw_bytes[:64] or raw_bytes.startswith(b'\x1a\x45\xdf\xa3') or fn_lower.endswith('.webm'):
                 suffix = '.webm'
+            elif raw_bytes.startswith(b'OggS') or fn_lower.endswith('.ogg') or fn_lower.endswith('.opus'):
+                suffix = '.ogg'
+            elif (len(raw_bytes) >= 8 and raw_bytes[4:8] == b'ftyp') or raw_bytes.startswith(b'\xff\xf1') or fn_lower.endswith('.m4a') or fn_lower.endswith('.mp4'):
+                suffix = '.m4a'
+            elif '.' in fn_lower:
+                ext = os.path.splitext(fn_lower)[1]
+                if ext in ['.aac', '.wma', '.aiff']:
+                    suffix = ext
 
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f_in:
                 f_in.write(raw_bytes)
@@ -233,6 +242,13 @@ class ShazamRecognitionService:
 
             if len(audio) > 16000:
                 audio = audio[:15000]
+
+            # Normalizar ganancia para capturas de micrófono ambiental con bajo volumen
+            try:
+                from pydub.effects import normalize
+                audio = normalize(audio)
+            except Exception:
+                pass
 
             audio = audio.set_sample_width(2).set_frame_rate(16000).set_channels(1)
             sig_gen = SignatureGenerator()
@@ -698,7 +714,7 @@ class ShazamRecognitionService:
         motor = (motor or "hybrid").lower().strip()
 
         # Convertir a WAV limpio para compatibilidad de codecs de navegador (WebM, Opus, MP3, etc.)
-        wav_path = self._convertir_bytes_a_wav(audio_bytes)
+        wav_path = self._convertir_bytes_a_wav(audio_bytes, filename=filename)
         target = wav_path if wav_path else audio_bytes
 
         try:

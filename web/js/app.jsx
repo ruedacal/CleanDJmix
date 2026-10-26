@@ -12191,17 +12191,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
 
         try {
             let res = null;
-            // 1. Intento primario vía puente Eel WebSockets
-            if (window.eel && window.eel.identificar_audio_base64) {
-                try {
-                    res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, filename)();
-                } catch (eelErr) {
-                    console.warn("Eel RPC falló o cerró conexión, recurriendo a endpoint HTTP:", eelErr);
-                }
-            }
-
-            // 2. Respaldo directo vía HTTP /api/identificar_audio si Eel no responde o no está disponible
-            if (!res) {
+            // 1. Intento primario vía API HTTP directa (soporta hasta 50MB sin límites de WebSocket)
+            try {
                 const response = await fetch('/api/identificar_audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -12215,12 +12206,23 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 if (response.ok) {
                     res = await response.json();
                 }
+            } catch (httpErr) {
+                console.warn("HTTP /api/identificar_audio falló, recurriendo a Eel:", httpErr);
+            }
+
+            // 2. Respaldo vía puente Eel WebSockets
+            if (!res && window.eel && window.eel.identificar_audio_base64) {
+                try {
+                    res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, filename)();
+                } catch (eelErr) {
+                    console.warn("Eel RPC también falló:", eelErr);
+                }
             }
 
             handleRecognitionResponse(res);
         } catch (err) {
             console.error("Error en reconocimiento acústico:", err);
-            setStatusMsg("Error de comunicación con el motor de reconocimiento acústico.");
+            setStatusMsg("Error de comunicación con el motor de reconocimiento acústico: " + (err.message || String(err)));
             setIsAnalyzing(false);
         }
     };
@@ -12280,11 +12282,23 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 console.warn("Web Audio VU meter no disponible:", e);
             }
 
-            let recorderOptions = { audioBitsPerSecond: 192000 };
+            let recorderOptions = { audioBitsPerSecond: 128000 };
+            let selectedMime = 'audio/webm';
             if (typeof MediaRecorder.isTypeSupported === 'function') {
                 if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-                    recorderOptions.mimeType = 'audio/webm;codecs=opus';
+                    selectedMime = 'audio/webm;codecs=opus';
+                } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                    selectedMime = 'audio/webm';
+                } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                    selectedMime = 'audio/mp4';
+                } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+                    selectedMime = 'audio/ogg';
                 }
+            }
+            try {
+                recorderOptions.mimeType = selectedMime;
+            } catch (e) {
+                console.warn("No se pudo fijar mimeType estricto:", e);
             }
 
             const mediaRecorder = new MediaRecorder(stream, recorderOptions);
@@ -12311,15 +12325,23 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 }
                 setIsListening(false);
 
-                const audioBlob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' });
+                if (chunks.length === 0) {
+                    setStatusMsg("El micrófono no capturó señal de audio. Verifica los permisos del navegador.");
+                    return;
+                }
+
+                const actualMime = chunks[0]?.type || selectedMime || 'audio/webm';
+                const ext = actualMime.includes('mp4') ? 'm4a' : actualMime.includes('ogg') ? 'ogg' : 'webm';
+                const audioBlob = new Blob(chunks, { type: actualMime });
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    executeRecognition(reader.result, "mic_sample.webm");
+                    executeRecognition(reader.result, `mic_sample.${ext}`);
                 };
                 reader.readAsDataURL(audioBlob);
             };
 
-            mediaRecorder.start();
+            // Transmitir paquetes cada 1.0s para asegurar que los chunks se acumulen limpiamente
+            mediaRecorder.start(1000);
 
             let timeLeft = 10;
             timerRef.current = setInterval(() => {

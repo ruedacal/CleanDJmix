@@ -8300,14 +8300,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setStatusMsg(`Consultando huella ac\xFAstica en [${engineLabel}]...`);
       try {
         let res = null;
-        if (window.eel && window.eel.identificar_audio_base64) {
-          try {
-            res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, filename)();
-          } catch (eelErr) {
-            console.warn("Eel RPC fall\xF3 o cerr\xF3 conexi\xF3n, recurriendo a endpoint HTTP:", eelErr);
-          }
-        }
-        if (!res) {
+        try {
           const response = await fetch("/api/identificar_audio", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -8321,11 +8314,20 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           if (response.ok) {
             res = await response.json();
           }
+        } catch (httpErr) {
+          console.warn("HTTP /api/identificar_audio fall\xF3, recurriendo a Eel:", httpErr);
+        }
+        if (!res && window.eel && window.eel.identificar_audio_base64) {
+          try {
+            res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, filename)();
+          } catch (eelErr) {
+            console.warn("Eel RPC tambi\xE9n fall\xF3:", eelErr);
+          }
         }
         handleRecognitionResponse(res);
       } catch (err) {
         console.error("Error en reconocimiento ac\xFAstico:", err);
-        setStatusMsg("Error de comunicaci\xF3n con el motor de reconocimiento ac\xFAstico.");
+        setStatusMsg("Error de comunicaci\xF3n con el motor de reconocimiento ac\xFAstico: " + (err.message || String(err)));
         setIsAnalyzing(false);
       }
     };
@@ -8376,11 +8378,23 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         } catch (e) {
           console.warn("Web Audio VU meter no disponible:", e);
         }
-        let recorderOptions = { audioBitsPerSecond: 192e3 };
+        let recorderOptions = { audioBitsPerSecond: 128e3 };
+        let selectedMime = "audio/webm";
         if (typeof MediaRecorder.isTypeSupported === "function") {
           if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
-            recorderOptions.mimeType = "audio/webm;codecs=opus";
+            selectedMime = "audio/webm;codecs=opus";
+          } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+            selectedMime = "audio/webm";
+          } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+            selectedMime = "audio/mp4";
+          } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
+            selectedMime = "audio/ogg";
           }
+        }
+        try {
+          recorderOptions.mimeType = selectedMime;
+        } catch (e) {
+          console.warn("No se pudo fijar mimeType estricto:", e);
         }
         const mediaRecorder = new MediaRecorder(stream, recorderOptions);
         mediaRecorderRef.current = mediaRecorder;
@@ -8409,14 +8423,20 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             audioStreamRef.current = null;
           }
           setIsListening(false);
-          const audioBlob = new Blob(chunks, { type: chunks[0]?.type || "audio/webm" });
+          if (chunks.length === 0) {
+            setStatusMsg("El micr\xF3fono no captur\xF3 se\xF1al de audio. Verifica los permisos del navegador.");
+            return;
+          }
+          const actualMime = chunks[0]?.type || selectedMime || "audio/webm";
+          const ext = actualMime.includes("mp4") ? "m4a" : actualMime.includes("ogg") ? "ogg" : "webm";
+          const audioBlob = new Blob(chunks, { type: actualMime });
           const reader = new FileReader();
           reader.onloadend = () => {
-            executeRecognition(reader.result, "mic_sample.webm");
+            executeRecognition(reader.result, `mic_sample.${ext}`);
           };
           reader.readAsDataURL(audioBlob);
         };
-        mediaRecorder.start();
+        mediaRecorder.start(1e3);
         let timeLeft = 10;
         timerRef.current = setInterval(() => {
           timeLeft -= 1;

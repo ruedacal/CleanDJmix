@@ -12,6 +12,10 @@ import atexit
 import eel
 import bottle
 
+# CRÍTICO: Permitir subidas de audio en Base64 desde micrófono y archivos (hasta 50 MB)
+# Evita el fallo HTTP 413 ('Request entity too large') que bloqueaba la escucha de Shazam (100 KB por defecto)
+bottle.BaseRequest.MEMFILE_MAX = 50 * 1024 * 1024
+
 from services.audio_service import AudioPlaybackService
 from services.audit_service import AuditService
 from services.media_service import MediaService
