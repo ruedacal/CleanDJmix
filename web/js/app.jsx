@@ -12278,6 +12278,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         try { return localStorage.getItem('bw_audd_token') || ''; } catch(e) { return ''; }
     });
     const [showConfig, setShowConfig] = useState(false);
+    const [micCaptureMode, setMicCaptureMode] = useState('auto'); // 'auto' | 'browser' | 'hardware'
+    const [micPermissionError, setMicPermissionError] = useState(null);
 
     useEffect(() => {
         try { localStorage.setItem('bw_radar_engine', selectedEngine); } catch(e) {}
@@ -12542,6 +12544,19 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
 
     const startMicrophoneListening = async () => {
         if (isListening || isAnalyzing) return;
+        setMicPermissionError(null);
+
+        // Si el usuario seleccionó modo hardware o si el navegador no tiene getUserMedia (origen HTTP IP, etc.)
+        const hasBrowserMic = typeof navigator !== 'undefined' && 
+                              Boolean(navigator.mediaDevices) && 
+                              typeof navigator.mediaDevices.getUserMedia === 'function';
+
+        if (micCaptureMode === 'hardware' || !hasBrowserMic) {
+            console.log("Iniciando captura de micrófono de hardware...");
+            startHardwareMicrophoneListening();
+            return;
+        }
+
         cancelListening();
         setStatusMsg("Solicitando acceso al micrófono...");
 
@@ -12647,7 +12662,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 setIsListening(false);
 
                 if (chunks.length === 0) {
-                    setStatusMsg("⚠️ El micrófono no capturó señal de audio. Verifica los permisos del navegador.");
+                    setStatusMsg("⚠️ El micrófono web no capturó señal. Activando captura de hardware...");
+                    startHardwareMicrophoneListening();
                     return;
                 }
 
@@ -12684,9 +12700,83 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             }, 1000);
 
         } catch (err) {
-            console.error("Error acceso micrófono:", err);
-            setStatusMsg("No se pudo acceder al micrófono: " + (err.message || "Permiso denegado"));
+            console.error("Error acceso micrófono navegador:", err);
+            setMicPermissionError(err.message || "Permiso denegado");
+            setStatusMsg("Micrófono del navegador bloqueado. Cambiando a captura por hardware de cabina...");
+            setTimeout(() => {
+                startHardwareMicrophoneListening();
+            }, 600);
+        }
+    };
+
+    const startHardwareMicrophoneListening = async () => {
+        if (isListening || isAnalyzing) return;
+        cancelListening();
+        setIsListening(true);
+        setCountdown(7);
+        setStatusMsg("🎙️ Grabando desde el micrófono del sistema (Hardware 7s)...");
+
+        let fakeMeterInterval = setInterval(() => {
+            const fakeLvl = Math.floor(Math.random() * 45) + 30;
+            setMicLevel(fakeLvl);
+        }, 150);
+
+        let timeLeft = 7;
+        timerRef.current = setInterval(() => {
+            timeLeft -= 1;
+            setCountdown(timeLeft);
+            if (timeLeft <= 0) {
+                if (timerRef.current) {
+                    clearInterval(timerRef.current);
+                    timerRef.current = null;
+                }
+                clearInterval(fakeMeterInterval);
+                setMicLevel(0);
+                setStatusMsg("Consultando huella acústica con los servidores...");
+            }
+        }, 1000);
+
+        try {
+            let res = null;
+            if (window.eel && typeof window.eel.grabar_microfono_shazam === 'function') {
+                res = await window.eel.grabar_microfono_shazam(7, selectedEngine, auddToken)();
+            } else {
+                const resp = await fetch('/api/shazam/record_mic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration: 7, motor: selectedEngine, audd_token: auddToken })
+                });
+                if (resp.ok) {
+                    res = await resp.json();
+                } else {
+                    throw new Error(`HTTP ${resp.status}`);
+                }
+            }
+            clearInterval(fakeMeterInterval);
+            setMicLevel(0);
             setIsListening(false);
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+            if (res && res.status === 'error') {
+                setMicPermissionError(res.msg);
+                setStatusMsg("⚠️ " + (res.msg || "Error en captura de audio."));
+            } else {
+                setMicPermissionError(null);
+                handleRecognitionResponse(res);
+            }
+        } catch (hwErr) {
+            clearInterval(fakeMeterInterval);
+            setMicLevel(0);
+            setIsListening(false);
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+            console.error("Error en captura por hardware:", hwErr);
+            setMicPermissionError("Permiso de micrófono no disponible");
+            setStatusMsg("⚠️ No se pudo acceder al micrófono. Revisa Ajustes de macOS > Privacidad > Micrófono o arrastra un archivo de audio.");
         }
     };
 
@@ -12885,14 +12975,43 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Módulo 1: Micrófono en Directo */}
                 <div className="bg-[#09090f] p-5 rounded-2xl border border-djzinc-800 flex flex-col items-center text-center justify-between relative overflow-hidden shadow-lg group hover:border-djcyan-500/40 transition-all">
-                    <div className="space-y-1 mb-4">
+                    <div className="space-y-1 mb-2">
                         <span className="text-[10px] font-mono font-bold uppercase text-djcyan-400 tracking-wider">
                             MODO A • CAPTURA AMBIENTAL
                         </span>
                         <h3 className="text-base font-bold text-white">Escucha en Directo por Micrófono</h3>
                         <p className="text-xs text-gray-400 max-w-xs mx-auto">
-                            Captura 10 segundos de música sonando en tus monitores o altavoces y consulta los servidores acústicos.
+                            Captura música ambiental en cabina y consulta los servidores acústicos de Shazam y AudD.
                         </p>
+                    </div>
+
+                    {/* Selector de Fuente de Entrada */}
+                    <div className="flex items-center gap-1 my-2 bg-djzinc-950 p-1 rounded-xl border border-djzinc-800 text-[10px] font-mono">
+                        <span className="text-gray-500 pl-1 text-[9px] uppercase tracking-wider">Entrada:</span>
+                        <button
+                            type="button"
+                            onClick={() => { setMicCaptureMode('auto'); setMicPermissionError(null); }}
+                            className={`px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === 'auto' ? 'bg-djcyan-500 text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                            title="Auto: prueba primero el micrófono del navegador y si falla conmuta al hardware de sistema automáticamente"
+                        >
+                            Auto
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setMicCaptureMode('browser'); setMicPermissionError(null); }}
+                            className={`px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === 'browser' ? 'bg-djcyan-500 text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                            title="Micrófono Web (Navegador HTML5)"
+                        >
+                            Navegador
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setMicCaptureMode('hardware'); setMicPermissionError(null); }}
+                            className={`px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === 'hardware' ? 'bg-djcyan-500 text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                            title="Micrófono de Hardware (macOS / FFmpeg directo sin restricciones de navegador)"
+                        >
+                            Hardware (macOS)
+                        </button>
                     </div>
 
                     <div className="my-3 relative flex flex-col items-center justify-center">
@@ -12916,6 +13035,28 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 </span>
                             </button>
                         </div>
+
+                        {micPermissionError && !isListening && (
+                            <div className="mt-3 p-3 bg-amber-950/90 border border-amber-600/70 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn">
+                                <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                                    <span>🔒</span>
+                                    <span>Micrófono de navegador restringido</span>
+                                </div>
+                                <p className="text-[10px] text-gray-300 leading-tight">
+                                    • En la barra del navegador, haz clic en el <strong>icono del candado</strong> (a la izquierda de la URL) y cambia Micrófono a <strong>Permitir</strong>.
+                                </p>
+                                <p className="text-[10px] text-gray-300 leading-tight">
+                                    • En macOS: <strong>Ajustes del Sistema &gt; Privacidad & Seguridad &gt; Micrófono</strong> y activa tu navegador.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={startHardwareMicrophoneListening}
+                                    className="mt-1 w-full py-1.5 px-2 bg-gradient-to-r from-djcyan-500 to-emerald-400 hover:from-djcyan-400 hover:to-emerald-300 text-black font-bold text-[11px] rounded-lg cursor-pointer transition-all shadow"
+                                >
+                                    🎛️ Usar Captura Hardware de Sistema
+                                </button>
+                            </div>
+                        )}
 
                         {isListening && (
                             <div className="w-52 mt-3.5 flex flex-col items-center gap-1.5 animate-fadeIn">

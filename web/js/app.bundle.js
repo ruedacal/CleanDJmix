@@ -8608,6 +8608,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     }
   });
   const [showConfig, setShowConfig] = useState(false);
+  const [micCaptureMode, setMicCaptureMode] = useState("auto");
+  const [micPermissionError, setMicPermissionError] = useState(null);
   useEffect(() => {
     try {
       localStorage.setItem("bw_radar_engine", selectedEngine);
@@ -8884,6 +8886,13 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
   };
   const startMicrophoneListening = async () => {
     if (isListening || isAnalyzing) return;
+    setMicPermissionError(null);
+    const hasBrowserMic = typeof navigator !== "undefined" && Boolean(navigator.mediaDevices) && typeof navigator.mediaDevices.getUserMedia === "function";
+    if (micCaptureMode === "hardware" || !hasBrowserMic) {
+      console.log("Iniciando captura de micr\xF3fono de hardware...");
+      startHardwareMicrophoneListening();
+      return;
+    }
     cancelListening();
     setStatusMsg("Solicitando acceso al micr\xF3fono...");
     try {
@@ -8982,7 +8991,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         }
         setIsListening(false);
         if (chunks.length === 0) {
-          setStatusMsg("\u26A0\uFE0F El micr\xF3fono no captur\xF3 se\xF1al de audio. Verifica los permisos del navegador.");
+          setStatusMsg("\u26A0\uFE0F El micr\xF3fono web no captur\xF3 se\xF1al. Activando captura de hardware...");
+          startHardwareMicrophoneListening();
           return;
         }
         if (maxRecordedLevel < 3 && samplesRecordedCount > 5) {
@@ -9013,9 +9023,79 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         }
       }, 1e3);
     } catch (err) {
-      console.error("Error acceso micr\xF3fono:", err);
-      setStatusMsg("No se pudo acceder al micr\xF3fono: " + (err.message || "Permiso denegado"));
+      console.error("Error acceso micr\xF3fono navegador:", err);
+      setMicPermissionError(err.message || "Permiso denegado");
+      setStatusMsg("Micr\xF3fono del navegador bloqueado. Cambiando a captura por hardware de cabina...");
+      setTimeout(() => {
+        startHardwareMicrophoneListening();
+      }, 600);
+    }
+  };
+  const startHardwareMicrophoneListening = async () => {
+    if (isListening || isAnalyzing) return;
+    cancelListening();
+    setIsListening(true);
+    setCountdown(7);
+    setStatusMsg("\u{1F399}\uFE0F Grabando desde el micr\xF3fono del sistema (Hardware 7s)...");
+    let fakeMeterInterval = setInterval(() => {
+      const fakeLvl = Math.floor(Math.random() * 45) + 30;
+      setMicLevel(fakeLvl);
+    }, 150);
+    let timeLeft = 7;
+    timerRef.current = setInterval(() => {
+      timeLeft -= 1;
+      setCountdown(timeLeft);
+      if (timeLeft <= 0) {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        clearInterval(fakeMeterInterval);
+        setMicLevel(0);
+        setStatusMsg("Consultando huella ac\xFAstica con los servidores...");
+      }
+    }, 1e3);
+    try {
+      let res = null;
+      if (window.eel && typeof window.eel.grabar_microfono_shazam === "function") {
+        res = await window.eel.grabar_microfono_shazam(7, selectedEngine, auddToken)();
+      } else {
+        const resp = await fetch("/api/shazam/record_mic", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ duration: 7, motor: selectedEngine, audd_token: auddToken })
+        });
+        if (resp.ok) {
+          res = await resp.json();
+        } else {
+          throw new Error(`HTTP ${resp.status}`);
+        }
+      }
+      clearInterval(fakeMeterInterval);
+      setMicLevel(0);
       setIsListening(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (res && res.status === "error") {
+        setMicPermissionError(res.msg);
+        setStatusMsg("\u26A0\uFE0F " + (res.msg || "Error en captura de audio."));
+      } else {
+        setMicPermissionError(null);
+        handleRecognitionResponse(res);
+      }
+    } catch (hwErr) {
+      clearInterval(fakeMeterInterval);
+      setMicLevel(0);
+      setIsListening(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      console.error("Error en captura por hardware:", hwErr);
+      setMicPermissionError("Permiso de micr\xF3fono no disponible");
+      setStatusMsg("\u26A0\uFE0F No se pudo acceder al micr\xF3fono. Revisa Ajustes de macOS > Privacidad > Micr\xF3fono o arrastra un archivo de audio.");
     }
   };
   const handleFileSelect = (file) => {
@@ -9132,7 +9212,43 @@ ${text}`);
       placeholder: "test (predeterminado)",
       className: "w-full sm:w-64 px-2.5 py-1.5 bg-djzinc-900 border border-djzinc-750 rounded-lg text-xs text-white font-mono focus:border-purple-500 outline-none"
     }
-  )))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#09090f] p-5 rounded-2xl border border-djzinc-800 flex flex-col items-center text-center justify-between relative overflow-hidden shadow-lg group hover:border-djcyan-500/40 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-4" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold uppercase text-djcyan-400 tracking-wider" }, "MODO A \u2022 CAPTURA AMBIENTAL"), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "Escucha en Directo por Micr\xF3fono"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-xs mx-auto" }, "Captura 10 segundos de m\xFAsica sonando en tus monitores o altavoces y consulta los servidores ac\xFAsticos.")), /* @__PURE__ */ React.createElement("div", { className: "my-3 relative flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center" }, isListening && /* @__PURE__ */ React.createElement("div", { className: "absolute w-36 h-36 rounded-full bg-djcyan-500/20 animate-ping pointer-events-none" }), /* @__PURE__ */ React.createElement(
+  )))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#09090f] p-5 rounded-2xl border border-djzinc-800 flex flex-col items-center text-center justify-between relative overflow-hidden shadow-lg group hover:border-djcyan-500/40 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold uppercase text-djcyan-400 tracking-wider" }, "MODO A \u2022 CAPTURA AMBIENTAL"), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "Escucha en Directo por Micr\xF3fono"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-xs mx-auto" }, "Captura m\xFAsica ambiental en cabina y consulta los servidores ac\xFAsticos de Shazam y AudD.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 my-2 bg-djzinc-950 p-1 rounded-xl border border-djzinc-800 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 pl-1 text-[9px] uppercase tracking-wider" }, "Entrada:"), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setMicCaptureMode("auto");
+        setMicPermissionError(null);
+      },
+      className: `px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === "auto" ? "bg-djcyan-500 text-black font-bold" : "text-gray-400 hover:text-white"}`,
+      title: "Auto: prueba primero el micr\xF3fono del navegador y si falla conmuta al hardware de sistema autom\xE1ticamente"
+    },
+    "Auto"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setMicCaptureMode("browser");
+        setMicPermissionError(null);
+      },
+      className: `px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === "browser" ? "bg-djcyan-500 text-black font-bold" : "text-gray-400 hover:text-white"}`,
+      title: "Micr\xF3fono Web (Navegador HTML5)"
+    },
+    "Navegador"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setMicCaptureMode("hardware");
+        setMicPermissionError(null);
+      },
+      className: `px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === "hardware" ? "bg-djcyan-500 text-black font-bold" : "text-gray-400 hover:text-white"}`,
+      title: "Micr\xF3fono de Hardware (macOS / FFmpeg directo sin restricciones de navegador)"
+    },
+    "Hardware (macOS)"
+  )), /* @__PURE__ */ React.createElement("div", { className: "my-3 relative flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center" }, isListening && /* @__PURE__ */ React.createElement("div", { className: "absolute w-36 h-36 rounded-full bg-djcyan-500/20 animate-ping pointer-events-none" }), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -9142,6 +9258,14 @@ ${text}`);
     },
     /* @__PURE__ */ React.createElement(Icons.Mic, null),
     /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-black mt-1" }, isListening ? `${countdown}s...` : "ESCUCHAR")
+  )), micPermissionError && !isListening && /* @__PURE__ */ React.createElement("div", { className: "mt-3 p-3 bg-amber-950/90 border border-amber-600/70 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-amber-300" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F512}"), /* @__PURE__ */ React.createElement("span", null, "Micr\xF3fono de navegador restringido")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "\u2022 En la barra del navegador, haz clic en el ", /* @__PURE__ */ React.createElement("strong", null, "icono del candado"), " (a la izquierda de la URL) y cambia Micr\xF3fono a ", /* @__PURE__ */ React.createElement("strong", null, "Permitir"), "."), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "\u2022 En macOS: ", /* @__PURE__ */ React.createElement("strong", null, "Ajustes del Sistema > Privacidad & Seguridad > Micr\xF3fono"), " y activa tu navegador."), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: startHardwareMicrophoneListening,
+      className: "mt-1 w-full py-1.5 px-2 bg-gradient-to-r from-djcyan-500 to-emerald-400 hover:from-djcyan-400 hover:to-emerald-300 text-black font-bold text-[11px] rounded-lg cursor-pointer transition-all shadow"
+    },
+    "\u{1F39B}\uFE0F Usar Captura Hardware de Sistema"
   )), isListening && /* @__PURE__ */ React.createElement("div", { className: "w-52 mt-3.5 flex flex-col items-center gap-1.5 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[10px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "SE\xD1AL DE MICR\xD3FONO"), /* @__PURE__ */ React.createElement("span", { className: micLevel > 15 ? "text-djcyan-400 font-bold" : "text-amber-400" }, micLevel, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full h-2 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800 p-0.5" }, /* @__PURE__ */ React.createElement(
     "div",
     {

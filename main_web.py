@@ -270,6 +270,11 @@ def identificar_audio_base64(b64_data, motor="hybrid", audd_token="", filename="
     return shazam_svc.reconocer_base64(b64_data, motor=motor, audd_token=audd_token, filename=filename)
 
 @eel.expose
+def grabar_microfono_shazam(duration_sec=7, motor="hybrid", audd_token=""):
+    """Graba directamente desde el hardware de sonido del sistema mediante FFmpeg y reconoce la pista."""
+    return shazam_svc.grabar_microfono_sistema(duration_sec=duration_sec, motor=motor, audd_token=audd_token)
+
+@eel.expose
 def regenerar_mood_y_comentario(track, lang="es"):
     from services.mood_intelligence_service import MoodIntelligenceService
     if not track or not isinstance(track, dict):
@@ -349,6 +354,22 @@ def api_identificar_audio():
         return shazam_svc.reconocer_base64(b64, motor=motor, audd_token=token, filename=filename)
     except Exception as e:
         return {"status": "error", "msg": f"Error en /api/identificar_audio: {e}"}
+
+@bottle.route('/api/shazam/record_mic', method=['POST', 'OPTIONS'])
+def api_shazam_record_mic():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    try:
+        data = bottle.request.json or {}
+        duration = data.get('duration', 7)
+        motor = data.get('motor', 'hybrid')
+        token = data.get('audd_token', '')
+        return shazam_svc.grabar_microfono_sistema(duration_sec=duration, motor=motor, audd_token=token)
+    except Exception as e:
+        return {"status": "error", "msg": f"Error grabando micrófono de sistema: {e}"}
 
 @bottle.route('/api/sanitizar_metadatos', method=['POST', 'OPTIONS'])
 def api_sanitizar_metadatos():

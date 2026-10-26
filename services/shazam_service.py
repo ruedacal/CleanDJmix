@@ -812,3 +812,75 @@ class ShazamRecognitionService:
         except Exception as e:
             print(f"[RECOGNITION ERROR] Decodificación Base64 falló: {e}")
             return {"status": "error", "msg": f"Error procesando audio: {e}"}
+
+    def grabar_microfono_sistema(self, duration_sec: int = 7, motor: str = "hybrid", audd_token: str = "") -> Dict[str, Any]:
+        """
+        Graba directamente desde el micrófono de hardware del sistema (macOS AVFoundation, Linux Pulse/ALSA, Windows DShow)
+        mediante FFmpeg y ejecuta el reconocimiento acústico.
+        Garantiza que el DJ pueda identificar canciones incluso si el navegador web bloquea el acceso al micro o en orígenes HTTP.
+        """
+        duration = max(3, min(15, int(duration_sec or 7)))
+        temp_wav = os.path.join(tempfile.gettempdir(), f"shazam_hw_mic_{uuid.uuid4().hex[:8]}.wav")
+
+        try:
+            ffmpeg_cmd = None
+            if sys.platform == 'darwin':
+                # macOS: AVFoundation con micrófono del sistema por defecto
+                ffmpeg_cmd = [
+                    'ffmpeg', '-y', '-f', 'avfoundation',
+                    '-i', ':default',
+                    '-t', str(duration),
+                    '-ar', '44100', '-ac', '2',
+                    temp_wav
+                ]
+            elif sys.platform.startswith('linux'):
+                ffmpeg_cmd = [
+                    'ffmpeg', '-y', '-f', 'pulse',
+                    '-i', 'default',
+                    '-t', str(duration),
+                    '-ar', '44100', '-ac', '2',
+                    temp_wav
+                ]
+            elif sys.platform == 'win32':
+                ffmpeg_cmd = [
+                    'ffmpeg', '-y', '-f', 'dshow',
+                    '-i', 'audio=Microphone',
+                    '-t', str(duration),
+                    '-ar', '44100', '-ac', '2',
+                    temp_wav
+                ]
+
+            if not ffmpeg_cmd:
+                return {"status": "error", "msg": f"Captura directa no soportada en la plataforma {sys.platform}"}
+
+            proc = subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=duration + 5)
+
+            # En macOS, si ':default' falla, intentar con ':1' o ':0'
+            if proc.returncode != 0 and sys.platform == 'darwin':
+                for alt_dev in [':1', ':0']:
+                    alt_cmd = ['ffmpeg', '-y', '-f', 'avfoundation', '-i', alt_dev, '-t', str(duration), '-ar', '44100', '-ac', '2', temp_wav]
+                    proc2 = subprocess.run(alt_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=duration + 5)
+                    if proc2.returncode == 0:
+                        proc = proc2
+                        break
+
+            if proc.returncode != 0 or not os.path.exists(temp_wav) or os.path.getsize(temp_wav) < 1000:
+                err_text = proc.stderr[-300:] if proc.stderr else "Error en captura de audio de sistema"
+                return {
+                    "status": "error",
+                    "msg": f"No se pudo capturar audio del micrófono de hardware ({err_text}). Verifica permisos de micrófono en Ajustes del Sistema."
+                }
+
+            # Ejecutar el pipeline de reconocimiento sobre el archivo grabado
+            res = self.reconocer_archivo(temp_wav, motor=motor, audd_token=audd_token)
+            if res and isinstance(res, dict):
+                res['origen_captura'] = 'hardware_mic'
+            return res
+        except Exception as e:
+            return {"status": "error", "msg": f"Error en captura de micrófono de hardware: {e}"}
+        finally:
+            if os.path.exists(temp_wav):
+                try:
+                    os.unlink(temp_wav)
+                except Exception:
+                    pass

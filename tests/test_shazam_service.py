@@ -106,3 +106,31 @@ def test_shazam_hybrid_fallback_audd_with_test_token():
             assert res["status"] == "ok"
             assert res["title"] == "Fallback Track"
             mock_audd.assert_called_once_with("/path/to/test.mp3", audd_token="test")
+
+def test_shazam_grabar_microfono_sistema_success():
+    service = ShazamRecognitionService()
+    with patch('subprocess.run') as mock_run, \
+         patch('os.path.exists', return_value=True), \
+         patch('os.path.getsize', return_value=5000), \
+         patch.object(service, 'reconocer_archivo', return_value={"status": "ok", "title": "Club Track", "artist": "DJ Victor"}):
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_run.return_value = mock_proc
+
+        res = service.grabar_microfono_sistema(duration_sec=3, motor="hybrid")
+        assert res["status"] == "ok"
+        assert res["title"] == "Club Track"
+        assert res.get("origen_captura") == "hardware_mic"
+
+def test_shazam_grabar_microfono_sistema_failure():
+    service = ShazamRecognitionService()
+    with patch('subprocess.run') as mock_run, \
+         patch('os.path.exists', return_value=False):
+        mock_proc = MagicMock()
+        mock_proc.returncode = 1
+        mock_proc.stderr = "Device not found"
+        mock_run.return_value = mock_proc
+
+        res = service.grabar_microfono_sistema(duration_sec=3)
+        assert res["status"] == "error"
+        assert "No se pudo capturar audio" in res["msg"]
