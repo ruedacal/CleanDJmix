@@ -43,6 +43,20 @@ def compilar_frontend_si_necesario():
             except Exception:
                 pass
 
+    copilot_jsx = os.path.join("web", "js", "copilot.jsx")
+    copilot_bundle = os.path.join("web", "js", "copilot.bundle.js")
+    if os.path.exists(copilot_jsx):
+        if not os.path.exists(copilot_bundle) or os.path.getmtime(copilot_jsx) > os.path.getmtime(copilot_bundle):
+            try:
+                subprocess.run(
+                    ["npx", "-y", "esbuild", copilot_jsx, f"--outfile={copilot_bundle}"],
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except Exception:
+                pass
+
 compilar_frontend_si_necesario()
 
 eel.init("web")

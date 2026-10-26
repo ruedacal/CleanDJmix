@@ -15702,16 +15702,36 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                         </div>
                     </div>
 
-                    {/* Botón Destacado: Descargar Manual en PDF */}
-                    <a
-                        href="/api/manual/pdf"
-                        download="CleanDJmix_PRO_Manual_Funcional_y_Tecnico.pdf"
-                        className="px-4 py-2 bg-gradient-to-r from-djcyan-500 to-purple-600 hover:from-djcyan-400 hover:to-purple-500 text-black font-black text-xs rounded-xl shadow-lg shadow-djcyan-500/20 flex items-center gap-2 cursor-pointer transition-transform active:scale-95"
-                        title="Descargar el manual completo en formato PDF con capturas de la aplicación y arquitectura de código"
-                    >
-                        <span>📄</span>
-                        <span>Descargar Manual PDF (8 Págs)</span>
-                    </a>
+                    {/* Botones de Cabecera: Tutoriales y Manual PDF */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => window.abrirTutorial && window.abrirTutorial('teaser')}
+                            className="px-3.5 py-2 bg-purple-950/80 hover:bg-purple-900 border border-purple-500/60 text-purple-200 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md font-mono"
+                            title="Ver Teaser Comercial de 60 segundos"
+                        >
+                            <span>🎬</span>
+                            <span>Ver Teaser (60s)</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => window.abrirTutorial && window.abrirTutorial('tour')}
+                            className="px-3.5 py-2 bg-djcyan-950/80 hover:bg-djcyan-900 border border-djcyan-500/60 text-djcyan-300 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md font-mono"
+                            title="Lanzar el Tour Guiado Spotlight por la cabina"
+                        >
+                            <span>🔦</span>
+                            <span>Tour Guiado Cabina</span>
+                        </button>
+                        <a
+                            href="/api/manual/pdf"
+                            download="CleanDJmix_PRO_Manual_Funcional_y_Tecnico.pdf"
+                            className="px-3.5 py-2 bg-gradient-to-r from-djcyan-500 to-purple-600 hover:from-djcyan-400 hover:to-purple-500 text-black font-black text-xs rounded-xl shadow-lg shadow-djcyan-500/20 flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95 font-mono"
+                            title="Descargar el manual completo en formato PDF con capturas de la aplicación y arquitectura de código"
+                        >
+                            <span>📄</span>
+                            <span>Manual PDF</span>
+                        </a>
+                    </div>
                 </div>
 
                 {/* Pestañas de Navegación Interna */}
@@ -16878,6 +16898,318 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
 };
 
 // =======================================================
+// WORKSPACE IN-APP: BEATWAVE LIVE COPILOT (CABINA)
+// =======================================================
+const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
+    const [state, setState] = useState(null);
+    const [clock, setClock] = useState('');
+    const [latency, setLatency] = useState(2);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            const now = new Date();
+            setClock(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchStatus = async () => {
+            const t0 = performance.now();
+            try {
+                const res = await fetch('/api/copilot/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    const dt = Math.round(performance.now() - t0);
+                    if (isMounted) {
+                        setState(data);
+                        setLatency(dt > 0 ? dt : 2);
+                    }
+                }
+            } catch (e) {}
+        };
+        fetchStatus();
+        const interval = setInterval(fetchStatus, 450);
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, []);
+
+    const toggleSimulation = async () => {
+        try {
+            const res = await fetch('/api/copilot/toggle_simulation', { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                setState(data);
+            }
+        } catch (e) {}
+    };
+
+    if (!state) {
+        return (
+            <div className="flex flex-col items-center justify-center w-full h-full gap-4 bg-[#040407]">
+                <div className="w-12 h-12 rounded-full border-4 border-djcyan-500/20 border-t-djcyan-400 animate-spin"></div>
+                <p className="font-mono text-xs text-djcyan-400 uppercase tracking-widest animate-pulse">
+                    Sincronizando con Serato DJ Pro & BeatWave DSP...
+                </p>
+            </div>
+        );
+    }
+
+    const { deck_1, deck_2, anti_muddy, harmonic, recommendations } = state;
+
+    return (
+        <div className="flex flex-col w-full h-full p-4 sm:p-6 overflow-y-auto select-none bg-[#040407] text-gray-200">
+            {/* Cabecera de la Pantalla Táctica */}
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-800 mb-6">
+                <div className="flex items-center gap-3">
+                    <span className={`w-3.5 h-3.5 rounded-full ${state.source === 'SERATO_LIVE' ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'}`}></span>
+                    <div>
+                        <h2 className="font-syne font-black text-xl sm:text-2xl text-white tracking-wide uppercase">
+                            MONITOR TÁCTICO <span className="text-djcyan-400">CABINA DJ</span>
+                        </h2>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="font-mono text-xs text-zinc-400">
+                                {state.source === 'SERATO_LIVE' ? 'SERATO LINK ACTIVO' : 'MODO SIMULACIÓN'}
+                            </span>
+                            <span className="text-zinc-600">•</span>
+                            <span className="font-mono text-xs text-zinc-400">
+                                LATENCIA: <strong className="text-emerald-400">{latency}ms</strong>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                    <div className="font-mono text-sm sm:text-base font-bold text-white bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800 shadow-inner">
+                        {clock || state.last_updated}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={toggleSimulation}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold uppercase transition-all cursor-pointer border ${
+                            state.source === 'SIMULATION_MODE'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                            : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border-zinc-700/60'
+                        }`}
+                        title="Alternar simulación"
+                    >
+                        🧪 {state.source === 'SIMULATION_MODE' ? 'Simulando' : 'Simular'}
+                    </button>
+                    {onOpenPopOut && (
+                        <button
+                            type="button"
+                            onClick={onOpenPopOut}
+                            className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-white bg-red-600 hover:bg-red-500 uppercase transition-all cursor-pointer shadow-md flex items-center gap-1.5"
+                            title="Abrir en ventana independiente Pop-Out para segundo monitor"
+                        >
+                            <span>🖥️</span>
+                            <span>Pop-Out ↗</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* DUAL DECK HEADS-UP DISPLAY */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+                {/* DECK 1 */}
+                <div className={`p-5 rounded-3xl border transition-all relative overflow-hidden ${
+                    deck_1.is_master 
+                    ? 'bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]' 
+                    : 'bg-[#07070f] border-zinc-800 hover:border-zinc-700'
+                }`}>
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <span className="font-orbitron font-black text-base text-zinc-400">DECK 1</span>
+                            <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black uppercase tracking-wider ${
+                                deck_1.is_master ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300'
+                            }`}>
+                                {deck_1.is_master ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
+                            </span>
+                        </div>
+                        <span className="font-mono text-xs text-zinc-500 uppercase">{deck_1.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP'}</span>
+                    </div>
+
+                    <div className="mb-4">
+                        <h2 className="font-syne font-black text-2xl lg:text-3xl text-white tracking-wide leading-tight line-clamp-1">{deck_1.title}</h2>
+                        <p className="font-syne font-bold text-sm sm:text-base text-zinc-400 mt-0.5 line-clamp-1">{deck_1.artist}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-zinc-800/80">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-orbitron font-black text-lg sm:text-xl text-black shadow-lg shrink-0" style={{ backgroundColor: deck_1.camelot_color }}>
+                                {deck_1.camelot}
+                            </div>
+                            <div>
+                                <div className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Tonalidad</div>
+                                <div className="font-syne font-bold text-sm sm:text-base text-white">{deck_1.raw_key || deck_1.camelot}</div>
+                            </div>
+                        </div>
+
+                        <div className="p-3 rounded-2xl bg-black/40 border border-zinc-800/80 flex flex-col justify-center">
+                            <div className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Tempo Estricto</div>
+                            <div className="font-orbitron font-black text-xl sm:text-2xl text-white">
+                                {deck_1.bpm ? Number(deck_1.bpm).toFixed(2) : '130.00'} <span className="text-xs font-normal text-zinc-400">BPM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-zinc-800/60 font-mono text-xs">
+                        <div className="flex items-center justify-between text-zinc-400">
+                            <span>Densidad Sub-Graves (Sub-Bass)</span>
+                            <span className={deck_1.low_ratio >= 44 ? 'text-red-400 font-bold' : 'text-zinc-200'}>{deck_1.low_ratio}%</span>
+                        </div>
+                        <div className="w-full bg-zinc-900 rounded-full h-2 overflow-hidden flex">
+                            <div className={`h-full transition-all duration-300 ${deck_1.low_ratio >= 44 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-djcyan-400'}`} style={{ width: `${Math.min(100, deck_1.low_ratio * 1.5)}%` }}></div>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1">
+                            <span>Medios: {deck_1.mid_ratio}%</span>
+                            <span>Agudos: {deck_1.high_ratio}%</span>
+                            <span>LUFS: <strong className="text-zinc-300">{deck_1.lufs} dB</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* DECK 2 */}
+                <div className={`p-5 rounded-3xl border transition-all relative overflow-hidden ${
+                    deck_2.is_master 
+                    ? 'bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]' 
+                    : 'bg-[#07070f] border-zinc-800 hover:border-zinc-700'
+                }`}>
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <span className="font-orbitron font-black text-base text-zinc-400">DECK 2</span>
+                            <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black uppercase tracking-wider ${
+                                deck_2.is_master ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300'
+                            }`}>
+                                {deck_2.is_master ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
+                            </span>
+                        </div>
+                        <span className="font-mono text-xs text-zinc-500 uppercase">{deck_2.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP'}</span>
+                    </div>
+
+                    <div className="mb-4">
+                        <h2 className="font-syne font-black text-2xl lg:text-3xl text-white tracking-wide leading-tight line-clamp-1">{deck_2.title}</h2>
+                        <p className="font-syne font-bold text-sm sm:text-base text-zinc-400 mt-0.5 line-clamp-1">{deck_2.artist}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-zinc-800/80">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-orbitron font-black text-lg sm:text-xl text-black shadow-lg shrink-0" style={{ backgroundColor: deck_2.camelot_color }}>
+                                {deck_2.camelot}
+                            </div>
+                            <div>
+                                <div className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Tonalidad</div>
+                                <div className="font-syne font-bold text-sm sm:text-base text-white">{deck_2.raw_key || deck_2.camelot}</div>
+                            </div>
+                        </div>
+
+                        <div className="p-3 rounded-2xl bg-black/40 border border-zinc-800/80 flex flex-col justify-center">
+                            <div className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Tempo Estricto</div>
+                            <div className="font-orbitron font-black text-xl sm:text-2xl text-white">
+                                {deck_2.bpm ? Number(deck_2.bpm).toFixed(2) : '130.00'} <span className="text-xs font-normal text-zinc-400">BPM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-zinc-800/60 font-mono text-xs">
+                        <div className="flex items-center justify-between text-zinc-400">
+                            <span>Densidad Sub-Graves (Sub-Bass)</span>
+                            <span className={deck_2.low_ratio >= 44 ? 'text-red-400 font-bold' : 'text-zinc-200'}>{deck_2.low_ratio}%</span>
+                        </div>
+                        <div className="w-full bg-zinc-900 rounded-full h-2 overflow-hidden flex">
+                            <div className={`h-full transition-all duration-300 ${deck_2.low_ratio >= 44 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-djcyan-400'}`} style={{ width: `${Math.min(100, deck_2.low_ratio * 1.5)}%` }}></div>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1">
+                            <span>Medios: {deck_2.mid_ratio}%</span>
+                            <span>Agudos: {deck_2.high_ratio}%</span>
+                            <span>LUFS: <strong className="text-zinc-300">{deck_2.lufs} dB</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* GUARDIÁN TÁCTICO ANTI-MUDDY */}
+            <section className="mb-6">
+                <div className={`p-5 rounded-2xl border transition-all ${
+                    anti_muddy.status === 'danger'
+                    ? 'bg-red-950/30 border-red-500/80 shadow-[0_0_25px_rgba(239,68,68,0.3)]'
+                    : anti_muddy.status === 'warning'
+                    ? 'bg-amber-950/30 border-amber-500/80 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+                    : 'bg-emerald-950/25 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                }`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">
+                                {anti_muddy.status === 'danger' ? '🛡️' : anti_muddy.status === 'warning' ? '⚡' : '🟢'}
+                            </span>
+                            <div>
+                                <h3 className="font-syne font-black text-lg text-white tracking-wide">{anti_muddy.title}</h3>
+                                <p className="text-sm text-zinc-300 mt-0.5">{anti_muddy.message}</p>
+                            </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-mono font-black uppercase tracking-wider shrink-0 ${
+                            anti_muddy.status === 'danger' ? 'bg-red-600 text-white' : anti_muddy.status === 'warning' ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-black'
+                        }`}>
+                            {anti_muddy.tag}
+                        </span>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
+                        <div className="flex items-center gap-2 text-zinc-300">
+                            <span className="text-djcyan-400 font-bold">👉 ACCIÓN TÁCTICA:</span>
+                            <span>{anti_muddy.action}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-zinc-400">
+                            <span>CAMELOT: <strong style={{ color: harmonic.color }}>{harmonic.badge}</strong></span>
+                            <span>Δ LUFS: <strong className="text-white">{state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta} dB</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 3 PISTAS SUGERIDAS */}
+            <section className="mt-auto">
+                <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-syne font-bold text-sm text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                        <span>💡 PRÓXIMAS PISTAS SUGERIDAS (RESCATE & PROGRESIÓN)</span>
+                    </h4>
+                    <span className="text-xs font-mono text-zinc-500">Filtrado por Rueda Camelot & Anti-Muddy DSP</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {recommendations.map((rec, idx) => (
+                        <div key={rec.id || idx} className="p-4 rounded-2xl bg-[#090912] border border-zinc-800 hover:border-djcyan-500/50 transition-all shadow-md group">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="w-9 h-9 rounded-xl flex items-center justify-center font-orbitron font-black text-xs text-black shadow-md shrink-0" style={{ backgroundColor: rec.camelot_color }}>
+                                        {rec.camelot}
+                                    </span>
+                                    <div>
+                                        <div className="font-syne font-bold text-sm text-white group-hover:text-djcyan-300 transition-colors line-clamp-1">{rec.title}</div>
+                                        <div className="text-xs text-zinc-400 line-clamp-1 font-mono">{rec.artist}</div>
+                                    </div>
+                                </div>
+                                <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-[10px] font-mono font-bold text-zinc-300 uppercase shrink-0">
+                                    {rec.bpm} BPM
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mt-2 pt-2 border-t border-zinc-800/60">
+                                <span className="text-djcyan-400 font-semibold">{rec.strategy}</span>
+                                <span className="text-zinc-500">Sub: {rec.low_ratio}%</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2">{rec.reason}</p>
+                        </div>
+                    ))}
+                </div>
+            </section>
+        </div>
+    );
+};
+
+// =======================================================
 // MODAL SELECTOR Y LANZADOR DE BEATWAVE LIVE COPILOT
 // =======================================================
 const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
@@ -17729,32 +18061,32 @@ const App = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* LANZADOR BEATWAVE LIVE COPILOT (MONITOR TÁCTICO CABINA) */}
-                    <div className="hidden lg:flex items-center ml-2 xl:ml-4 shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => setCopilotModalOpen(true)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-white shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95 group shrink-0 ${
-                                activeTab === 'copilot'
-                                ? 'bg-gradient-to-r from-red-600 to-rose-600 border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.7)]'
-                                : 'bg-gradient-to-r from-red-950/80 via-zinc-900 to-zinc-950 border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:border-red-400'
-                            }`}
-                            title="Abrir BeatWave Live Copilot: Monitor Táctico de Cabina (Serato Link & Anti-Muddy DSP)"
-                        >
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse"></span>
-                            <span className="font-mono text-xs font-black uppercase tracking-wider text-red-200 group-hover:text-white">
-                                LIVE COPILOT
-                            </span>
-                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-red-500/30 text-red-300 border border-red-500/40">
-                                2ms
-                            </span>
-                        </button>
-                    </div>
                 </div>
 
-                {/* CAPSULE DOCK DE PESTAÑAS: SEGMENTACIÓN FÍSICA HARDWARE (CABINA DJ PRO vs. STUDIO LAB & ACADEMIA) */}
-                <nav className="hidden xl:flex items-center p-1.5 rounded-2xl bg-[#080811]/95 border border-djzinc-800/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-md absolute left-1/2 -translate-x-1/2 z-30">
+                {/* CENTRO: BARRA TÁCTICA DE CABINA (LIVE COPILOT + CAPSULE DOCK) */}
+                <div className="hidden xl:flex items-center gap-2.5 shrink-0 mx-auto">
+                    {/* BOTÓN LIVE COPILOT PRO DJ */}
+                    <button
+                        type="button"
+                        onClick={() => setCopilotModalOpen(true)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-white shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95 group shrink-0 ${
+                            activeTab === 'copilot'
+                            ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-600 border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.7)]'
+                            : 'bg-gradient-to-r from-red-950/80 via-zinc-900 to-zinc-950 border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:border-red-400'
+                        }`}
+                        title="Abrir BeatWave Live Copilot: Monitor Táctico de Cabina (Serato Link & Anti-Muddy DSP)"
+                    >
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse"></span>
+                        <span className="font-mono text-xs font-black uppercase tracking-wider text-red-200 group-hover:text-white">
+                            LIVE COPILOT
+                        </span>
+                        <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-red-500/30 text-red-300 border border-red-500/40">
+                            2ms
+                        </span>
+                    </button>
+
+                    {/* CAPSULE DOCK DE PESTAÑAS: SEGMENTACIÓN FÍSICA HARDWARE (CABINA DJ PRO vs. STUDIO LAB & ACADEMIA) */}
+                    <nav className="flex items-center p-1.5 rounded-2xl bg-[#080811]/95 border border-djzinc-800/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-md">
                     {/* BAHÍA 1: CABINA PRO & FLUJO DE MEZCLA */}
                     <div className="flex items-center gap-1">
                         <button 
@@ -17881,81 +18213,66 @@ const App = () => {
                         </button>
                     </div>
                 </nav>
+            </div>
 
-                <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-                    {/* Botón Live Copilot Compacto Móvil (< 1280px) */}
-                    <button
-                        type="button"
-                        onClick={() => setCopilotModalOpen(true)}
-                        className="flex xl:hidden items-center gap-1.5 px-2 py-1.5 rounded-xl bg-red-950/70 hover:bg-red-900/90 text-red-300 border border-red-500/50 cursor-pointer shadow-md active:scale-95 shrink-0"
-                        title="Abrir Live Copilot (Cabina)"
-                    >
-                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                        <span className="text-[10px] font-mono font-black uppercase text-white">COPILOT</span>
-                    </button>
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                {/* Botón Live Copilot Compacto Móvil (< 1280px) */}
+                <button
+                    type="button"
+                    onClick={() => setCopilotModalOpen(true)}
+                    className="flex xl:hidden items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-500/60 cursor-pointer shadow-md active:scale-95 shrink-0"
+                    title="Abrir Live Copilot (Cabina)"
+                >
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <span className="text-[10px] font-mono font-black uppercase text-white">LIVE</span>
+                </button>
 
-                    {/* Botón Hamburger Móvil (< 1280px) */}
-                    <button
-                        type="button"
-                        onClick={() => setMobileDrawerOpen(true)}
-                        className="flex xl:hidden p-1.5 sm:p-2 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 cursor-pointer shadow-md active:scale-95 shrink-0"
-                        title="Menú de Navegación y Módulos"
-                    >
-                        <Icons.Menu />
-                    </button>
+                {/* Botón Hamburger Móvil (< 1280px) */}
+                <button
+                    type="button"
+                    onClick={() => setMobileDrawerOpen(true)}
+                    className="flex xl:hidden p-1.5 sm:p-2 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 cursor-pointer shadow-md active:scale-95 shrink-0"
+                    title="Menú de Navegación y Módulos"
+                >
+                    <Icons.Menu />
+                </button>
 
-                    {/* Botón de Tutorial / Guía */}
-                    <button
-                        type="button"
-                        onClick={() => setTutorialOpen(true)}
-                        className="flex px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 rounded-lg text-[11px] font-mono font-bold items-center gap-1 cursor-pointer shadow-sm transition-all hover:scale-105 shrink-0"
-                        title="Abrir Selector de Tutoriales (Teaser 60s o Tour Spotlight en Cabina)"
-                    >
-                        <span>❓</span>
-                        <span className="hidden sm:inline">{lang === 'en' ? 'Tutorial' : 'Tutorial'}</span>
-                    </button>
-
-                    {/* Banner de Auditoría Activa en Background */}
-                    {globalAuditInfo.isAuditing && (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded bg-djcyan-950/90 border border-djcyan-500/60 text-[10px] sm:text-[11px] font-mono text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.35)] animate-fadeIn shrink-0" title={globalAuditInfo.statusMsg || 'Auditoría en proceso'}>
-                            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-djcyan-400 animate-ping"></span>
-                            <span className="font-bold">{globalAuditInfo.progress}%</span>
-                        </div>
-                    )}
-
-                    {/* Selector de Idioma (Español / Inglés): Compacto en móvil, doble en desktop */}
-                    <button
-                        type="button"
-                        onClick={() => changeLang(lang === 'es' ? 'en' : 'es')}
-                        className="flex sm:hidden px-2 py-1 rounded-lg bg-djzinc-900 border border-djzinc-800 text-[10px] font-mono font-bold text-djcyan-300 shadow-inner cursor-pointer shrink-0"
-                        title="Cambiar idioma / Switch language"
-                    >
-                        {lang === 'es' ? '🇪🇸 ES' : '🇬🇧 EN'}
-                    </button>
-                    <div className="hidden sm:flex items-center bg-djzinc-900 border border-djzinc-800 rounded-lg p-0.5 text-[11px] font-mono font-bold shadow-inner shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => changeLang('es')}
-                            className={`px-2 py-0.5 rounded cursor-pointer transition-all ${lang === 'es' ? 'bg-djcyan-500 text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
-                            title="Cambiar idioma a Español"
-                        >
-                            🇪🇸 ES
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => changeLang('en')}
-                            className={`px-2 py-0.5 rounded cursor-pointer transition-all ${lang === 'en' ? 'bg-djcyan-500 text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
-                            title="Switch language to English"
-                        >
-                            🇬🇧 EN
-                        </button>
+                {/* Banner de Auditoría Activa en Background */}
+                {globalAuditInfo.isAuditing && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded bg-djcyan-950/90 border border-djcyan-500/60 text-[10px] sm:text-[11px] font-mono text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.35)] animate-fadeIn shrink-0" title={globalAuditInfo.statusMsg || 'Auditoría en proceso'}>
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-djcyan-400 animate-ping"></span>
+                        <span className="font-bold">{globalAuditInfo.progress}%</span>
                     </div>
+                )}
 
-                    <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded bg-djzinc-900 border border-djzinc-800 text-[11px] font-mono text-gray-400 shrink-0">
-                        <span className="w-2 h-2 rounded-full bg-djgreen-400 animate-pulse shadow-[0_0_5px_#22c55e]"></span>
-                        {t('dsp_online') || 'DSP ENGINE ONLINE'}
-                    </div>
+                {/* Selector de Idioma (Español / Inglés) */}
+                <button
+                    type="button"
+                    onClick={() => changeLang(lang === 'es' ? 'en' : 'es')}
+                    className="flex sm:hidden px-2 py-1 rounded-lg bg-djzinc-900 border border-djzinc-800 text-[10px] font-mono font-bold text-djcyan-300 shadow-inner cursor-pointer shrink-0"
+                    title="Cambiar idioma / Switch language"
+                >
+                    {lang === 'es' ? '🇪🇸 ES' : '🇬🇧 EN'}
+                </button>
+                <div className="hidden sm:flex items-center bg-djzinc-900 border border-djzinc-800 rounded-lg p-0.5 text-[11px] font-mono font-bold shadow-inner shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => changeLang('es')}
+                        className={`px-2 py-0.5 rounded cursor-pointer transition-all ${lang === 'es' ? 'bg-djcyan-500 text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
+                        title="Cambiar idioma a Español"
+                    >
+                        🇪🇸 ES
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => changeLang('en')}
+                        className={`px-2 py-0.5 rounded cursor-pointer transition-all ${lang === 'en' ? 'bg-djcyan-500 text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
+                        title="Switch language to English"
+                    >
+                        🇬🇧 EN
+                    </button>
                 </div>
+            </div>
             </header>
 
             {/* MAIN WORKSPACES: Persistencia Total de Estado Manteniendo Todo Montado */}
@@ -18085,7 +18402,14 @@ const App = () => {
                     <KnowledgeWorkspace lang={lang} />
                 </div>
                 <div style={{ display: activeTab === 'copilot' ? 'flex' : 'none' }} className="w-full h-full">
-                    <iframe src="/copilot.html" className="w-full h-full border-0 bg-[#040407]" title="BeatWave Live Copilot" />
+                    <CopilotWorkspace 
+                        onOpenPopOut={() => {
+                            const w = 1380, h = 880;
+                            const left = (window.screen.width - w) / 2;
+                            const top = (window.screen.height - h) / 2;
+                            window.open('/copilot.html', 'BeatWaveLiveCopilot', `width=${w},height=${h},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes`);
+                        }}
+                    />
                 </div>
             </main>
 
@@ -18244,16 +18568,18 @@ const App = () => {
                     type="button"
                     onClick={() => setMobileDrawerOpen(true)}
                     className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
-                        ['taxonomy', 'trends', 'knowledge'].includes(activeTab)
-                            ? (activeTab === 'trends' || activeTab === 'knowledge'
-                                ? 'text-indigo-400 font-bold scale-105'
-                                : 'text-djcyan-400 font-bold scale-105')
+                        ['taxonomy', 'trends', 'knowledge', 'copilot'].includes(activeTab)
+                            ? (activeTab === 'copilot'
+                                ? 'text-red-400 font-bold scale-105'
+                                : (activeTab === 'trends' || activeTab === 'knowledge'
+                                    ? 'text-indigo-400 font-bold scale-105'
+                                    : 'text-djcyan-400 font-bold scale-105'))
                             : 'text-gray-400 hover:text-white'
                     }`}
                 >
                     <Icons.Menu />
                     <span className="text-[9.5px] font-mono mt-0.5 truncate max-w-[64px]">
-                        {activeTab === 'taxonomy' ? 'Taxonomía' : (activeTab === 'trends' ? 'Tendencias' : (activeTab === 'knowledge' ? 'Conocimiento' : 'Más...'))}
+                        {activeTab === 'copilot' ? 'Copilot' : (activeTab === 'taxonomy' ? 'Taxonomía' : (activeTab === 'trends' ? 'Tendencias' : (activeTab === 'knowledge' ? 'Conocimiento' : 'Más...')))}
                     </span>
                 </button>
             </nav>
