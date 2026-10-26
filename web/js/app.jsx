@@ -17239,86 +17239,87 @@ const App = () => {
 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3.5 select-none">
-                        {/* ISOTIPO FLAGSHIP: ALTAVOZ SUBWOOFER CON MEMBRANA VIBRANTE EN CIAN */}
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0c0c16] via-[#07070e] to-[#030306] border-2 border-djcyan-400/70 flex items-center justify-center relative overflow-hidden shrink-0 shadow-[0_0_24px_rgba(6,182,212,0.5)] group select-none cursor-pointer" title="BeatWave Subwoofer Acústico">
-                            {/* Resplandor ambiental de fondo */}
-                            <div className="absolute inset-0 bg-radial from-djcyan-500/20 via-transparent to-transparent pointer-events-none"></div>
-
-                            <svg className="w-9 h-9 relative z-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* ISOTIPO FLAGSHIP: ALTAVOZ SUBWOOFER CLUB PRO (SIN BORDE EXTERIOR, EXCURSIÓN BRUSCA) */}
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center relative shrink-0 select-none cursor-pointer" title="BeatWave Subwoofer Acústico">
+                            <svg className="w-11 h-11 relative z-10 overflow-visible" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
-                                    {/* Gradiente radial del cono de la membrana */}
-                                    <radialGradient id="coneGrad" cx="50%" cy="50%" r="50%">
-                                        <stop offset="0%" stopColor="#040407" />
-                                        <stop offset="45%" stopColor="#0e1726" />
-                                        <stop offset="85%" stopColor="#083344" />
-                                        <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.8" />
-                                    </radialGradient>
-                                    
-                                    {/* Gradiente del Dust Cap central */}
-                                    <radialGradient id="capGrad" cx="40%" cy="35%" r="60%">
-                                        <stop offset="0%" stopColor="#67e8f9" />
-                                        <stop offset="35%" stopColor="#06b6d4" />
-                                        <stop offset="75%" stopColor="#082f49" />
-                                        <stop offset="100%" stopColor="#020617" />
+                                    {/* Gradiente del cono de carbono/polipropileno de club */}
+                                    <radialGradient id="proConeGrad" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stopColor="#050508" />
+                                        <stop offset="40%" stopColor="#0d0e14" />
+                                        <stop offset="78%" stopColor="#151620" />
+                                        <stop offset="100%" stopColor="#0a0a0f" />
                                     </radialGradient>
 
-                                    {/* Gradiente de la suspensión de goma exterior */}
-                                    <radialGradient id="surroundGrad" cx="50%" cy="50%" r="50%">
-                                        <stop offset="70%" stopColor="#181824" />
-                                        <stop offset="88%" stopColor="#2c2c3e" />
-                                        <stop offset="96%" stopColor="#0a0a10" />
-                                        <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.6" />
+                                    {/* Gradiente de suspensión toroidal sobredimensionada (High-Roll Surround) */}
+                                    <radialGradient id="proSurroundGrad" cx="45%" cy="40%" r="60%">
+                                        <stop offset="0%" stopColor="#252634" />
+                                        <stop offset="45%" stopColor="#181822" />
+                                        <stop offset="80%" stopColor="#0e0e14" />
+                                        <stop offset="100%" stopColor="#060609" />
                                     </radialGradient>
 
-                                    {/* Filtro de Resplandor Neón Cian */}
-                                    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
-                                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                                        <feMerge>
-                                            <feMergeNode in="blur" />
-                                            <feMergeNode in="SourceGraphic" />
-                                        </feMerge>
-                                    </filter>
+                                    {/* Gradiente cóncavo del Dust Cap invertido */}
+                                    <radialGradient id="proCapGrad" cx="42%" cy="38%" r="58%">
+                                        <stop offset="0%" stopColor="#1a1c26" />
+                                        <stop offset="35%" stopColor="#0e0f15" />
+                                        <stop offset="85%" stopColor="#050508" />
+                                        <stop offset="100%" stopColor="#020204" />
+                                    </radialGradient>
+
+                                    {/* Chasis de montaje en fundición de aluminio negro mate */}
+                                    <radialGradient id="proChassisGrad" cx="50%" cy="50%" r="50%">
+                                        <stop offset="75%" stopColor="#111218" />
+                                        <stop offset="92%" stopColor="#1a1b24" />
+                                        <stop offset="100%" stopColor="#090a0e" />
+                                    </radialGradient>
                                 </defs>
 
-                                {/* 1. Anillo de onda acústica expansiva */}
-                                <circle cx="24" cy="24" r="21" stroke="#06b6d4" strokeWidth="1" strokeDasharray="3 3" className="anim-woofer-ring" />
+                                {/* 1. Aro exterior de montaje metálico con bisel oscuro */}
+                                <circle cx="24" cy="24" r="23" fill="url(#proChassisGrad)" stroke="#222430" strokeWidth="0.8" />
+                                <circle cx="24" cy="24" r="21" stroke="#161720" strokeWidth="1" />
 
-                                {/* 2. Chasis exterior metálico con tornillos de fijación */}
-                                <circle cx="24" cy="24" r="22.5" stroke="#334155" strokeWidth="1.5" fill="#090910" />
-                                <circle cx="24" cy="24" r="20" stroke="#06b6d4" strokeWidth="0.8" strokeOpacity="0.4" />
-                                
-                                {/* 4 Pernos / Tornillos Allen en los bordes */}
-                                <circle cx="7" cy="7" r="1.2" fill="#06b6d4" opacity="0.85" />
-                                <circle cx="41" cy="7" r="1.2" fill="#06b6d4" opacity="0.85" />
-                                <circle cx="7" cy="41" r="1.2" fill="#06b6d4" opacity="0.85" />
-                                <circle cx="41" cy="41" r="1.2" fill="#06b6d4" opacity="0.85" />
+                                {/* 6 Pernos Allen industriales de fijación en acero grafito */}
+                                <circle cx="42.2" cy="34.5" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
+                                <circle cx="24" cy="45" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
+                                <circle cx="5.8" cy="34.5" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
+                                <circle cx="5.8" cy="13.5" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
+                                <circle cx="24" cy="3" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
+                                <circle cx="42.2" cy="13.5" r="1.3" fill="#475569" stroke="#1e293b" strokeWidth="0.4" />
 
-                                {/* 3. Suspensión de Goma (Surround Ring) */}
-                                <circle cx="24" cy="24" r="18" fill="url(#surroundGrad)" stroke="#06b6d4" strokeWidth="1.2" className="anim-woofer-surround" />
-                                
-                                {/* 4. Cono del Altavoz (Membrana en vibración) */}
+                                {/* 2. Suspensión de goma sobredimensionada (High-Roll Surround) */}
+                                <circle cx="24" cy="24" r="18" fill="url(#proSurroundGrad)" stroke="#12131a" strokeWidth="1.2" className="anim-woofer-surround" />
+
+                                {/* 3. Cono del Subwoofer con Excursión Brutal (anim-woofer-cone) */}
                                 <g className="anim-woofer-cone">
-                                    <circle cx="24" cy="24" r="14.5" fill="url(#coneGrad)" />
-                                    {/* Estrías y textura concéntrica del cono */}
-                                    <circle cx="24" cy="24" r="12.5" stroke="#06b6d4" strokeWidth="0.5" strokeOpacity="0.35" fill="none" />
-                                    <circle cx="24" cy="24" r="10" stroke="#22d3ee" strokeWidth="0.6" strokeOpacity="0.5" fill="none" />
+                                    <circle cx="24" cy="24" r="15" fill="url(#proConeGrad)" stroke="#1a1b26" strokeWidth="0.6" />
                                     
-                                    {/* Anillo de la bobina móvil (Voice Coil Ring Cian) */}
-                                    <circle cx="24" cy="24" r="7.5" stroke="#06b6d4" strokeWidth="1.2" fill="none" filter="url(#cyanGlow)" />
-                                    
-                                    {/* 5. Cúpula Central (Dust Cap / Domo Cóncavo) */}
-                                    <circle cx="24" cy="24" r="5.5" fill="url(#capGrad)" stroke="#67e8f9" strokeWidth="0.8" className="anim-woofer-dustcap" />
-                                    {/* Punto de luz / brillo especular de la cúpula */}
-                                    <ellipse cx="22.5" cy="22" rx="1.5" ry="0.9" fill="#ffffff" opacity="0.75" />
+                                    {/* Nervaduras radiales de refuerzo estructural (carácter acústico pro) */}
+                                    <line x1="24" y1="9.5" x2="24" y2="16.5" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
+                                    <line x1="24" y1="31.5" x2="24" y2="38.5" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
+                                    <line x1="9.5" y1="24" x2="16.5" y2="24" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
+                                    <line x1="31.5" y1="24" x2="38.5" y2="24" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
+                                    <line x1="13.8" y1="13.8" x2="18.7" y2="18.7" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
+                                    <line x1="29.3" y1="29.3" x2="34.2" y2="34.2" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
+                                    <line x1="34.2" y1="13.8" x2="29.3" y2="18.7" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
+                                    <line x1="18.7" y1="29.3" x2="13.8" y2="34.2" stroke="#222533" strokeWidth="0.8" strokeLinecap="round" />
+
+                                    {/* Único detalle en azul cian corporativo: Anillo fino de bobina móvil */}
+                                    <circle cx="24" cy="24" r="7.8" stroke="#06b6d4" strokeWidth="0.9" fill="none" opacity="0.9" />
+
+                                    {/* 4. Cúpula Central Invertida (Inverted Dust Cap) */}
+                                    <circle cx="24" cy="24" r="6.2" fill="url(#proCapGrad)" stroke="#161822" strokeWidth="0.8" className="anim-woofer-dustcap" />
+                                    {/* Sutil micro-arco de luz en la concavidad */}
+                                    <path d="M 21.2 21 Q 24 19.5 26.8 21" stroke="#ffffff" strokeWidth="0.6" strokeLinecap="round" opacity="0.3" fill="none" />
                                 </g>
                             </svg>
                         </div>
 
-                        {/* RÓTULO BEATWAVE PRO CON VIBRACIÓN ACÚSTICA SINCRONIZADA */}
+                        {/* RÓTULO BEATWAVE PRO DE ALTA JERARQUÍA (ANIMACIÓN ORIGINAL) */}
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2 sm:gap-2.5 leading-none">
-                                <span className="text-lg sm:text-[23px] tracking-wider uppercase font-black anim-bass-vibrating-logo truncate select-none cursor-pointer" style={{ fontFamily: "'Syne', sans-serif" }}>
-                                    BEAT<span className="anim-wave-bass-pulse">WAVE</span>
+                                <span className="text-lg sm:text-[23px] tracking-wider uppercase font-black anim-soundwave truncate select-none cursor-pointer" style={{ fontFamily: "'Syne', sans-serif" }}>
+                                    BEAT<span className="text-djcyan-400">WAVE</span>
                                 </span>
                                 <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-md font-black tracking-widest border border-djcyan-400/80 bg-djcyan-950 text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0">
                                     PRO
