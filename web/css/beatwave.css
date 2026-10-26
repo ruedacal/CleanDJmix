@@ -1,117 +1,175 @@
-/* --- BEATWAVE PRO: MOTOR DE EXCURSIÓN BRUSCA DE SUBWOOFER 3D (PUNCH DE CLUB BRUTAL) --- */
+/* --- BEATWAVE PRO: MOTOR DE EXCURSIÓN BRUTAL Y DISTORSIÓN MECÁNICA DE SUBWOOFER 3D --- */
 
-/* Excursión brutal 3D del cono hacia la derecha (hacia el texto BEATWAVE): disparo ultra-rápido y retroceso elástico */
+/* Retroceso violento del chasis / Kickback de toda la estructura por inercia acústica del imán pesado */
+@keyframes wooferChassisRecoil {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    8% {
+        /* Culatazo instantáneo del conjunto de imán hacia atrás */
+        transform: translate3d(-3.8px, 1.4px, 0) rotate(1.8deg);
+    }
+    18% {
+        /* Rebote hacia adelante */
+        transform: translate3d(1.8px, -0.6px, 0) rotate(-0.6deg);
+    }
+    30% {
+        transform: translate3d(-0.6px, 0.2px, 0);
+    }
+    50% {
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* Excursión brutal 3D y deformación no-lineal extrema del cono */
 @keyframes wooferBrutalPunch3D {
     0% {
-        transform: translate3d(0, 0, 0) scale(0.95);
+        transform: translate3d(0, 0, 0) scale(0.92);
         filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
     }
-    7% {
-        /* ¡EXPLOSIÓN! La membrana casi estalla saliendo del chasis hacia adelante/derecha */
-        transform: translate3d(5.5px, -1.8px, 0) scale(1.44);
-        filter: drop-shadow(0 0 14px rgba(6, 182, 212, 0.95)) drop-shadow(0 0 24px rgba(6, 182, 212, 0.6));
+    8% {
+        /* ¡EXPLOSIÓN DE GRAVES! La membrana casi estalla saliendo del chasis con distorsión asimétrica */
+        transform: translate3d(10.5px, -3.5px, 0) scaleX(1.78) scaleY(1.52) skewX(-9deg) skewY(3.5deg);
+        filter: url(#wooferMechanicalDistortion) drop-shadow(0 0 18px rgba(6, 182, 212, 1)) drop-shadow(0 0 36px rgba(6, 182, 212, 0.85));
     }
-    14% {
-        /* Retroceso elástico violento hacia el interior del entrehierro */
-        transform: translate3d(-2.8px, 1px, 0) scale(0.82);
-        filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.95));
-    }
-    22% {
-        /* Rebote secundario elástico */
-        transform: translate3d(1.8px, -0.6px, 0) scale(1.10);
-        filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.4));
-    }
-    32% {
-        transform: translate3d(-0.6px, 0.2px, 0) scale(0.97);
-    }
-    42% {
-        transform: translate3d(0.4px, -0.1px, 0) scale(1.01);
-    }
-    52%, 100% {
-        /* Reposo en posición neutra esperando el siguiente impacto */
-        transform: translate3d(0, 0, 0) scale(0.95);
-        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
-    }
-}
-
-/* Suspensión exterior de goma (High-Roll Surround): acompaña el impacto elástico */
-@keyframes wooferSurroundBrutal3D {
-    0% {
-        transform: translate3d(0, 0, 0) scale(0.97);
-        opacity: 0.85;
-    }
-    7% {
-        transform: translate3d(3px, -1px, 0) scale(1.24);
-        opacity: 1;
-        filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.65));
-    }
-    14% {
-        transform: translate3d(-1.5px, 0.5px, 0) scale(0.90);
-        opacity: 0.75;
-    }
-    22% {
-        transform: translate3d(1px, -0.3px, 0) scale(1.06);
-        opacity: 0.95;
-    }
-    32% {
-        transform: translate3d(0, 0, 0) scale(0.98);
-    }
-    52%, 100% {
-        transform: translate3d(0, 0, 0) scale(0.97);
-        opacity: 0.85;
-    }
-}
-
-/* Cúpula central invertida (Dust Cap): golpe concentrado en el eje acústico en 3D */
-@keyframes wooferDustCapBrutal3D {
-    0% {
-        transform: translate3d(0, 0, 0) scale(0.94);
-    }
-    7% {
-        transform: translate3d(7px, -2.2px, 0) scale(1.54);
-        filter: drop-shadow(0 0 16px rgba(6, 182, 212, 0.95));
-    }
-    14% {
-        transform: translate3d(-3.5px, 1.2px, 0) scale(0.78);
-    }
-    22% {
-        transform: translate3d(2px, -0.7px, 0) scale(1.14);
-    }
-    32% {
-        transform: translate3d(-0.8px, 0.3px, 0) scale(0.96);
-    }
-    52%, 100% {
-        transform: translate3d(0, 0, 0) scale(0.94);
-    }
-}
-
-/* Ondas de choque sónicas proyectadas del altavoz hacia las letras BEATWAVE */
-@keyframes wooferBlastWaveRings {
-    0% {
-        transform: translate3d(0, 0, 0) scale(0.65);
-        opacity: 0;
-    }
-    7% {
-        transform: translate3d(4px, -1px, 0) scale(0.95);
-        opacity: 0.95;
-        stroke: #22d3ee;
+    18% {
+        /* Retroceso elástico violento hacia el interior del entrehierro con compresión */
+        transform: translate3d(-5px, 1.8px, 0) scaleX(0.70) scaleY(0.76) skewX(5deg);
+        filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.95));
     }
     28% {
-        transform: translate3d(14px, -3px, 0) scale(1.55);
-        opacity: 0.4;
-        stroke: #06b6d4;
+        /* Rebote secundario elástico */
+        transform: translate3d(3.5px, -1.2px, 0) scaleX(1.22) scaleY(1.15) skewX(-2.5deg);
+        filter: drop-shadow(0 0 9px rgba(6, 182, 212, 0.55));
     }
-    45% {
-        transform: translate3d(22px, -5px, 0) scale(1.95);
+    40% {
+        transform: translate3d(-1.2px, 0.4px, 0) scale(0.95);
+    }
+    55%, 100% {
+        transform: translate3d(0, 0, 0) scale(0.92);
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+    }
+}
+
+/* Suspensión exterior de goma (Surround Torus 3D): acompañamiento ultra-elástico */
+@keyframes wooferSurroundBrutal3D {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(0.95);
+        opacity: 0.85;
+    }
+    8% {
+        transform: translate3d(6px, -2px, 0) scaleX(1.48) scaleY(1.34) skewX(-6deg);
+        opacity: 1;
+        filter: drop-shadow(0 0 14px rgba(6, 182, 212, 0.85));
+    }
+    18% {
+        transform: translate3d(-3px, 1px, 0) scaleX(0.82) scaleY(0.86);
+        opacity: 0.7;
+    }
+    28% {
+        transform: translate3d(2px, -0.7px, 0) scale(1.15);
+        opacity: 0.95;
+    }
+    40% {
+        transform: translate3d(-0.5px, 0.2px, 0) scale(0.98);
+    }
+    55% {
+        transform: translate3d(0, 0, 0) scale(0.95);
+        opacity: 0.85;
+    }
+}
+
+/* Cúpula central invertida (Dust Cap 3D): disparo concentrado en el eje acústico con distorsión */
+@keyframes wooferDustCapBrutal3D {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(0.90);
+    }
+    8% {
+        transform: translate3d(14px, -4.5px, 0) scale(1.95) skewX(-11deg);
+        filter: drop-shadow(0 0 22px rgba(6, 182, 212, 1));
+    }
+    18% {
+        transform: translate3d(-6px, 2px, 0) scale(0.65) skewX(6deg);
+    }
+    28% {
+        transform: translate3d(4.2px, -1.4px, 0) scale(1.28);
+        filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.6));
+    }
+    40% {
+        transform: translate3d(-1.2px, 0.4px, 0) scale(0.94);
+    }
+    55% {
+        transform: translate3d(0, 0, 0) scale(0.90);
+    }
+}
+
+/* Ondas de choque sónicas expansivas que viajan e impactan contra las letras */
+@keyframes wooferBlastWaveRings {
+    0% {
+        transform: translate3d(0, 0, 0) scale(0.5);
+        opacity: 0;
+        stroke-width: 2.6;
+    }
+    8% {
+        transform: translate3d(7px, -1.8px, 0) scale(1.1);
+        opacity: 1;
+        stroke: #22d3ee;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 10px #06b6d4);
+    }
+    25% {
+        transform: translate3d(20px, -4.5px, 0) scale(1.95);
+        opacity: 0.7;
+        stroke: #06b6d4;
+        stroke-width: 2.2;
+    }
+    42% {
+        transform: translate3d(32px, -7px, 0) scale(2.6);
         opacity: 0;
     }
     100% {
-        transform: translate3d(24px, -5px, 0) scale(2.1);
+        transform: translate3d(34px, -7px, 0) scale(2.7);
         opacity: 0;
     }
 }
 
-/* Clases activas de animación del altavoz con balística agresiva */
+/* Animación de la tipografía BEATWAVE: empuje cinético, distorsión y dispersión cromática */
+@keyframes textBrutalBassWarp {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
+        text-shadow: 0 0 2px rgba(6, 182, 212, 0.2);
+    }
+    8% {
+        /* Impacto directo de la onda expansiva: estiramiento vertical, empuje a la derecha y dispersión RGB */
+        transform: translate3d(6px, -1.2px, 0) scaleX(1.08) scaleY(1.30) skewX(-8deg);
+        text-shadow: -4px 0 0 rgba(236, 72, 153, 0.9), 4px 0 0 rgba(6, 182, 212, 1), 0 0 32px rgba(6, 182, 212, 0.95);
+    }
+    18% {
+        /* Contracción elástica post-impacto */
+        transform: translate3d(-3.5px, 0.6px, 0) scaleX(0.94) scaleY(0.88) skewX(5deg);
+        text-shadow: -2px 0 0 rgba(236, 72, 153, 0.5), 2px 0 0 rgba(6, 182, 212, 0.6), 0 0 16px rgba(6, 182, 212, 0.7);
+    }
+    28% {
+        /* Réplica de graves */
+        transform: translate3d(2.5px, -0.4px, 0) scaleX(1.03) scaleY(1.10) skewX(-2.5deg);
+        text-shadow: 0 0 14px rgba(6, 182, 212, 0.75);
+    }
+    42% {
+        transform: translate3d(-1px, 0, 0) scale(0.99) skewX(1deg);
+    }
+    55% {
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
+        text-shadow: 0 0 2px rgba(6, 182, 212, 0.2);
+    }
+}
+
+/* Clases activas de animación del altavoz con balística agresiva y distorsión */
+.anim-woofer-chassis {
+    transform-origin: 14px 38px;
+    animation: wooferChassisRecoil 0.8s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    will-change: transform;
+}
+
 .anim-woofer-cone,
 .anim-woofer-cone-3d {
     transform-origin: 36px 28px;
@@ -139,11 +197,13 @@
     will-change: transform, opacity;
 }
 
-/* --- ANIMACIÓN DEL RÓTULO BEATWAVE CON DISTORSIÓN VERTICAL SINCRONIZADA --- */
+/* --- ANIMACIÓN DEL RÓTULO BEATWAVE CON DISTORSIÓN VERTICAL ULTRA-BRUTAL SINCRONIZADA --- */
 .anim-soundwave {
     color: #ffffff;
     display: inline-block;
     filter: url(#waveDistortion);
+    animation: textBrutalBassWarp 0.8s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    transform-origin: left center;
     will-change: filter, transform;
 }
 

@@ -17297,23 +17297,52 @@ const App = () => {
         <div className="flex flex-col h-screen w-screen bg-djzinc-950 text-gray-300 overflow-hidden font-sans select-none">
             {/* TOP NAVIGATION BAR CON MÁXIMA JERARQUÍA VISUAL & CAPSULE DOCK */}
             <header className="h-16 border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md">
-                {/* MOTOR DE DISTORSIÓN FRACTAL VERTICAL SINCRONIZADA CON EL GOLPE DE SUBWOOFER (0.8s) */}
+                {/* MOTOR DE DISTORSIÓN FRACTAL VERTICAL ULTRA-BRUTAL (0.8s) */}
                 <svg width="0" height="0" className="absolute pointer-events-none">
                     <defs>
-                        <filter id="waveDistortion" x="-20%" y="-40%" width="140%" height="180%">
-                            {/* Ruido turbulento continuo estrictamente vertical (baseFrequency en X=0) */}
-                            <feTurbulence type="fractalNoise" baseFrequency="0 0.32" numOctaves="2" result="warp">
-                                <animate attributeName="baseFrequency" values="0 0.08; 0 0.48; 0 0.08" dur="0.8s" repeatCount="indefinite" />
+                        {/* 1. DISTORSIÓN VERTICAL TEARING ULTRA-BRUTAL PARA LAS LETRAS BEATWAVE */}
+                        <filter id="waveDistortion" x="-60%" y="-120%" width="220%" height="340%">
+                            {/* Ruido turbulento estricto vertical en X=0, con 3 octavas para cortes líquidos de alta resolución */}
+                            <feTurbulence type="fractalNoise" baseFrequency="0 0.38" numOctaves="3" result="warp">
+                                <animate 
+                                    attributeName="baseFrequency" 
+                                    values="0 0.16; 0 0.68; 0 0.28; 0 0.48; 0 0.16" 
+                                    keyTimes="0; 0.08; 0.20; 0.38; 1" 
+                                    dur="0.8s" 
+                                    repeatCount="indefinite" 
+                                />
                             </feTurbulence>
                             
-                            {/* Mapa de Desplazamiento sincronizado exactamente con la explosión del altavoz (0.8s) */}
+                            {/* Desplazamiento explosivo masivo (scale 86) que rasga las letras y crea ondas de vibración */}
                             <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="0" in="SourceGraphic" in2="warp">
                                 <animate 
                                     attributeName="scale" 
-                                    values="0; 24; 4; 0; 0" 
-                                    keyTimes="0; 0.07; 0.16; 0.38; 1" 
+                                    values="0; 86; 42; 20; 6; 0" 
+                                    keyTimes="0; 0.08; 0.18; 0.32; 0.50; 1" 
                                     dur="0.8s" 
                                     repeatCount="indefinite"
+                                />
+                            </feDisplacementMap>
+                        </filter>
+
+                        {/* 2. DISTORSIÓN MECÁNICA / RUPTURA DE MEMBRANA PARA EL CONO DEL ALTAVOZ */}
+                        <filter id="wooferMechanicalDistortion" x="-50%" y="-50%" width="200%" height="200%">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.08 0.14" numOctaves="2" result="coneNoise">
+                                <animate 
+                                    attributeName="baseFrequency" 
+                                    values="0.04 0.08; 0.16 0.26; 0.06 0.12; 0.04 0.08" 
+                                    keyTimes="0; 0.08; 0.25; 1" 
+                                    dur="0.8s" 
+                                    repeatCount="indefinite" 
+                                />
+                            </feTurbulence>
+                            <feDisplacementMap in="SourceGraphic" in2="coneNoise" scale="0" xChannelSelector="R" yChannelSelector="G">
+                                <animate 
+                                    attributeName="scale" 
+                                    values="0; 22; 8; 2; 0" 
+                                    keyTimes="0; 0.08; 0.18; 0.35; 1" 
+                                    dur="0.8s" 
+                                    repeatCount="indefinite" 
                                 />
                             </feDisplacementMap>
                         </filter>
@@ -17323,7 +17352,7 @@ const App = () => {
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3.5 select-none">
                         {/* ISOTIPO FLAGSHIP: SUBWOOFER CLUB 3D BASADO EN FOTO (ORIENTADO A LA DERECHA, DISPARO BRUTAL HACIA EL TEXTO) */}
-                        <div className="w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group" title="BeatWave Subwoofer Acústico Pro">
+                        <div className="w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group anim-woofer-chassis" title="BeatWave Subwoofer Acústico Pro">
                             <svg className="w-12 h-12 relative z-10 overflow-visible" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
                                     {/* Gradiente metálico de la estructura del motor / imán doble posterior */}
@@ -17400,8 +17429,9 @@ const App = () => {
 
                                 {/* 2. ONDAS DE CHOQUE SÓNICAS DISPARADAS HACIA LA DERECHA (DIRECTO HACIA EL TEXTO BEATWAVE) */}
                                 <g id="subwoofer-sound-blastwaves" className="pointer-events-none">
-                                    <path d="M 44 14 C 54 20, 54 38, 44 44" stroke="#06b6d4" strokeWidth="1.6" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="0.9" />
-                                    <path d="M 49 10 C 61 18, 61 40, 49 48" stroke="#22d3ee" strokeWidth="1.2" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="0.6" style={{ animationDelay: '0.07s' }} />
+                                    <path d="M 44 14 C 54 20, 54 38, 44 44" stroke="#06b6d4" strokeWidth="2.4" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="1" />
+                                    <path d="M 49 10 C 61 18, 61 40, 49 48" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="0.8" style={{ animationDelay: '0.06s' }} />
+                                    <path d="M 54 6 C 68 16, 68 42, 54 52" stroke="#67e8f9" strokeWidth="1.2" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="0.6" style={{ animationDelay: '0.12s' }} />
                                 </g>
 
                                 {/* 3. ARO FRONTAL EXTERIOR DE FUNDICIÓN (BASKET RIM EN PERSPECTIVA 3D TILTED) */}
