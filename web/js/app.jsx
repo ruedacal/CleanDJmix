@@ -4001,8 +4001,8 @@ const AuditWorkspace = ({
                 spotify_url: r.spotify_url || null,
                 isrc: r.isrc || null,
                 preview_url: r.preview_url || null,
-                energy: r.energy || 80,
-                danceability: r.danceability || 80,
+                energy: r.energy || r.e || 78,
+                danceability: r.danceability || r.dance || 84,
                 fase_badge: r.fase_badge || null,
                 comment: `Reemplazo HD para: ${r.reemplazo_de || r.filename || 'Pista local'}`
             }));
@@ -9783,14 +9783,14 @@ const SpotifyWorkspace = ({
                                             <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
                                                 <div className="flex items-center justify-between w-full text-[9px] font-mono">
                                                     <span className="text-gray-400">⚡</span>
-                                                    <span className={`font-bold ${(row.energy || 80) >= 82 ? 'text-red-400' : (row.energy || 80) >= 68 ? 'text-amber-400' : 'text-djcyan-400'}`}>
-                                                        {row.energy || 80}%
+                                                    <span className={`font-bold ${(row.energy || row.e || 75) >= 82 ? 'text-red-400' : (row.energy || row.e || 75) >= 68 ? 'text-amber-400' : 'text-djcyan-400'}`}>
+                                                        {row.energy || row.e || 75}%
                                                     </span>
                                                 </div>
                                                 <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
                                                     <div 
-                                                        className={`h-full rounded-full ${(row.energy || 80) >= 82 ? 'bg-gradient-to-r from-amber-500 to-red-500' : (row.energy || 80) >= 68 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 'bg-gradient-to-r from-cyan-400 to-blue-500'}`} 
-                                                        style={{ width: `${Math.min(100, Math.max(10, row.energy || 80))}%` }}
+                                                        className={`h-full rounded-full ${(row.energy || row.e || 75) >= 82 ? 'bg-gradient-to-r from-amber-500 to-red-500' : (row.energy || row.e || 75) >= 68 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 'bg-gradient-to-r from-cyan-400 to-blue-500'}`} 
+                                                        style={{ width: `${Math.min(100, Math.max(10, row.energy || row.e || 75))}%` }}
                                                     ></div>
                                                 </div>
                                             </div>
@@ -9801,12 +9801,12 @@ const SpotifyWorkspace = ({
                                             <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
                                                 <div className="flex items-center justify-between w-full text-[9px] font-mono">
                                                     <span className="text-gray-400">🕺</span>
-                                                    <span className="font-bold text-purple-300">{row.danceability || 80}%</span>
+                                                    <span className="font-bold text-purple-300">{row.danceability || row.dance || 82}%</span>
                                                 </div>
                                                 <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
                                                     <div 
                                                         className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" 
-                                                        style={{ width: `${Math.min(100, Math.max(10, row.danceability || 80))}%` }}
+                                                        style={{ width: `${Math.min(100, Math.max(10, row.danceability || row.dance || 82))}%` }}
                                                     ></div>
                                                 </div>
                                             </div>
@@ -16910,33 +16910,42 @@ const App = () => {
         const list = Array.isArray(tracksData) ? tracksData : [tracksData];
         if (list.length === 0) return;
 
-        const newTracks = list.map((trackData, idx) => ({
-            id: trackData.id || `tax_${Date.now()}_${idx}_${Math.floor(Math.random() * 1000)}`,
-            title: trackData.displayTitle || trackData.title || trackData.t || 'Pista Taxonomía',
-            artist: trackData.displayArtist || trackData.artist || trackData.a || 'Artista',
-            album: trackData.displayAlbum || trackData.album || (origin === 'audit_upgrade' || trackData.origin === 'audit_upgrade' ? 'Oficial Spotify HD' : 'Taxonomía AI'),
-            bpm: parseFloat(trackData.displayBpm || trackData.bpm || trackData.b || 128),
-            key: (trackData.displayKey || trackData.key || trackData.k || '8A').toUpperCase(),
-            cover: trackData.displayCover || trackData.cover || null,
-            duration: trackData.duration || '04:00',
-            origin: trackData.origin || origin,
-            reemplazo_de: trackData.reemplazo_de || null,
-            original_file: trackData.original_file || null,
-            original_path: trackData.original_path || null,
-            downloaded: false,
-            selected: true,
-            format: trackData.format || 'FLAC',
-            energy: trackData.energy || trackData.e || 80,
-            danceability: trackData.danceability || trackData.dance || 80,
-            fase_badge: trackData.fase_badge || null,
-            comment: trackData.comment || null,
-            calidad: trackData.calidad || (origin === 'audit_upgrade' || trackData.origin === 'audit_upgrade' ? 'Oficial Spotify HD' : 'Pendiente'),
-            status: trackData.status || 'Pendiente Descarga',
-            spotify_id: trackData.spotify_id || null,
-            spotify_url: trackData.spotify_url || null,
-            isrc: trackData.isrc || null,
-            preview_url: trackData.preview_url || null
-        }));
+        const newTracks = list.map((trackData, idx) => {
+            const bNum = parseFloat(trackData.displayBpm || trackData.bpm || trackData.b || 128) || 128;
+            const titleStr = String(trackData.displayTitle || trackData.title || trackData.t || '').toLowerCase();
+            const artistStr = String(trackData.displayArtist || trackData.artist || trackData.a || '').toLowerCase();
+            const seed = (titleStr + artistStr).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + (idx * 17);
+            const dynEnergy = Math.min(98, Math.max(45, Math.round(60 + (bNum - 118) * 1.5 + ((seed % 17) - 8))));
+            const dynDance = Math.min(98, Math.max(48, Math.round(92 - Math.abs(bNum - 126) * 0.9 + ((seed % 15) - 7))));
+
+            return {
+                id: trackData.id || `tax_${Date.now()}_${idx}_${Math.floor(Math.random() * 1000)}`,
+                title: trackData.displayTitle || trackData.title || trackData.t || 'Pista Taxonomía',
+                artist: trackData.displayArtist || trackData.artist || trackData.a || 'Artista',
+                album: trackData.displayAlbum || trackData.album || (origin === 'audit_upgrade' || trackData.origin === 'audit_upgrade' ? 'Oficial Spotify HD' : 'Taxonomía AI'),
+                bpm: bNum,
+                key: (trackData.displayKey || trackData.key || trackData.k || '8A').toUpperCase(),
+                cover: trackData.displayCover || trackData.cover || null,
+                duration: trackData.duration || '04:00',
+                origin: trackData.origin || origin,
+                reemplazo_de: trackData.reemplazo_de || null,
+                original_file: trackData.original_file || null,
+                original_path: trackData.original_path || null,
+                downloaded: false,
+                selected: true,
+                format: trackData.format || 'FLAC',
+                energy: trackData.energy || trackData.e || dynEnergy,
+                danceability: trackData.danceability || trackData.dance || dynDance,
+                fase_badge: trackData.fase_badge || null,
+                comment: trackData.comment || null,
+                calidad: trackData.calidad || (origin === 'audit_upgrade' || trackData.origin === 'audit_upgrade' ? 'Oficial Spotify HD' : 'Pendiente'),
+                status: trackData.status || 'Pendiente Descarga',
+                spotify_id: trackData.spotify_id || null,
+                spotify_url: trackData.spotify_url || null,
+                isrc: trackData.isrc || null,
+                preview_url: trackData.preview_url || null
+            };
+        });
 
         setSpotifyTracks(prev => {
             const current = prev || [];

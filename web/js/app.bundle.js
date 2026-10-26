@@ -2794,8 +2794,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           spotify_url: r.spotify_url || null,
           isrc: r.isrc || null,
           preview_url: r.preview_url || null,
-          energy: r.energy || 80,
-          danceability: r.danceability || 80,
+          energy: r.energy || r.e || 78,
+          danceability: r.danceability || r.dance || 84,
           fase_badge: r.fase_badge || null,
           comment: `Reemplazo HD para: ${r.reemplazo_de || r.filename || "Pista local"}`
         }));
@@ -6603,18 +6603,18 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-gray-400 text-xs" }, row.duration),
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "bg-[#14141c] text-gray-200 px-1.5 py-0.5 rounded text-[11px] font-mono border border-djzinc-800" }, row.bpm)),
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-mono font-bold text-xs" }, row.key)),
-        /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\u26A1"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${(row.energy || 80) >= 82 ? "text-red-400" : (row.energy || 80) >= 68 ? "text-amber-400" : "text-djcyan-400"}` }, row.energy || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\u26A1"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${(row.energy || row.e || 75) >= 82 ? "text-red-400" : (row.energy || row.e || 75) >= 68 ? "text-amber-400" : "text-djcyan-400"}` }, row.energy || row.e || 75, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
           "div",
           {
-            className: `h-full rounded-full ${(row.energy || 80) >= 82 ? "bg-gradient-to-r from-amber-500 to-red-500" : (row.energy || 80) >= 68 ? "bg-gradient-to-r from-yellow-400 to-amber-500" : "bg-gradient-to-r from-cyan-400 to-blue-500"}`,
-            style: { width: `${Math.min(100, Math.max(10, row.energy || 80))}%` }
+            className: `h-full rounded-full ${(row.energy || row.e || 75) >= 82 ? "bg-gradient-to-r from-amber-500 to-red-500" : (row.energy || row.e || 75) >= 68 ? "bg-gradient-to-r from-yellow-400 to-amber-500" : "bg-gradient-to-r from-cyan-400 to-blue-500"}`,
+            style: { width: `${Math.min(100, Math.max(10, row.energy || row.e || 75))}%` }
           }
         )))),
-        /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\u{1F57A}"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-purple-300" }, row.danceability || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\u{1F57A}"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-purple-300" }, row.danceability || row.dance || 82, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
           "div",
           {
             className: "h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500",
-            style: { width: `${Math.min(100, Math.max(10, row.danceability || 80))}%` }
+            style: { width: `${Math.min(100, Math.max(10, row.danceability || row.dance || 82))}%` }
           }
         )))),
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, row.downloaded ? isFake ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse", title: "\xA1Alerta! Falso FLAC con corte lossy previo" }, "FLAC FAKE") : /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 shadow", title: `Corte detectado: ${row.cutoff_khz || 22.05}kHz` }, row.status || "FLAC VERDADERO") : row.download_error ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-rose-950 text-rose-300 border border-rose-800", title: row.download_error }, "\u26A0\uFE0F Error"), /* @__PURE__ */ React.createElement(
@@ -11240,33 +11240,41 @@ Respuesta: ${qa.a}`).join("\n\n"),
       if (!tracksData) return;
       const list = Array.isArray(tracksData) ? tracksData : [tracksData];
       if (list.length === 0) return;
-      const newTracks = list.map((trackData, idx) => ({
-        id: trackData.id || `tax_${Date.now()}_${idx}_${Math.floor(Math.random() * 1e3)}`,
-        title: trackData.displayTitle || trackData.title || trackData.t || "Pista Taxonom\xEDa",
-        artist: trackData.displayArtist || trackData.artist || trackData.a || "Artista",
-        album: trackData.displayAlbum || trackData.album || (origin === "audit_upgrade" || trackData.origin === "audit_upgrade" ? "Oficial Spotify HD" : "Taxonom\xEDa AI"),
-        bpm: parseFloat(trackData.displayBpm || trackData.bpm || trackData.b || 128),
-        key: (trackData.displayKey || trackData.key || trackData.k || "8A").toUpperCase(),
-        cover: trackData.displayCover || trackData.cover || null,
-        duration: trackData.duration || "04:00",
-        origin: trackData.origin || origin,
-        reemplazo_de: trackData.reemplazo_de || null,
-        original_file: trackData.original_file || null,
-        original_path: trackData.original_path || null,
-        downloaded: false,
-        selected: true,
-        format: trackData.format || "FLAC",
-        energy: trackData.energy || trackData.e || 80,
-        danceability: trackData.danceability || trackData.dance || 80,
-        fase_badge: trackData.fase_badge || null,
-        comment: trackData.comment || null,
-        calidad: trackData.calidad || (origin === "audit_upgrade" || trackData.origin === "audit_upgrade" ? "Oficial Spotify HD" : "Pendiente"),
-        status: trackData.status || "Pendiente Descarga",
-        spotify_id: trackData.spotify_id || null,
-        spotify_url: trackData.spotify_url || null,
-        isrc: trackData.isrc || null,
-        preview_url: trackData.preview_url || null
-      }));
+      const newTracks = list.map((trackData, idx) => {
+        const bNum = parseFloat(trackData.displayBpm || trackData.bpm || trackData.b || 128) || 128;
+        const titleStr = String(trackData.displayTitle || trackData.title || trackData.t || "").toLowerCase();
+        const artistStr = String(trackData.displayArtist || trackData.artist || trackData.a || "").toLowerCase();
+        const seed = (titleStr + artistStr).split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) + idx * 17;
+        const dynEnergy = Math.min(98, Math.max(45, Math.round(60 + (bNum - 118) * 1.5 + (seed % 17 - 8))));
+        const dynDance = Math.min(98, Math.max(48, Math.round(92 - Math.abs(bNum - 126) * 0.9 + (seed % 15 - 7))));
+        return {
+          id: trackData.id || `tax_${Date.now()}_${idx}_${Math.floor(Math.random() * 1e3)}`,
+          title: trackData.displayTitle || trackData.title || trackData.t || "Pista Taxonom\xEDa",
+          artist: trackData.displayArtist || trackData.artist || trackData.a || "Artista",
+          album: trackData.displayAlbum || trackData.album || (origin === "audit_upgrade" || trackData.origin === "audit_upgrade" ? "Oficial Spotify HD" : "Taxonom\xEDa AI"),
+          bpm: bNum,
+          key: (trackData.displayKey || trackData.key || trackData.k || "8A").toUpperCase(),
+          cover: trackData.displayCover || trackData.cover || null,
+          duration: trackData.duration || "04:00",
+          origin: trackData.origin || origin,
+          reemplazo_de: trackData.reemplazo_de || null,
+          original_file: trackData.original_file || null,
+          original_path: trackData.original_path || null,
+          downloaded: false,
+          selected: true,
+          format: trackData.format || "FLAC",
+          energy: trackData.energy || trackData.e || dynEnergy,
+          danceability: trackData.danceability || trackData.dance || dynDance,
+          fase_badge: trackData.fase_badge || null,
+          comment: trackData.comment || null,
+          calidad: trackData.calidad || (origin === "audit_upgrade" || trackData.origin === "audit_upgrade" ? "Oficial Spotify HD" : "Pendiente"),
+          status: trackData.status || "Pendiente Descarga",
+          spotify_id: trackData.spotify_id || null,
+          spotify_url: trackData.spotify_url || null,
+          isrc: trackData.isrc || null,
+          preview_url: trackData.preview_url || null
+        };
+      });
       setSpotifyTracks((prev) => {
         const current = prev || [];
         const filteredNew = newTracks.filter((nt) => !current.some(
