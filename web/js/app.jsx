@@ -4851,7 +4851,7 @@ const AuditWorkspace = ({
                     <div data-tour="tour-audit-select" className="flex gap-2.5 items-center">
                         <button 
                             onClick={handleExplorar} 
-                            className="bg-gradient-to-r from-djcyan-600 via-djcyan-500 to-blue-600 hover:from-djcyan-400 hover:to-blue-500 text-black font-black px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5" 
+                            className="bg-djcyan-500 hover:bg-djcyan-400 text-black font-black px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono" 
                             title="Seleccionar carpetas completas y/o pistas sueltas navegando libremente por la biblioteca"
                         >
                             <span>📂</span>
@@ -4884,83 +4884,94 @@ const AuditWorkspace = ({
                         </button>
                     </div>
                     <div className="flex flex-wrap gap-2.5 items-center">
-                        {/* Grupo 1: Auditoría & DSP */}
+                        {/* Bloque 1: Motor DSP (Primario & Configuración) */}
                         <div className="flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
-                            <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
-                                <Icons.Sliders /> {t('btn_audit_batch') || 'Configurar Lote'}
+                            <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
+                                <Icons.Sliders /> {t('btn_audit_batch') || 'Configurar'}
                             </button>
-                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djcyan-500 hover:bg-djcyan-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-md font-extrabold text-xs shadow-md shadow-djcyan-500/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95">
+                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djcyan-500 hover:bg-djcyan-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-md shadow-djcyan-500/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono">
                                 <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Todo')}
                             </button>
-                            <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-750 text-amber-400 border border-amber-600/60 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
+                        </div>
+
+                        {/* Bloque 2: Herramientas Tácticas y Enriquecimiento (Secundario Pro) */}
+                        <div className="flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
+                            <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
                                 <span>🖼️</span>
-                                <span>{t('btn_inject_covers') || 'Inyectar Carátulas'}</span>
+                                <span>{t('btn_inject_covers') || 'Carátulas'}</span>
                             </button>
                             <button 
                                 onClick={handleSanitizarMetadatos} 
                                 disabled={isInjecting || tracks.length === 0} 
-                                className="bg-djzinc-800 hover:bg-djzinc-750 text-teal-300 border border-teal-600/60 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors" 
+                                className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono" 
                                 title="Higieniza etiquetas: elimina spam [Free Download], URLs, calidades y normaliza feats y versiones DJ"
                             >
                                 <span>🧹</span>
-                                <span>Limpiar Etiquetas</span>
+                                <span>Limpiar Tags</span>
+                            </button>
+
+                            {flacUpgradeTracks.length > 0 && (
+                                <button 
+                                    type="button"
+                                    onClick={() => handleBuscarReemplazosSpotify(flacUpgradeTracks)} 
+                                    disabled={isSearchingSpotifyHD || isAuditing}
+                                    className="bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 hover:border-djcyan-400 disabled:opacity-40 text-xs font-mono font-bold px-3 py-1.5 rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                    title="Detectados archivos FLAC que no cumplen con calidad Lossless (calidad media o transcode). Buscar masters oficiales en Spotify"
+                                >
+                                    <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '💎'}</span>
+                                    <span>SuperFLAC</span>
+                                    <span className="bg-djcyan-950 text-djcyan-300 text-[10px] px-1.5 py-0.2 rounded border border-djcyan-500/50 font-mono">
+                                        {flacUpgradeTracks.length}
+                                    </span>
+                                </button>
+                            )}
+
+                            <button 
+                                onClick={() => handleBuscarReemplazosSpotify()} 
+                                disabled={isSearchingSpotifyHD || isAuditing || (selectedAuditIds.size === 0 && badQualityTracks.length === 0)}
+                                className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 disabled:opacity-40 font-mono font-bold px-3 py-1.5 rounded-lg text-xs shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                title="Buscar versiones oficiales en Spotify Ingest para sustituir pistas de baja calidad o transcodes"
+                            >
+                                <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '📥'}</span>
+                                <span>{isSearchingSpotifyHD ? 'Buscando...' : 'Reemplazos HD'}</span>
+                                {(selectedAuditIds.size > 0 || badQualityTracks.length > 0) && (
+                                    <span className="bg-djzinc-950 text-amber-400 text-[10px] px-1.5 py-0.2 rounded border border-amber-600/50 font-mono">
+                                        {selectedAuditIds.size > 0 ? selectedAuditIds.size : badQualityTracks.length}
+                                    </span>
+                                )}
                             </button>
                         </div>
 
-                        {/* Botón Destacado: SuperFLAC Lossless */}
-                        {flacUpgradeTracks.length > 0 && (
-                            <button 
-                                type="button"
-                                onClick={() => handleBuscarReemplazosSpotify(flacUpgradeTracks)} 
-                                disabled={isSearchingSpotifyHD || isAuditing}
-                                className="bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black px-3.5 py-1.5 rounded-lg text-xs shadow-lg shadow-cyan-950/40 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
-                                title="Detectados archivos FLAC que no cumplen con calidad Lossless (calidad media o transcode). Buscar masters oficiales en Spotify"
-                            >
-                                <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '💎'}</span>
-                                <span>SuperFLAC Lossless ({flacUpgradeTracks.length})</span>
-                            </button>
-                        )}
-
-                        {/* Botón Destacado: Reemplazos Spotify HD */}
-                        <button 
-                            onClick={() => handleBuscarReemplazosSpotify()} 
-                            disabled={isSearchingSpotifyHD || isAuditing || (selectedAuditIds.size === 0 && badQualityTracks.length === 0)}
-                            className="bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black px-3.5 py-1.5 rounded-lg text-xs shadow-lg shadow-emerald-950/40 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
-                            title="Buscar versiones oficiales en Spotify Ingest para sustituir pistas de baja calidad o transcodes"
-                        >
-                            <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '📥'}</span>
-                            <span>{isSearchingSpotifyHD ? 'Buscando en Spotify HD...' : `Buscar Reemplazos Spotify (${selectedAuditIds.size > 0 ? selectedAuditIds.size : badQualityTracks.length})`}</span>
-                        </button>
-
-                        {/* Grupo 2: Exportación Oficial */}
-                        <div data-tour="tour-export-crates" className="flex items-center gap-1 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
-                            <button onClick={handleExportarXLS} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
+                        {/* Bloque 3: Control Segmentado de Exportación (Neutral de Cabina) */}
+                        <div data-tour="tour-export-crates" className="flex items-center bg-[#09090f] p-1 rounded-lg border border-djzinc-800 shadow-inner">
+                            <span className="text-[10px] font-mono font-bold text-gray-500 uppercase px-2 hidden lg:inline">Exportar:</span>
+                            <button onClick={handleExportarXLS} disabled={tracks.length === 0} className="px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
                                 <Icons.Excel /> XLS
                             </button>
-                            <button onClick={handleExportarSeratoCrates} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-purple-400 border border-purple-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Exportar archivos .crate oficiales a Serato DJ Pro">
+                            <button onClick={handleExportarSeratoCrates} disabled={tracks.length === 0} className="px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40" title="Exportar archivos .crate oficiales a Serato DJ Pro">
                                 <span>💽</span> Crates
                             </button>
-                            <button onClick={handleExportarRekordboxXml} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-blue-400 border border-blue-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Exportar rekordbox.xml estándar Pioneer DJ">
+                            <button onClick={handleExportarRekordboxXml} disabled={tracks.length === 0} className="px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40" title="Exportar rekordbox.xml estándar Pioneer DJ">
                                 <span>📋</span> Rekordbox
                             </button>
                         </div>
 
-                        {/* Grupo 3: Persistencia Directa en Disco */}
+                        {/* Bloque 4: Persistencia Física en Disco (Éxito / Esmeralda) */}
                         <button 
                             onClick={handleGuardarTodoEnFicheros} 
                             disabled={isInjecting || tracks.length === 0}
-                            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-lg shadow-emerald-500/25 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono"
                             title="Guarda y persiste todos los metadatos editados directamente en los archivos físicos de audio en disco"
                         >
                             <span>💾</span>
-                            <span>{t('btn_save_all') || 'Guardar Todo en Ficheros'} ({tracks.length})</span>
+                            <span>{t('btn_save_all') || 'Guardar en Archivos'} ({tracks.length})</span>
                         </button>
 
-                        {/* Grupo 4: Cancelación & Toggle de Inspector */}
+                        {/* Bloque 5: Cancelación & Toggle de Inspector */}
                         {(isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && (
                             <button 
                                 onClick={handleCancelarProceso}
-                                className="bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95"
+                                className="bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 font-mono"
                                 title="Detener el proceso actual inmediatamente"
                             >
                                 <span>✕</span>
@@ -5082,34 +5093,121 @@ const AuditWorkspace = ({
                                 );
                             })()}
                         </div>
-                        <div className="flex gap-1.5 ml-0 sm:ml-1 overflow-x-auto scrollbar-none pb-1 max-w-full">
-                            <button onClick={() => setFiltro('todos')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'todos' ? 'bg-djcyan-600 text-white font-bold' : 'bg-djzinc-800 text-gray-300 hover:text-white'}`}>{t('filter_all') || 'Todos'} ({metrics.total || 0})</button>
+                        <div className="flex gap-1.5 ml-0 sm:ml-1 overflow-x-auto scrollbar-none pb-1 max-w-full items-center">
+                            {/* Filtro: Todos */}
+                            <button 
+                                onClick={() => setFiltro('todos')} 
+                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                    filtro === 'todos' 
+                                        ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm shadow-djcyan-500/20' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
+                                }`}
+                            >
+                                {t('filter_all') || 'Todos'} ({metrics.total || 0})
+                            </button>
+
+                            {/* Acción Rápida: Seleccionar Malas */}
                             <button 
                                 onClick={handleSelectAllBadQuality}
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1 shadow ${
-                                    badQualityTracks.length > 0 
-                                        ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/20 active:scale-95' 
-                                        : 'bg-djzinc-800 text-gray-500 border border-djzinc-700 cursor-not-allowed'
+                                disabled={badQualityTracks.length === 0}
+                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1.5 border ${
+                                    badQualityTracks.length === 0
+                                        ? 'bg-djzinc-900/50 text-gray-600 border-djzinc-800/50 cursor-not-allowed'
+                                        : (selectedAuditIds.size > 0 && Array.from(selectedAuditIds).some(id => badQualityTracks.some(b => b.id === id)))
+                                            ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20 active:scale-95'
+                                            : 'bg-djzinc-850 hover:bg-djzinc-800 text-amber-400 border-amber-500/30 hover:border-amber-500/60 active:scale-95'
                                 }`}
                                 title="Seleccionar o deseleccionar todas las pistas de mala calidad"
                             >
                                 <span>⚡</span>
                                 <span>Mala Calidad ({badQualityTracks.length})</span>
                                 {selectedAuditIds.size > 0 && (
-                                    <span className="bg-black/30 text-white text-[9px] px-1 rounded-full font-mono ml-0.5">
-                                        {selectedAuditIds.size} selec.
+                                    <span className="bg-black/40 text-amber-300 text-[10px] px-1.5 py-0.2 rounded-full font-mono ml-0.5">
+                                        {selectedAuditIds.size}
                                     </span>
                                 )}
                             </button>
-                            <button onClick={() => setFiltro('bad_quality')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'bad_quality' ? 'bg-amber-600 text-white font-bold' : 'bg-amber-950/40 text-amber-400 border border-amber-800/40'}`}>Ver Solo Malas ({badQualityTracks.length})</button>
-                            <button onClick={() => setFiltro('missing')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'missing' ? 'bg-amber-600 text-white font-bold' : 'bg-amber-950/40 text-amber-400 border border-amber-800/40'}`}>Falta BPM/Key ({metrics.missing || 0})</button>
-                            <button onClick={() => setFiltro('missing_title')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'missing_title' ? 'bg-amber-600 text-white font-bold' : 'bg-amber-950/40 text-amber-300 border border-amber-800/40'}`}>Falta Título ({metrics.missing_title || 0})</button>
-                            <button onClick={() => setFiltro('missing_artist')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'missing_artist' ? 'bg-amber-600 text-white font-bold' : 'bg-amber-950/40 text-amber-300 border border-amber-800/40'}`}>Falta Artista ({metrics.missing_artist || 0})</button>
-                            <button onClick={() => setFiltro('missing_cover')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'missing_cover' ? 'bg-amber-600 text-white font-bold' : 'bg-amber-950/40 text-amber-300 border border-amber-800/40'}`}>Falta Cover ({metrics.missing_cover || 0})</button>
-                            <button onClick={() => setDuplicateModalOpen(true)} className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-900/60 hover:bg-amber-800 text-amber-300 border border-amber-700/80 cursor-pointer flex items-center gap-1 shadow">
-                                ⚖️ Duplicados ({metrics.duplicates || 0})
+
+                            {/* Filtro: Ver Solo Malas */}
+                            <button 
+                                onClick={() => setFiltro('bad_quality')} 
+                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                    filtro === 'bad_quality' 
+                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-amber-300 border-djzinc-800 hover:border-amber-500/40'
+                                }`}
+                            >
+                                Ver Solo Malas ({badQualityTracks.length})
                             </button>
-                            <button onClick={() => setFiltro('error')} className={`px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === 'error' ? 'bg-red-600 text-white font-bold' : 'bg-red-950/40 text-red-400 border border-red-800/40'}`}>{t('filter_errors') || 'FLAC Fake'} ({metrics.errors || 0})</button>
+
+                            {/* Filtro: Falta BPM/Key */}
+                            <button 
+                                onClick={() => setFiltro('missing')} 
+                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                    filtro === 'missing' 
+                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
+                                }`}
+                            >
+                                Falta BPM/Key ({metrics.missing || 0})
+                            </button>
+
+                            {/* Filtro: Falta Título */}
+                            <button 
+                                onClick={() => setFiltro('missing_title')} 
+                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                    filtro === 'missing_title' 
+                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
+                                }`}
+                            >
+                                Falta Título ({metrics.missing_title || 0})
+                            </button>
+
+                            {/* Filtro: Falta Artista */}
+                            <button 
+                                onClick={() => setFiltro('missing_artist')} 
+                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                    filtro === 'missing_artist' 
+                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
+                                }`}
+                            >
+                                Falta Artista ({metrics.missing_artist || 0})
+                            </button>
+
+                            {/* Filtro: Falta Cover */}
+                            <button 
+                                onClick={() => setFiltro('missing_cover')} 
+                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                    filtro === 'missing_cover' 
+                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
+                                }`}
+                            >
+                                Falta Cover ({metrics.missing_cover || 0})
+                            </button>
+
+                            {/* Modal Duplicados */}
+                            <button 
+                                onClick={() => setDuplicateModalOpen(true)} 
+                                className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow transition-all active:scale-95"
+                            >
+                                <span>⚖️</span>
+                                <span>Duplicados ({metrics.duplicates || 0})</span>
+                            </button>
+
+                            {/* Filtro: FLAC Fake */}
+                            <button 
+                                onClick={() => setFiltro('error')} 
+                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                    filtro === 'error' 
+                                        ? 'bg-red-500 text-black border-red-400 font-black shadow-sm shadow-red-500/20' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-red-400 border-djzinc-800 hover:border-red-500/40'
+                                }`}
+                            >
+                                {t('filter_errors') || 'FLAC Fake'} ({metrics.errors || 0})
+                            </button>
                         </div>
                     </div>
                     {saveFeedback && <span className="text-xs font-mono text-djgreen-400 font-bold animate-pulse">{saveFeedback}</span>}
@@ -7308,16 +7406,16 @@ const HotCuesWorkspace = ({
                     <button
                         type="button"
                         onClick={() => handleAbrirNavegador(currentFolder)}
-                        className="px-2.5 py-1 text-xs font-bold font-mono bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 rounded border border-djcyan-700/60 cursor-pointer shadow transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
-                        title="Cambiar carpeta de música"
+                        className="px-3 py-1.5 text-xs font-mono font-black bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg shadow-sm transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
+                        title="Seleccionar carpeta de música"
                     >
                         <span>📂</span>
-                        <span>{t('btn_change_dir') || 'Cambiar Carpeta'}</span>
+                        <span>{t('btn_change_dir') || 'Seleccionar'}</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => handleCargarDirectorio(currentFolder)}
-                        className="px-2 py-1 text-xs font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow transition-all shrink-0"
+                        className="px-2.5 py-1.5 text-xs font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all shrink-0 active:scale-95"
                         title="Recargar directorio actual"
                     >
                         🔄
@@ -7380,7 +7478,7 @@ const HotCuesWorkspace = ({
                     <button
                         type="button"
                         onClick={handleGuardarPista}
-                        className="px-3 py-1.5 bg-djgreen-600 hover:bg-djgreen-500 text-black font-mono font-bold text-xs rounded-lg shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                         title="Guardar cues, downbeat y metadatos de esta pista en el archivo físico"
                     >
                         <span>💾</span>
@@ -7390,7 +7488,7 @@ const HotCuesWorkspace = ({
                         type="button"
                         onClick={handleGuardarLote}
                         disabled={isSavingBatch}
-                        className="px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                        className="px-3 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 hover:text-white border border-djzinc-700 font-mono font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-50"
                         title="Inyectar y guardar todos los tracks del lote en disco"
                     >
                         <span>📦</span>
@@ -7723,7 +7821,7 @@ const HotCuesWorkspace = ({
                                         <button
                                             type="button"
                                             onClick={handleAutoGenerateClubTemplate}
-                                            className="px-2.5 py-1 bg-gradient-to-r from-djcyan-400 to-emerald-400 hover:from-djcyan-300 hover:to-emerald-300 text-black rounded-lg text-[10px] font-mono font-black flex items-center gap-1 shadow-md cursor-pointer transition-transform active:scale-95"
+                                            className="px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-95"
                                             title="Auto-mapear los 8 pads con la Plantilla Club Extended (Intro, Beat, Break, Drop, Loops, Outro) cuantizados al beatgrid"
                                         >
                                             <span>⚡</span>
@@ -7933,9 +8031,9 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => setSnapToGrid(prev => !prev)}
-                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow ${
+                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${
                                     snapToGrid
-                                    ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-500 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                                    ? 'bg-djzinc-800 text-djcyan-400 border-djcyan-500/60 font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]'
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
                                 }`}
                                 title="Alinear marcadores automáticamente a los tiempos del compás"
@@ -7947,9 +8045,9 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => setShowBeatgrid(prev => !prev)}
-                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow ${
+                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${
                                     showBeatgrid
-                                    ? 'bg-blue-950 text-blue-300 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
+                                    ? 'bg-djzinc-800 text-djcyan-400 border-djcyan-500/60 font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]'
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
                                 }`}
                                 title="Mostrar líneas de compás y frases de 16 compases"
@@ -7961,9 +8059,9 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => setFollowPlayhead(prev => !prev)}
-                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow ${
+                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${
                                     followPlayhead
-                                    ? 'bg-purple-950 text-purple-300 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                                    ? 'bg-djzinc-800 text-djcyan-400 border-djcyan-500/60 font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]'
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
                                 }`}
                                 title="Centrar automáticamente el scroll horizontal en la aguja de reproducción"
@@ -7975,7 +8073,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={handleAutoPhraseCues}
-                                className="px-3.5 py-1 bg-djcyan-500/20 hover:bg-djcyan-500 text-djcyan-300 hover:text-black font-mono font-extrabold text-xs rounded-lg border border-djcyan-500/50 cursor-pointer shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                                className="px-3.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 hover:text-white font-mono font-bold text-xs rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
                                 title="Calcular automáticamente 8 Hot Cues por frases musicales (16/32 compases)"
                             >
                                 <span>⚡</span>
@@ -8047,7 +8145,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(-barMs)}
-                                className="px-2 py-1 bg-red-950/40 hover:bg-red-900/60 text-red-300 rounded border border-red-800/60 font-bold cursor-pointer shadow active:scale-95"
+                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
                                 title="Retroceder 1 compás (4 beats)"
                             >
                                 -1c
@@ -8055,7 +8153,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(-beatMs)}
-                                className="px-2 py-1 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 rounded border border-amber-800/60 font-bold cursor-pointer shadow active:scale-95"
+                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
                                 title="Retroceder 1 beat (negra)"
                             >
                                 -1b
@@ -8063,7 +8161,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(-10)}
-                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 font-bold cursor-pointer shadow active:scale-95"
+                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
                                 title="Retroceder 10 milisegundos"
                             >
                                 -10ms
@@ -8071,7 +8169,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(10)}
-                                className="px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 font-bold cursor-pointer shadow active:scale-95"
+                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
                                 title="Avanzar 10 milisegundos"
                             >
                                 +10ms
@@ -8079,7 +8177,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(beatMs)}
-                                className="px-2 py-1 bg-teal-950/40 hover:bg-teal-900/60 text-teal-300 rounded border border-teal-800/60 font-bold cursor-pointer shadow active:scale-95"
+                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
                                 title="Avanzar 1 beat (negra)"
                             >
                                 +1b
@@ -8087,7 +8185,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(barMs)}
-                                className="px-2 py-1 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 rounded border border-emerald-800/60 font-bold cursor-pointer shadow active:scale-95"
+                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
                                 title="Avanzar 1 compás (4 beats)"
                             >
                                 +1c
@@ -8098,7 +8196,7 @@ const HotCuesWorkspace = ({
                         <button
                             type="button"
                             onClick={handleSetCueAtPlayhead}
-                            className="px-4 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-black font-mono font-bold text-xs rounded-lg shadow-md cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5"
+                            className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                             title="Fijar el Pad seleccionado en la posición actual de reproducción"
                         >
                             <span>📍</span>
@@ -8124,7 +8222,7 @@ const HotCuesWorkspace = ({
                                 type="button"
                                 onClick={handleRegenerarMood}
                                 disabled={isRegeneratingMood}
-                                className="px-3 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-700/80 rounded-lg text-xs font-mono font-bold shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                className="px-3 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 hover:text-white border border-djzinc-700 rounded-lg text-xs font-mono font-bold shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-50"
                                 title="Recalcular métricas de atmósfera sonora y comentario táctico con IA acústica"
                             >
                                 <span>{isRegeneratingMood ? '⏳' : '✨'}</span>
@@ -9093,9 +9191,9 @@ const SpotifyWorkspace = ({
                                 lanzarDescargaReal(seleccionadas);
                             }}
                             disabled={isDownloading || tracks.length === 0}
-                            className={`px-3.5 py-1.5 rounded text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${
+                            className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 ${
                                 selectedCount > 0 
-                                    ? 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-[0_0_12px_rgba(6,182,212,0.4)]' 
+                                    ? 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-djcyan-500/20' 
                                     : 'bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-700'
                             }`}
                         >
@@ -9107,7 +9205,7 @@ const SpotifyWorkspace = ({
                             <button
                                 onClick={() => lanzarDescargaReal(tracks)}
                                 disabled={isDownloading}
-                                className="px-3 py-1.5 rounded text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                                className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95"
                                 title="Reintentar descarga de todas las pistas pendientes/fallidas restantes"
                             >
                                 <span>🔄 Reintentar Pendientes ({tracks.length})</span>
@@ -9118,9 +9216,9 @@ const SpotifyWorkspace = ({
                         <button
                             onClick={handleDescargarReporteXLS}
                             disabled={isExportingXls || (downloadSession.downloaded.length === 0 && downloadSession.failed.length === 0)}
-                            className={`px-3 py-1.5 rounded text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 ${
                                 (downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0)
-                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.35)]'
+                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20'
                                     : 'bg-djzinc-900 text-gray-500 border border-djzinc-800 cursor-not-allowed'
                             }`}
                             title="Descargar informe Excel con las pistas descargadas con certificación FFT y las que fallaron"
@@ -9139,7 +9237,7 @@ const SpotifyWorkspace = ({
                         <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
                             <span>Destino:</span>
                             <span className="text-gray-200 truncate max-w-[140px]" title={destDir}>{destDir.split('/').pop() || destDir}</span>
-                            <button onClick={handleCambiarCarpeta} className="text-djcyan-400 hover:text-white px-2 py-1 bg-djzinc-900 border border-djzinc-700 rounded text-[11px] cursor-pointer">Cambiar</button>
+                            <button onClick={handleCambiarCarpeta} className="text-gray-300 hover:text-white px-2 py-0.5 bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700 rounded-md text-[11px] font-mono cursor-pointer transition-colors">Cambiar</button>
                         </div>
                         <div className="flex items-center gap-1 bg-[#060609] border border-djzinc-750 rounded-lg p-1">
                             {[
@@ -9151,10 +9249,10 @@ const SpotifyWorkspace = ({
                                 <button 
                                     key={f.id} 
                                     onClick={() => setSelectedFormat(f.id)} 
-                                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                                    className={`px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
                                         selectedFormat === f.id 
-                                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow font-black' 
-                                            : 'text-gray-400 hover:text-white'
+                                            ? 'bg-djcyan-500 text-black shadow-sm font-black' 
+                                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                                     }`}
                                     title={`Descargar en formato ${f.label} (${f.badge})`}
                                 >
@@ -9168,9 +9266,9 @@ const SpotifyWorkspace = ({
 
                         <button 
                             onClick={() => setSpInspectorOpen(prev => !prev)}
-                            className={`px-3 py-1.5 rounded text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
                                 spInspectorOpen 
-                                    ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner' 
+                                    ? 'bg-djzinc-800 text-white border-djcyan-500 shadow-sm' 
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
                             }`}
                             title={spInspectorOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}

@@ -3576,7 +3576,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       "button",
       {
         onClick: handleExplorar,
-        className: "bg-gradient-to-r from-djcyan-600 via-djcyan-500 to-blue-600 hover:from-djcyan-400 hover:to-blue-500 text-black font-black px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        className: "bg-djcyan-500 hover:bg-djcyan-400 text-black font-black px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono",
         title: "Seleccionar carpetas completas y/o pistas sueltas navegando libremente por la biblioteca"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F4C2}"),
@@ -3590,52 +3590,54 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         title: "Recargar selecci\xF3n actual"
       },
       "\u{1F504}"
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2.5 items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setBatchModalOpen(true), className: "bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors", title: "Configurar opciones avanzadas de auditor\xEDa por lotes y car\xE1tulas" }, /* @__PURE__ */ React.createElement(Icons.Sliders, null), " ", t("btn_audit_batch") || "Configurar Lote"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleAuditar(), disabled: isAuditing, className: "bg-djcyan-500 hover:bg-djcyan-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-md font-extrabold text-xs shadow-md shadow-djcyan-500/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95" }, /* @__PURE__ */ React.createElement(Icons.Library, null), " ", isAuditing ? lang === "en" ? "Auditing..." : "Auditando..." : t("btn_execute_audit") || "Auditar Todo"), /* @__PURE__ */ React.createElement("button", { onClick: handleInyectarCaratulasLote, disabled: isInjecting || tracks.length === 0, className: "bg-djzinc-800 hover:bg-djzinc-750 text-amber-400 border border-amber-600/60 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors", title: "Detecta o busca car\xE1tulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F5BC}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, t("btn_inject_covers") || "Inyectar Car\xE1tulas")), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2.5 items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setBatchModalOpen(true), className: "bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono", title: "Configurar opciones avanzadas de auditor\xEDa por lotes y car\xE1tulas" }, /* @__PURE__ */ React.createElement(Icons.Sliders, null), " ", t("btn_audit_batch") || "Configurar"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleAuditar(), disabled: isAuditing, className: "bg-djcyan-500 hover:bg-djcyan-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-md shadow-djcyan-500/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono" }, /* @__PURE__ */ React.createElement(Icons.Library, null), " ", isAuditing ? lang === "en" ? "Auditing..." : "Auditando..." : t("btn_execute_audit") || "Auditar Todo")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm" }, /* @__PURE__ */ React.createElement("button", { onClick: handleInyectarCaratulasLote, disabled: isInjecting || tracks.length === 0, className: "bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono", title: "Detecta o busca car\xE1tulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F5BC}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, t("btn_inject_covers") || "Car\xE1tulas")), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: handleSanitizarMetadatos,
         disabled: isInjecting || tracks.length === 0,
-        className: "bg-djzinc-800 hover:bg-djzinc-750 text-teal-300 border border-teal-600/60 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors",
+        className: "bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono",
         title: "Higieniza etiquetas: elimina spam [Free Download], URLs, calidades y normaliza feats y versiones DJ"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F9F9}"),
-      /* @__PURE__ */ React.createElement("span", null, "Limpiar Etiquetas")
-    )), flacUpgradeTracks.length > 0 && /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("span", null, "Limpiar Tags")
+    ), flacUpgradeTracks.length > 0 && /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => handleBuscarReemplazosSpotify(flacUpgradeTracks),
         disabled: isSearchingSpotifyHD || isAuditing,
-        className: "bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black px-3.5 py-1.5 rounded-lg text-xs shadow-lg shadow-cyan-950/40 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        className: "bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 hover:border-djcyan-400 disabled:opacity-40 text-xs font-mono font-bold px-3 py-1.5 rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
         title: "Detectados archivos FLAC que no cumplen con calidad Lossless (calidad media o transcode). Buscar masters oficiales en Spotify"
       },
       /* @__PURE__ */ React.createElement("span", { className: isSearchingSpotifyHD ? "animate-spin" : "" }, isSearchingSpotifyHD ? "\u23F3" : "\u{1F48E}"),
-      /* @__PURE__ */ React.createElement("span", null, "SuperFLAC Lossless (", flacUpgradeTracks.length, ")")
+      /* @__PURE__ */ React.createElement("span", null, "SuperFLAC"),
+      /* @__PURE__ */ React.createElement("span", { className: "bg-djcyan-950 text-djcyan-300 text-[10px] px-1.5 py-0.2 rounded border border-djcyan-500/50 font-mono" }, flacUpgradeTracks.length)
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => handleBuscarReemplazosSpotify(),
         disabled: isSearchingSpotifyHD || isAuditing || selectedAuditIds.size === 0 && badQualityTracks.length === 0,
-        className: "bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black px-3.5 py-1.5 rounded-lg text-xs shadow-lg shadow-emerald-950/40 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        className: "bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 disabled:opacity-40 font-mono font-bold px-3 py-1.5 rounded-lg text-xs shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
         title: "Buscar versiones oficiales en Spotify Ingest para sustituir pistas de baja calidad o transcodes"
       },
       /* @__PURE__ */ React.createElement("span", { className: isSearchingSpotifyHD ? "animate-spin" : "" }, isSearchingSpotifyHD ? "\u23F3" : "\u{1F4E5}"),
-      /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Spotify HD..." : `Buscar Reemplazos Spotify (${selectedAuditIds.size > 0 ? selectedAuditIds.size : badQualityTracks.length})`)
-    ), /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-export-crates", className: "flex items-center gap-1 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm" }, /* @__PURE__ */ React.createElement("button", { onClick: handleExportarXLS, disabled: tracks.length === 0, className: "bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors", title: "Exportar reporte de auditor\xEDa a Excel (.xlsx / .csv)" }, /* @__PURE__ */ React.createElement(Icons.Excel, null), " XLS"), /* @__PURE__ */ React.createElement("button", { onClick: handleExportarSeratoCrates, disabled: tracks.length === 0, className: "bg-djzinc-800 hover:bg-djzinc-700 text-purple-400 border border-purple-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors", title: "Exportar archivos .crate oficiales a Serato DJ Pro" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4BD}"), " Crates"), /* @__PURE__ */ React.createElement("button", { onClick: handleExportarRekordboxXml, disabled: tracks.length === 0, className: "bg-djzinc-800 hover:bg-djzinc-700 text-blue-400 border border-blue-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors", title: "Exportar rekordbox.xml est\xE1ndar Pioneer DJ" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB}"), " Rekordbox")), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando..." : "Reemplazos HD"),
+      (selectedAuditIds.size > 0 || badQualityTracks.length > 0) && /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-950 text-amber-400 text-[10px] px-1.5 py-0.2 rounded border border-amber-600/50 font-mono" }, selectedAuditIds.size > 0 ? selectedAuditIds.size : badQualityTracks.length)
+    )), /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-export-crates", className: "flex items-center bg-[#09090f] p-1 rounded-lg border border-djzinc-800 shadow-inner" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-gray-500 uppercase px-2 hidden lg:inline" }, "Exportar:"), /* @__PURE__ */ React.createElement("button", { onClick: handleExportarXLS, disabled: tracks.length === 0, className: "px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40", title: "Exportar reporte de auditor\xEDa a Excel (.xlsx / .csv)" }, /* @__PURE__ */ React.createElement(Icons.Excel, null), " XLS"), /* @__PURE__ */ React.createElement("button", { onClick: handleExportarSeratoCrates, disabled: tracks.length === 0, className: "px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40", title: "Exportar archivos .crate oficiales a Serato DJ Pro" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4BD}"), " Crates"), /* @__PURE__ */ React.createElement("button", { onClick: handleExportarRekordboxXml, disabled: tracks.length === 0, className: "px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40", title: "Exportar rekordbox.xml est\xE1ndar Pioneer DJ" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB}"), " Rekordbox")), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: handleGuardarTodoEnFicheros,
         disabled: isInjecting || tracks.length === 0,
-        className: "bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-lg shadow-emerald-500/25 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        className: "bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono",
         title: "Guarda y persiste todos los metadatos editados directamente en los archivos f\xEDsicos de audio en disco"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
-      /* @__PURE__ */ React.createElement("span", null, t("btn_save_all") || "Guardar Todo en Ficheros", " (", tracks.length, ")")
+      /* @__PURE__ */ React.createElement("span", null, t("btn_save_all") || "Guardar en Archivos", " (", tracks.length, ")")
     ), (isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: handleCancelarProceso,
-        className: "bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95",
+        className: "bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 font-mono",
         title: "Detener el proceso actual inmediatamente"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u2715"),
@@ -3676,17 +3678,91 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       const p = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
       if (!p || !p.tokens || p.tokens.length === 0) return null;
       return /* @__PURE__ */ React.createElement("div", { className: "hidden lg:flex items-center gap-1.5 flex-wrap" }, p.tokens.map((tok, tIdx) => /* @__PURE__ */ React.createElement("span", { key: tIdx, className: "px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-500/50 shadow-sm animate-fadeIn" }, tok.label)));
-    })()), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 ml-0 sm:ml-1 overflow-x-auto scrollbar-none pb-1 max-w-full" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setFiltro("todos"), className: `px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === "todos" ? "bg-djcyan-600 text-white font-bold" : "bg-djzinc-800 text-gray-300 hover:text-white"}` }, t("filter_all") || "Todos", " (", metrics.total || 0, ")"), /* @__PURE__ */ React.createElement(
+    })()), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 ml-0 sm:ml-1 overflow-x-auto scrollbar-none pb-1 max-w-full items-center" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setFiltro("todos"),
+        className: `px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "todos" ? "bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm shadow-djcyan-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+      },
+      t("filter_all") || "Todos",
+      " (",
+      metrics.total || 0,
+      ")"
+    ), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: handleSelectAllBadQuality,
-        className: `px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1 shadow ${badQualityTracks.length > 0 ? "bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/20 active:scale-95" : "bg-djzinc-800 text-gray-500 border border-djzinc-700 cursor-not-allowed"}`,
+        disabled: badQualityTracks.length === 0,
+        className: `px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1.5 border ${badQualityTracks.length === 0 ? "bg-djzinc-900/50 text-gray-600 border-djzinc-800/50 cursor-not-allowed" : selectedAuditIds.size > 0 && Array.from(selectedAuditIds).some((id) => badQualityTracks.some((b) => b.id === id)) ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20 active:scale-95" : "bg-djzinc-850 hover:bg-djzinc-800 text-amber-400 border-amber-500/30 hover:border-amber-500/60 active:scale-95"}`,
         title: "Seleccionar o deseleccionar todas las pistas de mala calidad"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
       /* @__PURE__ */ React.createElement("span", null, "Mala Calidad (", badQualityTracks.length, ")"),
-      selectedAuditIds.size > 0 && /* @__PURE__ */ React.createElement("span", { className: "bg-black/30 text-white text-[9px] px-1 rounded-full font-mono ml-0.5" }, selectedAuditIds.size, " selec.")
-    ), /* @__PURE__ */ React.createElement("button", { onClick: () => setFiltro("bad_quality"), className: `px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === "bad_quality" ? "bg-amber-600 text-white font-bold" : "bg-amber-950/40 text-amber-400 border border-amber-800/40"}` }, "Ver Solo Malas (", badQualityTracks.length, ")"), /* @__PURE__ */ React.createElement("button", { onClick: () => setFiltro("missing"), className: `px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === "missing" ? "bg-amber-600 text-white font-bold" : "bg-amber-950/40 text-amber-400 border border-amber-800/40"}` }, "Falta BPM/Key (", metrics.missing || 0, ")"), /* @__PURE__ */ React.createElement("button", { onClick: () => setFiltro("missing_title"), className: `px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === "missing_title" ? "bg-amber-600 text-white font-bold" : "bg-amber-950/40 text-amber-300 border border-amber-800/40"}` }, "Falta T\xEDtulo (", metrics.missing_title || 0, ")"), /* @__PURE__ */ React.createElement("button", { onClick: () => setFiltro("missing_artist"), className: `px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === "missing_artist" ? "bg-amber-600 text-white font-bold" : "bg-amber-950/40 text-amber-300 border border-amber-800/40"}` }, "Falta Artista (", metrics.missing_artist || 0, ")"), /* @__PURE__ */ React.createElement("button", { onClick: () => setFiltro("missing_cover"), className: `px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === "missing_cover" ? "bg-amber-600 text-white font-bold" : "bg-amber-950/40 text-amber-300 border border-amber-800/40"}` }, "Falta Cover (", metrics.missing_cover || 0, ")"), /* @__PURE__ */ React.createElement("button", { onClick: () => setDuplicateModalOpen(true), className: "px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-900/60 hover:bg-amber-800 text-amber-300 border border-amber-700/80 cursor-pointer flex items-center gap-1 shadow" }, "\u2696\uFE0F Duplicados (", metrics.duplicates || 0, ")"), /* @__PURE__ */ React.createElement("button", { onClick: () => setFiltro("error"), className: `px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${filtro === "error" ? "bg-red-600 text-white font-bold" : "bg-red-950/40 text-red-400 border border-red-800/40"}` }, t("filter_errors") || "FLAC Fake", " (", metrics.errors || 0, ")"))), saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse" }, saveFeedback)), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-auto bg-[#0f0f13]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-12 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1" }, /* @__PURE__ */ React.createElement(
+      selectedAuditIds.size > 0 && /* @__PURE__ */ React.createElement("span", { className: "bg-black/40 text-amber-300 text-[10px] px-1.5 py-0.2 rounded-full font-mono ml-0.5" }, selectedAuditIds.size)
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setFiltro("bad_quality"),
+        className: `px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "bad_quality" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-amber-300 border-djzinc-800 hover:border-amber-500/40"}`
+      },
+      "Ver Solo Malas (",
+      badQualityTracks.length,
+      ")"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setFiltro("missing"),
+        className: `px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "missing" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+      },
+      "Falta BPM/Key (",
+      metrics.missing || 0,
+      ")"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setFiltro("missing_title"),
+        className: `px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "missing_title" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+      },
+      "Falta T\xEDtulo (",
+      metrics.missing_title || 0,
+      ")"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setFiltro("missing_artist"),
+        className: `px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "missing_artist" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+      },
+      "Falta Artista (",
+      metrics.missing_artist || 0,
+      ")"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setFiltro("missing_cover"),
+        className: `px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "missing_cover" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+      },
+      "Falta Cover (",
+      metrics.missing_cover || 0,
+      ")"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setDuplicateModalOpen(true),
+        className: "px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow transition-all active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u2696\uFE0F"),
+      /* @__PURE__ */ React.createElement("span", null, "Duplicados (", metrics.duplicates || 0, ")")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setFiltro("error"),
+        className: `px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "error" ? "bg-red-500 text-black border-red-400 font-black shadow-sm shadow-red-500/20" : "bg-djzinc-900 text-gray-400 hover:text-red-400 border-djzinc-800 hover:border-red-500/40"}`
+      },
+      t("filter_errors") || "FLAC Fake",
+      " (",
+      metrics.errors || 0,
+      ")"
+    ))), saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse" }, saveFeedback)), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-auto bg-[#0f0f13]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-12 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1" }, /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "checkbox",
@@ -4992,17 +5068,17 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => handleAbrirNavegador(currentFolder),
-        className: "px-2.5 py-1 text-xs font-bold font-mono bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 rounded border border-djcyan-700/60 cursor-pointer shadow transition-all flex items-center gap-1.5 shrink-0 active:scale-95",
-        title: "Cambiar carpeta de m\xFAsica"
+        className: "px-3 py-1.5 text-xs font-mono font-black bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg shadow-sm transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer",
+        title: "Seleccionar carpeta de m\xFAsica"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F4C2}"),
-      /* @__PURE__ */ React.createElement("span", null, t("btn_change_dir") || "Cambiar Carpeta")
+      /* @__PURE__ */ React.createElement("span", null, t("btn_change_dir") || "Seleccionar")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => handleCargarDirectorio(currentFolder),
-        className: "px-2 py-1 text-xs font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-700 cursor-pointer shadow transition-all shrink-0",
+        className: "px-2.5 py-1.5 text-xs font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all shrink-0 active:scale-95",
         title: "Recargar directorio actual"
       },
       "\u{1F504}"
@@ -5037,7 +5113,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: handleGuardarPista,
-        className: "px-3 py-1.5 bg-djgreen-600 hover:bg-djgreen-500 text-black font-mono font-bold text-xs rounded-lg shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        className: "px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
         title: "Guardar cues, downbeat y metadatos de esta pista en el archivo f\xEDsico"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
@@ -5048,7 +5124,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         type: "button",
         onClick: handleGuardarLote,
         disabled: isSavingBatch,
-        className: "px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        className: "px-3 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 hover:text-white border border-djzinc-700 font-mono font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-50",
         title: "Inyectar y guardar todos los tracks del lote en disco"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F4E6}"),
@@ -5211,7 +5287,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: handleAutoGenerateClubTemplate,
-        className: "px-2.5 py-1 bg-gradient-to-r from-djcyan-400 to-emerald-400 hover:from-djcyan-300 hover:to-emerald-300 text-black rounded-lg text-[10px] font-mono font-black flex items-center gap-1 shadow-md cursor-pointer transition-transform active:scale-95",
+        className: "px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-95",
         title: "Auto-mapear los 8 pads con la Plantilla Club Extended (Intro, Beat, Break, Drop, Loops, Outro) cuantizados al beatgrid"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
@@ -5345,7 +5421,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => setSnapToGrid((prev) => !prev),
-        className: `px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow ${snapToGrid ? "bg-djcyan-950 text-djcyan-300 border-djcyan-500 shadow-[0_0_10px_rgba(6,182,212,0.3)]" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
+        className: `px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${snapToGrid ? "bg-djzinc-800 text-djcyan-400 border-djcyan-500/60 font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
         title: "Alinear marcadores autom\xE1ticamente a los tiempos del comp\xE1s"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F9F2}"),
@@ -5355,7 +5431,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => setShowBeatgrid((prev) => !prev),
-        className: `px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow ${showBeatgrid ? "bg-blue-950 text-blue-300 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
+        className: `px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${showBeatgrid ? "bg-djzinc-800 text-djcyan-400 border-djcyan-500/60 font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
         title: "Mostrar l\xEDneas de comp\xE1s y frases de 16 compases"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F532}"),
@@ -5365,7 +5441,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => setFollowPlayhead((prev) => !prev),
-        className: `px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow ${followPlayhead ? "bg-purple-950 text-purple-300 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.3)]" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
+        className: `px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${followPlayhead ? "bg-djzinc-800 text-djcyan-400 border-djcyan-500/60 font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
         title: "Centrar autom\xE1ticamente el scroll horizontal en la aguja de reproducci\xF3n"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F3AF}"),
@@ -5375,7 +5451,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: handleAutoPhraseCues,
-        className: "px-3.5 py-1 bg-djcyan-500/20 hover:bg-djcyan-500 text-djcyan-300 hover:text-black font-mono font-extrabold text-xs rounded-lg border border-djcyan-500/50 cursor-pointer shadow-md transition-all active:scale-95 flex items-center gap-1.5",
+        className: "px-3.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 hover:text-white font-mono font-bold text-xs rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1.5",
         title: "Calcular autom\xE1ticamente 8 Hot Cues por frases musicales (16/32 compases)"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
@@ -5425,7 +5501,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => handleNudgeMs(-barMs),
-        className: "px-2 py-1 bg-red-950/40 hover:bg-red-900/60 text-red-300 rounded border border-red-800/60 font-bold cursor-pointer shadow active:scale-95",
+        className: "px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors",
         title: "Retroceder 1 comp\xE1s (4 beats)"
       },
       "-1c"
@@ -5434,7 +5510,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => handleNudgeMs(-beatMs),
-        className: "px-2 py-1 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 rounded border border-amber-800/60 font-bold cursor-pointer shadow active:scale-95",
+        className: "px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors",
         title: "Retroceder 1 beat (negra)"
       },
       "-1b"
@@ -5443,7 +5519,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => handleNudgeMs(-10),
-        className: "px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 font-bold cursor-pointer shadow active:scale-95",
+        className: "px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors",
         title: "Retroceder 10 milisegundos"
       },
       "-10ms"
@@ -5452,7 +5528,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => handleNudgeMs(10),
-        className: "px-2 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 font-bold cursor-pointer shadow active:scale-95",
+        className: "px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors",
         title: "Avanzar 10 milisegundos"
       },
       "+10ms"
@@ -5461,7 +5537,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => handleNudgeMs(beatMs),
-        className: "px-2 py-1 bg-teal-950/40 hover:bg-teal-900/60 text-teal-300 rounded border border-teal-800/60 font-bold cursor-pointer shadow active:scale-95",
+        className: "px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors",
         title: "Avanzar 1 beat (negra)"
       },
       "+1b"
@@ -5470,7 +5546,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: () => handleNudgeMs(barMs),
-        className: "px-2 py-1 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 rounded border border-emerald-800/60 font-bold cursor-pointer shadow active:scale-95",
+        className: "px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors",
         title: "Avanzar 1 comp\xE1s (4 beats)"
       },
       "+1c"
@@ -5479,7 +5555,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         type: "button",
         onClick: handleSetCueAtPlayhead,
-        className: "px-4 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-black font-mono font-bold text-xs rounded-lg shadow-md cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5",
+        className: "px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
         title: "Fijar el Pad seleccionado en la posici\xF3n actual de reproducci\xF3n"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F4CD}"),
@@ -5496,7 +5572,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         type: "button",
         onClick: handleRegenerarMood,
         disabled: isRegeneratingMood,
-        className: "px-3 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-700/80 rounded-lg text-xs font-mono font-bold shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        className: "px-3 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 hover:text-white border border-djzinc-700 rounded-lg text-xs font-mono font-bold shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-50",
         title: "Recalcular m\xE9tricas de atm\xF3sfera sonora y comentario t\xE1ctico con IA ac\xFAstica"
       },
       /* @__PURE__ */ React.createElement("span", null, isRegeneratingMood ? "\u23F3" : "\u2728"),
@@ -6258,7 +6334,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           lanzarDescargaReal(seleccionadas);
         },
         disabled: isDownloading || tracks.length === 0,
-        className: `px-3.5 py-1.5 rounded text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${selectedCount > 0 ? "bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-700"}`
+        className: `px-3.5 py-1.5 rounded-lg text-xs font-mono font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 ${selectedCount > 0 ? "bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-djcyan-500/20" : "bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-700"}`
       },
       /* @__PURE__ */ React.createElement("span", null, "\u2B07 Descargar Seleccionadas (", selectedCount, ")")
     ), tracks.length > 0 && (downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0) && /* @__PURE__ */ React.createElement(
@@ -6266,7 +6342,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         onClick: () => lanzarDescargaReal(tracks),
         disabled: isDownloading,
-        className: "px-3 py-1.5 rounded text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95",
+        className: "px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95",
         title: "Reintentar descarga de todas las pistas pendientes/fallidas restantes"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F504} Reintentar Pendientes (", tracks.length, ")")
@@ -6275,12 +6351,12 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         onClick: handleDescargarReporteXLS,
         disabled: isExportingXls || downloadSession.downloaded.length === 0 && downloadSession.failed.length === 0,
-        className: `px-3 py-1.5 rounded text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0 ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.35)]" : "bg-djzinc-900 text-gray-500 border border-djzinc-800 cursor-not-allowed"}`,
+        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 ${downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0 ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20" : "bg-djzinc-900 text-gray-500 border border-djzinc-800 cursor-not-allowed"}`,
         title: "Descargar informe Excel con las pistas descargadas con certificaci\xF3n FFT y las que fallaron"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA}"),
       /* @__PURE__ */ React.createElement("span", null, isExportingXls ? "Generando XLS..." : downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0 ? `Reporte XLS (${downloadSession.downloaded.length}\u2713 | ${downloadSession.failed.length}\u2715)` : "Reporte XLS")
-    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-xs font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Destino:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[140px]", title: destDir }, destDir.split("/").pop() || destDir), /* @__PURE__ */ React.createElement("button", { onClick: handleCambiarCarpeta, className: "text-djcyan-400 hover:text-white px-2 py-1 bg-djzinc-900 border border-djzinc-700 rounded text-[11px] cursor-pointer" }, "Cambiar")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#060609] border border-djzinc-750 rounded-lg p-1" }, [
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-xs font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Destino:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[140px]", title: destDir }, destDir.split("/").pop() || destDir), /* @__PURE__ */ React.createElement("button", { onClick: handleCambiarCarpeta, className: "text-gray-300 hover:text-white px-2 py-0.5 bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700 rounded-md text-[11px] font-mono cursor-pointer transition-colors" }, "Cambiar")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#060609] border border-djzinc-750 rounded-lg p-1" }, [
       { id: "flac", label: "FLAC Hi-Res", badge: "24b Master" },
       { id: "wav", label: "WAV", badge: "24-bit" },
       { id: "aiff", label: "AIFF", badge: "Club" },
@@ -6290,7 +6366,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       {
         key: f.id,
         onClick: () => setSelectedFormat(f.id),
-        className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${selectedFormat === f.id ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow font-black" : "text-gray-400 hover:text-white"}`,
+        className: `px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${selectedFormat === f.id ? "bg-djcyan-500 text-black shadow-sm font-black" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`,
         title: `Descargar en formato ${f.label} (${f.badge})`
       },
       /* @__PURE__ */ React.createElement("span", null, f.label),
@@ -6299,7 +6375,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       "button",
       {
         onClick: () => setSpInspectorOpen((prev) => !prev),
-        className: `px-3 py-1.5 rounded text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${spInspectorOpen ? "bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
+        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${spInspectorOpen ? "bg-djzinc-800 text-white border-djcyan-500 shadow-sm" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
         title: spInspectorOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u25E8"),
