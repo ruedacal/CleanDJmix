@@ -2599,6 +2599,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const [fsFolders, setFsFolders] = useState([]);
     const [fsFiles, setFsFiles] = useState([]);
     const [selectedFsFiles, setSelectedFsFiles] = useState([]);
+    const [stagedFolders, setStagedFolders] = useState([]);
+    const [stagedFiles, setStagedFiles] = useState([]);
     const [fsActiveTab, setFsActiveTab] = useState("folders");
     const [fsLoading, setFsLoading] = useState(false);
     const [camelotModalOpen, setCamelotModalOpen] = useState(false);
@@ -2910,8 +2912,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
       setFsBrowserOpen(true);
       setFsLoading(true);
-      setSelectedFsFiles([]);
-      const startPath = initialPath || rutaOrigen || "";
+      const startPath = initialPath || (typeof rutaOrigen === "string" && !rutaOrigen.includes("pista") ? rutaOrigen : "") || "";
       if (window.eel && window.eel.listar_subcarpetas_sistema) {
         try {
           const res = await window.eel.listar_subcarpetas_sistema(startPath)();
@@ -2935,7 +2936,6 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     };
     const handleNavegarACarpeta = async (targetPath) => {
       setFsLoading(true);
-      setSelectedFsFiles([]);
       if (window.eel && window.eel.listar_subcarpetas_sistema) {
         try {
           const res = await window.eel.listar_subcarpetas_sistema(targetPath)();
@@ -2955,22 +2955,17 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         }
       }
     };
-    const handleSeleccionarCarpetaUI = async (targetPath) => {
-      const finalPath = targetPath || fsCurrentPath;
-      setSelectedLooseFiles([]);
-      setRutaOrigen(finalPath);
-      setFsBrowserOpen(false);
-      await handleCargarDirectorio(finalPath);
+    const toggleStageFolder = (folderPath) => {
+      setStagedFolders((prev) => {
+        if (prev.includes(folderPath)) {
+          return prev.filter((p) => p !== folderPath);
+        } else {
+          return [...prev, folderPath];
+        }
+      });
     };
-    const handleSeleccionarFicherosUI = async () => {
-      if (!selectedFsFiles || selectedFsFiles.length === 0) return;
-      setSelectedLooseFiles(selectedFsFiles);
-      setRutaOrigen(`${fsCurrentPath} (${selectedFsFiles.length} pistas seleccionadas)`);
-      setFsBrowserOpen(false);
-      await handleCargarDirectorio(selectedFsFiles);
-    };
-    const toggleSelectFsFile = (filePath) => {
-      setSelectedFsFiles((prev) => {
+    const toggleStageFile = (filePath) => {
+      setStagedFiles((prev) => {
         if (prev.includes(filePath)) {
           return prev.filter((p) => p !== filePath);
         } else {
@@ -2978,12 +2973,48 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         }
       });
     };
-    const toggleSelectAllFsFiles = () => {
-      if (selectedFsFiles.length === fsFiles.length) {
-        setSelectedFsFiles([]);
+    const toggleStageAllCurrentFsFiles = () => {
+      const currentPaths = (fsFiles || []).map((f) => f.path);
+      const allPresent = currentPaths.length > 0 && currentPaths.every((p) => stagedFiles.includes(p));
+      if (allPresent) {
+        setStagedFiles((prev) => prev.filter((p) => !currentPaths.includes(p)));
       } else {
-        setSelectedFsFiles(fsFiles.map((f) => f.path));
+        setStagedFiles((prev) => {
+          const combined = /* @__PURE__ */ new Set([...prev, ...currentPaths]);
+          return Array.from(combined);
+        });
       }
+    };
+    const clearStagedSelection = () => {
+      setStagedFolders([]);
+      setStagedFiles([]);
+      setSelectedFsFiles([]);
+    };
+    const handleConfirmarSeleccionLote = async () => {
+      const combined = [...stagedFolders, ...stagedFiles];
+      if (combined.length === 0) {
+        if (fsCurrentPath) {
+          setSelectedLooseFiles([]);
+          setRutaOrigen(fsCurrentPath);
+          setFsBrowserOpen(false);
+          await handleCargarDirectorio(fsCurrentPath);
+        }
+        return;
+      }
+      setSelectedLooseFiles(stagedFiles);
+      const descParts = [];
+      if (stagedFolders.length > 0) descParts.push(`${stagedFolders.length} carpeta(s)`);
+      if (stagedFiles.length > 0) descParts.push(`${stagedFiles.length} pista(s)`);
+      setRutaOrigen(descParts.join(" + "));
+      setFsBrowserOpen(false);
+      await handleCargarDirectorio(combined);
+    };
+    const handleSeleccionarCarpetaUI = async (targetPath) => {
+      const finalPath = targetPath || fsCurrentPath;
+      setSelectedLooseFiles([]);
+      setRutaOrigen(finalPath);
+      setFsBrowserOpen(false);
+      await handleCargarDirectorio(finalPath);
     };
     const handleExplorar = async () => {
       handleAbrirNavegadorCarpetas(rutaOrigen);
@@ -2993,6 +3024,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       if (selectedAuditIds && selectedAuditIds.size > 0) {
         const selectedPaths = (tracks || []).filter((t2) => selectedAuditIds.has(t2.id)).map((t2) => t2.path || t2.f).filter(Boolean);
         if (selectedPaths.length > 0) return selectedPaths;
+      }
+      if (stagedFolders.length > 0 || stagedFiles.length > 0) {
+        return [...stagedFolders, ...stagedFiles];
       }
       if (selectedLooseFiles && selectedLooseFiles.length > 0) {
         return selectedLooseFiles;
@@ -3538,33 +3572,24 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         });
       }
     };
-    return /* @__PURE__ */ React.createElement("div", { className: "flex w-full h-full overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 items-center w-1/2" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 max-w-md bg-djzinc-900 rounded-md border border-djzinc-700 flex overflow-hidden" }, /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 px-3 py-1.5 text-xs text-gray-400 font-mono border-r border-djzinc-700 flex items-center" }, "ORIGEN"), /* @__PURE__ */ React.createElement(
-      "input",
+    return /* @__PURE__ */ React.createElement("div", { className: "flex w-full h-full overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "p-3.5 border-b border-djzinc-800 bg-djzinc-950 flex flex-wrap justify-between items-center shrink-0 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex gap-2.5 items-center" }, /* @__PURE__ */ React.createElement(
+      "button",
       {
-        type: "text",
-        value: rutaOrigen,
-        onChange: (e) => setRutaOrigen(e.target.value),
-        onKeyDown: (e) => {
-          if (e.key === "Enter") {
-            handleCargarDirectorio(e.target.value);
-          }
-        },
-        placeholder: "Escribe o explora una ruta o pistas sueltas...",
-        className: "flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono"
-      }
-    )), /* @__PURE__ */ React.createElement("button", { onClick: handleExplorar, className: "bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-3.5 py-1.5 text-xs font-bold text-gray-200 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm", title: "Explorar y cargar carpetas de m\xFAsica" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4C2}"), /* @__PURE__ */ React.createElement("span", null, t("btn_change_dir") || "Explorar")), /* @__PURE__ */ React.createElement(
+        onClick: handleExplorar,
+        className: "bg-gradient-to-r from-djcyan-600 via-djcyan-500 to-blue-600 hover:from-djcyan-400 hover:to-blue-500 text-black font-black px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        title: "Seleccionar carpetas completas y/o pistas sueltas navegando libremente por la biblioteca"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u{1F4C2}"),
+      /* @__PURE__ */ React.createElement("span", null, "Seleccionar")
+    ), tracks && tracks.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 px-3 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-sm truncate", title: typeof rutaOrigen === "string" ? rutaOrigen : "Selecci\xF3n m\xFAltiple" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djgreen-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, typeof rutaOrigen === "string" && rutaOrigen ? rutaOrigen.split("/").pop() || rutaOrigen : "Colecci\xF3n Activa"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700" }, tracks.length, " pistas")) : /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-500 italic px-2" }, "Ninguna carpeta o pista seleccionada"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
-        onClick: () => {
-          setFsActiveTab("files");
-          handleAbrirNavegadorCarpetas(rutaOrigen);
-        },
-        className: "bg-djzinc-800 hover:bg-djzinc-700 border border-djcyan-500/50 text-djcyan-300 rounded px-3 py-1.5 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm",
-        title: "Seleccionar y cargar archivos de audio individuales (pistas sueltas)"
+        onClick: () => handleCargarDirectorio(resolveAuditTargets()),
+        className: "px-2.5 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono",
+        title: "Recargar selecci\xF3n actual"
       },
-      /* @__PURE__ */ React.createElement("span", null, "\u{1F3B5}"),
-      /* @__PURE__ */ React.createElement("span", null, "Pistas Sueltas")
+      "\u{1F504}"
     )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2.5 items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setBatchModalOpen(true), className: "bg-djzinc-800 hover:bg-djzinc-750 border border-djcyan-500/40 text-djcyan-400 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors", title: "Configurar opciones avanzadas de auditor\xEDa por lotes y car\xE1tulas" }, /* @__PURE__ */ React.createElement(Icons.Sliders, null), " ", t("btn_audit_batch") || "Configurar Lote"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleAuditar(), disabled: isAuditing, className: "bg-djcyan-500 hover:bg-djcyan-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-md font-extrabold text-xs shadow-md shadow-djcyan-500/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95" }, /* @__PURE__ */ React.createElement(Icons.Library, null), " ", isAuditing ? lang === "en" ? "Auditing..." : "Auditando..." : t("btn_execute_audit") || "Auditar Todo"), /* @__PURE__ */ React.createElement("button", { onClick: handleInyectarCaratulasLote, disabled: isInjecting || tracks.length === 0, className: "bg-djzinc-800 hover:bg-djzinc-750 text-amber-400 border border-amber-600/60 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors", title: "Detecta o busca car\xE1tulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F5BC}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, t("btn_inject_covers") || "Inyectar Car\xE1tulas")), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -4356,59 +4381,75 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         className: "px-4 py-1.5 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-mono font-bold text-xs cursor-pointer transition-colors shadow"
       },
       "Cerrar"
-    )))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-djzinc-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), " Explorador de Biblioteca & Selecci\xF3n de Archivos")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer" }, "\u2715")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate flex-1", title: fsCurrentPath }, fsCurrentPath || "Cargando..."), fsParentPath && fsParentPath !== fsCurrentPath && /* @__PURE__ */ React.createElement("button", { onClick: () => handleNavegarACarpeta(fsParentPath), className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded text-[11px] border border-djzinc-700 cursor-pointer shrink-0" }, "\u25B2 Subir Nivel")), /* @__PURE__ */ React.createElement("div", { className: "flex border-b border-djzinc-800 bg-[#07070a] px-4 pt-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement(
+    )))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-djzinc-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), " Explorador de Biblioteca & Selecci\xF3n de Archivos")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer" }, "\u2715")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate", title: fsCurrentPath }, fsCurrentPath || "Cargando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, fsCurrentPath && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => toggleStageFolder(fsCurrentPath),
+        className: `px-2.5 py-1 rounded text-[11px] font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 ${stagedFolders.includes(fsCurrentPath) ? "bg-emerald-500 text-black border-emerald-400 font-black shadow" : "bg-djcyan-950/80 hover:bg-djcyan-900 border-djcyan-700/70 text-djcyan-300"}`,
+        title: "A\xF1adir o quitar toda esta carpeta de la cesta de selecci\xF3n conjunta"
+      },
+      /* @__PURE__ */ React.createElement("span", null, stagedFolders.includes(fsCurrentPath) ? "\u2713" : "+"),
+      /* @__PURE__ */ React.createElement("span", null, stagedFolders.includes(fsCurrentPath) ? "Carpeta A\xF1adida" : "A\xF1adir Toda Esta Carpeta")
+    ), fsParentPath && fsParentPath !== fsCurrentPath && /* @__PURE__ */ React.createElement("button", { onClick: () => handleNavegarACarpeta(fsParentPath), className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded text-[11px] border border-djzinc-700 cursor-pointer shrink-0" }, "\u25B2 Subir Nivel"))), /* @__PURE__ */ React.createElement("div", { className: "flex border-b border-djzinc-800 bg-[#07070a] px-4 pt-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setFsActiveTab("folders"),
         className: `px-3 py-1.5 rounded-t font-bold transition-all cursor-pointer flex items-center gap-1.5 ${fsActiveTab === "folders" ? "bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700" : "text-gray-400 hover:text-white"}`
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F4C1} Subcarpetas"),
-      /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-djzinc-800 text-[10px] rounded-full text-gray-300" }, fsFolders.length)
+      /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-djzinc-800 text-[10px] rounded-full text-gray-300" }, fsFolders.length),
+      stagedFolders.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-emerald-500 text-black text-[10px] font-bold rounded-full" }, stagedFolders.length, " en cesta")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setFsActiveTab("files"),
         className: `px-3 py-1.5 rounded-t font-bold transition-all cursor-pointer flex items-center gap-1.5 ${fsActiveTab === "files" ? "bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700" : "text-gray-400 hover:text-white"}`
       },
-      /* @__PURE__ */ React.createElement("span", null, "\u{1F3B5} Archivos de Audio"),
-      /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 text-[10px] rounded-full font-bold ${selectedFsFiles.length > 0 ? "bg-djcyan-500 text-black" : "bg-djzinc-800 text-gray-300"}` }, selectedFsFiles.length > 0 ? `${selectedFsFiles.length}/${fsFiles.length}` : fsFiles.length)
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-3 space-y-1 bg-[#07070a]" }, fsLoading ? /* @__PURE__ */ React.createElement("div", { className: "py-14 text-center text-gray-400 text-xs font-mono flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-6 h-6 border-2 border-djcyan-400 border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", null, "Leyendo directorio y pistas de audio...")) : fsActiveTab === "folders" ? fsFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 text-xs font-mono" }, "No hay subcarpetas en este directorio.") : fsFolders.map((f, idx) => /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: idx,
-        onClick: () => handleNavegarACarpeta(f.path),
-        className: "p-2.5 rounded-lg bg-djzinc-900/60 hover:bg-djcyan-950/40 border border-djzinc-800/80 hover:border-djcyan-500/50 flex items-center justify-between cursor-pointer group transition-all"
-      },
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 text-base" }, "\u{1F4C1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-gray-200 group-hover:text-white font-medium truncate" }, f.name)),
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
-        "button",
+      /* @__PURE__ */ React.createElement("span", null, "\u{1F3B5} Pistas Sueltas"),
+      /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 text-[10px] rounded-full font-bold ${stagedFiles.length > 0 ? "bg-djcyan-500 text-black" : "bg-djzinc-800 text-gray-300"}` }, stagedFiles.length > 0 ? `${stagedFiles.length} en cesta` : fsFiles.length)
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-3 space-y-1 bg-[#07070a]" }, fsLoading ? /* @__PURE__ */ React.createElement("div", { className: "py-14 text-center text-gray-400 text-xs font-mono flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-6 h-6 border-2 border-djcyan-400 border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", null, "Leyendo directorio y pistas de audio...")) : fsActiveTab === "folders" ? fsFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 text-xs font-mono" }, "No hay subcarpetas en este directorio.") : fsFolders.map((f, idx) => {
+      const isFolderStaged = stagedFolders.includes(f.path);
+      return /* @__PURE__ */ React.createElement(
+        "div",
         {
-          onClick: (e) => {
-            e.stopPropagation();
-            handleSeleccionarCarpetaUI(f.path);
-          },
-          className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djcyan-600 hover:text-black text-gray-300 text-[10px] font-mono font-bold rounded border border-djzinc-700 cursor-pointer transition-colors",
-          title: "Auditar toda esta subcarpeta"
+          key: idx,
+          onClick: () => handleNavegarACarpeta(f.path),
+          className: `p-2.5 rounded-lg border flex items-center justify-between cursor-pointer group transition-all ${isFolderStaged ? "bg-emerald-950/20 border-emerald-500/50" : "bg-djzinc-900/60 hover:bg-djcyan-950/40 border-djzinc-800/80 hover:border-djcyan-500/50"}`
         },
-        "Cargar Carpeta"
-      ), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-xs group-hover:text-djcyan-400 font-mono" }, "\u2794"))
-    )) : (
-      /* Pestaña de Archivos de Audio */
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 text-base" }, "\u{1F4C1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-gray-200 group-hover:text-white font-medium truncate" }, f.name)),
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              toggleStageFolder(f.path);
+            },
+            className: `px-2.5 py-1 text-[10px] font-mono font-bold rounded border transition-colors cursor-pointer flex items-center gap-1 ${isFolderStaged ? "bg-emerald-500 text-black border-emerald-400 font-black" : "bg-djzinc-800 hover:bg-djcyan-950 text-djcyan-300 border-djzinc-700 hover:border-djcyan-600"}`,
+            title: "A\xF1adir o quitar esta subcarpeta de la cesta"
+          },
+          /* @__PURE__ */ React.createElement("span", null, isFolderStaged ? "\u2713" : "+"),
+          /* @__PURE__ */ React.createElement("span", null, isFolderStaged ? "A\xF1adida a Cesta" : "A\xF1adir Carpeta")
+        ), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-xs group-hover:text-djcyan-400 font-mono" }, "\u2794"))
+      );
+    }) : (
+      /* Pestaña de Archivos de Audio con Selección Incremental */
       /* @__PURE__ */ React.createElement("div", null, fsFiles.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between p-2 mb-2 bg-djzinc-900/80 rounded border border-djzinc-800 text-xs font-mono" }, /* @__PURE__ */ React.createElement("label", { className: "flex items-center gap-2 text-gray-300 cursor-pointer select-none" }, /* @__PURE__ */ React.createElement(
         "input",
         {
           type: "checkbox",
-          checked: fsFiles.length > 0 && selectedFsFiles.length === fsFiles.length,
-          onChange: toggleSelectAllFsFiles,
+          checked: fsFiles.length > 0 && fsFiles.every((f) => stagedFiles.includes(f.path)),
+          onChange: toggleStageAllCurrentFsFiles,
           className: "rounded bg-djzinc-950 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
         }
-      ), /* @__PURE__ */ React.createElement("span", { className: "font-bold" }, "Seleccionar todos los archivos (", fsFiles.length, ")")), selectedFsFiles.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 text-[11px] font-bold" }, "\u2713 ", selectedFsFiles.length, " seleccionado(s)")), fsFiles.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 text-xs font-mono" }, "No se encontraron archivos de audio directos (.flac, .mp3, .wav, etc.) en este nivel.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 mt-1 inline-block" }, 'Navega a una subcarpeta o pulsa "Cargar Toda la Carpeta".')) : fsFiles.map((fileItem, idx) => {
-        const isSelected = selectedFsFiles.includes(fileItem.path);
+      ), /* @__PURE__ */ React.createElement("span", { className: "font-bold" }, "Seleccionar todas las de este nivel (", fsFiles.length, ")")), stagedFiles.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 text-[11px] font-bold" }, "\u2713 ", stagedFiles.length, " pista(s) acumuladas en cesta")), fsFiles.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 text-xs font-mono" }, "No se encontraron archivos de audio directos (.flac, .mp3, .wav, etc.) en este nivel.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 mt-1 inline-block" }, "Navega a una subcarpeta para explorar m\xE1s pistas.")) : fsFiles.map((fileItem, idx) => {
+        const isSelected = stagedFiles.includes(fileItem.path);
         return /* @__PURE__ */ React.createElement(
           "div",
           {
             key: idx,
-            onClick: () => toggleSelectFsFile(fileItem.path),
+            onClick: () => toggleStageFile(fileItem.path),
             className: `p-2 rounded flex items-center justify-between cursor-pointer border transition-colors ${isSelected ? "bg-djcyan-950/40 border-djcyan-500/60 text-white" : "bg-djzinc-900/40 hover:bg-djzinc-800/60 border-djzinc-800 text-gray-300"}`
           },
           /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement(
@@ -4424,20 +4465,31 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-djzinc-800 text-djcyan-300 font-bold border border-djzinc-700" }, fileItem.ext || "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, fileItem.size_mb ? `${fileItem.size_mb} MB` : ""))
         );
       }))
-    )), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 flex flex-wrap justify-between items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono text-gray-400" }, fsFolders.length, " subcarpetas \u2022 ", fsFiles.length, " archivos de audio", selectedFsFiles.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold ml-1" }, "(", selectedFsFiles.length, " seleccionados)")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded text-xs cursor-pointer" }, "Cancelar"), selectedFsFiles.length > 0 && /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-djzinc-950 border-t border-djzinc-800 flex flex-wrap justify-between items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-300 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "Cesta:"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400" }, stagedFolders.length, " carpeta(s)"), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, stagedFiles.length, " pista(s)")), (stagedFolders.length > 0 || stagedFiles.length > 0) && /* @__PURE__ */ React.createElement(
       "button",
       {
-        onClick: handleSeleccionarFicherosUI,
-        className: "px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs rounded shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5"
+        type: "button",
+        onClick: clearStagedSelection,
+        className: "px-2 py-0.5 text-[10px] font-mono text-red-400 hover:text-red-300 hover:underline cursor-pointer",
+        title: "Vaciar la selecci\xF3n acumulada"
       },
-      /* @__PURE__ */ React.createElement("span", null, "\u{1F3B5} Cargar Ficheros Seleccionados (", selectedFsFiles.length, ")")
-    ), /* @__PURE__ */ React.createElement(
+      "[Vaciar Cesta]"
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded text-xs cursor-pointer font-mono" }, "Cancelar"), stagedFolders.length > 0 || stagedFiles.length > 0 ? /* @__PURE__ */ React.createElement(
       "button",
       {
+        type: "button",
+        onClick: handleConfirmarSeleccionLote,
+        className: "px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-djcyan-400 hover:from-emerald-400 hover:to-djcyan-300 text-black font-extrabold text-xs rounded-lg shadow-lg shadow-emerald-950/40 cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5 font-mono"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u{1F4E5} Cargar Cesta Completa (", stagedFolders.length, " carp., ", stagedFiles.length, " pistas)")
+    ) : /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
         onClick: () => handleSeleccionarCarpetaUI(fsCurrentPath),
-        className: "px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5"
+        className: "px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded-lg shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5 font-mono"
       },
-      /* @__PURE__ */ React.createElement("span", null, "\u{1F4C1} Cargar Toda la Carpeta")
+      /* @__PURE__ */ React.createElement("span", null, "\u{1F4C1} Cargar Toda la Carpeta Actual")
     ))))), camelotModalOpen && /* @__PURE__ */ React.createElement(
       CamelotWheelModal,
       {
@@ -8773,6 +8825,7 @@ ${text}`);
     const [isCrawling, setIsCrawling] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("todas");
     const [searchQuery, setSearchQuery] = useState("");
+    const [dateFilter, setDateFilter] = useState("all");
     const [readingArticle, setReadingArticle] = useState(null);
     const [copiedRef, setCopiedRef] = useState(false);
     const categories = [
@@ -8841,9 +8894,23 @@ ${text}`);
         const matchCat = selectedCategory === "todas" || item.category === selectedCategory;
         const q = searchQuery.toLowerCase().trim();
         const matchSearch = !q || (item.title || "").toLowerCase().includes(q) || (item.summary || "").toLowerCase().includes(q) || (item.source || "").toLowerCase().includes(q) || (item.key_tags || []).some((t) => t.toLowerCase().includes(q));
-        return matchCat && matchSearch;
+        if (!matchCat || !matchSearch) return false;
+        if (dateFilter !== "all" && item.date) {
+          try {
+            const itemDate = new Date(item.date);
+            if (!isNaN(itemDate.getTime())) {
+              const now = /* @__PURE__ */ new Date();
+              const diffDays = (now.getTime() - itemDate.getTime()) / (1e3 * 60 * 60 * 24);
+              if (dateFilter === "7days" && diffDays > 7) return false;
+              if (dateFilter === "30days" && diffDays > 30) return false;
+              if (dateFilter === "90days" && diffDays > 90) return false;
+            }
+          } catch (_) {
+          }
+        }
+        return true;
       });
-    }, [trendsData, selectedCategory, searchQuery]);
+    }, [trendsData, selectedCategory, searchQuery, dateFilter]);
     const festivals = useMemo(() => {
       const list = trendsData.festivals_calendar || [];
       const q = searchQuery.toLowerCase().trim();
@@ -8908,13 +8975,25 @@ ${text}`);
         /* @__PURE__ */ React.createElement("span", null, cat.label),
         /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded-full text-[9px] font-mono ${isSelected ? "bg-black text-djcyan-300 font-bold" : "bg-djzinc-800 text-gray-400"}` }, count)
       );
-    })), /* @__PURE__ */ React.createElement("div", { className: "relative min-w-[240px] md:w-72" }, /* @__PURE__ */ React.createElement(
+    })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-[#0d0d15] border border-djzinc-800 rounded-lg px-2.5 py-1 text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\u{1F4C5}"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: dateFilter,
+        onChange: (e) => setDateFilter(e.target.value),
+        className: "bg-transparent text-gray-300 text-xs font-mono outline-none cursor-pointer",
+        title: "Filtrar tendencias por fecha de publicaci\xF3n"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "all", className: "bg-[#0d0d15] text-gray-200" }, "Todas las fechas"),
+      /* @__PURE__ */ React.createElement("option", { value: "7days", className: "bg-[#0d0d15] text-gray-200" }, "\xDAltima semana"),
+      /* @__PURE__ */ React.createElement("option", { value: "30days", className: "bg-[#0d0d15] text-gray-200" }, "\xDAltimo mes"),
+      /* @__PURE__ */ React.createElement("option", { value: "90days", className: "bg-[#0d0d15] text-gray-200" }, "\xDAltimos 3 meses")
+    )), /* @__PURE__ */ React.createElement("div", { className: "relative min-w-[200px] md:w-64" }, /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
         value: searchQuery,
         onChange: (e) => setSearchQuery(e.target.value),
-        placeholder: "Buscar en noticias, artistas o festivales...",
+        placeholder: "Buscar noticias, artistas...",
         className: "w-full bg-[#0d0d15] border border-djzinc-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 outline-none focus:border-djcyan-500 transition-colors font-mono"
       }
     ), /* @__PURE__ */ React.createElement("span", { className: "absolute left-2.5 top-2 text-gray-500 text-xs" }, "\u{1F50D}"), searchQuery && /* @__PURE__ */ React.createElement(
@@ -8925,7 +9004,7 @@ ${text}`);
         className: "absolute right-2.5 top-1.5 text-gray-500 hover:text-white text-xs cursor-pointer"
       },
       "\u2715"
-    )))), selectedCategory === "Festivales & Eventos" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F3AA}"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Calendario Oficial de Festivales & Clubs (Temporada 2026 - 2027)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djcyan-400" }, festivals.length, " Eventos Confirmados")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, festivals.map((fest) => /* @__PURE__ */ React.createElement(
+    ))))), selectedCategory === "Festivales & Eventos" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F3AA}"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Calendario Oficial de Festivales & Clubs (Temporada 2026 - 2027)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djcyan-400" }, festivals.length, " Eventos Confirmados")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, festivals.map((fest) => /* @__PURE__ */ React.createElement(
       "div",
       {
         key: fest.id,
@@ -9084,7 +9163,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       {
         type: "button",
         onClick: () => setReadingArticle(null),
-        className: "absolute top-4 right-4 text-gray-400 hover:text-white text-base font-mono cursor-pointer p-1 rounded-full bg-djzinc-900 border border-djzinc-750"
+        className: "absolute top-3 right-3 z-50 text-white hover:text-white text-sm font-black font-mono cursor-pointer w-9 h-9 rounded-full bg-black/85 hover:bg-red-600 border border-white/30 shadow-2xl flex items-center justify-center transition-all active:scale-90",
+        title: "Cerrar art\xEDculo"
       },
       "\u2715"
     ), /* @__PURE__ */ React.createElement("div", { className: "h-56 w-full rounded-xl overflow-hidden relative" }, /* @__PURE__ */ React.createElement(

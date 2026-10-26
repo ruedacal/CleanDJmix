@@ -3754,13 +3754,16 @@ const AuditWorkspace = ({
     const [fftAnalysisData, setFftAnalysisData] = useState(null);
     const [isAnalyzingFft, setIsAnalyzingFft] = useState(false);
 
-    // Navegador de Carpetas Integrado (Cero popups de permisos del SO)
+    // Navegador de Carpetas Integrado con Ingesta Incremental (Cero popups de permisos del SO)
     const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
     const [fsCurrentPath, setFsCurrentPath] = useState('');
     const [fsParentPath, setFsParentPath] = useState('');
     const [fsFolders, setFsFolders] = useState([]);
     const [fsFiles, setFsFiles] = useState([]);
     const [selectedFsFiles, setSelectedFsFiles] = useState([]);
+    // Cesta de selección acumulativa: permite navegar entre carpetas y acumular múltiples carpetas y pistas sueltas
+    const [stagedFolders, setStagedFolders] = useState([]);
+    const [stagedFiles, setStagedFiles] = useState([]);
     const [fsActiveTab, setFsActiveTab] = useState('folders'); // 'folders' | 'files'
     const [fsLoading, setFsLoading] = useState(false);
 
@@ -4125,8 +4128,7 @@ const AuditWorkspace = ({
     const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
         setFsBrowserOpen(true);
         setFsLoading(true);
-        setSelectedFsFiles([]);
-        const startPath = initialPath || rutaOrigen || "";
+        const startPath = initialPath || (typeof rutaOrigen === 'string' && !rutaOrigen.includes('pista') ? rutaOrigen : "") || "";
         if (window.eel && window.eel.listar_subcarpetas_sistema) {
             try {
                 const res = await window.eel.listar_subcarpetas_sistema(startPath)();
@@ -4151,7 +4153,7 @@ const AuditWorkspace = ({
 
     const handleNavegarACarpeta = async (targetPath) => {
         setFsLoading(true);
-        setSelectedFsFiles([]);
+        // Mantiene intacta la cesta acumulativa de stagedFolders y stagedFiles al navegar
         if (window.eel && window.eel.listar_subcarpetas_sistema) {
             try {
                 const res = await window.eel.listar_subcarpetas_sistema(targetPath)();
@@ -4172,24 +4174,18 @@ const AuditWorkspace = ({
         }
     };
 
-    const handleSeleccionarCarpetaUI = async (targetPath) => {
-        const finalPath = targetPath || fsCurrentPath;
-        setSelectedLooseFiles([]);
-        setRutaOrigen(finalPath);
-        setFsBrowserOpen(false);
-        await handleCargarDirectorio(finalPath);
+    const toggleStageFolder = (folderPath) => {
+        setStagedFolders(prev => {
+            if (prev.includes(folderPath)) {
+                return prev.filter(p => p !== folderPath);
+            } else {
+                return [...prev, folderPath];
+            }
+        });
     };
 
-    const handleSeleccionarFicherosUI = async () => {
-        if (!selectedFsFiles || selectedFsFiles.length === 0) return;
-        setSelectedLooseFiles(selectedFsFiles);
-        setRutaOrigen(`${fsCurrentPath} (${selectedFsFiles.length} pistas seleccionadas)`);
-        setFsBrowserOpen(false);
-        await handleCargarDirectorio(selectedFsFiles);
-    };
-
-    const toggleSelectFsFile = (filePath) => {
-        setSelectedFsFiles(prev => {
+    const toggleStageFile = (filePath) => {
+        setStagedFiles(prev => {
             if (prev.includes(filePath)) {
                 return prev.filter(p => p !== filePath);
             } else {
@@ -4198,20 +4194,60 @@ const AuditWorkspace = ({
         });
     };
 
-    const toggleSelectAllFsFiles = () => {
-        if (selectedFsFiles.length === fsFiles.length) {
-            setSelectedFsFiles([]);
+    const toggleStageAllCurrentFsFiles = () => {
+        const currentPaths = (fsFiles || []).map(f => f.path);
+        const allPresent = currentPaths.length > 0 && currentPaths.every(p => stagedFiles.includes(p));
+        if (allPresent) {
+            setStagedFiles(prev => prev.filter(p => !currentPaths.includes(p)));
         } else {
-            setSelectedFsFiles(fsFiles.map(f => f.path));
+            setStagedFiles(prev => {
+                const combined = new Set([...prev, ...currentPaths]);
+                return Array.from(combined);
+            });
         }
     };
 
+    const clearStagedSelection = () => {
+        setStagedFolders([]);
+        setStagedFiles([]);
+        setSelectedFsFiles([]);
+    };
+
+    const handleConfirmarSeleccionLote = async () => {
+        const combined = [...stagedFolders, ...stagedFiles];
+        if (combined.length === 0) {
+            // Si el usuario no marcó elementos individuales, carga la carpeta actual abierta
+            if (fsCurrentPath) {
+                setSelectedLooseFiles([]);
+                setRutaOrigen(fsCurrentPath);
+                setFsBrowserOpen(false);
+                await handleCargarDirectorio(fsCurrentPath);
+            }
+            return;
+        }
+
+        setSelectedLooseFiles(stagedFiles);
+        const descParts = [];
+        if (stagedFolders.length > 0) descParts.push(`${stagedFolders.length} carpeta(s)`);
+        if (stagedFiles.length > 0) descParts.push(`${stagedFiles.length} pista(s)`);
+        setRutaOrigen(descParts.join(' + '));
+        setFsBrowserOpen(false);
+        await handleCargarDirectorio(combined);
+    };
+
+    const handleSeleccionarCarpetaUI = async (targetPath) => {
+        const finalPath = targetPath || fsCurrentPath;
+        setSelectedLooseFiles([]);
+        setRutaOrigen(finalPath);
+        setFsBrowserOpen(false);
+        await handleCargarDirectorio(finalPath);
+    };
+
     const handleExplorar = async () => {
-        // En lugar de popup nativo intrusivo, abre el navegador de carpetas web integrado
         handleAbrirNavegadorCarpetas(rutaOrigen);
     };
 
-    // Resuelve de forma inteligente la lista de archivos o la carpeta física objetivo (soporta carpetas y pistas sueltas)
+    // Resuelve de forma inteligente la lista de archivos o carpetas objetivo
     const resolveAuditTargets = (pathOverride) => {
         if (pathOverride) return pathOverride;
         // 1. Si hay pistas seleccionadas en la tabla con checkbox:
@@ -4222,7 +4258,11 @@ const AuditWorkspace = ({
                 .filter(Boolean);
             if (selectedPaths.length > 0) return selectedPaths;
         }
-        // 2. Si se han seleccionado pistas sueltas desde el explorador de archivos:
+        // 2. Si se han acumulado carpetas y pistas en la cesta:
+        if (stagedFolders.length > 0 || stagedFiles.length > 0) {
+            return [...stagedFolders, ...stagedFiles];
+        }
+        // 3. Si se han seleccionado pistas sueltas desde el explorador:
         if (selectedLooseFiles && selectedLooseFiles.length > 0) {
             return selectedLooseFiles;
         }
@@ -4807,38 +4847,40 @@ const AuditWorkspace = ({
     return (
         <div className="flex w-full h-full overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0">
-                <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center shrink-0">
-                    <div className="flex gap-2 items-center w-1/2">
-                        <div className="flex-1 max-w-md bg-djzinc-900 rounded-md border border-djzinc-700 flex overflow-hidden">
-                            <span className="bg-djzinc-800 px-3 py-1.5 text-xs text-gray-400 font-mono border-r border-djzinc-700 flex items-center">ORIGEN</span>
-                            <input 
-                                type="text" 
-                                value={rutaOrigen} 
-                                onChange={(e) => setRutaOrigen(e.target.value)} 
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleCargarDirectorio(e.target.value);
-                                    }
-                                }}
-                                placeholder="Escribe o explora una ruta o pistas sueltas..."
-                                className="flex-1 bg-transparent px-3 py-1.5 text-sm text-gray-200 outline-none font-mono" 
-                            />
-                        </div>
-                        <button onClick={handleExplorar} className="bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded px-3.5 py-1.5 text-xs font-bold text-gray-200 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm" title="Explorar y cargar carpetas de música">
-                            <span>📂</span>
-                            <span>{t('btn_change_dir') || 'Explorar'}</span>
-                        </button>
+                <div className="p-3.5 border-b border-djzinc-800 bg-djzinc-950 flex flex-wrap justify-between items-center shrink-0 gap-3">
+                    <div className="flex gap-2.5 items-center">
                         <button 
-                            type="button"
-                            onClick={() => {
-                                setFsActiveTab('files');
-                                handleAbrirNavegadorCarpetas(rutaOrigen);
-                            }} 
-                            className="bg-djzinc-800 hover:bg-djzinc-700 border border-djcyan-500/50 text-djcyan-300 rounded px-3 py-1.5 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm"
-                            title="Seleccionar y cargar archivos de audio individuales (pistas sueltas)"
+                            onClick={handleExplorar} 
+                            className="bg-gradient-to-r from-djcyan-600 via-djcyan-500 to-blue-600 hover:from-djcyan-400 hover:to-blue-500 text-black font-black px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5" 
+                            title="Seleccionar carpetas completas y/o pistas sueltas navegando libremente por la biblioteca"
                         >
-                            <span>🎵</span>
-                            <span>Pistas Sueltas</span>
+                            <span>📂</span>
+                            <span>Seleccionar</span>
+                        </button>
+
+                        {tracks && tracks.length > 0 ? (
+                            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-sm truncate" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
+                                <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>
+                                <span className="truncate">
+                                    {typeof rutaOrigen === 'string' && rutaOrigen ? (rutaOrigen.split('/').pop() || rutaOrigen) : 'Colección Activa'}
+                                </span>
+                                <span className="px-2 py-0.5 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700">
+                                    {tracks.length} pistas
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="text-xs font-mono text-gray-500 italic px-2">
+                                Ninguna carpeta o pista seleccionada
+                            </span>
+                        )}
+
+                        <button 
+                            type="button" 
+                            onClick={() => handleCargarDirectorio(resolveAuditTargets())} 
+                            className="px-2.5 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono" 
+                            title="Recargar selección actual"
+                        >
+                            🔄
                         </button>
                     </div>
                     <div className="flex flex-wrap gap-2.5 items-center">
@@ -6441,14 +6483,33 @@ const AuditWorkspace = ({
                             <button onClick={() => setFsBrowserOpen(false)} className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer">✕</button>
                         </div>
 
-                        <div className="px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono">
-                            <span className="text-gray-400 shrink-0">Ruta:</span>
-                            <span className="text-djcyan-400 font-semibold truncate flex-1" title={fsCurrentPath}>{fsCurrentPath || "Cargando..."}</span>
-                            {fsParentPath && fsParentPath !== fsCurrentPath && (
-                                <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded text-[11px] border border-djzinc-700 cursor-pointer shrink-0">
-                                    ▲ Subir Nivel
-                                </button>
-                            )}
+                        <div className="px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="text-gray-400 shrink-0">Ruta:</span>
+                                <span className="text-djcyan-400 font-semibold truncate" title={fsCurrentPath}>{fsCurrentPath || "Cargando..."}</span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                                {fsCurrentPath && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => toggleStageFolder(fsCurrentPath)}
+                                        className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                                            stagedFolders.includes(fsCurrentPath)
+                                                ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow'
+                                                : 'bg-djcyan-950/80 hover:bg-djcyan-900 border-djcyan-700/70 text-djcyan-300'
+                                        }`}
+                                        title="Añadir o quitar toda esta carpeta de la cesta de selección conjunta"
+                                    >
+                                        <span>{stagedFolders.includes(fsCurrentPath) ? '✓' : '+'}</span>
+                                        <span>{stagedFolders.includes(fsCurrentPath) ? 'Carpeta Añadida' : 'Añadir Toda Esta Carpeta'}</span>
+                                    </button>
+                                )}
+                                {fsParentPath && fsParentPath !== fsCurrentPath && (
+                                    <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded text-[11px] border border-djzinc-700 cursor-pointer shrink-0">
+                                        ▲ Subir Nivel
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Pestañas de Vista: Subcarpetas / Archivos de Audio */}
@@ -6463,6 +6524,11 @@ const AuditWorkspace = ({
                             >
                                 <span>📁 Subcarpetas</span>
                                 <span className="px-1.5 py-0.2 bg-djzinc-800 text-[10px] rounded-full text-gray-300">{fsFolders.length}</span>
+                                {stagedFolders.length > 0 && (
+                                    <span className="px-1.5 py-0.2 bg-emerald-500 text-black text-[10px] font-bold rounded-full">
+                                        {stagedFolders.length} en cesta
+                                    </span>
+                                )}
                             </button>
                             <button
                                 onClick={() => setFsActiveTab('files')}
@@ -6472,11 +6538,11 @@ const AuditWorkspace = ({
                                         : 'text-gray-400 hover:text-white'
                                 }`}
                             >
-                                <span>🎵 Archivos de Audio</span>
+                                <span>🎵 Pistas Sueltas</span>
                                 <span className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
-                                    selectedFsFiles.length > 0 ? 'bg-djcyan-500 text-black' : 'bg-djzinc-800 text-gray-300'
+                                    stagedFiles.length > 0 ? 'bg-djcyan-500 text-black' : 'bg-djzinc-800 text-gray-300'
                                 }`}>
-                                    {selectedFsFiles.length > 0 ? `${selectedFsFiles.length}/${fsFiles.length}` : fsFiles.length}
+                                    {stagedFiles.length > 0 ? `${stagedFiles.length} en cesta` : fsFiles.length}
                                 </span>
                             </button>
                         </div>
@@ -6493,46 +6559,59 @@ const AuditWorkspace = ({
                                         No hay subcarpetas en este directorio.
                                     </div>
                                 ) : (
-                                    fsFolders.map((f, idx) => (
-                                        <div 
-                                            key={idx} 
-                                            onClick={() => handleNavegarACarpeta(f.path)}
-                                            className="p-2.5 rounded-lg bg-djzinc-900/60 hover:bg-djcyan-950/40 border border-djzinc-800/80 hover:border-djcyan-500/50 flex items-center justify-between cursor-pointer group transition-all"
-                                        >
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                <span className="text-amber-400 text-base">📁</span>
-                                                <span className="text-xs text-gray-200 group-hover:text-white font-medium truncate">{f.name}</span>
+                                    fsFolders.map((f, idx) => {
+                                        const isFolderStaged = stagedFolders.includes(f.path);
+                                        return (
+                                            <div 
+                                                key={idx} 
+                                                onClick={() => handleNavegarACarpeta(f.path)}
+                                                className={`p-2.5 rounded-lg border flex items-center justify-between cursor-pointer group transition-all ${
+                                                    isFolderStaged 
+                                                        ? 'bg-emerald-950/20 border-emerald-500/50' 
+                                                        : 'bg-djzinc-900/60 hover:bg-djcyan-950/40 border-djzinc-800/80 hover:border-djcyan-500/50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <span className="text-amber-400 text-base">📁</span>
+                                                    <span className="text-xs text-gray-200 group-hover:text-white font-medium truncate">{f.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); toggleStageFolder(f.path); }}
+                                                        className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded border transition-colors cursor-pointer flex items-center gap-1 ${
+                                                            isFolderStaged
+                                                                ? 'bg-emerald-500 text-black border-emerald-400 font-black'
+                                                                : 'bg-djzinc-800 hover:bg-djcyan-950 text-djcyan-300 border-djzinc-700 hover:border-djcyan-600'
+                                                        }`}
+                                                        title="Añadir o quitar esta subcarpeta de la cesta"
+                                                    >
+                                                        <span>{isFolderStaged ? '✓' : '+'}</span>
+                                                        <span>{isFolderStaged ? 'Añadida a Cesta' : 'Añadir Carpeta'}</span>
+                                                    </button>
+                                                    <span className="text-gray-500 text-xs group-hover:text-djcyan-400 font-mono">➔</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); handleSeleccionarCarpetaUI(f.path); }}
-                                                    className="px-2.5 py-1 bg-djzinc-800 hover:bg-djcyan-600 hover:text-black text-gray-300 text-[10px] font-mono font-bold rounded border border-djzinc-700 cursor-pointer transition-colors"
-                                                    title="Auditar toda esta subcarpeta"
-                                                >
-                                                    Cargar Carpeta
-                                                </button>
-                                                <span className="text-gray-500 text-xs group-hover:text-djcyan-400 font-mono">➔</span>
-                                            </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )
                             ) : (
-                                /* Pestaña de Archivos de Audio */
+                                /* Pestaña de Archivos de Audio con Selección Incremental */
                                 <div>
                                     {fsFiles.length > 0 && (
                                         <div className="flex items-center justify-between p-2 mb-2 bg-djzinc-900/80 rounded border border-djzinc-800 text-xs font-mono">
                                             <label className="flex items-center gap-2 text-gray-300 cursor-pointer select-none">
                                                 <input 
                                                     type="checkbox"
-                                                    checked={fsFiles.length > 0 && selectedFsFiles.length === fsFiles.length}
-                                                    onChange={toggleSelectAllFsFiles}
+                                                    checked={fsFiles.length > 0 && fsFiles.every(f => stagedFiles.includes(f.path))}
+                                                    onChange={toggleStageAllCurrentFsFiles}
                                                     className="rounded bg-djzinc-950 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
                                                 />
-                                                <span className="font-bold">Seleccionar todos los archivos ({fsFiles.length})</span>
+                                                <span className="font-bold">Seleccionar todas las de este nivel ({fsFiles.length})</span>
                                             </label>
-                                            {selectedFsFiles.length > 0 && (
+                                            {stagedFiles.length > 0 && (
                                                 <span className="text-djcyan-400 text-[11px] font-bold">
-                                                    ✓ {selectedFsFiles.length} seleccionado(s)
+                                                    ✓ {stagedFiles.length} pista(s) acumuladas en cesta
                                                 </span>
                                             )}
                                         </div>
@@ -6542,15 +6621,15 @@ const AuditWorkspace = ({
                                         <div className="py-12 text-center text-gray-500 text-xs font-mono">
                                             No se encontraron archivos de audio directos (.flac, .mp3, .wav, etc.) en este nivel.
                                             <br />
-                                            <span className="text-gray-400 mt-1 inline-block">Navega a una subcarpeta o pulsa "Cargar Toda la Carpeta".</span>
+                                            <span className="text-gray-400 mt-1 inline-block">Navega a una subcarpeta para explorar más pistas.</span>
                                         </div>
                                     ) : (
                                         fsFiles.map((fileItem, idx) => {
-                                            const isSelected = selectedFsFiles.includes(fileItem.path);
+                                            const isSelected = stagedFiles.includes(fileItem.path);
                                             return (
                                                 <div 
                                                     key={idx}
-                                                    onClick={() => toggleSelectFsFile(fileItem.path)}
+                                                    onClick={() => toggleStageFile(fileItem.path)}
                                                     className={`p-2 rounded flex items-center justify-between cursor-pointer border transition-colors ${
                                                         isSelected 
                                                             ? 'bg-djcyan-950/40 border-djcyan-500/60 text-white' 
@@ -6581,31 +6660,47 @@ const AuditWorkspace = ({
                             )}
                         </div>
 
-                        <div className="p-3 bg-djzinc-950 border-t border-djzinc-800 flex flex-wrap justify-between items-center gap-2">
-                            <span className="text-[11px] font-mono text-gray-400">
-                                {fsFolders.length} subcarpetas • {fsFiles.length} archivos de audio
-                                {selectedFsFiles.length > 0 && (
-                                    <span className="text-djcyan-400 font-bold ml-1">({selectedFsFiles.length} seleccionados)</span>
-                                )}
-                            </span>
+                        <div className="p-3.5 bg-djzinc-950 border-t border-djzinc-800 flex flex-wrap justify-between items-center gap-3">
                             <div className="flex items-center gap-2">
-                                <button onClick={() => setFsBrowserOpen(false)} className="px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded text-xs cursor-pointer">
-                                    Cancelar
-                                </button>
-                                {selectedFsFiles.length > 0 && (
+                                <span className="text-xs font-mono font-bold text-gray-300 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></span>
+                                    <span>Cesta:</span>
+                                    <span className="text-emerald-400">{stagedFolders.length} carpeta(s)</span>
+                                    <span>•</span>
+                                    <span className="text-djcyan-300">{stagedFiles.length} pista(s)</span>
+                                </span>
+                                {(stagedFolders.length > 0 || stagedFiles.length > 0) && (
                                     <button 
-                                        onClick={handleSeleccionarFicherosUI}
-                                        className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs rounded shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5"
+                                        type="button" 
+                                        onClick={clearStagedSelection}
+                                        className="px-2 py-0.5 text-[10px] font-mono text-red-400 hover:text-red-300 hover:underline cursor-pointer"
+                                        title="Vaciar la selección acumulada"
                                     >
-                                        <span>🎵 Cargar Ficheros Seleccionados ({selectedFsFiles.length})</span>
+                                        [Vaciar Cesta]
                                     </button>
                                 )}
-                                <button 
-                                    onClick={() => handleSeleccionarCarpetaUI(fsCurrentPath)} 
-                                    className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5"
-                                >
-                                    <span>📁 Cargar Toda la Carpeta</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setFsBrowserOpen(false)} className="px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded text-xs cursor-pointer font-mono">
+                                    Cancelar
                                 </button>
+                                {(stagedFolders.length > 0 || stagedFiles.length > 0) ? (
+                                    <button 
+                                        type="button"
+                                        onClick={handleConfirmarSeleccionLote}
+                                        className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-djcyan-400 hover:from-emerald-400 hover:to-djcyan-300 text-black font-extrabold text-xs rounded-lg shadow-lg shadow-emerald-950/40 cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5 font-mono"
+                                    >
+                                        <span>📥 Cargar Cesta Completa ({stagedFolders.length} carp., {stagedFiles.length} pistas)</span>
+                                    </button>
+                                ) : (
+                                    <button 
+                                        type="button"
+                                        onClick={() => handleSeleccionarCarpetaUI(fsCurrentPath)} 
+                                        className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded-lg shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5 font-mono"
+                                    >
+                                        <span>📁 Cargar Toda la Carpeta Actual</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -12996,6 +13091,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
     const [isCrawling, setIsCrawling] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("todas");
     const [searchQuery, setSearchQuery] = useState("");
+    const [dateFilter, setDateFilter] = useState("all"); // 'all' | '7days' | '30days' | '90days'
     const [readingArticle, setReadingArticle] = useState(null);
     const [copiedRef, setCopiedRef] = useState(false);
 
@@ -13073,9 +13169,24 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 (item.summary || "").toLowerCase().includes(q) || 
                 (item.source || "").toLowerCase().includes(q) ||
                 (item.key_tags || []).some(t => t.toLowerCase().includes(q));
-            return matchCat && matchSearch;
+
+            if (!matchCat || !matchSearch) return false;
+
+            if (dateFilter !== "all" && item.date) {
+                try {
+                    const itemDate = new Date(item.date);
+                    if (!isNaN(itemDate.getTime())) {
+                        const now = new Date();
+                        const diffDays = (now.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24);
+                        if (dateFilter === "7days" && diffDays > 7) return false;
+                        if (dateFilter === "30days" && diffDays > 30) return false;
+                        if (dateFilter === "90days" && diffDays > 90) return false;
+                    }
+                } catch (_) {}
+            }
+            return true;
         });
-    }, [trendsData, selectedCategory, searchQuery]);
+    }, [trendsData, selectedCategory, searchQuery, dateFilter]);
 
     const festivals = useMemo(() => {
         const list = trendsData.festivals_calendar || [];
@@ -13205,24 +13316,43 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                         })}
                     </div>
 
-                    <div className="relative min-w-[240px] md:w-72">
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Buscar en noticias, artistas o festivales..."
-                            className="w-full bg-[#0d0d15] border border-djzinc-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 outline-none focus:border-djcyan-500 transition-colors font-mono"
-                        />
-                        <span className="absolute left-2.5 top-2 text-gray-500 text-xs">🔍</span>
-                        {searchQuery && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchQuery("")}
-                                className="absolute right-2.5 top-1.5 text-gray-500 hover:text-white text-xs cursor-pointer"
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {/* Selector de Rango de Fecha */}
+                        <div className="flex items-center gap-1.5 bg-[#0d0d15] border border-djzinc-800 rounded-lg px-2.5 py-1 text-xs font-mono">
+                            <span className="text-gray-400">📅</span>
+                            <select
+                                value={dateFilter}
+                                onChange={(e) => setDateFilter(e.target.value)}
+                                className="bg-transparent text-gray-300 text-xs font-mono outline-none cursor-pointer"
+                                title="Filtrar tendencias por fecha de publicación"
                             >
-                                ✕
-                            </button>
-                        )}
+                                <option value="all" className="bg-[#0d0d15] text-gray-200">Todas las fechas</option>
+                                <option value="7days" className="bg-[#0d0d15] text-gray-200">Última semana</option>
+                                <option value="30days" className="bg-[#0d0d15] text-gray-200">Último mes</option>
+                                <option value="90days" className="bg-[#0d0d15] text-gray-200">Últimos 3 meses</option>
+                            </select>
+                        </div>
+
+                        {/* Buscador de Tendencias */}
+                        <div className="relative min-w-[200px] md:w-64">
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Buscar noticias, artistas..."
+                                className="w-full bg-[#0d0d15] border border-djzinc-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 outline-none focus:border-djcyan-500 transition-colors font-mono"
+                            />
+                            <span className="absolute left-2.5 top-2 text-gray-500 text-xs">🔍</span>
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery("")}
+                                    className="absolute right-2.5 top-1.5 text-gray-500 hover:text-white text-xs cursor-pointer"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -13656,7 +13786,8 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                         <button
                             type="button"
                             onClick={() => setReadingArticle(null)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-base font-mono cursor-pointer p-1 rounded-full bg-djzinc-900 border border-djzinc-750"
+                            className="absolute top-3 right-3 z-50 text-white hover:text-white text-sm font-black font-mono cursor-pointer w-9 h-9 rounded-full bg-black/85 hover:bg-red-600 border border-white/30 shadow-2xl flex items-center justify-center transition-all active:scale-90"
+                            title="Cerrar artículo"
                         >
                             ✕
                         </button>

@@ -830,15 +830,32 @@ class AuditService:
         self.reiniciar_cancelacion()
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
         archivos = []
+        seen_files = set()
 
         if isinstance(ruta_directorio, (list, tuple)):
-            for f in ruta_directorio:
-                if isinstance(f, str) and os.path.isfile(f) and f.lower().endswith(extensiones):
-                    archivos.append((os.path.dirname(f), os.path.basename(f)))
+            for item in ruta_directorio:
+                if not isinstance(item, str):
+                    continue
+                if os.path.isfile(item):
+                    if item.lower().endswith(extensiones) and item not in seen_files:
+                        archivos.append((os.path.dirname(item), os.path.basename(item)))
+                        seen_files.add(item)
+                elif os.path.isdir(item):
+                    for root, _, files in os.walk(item):
+                        for file in sorted(files):
+                            if not file.startswith(".") and file.lower().endswith(extensiones):
+                                full_p = os.path.join(root, file)
+                                if full_p not in seen_files:
+                                    archivos.append((root, file))
+                                    seen_files.add(full_p)
+                                    if len(archivos) >= 50000:
+                                        break
+                        if len(archivos) >= 50000:
+                            break
             if archivos:
                 self.directorio_actual = archivos[0][0]
             if emitir_log_cb:
-                emitir_log_cb(f"Iniciando auditoría avanzada de {len(archivos)} pistas seleccionadas")
+                emitir_log_cb(f"Iniciando auditoría avanzada de {len(archivos)} pistas seleccionadas (de carpetas y pistas sueltas)")
         elif isinstance(ruta_directorio, str):
             if os.path.isfile(ruta_directorio):
                 if ruta_directorio.lower().endswith(extensiones):
@@ -849,9 +866,12 @@ class AuditService:
                 for root, _, files in os.walk(ruta_directorio):
                     for file in sorted(files):
                         if not file.startswith(".") and file.lower().endswith(extensiones):
-                            archivos.append((root, file))
-                            if len(archivos) >= 50000:
-                                break
+                            full_p = os.path.join(root, file)
+                            if full_p not in seen_files:
+                                archivos.append((root, file))
+                                seen_files.add(full_p)
+                                if len(archivos) >= 50000:
+                                    break
                     if len(archivos) >= 50000:
                         break
             if emitir_log_cb:
@@ -1111,11 +1131,28 @@ class AuditService:
         self.reiniciar_cancelacion()
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
         archivos = []
+        seen_files = set()
 
         if isinstance(ruta_directorio, (list, tuple)):
-            for f in ruta_directorio:
-                if isinstance(f, str) and os.path.isfile(f) and f.lower().endswith(extensiones):
-                    archivos.append((os.path.dirname(f), os.path.basename(f)))
+            for item in ruta_directorio:
+                if not isinstance(item, str):
+                    continue
+                if os.path.isfile(item):
+                    if item.lower().endswith(extensiones) and item not in seen_files:
+                        archivos.append((os.path.dirname(item), os.path.basename(item)))
+                        seen_files.add(item)
+                elif os.path.isdir(item):
+                    for root, _, files in os.walk(item):
+                        for file in sorted(files):
+                            if not file.startswith(".") and file.lower().endswith(extensiones):
+                                full_p = os.path.join(root, file)
+                                if full_p not in seen_files:
+                                    archivos.append((root, file))
+                                    seen_files.add(full_p)
+                                    if len(archivos) >= 50000:
+                                        break
+                        if len(archivos) >= 50000:
+                            break
             if archivos:
                 self.directorio_actual = archivos[0][0]
         elif isinstance(ruta_directorio, str):
@@ -1128,9 +1165,12 @@ class AuditService:
                 for root, _, files in os.walk(ruta_directorio):
                     for file in sorted(files):
                         if not file.startswith(".") and file.lower().endswith(extensiones):
-                            archivos.append((root, file))
-                            if len(archivos) >= 50000:
-                                break
+                            full_p = os.path.join(root, file)
+                            if full_p not in seen_files:
+                                archivos.append((root, file))
+                                seen_files.add(full_p)
+                                if len(archivos) >= 50000:
+                                    break
                     if len(archivos) >= 50000:
                         break
         else:

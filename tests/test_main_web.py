@@ -258,4 +258,22 @@ def test_trends_service_enriched_sections():
     assert "trends_radar" in data
     assert len(data["trends_radar"]) >= 3
 
+def test_cargar_metadatos_lista_heterogenea_carpetas_y_archivos():
+    import tempfile
+    with tempfile.TemporaryDirectory() as dir1:
+        f1 = os.path.join(dir1, "track_folder.mp3")
+        with open(f1, "wb") as f:
+            f.write(b"ID3" + b"\x00" * 500)
+        with tempfile.TemporaryDirectory() as dir2:
+            f2 = os.path.join(dir2, "track_loose.wav")
+            with open(f2, "wb") as f:
+                f.write(b"RIFF" + b"\x00" * 500)
+
+            # Cesta mixta: [carpeta dir1, pista suelta f2]
+            res = main_web.audit_svc.cargar_metadatos_directorio([dir1, f2])
+            assert res["total"] == 2
+            nombres = [t["filename"] for t in res["tracks"]]
+            assert "track_folder.mp3" in nombres
+            assert "track_loose.wav" in nombres
+
 
