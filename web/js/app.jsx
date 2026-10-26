@@ -16964,6 +16964,27 @@ const App = () => {
     const [tutorialInitialMode, setTutorialInitialMode] = useState('launcher');
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
+    // Secuencia Techno del Logo: vibraciones en bucle durante 10 segundos, luego estático
+    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState(true);
+    const logoTechnoTimerRef = useRef(null);
+
+    useEffect(() => {
+        logoTechnoTimerRef.current = setTimeout(() => {
+            setIsLogoTechnoActive(false);
+        }, 10000);
+        return () => {
+            if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
+        };
+    }, []);
+
+    const triggerLogoTechno = () => {
+        setIsLogoTechnoActive(true);
+        if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
+        logoTechnoTimerRef.current = setTimeout(() => {
+            setIsLogoTechnoActive(false);
+        }, 10000);
+    };
+
     useEffect(() => {
         window.abrirTutorial = (mode = 'launcher') => {
             setTutorialInitialMode(mode);
@@ -17297,29 +17318,28 @@ const App = () => {
         <div className="flex flex-col h-screen w-screen bg-djzinc-950 text-gray-300 overflow-hidden font-sans select-none">
             {/* TOP NAVIGATION BAR CON MÁXIMA JERARQUÍA VISUAL & CAPSULE DOCK */}
             <header className="h-16 border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md">
-                {/* MOTOR DE DISTORSIÓN FRACTAL VERTICAL ULTRA-BRUTAL (0.8s) */}
+                {/* MOTOR DE DISTORSIÓN FRACTAL VERTICAL ULTRA-BRUTAL: SECUENCIA TECHNO 4/4 (2.0s) */}
                 <svg width="0" height="0" className="absolute pointer-events-none">
                     <defs>
-                        {/* 1. DISTORSIÓN VERTICAL TEARING ULTRA-BRUTAL PARA LAS LETRAS BEATWAVE */}
+                        {/* 1. DISTORSIÓN VERTICAL TEARING PARA LAS LETRAS BEATWAVE (BOMBO 4/4 + ROLLING RUMBLE + STUTTER) */}
                         <filter id="waveDistortion" x="-60%" y="-120%" width="220%" height="340%">
-                            {/* Ruido turbulento estricto vertical en X=0, con 3 octavas para cortes líquidos de alta resolución */}
                             <feTurbulence type="fractalNoise" baseFrequency="0 0.38" numOctaves="3" result="warp">
                                 <animate 
                                     attributeName="baseFrequency" 
-                                    values="0 0.16; 0 0.68; 0 0.28; 0 0.48; 0 0.16" 
-                                    keyTimes="0; 0.08; 0.20; 0.38; 1" 
-                                    dur="0.8s" 
+                                    values="0 0.16; 0 0.68; 0 0.28; 0 0.58; 0 0.28; 0 0.62; 0 0.28; 0 0.68; 0 0.45; 0 0.16" 
+                                    keyTimes="0; 0.04; 0.14; 0.25; 0.35; 0.50; 0.60; 0.75; 0.88; 1" 
+                                    dur="2.0s" 
                                     repeatCount="indefinite" 
                                 />
                             </feTurbulence>
                             
-                            {/* Desplazamiento explosivo masivo (scale 86) que rasga las letras y crea ondas de vibración */}
+                            {/* Desplazamiento explosivo masivo sincronizado con la secuencia techno */}
                             <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="0" in="SourceGraphic" in2="warp">
                                 <animate 
                                     attributeName="scale" 
-                                    values="0; 86; 42; 20; 6; 0" 
-                                    keyTimes="0; 0.08; 0.18; 0.32; 0.50; 1" 
-                                    dur="0.8s" 
+                                    values="0; 86; 16; 76; 14; 80; 15; 86; 55; 65; 0" 
+                                    keyTimes="0; 0.04; 0.14; 0.25; 0.35; 0.50; 0.60; 0.75; 0.83; 0.92; 1" 
+                                    dur="2.0s" 
                                     repeatCount="indefinite"
                                 />
                             </feDisplacementMap>
@@ -17330,18 +17350,18 @@ const App = () => {
                             <feTurbulence type="fractalNoise" baseFrequency="0.08 0.14" numOctaves="2" result="coneNoise">
                                 <animate 
                                     attributeName="baseFrequency" 
-                                    values="0.04 0.08; 0.16 0.26; 0.06 0.12; 0.04 0.08" 
-                                    keyTimes="0; 0.08; 0.25; 1" 
-                                    dur="0.8s" 
+                                    values="0.04 0.08; 0.16 0.26; 0.06 0.12; 0.14 0.22; 0.06 0.12; 0.16 0.26; 0.04 0.08" 
+                                    keyTimes="0; 0.04; 0.20; 0.50; 0.70; 0.85; 1" 
+                                    dur="2.0s" 
                                     repeatCount="indefinite" 
                                 />
                             </feTurbulence>
                             <feDisplacementMap in="SourceGraphic" in2="coneNoise" scale="0" xChannelSelector="R" yChannelSelector="G">
                                 <animate 
                                     attributeName="scale" 
-                                    values="0; 22; 8; 2; 0" 
-                                    keyTimes="0; 0.08; 0.18; 0.35; 1" 
-                                    dur="0.8s" 
+                                    values="0; 22; 4; 18; 4; 20; 4; 22; 14; 18; 0" 
+                                    keyTimes="0; 0.04; 0.14; 0.25; 0.35; 0.50; 0.60; 0.75; 0.83; 0.92; 1" 
+                                    dur="2.0s" 
                                     repeatCount="indefinite" 
                                 />
                             </feDisplacementMap>
@@ -17350,9 +17370,13 @@ const App = () => {
                 </svg>
 
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3.5 select-none">
+                    <div 
+                        onClick={triggerLogoTechno} 
+                        className="flex items-center gap-3.5 select-none cursor-pointer group"
+                        title={isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para reiniciar la secuencia techno (10s)"}
+                    >
                         {/* ISOTIPO FLAGSHIP: SUBWOOFER CLUB 3D BASADO EN FOTO (ORIENTADO A LA DERECHA, DISPARO BRUTAL HACIA EL TEXTO) */}
-                        <div className="w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group anim-woofer-chassis" title="BeatWave Subwoofer Acústico Pro">
+                        <div className={`w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group ${isLogoTechnoActive ? 'anim-woofer-chassis' : ''}`} title="BeatWave Subwoofer Acústico Pro">
                             <svg className="w-12 h-12 relative z-10 overflow-visible" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
                                     {/* Gradiente metálico de la estructura del motor / imán doble posterior */}
@@ -17428,10 +17452,10 @@ const App = () => {
                                 </g>
 
                                 {/* 2. ONDAS DE CHOQUE SÓNICAS DISPARADAS HACIA LA DERECHA (DIRECTO HACIA EL TEXTO BEATWAVE) */}
-                                <g id="subwoofer-sound-blastwaves" className="pointer-events-none">
-                                    <path d="M 44 14 C 54 20, 54 38, 44 44" stroke="#06b6d4" strokeWidth="2.4" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="1" />
-                                    <path d="M 49 10 C 61 18, 61 40, 49 48" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="0.8" style={{ animationDelay: '0.06s' }} />
-                                    <path d="M 54 6 C 68 16, 68 42, 54 52" stroke="#67e8f9" strokeWidth="1.2" strokeLinecap="round" className="anim-woofer-blastwave" fill="none" opacity="0.6" style={{ animationDelay: '0.12s' }} />
+                                <g id="subwoofer-sound-blastwaves" className={`pointer-events-none transition-opacity duration-300 ${isLogoTechnoActive ? 'opacity-100' : 'opacity-0'}`}>
+                                    <path d="M 44 14 C 54 20, 54 38, 44 44" stroke="#06b6d4" strokeWidth="2.4" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} fill="none" opacity="1" />
+                                    <path d="M 49 10 C 61 18, 61 40, 49 48" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} fill="none" opacity="0.8" style={{ animationDelay: '0.06s' }} />
+                                    <path d="M 54 6 C 68 16, 68 42, 54 52" stroke="#67e8f9" strokeWidth="1.2" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} fill="none" opacity="0.6" style={{ animationDelay: '0.12s' }} />
                                 </g>
 
                                 {/* 3. ARO FRONTAL EXTERIOR DE FUNDICIÓN (BASKET RIM EN PERSPECTIVA 3D TILTED) */}
@@ -17450,14 +17474,14 @@ const App = () => {
                                 </g>
 
                                 {/* 4. SUSPENSIÓN TOROIDAL DE GOMA SOBREDIMENSIONADA (HIGH-ROLL SURROUND 3D) */}
-                                <g className="anim-woofer-surround-3d">
+                                <g className={isLogoTechnoActive ? "anim-woofer-surround-3d" : ""}>
                                     <ellipse cx="36" cy="29" rx="14.8" ry="19.2" fill="url(#subSurround3dGrad)" stroke="#0e0f15" strokeWidth="1.4" transform="rotate(-14 36 29)" />
                                     {/* Arco de luz especular 3D a lo largo del toroide de goma */}
                                     <path d="M 28 13 C 39 8, 48 18, 50 31" stroke="#474b60" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.45" />
                                 </g>
 
                                 {/* 5. CONO PROFUNDO CON EXCURSIÓN BRUTAL 3D (MEMBRANA QUE CASI ESTALLA HACIA LA DERECHA) */}
-                                <g className="anim-woofer-cone-3d">
+                                <g className={isLogoTechnoActive ? "anim-woofer-cone-3d" : ""}>
                                     {/* Cono cónico profundo de carbono/polipropileno */}
                                     <ellipse cx="36" cy="29" rx="12.2" ry="16" fill="url(#subCone3dGrad)" stroke="#1a1c26" strokeWidth="0.8" transform="rotate(-14 36 29)" />
 
@@ -17471,7 +17495,7 @@ const App = () => {
                                     <ellipse cx="36" cy="29" rx="7.4" ry="9.8" stroke="#06b6d4" strokeWidth="0.9" fill="none" opacity="0.95" transform="rotate(-14 36 29)" />
 
                                     {/* 6. CÚPULA CENTRAL INVERTIDA (DUST CAP 3D) */}
-                                    <ellipse cx="36" cy="29" rx="5.8" ry="7.6" fill="url(#subCap3dGrad)" stroke="#161822" strokeWidth="0.8" className="anim-woofer-dustcap-3d" transform="rotate(-14 36 29)" />
+                                    <ellipse cx="36" cy="29" rx="5.8" ry="7.6" fill="url(#subCap3dGrad)" stroke="#161822" strokeWidth="0.8" className={isLogoTechnoActive ? "anim-woofer-dustcap-3d" : ""} transform="rotate(-14 36 29)" />
                                     
                                     {/* Micro-arco de luz en la concavidad del Dust Cap */}
                                     <path d="M 33 25 Q 36 23 39 26" stroke="#ffffff" strokeWidth="0.6" strokeLinecap="round" opacity="0.4" fill="none" />
@@ -17485,8 +17509,8 @@ const App = () => {
                         {/* RÓTULO BEATWAVE PRO CON DISTORSIÓN VERTICAL SINCRONIZADA */}
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2 sm:gap-2.5 leading-none">
-                                <span className="text-lg sm:text-[23px] tracking-wider uppercase font-black anim-soundwave truncate select-none cursor-pointer" style={{ fontFamily: "'Syne', sans-serif" }}>
-                                    BEAT<span className="anim-wave-bass-pulse">WAVE</span>
+                                <span className={`text-lg sm:text-[23px] tracking-wider uppercase font-black truncate select-none cursor-pointer transition-all duration-300 ${isLogoTechnoActive ? 'anim-soundwave' : 'text-white'}`} style={{ fontFamily: "'Syne', sans-serif" }}>
+                                    BEAT<span className={isLogoTechnoActive ? "anim-wave-bass-pulse" : "text-djcyan-400 font-bold"}>WAVE</span>
                                 </span>
                                 <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-md font-black tracking-widest border border-djcyan-400/80 bg-djcyan-950 text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0">
                                     PRO
@@ -17494,11 +17518,11 @@ const App = () => {
                             </div>
                             <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5">
                                 <span className="hidden sm:flex text-[9.5px] uppercase tracking-[0.26em] font-mono font-bold items-center gap-1.5 text-gray-300">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 animate-pulse"></span>
+                                    <span className={`w-1.5 h-1.5 rounded-full bg-djcyan-400 ${isLogoTechnoActive ? 'animate-pulse' : ''}`}></span>
                                     PRECISION AUDIO INTELLIGENCE
                                 </span>
                                 <span className="flex sm:hidden text-[8.5px] uppercase tracking-wider font-mono font-bold items-center gap-1 text-djcyan-400">
-                                    <span className="w-1 h-1 rounded-full bg-djcyan-400 animate-pulse"></span>
+                                    <span className={`w-1 h-1 rounded-full bg-djcyan-400 ${isLogoTechnoActive ? 'animate-pulse' : ''}`}></span>
                                     DJ INTELLIGENCE
                                 </span>
                             </div>
