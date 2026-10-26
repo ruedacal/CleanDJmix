@@ -618,6 +618,14 @@ const parseTimeToMs = (timeStr) => {
     return !isNaN(num) ? Math.max(0, num * 1000) : 0;
 };
 
+// Helper para parsear duración (número, mm:ss o string) a segundos
+const parseDurationToSeconds = (dur) => {
+    if (typeof dur === 'number') return dur > 0 ? dur : 210;
+    if (!dur) return 210;
+    const ms = parseTimeToMs(String(dur));
+    return ms > 0 ? (ms / 1000) : 210;
+};
+
 // Helper para formatear milisegundos a mm:ss.ms
 const formatMsToTime = (ms) => {
     const totalSec = Math.max(0, ms) / 1000;
@@ -4887,11 +4895,11 @@ const AuditWorkspace = ({
     return (
         <div className="flex w-full h-full overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0">
-                <div className="p-3.5 border-b border-djzinc-800 bg-djzinc-950 flex flex-wrap justify-between items-center shrink-0 gap-3">
-                    <div data-tour="tour-audit-select" className="flex gap-2.5 items-center">
+                <div className="p-2.5 sm:p-3.5 border-b border-djzinc-800 bg-djzinc-950 flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-2.5 overflow-hidden">
+                    <div data-tour="tour-audit-select" className="flex gap-2 items-center overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full md:w-auto shrink-0">
                         <button 
                             onClick={handleExplorar} 
-                            className="bg-djcyan-500 hover:bg-djcyan-400 text-black font-black px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono" 
+                            className="bg-djcyan-500 hover:bg-djcyan-400 text-black font-black px-3 sm:px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0" 
                             title="Seleccionar carpetas completas y/o pistas sueltas navegando libremente por la biblioteca"
                         >
                             <span>📂</span>
@@ -4899,7 +4907,7 @@ const AuditWorkspace = ({
                         </button>
 
                         {tracks && tracks.length > 0 ? (
-                            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-sm truncate" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
+                            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-sm truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
                                 <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>
                                 <span className="truncate">
                                     {typeof rutaOrigen === 'string' && rutaOrigen ? (rutaOrigen.split('/').pop() || rutaOrigen) : 'Colección Activa'}
@@ -4909,7 +4917,7 @@ const AuditWorkspace = ({
                                 </span>
                             </div>
                         ) : (
-                            <span className="text-xs font-mono text-gray-500 italic px-2">
+                            <span className="text-xs font-mono text-gray-500 italic px-2 shrink-0">
                                 Ninguna carpeta o pista seleccionada
                             </span>
                         )}
@@ -4923,31 +4931,31 @@ const AuditWorkspace = ({
                             🔄
                         </button>
                     </div>
-                    <div className="flex flex-wrap gap-2.5 items-center">
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full md:w-auto shrink-0">
                         {/* Bloque 1: Motor DSP (Primario & Configuración) */}
-                        <div className="flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
-                            <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
-                                <Icons.Sliders /> {t('btn_audit_batch') || 'Configurar'}
+                        <div className="flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm shrink-0">
+                            <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 text-gray-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono shrink-0" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
+                                <Icons.Sliders /> <span className="hidden sm:inline">{t('btn_audit_batch') || 'Configurar'}</span>
                             </button>
-                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djcyan-500 hover:bg-djcyan-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-md shadow-djcyan-500/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono">
+                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djcyan-500 hover:bg-djcyan-400 disabled:opacity-50 text-black px-3 sm:px-3.5 py-1.5 rounded-lg font-black text-xs shadow-md shadow-djcyan-500/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0">
                                 <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Todo')}
                             </button>
                         </div>
 
                         {/* Bloque 2: Herramientas Tácticas y Enriquecimiento (Secundario Pro) */}
-                        <div className="flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
-                            <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
+                        <div className="flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm shrink-0">
+                            <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono shrink-0" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
                                 <span>🖼️</span>
                                 <span>{t('btn_inject_covers') || 'Carátulas'}</span>
                             </button>
                             <button 
                                 onClick={handleSanitizarMetadatos} 
                                 disabled={isInjecting || tracks.length === 0} 
-                                className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono" 
+                                className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono shrink-0" 
                                 title="Higieniza etiquetas: elimina spam [Free Download], URLs, calidades y normaliza feats y versiones DJ"
                             >
                                 <span>🧹</span>
-                                <span>Limpiar Tags</span>
+                                <span>Limpiar</span>
                             </button>
 
                             {flacUpgradeTracks.length > 0 && (
@@ -4955,7 +4963,7 @@ const AuditWorkspace = ({
                                     type="button"
                                     onClick={() => handleBuscarReemplazosSpotify(flacUpgradeTracks)} 
                                     disabled={isSearchingSpotifyHD || isAuditing}
-                                    className="bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 hover:border-djcyan-400 disabled:opacity-40 text-xs font-mono font-bold px-3 py-1.5 rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                    className="bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 hover:border-djcyan-400 disabled:opacity-40 text-xs font-mono font-bold px-2.5 sm:px-3 py-1.5 rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
                                     title="Detectados archivos FLAC que no cumplen con calidad Lossless (calidad media o transcode). Buscar masters oficiales en Spotify"
                                 >
                                     <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '💎'}</span>
@@ -4969,7 +4977,7 @@ const AuditWorkspace = ({
                             <button 
                                 onClick={() => handleBuscarReemplazosSpotify()} 
                                 disabled={isSearchingSpotifyHD || isAuditing || (selectedAuditIds.size === 0 && badQualityTracks.length === 0)}
-                                className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 disabled:opacity-40 font-mono font-bold px-3 py-1.5 rounded-lg text-xs shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 disabled:opacity-40 font-mono font-bold px-2.5 sm:px-3 py-1.5 rounded-lg text-xs shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
                                 title="Buscar versiones oficiales en Spotify Ingest para sustituir pistas de baja calidad o transcodes"
                             >
                                 <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '📥'}</span>
@@ -7443,9 +7451,9 @@ const HotCuesWorkspace = ({
     return (
         <div className="flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200">
             {/* BARRA SUPERIOR: RUTA DE CARPETA, SELECTOR DE PISTAS Y ACCIONES */}
-            <header className="h-14 border-b border-djzinc-800 bg-[#0a0a0f] px-4 flex items-center justify-between shrink-0 gap-3 z-10 shadow-sm">
-                {/* Directorio Actual & Botón Cambiar Carpeta */}
-                <div className="flex items-center gap-2 min-w-0 shrink-0">
+            <header className="border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm">
+                {/* Directorio Actual & Botón Cambiar Carpeta (Versión Desktop) */}
+                <div className="hidden md:flex items-center gap-2 min-w-0 shrink-0">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]" title={currentFolder}>
                         <Icons.Folder />
                         <span className="truncate">
@@ -7472,7 +7480,7 @@ const HotCuesWorkspace = ({
                 </div>
 
                 {/* Selector de Pistas de la Carpeta (Dropdown) y Botón para Desplegar Listado Completo */}
-                <div className="flex-1 min-w-0 max-w-xl flex items-center gap-2">
+                <div className="w-full md:flex-1 md:min-w-0 md:max-w-xl flex items-center gap-2">
                     {filteredTracks && filteredTracks.length > 0 ? (
                         <>
                             <div className="relative flex-1 min-w-0">
@@ -7499,7 +7507,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => setShowTrackListDrawer(prev => !prev)}
-                                className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow ${
+                                className={`px-2.5 sm:px-3 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow ${
                                     showTrackListDrawer
                                         ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
                                         : 'bg-djzinc-900 text-gray-300 border-djzinc-750 hover:bg-djzinc-850 hover:text-white'
@@ -7507,7 +7515,18 @@ const HotCuesWorkspace = ({
                                 title="Ver o esconder la tabla completa de pistas de la carpeta"
                             >
                                 <span>📋</span>
-                                <span>{showTrackListDrawer ? 'Ocultar Lista' : `Ver Lista (${filteredTracks.length})`}</span>
+                                <span className="hidden sm:inline">{showTrackListDrawer ? 'Ocultar Lista' : `Ver Lista (${filteredTracks.length})`}</span>
+                                <span className="sm:hidden">{filteredTracks.length}</span>
+                            </button>
+                            {/* Botón rápido Guardar Pista visible en móvil en la fila superior */}
+                            <button
+                                type="button"
+                                onClick={handleGuardarPista}
+                                className="flex md:hidden px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 items-center gap-1 shrink-0"
+                                title="Guardar pista en disco"
+                            >
+                                <span>💾</span>
+                                <span className="text-[11px]">Guardar</span>
                             </button>
                         </>
                     ) : (
@@ -7517,8 +7536,59 @@ const HotCuesWorkspace = ({
                     )}
                 </div>
 
-                {/* Acciones Globales de Guardado */}
-                <div className="flex items-center gap-2 shrink-0">
+                {/* FILA DE BOTONES CON SCROLL HORIZONTAL EN MÓVIL (< 768px) */}
+                <div className="flex md:hidden items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full whitespace-nowrap shrink-0">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shrink-0 max-w-[160px] truncate" title={currentFolder}>
+                        <Icons.Folder />
+                        <span className="truncate">
+                            {currentFolder ? (currentFolder.split('/').pop() || currentFolder) : "Sin carpeta"}
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => handleAbrirNavegador(currentFolder)}
+                        className="px-2.5 py-1 text-xs font-mono font-black bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg shadow-sm transition-all flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer"
+                        title="Seleccionar carpeta de música"
+                    >
+                        <span>📂</span>
+                        <span>{t('btn_change_dir') || 'Cambiar'}</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleCargarDirectorio(currentFolder)}
+                        className="px-2 py-1 text-xs font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all shrink-0 active:scale-95"
+                        title="Recargar directorio actual"
+                    >
+                        🔄
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleGuardarLote}
+                        disabled={isSavingBatch}
+                        className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 hover:text-white border border-djzinc-700 font-mono font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1 shrink-0 disabled:opacity-50"
+                        title="Inyectar y guardar todos los tracks del lote en disco"
+                    >
+                        <span>📦</span>
+                        <span>{t('save_all_disk') || 'Guardar Lote'}</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleAutoGenerateClubTemplate}
+                        className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 font-mono font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1 shrink-0"
+                        title="Auto-mapear los 8 pads con la Plantilla Club Extended"
+                    >
+                        <span>⚡</span>
+                        <span>Auto-Cues Club</span>
+                    </button>
+                    {saveStatus && (
+                        <span className="text-[11px] font-mono font-bold text-djcyan-400 animate-pulse bg-djcyan-950/80 px-2 py-0.5 rounded border border-djcyan-700/60 shadow shrink-0">
+                            {saveStatus}
+                        </span>
+                    )}
+                </div>
+
+                {/* Acciones Globales de Guardado (Versión Desktop) */}
+                <div className="hidden md:flex items-center gap-2 shrink-0">
                     {saveStatus && (
                         <span className="text-xs font-mono font-bold text-djcyan-400 animate-pulse bg-djcyan-950/80 px-2.5 py-1 rounded border border-djcyan-700/60 shadow">
                             {saveStatus}
@@ -7870,14 +7940,15 @@ const HotCuesWorkspace = ({
                                         <button
                                             type="button"
                                             onClick={handleAutoGenerateClubTemplate}
-                                            className="px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-95"
+                                            className="px-2.5 sm:px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0"
                                             title="Auto-mapear los 8 pads con la Plantilla Club Extended (Intro, Beat, Break, Drop, Loops, Outro) cuantizados al beatgrid"
                                         >
                                             <span>⚡</span>
-                                            <span>Auto-Generate Cues (Club Template)</span>
+                                            <span className="hidden sm:inline">Auto-Generate Cues (Club Template)</span>
+                                            <span className="sm:hidden">Auto-Cues Club</span>
                                         </button>
-                                        <span className="text-[10px] font-mono text-djcyan-400 font-bold">
-                                            {isCurrentPlayingThis ? `● EN SECCIÓN: CUE ${activePlayingCueId}` : 'PAUSA'}
+                                        <span className="text-[10px] font-mono text-djcyan-400 font-bold shrink-0">
+                                            {isCurrentPlayingThis ? `● CUE ${activePlayingCueId}` : 'PAUSA'}
                                         </span>
                                     </div>
                                 </div>
@@ -8044,14 +8115,14 @@ const HotCuesWorkspace = ({
                 </div>
 
                     {/* BARRA DE HERRAMIENTAS DEL WAVEFORM (ZOOM HORIZONTAL, SNAP, BEATGRID, PLAYHEAD) */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-djzinc-950/80 border border-djzinc-850 px-3 py-2 rounded-lg gap-2.5">
-                        {/* Selector de Nivel de Zoom Horizontal */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold font-mono text-gray-300 uppercase flex items-center gap-1.5">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-djzinc-950/80 border border-djzinc-850 px-2.5 sm:px-3 py-2 rounded-lg gap-2 overflow-hidden">
+                        {/* Selector de Nivel de Zoom Horizontal con Scroll Táctil */}
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap shrink-0">
+                            <span className="text-xs font-bold font-mono text-gray-300 uppercase flex items-center gap-1.5 shrink-0">
                                 <Icons.ZoomIn />
-                                <span>{t('zoom_level') || 'Zoom Horizontal'}:</span>
+                                <span className="hidden sm:inline">{t('zoom_level') || 'Zoom'}:</span>
                             </span>
-                            <div className="flex items-center bg-djzinc-900 p-0.5 rounded-lg border border-djzinc-800 text-xs font-mono">
+                            <div className="flex items-center bg-djzinc-900 p-0.5 rounded-lg border border-djzinc-800 text-xs font-mono shrink-0">
                                 {[
                                     { z: 1, label: "1x (Total)" },
                                     { z: 2, label: "2x" },
@@ -8063,7 +8134,7 @@ const HotCuesWorkspace = ({
                                         key={lvl.z}
                                         type="button"
                                         onClick={() => setZoom(lvl.z)}
-                                        className={`px-2.5 py-1 rounded cursor-pointer font-bold transition-all ${
+                                        className={`px-2 sm:px-2.5 py-1 rounded cursor-pointer font-bold transition-all shrink-0 text-[11px] sm:text-xs ${
                                             zoom === lvl.z
                                             ? 'bg-djcyan-500 text-black shadow'
                                             : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
@@ -8075,12 +8146,12 @@ const HotCuesWorkspace = ({
                             </div>
                         </div>
 
-                        {/* Toggles de Rejilla y Seguimiento de Reproducción */}
-                        <div className="flex items-center gap-2">
+                        {/* Toggles de Rejilla y Seguimiento de Reproducción con Scroll Táctil */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap shrink-0">
                             <button
                                 type="button"
                                 onClick={() => setSnapToGrid(prev => !prev)}
-                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${
+                                className={`px-2.5 sm:px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1 shadow-sm shrink-0 ${
                                     snapToGrid
                                     ? 'bg-djzinc-800 text-djcyan-400 border-djcyan-500/60 font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]'
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
@@ -8094,7 +8165,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => setShowBeatgrid(prev => !prev)}
-                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${
+                                className={`px-2.5 sm:px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1 shadow-sm shrink-0 ${
                                     showBeatgrid
                                     ? 'bg-djzinc-800 text-djcyan-400 border-djcyan-500/60 font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]'
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
@@ -8102,13 +8173,13 @@ const HotCuesWorkspace = ({
                                 title="Mostrar líneas de compás y frases de 16 compases"
                             >
                                 <span>🔲</span>
-                                <span>{showBeatgrid ? 'Beatgrid: ON' : 'Beatgrid: OFF'}</span>
+                                <span>{showBeatgrid ? 'Grid: ON' : 'Grid: OFF'}</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => setFollowPlayhead(prev => !prev)}
-                                className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${
+                                className={`px-2.5 sm:px-3 py-1 text-xs font-mono font-bold rounded-lg border cursor-pointer transition-all flex items-center gap-1 shadow-sm shrink-0 ${
                                     followPlayhead
                                     ? 'bg-djzinc-800 text-djcyan-400 border-djcyan-500/60 font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]'
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
@@ -8122,7 +8193,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={handleAutoPhraseCues}
-                                className="px-3.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 hover:text-white font-mono font-bold text-xs rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+                                className="px-2.5 sm:px-3.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 hover:text-white font-mono font-bold text-xs rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1 shrink-0"
                                 title="Calcular automáticamente 8 Hot Cues por frases musicales (16/32 compases)"
                             >
                                 <span>⚡</span>
@@ -8163,11 +8234,11 @@ const HotCuesWorkspace = ({
                         </div>
                     </div>
 
-                    {/* BARRA DE MICRO-AJUSTE (NUDGE) & EDICIÓN DEL CUE SELECCIONADO */}
-                    <div className="bg-[#0a0a10] border border-djzinc-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-md">
-                        <div className="flex items-center gap-2.5">
-                            <span className="text-xs font-bold text-djcyan-400 font-mono bg-djcyan-950/80 px-2.5 py-1 rounded border border-djcyan-700/60">
-                                PAD {selectedCueId} ({currentCue.name || `Cue ${selectedCueId}`})
+                    {/* BARRA DE MICRO-AJUSTE (NUDGE) & EDICIÓN DEL CUE SELECCIONADO CON SCROLL TÁCTIL */}
+                    <div className="bg-[#0a0a10] border border-djzinc-800 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-2.5 shadow-md overflow-x-auto no-scrollbar whitespace-nowrap">
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs font-bold text-djcyan-400 font-mono bg-djcyan-950/80 px-2 py-1 rounded border border-djcyan-700/60 shrink-0">
+                                PAD {selectedCueId}
                             </span>
                             <input
                                 type="text"
@@ -8177,24 +8248,24 @@ const HotCuesWorkspace = ({
                                     updateSingleCue({ name: e.target.value, short_name: e.target.value });
                                 }}
                                 placeholder="Nombre del punto (ej. Drop A)"
-                                className="w-48 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-white font-mono outline-none"
+                                className="w-32 sm:w-48 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-white font-mono outline-none shrink-0"
                             />
                             <input
                                 type="text"
                                 value={cueTimeInput}
                                 onChange={handleTimeInputChange}
                                 placeholder="00:00.00"
-                                className="w-24 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center"
+                                className="w-20 sm:w-24 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center shrink-0"
                             />
                         </div>
 
-                        {/* Botones de Micro-Ajuste Nudge */}
-                        <div className="flex items-center gap-1 font-mono text-xs">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase mr-1">Nudge:</span>
+                        {/* Botones de Micro-Ajuste Nudge con Scroll Táctil */}
+                        <div className="flex items-center gap-1 font-mono text-xs overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 shrink-0">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase mr-1 shrink-0">Nudge:</span>
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(-barMs)}
-                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
+                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
                                 title="Retroceder 1 compás (4 beats)"
                             >
                                 -1c
@@ -8202,7 +8273,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(-beatMs)}
-                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
+                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
                                 title="Retroceder 1 beat (negra)"
                             >
                                 -1b
@@ -8210,7 +8281,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(-10)}
-                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
+                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
                                 title="Retroceder 10 milisegundos"
                             >
                                 -10ms
@@ -8218,7 +8289,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(10)}
-                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
+                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
                                 title="Avanzar 10 milisegundos"
                             >
                                 +10ms
@@ -8226,7 +8297,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(beatMs)}
-                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
+                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
                                 title="Avanzar 1 beat (negra)"
                             >
                                 +1b
@@ -8234,7 +8305,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={() => handleNudgeMs(barMs)}
-                                className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors"
+                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
                                 title="Avanzar 1 compás (4 beats)"
                             >
                                 +1c
@@ -8245,11 +8316,12 @@ const HotCuesWorkspace = ({
                         <button
                             type="button"
                             onClick={handleSetCueAtPlayhead}
-                            className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                            className="px-3 sm:px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
                             title="Fijar el Pad seleccionado en la posición actual de reproducción"
                         >
                             <span>📍</span>
-                            <span>Fijar Pad {selectedCueId} en Playhead</span>
+                            <span className="hidden sm:inline">Fijar Pad {selectedCueId} en Playhead</span>
+                            <span className="sm:hidden">Fijar en Playhead</span>
                         </button>
                     </div>
 
@@ -9211,9 +9283,9 @@ const SpotifyWorkspace = ({
                             )}
                         </div>
 
-                        {/* Pills de Búsqueda Rápida Determinista */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] font-mono text-gray-500">Sugerencias:</span>
+                        {/* Pills de Búsqueda Rápida Determinista con Scroll Táctil */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full">
+                            <span className="text-[10px] font-mono text-gray-500 shrink-0">Sugerencias:</span>
                             {[
                                 "Marco Bailey", 
                                 "Charlotte de Witte", 
@@ -9226,7 +9298,7 @@ const SpotifyWorkspace = ({
                                     key={sug}
                                     type="button"
                                     onClick={() => handleAnalizar(sug)}
-                                    className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#14141d] hover:bg-djcyan-950 text-gray-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-700/60 transition-colors cursor-pointer"
+                                    className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#14141d] hover:bg-djcyan-950 text-gray-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-700/60 transition-colors cursor-pointer shrink-0"
                                 >
                                     + {sug}
                                 </button>
@@ -9234,7 +9306,7 @@ const SpotifyWorkspace = ({
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-1 w-full md:w-auto shrink-0">
                         {/* Botón de Descarga Seleccionadas en la Barra Superior */}
                         <button 
                             onClick={() => {
@@ -9246,13 +9318,13 @@ const SpotifyWorkspace = ({
                                 lanzarDescargaReal(seleccionadas);
                             }}
                             disabled={isDownloading || tracks.length === 0}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 ${
+                            className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-mono font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 shrink-0 ${
                                 selectedCount > 0 
                                     ? 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-djcyan-500/20' 
                                     : 'bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-700'
                             }`}
                         >
-                            <span>⬇ Descargar Seleccionadas ({selectedCount})</span>
+                            <span>⬇ Descargar ({selectedCount})</span>
                         </button>
 
                         {/* Botón Seleccionar Solo Recomendadas (Hi-Res & Lossless) */}
@@ -9264,7 +9336,7 @@ const SpotifyWorkspace = ({
                                         selected: t.pre_worth_it !== false
                                     })));
                                 }}
-                                className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-300 hover:text-white border border-djcyan-700/60 flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95"
+                                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-300 hover:text-white border border-djcyan-700/60 flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 shrink-0"
                                 title="Marcar automáticamente solo las pistas con Master Hi-Res 24b o Lossless 16b y desmarcar las que no merecen la pena"
                             >
                                 <span>⭐</span>
@@ -9277,10 +9349,10 @@ const SpotifyWorkspace = ({
                             <button
                                 onClick={() => lanzarDescargaReal(tracks)}
                                 disabled={isDownloading}
-                                className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95"
+                                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 shrink-0"
                                 title="Reintentar descarga de todas las pistas pendientes/fallidas restantes"
                             >
-                                <span>🔄 Reintentar Pendientes ({tracks.length})</span>
+                                <span>🔄 Reintentar ({tracks.length})</span>
                             </button>
                         )}
 
@@ -9288,7 +9360,7 @@ const SpotifyWorkspace = ({
                         <button
                             onClick={handleDescargarReporteXLS}
                             disabled={isExportingXls || (downloadSession.downloaded.length === 0 && downloadSession.failed.length === 0)}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 whitespace-nowrap ${
+                            className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 whitespace-nowrap shrink-0 ${
                                 (downloadSession.downloaded.length > 0 || downloadSession.failed.length > 0)
                                     ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20 font-black'
                                     : 'bg-djzinc-900 text-gray-500 border border-djzinc-800 cursor-not-allowed'
@@ -10819,14 +10891,14 @@ const TaxonomyWorkspace = ({
                     <div className="p-5 border-b border-djzinc-850 bg-[#09090e] shrink-0 space-y-3">
                         {/* SELECTOR DE ÁMBITO DE BÚSQUEDA + BOTÓN DE FILTROS MANUALES */}
                         <div className="flex flex-wrap items-center justify-between gap-2.5">
-                            <div className="flex items-center gap-1.5 bg-[#050509] p-1 rounded-xl border border-djzinc-800 shadow-inner">
-                                <span className="text-[10px] font-mono font-bold text-gray-400 px-2 uppercase tracking-wider">
+                            <div className="flex items-center gap-1.5 bg-[#050509] p-1 rounded-xl border border-djzinc-800 shadow-inner overflow-x-auto no-scrollbar whitespace-nowrap shrink-0 max-w-full">
+                                <span className="text-[10px] font-mono font-bold text-gray-400 px-2 uppercase tracking-wider shrink-0">
                                     Buscar en:
                                 </span>
                                 <button
                                     type="button"
                                     onClick={() => setSearchScope('all')}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                         searchScope === 'all'
                                             ? 'bg-gradient-to-r from-djcyan-500 to-blue-500 text-black shadow'
                                             : 'text-gray-400 hover:text-white'
@@ -10837,26 +10909,25 @@ const TaxonomyWorkspace = ({
                                 <button
                                     type="button"
                                     onClick={() => setSearchScope('local')}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                         searchScope === 'local'
                                             ? 'bg-djcyan-500 text-black shadow'
                                             : 'text-gray-400 hover:text-white'
                                     }`}
                                 >
-                                    <span>📁 Mi Biblioteca Local</span>
+                                    <span>📁 Mi Biblioteca</span>
                                     <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/30 text-white font-mono">{localTracks.length}</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setSearchScope('online')}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                         searchScope === 'online'
                                             ? 'bg-purple-500 text-white shadow'
                                             : 'text-gray-400 hover:text-white'
                                     }`}
                                 >
-                                    <span>☁️ Record Pool Online</span>
-                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/40 text-purple-200 font-mono">SuperFLAC / Pool</span>
+                                    <span>☁️ Record Pool</span>
                                 </button>
                             </div>
 
@@ -15064,19 +15135,19 @@ const SetBuilderWorkspace = ({
                         </p>
                     </div>
 
-                    {/* Acciones principales */}
-                    <div className="flex items-center gap-2.5 flex-wrap">
+                    {/* Acciones principales con Scroll Táctil */}
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-1 w-full lg:w-auto shrink-0">
                         {/* Botón Auditar Pistas del Set si hay pistas sin auditar */}
                         {stats.pendingAuditCount > 0 && (
                             <button
                                 type="button"
                                 onClick={handleAuditSetTracks}
                                 disabled={isAuditingSet}
-                                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition-all active:scale-95 disabled:opacity-40 cursor-pointer animate-pulse"
+                                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition-all active:scale-95 disabled:opacity-40 cursor-pointer animate-pulse shrink-0"
                                 title="Calcula BPM exacto, Tonalidad Camelot, LUFS y Roles Espectrales para las pistas del set sin auditar"
                             >
                                 <span>⚡</span>
-                                <span>{isAuditingSet ? 'Auditando...' : `Auditar Pistas del Set (${stats.pendingAuditCount} pend.)`}</span>
+                                <span>{isAuditingSet ? 'Auditando...' : `Auditar (${stats.pendingAuditCount})`}</span>
                             </button>
                         )}
 
@@ -15084,37 +15155,38 @@ const SetBuilderWorkspace = ({
                             type="button"
                             onClick={handleOptimizeHarmonicFlow}
                             disabled={setTracks.length < 2 || isAuditingSet}
-                            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
+                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
                             title="Reordena automáticamente las pistas para maximizar la compatibilidad armónica Camelot y progresión de BPM"
                         >
                             <span>⚡</span>
-                            <span>Auto-Optimizar Pro (Flow Armónico)</span>
+                            <span className="hidden sm:inline">Auto-Optimizar Pro (Flow Armónico)</span>
+                            <span className="sm:hidden">Auto-Optimizar</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={handleExportM3U}
                             disabled={isExporting || setTracks.length === 0}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
+                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
                             title="Exportar archivo M3U8 para Pioneer Rekordbox, Serato DJ Pro, Traktor Pro y VirtualDJ"
                         >
                             <span>💾</span>
-                            <span>{isExporting ? 'Exportando...' : 'Exportar Set (.M3U8)'}</span>
+                            <span>{isExporting ? 'Exportando...' : 'Exportar (.M3U8)'}</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setIsAddDrawerOpen(true)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 transition-all cursor-pointer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 transition-all cursor-pointer shrink-0"
                         >
-                            <span>➕ Añadir Pistas</span>
+                            <span>➕ Añadir</span>
                         </button>
 
                         {setTracks.length > 0 && (
                             <button
                                 type="button"
                                 onClick={handleClearSet}
-                                className="px-2.5 py-2 rounded-xl text-xs font-mono text-rose-400 hover:bg-rose-950/50 border border-rose-900/40 transition-all cursor-pointer"
+                                className="px-2.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono text-rose-400 hover:bg-rose-950/50 border border-rose-900/40 transition-all cursor-pointer shrink-0"
                                 title="Vaciar set"
                             >
                                 🗑️
@@ -17437,12 +17509,12 @@ const App = () => {
                     </button>
                 </nav>
 
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                     {/* Botón Hamburger Móvil (< 1280px) */}
                     <button
                         type="button"
                         onClick={() => setMobileDrawerOpen(true)}
-                        className="flex xl:hidden p-2 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 cursor-pointer shadow-md active:scale-95"
+                        className="flex xl:hidden p-1.5 sm:p-2 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 cursor-pointer shadow-md active:scale-95 shrink-0"
                         title="Menú de Navegación y Módulos"
                     >
                         <Icons.Menu />
@@ -17452,23 +17524,31 @@ const App = () => {
                     <button
                         type="button"
                         onClick={() => setTutorialOpen(true)}
-                        className="flex px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 rounded-lg text-[11px] font-mono font-bold items-center gap-1.5 cursor-pointer shadow-sm transition-all hover:scale-105"
+                        className="flex px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 rounded-lg text-[11px] font-mono font-bold items-center gap-1 cursor-pointer shadow-sm transition-all hover:scale-105 shrink-0"
                         title="Abrir Selector de Tutoriales (Teaser 60s o Tour Spotlight en Cabina)"
                     >
                         <span>❓</span>
-                        <span>{lang === 'en' ? 'Tutorial' : 'Tutorial'}</span>
+                        <span className="hidden sm:inline">{lang === 'en' ? 'Tutorial' : 'Tutorial'}</span>
                     </button>
 
                     {/* Banner de Auditoría Activa en Background */}
                     {globalAuditInfo.isAuditing && (
-                        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-djcyan-950/90 border border-djcyan-500/60 text-[11px] font-mono text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.35)] animate-fadeIn" title={globalAuditInfo.statusMsg || 'Auditoría en proceso'}>
-                            <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-ping"></span>
-                            <span className="font-bold">Lote: {globalAuditInfo.progress}%</span>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded bg-djcyan-950/90 border border-djcyan-500/60 text-[10px] sm:text-[11px] font-mono text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.35)] animate-fadeIn shrink-0" title={globalAuditInfo.statusMsg || 'Auditoría en proceso'}>
+                            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-djcyan-400 animate-ping"></span>
+                            <span className="font-bold">{globalAuditInfo.progress}%</span>
                         </div>
                     )}
 
-                    {/* Selector de Idioma (Español / Inglés) */}
-                    <div className="flex items-center bg-djzinc-900 border border-djzinc-800 rounded-lg p-0.5 text-[11px] font-mono font-bold shadow-inner">
+                    {/* Selector de Idioma (Español / Inglés): Compacto en móvil, doble en desktop */}
+                    <button
+                        type="button"
+                        onClick={() => changeLang(lang === 'es' ? 'en' : 'es')}
+                        className="flex sm:hidden px-2 py-1 rounded-lg bg-djzinc-900 border border-djzinc-800 text-[10px] font-mono font-bold text-djcyan-300 shadow-inner cursor-pointer shrink-0"
+                        title="Cambiar idioma / Switch language"
+                    >
+                        {lang === 'es' ? '🇪🇸 ES' : '🇬🇧 EN'}
+                    </button>
+                    <div className="hidden sm:flex items-center bg-djzinc-900 border border-djzinc-800 rounded-lg p-0.5 text-[11px] font-mono font-bold shadow-inner shrink-0">
                         <button
                             type="button"
                             onClick={() => changeLang('es')}
@@ -17487,7 +17567,7 @@ const App = () => {
                         </button>
                     </div>
 
-                    <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-djzinc-900 border border-djzinc-800 text-[11px] font-mono text-gray-400">
+                    <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded bg-djzinc-900 border border-djzinc-800 text-[11px] font-mono text-gray-400 shrink-0">
                         <span className="w-2 h-2 rounded-full bg-djgreen-400 animate-pulse shadow-[0_0_5px_#22c55e]"></span>
                         {t('dsp_online') || 'DSP ENGINE ONLINE'}
                     </div>
