@@ -369,7 +369,9 @@ class SpotifyFlacIngestService:
                     if ext_final == "mp3":
                         cmd_ff += ["-ab", "320k", "-map_metadata", "0", "-id3v2_version", "3", ruta_final]
                     elif ext_final == "aiff":
-                        cmd_ff += ["-c:a", "pcm_s16be", "-write_id3v2", "1", ruta_final]
+                        cmd_ff += ["-c:a", "pcm_s24be", "-write_id3v2", "1", ruta_final]
+                    elif ext_final == "wav":
+                        cmd_ff += ["-c:a", "pcm_s24le", ruta_final]
                     else:
                         cmd_ff += [ruta_final]
                     subprocess.run(cmd_ff, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

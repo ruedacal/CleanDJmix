@@ -4848,7 +4848,7 @@ const AuditWorkspace = ({
         <div className="flex w-full h-full overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0">
                 <div className="p-3.5 border-b border-djzinc-800 bg-djzinc-950 flex flex-wrap justify-between items-center shrink-0 gap-3">
-                    <div className="flex gap-2.5 items-center">
+                    <div data-tour="tour-audit-select" className="flex gap-2.5 items-center">
                         <button 
                             onClick={handleExplorar} 
                             className="bg-gradient-to-r from-djcyan-600 via-djcyan-500 to-blue-600 hover:from-djcyan-400 hover:to-blue-500 text-black font-black px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5" 
@@ -4933,7 +4933,7 @@ const AuditWorkspace = ({
                         </button>
 
                         {/* Grupo 2: Exportación Oficial */}
-                        <div className="flex items-center gap-1 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
+                        <div data-tour="tour-export-crates" className="flex items-center gap-1 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm">
                             <button onClick={handleExportarXLS} disabled={tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-700 text-djgreen-400 border border-djgreen-700/60 px-2.5 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 cursor-pointer shadow disabled:opacity-50 transition-colors" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
                                 <Icons.Excel /> XLS
                             </button>
@@ -5010,7 +5010,7 @@ const AuditWorkspace = ({
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-px bg-djzinc-800 border-b border-djzinc-800 shrink-0">
+                <div data-tour="tour-audit-table" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-px bg-djzinc-800 border-b border-djzinc-800 shrink-0">
                     <div onClick={() => setFiltro('todos')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'todos' ? 'bg-djcyan-950/40 border-b-2 border-djcyan-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
                         <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">{t('metric_total') || 'Total Pistas'}</span>
                         <span className="text-xl font-mono text-white font-bold">{(metrics.total || 0).toLocaleString()}</span>
@@ -7705,7 +7705,7 @@ const HotCuesWorkspace = ({
 
                             {/* LADO DERECHO: PIONEER DDJ 8-PADS + PITCH FADER HARDWARE */}
                             <div className="flex-1 min-w-0 max-w-3xl flex flex-col md:flex-row items-stretch gap-3 w-full">
-                                <div className={`flex-1 min-w-0 bg-[#09090f] p-3 rounded-xl border border-djzinc-800 shadow-inner ${mobileDeckMode === 'pads' ? 'block' : 'hidden md:block'}`}>
+                                <div data-tour="tour-hotcues-deck" className={`flex-1 min-w-0 bg-[#09090f] p-3 rounded-xl border border-djzinc-800 shadow-inner ${mobileDeckMode === 'pads' ? 'block' : 'hidden md:block'}`}>
                                 {/* Barra Superior del Pad Mode */}
                                 <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-2.5">
                                     <div className="flex items-center gap-2">
@@ -9141,9 +9141,28 @@ const SpotifyWorkspace = ({
                             <span className="text-gray-200 truncate max-w-[140px]" title={destDir}>{destDir.split('/').pop() || destDir}</span>
                             <button onClick={handleCambiarCarpeta} className="text-djcyan-400 hover:text-white px-2 py-1 bg-djzinc-900 border border-djzinc-700 rounded text-[11px] cursor-pointer">Cambiar</button>
                         </div>
-                        <div className="flex items-center gap-1.5 bg-[#060609] border border-djzinc-750 rounded p-1">
-                            {['flac', 'mp3', 'wav'].map(f => (
-                                <button key={f} onClick={() => setSelectedFormat(f)} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase transition-colors ${selectedFormat === f ? 'bg-djcyan-500 text-black' : 'text-gray-400 hover:text-white'}`}>{f}</button>
+                        <div className="flex items-center gap-1 bg-[#060609] border border-djzinc-750 rounded-lg p-1">
+                            {[
+                                { id: 'flac', label: 'FLAC Hi-Res', badge: '24b Master' },
+                                { id: 'wav', label: 'WAV', badge: '24-bit' },
+                                { id: 'aiff', label: 'AIFF', badge: 'Club' },
+                                { id: 'mp3', label: 'MP3', badge: '320k' }
+                            ].map(f => (
+                                <button 
+                                    key={f.id} 
+                                    onClick={() => setSelectedFormat(f.id)} 
+                                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                                        selectedFormat === f.id 
+                                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow font-black' 
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                    title={`Descargar en formato ${f.label} (${f.badge})`}
+                                >
+                                    <span>{f.label}</span>
+                                    <span className={`text-[8px] px-1 rounded font-normal ${selectedFormat === f.id ? 'bg-black/25 text-black font-bold' : 'bg-djzinc-800 text-djcyan-400'}`}>
+                                        {f.badge}
+                                    </span>
+                                </button>
                             ))}
                         </div>
 
@@ -14746,7 +14765,7 @@ const SetBuilderWorkspace = ({
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8">
+        <div data-tour="tour-setbuilder" className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8">
             {/* Header del Espacio de Set-Builder */}
             <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -15651,84 +15670,581 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
 };
 
 
-// Pasos del Asistente y Tutorial Interactivo para Nuevos Usuarios
-const TUTORIAL_STEPS = [
+// ==============================================================================
+// SISTEMA DE ONBOARDING DJ: TEASER COMERCIAL 60S & TOUR SPOTLIGHT INTERACTIVO
+// ==============================================================================
+
+// Motor de Síntesis Web Audio API para el Teaser Comercial (Cero dependencias externas)
+class CommercialBeatEngine {
+    constructor() {
+        this.ctx = null;
+        this.timer = null;
+        this.isPlaying = false;
+        this.isMuted = false;
+        this.step = 0;
+    }
+
+    init() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            this.ctx = new AudioCtx();
+        } catch (e) {
+            console.warn("AudioContext error:", e);
+        }
+    }
+
+    start() {
+        if (!this.ctx) this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+        this.isPlaying = true;
+        this.step = 0;
+        this.scheduleTick();
+    }
+
+    scheduleTick() {
+        if (!this.isPlaying || !this.ctx) return;
+        const bpm = 126;
+        const stepInterval = (60 / bpm) / 4; // semicorcheas
+        this.playStep(this.step);
+        this.step = (this.step + 1) % 16;
+        this.timer = setTimeout(() => this.scheduleTick(), stepInterval * 1000);
+    }
+
+    playStep(s) {
+        if (this.isMuted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Kick analógico 4x4 de club (pasos 0, 4, 8, 12)
+        if (s % 4 === 0) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(135, now);
+            osc.frequency.exponentialRampToValueAtTime(32, now + 0.12);
+            gain.gain.setValueAtTime(0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.25);
+        }
+        // Hi-Hat en el contratiempo (pasos 2, 6, 10, 14)
+        if (s % 4 === 2) {
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.04);
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.25));
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.setValueAtTime(7500, now);
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.ctx.destination);
+            noise.start(now);
+        }
+        // Sub-bassline club en tonalidad 8A (A1 = 55Hz)
+        if (s % 2 === 0 && s % 4 !== 0) {
+            const bass = this.ctx.createOscillator();
+            const bGain = this.ctx.createGain();
+            const bFilter = this.ctx.createBiquadFilter();
+            bass.type = 'sawtooth';
+            bass.frequency.setValueAtTime(55, now);
+            bFilter.type = 'lowpass';
+            bFilter.frequency.setValueAtTime(280, now);
+            bGain.gain.setValueAtTime(0.35, now);
+            bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+            bass.connect(bFilter);
+            bFilter.connect(bGain);
+            bGain.connect(this.ctx.destination);
+            bass.start(now);
+            bass.stop(now + 0.18);
+        }
+    }
+
+    setMuted(m) {
+        this.isMuted = m;
+    }
+
+    stop() {
+        this.isPlaying = false;
+        if (this.timer) {
+            clearTimeout(this.timer);
+            this.timer = null;
+        }
+    }
+
+    destroy() {
+        this.stop();
+        if (this.ctx && this.ctx.state !== 'closed') {
+            try { this.ctx.close(); } catch (e) {}
+        }
+        this.ctx = null;
+    }
+}
+
+// 5 Escenas Dinámicas de 12 segundos para la Demo Comercial de 60 Segundos
+const COMMERCIAL_SCENES = [
     {
-        step: 1,
-        title: "¡Bienvenido a CleanDJmix PRO!",
-        badge: "CABINA PROFESIONAL DJ",
-        icon: "🎛️",
-        subtitle: "Tu Suite Integral de Audio DSP, Inteligencia Acústica y Preparación de Sets",
-        description: "CleanDJmix PRO está diseñado para eliminar la incertidumbre en tus sesiones en directo. Con análisis de audio de alta precisión, colocación milimétrica de Hot Cues y ecualización hardware con latencia cero, tus pistas sonarán limpias y sincronizadas en cualquier soundsystem.",
-        highlights: [
-            "Auditoría acústica con detección decimal de BPM y Key armónico Camelot/OpenKey.",
-            "Estudio de 8 Hot Cues con beatgrid 1.0.0, pitch fader de rango dual y scratch.",
-            "Motor SuperFLAC para sustitución de archivos transcode por masters originales.",
-            "Exportación directa y segura a Serato DJ Pro y Pioneer Rekordbox."
-        ]
+        id: "fft_fake",
+        startSec: 0,
+        endSec: 12,
+        badge: "01/05 • INGESTA HÍBRIDA & RADAR FFT",
+        tag: "DETECCIÓN FAKE LOSSLESS",
+        title: "¡NUNCA MÁS UN MP3 DISFRAZADO EN FESTIVAL!",
+        hook: "Transformada Rápida de Fourier (FFT) en proceso multihilo asíncrono",
+        description: "Muchos DJs descargan supuestos WAV o FLAC que son ripeos inflados desde MP3 a 128 kbps. CleanDJmix analiza el espectro al milisegundo: si corta en seco a 16 kHz, activa la alerta roja y busca el master oficial original en la pasarela SuperFLAC.",
+        metricLabel: "CORTE FFT DETECTADO",
+        metricVal: "16.0 kHz ❌ FAKE",
+        metricSuccess: "22.05 kHz ✓ LOSSLESS REAL",
+        accent: "from-red-500 via-amber-500 to-djcyan-400"
     },
     {
-        step: 2,
-        title: "Auditar Todo: Carpetas y Pistas Sueltas",
-        badge: "MOTOR DSP EN LOTE",
-        icon: "⚡",
-        subtitle: "Análisis acústico instantáneo de directorios completos o pistas individuales",
-        description: "El botón 'Auditar Todo' ejecuta el análisis DSP completo sobre todas las pistas cargadas o seleccionadas. Además, puedes cargar archivos individuales con el botón '🎵 Pistas Sueltas' y configurar inyección masiva de carátulas 1:1 y comentarios tácticos en 'Configurar Lote'.",
-        highlights: [
-            "Soporte transparente para carpetas enteras o pistas sueltas sin bloqueos.",
-            "Persistencia en segundo plano: ¡puedes cambiar de pestaña sin que se detenga ningún proceso!",
-            "Detección de primer downbeat para mezclas con arranque instantáneo sin silencios."
-        ]
+        id: "anti_muddy",
+        startSec: 12,
+        endSec: 24,
+        badge: "02/05 • ESCUDO ANTI-MUDDY TRI-BANDA",
+        tag: "BALANCE ESPECTRAL CABINA",
+        title: "PROTEGE TU MEZCLA DE LA COLISIÓN DE GRAVES",
+        hook: "Ratio de Energía Espectral Tri-Banda (Low / Mid / High %)",
+        description: "El error número 1 al mezclar es solapar dos pistas con excesiva carga de subgraves (30-80 Hz). La app calcula la densidad espectral de cada tema y clasifica su Rol Acústico: Bass Driver, Vocal/Lead o Percussive Tool para mezclas limpias y potentes.",
+        metricLabel: "DISTRIBUCIÓN TRI-BANDA",
+        metricVal: "LOW: 45% | MID: 35% | HI: 20%",
+        metricSuccess: "ROL: BASS DRIVER (COMPLEMENTARIO)",
+        accent: "from-cyan-500 via-blue-500 to-emerald-400"
     },
     {
-        step: 3,
-        title: "SuperFLAC: Detección y Reemplazo Hi-Res",
-        badge: "CALIDAD ACÚSTICA LOSSLESS",
-        icon: "💎",
-        subtitle: "Protección contra FLACs falsos, transcodes y cortes de frecuencia",
-        description: "Si una pista FLAC no cumple los estándares Hi-Res (calidad media, transcode desde MP3 o corte espectral < 20 kHz), CleanDJmix PRO la marca con '💎 SuperFLAC'. Con un solo clic, el sistema busca el master oficial en Spotify Ingest para sustituir la copia defectuosa.",
-        highlights: [
-            "Inspección espectral de frecuencia de corte real (Cutoff kHz).",
-            "Búsqueda automática en Spotify por título, artista e ISRC.",
-            "Sustitución en lote con descarga oficial en verdadera alta resolución."
-        ]
+        id: "hot_cues",
+        startSec: 24,
+        endSec: 36,
+        badge: "03/05 • 8 HOT CUES & AUTO-MAPPING",
+        tag: "ESTRUCTURA DE CLUB EXTENDED",
+        title: "TUS 8 PADS LISTOS EN MENOS DE 1 SEGUNDO",
+        hook: "Auto-Mapping algorítmico a 16 y 32 compases",
+        description: "Se acabó colocar cues a mano tema por tema en librerías de 2.000 pistas. Con un clic, la app detecta el primer beat y mapea la plantilla Club: Pad 1 Intro, Pad 2 Percusión, Pad 3 Breakdown, Pad 4 Drop, Pads 5-6 Loops de 16/32c y Pads 7-8 Outro con colores oficiales RGB.",
+        metricLabel: "CUANTIZACIÓN DE FRASE",
+        metricVal: "16 & 32 COMPASES (AUTO)",
+        metricSuccess: "8 PADS RGB SERATO & REKORDBOX",
+        accent: "from-emerald-400 via-teal-400 to-cyan-400"
     },
     {
-        step: 4,
-        title: "Hot Cues Studio & Hardware DJ Deck",
-        badge: "EMULACIÓN HARDWARE DE CLUB",
-        icon: "💽",
-        subtitle: "Controles táctiles profesionales con Web Audio API DSP",
-        description: "Una auténtica cabina en tu pantalla: 8 Hot Cues pads con anclaje al beatgrid, Pitch Fader vertical con rangos seleccionables (±8% / ±16%) y micro-nudge táctil, Ecualizador Hardware de 3 Vías (LOW 250Hz, MID 1kHz, HI 3.5kHz) y plato de vinilo de 33⅓ RPM con scratch táctil.",
-        highlights: [
-            "Física de tornamesa directa con desplazamiento de audio de 1.8s por revolución.",
-            "Respuesta de ecualización de -24 dB a +6 dB con botón FLAT.",
-            "Forma de onda estéreo con zoom continuo y tooltips de tiempo confinados."
-        ]
+        id: "set_builder",
+        startSec: 36,
+        endSec: 48,
+        badge: "04/05 • SET-BUILDER & FLUJO ARMÓNICO",
+        tag: "CAMELOT WHEEL & ENERGY CURVE",
+        title: "DISEÑA EL VIAJE SONORO PERFECTO DE TU SESIÓN",
+        hook: "Canvas interactivo con visualización de curva de energía",
+        description: "Un DJ improvisando sin rumbo se pierde. Arrastra temas al canvas interactivo y la app dibuja la progresión de BPM y energía en tiempo real, advirtiéndote al instante de saltos armónicos bruscos o caídas de dinámica para mantener la pista de baile en llamas.",
+        metricLabel: "COMPATIBILIDAD TONAL",
+        metricVal: "CAMELOT: 8A → 9A (+1 COMPATIBLE)",
+        metricSuccess: "CURVA DE ENERGÍA: ASCENDENTE (126 → 128 BPM)",
+        accent: "from-purple-500 via-pink-500 to-djcyan-400"
     },
     {
-        step: 5,
-        title: "Radar Shazam & Buscador Semántico IA",
-        badge: "BÚSQUEDA Y TAXONOMÍA",
-        icon: "🧠",
-        subtitle: "Identificación acústica al vuelo y búsqueda por lenguaje natural",
-        description: "Utiliza el Radar Shazam para reconocer grabaciones en directo y descargar portadas en 1400x1400. En Taxonomía, escribe búsquedas naturales como 'Tech House 126 bpm en 8A vocal' y gestiona dinámicamente las etiquetas con eliminación [✕] y adición [+ Añadir Tag].",
-        highlights: [
-            "Reconocimiento híbrido Shazamio con respaldo cruzado en Spotify.",
-            "Presets rápidos BeatWave Pool para filtrar temas por momento de la noche.",
-            "Exportación nativa inmediata a Serato DJ Pro (.crate) y rekordbox.xml."
-        ]
+        id: "export",
+        startSec: 48,
+        endSec: 60,
+        badge: "05/05 • EXPORTACIÓN NATIVA ZERO-LATENCY",
+        tag: "COMPATIBILIDAD SERATO & REKORDBOX",
+        title: "DE TU PORTÁTIL A LA CABINA EN UN SOLO CLIC",
+        hook: "Paridad binaria Serato GEOB Markers2 y Rekordbox XML",
+        description: "Exportación nativa inmediata para Pioneer DJ (rekordbox.xml) y Serato DJ Pro (.crate). Conecta tu USB al mixer o a los CDJs y tendrás todos tus Hot Cues, beatgrids decimales, carátulas y etiquetas listos para tocar en directo sin ningún paso extra.",
+        metricLabel: "COMPATIBILIDAD DE HARDWARE",
+        metricVal: "SERATO DJ PRO (.crate) + PIONEER CDJ (XML)",
+        metricSuccess: "PARIDAD GEOB 100% CERTIFICADA",
+        accent: "from-djcyan-400 via-emerald-400 to-amber-400"
     }
 ];
 
-const AppTutorialModal = ({ isOpen, onClose }) => {
-    const [currentStepIdx, setCurrentStepIdx] = useState(0);
-    const [dontShowAgain, setDontShowAgain] = useState(false);
+// Pasos Guiados para el Tour Spotlight en Pantalla Real
+const TOUR_STEPS = [
+    {
+        id: "audit-select",
+        target: "tour-audit-select",
+        tab: "audit",
+        badge: "PASO 1 DE 5 • INGESTA HÍBRIDA",
+        icon: "📂",
+        title: "Selección Híbrida de Carpetas & Pistas",
+        description: "Navega libremente por tu biblioteca y añade carpetas enteras o pistas sueltas sin perder tu selección previa en la cesta. Toda la ingesta se ejecuta con procesos asíncronos multihilo sin congelar la interfaz.",
+        tip: "Pulsa '📂 Seleccionar' para explorar carpetas, marcar pistas y cargar todo en conjunto."
+    },
+    {
+        id: "audit-table",
+        target: "tour-audit-table",
+        tab: "audit",
+        badge: "PASO 2 DE 5 • INTELIGENCIA ACÚSTICA",
+        icon: "⚡",
+        title: "FFT Anti-Muddy & Rol Acústico",
+        description: "Análisis espectral por FFT para cazar falsos Lossless (cortes a 16 kHz), medición EBU R128 LUFS y cálculo del Ratio Tri-Banda (Low 20-250Hz, Mid 250-4kHz, High 4-20kHz).",
+        tip: "La columna 'Rol Acústico' clasifica cada tema como Bass Driver, Vocal/Lead o Percussive para mezclar sin colisión de frecuencias."
+    },
+    {
+        id: "hotcues-deck",
+        target: "tour-hotcues-deck",
+        tab: "hotcues",
+        badge: "PASO 3 DE 5 • HARDWARE HOT CUES",
+        icon: "🎛️",
+        title: "8 Pads RGB con Auto-Mapping de Frase",
+        description: "Cabina táctil profesional con 8 pads RGB, pitch fader de rango dual y forma de onda 64x. El motor de Auto-Mapping detecta el downbeat y cuantiza automáticamente Drops, Breaks y Loops a 16 y 32 compases.",
+        tip: "Pulsa 'Auto-Generate Cues (Club)' para poblar los 8 pads con offsets cuantizados en 1 segundo."
+    },
+    {
+        id: "setbuilder",
+        target: "tour-setbuilder",
+        tab: "setbuilder",
+        badge: "PASO 4 DE 5 • FLUJO ARMÓNICO",
+        icon: "🗺️",
+        title: "Set-Builder & Curva de Energía",
+        description: "Canvas interactivo donde diseñas la narrativa de tu noche. Visualiza la curva de energía dinámica y las transiciones tonales en la Rueda Camelot para evitar saltos bruscos o caídas de ritmo.",
+        tip: "Arrastra y organiza tus bloques de pistas para comprobar la compatibilidad armónica en tiempo real."
+    },
+    {
+        id: "export-crates",
+        target: "tour-export-crates",
+        tab: "audit",
+        badge: "PASO 5 DE 5 • EXPORTACIÓN CLUB",
+        icon: "🚀",
+        title: "Exportación Directa a Serato & Rekordbox",
+        description: "Exporta tus listas y cues a Serato DJ Pro (.crate con paridad binaria GEOB Markers2) o Rekordbox XML para Pioneer CDJ en cero latencia.",
+        tip: "Tus Hot Cues con colores oficiales y grids milimétricos se escriben directamente en tu USB para el soundsystem."
+    }
+];
+
+// Modal 1: Vídeo Teaser Comercial de 60 Segundos
+const CommercialTeaserModal = ({ isOpen, onClose, onOpenTour }) => {
+    const [currentTime, setCurrentTime] = useState(0);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [isMuted, setIsMuted] = useState(false);
+    const beatEngineRef = useRef(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const engine = new CommercialBeatEngine();
+        beatEngineRef.current = engine;
+        engine.init();
+        if (isPlaying && !isMuted) {
+            engine.start();
+        }
+        return () => {
+            if (beatEngineRef.current) {
+                beatEngineRef.current.destroy();
+                beatEngineRef.current = null;
+            }
+        };
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen || !isPlaying) {
+            if (beatEngineRef.current) beatEngineRef.current.stop();
+            return;
+        }
+        if (beatEngineRef.current && !beatEngineRef.current.isPlaying && !isMuted) {
+            beatEngineRef.current.start();
+        }
+
+        const interval = setInterval(() => {
+            setCurrentTime(prev => {
+                if (prev >= 60) {
+                    setIsPlaying(false);
+                    if (beatEngineRef.current) beatEngineRef.current.stop();
+                    return 60;
+                }
+                return Math.round((prev + 0.1) * 10) / 10;
+            });
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, [isOpen, isPlaying, isMuted]);
 
     if (!isOpen) return null;
 
-    const cur = TUTORIAL_STEPS[currentStepIdx];
-    const isLast = currentStepIdx === TUTORIAL_STEPS.length - 1;
+    const currentScene = COMMERCIAL_SCENES.find(s => currentTime >= s.startSec && currentTime < s.endSec) || COMMERCIAL_SCENES[COMMERCIAL_SCENES.length - 1];
+    const isFinished = currentTime >= 60;
+
+    const handleTogglePlay = () => {
+        if (isFinished) {
+            setCurrentTime(0);
+            setIsPlaying(true);
+            if (beatEngineRef.current && !isMuted) beatEngineRef.current.start();
+        } else {
+            setIsPlaying(prev => !prev);
+        }
+    };
+
+    const handleToggleMute = () => {
+        const nextMute = !isMuted;
+        setIsMuted(nextMute);
+        if (beatEngineRef.current) {
+            beatEngineRef.current.setMuted(nextMute);
+            if (!nextMute && isPlaying && !beatEngineRef.current.isPlaying) {
+                beatEngineRef.current.start();
+            }
+        }
+    };
+
+    const handleSeek = (sec) => {
+        setCurrentTime(sec);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[9990] bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
+            <div className="relative w-full max-w-4xl bg-[#0a0a12] border border-djcyan-500/50 rounded-3xl shadow-[0_0_80px_rgba(6,182,212,0.35)] overflow-hidden flex flex-col max-h-[92vh]">
+                
+                {/* Header Superior del Reproductor */}
+                <div className="p-4 sm:p-5 border-b border-djzinc-800 bg-djzinc-950/90 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="w-3 h-3 rounded-full bg-red-500 animate-ping"></span>
+                        <div>
+                            <span className="text-[10px] font-mono tracking-widest text-djcyan-400 font-black uppercase block">
+                                DEMO OFICIAL EN 60 SEGUNDOS • CLEANDJMIX PRO
+                            </span>
+                            <h2 className="text-base sm:text-lg font-black text-white">
+                                {currentScene.tag}
+                            </h2>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {/* Control de Audio Club */}
+                        <button
+                            type="button"
+                            onClick={handleToggleMute}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
+                                !isMuted 
+                                    ? 'bg-djcyan-500/20 text-djcyan-300 border border-djcyan-500/50' 
+                                    : 'bg-djzinc-800 text-gray-400 hover:text-white'
+                            }`}
+                            title={isMuted ? "Activar audio synth club" : "Silenciar audio synth"}
+                        >
+                            <span>{!isMuted ? '🔊' : '🔇'}</span>
+                            <span className="hidden sm:inline">{!isMuted ? 'Audio Club ON' : 'Mudo'}</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="p-1.5 rounded-lg bg-djzinc-800 hover:bg-djzinc-700 text-gray-400 hover:text-white cursor-pointer transition-colors"
+                            title="Cerrar reproductor"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+
+                {/* Área de Visualización Cinematográfica */}
+                <div className="relative flex-1 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto bg-gradient-to-b from-[#0e0e18] via-[#0a0a14] to-[#05050a]">
+                    
+                    {/* Badge de Fase y Progreso de Escenas */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
+                        <div className="flex items-center gap-1.5">
+                            {COMMERCIAL_SCENES.map((sc, sIdx) => {
+                                const isActive = currentScene.id === sc.id;
+                                const isPassed = currentTime >= sc.endSec;
+                                return (
+                                    <button
+                                        key={sc.id}
+                                        type="button"
+                                        onClick={() => handleSeek(sc.startSec)}
+                                        className={`h-2 rounded-full transition-all cursor-pointer ${
+                                            isActive 
+                                                ? 'w-10 sm:w-16 bg-gradient-to-r from-djcyan-400 to-djcyan-500 shadow-[0_0_10px_#06b6d4]' 
+                                                : isPassed 
+                                                    ? 'w-6 bg-djcyan-800' 
+                                                    : 'w-4 bg-djzinc-800 hover:bg-gray-600'
+                                        }`}
+                                        title={`Saltar a: ${sc.badge}`}
+                                    />
+                                );
+                            })}
+                        </div>
+
+                        <div className="px-3 py-1 rounded-full bg-djzinc-900 border border-djzinc-800 text-xs font-mono font-bold text-djcyan-300 flex items-center gap-1.5 shadow-sm">
+                            <span>⏱️</span>
+                            <span>{Math.floor(currentTime)}s / 60s</span>
+                        </div>
+                    </div>
+
+                    {/* Contenido Dinámico de la Escena Activa */}
+                    <div className="space-y-4 my-auto">
+                        <span className="text-[11px] font-mono font-black uppercase tracking-widest text-djcyan-400 bg-djcyan-950/80 px-3 py-1 rounded-md border border-djcyan-500/40 inline-block shadow-sm">
+                            {currentScene.badge}
+                        </span>
+
+                        <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight uppercase leading-tight max-w-2xl drop-shadow-md">
+                            {currentScene.title}
+                        </h1>
+
+                        <p className="text-xs sm:text-sm font-mono font-bold text-djcyan-300 flex items-center gap-2">
+                            <span>⚡</span>
+                            <span>{currentScene.hook}</span>
+                        </p>
+
+                        <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-2xl">
+                            {currentScene.description}
+                        </p>
+
+                        {/* Visualizador de Métrica / Gráfico de la Escena */}
+                        <div className="p-4 rounded-2xl bg-djzinc-950/90 border border-djzinc-800/90 shadow-xl max-w-xl flex flex-col gap-2.5">
+                            <div className="flex items-center justify-between text-[11px] font-mono">
+                                <span className="text-gray-400 font-bold uppercase tracking-wider">{currentScene.metricLabel}</span>
+                                <span className="text-red-400 font-bold">{currentScene.metricVal}</span>
+                            </div>
+
+                            {/* Barras de Espectro Animadas Simulando Cabina */}
+                            <div className="h-10 flex items-end gap-1.5 px-2 py-1 bg-black/60 rounded-lg border border-djzinc-850">
+                                {[40, 65, 85, 95, 80, 60, 45, 90, 75, 50, 30, 20, 15].map((h, i) => (
+                                    <div
+                                        key={i}
+                                        className={`flex-1 rounded-t transition-all duration-150 ${
+                                            i < 4 ? 'bg-red-500' : i < 8 ? 'bg-amber-400' : 'bg-djcyan-400'
+                                        }`}
+                                        style={{ 
+                                            height: isPlaying ? `${Math.max(15, Math.min(100, h * (0.6 + Math.random() * 0.5)))}%` : `${h}%` 
+                                        }}
+                                    />
+                                ))}
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] font-mono">
+                                <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    {currentScene.metricSuccess}
+                                </span>
+                                <span className="text-gray-500 text-[10px]">VERIFICACIÓN 100% HARDWARE</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Timeline Interactivo de 60 Segundos */}
+                    <div className="pt-4 mt-6 border-t border-djzinc-800/80 flex flex-col gap-3">
+                        <div className="relative w-full h-3 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800 cursor-pointer group"
+                             onClick={(e) => {
+                                 const rect = e.currentTarget.getBoundingClientRect();
+                                 const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                                 handleSeek(Math.round(pct * 60));
+                             }}
+                        >
+                            <div 
+                                className="h-full bg-gradient-to-r from-djcyan-400 via-emerald-400 to-amber-400 transition-all duration-100 ease-linear shadow-[0_0_15px_#06b6d4]"
+                                style={{ width: `${(currentTime / 60) * 100}%` }}
+                            />
+                        </div>
+
+                        {/* Botones de Control de Reproducción & CTA */}
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleTogglePlay}
+                                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black text-xs cursor-pointer shadow-lg shadow-djcyan-500/30 flex items-center gap-1.5 active:scale-95 transition-all"
+                                >
+                                    <span>{isFinished ? '🔄' : isPlaying ? '⏸' : '▶'}</span>
+                                    <span>{isFinished ? 'Repetir Teaser' : isPlaying ? 'Pausar' : 'Reanudar'}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleSeek(0)}
+                                    className="px-3 py-2 rounded-xl bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 font-bold text-xs cursor-pointer"
+                                    title="Volver al inicio (00:00)"
+                                >
+                                    ⏮ 00s
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onClose();
+                                        if (onOpenTour) onOpenTour();
+                                    }}
+                                    className="px-4 py-2 rounded-xl bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 font-black text-xs cursor-pointer flex items-center gap-1.5 transition-all"
+                                >
+                                    <span>🎯</span>
+                                    <span>Hacer Tour Paso a Paso en Cabina</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black font-black text-xs cursor-pointer shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
+                                >
+                                    🔥 ¡Comenzar a Mezclar!
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Modal 2: Tour Interactivo Spotlight con Overlay Alpha y Tooltips Paso a Paso
+const SpotlightTourOverlay = ({ isOpen, onClose, activeTab, setActiveTab, onOpenTeaser }) => {
+    const [stepIdx, setStepIdx] = useState(0);
+    const [targetRect, setTargetRect] = useState(null);
+    const [dontShowAgain, setDontShowAgain] = useState(false);
+
+    const curStep = TOUR_STEPS[stepIdx];
+    const isLast = stepIdx === TOUR_STEPS.length - 1;
+
+    // Sincronizar pestaña activa de acuerdo al paso
+    useEffect(() => {
+        if (!isOpen || !curStep) return;
+        if (curStep.tab && activeTab !== curStep.tab && setActiveTab) {
+            setActiveTab(curStep.tab);
+        }
+    }, [stepIdx, isOpen]);
+
+    // Recalcular rect del elemento objetivo en el DOM
+    const updateTargetRect = () => {
+        if (!curStep) return;
+        const el = document.querySelector(`[data-tour="${curStep.target}"]`);
+        if (el) {
+            const r = el.getBoundingClientRect();
+            setTargetRect({
+                x: Math.max(8, r.left),
+                y: Math.max(8, r.top),
+                w: r.width,
+                h: r.height
+            });
+        } else {
+            setTargetRect(null);
+        }
+    };
+
+    useEffect(() => {
+        if (!isOpen) return;
+        updateTargetRect();
+        const t1 = setTimeout(updateTargetRect, 80);
+        const t2 = setTimeout(updateTargetRect, 250);
+        const t3 = setTimeout(updateTargetRect, 600);
+
+        window.addEventListener('resize', updateTargetRect);
+        window.addEventListener('scroll', updateTargetRect, true);
+
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
+            window.removeEventListener('resize', updateTargetRect);
+            window.removeEventListener('scroll', updateTargetRect, true);
+        };
+    }, [stepIdx, isOpen, activeTab]);
+
+    if (!isOpen) return null;
 
     const handleFinish = () => {
         if (dontShowAgain) {
@@ -15739,76 +16255,159 @@ const AppTutorialModal = ({ isOpen, onClose }) => {
         onClose();
     };
 
+    // Posicionamiento inteligente del tooltip
+    let tooltipStyle = {};
+    if (targetRect) {
+        const spaceBelow = window.innerHeight - (targetRect.y + targetRect.h);
+        const spaceAbove = targetRect.y;
+        const placeBelow = spaceBelow >= 260 || spaceBelow >= spaceAbove;
+
+        const top = placeBelow 
+            ? Math.min(window.innerHeight - 300, targetRect.y + targetRect.h + 16)
+            : Math.max(20, targetRect.y - 300);
+
+        const left = Math.max(16, Math.min(window.innerWidth - 400, targetRect.x + (targetRect.w / 2) - 190));
+
+        tooltipStyle = {
+            position: 'fixed',
+            top: `${top}px`,
+            left: `${left}px`,
+            maxWidth: '390px',
+            width: 'calc(100vw - 32px)',
+            zIndex: 9999
+        };
+    } else {
+        tooltipStyle = {
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            maxWidth: '420px',
+            width: 'calc(100vw - 32px)',
+            zIndex: 9999
+        };
+    }
+
     return (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-            <div className="bg-[#0f1019] border border-djcyan-500/50 rounded-2xl max-w-xl w-full p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] flex flex-col gap-5 relative text-gray-200">
-                {/* Header Modal */}
-                <div className="flex items-center justify-between border-b border-djzinc-800 pb-3">
+        <div className="fixed inset-0 z-[9990] animate-fadeIn">
+            {/* Máscara Alpha SVG con Cutout Rectangular Iluminando el Elemento Real */}
+            <svg className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 9991 }}>
+                <defs>
+                    <mask id="tour-spotlight-mask">
+                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                        {targetRect && (
+                            <rect 
+                                x={targetRect.x - 6} 
+                                y={targetRect.y - 6} 
+                                width={targetRect.w + 12} 
+                                height={targetRect.h + 12} 
+                                rx="14" 
+                                fill="black" 
+                            />
+                        )}
+                    </mask>
+                </defs>
+                <rect 
+                    x="0" 
+                    y="0" 
+                    width="100%" 
+                    height="100%" 
+                    fill="rgba(0, 0, 0, 0.85)" 
+                    mask="url(#tour-spotlight-mask)" 
+                />
+            </svg>
+
+            {/* Marco Fluorescente Pulsante sobre el Elemento Objetivo */}
+            {targetRect && (
+                <div 
+                    style={{
+                        position: 'fixed',
+                        left: targetRect.x - 6,
+                        top: targetRect.y - 6,
+                        width: targetRect.w + 12,
+                        height: targetRect.h + 12,
+                        borderRadius: '14px',
+                        border: '2px solid #06b6d4',
+                        boxShadow: '0 0 35px rgba(6, 182, 212, 0.85), inset 0 0 15px rgba(6, 182, 212, 0.4)',
+                        pointerEvents: 'none',
+                        zIndex: 9992,
+                        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}
+                    className="animate-pulse"
+                />
+            )}
+
+            {/* Tooltip Card Flotante Directo */}
+            <div 
+                style={tooltipStyle}
+                className="bg-[#0b0c14] border border-djcyan-500/60 shadow-[0_0_50px_rgba(6,182,212,0.35)] rounded-2xl p-5 text-gray-200 flex flex-col gap-3.5 animate-fadeIn"
+            >
+                {/* Header Tooltip */}
+                <div className="flex items-center justify-between border-b border-djzinc-800 pb-2.5">
                     <div className="flex items-center gap-2">
-                        <span className="text-2xl">{cur.icon}</span>
+                        <span className="text-xl">{curStep.icon}</span>
                         <div>
                             <span className="text-[10px] font-mono tracking-widest text-djcyan-400 font-black uppercase">
-                                {cur.badge} • PASO {cur.step} DE {TUTORIAL_STEPS.length}
+                                {curStep.badge}
                             </span>
-                            <h2 className="text-lg font-black text-white">{cur.title}</h2>
+                            <h3 className="text-sm font-black text-white">{curStep.title}</h3>
                         </div>
                     </div>
                     <button 
+                        type="button"
                         onClick={handleFinish} 
-                        className="text-gray-400 hover:text-white text-sm font-mono cursor-pointer p-1"
-                        title="Cerrar tutorial"
+                        className="text-gray-400 hover:text-white text-xs font-mono cursor-pointer p-1"
+                        title="Salir del tour"
                     >
                         ✕
                     </button>
                 </div>
 
-                {/* Subtítulo y Descripción */}
-                <div className="space-y-3">
-                    <h3 className="text-xs font-mono font-bold text-djcyan-300">{cur.subtitle}</h3>
-                    <p className="text-xs text-gray-300 leading-relaxed">{cur.description}</p>
-                    
-                    <div className="p-3 bg-djzinc-900/90 rounded-xl border border-djzinc-800 space-y-1.5">
-                        <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider block">Puntos Clave:</span>
-                        {cur.highlights.map((h, i) => (
-                            <div key={i} className="flex items-start gap-2 text-xs text-gray-200">
-                                <span className="text-djcyan-400 font-bold">✓</span>
-                                <span>{h}</span>
-                            </div>
-                        ))}
-                    </div>
+                {/* Explicación Táctica */}
+                <p className="text-xs text-gray-300 leading-relaxed font-sans">
+                    {curStep.description}
+                </p>
+
+                {/* Tip de Cabina */}
+                <div className="p-2.5 bg-djzinc-950 rounded-xl border border-djzinc-800/90 text-xs text-djcyan-300 font-mono flex items-start gap-2 shadow-inner">
+                    <span className="text-djcyan-400 font-bold shrink-0">💡</span>
+                    <span>{curStep.tip}</span>
                 </div>
 
                 {/* Dots de Progreso */}
                 <div className="flex items-center justify-center gap-2 pt-1">
-                    {TUTORIAL_STEPS.map((s, idx) => (
+                    {TOUR_STEPS.map((s, idx) => (
                         <button
                             key={idx}
-                            onClick={() => setCurrentStepIdx(idx)}
-                            className={`h-2 rounded-full transition-all cursor-pointer ${
-                                idx === currentStepIdx ? 'w-6 bg-djcyan-400' : 'w-2 bg-djzinc-700 hover:bg-gray-400'
+                            type="button"
+                            onClick={() => setStepIdx(idx)}
+                            className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                idx === stepIdx ? 'w-6 bg-djcyan-400' : 'w-2 bg-djzinc-700 hover:bg-gray-400'
                             }`}
                         />
                     ))}
                 </div>
 
-                {/* Footer y Botones de Navegación */}
+                {/* Footer del Tooltip con Botones */}
                 <div className="flex items-center justify-between pt-2 border-t border-djzinc-800">
-                    <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
-                        <input 
-                            type="checkbox" 
-                            checked={dontShowAgain} 
-                            onChange={(e) => setDontShowAgain(e.target.checked)}
-                            className="rounded bg-djzinc-900 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
-                        />
-                        <span>No volver a mostrar automáticamente</span>
-                    </label>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (onOpenTeaser) onOpenTeaser();
+                        }}
+                        className="text-[11px] font-mono text-gray-400 hover:text-djcyan-300 cursor-pointer flex items-center gap-1"
+                        title="Ver vídeo teaser comercial de 60 segundos"
+                    >
+                        <span>🎬</span>
+                        <span>Ver Teaser 60s</span>
+                    </button>
 
                     <div className="flex items-center gap-2">
-                        {currentStepIdx > 0 && (
+                        {stepIdx > 0 && (
                             <button
                                 type="button"
-                                onClick={() => setCurrentStepIdx(prev => prev - 1)}
-                                className="px-3.5 py-1.5 rounded-lg bg-djzinc-800 hover:bg-djzinc-700 text-gray-200 font-bold text-xs cursor-pointer"
+                                onClick={() => setStepIdx(prev => prev - 1)}
+                                className="px-3 py-1.5 rounded-lg bg-djzinc-800 hover:bg-djzinc-700 text-gray-200 font-bold text-xs cursor-pointer"
                             >
                                 Anterior
                             </button>
@@ -15819,17 +16418,156 @@ const AppTutorialModal = ({ isOpen, onClose }) => {
                                 if (isLast) {
                                     handleFinish();
                                 } else {
-                                    setCurrentStepIdx(prev => prev + 1);
+                                    setStepIdx(prev => prev + 1);
                                 }
                             }}
                             className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black text-xs cursor-pointer shadow-md shadow-djcyan-500/30 transition-transform active:scale-95"
                         >
-                            {isLast ? "¡Comenzar ahora!" : "Siguiente →"}
+                            {isLast ? "¡A mezclar!" : "Siguiente →"}
                         </button>
                     </div>
                 </div>
             </div>
         </div>
+    );
+};
+
+// Modal 3: Launcher / Selector Inicial de Onboarding (Teaser vs Tour)
+const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }) => {
+    const [dontShowAgain, setDontShowAgain] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleSkip = () => {
+        if (dontShowAgain) {
+            try {
+                localStorage.setItem('cleandjmix_tutorial_completed', 'true');
+            } catch (e) {}
+        }
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[9990] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-[#0c0d16] border border-djcyan-500/50 rounded-2xl max-w-lg w-full p-6 shadow-[0_0_60px_rgba(6,182,212,0.3)] flex flex-col gap-5 text-gray-200">
+                <div className="flex items-center justify-between border-b border-djzinc-800 pb-3">
+                    <div className="flex items-center gap-2.5">
+                        <span className="text-2xl">🎛️</span>
+                        <div>
+                            <span className="text-[10px] font-mono tracking-widest text-djcyan-400 font-black uppercase">
+                                BIENVENIDO A CLEANDJMIX PRO
+                            </span>
+                            <h2 className="text-lg font-black text-white">¿Cómo prefieres descubrir la cabina?</h2>
+                        </div>
+                    </div>
+                    <button onClick={handleSkip} className="text-gray-400 hover:text-white cursor-pointer p-1">✕</button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* Opción 1: Teaser 60s */}
+                    <div 
+                        onClick={onLaunchTeaser}
+                        className="p-4 rounded-xl bg-gradient-to-b from-[#141524] to-[#0c0d16] border border-djcyan-500/40 hover:border-djcyan-400 cursor-pointer transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between group"
+                    >
+                        <div className="space-y-2">
+                            <span className="text-2xl block group-hover:scale-110 transition-transform">🎬</span>
+                            <h3 className="text-sm font-black text-white uppercase group-hover:text-djcyan-300">
+                                Vídeo Teaser (60s)
+                            </h3>
+                            <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                                Demostración rápida con audio synth club en 128 BPM, visualizador FFT y las 5 funciones clave en 1 minuto.
+                            </p>
+                        </div>
+                        <span className="mt-3 text-[11px] font-mono font-bold text-djcyan-400 flex items-center gap-1">
+                            ▶ Ver Vídeo 60s →
+                        </span>
+                    </div>
+
+                    {/* Opción 2: Tour Guiado Spotlight */}
+                    <div 
+                        onClick={onLaunchTour}
+                        className="p-4 rounded-xl bg-gradient-to-b from-[#141524] to-[#0c0d16] border border-djzinc-750 hover:border-djcyan-400 cursor-pointer transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between group"
+                    >
+                        <div className="space-y-2">
+                            <span className="text-2xl block group-hover:scale-110 transition-transform">🎯</span>
+                            <h3 className="text-sm font-black text-white uppercase group-hover:text-djcyan-300">
+                                Tour en Cabina (Spotlight)
+                            </h3>
+                            <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                                Fondo alpha con tooltips interactivos directamente sobre tus controles, Hot Cues y Set-Builder paso a paso.
+                            </p>
+                        </div>
+                        <span className="mt-3 text-[11px] font-mono font-bold text-djcyan-400 flex items-center gap-1">
+                            🔍 Iniciar Tour Guiado →
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-djzinc-800 text-xs text-gray-400">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input 
+                            type="checkbox" 
+                            checked={dontShowAgain} 
+                            onChange={(e) => setDontShowAgain(e.target.checked)}
+                            className="rounded bg-djzinc-900 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
+                        />
+                        <span>No volver a mostrar automáticamente</span>
+                    </label>
+
+                    <button 
+                        type="button" 
+                        onClick={handleSkip} 
+                        className="text-gray-400 hover:text-white font-mono text-xs cursor-pointer"
+                    >
+                        Saltar a la cabina
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Componente Wrapper Orquestador del Tutorial
+const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab }) => {
+    const [viewMode, setViewMode] = useState('launcher'); // 'launcher' | 'teaser' | 'tour'
+
+    if (!isOpen) return null;
+
+    if (viewMode === 'teaser') {
+        return (
+            <CommercialTeaserModal
+                isOpen={isOpen}
+                onClose={() => {
+                    setViewMode('launcher');
+                    onClose();
+                }}
+                onOpenTour={() => setViewMode('tour')}
+            />
+        );
+    }
+
+    if (viewMode === 'tour') {
+        return (
+            <SpotlightTourOverlay
+                isOpen={isOpen}
+                onClose={() => {
+                    setViewMode('launcher');
+                    onClose();
+                }}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                onOpenTeaser={() => setViewMode('teaser')}
+            />
+        );
+    }
+
+    return (
+        <TutorialLauncherModal
+            isOpen={isOpen}
+            onClose={onClose}
+            onLaunchTeaser={() => setViewMode('teaser')}
+            onLaunchTour={() => setViewMode('tour')}
+        />
     );
 };
 
@@ -16810,6 +17548,8 @@ const App = () => {
             <AppTutorialModal 
                 isOpen={tutorialOpen} 
                 onClose={() => setTutorialOpen(false)} 
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
             />
         </div>
     );
