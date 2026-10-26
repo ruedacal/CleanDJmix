@@ -4937,7 +4937,7 @@ const AuditWorkspace = ({
                             <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 text-gray-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono shrink-0" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
                                 <Icons.Sliders /> <span className="hidden sm:inline">{t('btn_audit_batch') || 'Configurar'}</span>
                             </button>
-                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-djcyan-500 hover:bg-djcyan-400 disabled:opacity-50 text-black px-3 sm:px-3.5 py-1.5 rounded-lg font-black text-xs shadow-md shadow-djcyan-500/25 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0">
+                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 disabled:opacity-50 text-black px-4 sm:px-4.5 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-djcyan-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0">
                                 <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Todo')}
                             </button>
                         </div>
@@ -5008,7 +5008,7 @@ const AuditWorkspace = ({
                         <button 
                             onClick={handleGuardarTodoEnFicheros} 
                             disabled={isInjecting || tracks.length === 0}
-                            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono"
+                            className="bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 disabled:opacity-50 text-black px-4 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-300/50 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono"
                             title="Guarda y persiste todos los metadatos editados directamente en los archivos físicos de audio en disco"
                         >
                             <span>💾</span>
@@ -7522,7 +7522,7 @@ const HotCuesWorkspace = ({
                             <button
                                 type="button"
                                 onClick={handleGuardarPista}
-                                className="flex md:hidden px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 items-center gap-1 shrink-0"
+                                className="flex md:hidden px-3 py-1.5 bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-black font-mono font-black text-xs rounded-xl shadow-[0_0_12px_rgba(16,185,129,0.4)] border border-emerald-300/60 cursor-pointer transition-all active:scale-95 items-center gap-1 shrink-0"
                                 title="Guardar pista en disco"
                             >
                                 <span>💾</span>
@@ -7597,7 +7597,7 @@ const HotCuesWorkspace = ({
                     <button
                         type="button"
                         onClick={handleGuardarPista}
-                        className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                        className="px-4 py-1.5 bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-black font-mono font-black text-xs rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.45)] border border-emerald-300/60 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                         title="Guardar cues, downbeat y metadatos de esta pista en el archivo físico"
                     >
                         <span>💾</span>
@@ -13607,14 +13607,14 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <div className="flex items-center gap-2.5">
-                            <span className="p-2 bg-gradient-to-br from-djcyan-500/20 to-purple-500/20 border border-djcyan-500/40 rounded-xl text-djcyan-400">
+                            <span className="p-2 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/40 rounded-xl text-indigo-400">
                                 <Icons.Trends />
                             </span>
                             <div>
                                 <h1 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2">
                                     <span>TENDENCIAS DE MÚSICA ELECTRÓNICA</span>
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-djcyan-950 border border-djcyan-500/50 text-djcyan-300">
-                                        RADAR WEB & FESTIVALES
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-indigo-950 border border-indigo-500/60 text-indigo-300">
+                                        STUDIO LAB · RADAR & FESTIVALES
                                     </span>
                                 </h1>
                                 <p className="text-xs text-gray-400 mt-0.5">
@@ -15155,7 +15155,7 @@ const SetBuilderWorkspace = ({
                             type="button"
                             onClick={handleOptimizeHarmonicFlow}
                             disabled={setTracks.length < 2 || isAuditingSet}
-                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
+                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
                             title="Reordena automáticamente las pistas para maximizar la compatibilidad armónica Camelot y progresión de BPM"
                         >
                             <span>⚡</span>
@@ -15167,7 +15167,7 @@ const SetBuilderWorkspace = ({
                             type="button"
                             onClick={handleExportM3U}
                             disabled={isExporting || setTracks.length === 0}
-                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
+                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.35)] border border-djcyan-300/50 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
                             title="Exportar archivo M3U8 para Pioneer Rekordbox, Serato DJ Pro, Traktor Pro y VirtualDJ"
                         >
                             <span>💾</span>
@@ -15686,14 +15686,14 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
             <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-2.5">
-                        <span className="p-2 bg-gradient-to-br from-djcyan-500/20 to-purple-500/20 border border-djcyan-500/40 rounded-xl text-djcyan-400">
+                        <span className="p-2 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/40 rounded-xl text-indigo-400">
                             <Icons.Knowledge />
                         </span>
                         <div>
                             <h1 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2">
                                 <span>ACADEMIA & CONOCIMIENTO DJ</span>
-                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-purple-950 border border-purple-500/50 text-purple-300">
-                                    PRO MASTERY
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-purple-950 border border-purple-500/60 text-purple-300">
+                                    STUDIO ACADEMY · FORMACIÓN
                                 </span>
                             </h1>
                             <p className="text-xs text-gray-400 mt-0.5">
@@ -17476,93 +17476,133 @@ const App = () => {
                     </div>
                 </div>
 
-                {/* CAPSULE DOCK DE PESTAÑAS: ALTA JERARQUÍA VISUAL HARDWARE */}
-                <nav className="hidden xl:flex items-center gap-1.5 p-1.5 rounded-2xl bg-[#090912]/95 border border-djzinc-800/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-md absolute left-1/2 -translate-x-1/2">
-                    <button 
-                        onClick={() => setActiveTab('audit')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'audit' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Library /> <span>Auditar</span>
-                        {globalAuditInfo.isAuditing && (
-                            <span className="px-1.5 py-0.2 bg-amber-400 text-black rounded text-[9px] font-black animate-pulse shadow-sm">
-                                {globalAuditInfo.progress}%
+                {/* CAPSULE DOCK DE PESTAÑAS: SEGMENTACIÓN FÍSICA HARDWARE (CABINA DJ PRO vs. STUDIO LAB & ACADEMIA) */}
+                <nav className="hidden xl:flex items-center p-1.5 rounded-2xl bg-[#080811]/95 border border-djzinc-800/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-md absolute left-1/2 -translate-x-1/2 z-30">
+                    {/* BAHÍA 1: CABINA PRO & FLUJO DE MEZCLA */}
+                    <div className="flex items-center gap-1">
+                        <button 
+                            type="button"
+                            onClick={() => setActiveTab('audit')} 
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                                activeTab === 'audit' 
+                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                            }`}
+                            title="Auditoría Acústica y Enriquecimiento de Tags"
+                        >
+                            <Icons.Library /> <span>Auditar</span>
+                            {globalAuditInfo.isAuditing && (
+                                <span className="px-1.5 py-0.2 bg-amber-400 text-black rounded text-[9px] font-black animate-pulse shadow-sm">
+                                    {globalAuditInfo.progress}%
+                                </span>
+                            )}
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setActiveTab('hotcues')} 
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                                activeTab === 'hotcues' 
+                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                            }`}
+                            title="Hot Cues y Puntos de Mezcla de Club"
+                        >
+                            <Icons.Cue /> <span>Cues</span>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setActiveTab('setbuilder')} 
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                                activeTab === 'setbuilder' 
+                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                            }`}
+                            title="Set Builder y Flujo de Energía BPM"
+                        >
+                            <Icons.Flow /> <span>Set Builder</span>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setActiveTab('spotify')} 
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                                activeTab === 'spotify' 
+                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                            }`}
+                            title="Descargas y Record Pool Ingest"
+                        >
+                            <Icons.Spotify /> <span>Download</span>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setActiveTab('shazam')} 
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                                activeTab === 'shazam' 
+                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                            }`}
+                            title="Radar Shazam por Micro y Audio"
+                        >
+                            <Icons.Radar /> <span>Radar</span>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setActiveTab('taxonomy')} 
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                                activeTab === 'taxonomy' 
+                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                            }`}
+                            title="Taxonomía Musical y Subgéneros"
+                        >
+                            <Icons.Routing /> <span>Taxonomia</span>
+                        </button>
+                    </div>
+
+                    {/* SEPARADOR FÍSICO CON BISEL METÁLICO & INDICADOR DE ENTORNO */}
+                    <div className="flex items-center px-2 select-none" title="Separación de Entorno: Cabina DJ vs. Estudio & Aprendizaje">
+                        <div className="h-6 w-[1.5px] bg-gradient-to-b from-transparent via-djzinc-600 to-transparent rounded-full"></div>
+                    </div>
+
+                    {/* BAHÍA 2: STUDIO LAB & ACADEMIA (ESPACIO DE INVESTIGACIÓN Y FORMACIÓN) */}
+                    <div className="flex items-center gap-1 pl-1 pr-1 py-0.5 rounded-xl bg-indigo-950/25 border border-indigo-900/40">
+                        <button 
+                            type="button"
+                            onClick={() => setActiveTab('trends')} 
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                                activeTab === 'trends' 
+                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_18px_rgba(147,51,234,0.55),inset_0_1px_1px_rgba(255,255,255,0.5)] font-black scale-[1.02]' 
+                                : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60 border border-transparent hover:border-indigo-600/40'
+                            }`}
+                            title="Tendencias Globales de Pistas, Festivales y Sonidos (Espacio de Estudio)"
+                        >
+                            <Icons.Trends /> 
+                            <span>Tendencias</span>
+                            <span className={`px-1 py-0.2 rounded text-[7.5px] font-mono uppercase tracking-widest ${
+                                activeTab === 'trends' ? 'bg-black/30 text-white font-black' : 'bg-indigo-900/70 text-indigo-300 border border-indigo-700/60'
+                            }`}>
+                                LAB
                             </span>
-                        )}
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('hotcues')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'hotcues' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Cue /> <span>Cues</span>
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('setbuilder')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'setbuilder' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Flow /> <span>Set Builder</span>
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('spotify')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'spotify' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Spotify /> <span>Download</span>
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('shazam')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'shazam' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Radar /> <span>Radar</span>
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('taxonomy')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'taxonomy' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Routing /> <span>Taxonomia</span>
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('trends')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'trends' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Trends /> <span>Tendencias</span>
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('knowledge')} 
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
-                            activeTab === 'knowledge' 
-                            ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                            : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                        }`}
-                    >
-                        <Icons.Knowledge /> <span>Conocimiento</span>
-                    </button>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setActiveTab('knowledge')} 
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                                activeTab === 'knowledge' 
+                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_18px_rgba(147,51,234,0.55),inset_0_1px_1px_rgba(255,255,255,0.5)] font-black scale-[1.02]' 
+                                : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60 border border-transparent hover:border-indigo-600/40'
+                            }`}
+                            title="Base de Conocimiento, Teoría y Guías DJ (Espacio Educativo)"
+                        >
+                            <Icons.Knowledge /> 
+                            <span>Conocimiento</span>
+                            <span className={`px-1 py-0.2 rounded text-[7.5px] font-mono uppercase tracking-widest ${
+                                activeTab === 'knowledge' ? 'bg-black/30 text-white font-black' : 'bg-indigo-900/70 text-indigo-300 border border-indigo-700/60'
+                            }`}>
+                                EDU
+                            </span>
+                        </button>
+                    </div>
                 </nav>
 
                 <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
@@ -17912,10 +17952,18 @@ const App = () => {
                 <button
                     type="button"
                     onClick={() => setMobileDrawerOpen(true)}
-                    className="flex flex-col items-center justify-center flex-1 py-1 cursor-pointer text-gray-400 hover:text-white transition-all"
+                    className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
+                        ['taxonomy', 'trends', 'knowledge'].includes(activeTab)
+                            ? (activeTab === 'trends' || activeTab === 'knowledge'
+                                ? 'text-indigo-400 font-bold scale-105'
+                                : 'text-djcyan-400 font-bold scale-105')
+                            : 'text-gray-400 hover:text-white'
+                    }`}
                 >
                     <Icons.Menu />
-                    <span className="text-[9.5px] font-mono mt-0.5">Más...</span>
+                    <span className="text-[9.5px] font-mono mt-0.5 truncate max-w-[64px]">
+                        {activeTab === 'taxonomy' ? 'Taxonomía' : (activeTab === 'trends' ? 'Tendencias' : (activeTab === 'knowledge' ? 'Conocimiento' : 'Más...'))}
+                    </span>
                 </button>
             </nav>
 
@@ -17952,9 +18000,13 @@ const App = () => {
                             </button>
                         </div>
 
-                        {/* Lista de las 7 Pestañas */}
-                        <div className="flex flex-col gap-1.5 py-4 flex-1">
-                            <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 px-2 mb-1">Módulos Principales</span>
+                        {/* Módulos Agrupados Semánticamente en 2 Bahías */}
+                        <div className="flex flex-col gap-1 py-3 flex-1 overflow-y-auto">
+                            {/* BLOQUE 1: CABINA PRO & PRODUCCIÓN DJ */}
+                            <div className="flex items-center gap-1.5 px-2 mt-1 mb-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
+                                <span className="text-[10px] font-mono uppercase tracking-widest text-djcyan-400 font-black">🎛️ CABINA PRO & FLUJO DJ</span>
+                            </div>
                             
                             {[
                                 { id: 'audit', icon: <Icons.Library />, label: 'Auditar' },
@@ -17963,8 +18015,6 @@ const App = () => {
                                 { id: 'spotify', icon: <Icons.Spotify />, label: 'Download' },
                                 { id: 'shazam', icon: <Icons.Radar />, label: 'Radar' },
                                 { id: 'taxonomy', icon: <Icons.Routing />, label: 'Taxonomia' },
-                                { id: 'trends', icon: <Icons.Trends />, label: 'Tendencias' },
-                                { id: 'knowledge', icon: <Icons.Knowledge />, label: 'Conocimiento' },
                             ].map(item => {
                                 const isActive = activeTab === item.id;
                                 return (
@@ -17975,9 +18025,9 @@ const App = () => {
                                             setActiveTab(item.id);
                                             setMobileDrawerOpen(false);
                                         }}
-                                        className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-left transition-all cursor-pointer ${
+                                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-left transition-all cursor-pointer ${
                                             isActive 
-                                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-lg shadow-djcyan-500/30 font-black' 
+                                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-lg shadow-djcyan-500/30 font-black scale-[1.01]' 
                                                 : 'text-gray-300 hover:bg-djzinc-900 border border-transparent hover:border-djzinc-800'
                                         }`}
                                     >
@@ -17988,6 +18038,50 @@ const App = () => {
                                                 {globalAuditInfo.progress}%
                                             </span>
                                         )}
+                                    </button>
+                                );
+                            })}
+
+                            {/* SEPARADOR FÍSICO */}
+                            <div className="h-px bg-gradient-to-r from-transparent via-djzinc-750 to-transparent my-2"></div>
+
+                            {/* BLOQUE 2: STUDIO LAB & ACADEMIA */}
+                            <div className="flex items-center justify-between px-2 mt-1 mb-1.5">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]"></span>
+                                    <span className="text-[10px] font-mono uppercase tracking-widest text-indigo-300 font-black">🎓 ESTUDIO & APRENDIZAJE</span>
+                                </div>
+                                <span className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded bg-indigo-950/80 border border-indigo-700/50 text-indigo-300 font-bold">
+                                    LAB / EDU
+                                </span>
+                            </div>
+
+                            {[
+                                { id: 'trends', icon: <Icons.Trends />, label: 'Tendencias', badge: 'LAB' },
+                                { id: 'knowledge', icon: <Icons.Knowledge />, label: 'Conocimiento', badge: 'EDU' },
+                            ].map(item => {
+                                const isActive = activeTab === item.id;
+                                return (
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveTab(item.id);
+                                            setMobileDrawerOpen(false);
+                                        }}
+                                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-left transition-all cursor-pointer ${
+                                            isActive 
+                                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 font-black scale-[1.01]' 
+                                                : 'text-indigo-200/80 hover:bg-indigo-950/50 border border-indigo-900/40 hover:border-indigo-700/60'
+                                        }`}
+                                    >
+                                        <span className={isActive ? 'text-white' : 'text-indigo-400'}>{item.icon}</span>
+                                        <span className="flex-1">{item.label}</span>
+                                        <span className={`text-[8px] font-mono uppercase px-1.5 py-0.5 rounded ${
+                                            isActive ? 'bg-black/30 text-white font-black' : 'bg-indigo-950 border border-indigo-800 text-indigo-300'
+                                        }`}>
+                                            {item.badge}
+                                        </span>
                                     </button>
                                 );
                             })}
