@@ -312,7 +312,8 @@ class CopilotService:
             "mid_ratio": 32.0,
             "high_ratio": 20.0,
             "acoustic_role": "Bass-Heavy Driver",
-            "is_audited": False
+            "is_audited": False,
+            "comment": "Intro limpia 32b • Drop contundente • Outro 64b"
         }
         if not filepath or not os.path.exists(self.audit_cache_path):
             return default_dsp
@@ -328,13 +329,15 @@ class CopilotService:
             row = cursor.fetchone()
             conn.close()
             if row:
+                role = str(row[4]) if row[4] else "Club Master"
                 return {
                     "lufs": float(row[0]) if row[0] is not None else -6.8,
                     "low_ratio": float(row[1]) if row[1] is not None else 48.0,
                     "mid_ratio": float(row[2]) if row[2] is not None else 32.0,
                     "high_ratio": float(row[3]) if row[3] is not None else 20.0,
-                    "acoustic_role": str(row[4]) if row[4] else "Club Master",
-                    "is_audited": True
+                    "acoustic_role": role,
+                    "is_audited": True,
+                    "comment": f"[{role}] Intro 32b • Drop contundente • Outro 64b"
                 }
         except Exception:
             pass
@@ -878,7 +881,9 @@ class CopilotService:
             "mid_ratio": 32.0,
             "high_ratio": 20.0,
             "acoustic_role": "Bass-Heavy Driver",
-            "is_audited": True
+            "is_audited": True,
+            "comment": f"[{t1['bpm']} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
+            "tactical_comment": f"[{t1['bpm']} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b"
         }
 
         deck_2 = {
@@ -897,7 +902,9 @@ class CopilotService:
             "mid_ratio": 31.0,
             "high_ratio": 18.0,
             "acoustic_role": "Peak Time Driver",
-            "is_audited": True
+            "is_audited": True,
+            "comment": f"[{t2['bpm']} BPM | {c2}] Warm-Up Groovy • Drop vocal intenso",
+            "tactical_comment": f"[{t2['bpm']} BPM | {c2}] Warm-Up Groovy • Drop vocal intenso"
         }
 
         anti_muddy = self._calculate_anti_muddy_guard(deck_1, deck_2)
@@ -1012,7 +1019,9 @@ class CopilotService:
             "mid_ratio": dsp_1["mid_ratio"],
             "high_ratio": dsp_1["high_ratio"],
             "acoustic_role": dsp_1["acoustic_role"],
-            "is_audited": dsp_1["is_audited"]
+            "is_audited": dsp_1["is_audited"],
+            "comment": dsp_1.get("comment") or f"[{deck_1_raw.get('bpm', 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
+            "tactical_comment": dsp_1.get("comment") or f"[{deck_1_raw.get('bpm', 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b"
         }
 
         deck_2 = {
@@ -1031,7 +1040,9 @@ class CopilotService:
             "mid_ratio": dsp_2["mid_ratio"],
             "high_ratio": dsp_2["high_ratio"],
             "acoustic_role": dsp_2["acoustic_role"],
-            "is_audited": dsp_2["is_audited"]
+            "is_audited": dsp_2["is_audited"],
+            "comment": dsp_2.get("comment") or f"[{deck_2_raw.get('bpm', 130.0)} BPM | {c2}] Entrada armónica limpia • Outro extendido",
+            "tactical_comment": dsp_2.get("comment") or f"[{deck_2_raw.get('bpm', 130.0)} BPM | {c2}] Entrada armónica limpia • Outro extendido"
         }
 
         master_deck = deck_1 if deck_1_is_master else deck_2

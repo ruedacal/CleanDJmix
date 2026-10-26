@@ -69,6 +69,9 @@ def test_copilot_simulation_mode():
     assert state["source"] == "SIMULATION_MODE"
     assert "deck_1" in state
     assert "deck_2" in state
+    assert "comment" in state["deck_1"]
+    assert "tactical_comment" in state["deck_1"]
+    assert "comment" in state["deck_2"]
     assert len(state["recommendations"]) == 3
     assert "local_ip" in state
     assert "platform" in state

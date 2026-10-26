@@ -641,7 +641,9 @@ def exportar_apuntes_shazam(tracks, formato="xls", destino_dir="/Users/admin/Mus
                     gen = trk.get("genre") or "Electronic"
                     yr = trk.get("year") or ""
                     isrc = trk.get("isrc") or ""
-                    f.write(f"{i:02d}. {art} - {tit} [{alb} {yr}] - {gen} (ISRC: {isrc})\n")
+                    comm = trk.get("comment") or trk.get("comentario") or ""
+                    comm_line = f" [💬 {comm}]" if comm else ""
+                    f.write(f"{i:02d}. {art} - {tit} [{alb} {yr}] - {gen}{comm_line} (ISRC: {isrc})\n")
             return {"status": "ok", "path": filepath, "filename": filename, "total": len(tracks)}
         else:
             filename = f"BeatWave_Shazam_Apuntes_{timestamp}.xlsx"
@@ -658,6 +660,7 @@ def exportar_apuntes_shazam(tracks, formato="xls", destino_dir="/Users/admin/Mus
                         "Genero": trk.get("genre") or "Electronic",
                         "Ano": trk.get("year") or "",
                         "ISRC": trk.get("isrc") or "",
+                        "Comentario DJ": trk.get("comment") or trk.get("comentario") or "",
                         "Fecha Apunte": trk.get("added_at") or datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),
                         "Spotify Query": trk.get("spotify_query") or f"{trk.get('title','')} {trk.get('artist','')}"
                     })
@@ -670,7 +673,7 @@ def exportar_apuntes_shazam(tracks, formato="xls", destino_dir="/Users/admin/Mus
                 import csv
                 with open(filepath, "w", encoding="utf-8-sig", newline="") as f:
                     writer = csv.writer(f)
-                    writer.writerow(["#", "Artista", "Titulo", "Album", "Genero", "Ano", "ISRC", "Fecha Apunte"])
+                    writer.writerow(["#", "Artista", "Titulo", "Album", "Genero", "Ano", "ISRC", "Comentario DJ", "Fecha Apunte"])
                     for i, trk in enumerate(tracks, 1):
                         writer.writerow([
                             i,
@@ -680,6 +683,7 @@ def exportar_apuntes_shazam(tracks, formato="xls", destino_dir="/Users/admin/Mus
                             trk.get("genre") or "",
                             trk.get("year") or "",
                             trk.get("isrc") or "",
+                            trk.get("comment") or trk.get("comentario") or "",
                             trk.get("added_at") or ""
                         ])
                 return {"status": "ok", "path": filepath, "filename": filename, "total": len(tracks)}

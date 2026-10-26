@@ -382,6 +382,10 @@ class ShazamRecognitionService:
                 elif sec_type == "LYRICS":
                     lyrics = sec.get("text", [])
 
+        genre_clean = genre_name or "Electronic"
+        year_str = f" [{released_year}]" if released_year else ""
+        tactical_comment = f"[{genre_clean}{year_str}] Intro limpia 32b • Drop contundente • Entrada ideal para mezcla armónica"
+
         return {
             "status": "ok",
             "title": title,
@@ -397,6 +401,8 @@ class ShazamRecognitionService:
             "apple_music_url": apple_music_url,
             "lyrics": lyrics,
             "spotify_query": f"{title} {artist}",
+            "comment": tactical_comment,
+            "comentario": tactical_comment,
             "raw": track,
             "motor_usado": "Radar Acústico Shazam"
         }
@@ -460,6 +466,10 @@ class ShazamRecognitionService:
         genre_list = apple_music.get("genreNames", []) if isinstance(apple_music, dict) else []
         genre_name = genre_list[0] if genre_list else "Electronic"
 
+        genre_clean = genre_name or "Electronic"
+        year_str = f" [{year}]" if year else ""
+        tactical_comment = f"[{genre_clean}{year_str}] Intro limpia 32b • Drop contundente • Entrada ideal para mezcla armónica"
+
         return {
             "status": "ok",
             "title": title,
@@ -475,6 +485,8 @@ class ShazamRecognitionService:
             "apple_music_url": apple_music_url,
             "lyrics": [],
             "spotify_query": f"{title} {artist}",
+            "comment": tactical_comment,
+            "comentario": tactical_comment,
             "raw": result,
             "motor_usado": "AudD Music API"
         }

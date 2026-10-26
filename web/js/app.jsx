@@ -2749,9 +2749,9 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
     if (!track) {
         return (
             <div className="flex-1 h-11 bg-[#060609]/70 rounded-lg border border-djzinc-850/80 mx-6 flex items-center justify-center select-none shadow-inner">
-                <div className="flex items-center gap-2 text-[10px] font-mono text-gray-600 uppercase tracking-widest">
+                <div className="flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest">
                     <span className="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
-                    <span>DECK 1 STANDBY • SIN PISTA CARGADA</span>
+                    <span>DECK 1 STANDBY • COMENTARIO TÁCTICO & WAVEFORM LISTOS</span>
                 </div>
             </div>
         );
@@ -5708,8 +5708,9 @@ const AuditWorkspace = ({
 
                                         {/* COMENTARIO PRO DJ */}
                                         <td className="py-2 px-2 text-left">
-                                            <div className="flex items-center gap-1.5 max-w-[220px]">
-                                                <span className="text-[10px] font-mono text-gray-400 truncate" title={row.comment || `[${row.b || '--'} BPM | ${row.k || '--'}] Intro limpia 32b • Drop contundente • Outro 64b`}>
+                                            <div className="flex items-center gap-1.5 max-w-[260px]">
+                                                <span className="text-emerald-400 text-xs shrink-0">💬</span>
+                                                <span className="text-[10.5px] font-mono text-gray-200 truncate" title={row.comment || `[${row.b || '--'} BPM | ${row.k || '--'}] Intro limpia 32b • Drop contundente • Outro 64b`}>
                                                     {row.comment || `[${row.b || '--'} BPM | ${row.k || '--'}] Intro limpia 32b • Drop contundente • Outro 64b`}
                                                 </span>
                                             </div>
@@ -11656,8 +11657,9 @@ const TaxonomyWorkspace = ({
 
                                                     {/* COMENTARIO PRO */}
                                                     <td className="py-2 px-2.5 text-left">
-                                                        <div className="flex items-center gap-1.5 max-w-[210px]">
-                                                            <span className="text-[10px] font-mono text-gray-400 truncate" title={trk.comment || `[${trk.displayBpm} BPM | ${trk.displayKey}] Intro 32b • Drop contundente • Outro 64b`}>
+                                                        <div className="flex items-center gap-1.5 max-w-[260px]">
+                                                            <span className="text-emerald-400 text-xs shrink-0">💬</span>
+                                                            <span className="text-[10.5px] font-mono text-gray-200 truncate" title={trk.comment || `[${trk.displayBpm} BPM | ${trk.displayKey}] Intro 32b • Drop contundente • Outro 64b`}>
                                                                 {trk.comment || `[${trk.displayBpm} BPM | ${trk.displayKey}] Intro 32b • Drop contundente • Outro 64b`}
                                                             </span>
                                                         </div>
@@ -12313,13 +12315,16 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         if (!exists) {
             const now = new Date();
             const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const defaultComm = trackToAdd.comment || trackToAdd.comentario || `[${trackToAdd.genre || 'Electronic'}] Mezcla armónica • Entrada progresiva 32b • Drop potente`;
             const item = {
                 ...trackToAdd,
                 notebook_id: Date.now(),
-                added_at: dateStr
+                added_at: dateStr,
+                comment: defaultComm,
+                comentario: defaultComm
             };
             setNotebookTracks(prev => [item, ...prev]);
-            setNotebookFeedback(`✓ "${trackToAdd.title}" apuntado en tu libreta digital.`);
+            setNotebookFeedback(`✓ "${trackToAdd.title}" apuntado en tu libreta digital con nota DJ.`);
             setTimeout(() => setNotebookFeedback(""), 3500);
         } else {
             setNotebookFeedback(`ℹ "${trackToAdd.title}" ya estaba en la libreta.`);
@@ -12366,7 +12371,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             }
         }
         // Descarga directa en navegador para compatibilidad instantánea
-        const headers = ["#", "Artista", "Título", "Álbum", "Género", "Año", "ISRC", "Fecha de Apunte"];
+        const headers = ["#", "Artista", "Título", "Álbum", "Género", "Año", "ISRC", "Comentario / Nota DJ", "Fecha de Apunte"];
         const rows = notebookTracks.map((t, idx) => [
             idx + 1,
             `"${(t.artist || '').replace(/"/g, '""')}"`,
@@ -12375,6 +12380,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             `"${(t.genre || '').replace(/"/g, '""')}"`,
             `"${(t.year || '').replace(/"/g, '""')}"`,
             `"${(t.isrc || '').replace(/"/g, '""')}"`,
+            `"${(t.comment || t.comentario || '').replace(/"/g, '""')}"`,
             `"${(t.added_at || '').replace(/"/g, '""')}"`
         ]);
         const csvContent = "\uFEFF" + [headers.join("\t"), ...rows.map(r => r.join("\t"))].join("\n");
@@ -12409,7 +12415,11 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         txt += `Total pistas: ${notebookTracks.length}\n`;
         txt += "====================================================\n\n";
         notebookTracks.forEach((t, i) => {
+            const comm = t.comment || t.comentario;
             txt += `${String(i + 1).padStart(2, '0')}. ${t.artist} - ${t.title} [${t.album || ''} ${t.year || ''}] • ${t.genre || 'Electronic'}${t.isrc ? ` (ISRC: ${t.isrc})` : ''}\n`;
+            if (comm) {
+                txt += `    💬 Comentario DJ: ${comm}\n`;
+            }
         });
         const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -12835,6 +12845,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             status: 'Pass 22.05kHz',
             first_downbeat_ms: 250,
             trim_start_ms: 25,
+            comment: trk.comment || trk.comentario || `[126 BPM | 8A] Intro limpia 32b • Drop contundente • Outro 64b`,
+            comentario: trk.comment || trk.comentario || `[126 BPM | 8A] Intro limpia 32b • Drop contundente • Outro 64b`,
             cues: NV2_COLORS
         };
         onSendToAudit(newTrackItem);
@@ -13261,6 +13273,48 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 </div>
                             </div>
 
+                            {/* SECCIÓN VISIBLE: COMENTARIO TÁCTICO & NOTA DE MEZCLA DJ */}
+                            <div className="bg-[#050508] p-3 rounded-xl border border-djzinc-800 space-y-2">
+                                <div className="flex items-center justify-between text-[11px] font-mono">
+                                    <span className="text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+                                        Comentario Táctico DJ & Guía de Mezcla
+                                    </span>
+                                    <span className="text-gray-500 text-[10px]">Tag ID3 / Libreta</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base">💬</span>
+                                    <input 
+                                        type="text" 
+                                        value={identifiedTrack.comment || identifiedTrack.comentario || ''} 
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setIdentifiedTrack(prev => ({ ...prev, comment: val, comentario: val }));
+                                        }} 
+                                        placeholder="Escribe aquí el comentario estratégico para cabina..."
+                                        className="flex-1 bg-djzinc-950 border border-djzinc-750 focus:border-djcyan-400 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-200 outline-none transition-colors"
+                                    />
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                                    {[
+                                        { label: '🔥 Peak Time', text: `[${identifiedTrack.genre || 'Electronic'}] Peak Time • Drop Contundente • Outro Rápido 32b` },
+                                        { label: '🎧 Warm Up', text: `[${identifiedTrack.genre || 'Electronic'}] Warm Up Groovy • Entrada Progresiva 64b • Mezcla Limpia` },
+                                        { label: '🎤 Breakdown', text: `[${identifiedTrack.genre || 'Electronic'}] Breakdown Vocal Intenso • Mezcla Larga con Graves` },
+                                        { label: '⚡ After', text: `[${identifiedTrack.genre || 'Electronic'}] Afterhours • Dark Hypnotic • Bombo Pesado Sub-Bass` }
+                                    ].map((tpl, tIdx) => (
+                                        <button
+                                            key={tIdx}
+                                            type="button"
+                                            onClick={() => setIdentifiedTrack(prev => ({ ...prev, comment: tpl.text, comentario: tpl.text }))}
+                                            className="px-2 py-0.5 text-[9px] font-mono bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white rounded border border-djzinc-800 cursor-pointer transition-colors"
+                                            title={`Insertar: "${tpl.text}"`}
+                                        >
+                                            {tpl.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* DOS BOTONES PRINCIPALES: APUNTAR EN LISTA O DESCARTAR */}
                             <div className="flex flex-wrap items-center gap-3 pt-2">
                                 <button
@@ -13396,10 +13450,11 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 <tr>
                                     <th className="py-2 px-2 text-center w-8">#</th>
                                     <th className="py-2 px-2 w-10 text-center">PLAY</th>
-                                    <th className="py-2 px-3 min-w-[260px]">PISTA / ÁLBUM</th>
-                                    <th className="py-2 px-3 min-w-[160px]">ARTISTA</th>
+                                    <th className="py-2 px-3 min-w-[220px]">PISTA / ÁLBUM</th>
+                                    <th className="py-2 px-3 min-w-[150px]">ARTISTA</th>
                                     <th className="py-2 px-2 text-center w-24">GÉNERO</th>
                                     <th className="py-2 px-2 text-center w-16">AÑO</th>
+                                    <th className="py-2 px-3 min-w-[220px] text-left text-djcyan-400">COMENTARIO / NOTA DJ</th>
                                     <th className="py-2 px-3 text-center w-28">HORA APUNTE</th>
                                     <th className="py-2 px-3 text-center w-36">ACCIONES</th>
                                 </tr>
@@ -13449,6 +13504,22 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                             <td className="py-2 px-3 text-gray-300 font-medium truncate max-w-xs">{row.artist}</td>
                                             <td className="py-2 px-2 text-center font-mono text-[10px] text-emerald-400">{row.genre || 'Electronic'}</td>
                                             <td className="py-2 px-2 text-center font-mono text-gray-400">{row.year || '--'}</td>
+                                            <td className="py-2 px-3 text-left">
+                                                <div className="flex items-center gap-1.5 max-w-[260px]">
+                                                    <span className="text-emerald-400 text-xs shrink-0">💬</span>
+                                                    <input 
+                                                        type="text" 
+                                                        value={row.comment || row.comentario || ''} 
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setNotebookTracks(prev => prev.map((t, i) => i === idx ? { ...t, comment: val, comentario: val } : t));
+                                                        }}
+                                                        placeholder="Añadir nota DJ..."
+                                                        className="w-full bg-[#050508] border border-djzinc-800 hover:border-djzinc-700 focus:border-djcyan-400 rounded px-2 py-1 text-[11px] font-mono text-gray-200 outline-none transition-colors"
+                                                        title={row.comment || row.comentario || 'Nota o comentario táctico DJ'}
+                                                    />
+                                                </div>
+                                            </td>
                                             <td className="py-2 px-3 text-center font-mono text-[10px] text-gray-400">{row.added_at || '--'}</td>
                                             <td className="py-2 px-3 text-center">
                                                 <div className="flex items-center justify-center gap-1.5">
@@ -17276,6 +17347,17 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             <span>LUFS: <strong className="text-zinc-300">{deck_1.lufs} dB</strong></span>
                         </div>
                     </div>
+
+                    {/* COMENTARIO TÁCTICO CABINA DECK 1 */}
+                    <div className="mt-3 p-2.5 rounded-2xl bg-black/50 border border-zinc-800/80 flex items-start gap-2.5">
+                        <span className="text-emerald-400 text-sm shrink-0">💬</span>
+                        <div className="min-w-0 flex-1">
+                            <div className="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ</div>
+                            <div className="font-mono text-xs text-zinc-200 truncate" title={deck_1.comment || deck_1.tactical_comment || `[${deck_1.bpm ? Number(deck_1.bpm).toFixed(1) : '--'} BPM | ${deck_1.camelot}] Intro 32b • Drop contundente • Outro 64b`}>
+                                {deck_1.comment || deck_1.tactical_comment || `[${deck_1.bpm ? Number(deck_1.bpm).toFixed(1) : '--'} BPM | ${deck_1.camelot}] Intro 32b • Drop contundente • Outro 64b`}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* DECK 2 */}
@@ -17332,6 +17414,17 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             <span>Medios: {deck_2.mid_ratio}%</span>
                             <span>Agudos: {deck_2.high_ratio}%</span>
                             <span>LUFS: <strong className="text-zinc-300">{deck_2.lufs} dB</strong></span>
+                        </div>
+                    </div>
+
+                    {/* COMENTARIO TÁCTICO CABINA DECK 2 */}
+                    <div className="mt-3 p-2.5 rounded-2xl bg-black/50 border border-zinc-800/80 flex items-start gap-2.5">
+                        <span className="text-emerald-400 text-sm shrink-0">💬</span>
+                        <div className="min-w-0 flex-1">
+                            <div className="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ</div>
+                            <div className="font-mono text-xs text-zinc-200 truncate" title={deck_2.comment || deck_2.tactical_comment || `[${deck_2.bpm ? Number(deck_2.bpm).toFixed(1) : '--'} BPM | ${deck_2.camelot}] Entrada limpia • Outro extendido`}>
+                                {deck_2.comment || deck_2.tactical_comment || `[${deck_2.bpm ? Number(deck_2.bpm).toFixed(1) : '--'} BPM | ${deck_2.camelot}] Entrada limpia • Outro extendido`}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -18699,7 +18792,7 @@ const App = () => {
                 </div>
 
                 {!nowPlayingTrack ? (
-                    <div className="flex items-center gap-3 min-w-0 flex-1 md:w-80 md:flex-initial shrink-0 opacity-40 select-none">
+                    <div className="flex items-center gap-3 min-w-0 flex-1 md:w-80 md:flex-initial shrink-0 opacity-50 select-none">
                         <div className="w-10 h-10 md:w-11 md:h-11 rounded-md bg-[#0a0a0f] border border-djzinc-850 flex items-center justify-center text-gray-600 shadow-inner shrink-0">
                             <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <circle cx="12" cy="12" r="10" strokeDasharray="3 3"></circle>
@@ -18707,11 +18800,11 @@ const App = () => {
                             </svg>
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider">
+                            <span className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider">
                                 DECK 1 STANDBY
                             </span>
-                            <span className="text-[10px] text-gray-600 font-mono">
-                                Sin pista seleccionada
+                            <span className="text-[10px] text-gray-500 font-mono truncate">
+                                💬 Comentario táctico visible al cargar pista
                             </span>
                         </div>
                     </div>
@@ -18730,9 +18823,17 @@ const App = () => {
                             <span className="text-[11px] text-djcyan-400 font-medium truncate" title={nowPlayingTrack.a || nowPlayingTrack.artist}>
                                 {nowPlayingTrack.a || nowPlayingTrack.artist}
                             </span>
-                            <span className="text-[10px] text-gray-500 font-mono truncate">
-                                {`${nowPlayingTrack.b || nowPlayingTrack.bpm || '--'} BPM • Key ${nowPlayingTrack.k || nowPlayingTrack.key || '--'}`}
-                            </span>
+                            <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-mono truncate">
+                                <span>{`${nowPlayingTrack.b || nowPlayingTrack.bpm || '--'} BPM • Key ${nowPlayingTrack.k || nowPlayingTrack.key || '--'}`}</span>
+                                {(nowPlayingTrack.comment || nowPlayingTrack.comentario) && (
+                                    <>
+                                        <span className="text-gray-600">•</span>
+                                        <span className="text-emerald-400 truncate max-w-[150px] sm:max-w-xs font-mono font-semibold" title={nowPlayingTrack.comment || nowPlayingTrack.comentario}>
+                                            💬 {nowPlayingTrack.comment || nowPlayingTrack.comentario}
+                                        </span>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -18775,6 +18876,16 @@ const App = () => {
                         SYNC
                     </button>
                 </div>
+
+                {/* BADGE DE COMENTARIO TÁCTICO EN BARRA GLOBAL */}
+                {(nowPlayingTrack && (nowPlayingTrack.comment || nowPlayingTrack.comentario)) && (
+                    <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0e0e18] border border-djzinc-750 text-xs font-mono text-gray-200 max-w-sm shadow-inner shrink-0" title={nowPlayingTrack.comment || nowPlayingTrack.comentario}>
+                        <span className="text-emerald-400 font-bold shrink-0">💬</span>
+                        <span className="text-[11px] text-gray-300 truncate font-mono">
+                            {nowPlayingTrack.comment || nowPlayingTrack.comentario}
+                        </span>
+                    </div>
+                )}
 
                 <div className="hidden md:flex flex-1 max-w-2xl ml-4">
                     <FooterMasterWaveform 

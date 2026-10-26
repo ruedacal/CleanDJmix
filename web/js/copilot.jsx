@@ -447,6 +447,17 @@ function DeckCard({ deck, side, isMaster }) {
                     <span>LUFS: <strong className="text-zinc-300">{deck.lufs} dB</strong></span>
                 </div>
             </div>
+
+            {/* COMENTARIO TÁCTICO CABINA */}
+            <div className="mt-3 p-2.5 rounded-2xl bg-black/50 border border-zinc-800/80 flex items-start gap-2.5">
+                <span className="text-emerald-400 text-sm shrink-0">💬</span>
+                <div className="min-w-0 flex-1">
+                    <div className="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ</div>
+                    <div className="font-mono text-xs text-zinc-200 truncate" title={deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}>
+                        {deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

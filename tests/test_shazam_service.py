@@ -56,6 +56,8 @@ def test_shazam_normalizar_resultado_valido():
     assert norm["preview_url"] == "https://example.com/preview.m4a"
     assert norm["apple_music_url"] == "https://music.apple.com/song/12345"
     assert "deadmau5" in norm["spotify_query"]
+    assert "Dance" in norm["comment"]
+    assert "comentario" in norm
 
 def test_shazam_reconocer_archivo_inexistente():
     service = ShazamRecognitionService()
