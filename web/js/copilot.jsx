@@ -64,62 +64,132 @@ function LiveCopilotApp() {
         } catch (e) {}
     };
 
+    const setPlatform = async (plat) => {
+        try {
+            const res = await fetch('/api/copilot/set_platform', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform: plat })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setState(data);
+            }
+        } catch (e) {}
+    };
+
     if (!state) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-[#040407]">
                 <div className="w-12 h-12 rounded-full border-4 border-djcyan-500/20 border-t-djcyan-400 animate-spin"></div>
                 <p className="font-mono text-xs text-djcyan-400 uppercase tracking-widest animate-pulse">
-                    Sincronizando con Serato DJ Pro & BeatWave DSP...
+                    Sincronizando con suites DJ (Serato, Rekordbox, VDJ, Traktor) & BeatWave DSP...
                 </p>
             </div>
         );
     }
 
-    const { deck_1, deck_2, anti_muddy, harmonic, recommendations, local_ip } = state;
+    const { deck_1, deck_2, anti_muddy, harmonic, recommendations, local_ip, platform, platform_mode, platform_name, platform_icon, platform_color, platform_status } = state;
     const companionUrl = `http://${local_ip || '127.0.0.1'}:8000/copilot.html`;
+
+    const platformsList = [
+        { id: 'auto', label: 'Auto', icon: '🔄', color: '#a855f7' },
+        { id: 'serato', label: 'Serato', icon: '💿', color: '#06b6d4' },
+        { id: 'rekordbox', label: 'Rekordbox', icon: '🎛️', color: '#3b82f6' },
+        { id: 'virtualdj', label: 'VirtualDJ', icon: '🎧', color: '#f97316' },
+        { id: 'traktor', label: 'Traktor', icon: '⚡', color: '#eab308' }
+    ];
+
+    const isLive = state.source && state.source.endsWith('_LIVE');
+    const isStandby = state.source && state.source.endsWith('_STANDBY');
 
     return (
         <div className="flex flex-col min-h-screen p-3 sm:p-5 lg:p-6 select-none bg-[#040407] text-gray-200">
             {/* BARRA SUPERIOR DE CABINA HUD */}
-            <header className="flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6">
-                <div className="flex items-center gap-3">
+            <header className="flex flex-col md:flex-row md:items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex items-center gap-2">
-                        <span className={`w-3 h-3 rounded-full ${state.source === 'SERATO_LIVE' ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'}`}></span>
+                        <span className={`w-3.5 h-3.5 rounded-full ${
+                            isLive 
+                            ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' 
+                            : isStandby 
+                            ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
+                            : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
+                        }`}></span>
                         <h1 className="font-syne font-black text-lg sm:text-2xl text-white tracking-wider uppercase">
                             BEATWAVE <span className="text-djcyan-400">COPILOT</span>
                         </h1>
                     </div>
-                    <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[11px] text-zinc-300">
-                        {state.source === 'SERATO_LIVE' ? 'SERATO LINK ACTIVO' : 'MODO SIMULACIÓN'}
-                    </span>
-                    <span className="hidden lg:inline-block font-mono text-[11px] text-zinc-500">
+
+                    {/* BADGE DEL SOFTWARE ACTIVO */}
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-xs">
+                        <span>{platform_icon || '🎛️'}</span>
+                        <strong style={{ color: platform_color || '#06b6d4' }}>{platform_name || 'DJ LINK'}</strong>
+                        <span className="text-zinc-600">|</span>
+                        <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-blue-400' : 'text-amber-400 font-bold'}>
+                            {platform_status || (isLive ? 'LIVE' : 'STANDBY')}
+                        </span>
+                    </div>
+
+                    <span className="hidden xl:inline-block font-mono text-[11px] text-zinc-500">
                         LATENCIA: <span className="text-emerald-400 font-bold">{latency}ms</span>
                     </span>
                 </div>
 
-                {/* RELOJ & BOTONES DE CONTROL */}
-                <div className="flex items-center gap-2 sm:gap-3">
+                {/* SELECTOR DE PLATAFORMA & CONTROLES */}
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-between md:justify-end">
+                    {/* SELECTOR DE PLATAFORMA MULTI-DJ */}
+                    <div className="flex items-center p-1 bg-zinc-950/90 rounded-xl border border-zinc-800/90 shadow-inner">
+                        {platformsList.map(p => {
+                            const isSelected = (platform_mode === p.id) || (platform_mode === 'auto' && p.id === 'auto');
+                            return (
+                                <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => setPlatform(p.id)}
+                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+                                        isSelected 
+                                        ? 'bg-zinc-800 text-white shadow-md border border-zinc-600'
+                                        : 'text-zinc-400 hover:text-zinc-200'
+                                    }`}
+                                    style={isSelected ? { color: p.color, borderColor: `${p.color}66` } : {}}
+                                    title={`Conectar con ${p.label}`}
+                                >
+                                    <span className="text-xs">{p.icon}</span>
+                                    <span className="hidden sm:inline text-[11px]">{p.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* RELOJ CABINA */}
                     <div className="font-mono text-sm sm:text-base font-bold text-white bg-zinc-900/90 px-3 py-1 rounded-xl border border-zinc-800 shadow-inner">
                         {clock || state.last_updated}
                     </div>
+
+                    {/* BOTÓN MODO SIMULACIÓN */}
                     <button
                         onClick={toggleSimulation}
-                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-mono font-bold uppercase transition-all cursor-pointer border ${
+                        className={`px-2.5 sm:px-3 py-1 rounded-xl text-xs font-mono font-bold uppercase transition-all cursor-pointer border ${
                             state.source === 'SIMULATION_MODE'
                             ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
                             : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border-zinc-700/60'
                         }`}
-                        title="Alternar entre lectura real de Serato o simulación de pistas"
+                        title="Alternar entre lectura real del software DJ o simulación de pistas"
                     >
                         🧪 {state.source === 'SIMULATION_MODE' ? 'Simulando' : 'Simular'}
                     </button>
+
+                    {/* BOTÓN CONECTAR IPAD */}
                     <button
                         onClick={() => setQrModalOpen(true)}
-                        className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-mono font-bold text-djcyan-400 bg-djcyan-950/40 hover:bg-djcyan-900/50 border border-djcyan-500/40 uppercase transition-all cursor-pointer shadow-sm"
+                        className="px-2.5 sm:px-3 py-1 rounded-xl text-xs font-mono font-bold text-djcyan-400 bg-djcyan-950/40 hover:bg-djcyan-900/50 border border-djcyan-500/40 uppercase transition-all cursor-pointer shadow-sm"
                         title="Mostrar enlace y código QR para conectar iPad o móvil en cabina"
                     >
-                        📱 Conectar iPad
+                        📱 iPad
                     </button>
+
+                    {/* BOTÓN PANTALLA COMPLETA */}
                     <button
                         onClick={toggleFullscreen}
                         className="p-1.5 sm:p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/60 cursor-pointer transition-all"
@@ -161,116 +231,129 @@ function LiveCopilotApp() {
                                 </p>
                             </div>
                         </div>
-                        <span className={`self-start md:self-auto px-3 py-1 rounded-full text-xs font-mono font-black uppercase tracking-wider shrink-0 ${
-                            anti_muddy.status === 'danger' ? 'bg-red-600 text-white' : anti_muddy.status === 'warning' ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-black'
-                        }`}>
-                            {anti_muddy.tag}
-                        </span>
+
+                        {/* ACCIÓN RECOMENDADA INMEDIATA */}
+                        <div className="px-3.5 py-1.5 rounded-xl bg-black/60 border border-zinc-700/60 font-mono text-xs flex items-center gap-2 self-start md:self-auto">
+                            <span className="text-zinc-500 uppercase tracking-wider">ACCIÓN:</span>
+                            <span className="text-white font-bold">{anti_muddy.action}</span>
+                        </div>
                     </div>
 
-                    <div className="mt-3 pt-3 border-t border-zinc-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
-                        <div className="flex items-center gap-2 text-zinc-300">
-                            <span className="text-djcyan-400 font-bold">👉 ACCIÓN TÁCTICA:</span>
-                            <span>{anti_muddy.action}</span>
+                    {/* CRUCE ARMÓNICO CAMELOT & ENERGÍA */}
+                    <div className="pt-3 mt-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                            <span className="text-zinc-400">Transición Armónica:</span>
+                            <span 
+                                className="px-2 py-0.5 rounded-lg font-bold text-black uppercase text-[10px]"
+                                style={{ backgroundColor: harmonic.color || '#06b6d4' }}
+                            >
+                                {harmonic.badge}
+                            </span>
+                            <span className="text-zinc-300 font-sans">{harmonic.label}</span>
                         </div>
-                        <div className="flex items-center gap-3 text-zinc-400">
-                            <span>CAMELOT: <strong style={{ color: harmonic.color }}>{harmonic.badge}</strong></span>
-                            <span>Δ LUFS: <strong className="text-white">{state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta} dB</strong></span>
+
+                        {/* DELTA DE ENERGÍA LUFS & TEMPO */}
+                        <div className="flex items-center gap-4 text-zinc-400">
+                            <div>
+                                Δ LUFS: <strong className={Math.abs(state.lufs_delta) > 3 ? 'text-amber-400' : 'text-emerald-400'}>
+                                    {state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta} dB
+                                </strong>
+                            </div>
+                            <div>
+                                Δ BPM: <strong className="text-white">
+                                    {state.bpm_delta > 0 ? `+${state.bpm_delta}` : state.bpm_delta} ({state.bpm_pct > 0 ? `+${state.bpm_pct}` : state.bpm_pct}%)
+                                </strong>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* PRÓXIMAS 3 PISTAS SUGERIDAS DESDE LA LIBRERÍA */}
+            {/* SECCIÓN DE RECOMENDACIONES TÁCTICAS INMEDIATAS */}
             <section className="mt-auto">
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-syne font-bold text-xs sm:text-sm text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                        <span>💡 PRÓXIMAS PISTAS SUGERIDAS (RESCATE & PROGRESIÓN)</span>
-                    </h3>
-                    <span className="text-[11px] font-mono text-zinc-500">Filtrado por Rueda Camelot & Anti-Muddy</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-base">🎯</span>
+                        <h3 className="font-syne font-black text-xs sm:text-sm uppercase tracking-wider text-zinc-300">
+                            Sugerencias Tácticas Compatibles (Anti-Muddy & Camelot)
+                        </h3>
+                    </div>
+                    <span className="text-[11px] font-mono text-zinc-500">
+                        FILTRADAS DE TU BIBLIOTECA AUDITADA
+                    </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-                    {recommendations.map((rec, idx) => (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {recommendations && recommendations.map(rec => (
                         <div 
-                            key={rec.id || idx}
-                            className="p-3.5 rounded-2xl bg-[#090912] border border-zinc-800/80 hover:border-djcyan-500/50 transition-all shadow-md group relative overflow-hidden"
+                            key={rec.id}
+                            className="p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 hover:border-djcyan-500/50 hover:bg-zinc-900/60 transition-all flex flex-col justify-between group"
                         >
                             <div className="flex items-start justify-between gap-2 mb-2">
-                                <div className="flex items-center gap-2">
-                                    <span 
-                                        className="w-8 h-8 rounded-xl flex items-center justify-center font-orbitron font-black text-xs text-black shadow-md shrink-0"
-                                        style={{ backgroundColor: rec.camelot_color }}
-                                    >
-                                        {rec.camelot}
-                                    </span>
-                                    <div>
-                                        <h4 className="font-syne font-bold text-sm text-white group-hover:text-djcyan-300 transition-colors line-clamp-1">
-                                            {rec.title}
-                                        </h4>
-                                        <p className="text-xs text-zinc-400 line-clamp-1 font-mono">
-                                            {rec.artist}
-                                        </p>
+                                <div className="min-w-0">
+                                    <div className="font-syne font-bold text-sm text-white group-hover:text-djcyan-400 transition-colors truncate">
+                                        {rec.title}
+                                    </div>
+                                    <div className="font-syne text-xs text-zinc-400 truncate">
+                                        {rec.artist}
                                     </div>
                                 </div>
-                                <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-[10px] font-mono font-bold text-zinc-300 uppercase shrink-0">
-                                    {rec.bpm} BPM
-                                </span>
+                                <div 
+                                    className="px-2 py-0.5 rounded-lg font-orbitron font-bold text-xs text-black shrink-0"
+                                    style={{ backgroundColor: rec.camelot_color }}
+                                >
+                                    {rec.camelot}
+                                </div>
                             </div>
 
-                            <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 mt-2 pt-2 border-t border-zinc-800/60">
-                                <span className="text-djcyan-400 font-semibold">{rec.strategy}</span>
-                                <span className="text-zinc-500">Sub: {rec.low_ratio}%</span>
-                            </div>
-                            <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2">
+                            <div className="text-[11px] text-zinc-400 font-mono mb-2 line-clamp-2">
                                 {rec.reason}
-                            </p>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-500">
+                                <span>{rec.bpm} BPM</span>
+                                <span className="text-djcyan-400 font-bold uppercase">{rec.strategy}</span>
+                                <span>{rec.lufs} dB</span>
+                            </div>
                         </div>
                     ))}
                 </div>
             </section>
 
-            {/* MODAL QR PARA CONECTAR IPAD / TABLET */}
+            {/* MODAL QR PARA CONEXIÓN IPAD */}
             {qrModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                    <div className="p-6 max-w-md w-full bg-[#0a0a14] rounded-3xl border border-djcyan-500/40 shadow-[0_0_40px_rgba(6,182,212,0.3)]">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <span className="text-2xl">📱</span>
-                                <h3 className="font-syne font-black text-lg text-white">CONECTAR IPAD / TABLET</h3>
-                            </div>
-                            <button
-                                onClick={() => setQrModalOpen(false)}
-                                className="p-1 rounded-xl text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 cursor-pointer"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <p className="text-xs text-zinc-300 mb-4 leading-relaxed">
-                            Conecta tu iPad o teléfono a la misma red Wi-Fi de cabina y entra a este enlace:
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+                    <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center">
+                        <button
+                            onClick={() => setQrModalOpen(false)}
+                            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center border border-zinc-800 transition-colors"
+                        >
+                            ✕
+                        </button>
+                        <h3 className="font-syne font-black text-xl text-white mb-1 uppercase tracking-wide">
+                            Conectar iPad en Cabina
+                        </h3>
+                        <p className="text-xs text-zinc-400 font-mono mb-4">
+                            Escanea con la cámara de tu tablet o móvil estando conectado al mismo Wi-Fi:
                         </p>
-
-                        <div className="p-3 bg-black rounded-2xl border border-zinc-800 font-mono text-center text-sm font-bold text-djcyan-400 break-all select-all mb-4">
-                            {companionUrl}
-                        </div>
-
-                        <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl w-48 h-48 mx-auto mb-4 shadow-xl">
+                        <div className="p-3 bg-white rounded-2xl shadow-lg mb-4">
                             <img 
                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(companionUrl)}`} 
-                                alt="Código QR para iPad"
-                                className="w-40 h-40 object-contain"
+                                alt="Código QR iPad"
+                                className="w-44 h-44 object-contain"
                             />
                         </div>
-
+                        <div className="w-full p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 font-mono text-xs text-djcyan-400 font-bold break-all select-all mb-4">
+                            {companionUrl}
+                        </div>
                         <button
                             onClick={() => {
                                 navigator.clipboard.writeText(companionUrl);
-                                alert("Enlace copiado al portapapeles: " + companionUrl);
+                                setQrModalOpen(false);
                             }}
-                            className="w-full py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-lg hover:brightness-110 active:scale-98 transition-all cursor-pointer"
+                            className="w-full py-2.5 rounded-xl bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono text-xs font-bold uppercase transition-all shadow-md cursor-pointer"
                         >
-                            📋 Copiar Enlace Directo
+                            Copiar Enlace Directo
                         </button>
                     </div>
                 </div>
@@ -279,21 +362,26 @@ function LiveCopilotApp() {
     );
 }
 
+// Subcomponente de Tarjeta de Deck A/B
 function DeckCard({ deck, side, isMaster }) {
+    if (!deck) return null;
+
     return (
-        <div className={`p-4 sm:p-5 rounded-3xl border transition-all relative overflow-hidden ${
+        <div className={`p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden ${
             isMaster 
             ? 'bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]' 
             : 'bg-[#07070f] border-zinc-800 hover:border-zinc-700'
         }`}>
-            {/* ENCABEZADO DECK */}
+            {/* CABECERA DEL DECK */}
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                    <span className="font-orbitron font-black text-sm sm:text-base text-zinc-400">
-                        DECK {deck.deck_num || side}
+                    <span className="font-orbitron font-black text-base sm:text-lg text-zinc-400">
+                        DECK {side}
                     </span>
                     <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black uppercase tracking-wider ${
-                        isMaster ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300'
+                        isMaster 
+                        ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' 
+                        : 'bg-zinc-800 text-zinc-300'
                     }`}>
                         {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
                     </span>

@@ -729,6 +729,35 @@ def api_copilot_status():
     import json
     return json.dumps(copilot_service.get_live_state())
 
+@bottle.route('/api/copilot/platforms', method=['GET', 'OPTIONS'])
+def api_copilot_platforms():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    return json.dumps({
+        "platform_mode": copilot_service.platform_mode,
+        "active_platform": copilot_service.detect_active_platform(),
+        "platforms": copilot_service.get_available_platforms()
+    })
+
+@bottle.route('/api/copilot/set_platform', method=['POST', 'OPTIONS'])
+def api_copilot_set_platform():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    data = bottle.request.json or {}
+    platform = data.get('platform', 'auto')
+    new_state = copilot_service.set_platform(platform)
+    import json
+    return json.dumps(new_state)
+
 @bottle.route('/api/copilot/toggle_simulation', method=['POST', 'OPTIONS'])
 def api_copilot_toggle_simulation():
     bottle.response.set_header("Access-Control-Allow-Origin", "*")
@@ -754,6 +783,9 @@ def api_copilot_info():
     return json.dumps({
         "local_ip": ip,
         "companion_url": f"http://{ip}:8000/copilot.html",
+        "active_platform": copilot_service.detect_active_platform(),
+        "platform_mode": copilot_service.platform_mode,
+        "platforms": copilot_service.get_available_platforms(),
         "serato_detected": os.path.exists(copilot_service.serato_db_path),
         "serato_db_path": copilot_service.serato_db_path,
         "simulation_mode": copilot_service.simulation_mode
@@ -770,6 +802,18 @@ def eel_copilot_get_state():
     return copilot_service.get_live_state()
 
 @eel.expose
+def eel_copilot_get_platforms():
+    return {
+        "platform_mode": copilot_service.platform_mode,
+        "active_platform": copilot_service.detect_active_platform(),
+        "platforms": copilot_service.get_available_platforms()
+    }
+
+@eel.expose
+def eel_copilot_set_platform(platform):
+    return copilot_service.set_platform(platform)
+
+@eel.expose
 def eel_copilot_toggle_simulation():
     copilot_service.simulation_mode = not copilot_service.simulation_mode
     return copilot_service.get_live_state()
@@ -780,6 +824,9 @@ def eel_copilot_get_info():
     return {
         "local_ip": ip,
         "companion_url": f"http://{ip}:8000/copilot.html",
+        "active_platform": copilot_service.detect_active_platform(),
+        "platform_mode": copilot_service.platform_mode,
+        "platforms": copilot_service.get_available_platforms(),
         "serato_detected": os.path.exists(copilot_service.serato_db_path),
         "simulation_mode": copilot_service.simulation_mode
     }

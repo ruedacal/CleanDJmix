@@ -16947,42 +16947,107 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
         } catch (e) {}
     };
 
+    const setPlatform = async (plat) => {
+        try {
+            const res = await fetch('/api/copilot/set_platform', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform: plat })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setState(data);
+            }
+        } catch (e) {}
+    };
+
     if (!state) {
         return (
             <div className="flex flex-col items-center justify-center w-full h-full gap-4 bg-[#040407]">
                 <div className="w-12 h-12 rounded-full border-4 border-djcyan-500/20 border-t-djcyan-400 animate-spin"></div>
                 <p className="font-mono text-xs text-djcyan-400 uppercase tracking-widest animate-pulse">
-                    Sincronizando con Serato DJ Pro & BeatWave DSP...
+                    Sincronizando con suites DJ (Serato, Rekordbox, VDJ, Traktor) & BeatWave DSP...
                 </p>
             </div>
         );
     }
 
     const { deck_1, deck_2, anti_muddy, harmonic, recommendations } = state;
+    const isLive = state.source && state.source.endsWith('_LIVE');
+    const isStandby = state.source && state.source.endsWith('_STANDBY');
+
+    const platformsList = [
+        { id: 'auto', label: 'Auto', icon: '🔄', color: '#a855f7' },
+        { id: 'serato', label: 'Serato', icon: '💿', color: '#06b6d4' },
+        { id: 'rekordbox', label: 'Rekordbox', icon: '🎛️', color: '#3b82f6' },
+        { id: 'virtualdj', label: 'VirtualDJ', icon: '🎧', color: '#f97316' },
+        { id: 'traktor', label: 'Traktor', icon: '⚡', color: '#eab308' }
+    ];
 
     return (
         <div className="flex flex-col w-full h-full p-4 sm:p-6 overflow-y-auto select-none bg-[#040407] text-gray-200">
             {/* Cabecera de la Pantalla Táctica */}
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-800 mb-6">
-                <div className="flex items-center gap-3">
-                    <span className={`w-3.5 h-3.5 rounded-full ${state.source === 'SERATO_LIVE' ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'}`}></span>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-zinc-800 mb-6 gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <span className={`w-3.5 h-3.5 rounded-full ${
+                        isLive 
+                        ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' 
+                        : isStandby
+                        ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
+                        : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
+                    }`}></span>
                     <div>
-                        <h2 className="font-syne font-black text-xl sm:text-2xl text-white tracking-wide uppercase">
-                            MONITOR TÁCTICO <span className="text-djcyan-400">CABINA DJ</span>
-                        </h2>
+                        <div className="flex items-center gap-2">
+                            <h2 className="font-syne font-black text-xl sm:text-2xl text-white tracking-wide uppercase">
+                                MONITOR TÁCTICO <span className="text-djcyan-400">CABINA DJ</span>
+                            </h2>
+                            {/* BADGE DEL SOFTWARE ACTIVO */}
+                            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[11px]">
+                                <span>{state.platform_icon || '🎛️'}</span>
+                                <strong style={{ color: state.platform_color || '#06b6d4' }}>{state.platform_name || 'DJ LINK'}</strong>
+                                <span className="text-zinc-600">|</span>
+                                <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-blue-400' : 'text-amber-400 font-bold'}>
+                                    {state.platform_status || (isLive ? 'LIVE' : 'STANDBY')}
+                                </span>
+                            </div>
+                        </div>
                         <div className="flex items-center gap-2 mt-0.5">
                             <span className="font-mono text-xs text-zinc-400">
-                                {state.source === 'SERATO_LIVE' ? 'SERATO LINK ACTIVO' : 'MODO SIMULACIÓN'}
+                                LATENCIA MOTOR: <strong className="text-emerald-400">{latency}ms</strong>
                             </span>
                             <span className="text-zinc-600">•</span>
-                            <span className="font-mono text-xs text-zinc-400">
-                                LATENCIA: <strong className="text-emerald-400">{latency}ms</strong>
+                            <span className="font-mono text-xs text-zinc-500">
+                                {state.deck_1 && state.deck_1.title ? 'DECKS SINCRONIZADOS' : 'ESPERANDO CARGA'}
                             </span>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap justify-between lg:justify-end">
+                    {/* SELECTOR DE PLATAFORMA MULTI-DJ */}
+                    <div className="flex items-center p-1 bg-zinc-950/90 rounded-xl border border-zinc-800 shadow-inner">
+                        {platformsList.map(p => {
+                            const isSelected = (state.platform_mode === p.id) || (state.platform_mode === 'auto' && p.id === 'auto');
+                            return (
+                                <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => setPlatform(p.id)}
+                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+                                        isSelected 
+                                        ? 'bg-zinc-800 text-white shadow-md border border-zinc-600'
+                                        : 'text-zinc-400 hover:text-zinc-200'
+                                    }`}
+                                    style={isSelected ? { color: p.color, borderColor: `${p.color}66` } : {}}
+                                    title={`Conectar con ${p.label}`}
+                                >
+                                    <span className="text-xs">{p.icon}</span>
+                                    <span className="hidden sm:inline text-[11px]">{p.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
                     <div className="font-mono text-sm sm:text-base font-bold text-white bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800 shadow-inner">
                         {clock || state.last_updated}
                     </div>
@@ -17213,7 +17278,7 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
 // MODAL SELECTOR Y LANZADOR DE BEATWAVE LIVE COPILOT
 // =======================================================
 const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
-    const [copilotInfo, setCopilotInfo] = useState({ local_ip: '127.0.0.1', companion_url: '/copilot.html', simulation_mode: false });
+    const [copilotInfo, setCopilotInfo] = useState({ local_ip: '127.0.0.1', companion_url: '/copilot.html', simulation_mode: false, platform_mode: 'auto', platforms: [] });
     const [copied, setCopied] = useState(false);
     const [qrShown, setQrShown] = useState(false);
 
@@ -17258,13 +17323,33 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
         } catch (e) {}
     };
 
+    const selectPlatform = async (pId) => {
+        try {
+            const res = await fetch('/api/copilot/set_platform', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform: pId })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCopilotInfo(prev => ({
+                    ...prev,
+                    platform_mode: pId,
+                    active_platform: data.platform
+                }));
+            }
+        } catch (e) {}
+    };
+
     const companionUrl = copilotInfo.companion_url || `${window.location.protocol}//${copilotInfo.local_ip || '127.0.0.1'}:8000/copilot.html`;
+
+    const activePlatObj = (copilotInfo.platforms || []).find(p => p.id === copilotInfo.active_platform) || { name: 'Suite DJ', icon: '🎛️' };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-            <div className="relative w-full max-w-2xl bg-[#090913] border border-red-500/40 rounded-3xl p-6 sm:p-7 shadow-[0_0_50px_rgba(239,68,68,0.25)] flex flex-col gap-6">
+            <div className="relative w-full max-w-2xl bg-[#090913] border border-red-500/40 rounded-3xl p-6 sm:p-7 shadow-[0_0_50px_rgba(239,68,68,0.25)] flex flex-col gap-5">
                 {/* Cabecera */}
-                <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
                     <div className="flex items-center gap-3">
                         <span className="w-3.5 h-3.5 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse"></span>
                         <div>
@@ -17272,7 +17357,7 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                                 BEATWAVE <span className="text-red-400">LIVE COPILOT</span>
                             </h2>
                             <p className="text-xs font-mono text-zinc-400">
-                                Monitor Táctico de Cabina en Tiempo Real (Serato Link & Anti-Muddy DSP)
+                                Monitor Táctico Multi-Plataforma en Tiempo Real (Anti-Muddy & Camelot DSP)
                             </p>
                         </div>
                     </div>
@@ -17283,6 +17368,55 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                     >
                         ✕
                     </button>
+                </div>
+
+                {/* SELECTOR DE PLATAFORMA DE CABINA */}
+                <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-[#0e0e1a] border border-zinc-800">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                        <span className="text-zinc-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                            <span>🎛️</span> Software de Cabina:
+                        </span>
+                        <span className="text-zinc-500 text-[11px]">
+                            Selecciona tu suite o deja en Auto
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        {[
+                            { id: 'auto', label: 'Auto (Detectar)', icon: '🔄', color: '#a855f7' },
+                            { id: 'serato', label: 'Serato DJ Pro', icon: '💿', color: '#06b6d4' },
+                            { id: 'rekordbox', label: 'Rekordbox', icon: '🎛️', color: '#3b82f6' },
+                            { id: 'virtualdj', label: 'VirtualDJ Pro', icon: '🎧', color: '#f97316' },
+                            { id: 'traktor', label: 'Traktor Pro', icon: '⚡', color: '#eab308' }
+                        ].map(p => {
+                            const isSelected = (copilotInfo.platform_mode === p.id) || (!copilotInfo.platform_mode && p.id === 'auto');
+                            const platData = (copilotInfo.platforms || []).find(x => x.id === p.id);
+                            const isDetected = platData ? platData.detected : (p.id === 'auto');
+                            return (
+                                <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => selectPlatform(p.id)}
+                                    className={`p-2.5 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer text-center ${
+                                        isSelected
+                                        ? 'bg-zinc-800/90 shadow-md border-zinc-500'
+                                        : 'bg-black/40 border-zinc-800/80 hover:border-zinc-700'
+                                    }`}
+                                    style={isSelected ? { borderColor: `${p.color}aa`, boxShadow: `0 0 15px ${p.color}33` } : {}}
+                                >
+                                    <span className="text-xl">{p.icon}</span>
+                                    <span className="font-syne font-bold text-xs text-white" style={isSelected ? { color: p.color } : {}}>
+                                        {p.label}
+                                    </span>
+                                    <span className="font-mono text-[10px] flex items-center gap-1">
+                                        <span className={`w-1.5 h-1.5 rounded-full ${isDetected ? 'bg-emerald-400' : 'bg-zinc-600'}`}></span>
+                                        <span className={isDetected ? 'text-zinc-400' : 'text-zinc-600'}>
+                                            {p.id === 'auto' ? 'Auto Link' : isDetected ? 'Detectado' : 'Standby'}
+                                        </span>
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 {/* 3 Modos de Visualización en Cabina */}
@@ -17386,11 +17520,11 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-800/80 text-xs font-mono">
                     <div className="flex items-center gap-2 text-zinc-400">
                         <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                        <span>Motor Serato SQLite: <strong className="text-white">Detectado & Conectado</strong></span>
+                        <span>Motor Activo: <strong className="text-white">{activePlatObj.icon} {activePlatObj.name}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-zinc-500">¿Sin Serato activo ahora?</span>
+                        <span className="text-zinc-500">¿Sin software activo ahora?</span>
                         <button
                             type="button"
                             onClick={toggleSimulation}

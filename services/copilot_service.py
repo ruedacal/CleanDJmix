@@ -3,14 +3,21 @@ import sys
 import sqlite3
 import time
 import socket
+import re
+import subprocess
+import xml.etree.ElementTree as ET
 from typing import Dict, List, Any, Optional
 
 class CopilotService:
     """
-    Servicio de Copiloto en Tiempo Real para Cabina DJ (BeatWave Live Copilot).
-    Monitorea en tiempo real las pistas cargadas y reproducidas en Serato DJ Pro
-    a través de su base de datos local 'master.sqlite' (modo solo lectura),
-    analiza el cruce espectral y armónico con BeatWave DSP (Anti-Muddy DSP)
+    Servicio Universal de Copiloto en Tiempo Real para Cabina DJ (BeatWave Live Copilot).
+    Soporta ingesta en tiempo real de 4 plataformas DJ líderes:
+    - Serato DJ Pro (master.sqlite en modo solo lectura)
+    - Pioneer Rekordbox (rekordbox.xml / history playlists / database)
+    - VirtualDJ Pro (History M3U/M3U8 logs & database.xml)
+    - Native Instruments Traktor Pro (Traktor NML XML history logs)
+    
+    Analiza el cruce espectral y armónico con BeatWave DSP (Anti-Muddy DSP)
     y genera alertas tácticas de mezcla y recomendaciones inmediatas.
     """
 
@@ -52,13 +59,59 @@ class CopilotService:
         "9B": "#f43f5e", "10B": "#fb923c", "11B": "#facc15", "12B": "#a3e635"
     }
 
+    PLATFORM_SPECS = {
+        "serato": {
+            "id": "serato",
+            "name": "Serato DJ Pro",
+            "short_name": "Serato",
+            "icon": "💿",
+            "brand_color": "#06b6d4",
+            "badge_class": "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
+        },
+        "rekordbox": {
+            "id": "rekordbox",
+            "name": "Pioneer Rekordbox",
+            "short_name": "Rekordbox",
+            "icon": "🎛️",
+            "brand_color": "#3b82f6",
+            "badge_class": "bg-blue-500/20 text-blue-300 border-blue-500/50"
+        },
+        "virtualdj": {
+            "id": "virtualdj",
+            "name": "VirtualDJ Pro",
+            "short_name": "VirtualDJ",
+            "icon": "🎧",
+            "brand_color": "#f97316",
+            "badge_class": "bg-orange-500/20 text-orange-300 border-orange-500/50"
+        },
+        "traktor": {
+            "id": "traktor",
+            "name": "Native Instruments Traktor",
+            "short_name": "Traktor",
+            "icon": "⚡",
+            "brand_color": "#eab308",
+            "badge_class": "bg-amber-500/20 text-amber-300 border-amber-500/50"
+        }
+    }
+
     def __init__(self, serato_db_path: Optional[str] = None, audit_cache_path: str = "./data/audit_cache.db"):
         self.serato_db_path = serato_db_path or self._detect_serato_db_path()
+        self.virtualdj_dir = self._detect_virtualdj_dir()
+        self.rekordbox_dir = self._detect_rekordbox_dir()
+        self.traktor_dir = self._detect_traktor_dir()
         self.audit_cache_path = audit_cache_path
+        
+        # 'auto' | 'serato' | 'rekordbox' | 'virtualdj' | 'traktor'
+        self.platform_mode = "auto"
         self.simulation_mode = False
         self._cached_state: Dict[str, Any] = {}
-        self._last_check_time = 0.0
+        self._last_process_check = 0.0
+        self._cached_running_process = ""
         self._sim_index = 0
+
+    # =========================================================================
+    # DETECCIÓN DE RUTAS DE SOFTWARE
+    # =========================================================================
 
     def _detect_serato_db_path(self) -> str:
         """Localiza la base de datos de Serato DJ Pro en macOS o variable de entorno."""
@@ -70,7 +123,6 @@ class CopilotService:
         if os.path.exists(default_mac):
             return default_mac
         
-        # Búsqueda en rutas alternativas
         alt_paths = [
             os.path.expanduser("~/Music/_Serato_/master.sqlite"),
             os.path.expanduser("~/Library/Application Support/Serato/master.sqlite")
@@ -79,6 +131,155 @@ class CopilotService:
             if os.path.exists(p):
                 return p
         return default_mac
+
+    def _detect_virtualdj_dir(self) -> str:
+        """Localiza el directorio principal de VirtualDJ."""
+        env_path = os.getenv("VIRTUALDJ_PATH")
+        if env_path and os.path.exists(env_path):
+            return env_path
+        for p in [
+            os.path.expanduser("~/Library/Application Support/VirtualDJ"),
+            os.path.expanduser("~/Documents/VirtualDJ")
+        ]:
+            if os.path.exists(p):
+                return p
+        return os.path.expanduser("~/Library/Application Support/VirtualDJ")
+
+    def _detect_rekordbox_dir(self) -> str:
+        """Localiza el directorio de datos o base de Pioneer Rekordbox."""
+        env_path = os.getenv("REKORDBOX_PATH")
+        if env_path and os.path.exists(env_path):
+            return env_path
+        for p in [
+            os.path.expanduser("~/Library/Pioneer/rekordbox"),
+            os.path.expanduser("~/Library/Application Support/Pioneer/rekordbox6"),
+            os.path.expanduser("~/Documents/rekordbox")
+        ]:
+            if os.path.exists(p):
+                return p
+        return os.path.expanduser("~/Library/Pioneer/rekordbox")
+
+    def _detect_traktor_dir(self) -> str:
+        """Localiza el directorio de Native Instruments Traktor."""
+        env_path = os.getenv("TRAKTOR_PATH")
+        if env_path and os.path.exists(env_path):
+            return env_path
+        for p in [
+            os.path.expanduser("~/Documents/Native Instruments/Traktor Pro 4"),
+            os.path.expanduser("~/Documents/Native Instruments/Traktor Pro 3"),
+            os.path.expanduser("~/Documents/Native Instruments/Traktor 2"),
+            os.path.expanduser("~/Library/Application Support/Native Instruments/Traktor")
+        ]:
+            if os.path.exists(p):
+                return p
+        return os.path.expanduser("~/Documents/Native Instruments/Traktor Pro 3")
+
+    def _is_platform_installed(self, platform_id: str) -> bool:
+        """Verifica si el software DJ seleccionado está instalado en el sistema."""
+        if platform_id == "serato":
+            return bool(self.serato_db_path and os.path.exists(self.serato_db_path))
+        elif platform_id == "virtualdj":
+            return bool(self.virtualdj_dir and os.path.exists(self.virtualdj_dir))
+        elif platform_id == "rekordbox":
+            return bool(self.rekordbox_dir and os.path.exists(self.rekordbox_dir))
+        elif platform_id == "traktor":
+            return bool(self.traktor_dir and os.path.exists(self.traktor_dir))
+        return False
+
+    def _get_running_dj_process(self) -> Optional[str]:
+        """Detecta si alguna de las suites DJ se encuentra en ejecución en macOS (cacheado 2s)."""
+        now = time.time()
+        if now - self._last_process_check < 2.0:
+            return self._cached_running_process or None
+        
+        self._last_process_check = now
+        self._cached_running_process = ""
+        try:
+            out = subprocess.check_output(['ps', '-A', '-o', 'comm='], stderr=subprocess.DEVNULL).decode('utf-8', errors='ignore').lower()
+            if "serato" in out:
+                self._cached_running_process = "serato"
+            elif "rekordbox" in out:
+                self._cached_running_process = "rekordbox"
+            elif "virtualdj" in out:
+                self._cached_running_process = "virtualdj"
+            elif "traktor" in out:
+                self._cached_running_process = "traktor"
+        except Exception:
+            pass
+        return self._cached_running_process or None
+
+    def detect_active_platform(self) -> str:
+        """
+        Determina la plataforma activa en modo 'auto':
+        1. Si un proceso DJ está activo en memoria, lo prioriza.
+        2. Si no, compara el mtime de las bases de datos / logs recientes.
+        3. Fallback al primer software instalado disponible o 'serato'.
+        """
+        if self.platform_mode != "auto":
+            return self.platform_mode
+
+        running = self._get_running_dj_process()
+        if running:
+            return running
+
+        # Comparación de marcas temporales de modificación
+        best_platform = "serato"
+        best_mtime = 0.0
+
+        # Serato
+        if os.path.exists(self.serato_db_path):
+            mt = os.path.getmtime(self.serato_db_path)
+            if mt > best_mtime:
+                best_mtime = mt
+                best_platform = "serato"
+
+        # VirtualDJ (revisar History o database.xml)
+        vdj_db = os.path.join(self.virtualdj_dir, "database.xml")
+        if os.path.exists(vdj_db):
+            mt = os.path.getmtime(vdj_db)
+            if mt > best_mtime:
+                best_mtime = mt
+                best_platform = "virtualdj"
+
+        # Rekordbox
+        rb_db = os.path.join(self.rekordbox_dir, "master.db")
+        if os.path.exists(rb_db):
+            mt = os.path.getmtime(rb_db)
+            if mt > best_mtime:
+                best_mtime = mt
+                best_platform = "rekordbox"
+
+        return best_platform
+
+    def set_platform(self, mode: str) -> Dict[str, Any]:
+        """Cambia el modo de plataforma ('auto', 'serato', 'rekordbox', 'virtualdj', 'traktor')."""
+        valid_modes = ["auto", "serato", "rekordbox", "virtualdj", "traktor"]
+        if mode in valid_modes:
+            self.platform_mode = mode
+        return self.get_live_state()
+
+    def get_available_platforms(self) -> List[Dict[str, Any]]:
+        """Devuelve el listado de plataformas soportadas con su estado de detección."""
+        active = self.detect_active_platform()
+        platforms = []
+        for pid, spec in self.PLATFORM_SPECS.items():
+            detected = self._is_platform_installed(pid)
+            platforms.append({
+                "id": pid,
+                "name": spec["name"],
+                "short_name": spec["short_name"],
+                "icon": spec["icon"],
+                "brand_color": spec["brand_color"],
+                "badge_class": spec["badge_class"],
+                "detected": detected,
+                "is_active": (active == pid),
+                "is_selected": (self.platform_mode == pid or (self.platform_mode == "auto" and active == pid))
+            })
+        return platforms
+
+    # =========================================================================
+    # UTILIDADES DE AUDIO & HARMONIC DSP
+    # =========================================================================
 
     def get_local_ip(self) -> str:
         """Obtiene la dirección IP local de la máquina para conectar iPads/tablets."""
@@ -139,8 +340,12 @@ class CopilotService:
             pass
         return default_dsp
 
+    # =========================================================================
+    # INGESTA ESPECÍFICA POR PLATAFORMA
+    # =========================================================================
+
     def _query_serato_history(self) -> List[Dict[str, Any]]:
-        """Lee de forma ultrarrápida las últimas pistas reproducidas desde Serato master.sqlite."""
+        """Lee las últimas pistas reproducidas desde Serato master.sqlite."""
         if not self.serato_db_path or not os.path.exists(self.serato_db_path):
             return []
 
@@ -174,6 +379,308 @@ class CopilotService:
         except Exception:
             pass
         return entries
+
+    def _query_virtualdj_history(self) -> List[Dict[str, Any]]:
+        """Lee el historial reciente de VirtualDJ a través de History/*.m3u o database.xml."""
+        if not self.virtualdj_dir or not os.path.exists(self.virtualdj_dir):
+            return []
+
+        entries = []
+        history_dir = os.path.join(self.virtualdj_dir, "History")
+        
+        # 1. Intentar leer el archivo .m3u / .txt de la sesión más reciente en History/
+        if os.path.exists(history_dir):
+            m3u_files = [
+                os.path.join(history_dir, f) for f in os.listdir(history_dir)
+                if f.endswith(('.m3u', '.m3u8', '.txt')) and os.path.isfile(os.path.join(history_dir, f))
+            ]
+            if m3u_files:
+                newest_file = max(m3u_files, key=os.path.getmtime)
+                try:
+                    with open(newest_file, 'r', encoding='utf-8', errors='ignore') as fh:
+                        lines = [line.strip() for line in fh.readlines() if line.strip()]
+                    
+                    cur_deck = "1"
+                    cur_artist = ""
+                    cur_title = ""
+                    for line in lines:
+                        if line.startswith("#EXTVDJ:"):
+                            deck_match = re.search(r'<deck>(\d+)</deck>', line)
+                            if deck_match:
+                                cur_deck = deck_match.group(1)
+                        elif line.startswith("#EXTINF:"):
+                            meta = line.split(",", 1)[-1].strip()
+                            if " - " in meta:
+                                parts = meta.split(" - ", 1)
+                                cur_artist, cur_title = parts[0].strip(), parts[1].strip()
+                            else:
+                                cur_artist, cur_title = "Unknown Artist", meta
+                        elif not line.startswith("#"):
+                            entries.append({
+                                "id": len(entries) + 1,
+                                "deck": cur_deck,
+                                "artist": cur_artist or "Unknown Artist",
+                                "name": cur_title or os.path.basename(line),
+                                "bpm": 130.0,
+                                "raw_key": "",
+                                "camelot": "8A",
+                                "file_path": line,
+                                "start_time": int(time.time()),
+                                "played": True
+                            })
+                            cur_artist = ""
+                            cur_title = ""
+                            cur_deck = "2" if cur_deck == "1" else "1"
+                    
+                    if entries:
+                        entries.reverse() # Más recientes primero
+                        return entries[:15]
+                except Exception:
+                    pass
+
+        # 2. Fallback a database.xml si History no tiene pistas o no está disponible
+        vdj_db = os.path.join(self.virtualdj_dir, "database.xml")
+        if os.path.exists(vdj_db):
+            try:
+                tree = ET.parse(vdj_db)
+                root = tree.getroot()
+                songs = root.findall('Song')
+                
+                # Filtrar canciones con reproducción o las más recientes
+                played_songs = []
+                for s in songs:
+                    infos = s.find('Infos')
+                    play_count = int(infos.get('PlayCount', 0)) if infos is not None else 0
+                    if play_count > 0:
+                        played_songs.append(s)
+                
+                target_songs = played_songs[-15:] if played_songs else songs[:4]
+                target_songs.reverse()
+
+                deck_toggle = "1"
+                for idx, s in enumerate(target_songs):
+                    fp = s.get('FilePath', '')
+                    tags = s.find('Tags')
+                    artist = tags.get('Author', 'Unknown Artist') if tags is not None else 'Unknown Artist'
+                    title = tags.get('Title', os.path.basename(fp)) if tags is not None else os.path.basename(fp)
+                    key = tags.get('Key', '') if tags is not None else ''
+                    
+                    poi = s.find('Poi')
+                    bpm_val = 130.0
+                    if poi is not None and poi.get('Bpm'):
+                        try:
+                            bpm_val = round(float(poi.get('Bpm')), 2)
+                        except Exception:
+                            bpm_val = 130.0
+
+                    entries.append({
+                        "id": idx + 1,
+                        "deck": deck_toggle,
+                        "artist": artist,
+                        "name": title,
+                        "bpm": bpm_val,
+                        "raw_key": key,
+                        "camelot": self.to_camelot(key),
+                        "file_path": fp,
+                        "start_time": int(time.time()) - (idx * 180),
+                        "played": True
+                    })
+                    deck_toggle = "2" if deck_toggle == "1" else "1"
+            except Exception:
+                pass
+
+        return entries
+
+    def _query_traktor_history(self) -> List[Dict[str, Any]]:
+        """Lee el archivo .nml más reciente del historial de Traktor Pro."""
+        if not self.traktor_dir or not os.path.exists(self.traktor_dir):
+            return []
+
+        entries = []
+        history_dir = os.path.join(self.traktor_dir, "History")
+        search_dirs = [history_dir, self.traktor_dir]
+        
+        nml_files = []
+        for d in search_dirs:
+            if os.path.exists(d):
+                nml_files.extend([
+                    os.path.join(d, f) for f in os.listdir(d)
+                    if f.endswith('.nml') and os.path.isfile(os.path.join(d, f))
+                ])
+
+        if not nml_files:
+            return []
+
+        newest_nml = max(nml_files, key=os.path.getmtime)
+        try:
+            tree = ET.parse(newest_nml)
+            root = tree.getroot()
+            collection = root.find('COLLECTION')
+            if collection is None:
+                return []
+
+            tracks_dict = {}
+            for entry in collection.findall('ENTRY'):
+                artist = entry.get('ARTIST', 'Unknown Artist')
+                title = entry.get('TITLE', 'Unknown Title')
+                info = entry.find('INFO')
+                raw_key = info.get('KEY', '') if info is not None else ''
+                tempo = entry.find('TEMPO')
+                bpm_val = 130.0
+                if tempo is not None and tempo.get('BPM'):
+                    try:
+                        bpm_val = round(float(tempo.get('BPM')), 2)
+                    except Exception:
+                        bpm_val = 130.0
+
+                loc = entry.find('LOCATION')
+                fp = ""
+                if loc is not None:
+                    fp = os.path.join(loc.get('DIR', ''), loc.get('FILE', '')).replace('/:', '/')
+
+                full_key = f"{artist} - {title}".lower()
+                tracks_dict[full_key] = {
+                    "artist": artist,
+                    "title": title,
+                    "bpm": bpm_val,
+                    "raw_key": raw_key,
+                    "camelot": self.to_camelot(raw_key),
+                    "file_path": fp
+                }
+
+            # Parsear el orden de reproducción si hay nodo PLAYLIST
+            deck_toggle = "1"
+            playlists_node = root.find('PLAYLISTS')
+            parsed_entries = []
+            if playlists_node is not None:
+                for pl_entry in playlists_node.findall('.//ENTRY'):
+                    d_attr = pl_entry.get('DECK', '')
+                    deck_num = "1" if d_attr in ("A", "1") else "2" if d_attr in ("B", "2") else deck_toggle
+                    pkey = pl_entry.find('PRIMARYKEY')
+                    if pkey is not None and pkey.get('KEY'):
+                        raw_pkey = pkey.get('KEY', '')
+                        filename = os.path.basename(raw_pkey.replace('/:', '/'))
+                        # Buscar coincidencia
+                        matched = None
+                        for k, v in tracks_dict.items():
+                            if filename.lower() in v['file_path'].lower() or filename.lower() in k:
+                                matched = v
+                                break
+                        if matched:
+                            parsed_entries.append({
+                                "id": len(parsed_entries) + 1,
+                                "deck": deck_num,
+                                "artist": matched["artist"],
+                                "name": matched["title"],
+                                "bpm": matched["bpm"],
+                                "raw_key": matched["raw_key"],
+                                "camelot": matched["camelot"],
+                                "file_path": matched["file_path"],
+                                "start_time": int(time.time()),
+                                "played": True
+                            })
+                            deck_toggle = "2" if deck_toggle == "1" else "1"
+
+            if parsed_entries:
+                parsed_entries.reverse()
+                return parsed_entries[:15]
+
+            # Si no hubo playlist específica, devolver las de la colección
+            for idx, (k, t) in enumerate(list(tracks_dict.items())[:15]):
+                entries.append({
+                    "id": idx + 1,
+                    "deck": "1" if idx % 2 == 0 else "2",
+                    "artist": t["artist"],
+                    "name": t["title"],
+                    "bpm": t["bpm"],
+                    "raw_key": t["raw_key"],
+                    "camelot": t["camelot"],
+                    "file_path": t["file_path"],
+                    "start_time": int(time.time()),
+                    "played": True
+                })
+        except Exception:
+            pass
+
+        return entries
+
+    def _query_rekordbox_history(self) -> List[Dict[str, Any]]:
+        """Lee el historial o biblioteca exportada de Rekordbox (rekordbox.xml o history playlists)."""
+        entries = []
+        possible_xmls = [
+            os.path.join(self.rekordbox_dir, "rekordbox.xml"),
+            os.path.expanduser("~/Documents/rekordbox/rekordbox.xml"),
+            os.path.expanduser("~/Music/_DJ MUSIC_/rekordbox.xml")
+        ]
+
+        found_xml = None
+        for px in possible_xmls:
+            if os.path.exists(px):
+                found_xml = px
+                break
+
+        if not found_xml:
+            return []
+
+        try:
+            tree = ET.parse(found_xml)
+            root = tree.getroot()
+            collection = root.find('COLLECTION')
+            if collection is None:
+                return []
+
+            tracks_by_id = {}
+            for tr in collection.findall('TRACK'):
+                tid = tr.get('TrackID')
+                bpm_val = 130.0
+                try:
+                    bpm_val = round(float(tr.get('AverageBpm', 130.0)), 2)
+                except Exception:
+                    bpm_val = 130.0
+
+                tonality = tr.get('Tonality', '')
+                tracks_by_id[tid] = {
+                    "name": tr.get('Name', 'Unknown Title'),
+                    "artist": tr.get('Artist', 'Unknown Artist'),
+                    "bpm": bpm_val,
+                    "raw_key": tonality,
+                    "camelot": self.to_camelot(tonality),
+                    "file_path": tr.get('Location', '').replace('file://localhost', '')
+                }
+
+            # Buscar playlists de historial
+            history_nodes = root.findall('.//NODE[@Type="1"]')
+            history_tracks = []
+            for hnode in reversed(history_nodes):
+                for tk in hnode.findall('TRACK'):
+                    kid = tk.get('Key')
+                    if kid in tracks_by_id:
+                        history_tracks.append(tracks_by_id[kid])
+                if len(history_tracks) >= 2:
+                    break
+
+            target_list = history_tracks if history_tracks else list(tracks_by_id.values())[:6]
+            for idx, t in enumerate(target_list[:15]):
+                entries.append({
+                    "id": idx + 1,
+                    "deck": "1" if idx % 2 == 0 else "2",
+                    "artist": t["artist"],
+                    "name": t["name"],
+                    "bpm": t["bpm"],
+                    "raw_key": t["raw_key"],
+                    "camelot": t["camelot"],
+                    "file_path": t["file_path"],
+                    "start_time": int(time.time()) - (idx * 150),
+                    "played": True
+                })
+        except Exception:
+            pass
+
+        return entries
+
+    # =========================================================================
+    # REGLAS ANTI-MUDDY & COMPATIBILIDAD ARMÓNICA
+    # =========================================================================
 
     def _calculate_anti_muddy_guard(self, deck_a: Dict[str, Any], deck_b: Dict[str, Any]) -> Dict[str, Any]:
         """Calcula el riesgo de colisión de graves y saturación espectral (Anti-Muddy DSP)."""
@@ -232,7 +739,6 @@ class CopilotService:
         num_a, mode_a = int(key_a[:-1]), key_a[-1]
         num_b, mode_b = int(key_b[:-1]), key_b[-1]
 
-        # Salto de energía +1 compás horario
         up_num = 1 if num_a == 12 else num_a + 1
         down_num = 12 if num_a == 1 else num_a - 1
 
@@ -284,7 +790,6 @@ class CopilotService:
         rec_same = f"{num}{mode}"
         rec_up = f"{up_num}{mode}"
 
-        # Catálogo de pistas tácticas recomendadas (priorizando nombres auditados o arquetipos de club)
         candidates = [
             {
                 "id": "rec_1",
@@ -329,8 +834,12 @@ class CopilotService:
 
         return candidates
 
-    def get_simulation_state(self) -> Dict[str, Any]:
-        """Genera un estado dinámico simulado para pruebas de cabina cuando Serato no está activo."""
+    # =========================================================================
+    # ESTADO SIMULADO Y CONSOLIDADO
+    # =========================================================================
+
+    def get_simulation_state(self, platform_override: Optional[str] = None) -> Dict[str, Any]:
+        """Genera un estado dinámico simulado para pruebas de cabina."""
         sim_decks = [
             (
                 {"artist": "Mauro Picotto", "name": "Komodo (Megavoices Claxixx Mix)", "bpm": 137.68, "raw_key": "Bm", "file": "Mauro Picotto - Komodo.flac"},
@@ -399,9 +908,21 @@ class CopilotService:
         bpm_delta = round(deck_2["bpm"] - deck_1["bpm"], 2)
         bpm_pct = round(((deck_2["bpm"] - deck_1["bpm"]) / deck_1["bpm"]) * 100, 2)
 
+        active_plat = platform_override or self.detect_active_platform()
+        spec = self.PLATFORM_SPECS.get(active_plat, self.PLATFORM_SPECS["serato"])
+
         return {
             "connected": True,
             "source": "SIMULATION_MODE",
+            "platform": active_plat,
+            "platform_mode": self.platform_mode,
+            "platform_name": spec["name"],
+            "platform_icon": spec["icon"],
+            "platform_color": spec["brand_color"],
+            "platform_status": "SIMULACIÓN",
+            "detected_platforms": {
+                pid: self._is_platform_installed(pid) for pid in self.PLATFORM_SPECS
+            },
             "deck_1": deck_1,
             "deck_2": deck_2,
             "anti_muddy": anti_muddy,
@@ -416,36 +937,51 @@ class CopilotService:
         }
 
     def get_live_state(self) -> Dict[str, Any]:
-        """Obtiene el estado táctico consolidado de la cabina en tiempo real."""
-        if self.simulation_mode:
-            return self.get_simulation_state()
+        """Obtiene el estado táctico consolidado de la cabina adaptado al software DJ seleccionado."""
+        active_plat = self.detect_active_platform()
+        spec = self.PLATFORM_SPECS.get(active_plat, self.PLATFORM_SPECS["serato"])
 
-        serato_entries = self._query_serato_history()
-        if not serato_entries:
-            # Si Serato no ha emitido historial aún, retornamos simulación amigable con aviso
-            state = self.get_simulation_state()
-            state["source"] = "SERATO_STANDBY"
-            state["serato_detected"] = os.path.exists(self.serato_db_path)
+        if self.simulation_mode:
+            return self.get_simulation_state(active_plat)
+
+        # Ingesta según la plataforma activa
+        entries = []
+        if active_plat == "serato":
+            entries = self._query_serato_history()
+        elif active_plat == "virtualdj":
+            entries = self._query_virtualdj_history()
+        elif active_plat == "rekordbox":
+            entries = self._query_rekordbox_history()
+        elif active_plat == "traktor":
+            entries = self._query_traktor_history()
+
+        is_installed = self._is_platform_installed(active_plat)
+
+        if not entries:
+            # Standby inteligente con perfil de la plataforma
+            state = self.get_simulation_state(active_plat)
+            state["source"] = f"{active_plat.upper()}_STANDBY"
+            state["platform_status"] = "STANDBY"
+            state["platform_detected"] = is_installed
             return state
 
         # Agrupar las pistas por Deck (1 y 2)
         deck_1_raw = None
         deck_2_raw = None
 
-        for entry in serato_entries:
-            d = entry.get("deck")
-            if d == "1" and deck_1_raw is None:
+        for entry in entries:
+            d = str(entry.get("deck", "1")).strip()
+            if d in ("1", "A") and deck_1_raw is None:
                 deck_1_raw = entry
-            elif d == "2" and deck_2_raw is None:
+            elif d in ("2", "B") and deck_2_raw is None:
                 deck_2_raw = entry
             if deck_1_raw and deck_2_raw:
                 break
 
-        # Si solo hay un deck activo en el log reciente
-        if not deck_1_raw and serato_entries:
-            deck_1_raw = serato_entries[0]
-        if not deck_2_raw and len(serato_entries) > 1:
-            deck_2_raw = serato_entries[1]
+        if not deck_1_raw and entries:
+            deck_1_raw = entries[0]
+        if not deck_2_raw and len(entries) > 1:
+            deck_2_raw = entries[1]
         elif not deck_2_raw:
             deck_2_raw = deck_1_raw
 
@@ -456,7 +992,6 @@ class CopilotService:
         c1 = deck_1_raw.get("camelot") or "8A"
         c2 = deck_2_raw.get("camelot") or "8A"
 
-        # Determinar cuál es el deck Master según hora de inicio
         t1_start = deck_1_raw.get("start_time", 0)
         t2_start = deck_2_raw.get("start_time", 0)
         deck_1_is_master = t1_start >= t2_start
@@ -499,7 +1034,6 @@ class CopilotService:
             "is_audited": dsp_2["is_audited"]
         }
 
-        # Analizar táctica
         master_deck = deck_1 if deck_1_is_master else deck_2
         incoming_deck = deck_2 if deck_1_is_master else deck_1
 
@@ -513,8 +1047,16 @@ class CopilotService:
 
         return {
             "connected": True,
-            "source": "SERATO_LIVE",
-            "serato_detected": True,
+            "source": f"{active_plat.upper()}_LIVE",
+            "platform": active_plat,
+            "platform_mode": self.platform_mode,
+            "platform_name": spec["name"],
+            "platform_icon": spec["icon"],
+            "platform_color": spec["brand_color"],
+            "platform_status": "LIVE",
+            "detected_platforms": {
+                pid: self._is_platform_installed(pid) for pid in self.PLATFORM_SPECS
+            },
             "deck_1": deck_1,
             "deck_2": deck_2,
             "anti_muddy": anti_muddy,
