@@ -9232,12 +9232,12 @@ const SpotifyWorkspace = ({
     };
 
     return (
-        <div className="flex w-full h-full bg-[#09090c] text-gray-300 font-sans select-none overflow-hidden">
-            <div className="flex-1 flex flex-col min-w-0">
-                <div className="p-3.5 border-b border-djzinc-800 bg-[#0c0c10] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shrink-0">
-                    <div className="flex flex-col gap-1.5 flex-1 max-w-2xl w-full">
+        <div className="flex w-full h-full max-w-full bg-[#09090c] text-gray-300 font-sans select-none overflow-x-hidden">
+            <div className="flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden">
+                <div className="p-3.5 border-b border-djzinc-800 bg-[#0c0c10] flex flex-wrap 2xl:flex-nowrap items-center justify-between gap-3 shrink-0 w-full max-w-full">
+                    <div className="flex flex-col gap-1.5 flex-1 min-w-[280px] max-w-2xl w-full">
                         <div className="flex items-center gap-2 w-full">
-                            <div className="flex-1 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded flex items-center overflow-hidden">
+                            <div className="flex-1 min-w-0 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded flex items-center overflow-hidden">
                                 <span className="px-2.5 py-1.5 text-[11px] font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-semibold shrink-0">BÚSQUEDA / SPOTIFY</span>
                                 <input 
                                     type="text" 
@@ -9249,7 +9249,7 @@ const SpotifyWorkspace = ({
                                         }
                                     }}
                                     placeholder="Pega enlace de Spotify o busca por artista, álbum, canción, género..." 
-                                    className="bg-transparent px-3 py-1.5 text-xs text-white placeholder-gray-500 outline-none flex-1 font-mono" 
+                                    className="bg-transparent px-3 py-1.5 text-xs text-white placeholder-gray-500 outline-none flex-1 min-w-0 font-mono" 
                                 />
                                 {spotifyUrl && (
                                     <button
@@ -9306,7 +9306,7 @@ const SpotifyWorkspace = ({
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-1 w-full md:w-auto shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 py-1 w-full 2xl:w-auto shrink-0">
                         {/* Botón de Descarga Seleccionadas en la Barra Superior */}
                         <button 
                             onClick={() => {
@@ -17982,9 +17982,9 @@ const App = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen w-screen bg-djzinc-950 text-gray-300 overflow-hidden font-sans select-none">
+        <div className="flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none">
             {/* TOP NAVIGATION BAR CON MÁXIMA JERARQUÍA VISUAL & CAPSULE DOCK */}
-            <header className="h-16 border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md">
+            <header className="h-16 w-full max-w-full border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md overflow-x-hidden">
                 {/* MOTOR DE DISTORSIÓN FRACTAL VERTICAL ULTRA-BRUTAL: SECUENCIA TECHNO 4/4 (2.0s) */}
                 <svg width="0" height="0" className="absolute pointer-events-none">
                     <defs>
@@ -18174,9 +18174,9 @@ const App = () => {
                         </div>
 
                         {/* RÓTULO BEATWAVE PRO CON DISTORSIÓN VERTICAL SINCRONIZADA */}
-                        <div className="flex flex-col min-w-0">
+                        <div className="flex flex-col min-w-0 shrink-0">
                             <div className="flex items-center gap-2 sm:gap-2.5 leading-none">
-                                <span className={`text-lg sm:text-[23px] tracking-wider uppercase font-black truncate select-none cursor-pointer transition-all duration-300 ${isLogoTechnoActive ? 'anim-soundwave' : 'text-white'}`} style={{ fontFamily: "'Syne', sans-serif" }}>
+                                <span className={`text-lg sm:text-[22px] 2xl:text-[23px] tracking-wider uppercase font-black truncate select-none cursor-pointer transition-all duration-300 ${isLogoTechnoActive ? 'anim-soundwave' : 'text-white'}`} style={{ fontFamily: "'Syne', sans-serif" }}>
                                     BEAT<span className={isLogoTechnoActive ? "anim-wave-bass-pulse" : "text-djcyan-400 font-bold"}>WAVE</span>
                                 </span>
                                 <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-md font-black tracking-widest border border-djcyan-400/80 bg-djcyan-950 text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0">
@@ -18184,11 +18184,11 @@ const App = () => {
                                 </span>
                             </div>
                             <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5">
-                                <span className="hidden sm:flex text-[9.5px] uppercase tracking-[0.26em] font-mono font-bold items-center gap-1.5 text-gray-300">
+                                <span className="hidden sm:flex text-[8.5px] uppercase tracking-wider font-mono font-bold items-center gap-1.5 text-gray-300 whitespace-nowrap">
                                     <span className={`w-1.5 h-1.5 rounded-full bg-djcyan-400 ${isLogoTechnoActive ? 'animate-pulse' : ''}`}></span>
                                     PRECISION AUDIO INTELLIGENCE
                                 </span>
-                                <span className="flex sm:hidden text-[8.5px] uppercase tracking-wider font-mono font-bold items-center gap-1 text-djcyan-400">
+                                <span className="flex sm:hidden text-[8px] uppercase tracking-wider font-mono font-bold items-center gap-1 text-djcyan-400 whitespace-nowrap">
                                     <span className={`w-1 h-1 rounded-full bg-djcyan-400 ${isLogoTechnoActive ? 'animate-pulse' : ''}`}></span>
                                     DJ INTELLIGENCE
                                 </span>
@@ -18198,35 +18198,35 @@ const App = () => {
                 </div>
 
                 {/* CENTRO: BARRA TÁCTICA DE CABINA (LIVE COPILOT + CAPSULE DOCK) */}
-                <div className="hidden xl:flex items-center gap-2.5 shrink-0 mx-auto">
+                <div className="hidden xl:flex items-center justify-center gap-2 2xl:gap-3 flex-1 min-w-0 px-2">
                     {/* BOTÓN LIVE COPILOT PRO DJ */}
                     <button
                         type="button"
                         onClick={() => setCopilotModalOpen(true)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-white shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95 group shrink-0 ${
+                        className={`flex items-center gap-1.5 2xl:gap-2 px-2.5 2xl:px-3 py-1.5 rounded-xl border text-white shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95 group shrink-0 ${
                             activeTab === 'copilot'
                             ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-600 border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.7)]'
                             : 'bg-gradient-to-r from-red-950/80 via-zinc-900 to-zinc-950 border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:border-red-400'
                         }`}
                         title="Abrir BeatWave Live Copilot: Monitor Táctico de Cabina (Serato Link & Anti-Muddy DSP)"
                     >
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse"></span>
-                        <span className="font-mono text-xs font-black uppercase tracking-wider text-red-200 group-hover:text-white">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse shrink-0"></span>
+                        <span className="font-mono text-xs font-black uppercase tracking-wider text-red-200 group-hover:text-white whitespace-nowrap">
                             LIVE COPILOT
                         </span>
-                        <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-red-500/30 text-red-300 border border-red-500/40">
+                        <span className="hidden 2xl:inline-block text-[9px] font-mono px-1 py-0.2 rounded bg-red-500/30 text-red-300 border border-red-500/40">
                             2ms
                         </span>
                     </button>
 
                     {/* CAPSULE DOCK DE PESTAÑAS: SEGMENTACIÓN FÍSICA HARDWARE (CABINA DJ PRO vs. STUDIO LAB & ACADEMIA) */}
-                    <nav className="flex items-center p-1.5 rounded-2xl bg-[#080811]/95 border border-djzinc-800/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-md">
+                    <nav className="flex items-center p-1 2xl:p-1.5 rounded-2xl bg-[#080811]/95 border border-djzinc-800/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
                     {/* BAHÍA 1: CABINA PRO & FLUJO DE MEZCLA */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 2xl:gap-1">
                         <button 
                             type="button"
                             onClick={() => setActiveTab('audit')} 
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'audit' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
@@ -18243,7 +18243,7 @@ const App = () => {
                         <button 
                             type="button"
                             onClick={() => setActiveTab('hotcues')} 
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'hotcues' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
@@ -18255,7 +18255,7 @@ const App = () => {
                         <button 
                             type="button"
                             onClick={() => setActiveTab('setbuilder')} 
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'setbuilder' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
@@ -18267,7 +18267,7 @@ const App = () => {
                         <button 
                             type="button"
                             onClick={() => setActiveTab('spotify')} 
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'spotify' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
@@ -18279,7 +18279,7 @@ const App = () => {
                         <button 
                             type="button"
                             onClick={() => setActiveTab('shazam')} 
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'shazam' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
@@ -18291,7 +18291,7 @@ const App = () => {
                         <button 
                             type="button"
                             onClick={() => setActiveTab('taxonomy')} 
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'taxonomy' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
@@ -18303,16 +18303,16 @@ const App = () => {
                     </div>
 
                     {/* SEPARADOR FÍSICO CON BISEL METÁLICO & INDICADOR DE ENTORNO */}
-                    <div className="flex items-center px-2 select-none" title="Separación de Entorno: Cabina DJ vs. Estudio & Aprendizaje">
+                    <div className="flex items-center px-1.5 2xl:px-2 select-none" title="Separación de Entorno: Cabina DJ vs. Estudio & Aprendizaje">
                         <div className="h-6 w-[1.5px] bg-gradient-to-b from-transparent via-djzinc-600 to-transparent rounded-full"></div>
                     </div>
 
                     {/* BAHÍA 2: STUDIO LAB & ACADEMIA (ESPACIO DE INVESTIGACIÓN Y FORMACIÓN) */}
-                    <div className="flex items-center gap-1 pl-1 pr-1 py-0.5 rounded-xl bg-indigo-950/25 border border-indigo-900/40">
+                    <div className="flex items-center gap-0.5 2xl:gap-1 pl-1 pr-1 py-0.5 rounded-xl bg-indigo-950/25 border border-indigo-900/40">
                         <button 
                             type="button"
                             onClick={() => setActiveTab('trends')} 
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'trends' 
                                 ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_18px_rgba(147,51,234,0.55),inset_0_1px_1px_rgba(255,255,255,0.5)] font-black scale-[1.02]' 
                                 : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60 border border-transparent hover:border-indigo-600/40'
@@ -18321,7 +18321,7 @@ const App = () => {
                         >
                             <Icons.Trends /> 
                             <span>Tendencias</span>
-                            <span className={`px-1 py-0.2 rounded text-[7.5px] font-mono uppercase tracking-widest ${
+                            <span className={`hidden 2xl:inline-block px-1 py-0.2 rounded text-[7.5px] font-mono uppercase tracking-widest ${
                                 activeTab === 'trends' ? 'bg-black/30 text-white font-black' : 'bg-indigo-900/70 text-indigo-300 border border-indigo-700/60'
                             }`}>
                                 LAB
@@ -18330,7 +18330,7 @@ const App = () => {
                         <button 
                             type="button"
                             onClick={() => setActiveTab('knowledge')} 
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'knowledge' 
                                 ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_18px_rgba(147,51,234,0.55),inset_0_1px_1px_rgba(255,255,255,0.5)] font-black scale-[1.02]' 
                                 : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60 border border-transparent hover:border-indigo-600/40'
@@ -18339,7 +18339,7 @@ const App = () => {
                         >
                             <Icons.Knowledge /> 
                             <span>Conocimiento</span>
-                            <span className={`px-1 py-0.2 rounded text-[7.5px] font-mono uppercase tracking-widest ${
+                            <span className={`hidden 2xl:inline-block px-1 py-0.2 rounded text-[7.5px] font-mono uppercase tracking-widest ${
                                 activeTab === 'knowledge' ? 'bg-black/30 text-white font-black' : 'bg-indigo-900/70 text-indigo-300 border border-indigo-700/60'
                             }`}>
                                 EDU
