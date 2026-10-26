@@ -16877,6 +16877,206 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
     );
 };
 
+// =======================================================
+// MODAL SELECTOR Y LANZADOR DE BEATWAVE LIVE COPILOT
+// =======================================================
+const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
+    const [copilotInfo, setCopilotInfo] = useState({ local_ip: '127.0.0.1', companion_url: '/copilot.html', simulation_mode: false });
+    const [copied, setCopied] = useState(false);
+    const [qrShown, setQrShown] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch('/api/copilot/info')
+                .then(r => r.json())
+                .then(data => setCopilotInfo(data))
+                .catch(() => {});
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const launchPopOut = () => {
+        const w = 1380;
+        const h = 880;
+        const left = (window.screen.width - w) / 2;
+        const top = (window.screen.height - h) / 2;
+        window.open(
+            '/copilot.html',
+            'BeatWaveLiveCopilot',
+            `width=${w},height=${h},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes`
+        );
+        onClose();
+    };
+
+    const copyCompanionUrl = () => {
+        const url = copilotInfo.companion_url || (window.location.origin + '/copilot.html');
+        navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+    };
+
+    const toggleSimulation = async () => {
+        try {
+            const res = await fetch('/api/copilot/toggle_simulation', { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                setCopilotInfo(prev => ({ ...prev, simulation_mode: !prev.simulation_mode }));
+            }
+        } catch (e) {}
+    };
+
+    const companionUrl = copilotInfo.companion_url || `${window.location.protocol}//${copilotInfo.local_ip || '127.0.0.1'}:8000/copilot.html`;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+            <div className="relative w-full max-w-2xl bg-[#090913] border border-red-500/40 rounded-3xl p-6 sm:p-7 shadow-[0_0_50px_rgba(239,68,68,0.25)] flex flex-col gap-6">
+                {/* Cabecera */}
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+                    <div className="flex items-center gap-3">
+                        <span className="w-3.5 h-3.5 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse"></span>
+                        <div>
+                            <h2 className="font-syne font-black text-xl sm:text-2xl text-white tracking-wide uppercase">
+                                BEATWAVE <span className="text-red-400">LIVE COPILOT</span>
+                            </h2>
+                            <p className="text-xs font-mono text-zinc-400">
+                                Monitor Táctico de Cabina en Tiempo Real (Serato Link & Anti-Muddy DSP)
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="w-9 h-9 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center border border-zinc-800 transition-colors cursor-pointer"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* 3 Modos de Visualización en Cabina */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    {/* Tarjeta 1: Segundo Monitor / Pop-Out */}
+                    <div 
+                        onClick={launchPopOut}
+                        className="p-4 rounded-2xl bg-[#0e0e1a] border border-zinc-800 hover:border-red-500/70 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all cursor-pointer flex flex-col justify-between group"
+                    >
+                        <div>
+                            <div className="text-2xl mb-2">🖥️</div>
+                            <h3 className="font-syne font-bold text-sm text-white group-hover:text-red-400 transition-colors uppercase">
+                                Segundo Monitor
+                            </h3>
+                            <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                                Ventana flotante limpia para arrastrar a tu pantalla secundaria o proyector con soporte F11.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="mt-4 w-full py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-mono text-[11px] font-black uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                        >
+                            Lanzar Pop-Out ↗
+                        </button>
+                    </div>
+
+                    {/* Tarjeta 2: iPad / Tablet Companion */}
+                    <div 
+                        onClick={() => setQrShown(!qrShown)}
+                        className="p-4 rounded-2xl bg-[#0e0e1a] border border-zinc-800 hover:border-djcyan-500/70 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all cursor-pointer flex flex-col justify-between group"
+                    >
+                        <div>
+                            <div className="text-2xl mb-2">📱</div>
+                            <h3 className="font-syne font-bold text-sm text-white group-hover:text-djcyan-400 transition-colors uppercase">
+                                iPad / Tablet
+                            </h3>
+                            <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                                Abre en el navegador de tu iPad sin cables. Enlace Wi-Fi directo para cabina.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="mt-4 w-full py-2 rounded-xl bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono text-[11px] font-black uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                        >
+                            {qrShown ? 'Ocultar QR' : 'Ver Código QR'}
+                        </button>
+                    </div>
+
+                    {/* Tarjeta 3: Esta Pantalla (In-App) */}
+                    <div 
+                        onClick={onSelectEmbedded}
+                        className="p-4 rounded-2xl bg-[#0e0e1a] border border-zinc-800 hover:border-emerald-500/70 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all cursor-pointer flex flex-col justify-between group"
+                    >
+                        <div>
+                            <div className="text-2xl mb-2">🎛️</div>
+                            <h3 className="font-syne font-bold text-sm text-white group-hover:text-emerald-400 transition-colors uppercase">
+                                Esta Pantalla
+                            </h3>
+                            <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                                Maximiza el HUD en esta misma ventana para preparar el set antes de la actuación.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="mt-4 w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono text-[11px] font-black uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                        >
+                            Ver en la App ➔
+                        </button>
+                    </div>
+                </div>
+
+                {/* Desplegable QR & Enlace */}
+                {qrShown && (
+                    <div className="p-4 rounded-2xl bg-black border border-zinc-800 flex flex-col sm:flex-row items-center gap-4 animate-fadeIn">
+                        <div className="p-2 bg-white rounded-xl shrink-0 shadow-lg">
+                            <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(companionUrl)}`} 
+                                alt="Código QR iPad"
+                                className="w-28 h-28 object-contain"
+                            />
+                        </div>
+                        <div className="flex-1 flex flex-col gap-2 min-w-0">
+                            <div className="text-xs font-mono text-zinc-400">
+                                Dirección local de cabina (misma red Wi-Fi):
+                            </div>
+                            <div className="p-2 rounded-lg bg-zinc-900 border border-zinc-700 font-mono text-xs text-djcyan-400 font-bold break-all select-all">
+                                {companionUrl}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={copyCompanionUrl}
+                                className="self-start px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-mono font-bold text-white transition-all cursor-pointer"
+                            >
+                                {copied ? '✓ ¡Enlace Copiado!' : '📋 Copiar Enlace'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Barra de Estado y Simulación */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-800/80 text-xs font-mono">
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span>Motor Serato SQLite: <strong className="text-white">Detectado & Conectado</strong></span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-zinc-500">¿Sin Serato activo ahora?</span>
+                        <button
+                            type="button"
+                            onClick={toggleSimulation}
+                            className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                                copilotInfo.simulation_mode 
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50' 
+                                : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                            }`}
+                        >
+                            🧪 {copilotInfo.simulation_mode ? 'Simulación Activa' : 'Activar Simulación'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Componente Wrapper Orquestador del Tutorial
 const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = 'launcher' }) => {
     const [viewMode, setViewMode] = useState(initialMode); // 'launcher' | 'teaser' | 'tour'
@@ -16963,6 +17163,7 @@ const App = () => {
     const [tutorialOpen, setTutorialOpen] = useState(false);
     const [tutorialInitialMode, setTutorialInitialMode] = useState('launcher');
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+    const [copilotModalOpen, setCopilotModalOpen] = useState(false);
 
     // Secuencia Techno del Logo: vibraciones en bucle durante 10 segundos, luego estático
     const [isLogoTechnoActive, setIsLogoTechnoActive] = useState(true);
@@ -17528,6 +17729,28 @@ const App = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* LANZADOR BEATWAVE LIVE COPILOT (MONITOR TÁCTICO CABINA) */}
+                    <div className="hidden lg:flex items-center ml-2 xl:ml-4 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setCopilotModalOpen(true)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-white shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95 group shrink-0 ${
+                                activeTab === 'copilot'
+                                ? 'bg-gradient-to-r from-red-600 to-rose-600 border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.7)]'
+                                : 'bg-gradient-to-r from-red-950/80 via-zinc-900 to-zinc-950 border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:border-red-400'
+                            }`}
+                            title="Abrir BeatWave Live Copilot: Monitor Táctico de Cabina (Serato Link & Anti-Muddy DSP)"
+                        >
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse"></span>
+                            <span className="font-mono text-xs font-black uppercase tracking-wider text-red-200 group-hover:text-white">
+                                LIVE COPILOT
+                            </span>
+                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-red-500/30 text-red-300 border border-red-500/40">
+                                2ms
+                            </span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* CAPSULE DOCK DE PESTAÑAS: SEGMENTACIÓN FÍSICA HARDWARE (CABINA DJ PRO vs. STUDIO LAB & ACADEMIA) */}
@@ -17660,6 +17883,17 @@ const App = () => {
                 </nav>
 
                 <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                    {/* Botón Live Copilot Compacto Móvil (< 1280px) */}
+                    <button
+                        type="button"
+                        onClick={() => setCopilotModalOpen(true)}
+                        className="flex xl:hidden items-center gap-1.5 px-2 py-1.5 rounded-xl bg-red-950/70 hover:bg-red-900/90 text-red-300 border border-red-500/50 cursor-pointer shadow-md active:scale-95 shrink-0"
+                        title="Abrir Live Copilot (Cabina)"
+                    >
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <span className="text-[10px] font-mono font-black uppercase text-white">COPILOT</span>
+                    </button>
+
                     {/* Botón Hamburger Móvil (< 1280px) */}
                     <button
                         type="button"
@@ -17849,6 +18083,9 @@ const App = () => {
                 </div>
                 <div style={{ display: activeTab === 'knowledge' ? 'flex' : 'none' }} className="w-full h-full">
                     <KnowledgeWorkspace lang={lang} />
+                </div>
+                <div style={{ display: activeTab === 'copilot' ? 'flex' : 'none' }} className="w-full h-full">
+                    <iframe src="/copilot.html" className="w-full h-full border-0 bg-[#040407]" title="BeatWave Live Copilot" />
                 </div>
             </main>
 
@@ -18056,6 +18293,20 @@ const App = () => {
 
                         {/* Módulos Agrupados Semánticamente en 2 Bahías */}
                         <div className="flex flex-col gap-1 py-3 flex-1 overflow-y-auto">
+                            {/* BOTÓN PRIMARIO LIVE COPILOT */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMobileDrawerOpen(false);
+                                    setCopilotModalOpen(true);
+                                }}
+                                className="flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] border border-red-400/50 mb-2 cursor-pointer hover:brightness-110 active:scale-98 transition-all"
+                            >
+                                <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse shadow-md"></span>
+                                <span className="flex-1">🔴 LIVE COPILOT (CABINA)</span>
+                                <span className="text-[9px] bg-black/40 px-2 py-0.5 rounded text-white font-mono">HUD</span>
+                            </button>
+
                             {/* BLOQUE 1: CABINA PRO & PRODUCCIÓN DJ */}
                             <div className="flex items-center gap-1.5 px-2 mt-1 mb-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
@@ -18198,6 +18449,16 @@ const App = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 initialMode={tutorialInitialMode}
+            />
+
+            {/* MODAL LANZADOR BEATWAVE LIVE COPILOT */}
+            <CopilotLaunchModal 
+                isOpen={copilotModalOpen}
+                onClose={() => setCopilotModalOpen(false)}
+                onSelectEmbedded={() => {
+                    setActiveTab('copilot');
+                    setCopilotModalOpen(false);
+                }}
             />
         </div>
     );

@@ -26,6 +26,7 @@ from services.shazam_service import ShazamRecognitionService
 from services.tag_sanitizer_service import TagSanitizerService
 from services.trends_service import trends_service
 from services.knowledge_service import knowledge_service
+from services.copilot_service import copilot_service
 
 def compilar_frontend_si_necesario():
     jsx_path = os.path.join("web", "js", "app.jsx")
@@ -699,6 +700,76 @@ def api_download_manual_pdf():
     root_dir = os.path.dirname(os.path.abspath(__file__))
     return bottle.static_file(pdf_filename, root=root_dir, download=pdf_filename, mimetype='application/pdf')
 
+# ==========================================
+# RUTAS Y EEL EXPOSURES: BEATWAVE LIVE COPILOT
+# ==========================================
+
+@bottle.route('/api/copilot/status', method=['GET', 'OPTIONS'])
+def api_copilot_status():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    return json.dumps(copilot_service.get_live_state())
+
+@bottle.route('/api/copilot/toggle_simulation', method=['POST', 'OPTIONS'])
+def api_copilot_toggle_simulation():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    copilot_service.simulation_mode = not copilot_service.simulation_mode
+    import json
+    return json.dumps(copilot_service.get_live_state())
+
+@bottle.route('/api/copilot/info', method=['GET', 'OPTIONS'])
+def api_copilot_info():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    ip = copilot_service.get_local_ip()
+    return json.dumps({
+        "local_ip": ip,
+        "companion_url": f"http://{ip}:8000/copilot.html",
+        "serato_detected": os.path.exists(copilot_service.serato_db_path),
+        "serato_db_path": copilot_service.serato_db_path,
+        "simulation_mode": copilot_service.simulation_mode
+    })
+
+@bottle.route('/copilot')
+@bottle.route('/copilot.html')
+def route_copilot_page():
+    root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+    return bottle.static_file("copilot.html", root=root_dir)
+
+@eel.expose
+def eel_copilot_get_state():
+    return copilot_service.get_live_state()
+
+@eel.expose
+def eel_copilot_toggle_simulation():
+    copilot_service.simulation_mode = not copilot_service.simulation_mode
+    return copilot_service.get_live_state()
+
+@eel.expose
+def eel_copilot_get_info():
+    ip = copilot_service.get_local_ip()
+    return {
+        "local_ip": ip,
+        "companion_url": f"http://{ip}:8000/copilot.html",
+        "serato_detected": os.path.exists(copilot_service.serato_db_path),
+        "simulation_mode": copilot_service.simulation_mode
+    }
+
 if __name__ == "__main__":
     try:
         try:
@@ -711,6 +782,7 @@ if __name__ == "__main__":
 
         eel.start(
             "index.html",
+            host="0.0.0.0",
             mode="chrome",
             size=(w, h),
             position=(0, 0),

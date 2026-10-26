@@ -276,4 +276,25 @@ def test_cargar_metadatos_lista_heterogenea_carpetas_y_archivos():
             assert "track_folder.mp3" in nombres
             assert "track_loose.wav" in nombres
 
+def test_api_copilot_status_and_info():
+    import json
+    res_status_raw = main_web.api_copilot_status()
+    res_status = json.loads(res_status_raw)
+    assert "connected" in res_status
+    assert "deck_1" in res_status
+    assert "deck_2" in res_status
+    assert "anti_muddy" in res_status
+
+    res_info_raw = main_web.api_copilot_info()
+    res_info = json.loads(res_info_raw)
+    assert "local_ip" in res_info
+    assert "companion_url" in res_info
+
+def test_eel_copilot_exposures():
+    state = main_web.eel_copilot_get_state()
+    assert state["connected"] is True
+    info = main_web.eel_copilot_get_info()
+    assert "companion_url" in info
+
+
 
