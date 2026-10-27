@@ -79,6 +79,10 @@ const I18N_TRANSLATIONS = {
     danceability: "Bailabilidad",
     mood: "Atm\xF3sfera (Mood)",
     format: "Formato",
+    btn_remove_track: "Quitar pista del an\xE1lisis",
+    btn_remove_selected: "Quitar seleccionadas",
+    btn_clear_all: "Vaciar Lista",
+    th_remove: "Quitar",
     actions: "Acciones",
     cues_summary_title: "8 Hot Cues (Resumen T\xE1ctico)",
     cues_open_studio_btn: "Abrir Estudio Hot Cues \u2192",
@@ -171,6 +175,10 @@ const I18N_TRANSLATIONS = {
     danceability: "Danceability",
     mood: "Atmosphere (Mood)",
     format: "Format",
+    btn_remove_track: "Remove track from analysis",
+    btn_remove_selected: "Remove selected",
+    btn_clear_all: "Clear List",
+    th_remove: "Remove",
     actions: "Actions",
     cues_summary_title: "8 Hot Cues (Tactical Summary)",
     cues_open_studio_btn: "Open in Hot Cues Studio \u2192",
@@ -2943,6 +2951,9 @@ const AuditWorkspace = ({
   onNavigateTab,
   onAddTrackToSet,
   onSendToSpotify,
+  onRemoveTrack,
+  onRemoveMultipleTracks,
+  onClearAllTracks,
   lang = "es",
   t = (k) => k,
   currentFolder = "",
@@ -3011,6 +3022,105 @@ const AuditWorkspace = ({
       });
     }
   }, [isAuditing, batchProgress, batchStatusMsg, onAuditProgressChange]);
+  useEffect(() => {
+    if (!tracks || tracks.length === 0) {
+      setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+    } else {
+      const total = tracks.length;
+      const missing = tracks.filter((t2) => !t2.b || t2.b === "--" || !t2.k || t2.k === "--").length;
+      const missing_title = tracks.filter((t2) => t2.missing_title || !t2.t || t2.t === "Desconocido").length;
+      const missing_artist = tracks.filter((t2) => t2.missing_artist || !t2.a || t2.a === "Artista Desconocido").length;
+      const missing_cover = tracks.filter((t2) => t2.missing_cover || !t2.cover).length;
+      const errors = tracks.filter((x) => Boolean(x.es_fake) || x.format === "FLAC" && String(x.status || "").includes("Fake")).length;
+      const ready = Math.max(0, total - missing);
+      setMetrics((prev) => ({
+        ...prev,
+        total,
+        missing,
+        missing_title,
+        missing_artist,
+        missing_cover,
+        errors,
+        ready
+      }));
+    }
+  }, [tracks]);
+  const handleRemoveSingleTrack = (trackId, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!trackId && trackId !== 0) return;
+    setSelectedAuditIds((prev) => {
+      const next = new Set(prev);
+      next.delete(trackId);
+      return next;
+    });
+    if (onRemoveTrack) {
+      onRemoveTrack(trackId);
+    } else {
+      setTracks((prev) => prev.filter((t2) => String(t2.id) !== String(trackId) && t2.path !== trackId));
+      if (selectedTrack === trackId) {
+        const remaining = tracks.filter((t2) => String(t2.id) !== String(trackId));
+        setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
+      }
+      if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(trackId) || nowPlayingTrack.path === trackId)) {
+        if (audioRef && audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        }
+        if (onPlayTrack) onPlayTrack(null);
+      }
+    }
+    setSaveFeedback(lang === "en" ? "\u2713 Track removed from analysis" : "\u2713 Pista excluida del an\xE1lisis.");
+    setTimeout(() => setSaveFeedback(""), 2500);
+  };
+  const handleRemoveSelectedTracks = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!selectedAuditIds || selectedAuditIds.size === 0) return;
+    const count = selectedAuditIds.size;
+    const idsToRemove = Array.from(selectedAuditIds);
+    const confirmMsg = lang === "en" ? `Remove ${count} selected track(s) from the global analysis?` : `\xBFQuitar las ${count} pistas seleccionadas del an\xE1lisis global?`;
+    if (!window.confirm(confirmMsg)) return;
+    if (onRemoveMultipleTracks) {
+      onRemoveMultipleTracks(idsToRemove);
+    } else {
+      const idSet = new Set(idsToRemove.map((id) => String(id)));
+      setTracks((prev) => prev.filter((t2) => !idSet.has(String(t2.id)) && !idSet.has(String(t2.path))));
+      if (selectedTrack && idSet.has(String(selectedTrack))) {
+        const remaining = tracks.filter((t2) => !idSet.has(String(t2.id)));
+        setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
+      }
+      if (nowPlayingTrack && (idSet.has(String(nowPlayingTrack.id)) || idSet.has(String(nowPlayingTrack.path)))) {
+        if (audioRef && audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        }
+        if (onPlayTrack) onPlayTrack(null);
+      }
+    }
+    setSelectedAuditIds(/* @__PURE__ */ new Set());
+    setSaveFeedback(lang === "en" ? `\u2713 ${count} tracks removed from analysis.` : `\u2713 ${count} pistas eliminadas del an\xE1lisis.`);
+    setTimeout(() => setSaveFeedback(""), 2500);
+  };
+  const handleClearAllTracks = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!tracks || tracks.length === 0) return;
+    const confirmMsg = lang === "en" ? `Empty the analysis list and remove all ${tracks.length} track(s)?` : `\xBFVaciar la lista y eliminar todas las ${tracks.length} pistas del an\xE1lisis?`;
+    if (!window.confirm(confirmMsg)) return;
+    if (onClearAllTracks) {
+      onClearAllTracks();
+    } else {
+      setTracks([]);
+      setSelectedTrack(null);
+      if (audioRef && audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      if (onPlayTrack) onPlayTrack(null);
+    }
+    setSelectedAuditIds(/* @__PURE__ */ new Set());
+    setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+    setSaveFeedback(lang === "en" ? "\u2713 Analysis list emptied." : "\u2713 Lista de an\xE1lisis vaciada.");
+    setTimeout(() => setSaveFeedback(""), 2500);
+  };
   const updateCurrentTrackField = (field, val) => {
     setTracks((prev) => prev.map((t2) => t2.id === currentTrack.id ? { ...t2, [field]: val } : t2));
   };
@@ -3973,6 +4083,16 @@ const AuditWorkspace = ({
       title: "Recargar selecci\xF3n actual"
     },
     "\u{1F504}"
+  ), tracks && tracks.length > 0 && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleClearAllTracks,
+      className: "px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 rounded-lg border border-red-800/40 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono flex items-center gap-1.5",
+      title: "Vaciar la lista y eliminar todas las pistas del an\xE1lisis actual"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_clear_all") || "Vaciar Lista")
   )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full md:w-auto shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm shrink-0" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setBatchModalOpen(true), className: "bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 text-gray-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono shrink-0", title: "Configurar opciones avanzadas de auditor\xEDa por lotes y car\xE1tulas" }, /* @__PURE__ */ React.createElement(Icons.Sliders, null), " ", /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_audit_batch") || "Configurar")), /* @__PURE__ */ React.createElement("button", { onClick: () => handleAuditar(), disabled: isAuditing, className: "bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 disabled:opacity-50 text-black px-4 sm:px-4.5 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-djcyan-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Library, null), " ", isAuditing ? lang === "en" ? "Auditing..." : "Auditando..." : t("btn_execute_audit") || "Auditar Todo")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm shrink-0" }, /* @__PURE__ */ React.createElement("button", { onClick: handleInyectarCaratulasLote, disabled: isInjecting || tracks.length === 0, className: "bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono shrink-0", title: "Detecta o busca car\xE1tulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F5BC}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, t("btn_inject_covers") || "Car\xE1tulas")), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -4006,6 +4126,17 @@ const AuditWorkspace = ({
     /* @__PURE__ */ React.createElement("span", { className: isSearchingSpotifyHD ? "animate-spin" : "" }, isSearchingSpotifyHD ? "\u23F3" : "\u{1F4E5}"),
     /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando..." : "Reemplazos HD"),
     (selectedAuditIds.size > 0 || badQualityTracks.length > 0) && /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-950 text-amber-400 text-[10px] px-1.5 py-0.2 rounded border border-amber-600/50 font-mono" }, selectedAuditIds.size > 0 ? selectedAuditIds.size : badQualityTracks.length)
+  ), selectedAuditIds.size > 0 && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleRemoveSelectedTracks,
+      className: "bg-red-950/80 hover:bg-red-900 text-red-300 hover:text-white border border-red-750 px-2.5 sm:px-3 py-1.5 rounded-lg font-mono font-bold text-xs shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0 animate-fadeIn",
+      title: `Eliminar las ${selectedAuditIds.size} pistas seleccionadas del an\xE1lisis global`
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, t("btn_remove_selected") || "Quitar seleccionadas"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-red-900 text-white text-[10px] px-1.5 py-0.2 rounded font-mono font-bold" }, selectedAuditIds.size)
   )), /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-export-crates", className: "flex items-center bg-[#09090f] p-1 rounded-lg border border-djzinc-800 shadow-inner" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-gray-500 uppercase px-2 hidden lg:inline" }, "Exportar:"), /* @__PURE__ */ React.createElement("button", { onClick: handleExportarXLS, disabled: tracks.length === 0, className: "px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40", title: "Exportar reporte de auditor\xEDa a Excel (.xlsx / .csv)" }, /* @__PURE__ */ React.createElement(Icons.Excel, null), " XLS"), /* @__PURE__ */ React.createElement("button", { onClick: handleExportarSeratoCrates, disabled: tracks.length === 0, className: "px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40", title: "Exportar archivos .crate oficiales a Serato DJ Pro" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4BD}"), " Crates"), /* @__PURE__ */ React.createElement("button", { onClick: handleExportarRekordboxXml, disabled: tracks.length === 0, className: "px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40", title: "Exportar rekordbox.xml est\xE1ndar Pioneer DJ" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB}"), " Rekordbox")), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -4091,6 +4222,15 @@ const AuditWorkspace = ({
     "Ver Solo Malas (",
     badQualityTracks.length,
     ")"
+  ), selectedAuditIds.size > 0 && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: handleRemoveSelectedTracks,
+      className: "px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1.5 border bg-red-950/80 hover:bg-red-900 text-red-300 border-red-750 shadow-sm active:scale-95 shrink-0",
+      title: "Quitar las pistas seleccionadas del an\xE1lisis"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, t("btn_remove_selected") || "Quitar", " (", selectedAuditIds.size, ")")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -4154,7 +4294,7 @@ const AuditWorkspace = ({
       className: "accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded",
       title: "Seleccionar / deseleccionar todas las pistas visibles"
     }
-  ), /* @__PURE__ */ React.createElement("span", { onClick: () => handleSortAudit("id"), className: "cursor-pointer hover:text-white text-[9px] font-mono" }, "#"), renderSortArrowAudit("id"))), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-28 text-center text-djcyan-400" }, t("th_waveform") || "Waveform"), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("title"), className: "py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors" }, t("th_title") || "Archivo / T\xEDtulo", " ", renderSortArrowAudit("title")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("artist"), className: "py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors" }, t("th_artist") || "Artista", " ", renderSortArrowAudit("artist")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("format"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_format") || "Formato", " ", renderSortArrowAudit("format")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("sample_rate_khz"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_khz") || "kHz", " ", renderSortArrowAudit("sample_rate_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("bitrate_kbps"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, t("th_kbps") || "kbps", " ", renderSortArrowAudit("bitrate_kbps")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("calidad"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_quality") || "Calidad", " ", renderSortArrowAudit("calidad")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("perdida_pct"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" }, t("th_loss") || "P\xE9rdida / Compresi\xF3n", " ", renderSortArrowAudit("perdida_pct")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("cutoff_khz"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, t("th_fft") || "Cert. FFT", " ", renderSortArrowAudit("cutoff_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("lufs"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors", title: "Sonoridad integrada LUFS (EBU R128) y pico True Peak (dBFS)" }, "LUFS / Peak ", renderSortArrowAudit("lufs")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("duration"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, t("th_duration") || "Time", " ", renderSortArrowAudit("duration")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("bpm"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, "BPM ", renderSortArrowAudit("bpm")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("key"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, "Key ", renderSortArrowAudit("key")), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-1.5 text-center" }, t("th_cues") || "8 Hot Cues"), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("e"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "\u26A1 Energ\xEDa ", renderSortArrowAudit("e")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("dance"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "\u{1F57A} Dance ", renderSortArrowAudit("dance")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("fase_badge"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "Fase DJ ", renderSortArrowAudit("fase_badge")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("acoustic_role"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400", title: "Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-Muddy" }, "Rol Ac\xFAstico & Anti-Muddy ", renderSortArrowAudit("acoustic_role")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("comment"), className: "py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors" }, "Comentario Pro DJ ", renderSortArrowAudit("comment")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("status"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, t("th_status") || "Estado", " ", renderSortArrowAudit("status"))), /* @__PURE__ */ React.createElement("tr", { className: "bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans" }, /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, filterHeaderSearch || filterHeaderFormat !== "ALL" || filterHeaderQuality !== "ALL" || filterHeaderStatus !== "ALL" || filterHeaderEnergy !== "ALL" || filterHeaderDance !== "ALL" ? /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("span", { onClick: () => handleSortAudit("id"), className: "cursor-pointer hover:text-white text-[9px] font-mono" }, "#"), renderSortArrowAudit("id"))), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-28 text-center text-djcyan-400" }, t("th_waveform") || "Waveform"), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("title"), className: "py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors" }, t("th_title") || "Archivo / T\xEDtulo", " ", renderSortArrowAudit("title")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("artist"), className: "py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors" }, t("th_artist") || "Artista", " ", renderSortArrowAudit("artist")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("format"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_format") || "Formato", " ", renderSortArrowAudit("format")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("sample_rate_khz"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_khz") || "kHz", " ", renderSortArrowAudit("sample_rate_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("bitrate_kbps"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, t("th_kbps") || "kbps", " ", renderSortArrowAudit("bitrate_kbps")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("calidad"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_quality") || "Calidad", " ", renderSortArrowAudit("calidad")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("perdida_pct"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" }, t("th_loss") || "P\xE9rdida / Compresi\xF3n", " ", renderSortArrowAudit("perdida_pct")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("cutoff_khz"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, t("th_fft") || "Cert. FFT", " ", renderSortArrowAudit("cutoff_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("lufs"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors", title: "Sonoridad integrada LUFS (EBU R128) y pico True Peak (dBFS)" }, "LUFS / Peak ", renderSortArrowAudit("lufs")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("duration"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, t("th_duration") || "Time", " ", renderSortArrowAudit("duration")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("bpm"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, "BPM ", renderSortArrowAudit("bpm")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("key"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, "Key ", renderSortArrowAudit("key")), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-1.5 text-center" }, t("th_cues") || "8 Hot Cues"), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("e"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "\u26A1 Energ\xEDa ", renderSortArrowAudit("e")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("dance"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "\u{1F57A} Dance ", renderSortArrowAudit("dance")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("fase_badge"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "Fase DJ ", renderSortArrowAudit("fase_badge")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("acoustic_role"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400", title: "Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-Muddy" }, "Rol Ac\xFAstico & Anti-Muddy ", renderSortArrowAudit("acoustic_role")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("comment"), className: "py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors" }, "Comentario Pro DJ ", renderSortArrowAudit("comment")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("status"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, t("th_status") || "Estado", " ", renderSortArrowAudit("status")), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-14 text-red-400/80 font-mono", title: "Quitar pista del an\xE1lisis global" }, t("th_remove") || "Quitar")), /* @__PURE__ */ React.createElement("tr", { className: "bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans" }, /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, filterHeaderSearch || filterHeaderFormat !== "ALL" || filterHeaderQuality !== "ALL" || filterHeaderStatus !== "ALL" || filterHeaderEnergy !== "ALL" || filterHeaderDance !== "ALL" ? /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => {
@@ -4248,7 +4388,7 @@ const AuditWorkspace = ({
     /* @__PURE__ */ React.createElement("option", { value: "LOSSLESS" }, "Lossless"),
     /* @__PURE__ */ React.createElement("option", { value: "MP3" }, "MP3"),
     /* @__PURE__ */ React.createElement("option", { value: "FAKE" }, "FLAC Fake")
-  )))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: "20", className: "py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4" }, 'No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".')), tracksFiltrados.map((row) => {
+  )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: "21", className: "py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4" }, 'No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".')), tracksFiltrados.map((row) => {
     const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
     const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
     const isFake = Boolean(row.es_fake || row.format === "FLAC" && String(row.status || "").includes("Fake"));
@@ -4378,7 +4518,16 @@ const AuditWorkspace = ({
         return /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/80", title: "Frecuencias complementarias: Mezcla limpia garantizada" }, "\u{1F7E2} Anti-Muddy Compl.");
       }
       return null;
-    })())), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 max-w-[260px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 text-xs shrink-0" }, "\u{1F4AC}"), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] font-mono text-gray-200 truncate", title: row.comment || `[${row.b || "--"} BPM | ${row.k || "--"}] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b` }, row.comment || `[${row.b || "--"} BPM | ${row.k || "--"}] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b`))), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, isFake ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse", title: "\xA1Alerta! Falso FLAC con corte lossy previo" }, "FLAC FAKE") : String(row.status || "").includes("VERDADERO") || String(row.status || "").includes("True") || String(row.status || "").includes("HI-RES") ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800" }, row.status) : row.format === "MP3" || String(row.status || "").includes("MP3") ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-cyan-300 border border-djzinc-700" }, row.status) : /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono bg-djzinc-850 text-gray-300 border border-djzinc-750" }, row.status)));
+    })())), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 max-w-[260px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 text-xs shrink-0" }, "\u{1F4AC}"), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] font-mono text-gray-200 truncate", title: row.comment || `[${row.b || "--"} BPM | ${row.k || "--"}] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b` }, row.comment || `[${row.b || "--"} BPM | ${row.k || "--"}] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b`))), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, isFake ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse", title: "\xA1Alerta! Falso FLAC con corte lossy previo" }, "FLAC FAKE") : String(row.status || "").includes("VERDADERO") || String(row.status || "").includes("True") || String(row.status || "").includes("HI-RES") ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800" }, row.status) : row.format === "MP3" || String(row.status || "").includes("MP3") ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-cyan-300 border border-djzinc-700" }, row.status) : /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono bg-djzinc-850 text-gray-300 border border-djzinc-750" }, row.status)), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: (e) => handleRemoveSingleTrack(row.id, e),
+        className: "p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-800/60 cursor-pointer transition-all active:scale-90",
+        title: "Quitar pista del an\xE1lisis (eliminar de la lista global)"
+      },
+      /* @__PURE__ */ React.createElement("span", { className: "text-xs" }, "\u{1F5D1}\uFE0F")
+    )));
   }))), /* @__PURE__ */ React.createElement("div", { className: "block md:hidden p-2 space-y-2.5 pb-36" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 font-mono text-xs" }, "No hay pistas cargadas en esta vista. Selecciona una carpeta o audita pistas sueltas."), tracksFiltrados.map((row) => {
     const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
     const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
@@ -4456,6 +4605,15 @@ const AuditWorkspace = ({
           className: "px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950/80 text-djcyan-300 border border-djcyan-800/60 cursor-pointer"
         },
         "\u2795 Set"
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: (e) => handleRemoveSingleTrack(row.id, e),
+          className: "p-1 rounded text-[11px] font-mono bg-red-950/60 hover:bg-red-900 text-red-400 hover:text-white border border-red-800/60 cursor-pointer transition-colors active:scale-90",
+          title: "Quitar del an\xE1lisis"
+        },
+        "\u{1F5D1}\uFE0F"
       ))),
       isSuperFlacCandidate && /* @__PURE__ */ React.createElement("div", { className: "mt-2 pt-2 border-t border-djzinc-800/60 flex items-center justify-between gap-2", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-amber-400" }, "Calidad ", row.calidad || "Mejorable"), /* @__PURE__ */ React.createElement(
         "button",
@@ -4481,7 +4639,7 @@ const AuditWorkspace = ({
         /* @__PURE__ */ React.createElement("span", null, "SuperFLAC Spotify HD")
       ))
     );
-  })))), sidebarOpen && /* @__PURE__ */ React.createElement("aside", { key: currentTrack ? currentTrack.id : "none", className: "w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Gear, null), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs uppercase tracking-wider text-gray-200" }, "Inspector DJ Granular")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded" }, "Track #", currentTrack.id || "--"), /* @__PURE__ */ React.createElement(
+  })))), sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && /* @__PURE__ */ React.createElement("aside", { key: currentTrack ? currentTrack.id : "none", className: "w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Gear, null), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs uppercase tracking-wider text-gray-200" }, "Inspector DJ Granular")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded" }, "Track #", currentTrack.id || "--"), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setSidebarOpen(false),
@@ -4751,7 +4909,22 @@ const AuditWorkspace = ({
       rows: "2",
       className: "w-full bg-djzinc-950 border border-djzinc-700 rounded p-2 text-xs text-gray-200 outline-none font-mono resize-none"
     }
-  ))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800" }, /* @__PURE__ */ React.createElement("button", { onClick: handleGuardarTrack, className: "w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Aplicar Cambios a este Track"))), /* @__PURE__ */ React.createElement(BatchAuditorModal, { isOpen: batchModalOpen, onClose: () => setBatchModalOpen(false), onRunBatch: async (opts) => {
+  ))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("button", { onClick: handleGuardarTrack, className: "w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Aplicar Cambios a este Track"), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: (e) => {
+        if (currentTrack && (currentTrack.id || currentTrack.id === 0)) {
+          handleRemoveSingleTrack(currentTrack.id, e);
+          setSidebarOpen(false);
+        }
+      },
+      className: "w-full py-1.5 bg-red-950/50 hover:bg-red-900/80 text-red-300 hover:text-white rounded border border-red-800/60 font-mono text-xs font-semibold cursor-pointer transition-colors flex items-center justify-center gap-1.5",
+      title: "Quitar este archivo de la lista y del an\xE1lisis global"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, "Quitar este track del an\xE1lisis")
+  ))), /* @__PURE__ */ React.createElement(BatchAuditorModal, { isOpen: batchModalOpen, onClose: () => setBatchModalOpen(false), onRunBatch: async (opts) => {
     setBatchModalOpen(false);
     const target = resolveAuditTargets();
     if (!target || Array.isArray(target) && target.length === 0) {
@@ -4990,6 +5163,8 @@ const HotCuesWorkspace = ({
   onTogglePlay,
   playProgress = 0,
   onNavigateTab,
+  onRemoveTrack,
+  onRemoveMultipleTracks,
   lang = "es",
   t = (k) => k,
   currentFolder = "/Users/admin/Music/mi musica",
@@ -4997,6 +5172,18 @@ const HotCuesWorkspace = ({
   audioRef
 }) => {
   const currentTrack = tracks && tracks.length > 0 ? tracks.find((t2) => String(t2.id) === String(selectedTrack)) || tracks[0] : null;
+  const handleRemoveTrackFromHotCues = (trackId, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (onRemoveTrack) {
+      onRemoveTrack(trackId);
+    } else if (setTracks) {
+      setTracks((prev) => prev.filter((t2) => String(t2.id) !== String(trackId)));
+    }
+    if (String(selectedTrack) === String(trackId)) {
+      const remaining = tracks.filter((t2) => String(t2.id) !== String(trackId));
+      setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
+    }
+  };
   const [zoom, setZoom] = useState(4);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showBeatgrid, setShowBeatgrid] = useState(true);
@@ -5616,7 +5803,7 @@ const HotCuesWorkspace = ({
       /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 font-mono text-gray-300" }, trk.bpm || trk.b || "--"),
       /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 font-mono text-djcyan-400" }, trk.key || trk.k || "--"),
       /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 text-gray-400" }, trk.duration || "--"),
-      /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 text-right" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
@@ -5629,7 +5816,16 @@ const HotCuesWorkspace = ({
           className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-mono font-bold rounded cursor-pointer shadow active:scale-95"
         },
         "\u25B6 Cargar"
-      ))
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: (e) => handleRemoveTrackFromHotCues(trk.id, e),
+          className: "p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-950/50 border border-transparent hover:border-red-800/60 text-[11px] cursor-pointer transition-colors active:scale-90",
+          title: "Quitar pista del an\xE1lisis global"
+        },
+        "\u{1F5D1}\uFE0F"
+      )))
     );
   }))))), currentTrack ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex flex-col p-4 overflow-y-auto custom-scrollbar gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-b from-[#181826] via-[#101018] to-[#0a0a0f] border-2 border-djzinc-800 rounded-2xl p-4 shadow-2xl relative" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-djcyan-500/40 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "flex md:hidden items-center justify-between p-1 bg-[#090912] border border-djzinc-800 rounded-xl mb-4 gap-1" }, /* @__PURE__ */ React.createElement(
     "button",
@@ -6087,6 +6283,15 @@ const HotCuesWorkspace = ({
         className: "px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-bold rounded cursor-pointer shadow active:scale-95"
       },
       "\u25B6 Cargar"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: (e) => handleRemoveTrackFromHotCues(trk.id, e),
+        className: "p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-950/50 border border-transparent hover:border-red-800/60 text-[11px] cursor-pointer transition-colors active:scale-90",
+        title: "Quitar pista del an\xE1lisis global"
+      },
+      "\u{1F5D1}\uFE0F"
     ))
   )))) : null, /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner mt-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" }), "8 Hot Cues Performance \u2022 C\xF3digo de Colores Oficial"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, "Pads 1-4 (Superior) \u2022 Pads 5-8 (Inferior)")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-4 gap-2.5" }, NV2_COLORS.slice(0, 8).map((cue, idx) => {
     const padNum = idx + 1;
@@ -7059,7 +7264,8 @@ const TaxonomyWorkspace = ({
   onSelectTrackForCues,
   onSendToSpotify,
   onAddTrackToSpotify,
-  onAddTracksToSpotify
+  onAddTracksToSpotify,
+  onRemoveTrack
 }) => {
   const [activeSubView, setActiveSubView] = useState("search");
   const [searchScope, setSearchScope] = useState("all");
@@ -8290,7 +8496,22 @@ const TaxonomyWorkspace = ({
             title: "Buscar en Spotify Ingest"
           },
           "\u{1F50D} Spotify"
-        ) : /* @__PURE__ */ React.createElement("button", { onClick: () => handleAsignarACrateIndividual(trk), className: "px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer", title: "Rutar a Crate" }, "\u{1F4C1} Crate")))
+        ) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: () => handleAsignarACrateIndividual(trk), className: "px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer", title: "Rutar a Crate" }, "\u{1F4C1} Crate"), isLocal && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: (e) => {
+              e.stopPropagation();
+              if (onRemoveTrack) {
+                onRemoveTrack(trk.id);
+              } else if (onTracksUpdated) {
+                onTracksUpdated((prev) => prev.filter((t) => String(t.id) !== String(trk.id)));
+              }
+            },
+            className: "p-1 rounded bg-red-950/40 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90",
+            title: "Quitar pista del an\xE1lisis global"
+          },
+          "\u{1F5D1}\uFE0F"
+        ))))
       );
     }))))
   ) : (
@@ -8402,7 +8623,7 @@ const TaxonomyWorkspace = ({
           },
           /* @__PURE__ */ React.createElement("span", null, "\u{1F4E5}"),
           /* @__PURE__ */ React.createElement("span", null, "SuperFLAC")
-        ) : /* @__PURE__ */ React.createElement(
+        ) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
@@ -8411,7 +8632,23 @@ const TaxonomyWorkspace = ({
             title: "Rutar f\xEDsicamente a Serato Crate"
           },
           /* @__PURE__ */ React.createElement("span", null, "\u{1F4C1}")
-        ))
+        ), isLocal && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              if (onRemoveTrack) {
+                onRemoveTrack(trk.id);
+              } else if (onTracksUpdated) {
+                onTracksUpdated((prev) => prev.filter((t) => String(t.id) !== String(trk.id)));
+              }
+            },
+            className: "py-1 px-1.5 rounded bg-red-950/50 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90",
+            title: "Quitar pista del an\xE1lisis global"
+          },
+          /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F")
+        )))
       );
     }))
   ), /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-gradient-to-r from-djzinc-900 via-djzinc-900 to-djcyan-950/40 border border-djzinc-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-2xl" }, "\u{1F310}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white uppercase tracking-wider font-mono" }, "\xBFBuscas canciones que no est\xE1n en tu biblioteca local?"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, "Explora y descarga temas por taxonom\xEDa en SuperFLAC / Spotify Ingest con car\xE1tula en alta definici\xF3n y tags autom\xE1ticos."))), /* @__PURE__ */ React.createElement(
@@ -12833,6 +13070,52 @@ const App = () => {
       window.eel.cue_audio_mac(trk.path || trk.f || "")();
     }
   };
+  const handleRemoveTrackGlobal = (trackId) => {
+    if (!trackId && trackId !== 0) return;
+    setAuditTracks((prev) => prev.filter((t2) => String(t2.id) !== String(trackId) && t2.path !== trackId));
+    setSelectedTrack((prev) => String(prev) === String(trackId) ? null : prev);
+    if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(trackId) || nowPlayingTrack.path === trackId)) {
+      stopSynthPreview();
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+      setIsPlaying(false);
+      setNowPlayingTrack(null);
+      window.__bwCurrentTrack = null;
+    }
+  };
+  const handleRemoveMultipleTracksGlobal = (trackIds) => {
+    if (!Array.isArray(trackIds) || trackIds.length === 0) return;
+    const idSet = new Set(trackIds.map((id) => String(id)));
+    setAuditTracks((prev) => prev.filter((t2) => !idSet.has(String(t2.id)) && !idSet.has(String(t2.path))));
+    setSelectedTrack((prev) => idSet.has(String(prev)) ? null : prev);
+    if (nowPlayingTrack && (idSet.has(String(nowPlayingTrack.id)) || idSet.has(String(nowPlayingTrack.path)))) {
+      stopSynthPreview();
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+      setIsPlaying(false);
+      setNowPlayingTrack(null);
+      window.__bwCurrentTrack = null;
+    }
+  };
+  const handleClearAllTracksGlobal = () => {
+    setAuditTracks([]);
+    setSelectedTrack(null);
+    stopSynthPreview();
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setNowPlayingTrack(null);
+    window.__bwCurrentTrack = null;
+  };
   return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none" }, /* @__PURE__ */ React.createElement("header", { className: "h-16 w-full max-w-full border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md overflow-x-hidden" }, /* @__PURE__ */ React.createElement("svg", { width: "0", height: "0", className: "absolute pointer-events-none" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "waveDistortion", x: "-60%", y: "-120%", width: "220%", height: "340%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0 0.38", numOctaves: "3", result: "warp" }, /* @__PURE__ */ React.createElement(
     "animate",
     {
@@ -13038,6 +13321,9 @@ const App = () => {
       playProgress,
       onNavigateTab: setActiveTab,
       onSendToSpotify: handleAddTracksToSpotify,
+      onRemoveTrack: handleRemoveTrackGlobal,
+      onRemoveMultipleTracks: handleRemoveMultipleTracksGlobal,
+      onClearAllTracks: handleClearAllTracksGlobal,
       lang,
       t,
       currentFolder,
@@ -13059,6 +13345,8 @@ const App = () => {
       playProgress,
       onNavigateTab: setActiveTab,
       onSendToSpotify: handleAddTracksToSpotify,
+      onRemoveTrack: handleRemoveTrackGlobal,
+      onRemoveMultipleTracks: handleRemoveMultipleTracksGlobal,
       lang,
       t,
       currentFolder,
@@ -13104,6 +13392,7 @@ const App = () => {
       nowPlayingTrack,
       isPlaying,
       onTogglePlay: togglePlayPause,
+      onRemoveTrack: handleRemoveTrackGlobal,
       onSelectTrackForCues: (trk) => {
         if (!trk) return;
         const existing = auditTracks.find((t2) => t2.id === trk.id || t2.path && t2.path === trk.path);

@@ -73,6 +73,10 @@ const I18N_TRANSLATIONS = {
         danceability: "Bailabilidad",
         mood: "Atmósfera (Mood)",
         format: "Formato",
+        btn_remove_track: "Quitar pista del análisis",
+        btn_remove_selected: "Quitar seleccionadas",
+        btn_clear_all: "Vaciar Lista",
+        th_remove: "Quitar",
         actions: "Acciones",
         cues_summary_title: "8 Hot Cues (Resumen Táctico)",
         cues_open_studio_btn: "Abrir Estudio Hot Cues →",
@@ -165,6 +169,10 @@ const I18N_TRANSLATIONS = {
         danceability: "Danceability",
         mood: "Atmosphere (Mood)",
         format: "Format",
+        btn_remove_track: "Remove track from analysis",
+        btn_remove_selected: "Remove selected",
+        btn_clear_all: "Clear List",
+        th_remove: "Remove",
         actions: "Actions",
         cues_summary_title: "8 Hot Cues (Tactical Summary)",
         cues_open_studio_btn: "Open in Hot Cues Studio →",
@@ -3765,6 +3773,9 @@ const AuditWorkspace = ({
     onNavigateTab,
     onAddTrackToSet,
     onSendToSpotify,
+    onRemoveTrack,
+    onRemoveMultipleTracks,
+    onClearAllTracks,
     lang = "es",
     t = (k) => k,
     currentFolder = "",
@@ -3847,6 +3858,128 @@ const AuditWorkspace = ({
             });
         }
     }, [isAuditing, batchProgress, batchStatusMsg, onAuditProgressChange]);
+
+    // Sincronización continua de métricas en función del estado de tracks
+    useEffect(() => {
+        if (!tracks || tracks.length === 0) {
+            setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+        } else {
+            const total = tracks.length;
+            const missing = tracks.filter(t => !t.b || t.b === '--' || !t.k || t.k === '--').length;
+            const missing_title = tracks.filter(t => t.missing_title || !t.t || t.t === 'Desconocido').length;
+            const missing_artist = tracks.filter(t => t.missing_artist || !t.a || t.a === 'Artista Desconocido').length;
+            const missing_cover = tracks.filter(t => t.missing_cover || !t.cover).length;
+            const errors = tracks.filter(x => Boolean(x.es_fake) || (x.format === 'FLAC' && String(x.status || '').includes('Fake'))).length;
+            const ready = Math.max(0, total - missing);
+            setMetrics(prev => ({
+                ...prev,
+                total,
+                missing,
+                missing_title,
+                missing_artist,
+                missing_cover,
+                errors,
+                ready
+            }));
+        }
+    }, [tracks]);
+
+    // Eliminación individual de pista del análisis global
+    const handleRemoveSingleTrack = (trackId, e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (!trackId && trackId !== 0) return;
+
+        setSelectedAuditIds(prev => {
+            const next = new Set(prev);
+            next.delete(trackId);
+            return next;
+        });
+
+        if (onRemoveTrack) {
+            onRemoveTrack(trackId);
+        } else {
+            setTracks(prev => prev.filter(t => String(t.id) !== String(trackId) && t.path !== trackId));
+            if (selectedTrack === trackId) {
+                const remaining = tracks.filter(t => String(t.id) !== String(trackId));
+                setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
+            }
+            if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(trackId) || nowPlayingTrack.path === trackId)) {
+                if (audioRef && audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.currentTime = 0;
+                }
+                if (onPlayTrack) onPlayTrack(null);
+            }
+        }
+
+        setSaveFeedback(lang === 'en' ? "✓ Track removed from analysis" : "✓ Pista excluida del análisis.");
+        setTimeout(() => setSaveFeedback(''), 2500);
+    };
+
+    // Eliminación por lote de pistas seleccionadas
+    const handleRemoveSelectedTracks = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (!selectedAuditIds || selectedAuditIds.size === 0) return;
+        const count = selectedAuditIds.size;
+        const idsToRemove = Array.from(selectedAuditIds);
+
+        const confirmMsg = lang === 'en' 
+            ? `Remove ${count} selected track(s) from the global analysis?` 
+            : `¿Quitar las ${count} pistas seleccionadas del análisis global?`;
+
+        if (!window.confirm(confirmMsg)) return;
+
+        if (onRemoveMultipleTracks) {
+            onRemoveMultipleTracks(idsToRemove);
+        } else {
+            const idSet = new Set(idsToRemove.map(id => String(id)));
+            setTracks(prev => prev.filter(t => !idSet.has(String(t.id)) && !idSet.has(String(t.path))));
+            if (selectedTrack && idSet.has(String(selectedTrack))) {
+                const remaining = tracks.filter(t => !idSet.has(String(t.id)));
+                setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
+            }
+            if (nowPlayingTrack && (idSet.has(String(nowPlayingTrack.id)) || idSet.has(String(nowPlayingTrack.path)))) {
+                if (audioRef && audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.currentTime = 0;
+                }
+                if (onPlayTrack) onPlayTrack(null);
+            }
+        }
+
+        setSelectedAuditIds(new Set());
+        setSaveFeedback(lang === 'en' ? `✓ ${count} tracks removed from analysis.` : `✓ ${count} pistas eliminadas del análisis.`);
+        setTimeout(() => setSaveFeedback(''), 2500);
+    };
+
+    // Vaciar lista completa
+    const handleClearAllTracks = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (!tracks || tracks.length === 0) return;
+
+        const confirmMsg = lang === 'en'
+            ? `Empty the analysis list and remove all ${tracks.length} track(s)?`
+            : `¿Vaciar la lista y eliminar todas las ${tracks.length} pistas del análisis?`;
+
+        if (!window.confirm(confirmMsg)) return;
+
+        if (onClearAllTracks) {
+            onClearAllTracks();
+        } else {
+            setTracks([]);
+            setSelectedTrack(null);
+            if (audioRef && audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            }
+            if (onPlayTrack) onPlayTrack(null);
+        }
+
+        setSelectedAuditIds(new Set());
+        setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+        setSaveFeedback(lang === 'en' ? "✓ Analysis list emptied." : "✓ Lista de análisis vaciada.");
+        setTimeout(() => setSaveFeedback(''), 2500);
+    };
 
     const updateCurrentTrackField = (field, val) => {
         setTracks(prev => prev.map(t => t.id === currentTrack.id ? { ...t, [field]: val } : t));
@@ -4930,6 +5063,18 @@ const AuditWorkspace = ({
                         >
                             🔄
                         </button>
+
+                        {tracks && tracks.length > 0 && (
+                            <button 
+                                type="button" 
+                                onClick={handleClearAllTracks} 
+                                className="px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 rounded-lg border border-red-800/40 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono flex items-center gap-1.5" 
+                                title="Vaciar la lista y eliminar todas las pistas del análisis actual"
+                            >
+                                <span>🗑️</span>
+                                <span className="hidden sm:inline">{t('btn_clear_all') || 'Vaciar Lista'}</span>
+                            </button>
+                        )}
                     </div>
                     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full md:w-auto shrink-0">
                         {/* Bloque 1: Motor DSP (Primario & Configuración) */}
@@ -4988,6 +5133,21 @@ const AuditWorkspace = ({
                                     </span>
                                 )}
                             </button>
+
+                            {selectedAuditIds.size > 0 && (
+                                <button 
+                                    type="button"
+                                    onClick={handleRemoveSelectedTracks} 
+                                    className="bg-red-950/80 hover:bg-red-900 text-red-300 hover:text-white border border-red-750 px-2.5 sm:px-3 py-1.5 rounded-lg font-mono font-bold text-xs shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0 animate-fadeIn"
+                                    title={`Eliminar las ${selectedAuditIds.size} pistas seleccionadas del análisis global`}
+                                >
+                                    <span>🗑️</span>
+                                    <span>{t('btn_remove_selected') || 'Quitar seleccionadas'}</span>
+                                    <span className="bg-red-900 text-white text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">
+                                        {selectedAuditIds.size}
+                                    </span>
+                                </button>
+                            )}
                         </div>
 
                         {/* Bloque 3: Control Segmentado de Exportación (Neutral de Cabina) */}
@@ -5188,6 +5348,18 @@ const AuditWorkspace = ({
                                 Ver Solo Malas ({badQualityTracks.length})
                             </button>
 
+                            {/* Acción Rápida: Quitar Seleccionadas */}
+                            {selectedAuditIds.size > 0 && (
+                                <button 
+                                    onClick={handleRemoveSelectedTracks}
+                                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1.5 border bg-red-950/80 hover:bg-red-900 text-red-300 border-red-750 shadow-sm active:scale-95 shrink-0"
+                                    title="Quitar las pistas seleccionadas del análisis"
+                                >
+                                    <span>🗑️</span>
+                                    <span>{t('btn_remove_selected') || 'Quitar'} ({selectedAuditIds.size})</span>
+                                </button>
+                            )}
+
                             {/* Filtro: Falta BPM/Key */}
                             <button 
                                 onClick={() => setFiltro('missing')} 
@@ -5298,6 +5470,7 @@ const AuditWorkspace = ({
                                 <th onClick={() => handleSortAudit('acoustic_role')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-Muddy">Rol Acústico & Anti-Muddy {renderSortArrowAudit('acoustic_role')}</th>
                                 <th onClick={() => handleSortAudit('comment')} className="py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors">Comentario Pro DJ {renderSortArrowAudit('comment')}</th>
                                 <th onClick={() => handleSortAudit('status')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_status') || 'Estado'} {renderSortArrowAudit('status')}</th>
+                                <th className="py-2.5 px-2 text-center w-14 text-red-400/80 font-mono" title="Quitar pista del análisis global">{t('th_remove') || 'Quitar'}</th>
                             </tr>
                             <tr className="bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans">
                                 <th className="p-1 text-center font-mono text-[9px] text-gray-500">
@@ -5414,12 +5587,13 @@ const AuditWorkspace = ({
                                         <option value="FAKE">FLAC Fake</option>
                                     </select>
                                 </th>
+                                <th className="p-1"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracksFiltrados.length === 0 && !isAuditing && (
                                 <tr>
-                                    <td colSpan="20" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4">
+                                    <td colSpan="21" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4">
                                         No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".
                                     </td>
                                 </tr>
@@ -5736,6 +5910,16 @@ const AuditWorkspace = ({
                                                 </span>
                                             )}
                                         </td>
+                                        <td className="py-2 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => handleRemoveSingleTrack(row.id, e)}
+                                                className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-800/60 cursor-pointer transition-all active:scale-90"
+                                                title="Quitar pista del análisis (eliminar de la lista global)"
+                                            >
+                                                <span className="text-xs">🗑️</span>
+                                            </button>
+                                        </td>
                                     </tr>
                                 );
                             })}
@@ -5869,6 +6053,14 @@ const AuditWorkspace = ({
                                             >
                                                 ➕ Set
                                             </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleRemoveSingleTrack(row.id, e)}
+                                                className="p-1 rounded text-[11px] font-mono bg-red-950/60 hover:bg-red-900 text-red-400 hover:text-white border border-red-800/60 cursor-pointer transition-colors active:scale-90"
+                                                title="Quitar del análisis"
+                                            >
+                                                🗑️
+                                            </button>
                                         </div>
                                     </div>
 
@@ -5908,7 +6100,7 @@ const AuditWorkspace = ({
                 </div>
             </div>
 
-            {sidebarOpen && (
+            {sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && (
                 <aside key={currentTrack ? currentTrack.id : "none"} className="w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl">
                     <div className="p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
                         <div className="flex items-center gap-2"><Icons.Gear /><span className="font-bold text-xs uppercase tracking-wider text-gray-200">Inspector DJ Granular</span></div>
@@ -6428,9 +6620,23 @@ const AuditWorkspace = ({
                         ></textarea>
                     </div>
                 </div>
-                <div className="p-3 bg-djzinc-950 border-t border-djzinc-800">
+                <div className="p-3 bg-djzinc-950 border-t border-djzinc-800 space-y-2">
                     <button onClick={handleGuardarTrack} className="w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors">
                         Aplicar Cambios a este Track
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={(e) => {
+                            if (currentTrack && (currentTrack.id || currentTrack.id === 0)) {
+                                handleRemoveSingleTrack(currentTrack.id, e);
+                                setSidebarOpen(false);
+                            }
+                        }} 
+                        className="w-full py-1.5 bg-red-950/50 hover:bg-red-900/80 text-red-300 hover:text-white rounded border border-red-800/60 font-mono text-xs font-semibold cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+                        title="Quitar este archivo de la lista y del análisis global"
+                    >
+                        <span>🗑️</span>
+                        <span>Quitar este track del análisis</span>
                     </button>
                 </div>
             </aside>
@@ -6903,6 +7109,8 @@ const HotCuesWorkspace = ({
     onTogglePlay,
     playProgress = 0,
     onNavigateTab,
+    onRemoveTrack,
+    onRemoveMultipleTracks,
     lang = "es",
     t = (k) => k,
     currentFolder = "/Users/admin/Music/mi musica",
@@ -6912,6 +7120,19 @@ const HotCuesWorkspace = ({
     const currentTrack = (tracks && tracks.length > 0)
         ? (tracks.find(t => String(t.id) === String(selectedTrack)) || tracks[0])
         : null;
+
+    const handleRemoveTrackFromHotCues = (trackId, e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (onRemoveTrack) {
+            onRemoveTrack(trackId);
+        } else if (setTracks) {
+            setTracks(prev => prev.filter(t => String(t.id) !== String(trackId)));
+        }
+        if (String(selectedTrack) === String(trackId)) {
+            const remaining = tracks.filter(t => String(t.id) !== String(trackId));
+            setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
+        }
+    };
 
     const [zoom, setZoom] = useState(4); // 1, 2, 4, 8, 16
     const [snapToGrid, setSnapToGrid] = useState(true);
@@ -7693,18 +7914,28 @@ const HotCuesWorkspace = ({
                                             <td className="py-1.5 px-2 font-mono text-djcyan-400">{trk.key || trk.k || '--'}</td>
                                             <td className="py-1.5 px-2 text-gray-400">{trk.duration || '--'}</td>
                                             <td className="py-1.5 px-2 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedTrack(trk.id);
-                                                        setShowTrackListDrawer(false);
-                                                        if (onPlayTrack) onPlayTrack(trk, 0, true);
-                                                    }}
-                                                    className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-mono font-bold rounded cursor-pointer shadow active:scale-95"
-                                                >
-                                                    ▶ Cargar
-                                                </button>
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedTrack(trk.id);
+                                                            setShowTrackListDrawer(false);
+                                                            if (onPlayTrack) onPlayTrack(trk, 0, true);
+                                                        }}
+                                                        className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-mono font-bold rounded cursor-pointer shadow active:scale-95"
+                                                    >
+                                                        ▶ Cargar
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleRemoveTrackFromHotCues(trk.id, e)}
+                                                        className="p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-950/50 border border-transparent hover:border-red-800/60 text-[11px] cursor-pointer transition-colors active:scale-90"
+                                                        title="Quitar pista del análisis global"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -8495,6 +8726,14 @@ const HotCuesWorkspace = ({
                                                     className="px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-bold rounded cursor-pointer shadow active:scale-95"
                                                 >
                                                     ▶ Cargar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handleRemoveTrackFromHotCues(trk.id, e)}
+                                                    className="p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-950/50 border border-transparent hover:border-red-800/60 text-[11px] cursor-pointer transition-colors active:scale-90"
+                                                    title="Quitar pista del análisis global"
+                                                >
+                                                    🗑️
                                                 </button>
                                             </div>
                                         </div>
@@ -10091,7 +10330,8 @@ const TaxonomyWorkspace = ({
     onSelectTrackForCues,
     onSendToSpotify,
     onAddTrackToSpotify,
-    onAddTracksToSpotify
+    onAddTracksToSpotify,
+    onRemoveTrack
 }) => {
     // Sub-pestaña activa: 'search' (Buscador Cuenca Music IA) o 'routing' (Serato Crates)
     const [activeSubView, setActiveSubView] = useState('search');
@@ -11693,9 +11933,27 @@ const TaxonomyWorkspace = ({
                                                                     🔍 Spotify
                                                                 </button>
                                                             ) : (
-                                                                <button onClick={() => handleAsignarACrateIndividual(trk)} className="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer" title="Rutar a Crate">
-                                                                    📁 Crate
-                                                                </button>
+                                                                <>
+                                                                    <button onClick={() => handleAsignarACrateIndividual(trk)} className="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer" title="Rutar a Crate">
+                                                                        📁 Crate
+                                                                    </button>
+                                                                    {isLocal && (
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                if (onRemoveTrack) {
+                                                                                    onRemoveTrack(trk.id);
+                                                                                } else if (onTracksUpdated) {
+                                                                                    onTracksUpdated(prev => prev.filter(t => String(t.id) !== String(trk.id)));
+                                                                                }
+                                                                            }} 
+                                                                            className="p-1 rounded bg-red-950/40 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90" 
+                                                                            title="Quitar pista del análisis global"
+                                                                        >
+                                                                            🗑️
+                                                                        </button>
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </div>
                                                     </td>
@@ -11871,14 +12129,33 @@ const TaxonomyWorkspace = ({
                                                         <span>SuperFLAC</span>
                                                     </button>
                                                 ) : (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleAsignarACrateIndividual(trk)}
-                                                        className="py-1 px-2 rounded bg-purple-950/60 hover:bg-purple-900 border border-purple-500/60 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                                                        title="Rutar físicamente a Serato Crate"
-                                                    >
-                                                        <span>📁</span>
-                                                    </button>
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAsignarACrateIndividual(trk)}
+                                                            className="py-1 px-2 rounded bg-purple-950/60 hover:bg-purple-900 border border-purple-500/60 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                                            title="Rutar físicamente a Serato Crate"
+                                                        >
+                                                            <span>📁</span>
+                                                        </button>
+                                                        {isLocal && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (onRemoveTrack) {
+                                                                        onRemoveTrack(trk.id);
+                                                                    } else if (onTracksUpdated) {
+                                                                        onTracksUpdated(prev => prev.filter(t => String(t.id) !== String(trk.id)));
+                                                                    }
+                                                                }}
+                                                                className="py-1 px-1.5 rounded bg-red-950/50 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90"
+                                                                title="Quitar pista del análisis global"
+                                                            >
+                                                                <span>🗑️</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -18797,6 +19074,56 @@ const App = () => {
         }
     };
 
+    // Gestión Global de Eliminación de Pistas del Análisis
+    const handleRemoveTrackGlobal = (trackId) => {
+        if (!trackId && trackId !== 0) return;
+        setAuditTracks(prev => prev.filter(t => String(t.id) !== String(trackId) && t.path !== trackId));
+        setSelectedTrack(prev => (String(prev) === String(trackId) ? null : prev));
+        if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(trackId) || nowPlayingTrack.path === trackId)) {
+            stopSynthPreview();
+            const audio = audioRef.current;
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+            setIsPlaying(false);
+            setNowPlayingTrack(null);
+            window.__bwCurrentTrack = null;
+        }
+    };
+
+    const handleRemoveMultipleTracksGlobal = (trackIds) => {
+        if (!Array.isArray(trackIds) || trackIds.length === 0) return;
+        const idSet = new Set(trackIds.map(id => String(id)));
+        setAuditTracks(prev => prev.filter(t => !idSet.has(String(t.id)) && !idSet.has(String(t.path))));
+        setSelectedTrack(prev => (idSet.has(String(prev)) ? null : prev));
+        if (nowPlayingTrack && (idSet.has(String(nowPlayingTrack.id)) || idSet.has(String(nowPlayingTrack.path)))) {
+            stopSynthPreview();
+            const audio = audioRef.current;
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+            setIsPlaying(false);
+            setNowPlayingTrack(null);
+            window.__bwCurrentTrack = null;
+        }
+    };
+
+    const handleClearAllTracksGlobal = () => {
+        setAuditTracks([]);
+        setSelectedTrack(null);
+        stopSynthPreview();
+        const audio = audioRef.current;
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+        setIsPlaying(false);
+        setNowPlayingTrack(null);
+        window.__bwCurrentTrack = null;
+    };
+
     return (
         <div className="flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none">
             {/* TOP NAVIGATION BAR CON MÁXIMA JERARQUÍA VISUAL & CAPSULE DOCK */}
@@ -19240,6 +19567,9 @@ const App = () => {
                         playProgress={playProgress} 
                         onNavigateTab={setActiveTab}
                         onSendToSpotify={handleAddTracksToSpotify}
+                        onRemoveTrack={handleRemoveTrackGlobal}
+                        onRemoveMultipleTracks={handleRemoveMultipleTracksGlobal}
+                        onClearAllTracks={handleClearAllTracksGlobal}
                         lang={lang}
                         t={t}
                         currentFolder={currentFolder}
@@ -19261,6 +19591,8 @@ const App = () => {
                         playProgress={playProgress} 
                         onNavigateTab={setActiveTab}
                         onSendToSpotify={handleAddTracksToSpotify}
+                        onRemoveTrack={handleRemoveTrackGlobal}
+                        onRemoveMultipleTracks={handleRemoveMultipleTracksGlobal}
                         lang={lang}
                         t={t}
                         currentFolder={currentFolder}
@@ -19306,6 +19638,7 @@ const App = () => {
                         nowPlayingTrack={nowPlayingTrack}
                         isPlaying={isPlaying}
                         onTogglePlay={togglePlayPause}
+                        onRemoveTrack={handleRemoveTrackGlobal}
                         onSelectTrackForCues={(trk) => {
                             if (!trk) return;
                             const existing = auditTracks.find(t => t.id === trk.id || (t.path && t.path === trk.path));
