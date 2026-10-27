@@ -12004,11 +12004,12 @@ const CopilotSeratoWaveform = ({
 }) => {
   const canvasRef = useRef(null);
   const minimapRef = useRef(null);
+  const minimapCacheRef = useRef(null);
   const [zoom, setZoom] = useState(4);
   const [showTacticalAids, setShowTacticalAids] = useState(true);
   const [progress, setProgress] = useState(deck.play_progress || 0.15);
   const progressRef = useRef(deck.play_progress || 0.15);
-  const isPlayingRef = useRef(deck.is_playing || deck.is_master || false);
+  const isPlayingRef = useRef(Boolean(deck.is_playing));
   const bpmRef = useRef(deck.bpm || 130);
   const durationSecRef = useRef(deck.duration_sec || 390);
   useEffect(() => {
@@ -12019,13 +12020,14 @@ const CopilotSeratoWaveform = ({
         setProgress(deck.play_progress);
       }
     }
-    isPlayingRef.current = deck.is_playing !== void 0 ? deck.is_playing : deck.is_master || false;
+    isPlayingRef.current = Boolean(deck.is_playing);
     bpmRef.current = parseFloat(deck.bpm) || 130;
     durationSecRef.current = parseFloat(deck.duration_sec) || 390;
-  }, [deck.play_progress, deck.is_playing, deck.is_master, deck.bpm, deck.duration_sec]);
+  }, [deck.play_progress, deck.is_playing, deck.bpm, deck.duration_sec]);
   useEffect(() => {
     let animId;
     let lastTime = performance.now();
+    let lastUiUpdate = 0;
     const tick = (now) => {
       const dt = (now - lastTime) / 1e3;
       lastTime = now;
@@ -12033,13 +12035,22 @@ const CopilotSeratoWaveform = ({
         const advance = dt / durationSecRef.current;
         const next = (progressRef.current + advance) % 1;
         progressRef.current = next;
-        setProgress(next);
+        if (now - lastUiUpdate >= 33) {
+          lastUiUpdate = now;
+          setProgress(next);
+        }
       }
-      animId = requestAnimationFrame(tick);
+      if (isPlayingRef.current) {
+        animId = requestAnimationFrame(tick);
+      }
     };
-    animId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animId);
-  }, []);
+    if (isPlayingRef.current) {
+      animId = requestAnimationFrame(tick);
+    }
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, [deck.is_playing]);
   const rawId = deck.file_path || deck.title || "1";
   const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
   const durSec = deck.duration_sec || 390;
@@ -12248,37 +12259,49 @@ const CopilotSeratoWaveform = ({
     if (mCtx.resetTransform) mCtx.resetTransform();
     else mCtx.setTransform(1, 0, 0, 1, 0, 0);
     mCtx.scale(dpr, dpr);
-    mCtx.fillStyle = "#06060e";
-    mCtx.fillRect(0, 0, mw, mh);
-    const mStep = 2;
-    const mSlices = Math.ceil(mw / mStep);
-    for (let j = 0; j < mSlices; j++) {
-      const mx = j * mStep;
-      const mNorm = mx / mw;
-      const { bass, treble } = computeTrackStructuralBands(mNorm, seed);
-      const mHalf = mh / 2;
-      const bAmp = bass * (mHalf - 2);
-      const tAmp = treble * (mHalf - 4);
-      mCtx.fillStyle = "#2563eb";
-      mCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
-      mCtx.fillStyle = "#06b6d4";
-      mCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
+    const cacheKey = `${rawId}_${mw}_${showTacticalAids}`;
+    if (!minimapCacheRef.current || minimapCacheRef.current.key !== cacheKey) {
+      const off = document.createElement("canvas");
+      off.width = Math.round(mw * dpr);
+      off.height = Math.round(mh * dpr);
+      const oCtx = off.getContext("2d");
+      if (oCtx.resetTransform) oCtx.resetTransform();
+      else oCtx.setTransform(1, 0, 0, 1, 0, 0);
+      oCtx.scale(dpr, dpr);
+      oCtx.fillStyle = "#06060e";
+      oCtx.fillRect(0, 0, mw, mh);
+      const mStep = 2;
+      const mSlices = Math.ceil(mw / mStep);
+      for (let j = 0; j < mSlices; j++) {
+        const mx = j * mStep;
+        const mNorm = mx / mw;
+        const { bass, treble } = computeTrackStructuralBands(mNorm, seed);
+        const mHalf = mh / 2;
+        const bAmp = bass * (mHalf - 2);
+        const tAmp = treble * (mHalf - 4);
+        oCtx.fillStyle = "#2563eb";
+        oCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
+        oCtx.fillStyle = "#06b6d4";
+        oCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
+      }
+      if (showTacticalAids) {
+        phases.forEach((ph) => {
+          const px1 = ph.start_pct * mw;
+          const px2 = ph.end_pct * mw;
+          oCtx.fillStyle = `${ph.color}25`;
+          oCtx.fillRect(px1, 0, px2 - px1, mh);
+          oCtx.fillStyle = ph.color;
+          oCtx.fillRect(px1, 0, px2 - px1, 2);
+        });
+        cues.forEach((cue) => {
+          const cx = (cue.pct || 0) * mw;
+          oCtx.fillStyle = cue.color || "#06b6d4";
+          oCtx.fillRect(cx - 1, 0, 2, mh);
+        });
+      }
+      minimapCacheRef.current = { key: cacheKey, canvas: off };
     }
-    if (showTacticalAids) {
-      phases.forEach((ph) => {
-        const px1 = ph.start_pct * mw;
-        const px2 = ph.end_pct * mw;
-        mCtx.fillStyle = `${ph.color}25`;
-        mCtx.fillRect(px1, 0, px2 - px1, mh);
-        mCtx.fillStyle = ph.color;
-        mCtx.fillRect(px1, 0, px2 - px1, 2);
-      });
-      cues.forEach((cue) => {
-        const cx = (cue.pct || 0) * mw;
-        mCtx.fillStyle = cue.color || "#06b6d4";
-        mCtx.fillRect(cx - 1, 0, 2, mh);
-      });
-    }
+    mCtx.drawImage(minimapCacheRef.current.canvas, 0, 0, mw, mh);
     const vStart = Math.max(0, startSec / durSec * mw);
     const vEnd = Math.min(mw, endSec / durSec * mw);
     mCtx.fillStyle = "rgba(255, 255, 255, 0.15)";
@@ -12402,7 +12425,10 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
   }, []);
   useEffect(() => {
     let isMounted = true;
+    let isFetching = false;
     const fetchStatus = async () => {
+      if (isFetching || document.hidden) return;
+      isFetching = true;
       const t0 = performance.now();
       try {
         const res = await fetch("/api/copilot/status");
@@ -12415,10 +12441,12 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
           }
         }
       } catch (e) {
+      } finally {
+        isFetching = false;
       }
     };
     fetchStatus();
-    const interval = setInterval(fetchStatus, 450);
+    const interval = setInterval(fetchStatus, 1500);
     return () => {
       isMounted = false;
       clearInterval(interval);
@@ -13463,7 +13491,7 @@ const App = () => {
       onNavigateTab: setActiveTab,
       lang
     }
-  )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "knowledge" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "copilot" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "knowledge" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
     CopilotWorkspace,
     {
       onOpenPopOut: () => {
@@ -13471,7 +13499,8 @@ const App = () => {
         const left = (window.screen.width - w) / 2;
         const top = (window.screen.height - h) / 2;
         window.open("/copilot.html", "BeatWaveLiveCopilot", `width=${w},height=${h},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes`);
-      }
+      },
+      onOpenQr: () => setCopilotModalOpen(true)
     }
   ))), /* @__PURE__ */ React.createElement("footer", { className: `${!nowPlayingTrack ? "hidden md:flex" : "flex"} h-14 sm:h-16 bg-[#0a0a0e] border-t border-djzinc-800 px-2.5 sm:px-5 items-center justify-between shrink-0 glass-panel z-30 relative` }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 right-0 h-0.5 bg-djzinc-850 md:hidden overflow-hidden" }, /* @__PURE__ */ React.createElement(
     "div",

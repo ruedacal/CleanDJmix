@@ -148,11 +148,12 @@ const CopilotSeratoWaveform = ({
 }) => {
     const canvasRef = useRef(null);
     const minimapRef = useRef(null);
+    const minimapCacheRef = useRef(null);
     const [zoom, setZoom] = useState(4); // 2x, 4x, 8x, 16x
     const [showTacticalAids, setShowTacticalAids] = useState(true);
     const [progress, setProgress] = useState(deck.play_progress || 0.15);
     const progressRef = useRef(deck.play_progress || 0.15);
-    const isPlayingRef = useRef(deck.is_playing || deck.is_master || false);
+    const isPlayingRef = useRef(Boolean(deck.is_playing));
     const bpmRef = useRef(deck.bpm || 130.0);
     const durationSecRef = useRef(deck.duration_sec || 390.0);
 
@@ -164,15 +165,16 @@ const CopilotSeratoWaveform = ({
                 setProgress(deck.play_progress);
             }
         }
-        isPlayingRef.current = (deck.is_playing !== undefined) ? deck.is_playing : (deck.is_master || false);
+        isPlayingRef.current = Boolean(deck.is_playing);
         bpmRef.current = parseFloat(deck.bpm) || 130.0;
         durationSecRef.current = parseFloat(deck.duration_sec) || 390.0;
-    }, [deck.play_progress, deck.is_playing, deck.is_master, deck.bpm, deck.duration_sec]);
+    }, [deck.play_progress, deck.is_playing, deck.bpm, deck.duration_sec]);
 
-    // Reproducción continua en tiempo real (60fps)
+    // Reproducción optimizada en tiempo real: solo corre rAF cuando deck.is_playing es verdadero
     useEffect(() => {
         let animId;
         let lastTime = performance.now();
+        let lastUiUpdate = 0;
 
         const tick = (now) => {
             const dt = (now - lastTime) / 1000.0;
@@ -182,13 +184,25 @@ const CopilotSeratoWaveform = ({
                 const advance = dt / durationSecRef.current;
                 const next = (progressRef.current + advance) % 1.0;
                 progressRef.current = next;
-                setProgress(next);
+
+                // Throttled UI state updates a ~30fps para mantener el hilo principal ágil
+                if (now - lastUiUpdate >= 33) {
+                    lastUiUpdate = now;
+                    setProgress(next);
+                }
             }
-            animId = requestAnimationFrame(tick);
+            if (isPlayingRef.current) {
+                animId = requestAnimationFrame(tick);
+            }
         };
-        animId = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(animId);
-    }, []);
+
+        if (isPlayingRef.current) {
+            animId = requestAnimationFrame(tick);
+        }
+        return () => {
+            if (animId) cancelAnimationFrame(animId);
+        };
+    }, [deck.is_playing]);
 
     const rawId = deck.file_path || deck.title || "1";
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
@@ -419,7 +433,7 @@ const CopilotSeratoWaveform = ({
             }
         }
 
-        // Minimapa Overview de la Pista Completa
+        // Minimapa Overview de la Pista Completa con Capa Pre-renderizada en Cache
         const miniCanvas = minimapRef.current;
         if (!miniCanvas) return;
         const mRect = miniCanvas.getBoundingClientRect();
@@ -431,43 +445,59 @@ const CopilotSeratoWaveform = ({
         if (mCtx.resetTransform) mCtx.resetTransform(); else mCtx.setTransform(1, 0, 0, 1, 0, 0);
         mCtx.scale(dpr, dpr);
 
-        mCtx.fillStyle = '#06060e';
-        mCtx.fillRect(0, 0, mw, mh);
+        const cacheKey = `${rawId}_${mw}_${showTacticalAids}`;
+        if (!minimapCacheRef.current || minimapCacheRef.current.key !== cacheKey) {
+            const off = document.createElement('canvas');
+            off.width = Math.round(mw * dpr);
+            off.height = Math.round(mh * dpr);
+            const oCtx = off.getContext('2d');
+            if (oCtx.resetTransform) oCtx.resetTransform(); else oCtx.setTransform(1, 0, 0, 1, 0, 0);
+            oCtx.scale(dpr, dpr);
 
-        const mStep = 2;
-        const mSlices = Math.ceil(mw / mStep);
-        for (let j = 0; j < mSlices; j++) {
-            const mx = j * mStep;
-            const mNorm = mx / mw;
-            const { bass, treble } = computeTrackStructuralBands(mNorm, seed);
-            const mHalf = mh / 2;
-            const bAmp = bass * (mHalf - 2);
-            const tAmp = treble * (mHalf - 4);
+            oCtx.fillStyle = '#06060e';
+            oCtx.fillRect(0, 0, mw, mh);
 
-            mCtx.fillStyle = '#2563eb';
-            mCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
+            const mStep = 2;
+            const mSlices = Math.ceil(mw / mStep);
+            for (let j = 0; j < mSlices; j++) {
+                const mx = j * mStep;
+                const mNorm = mx / mw;
+                const { bass, treble } = computeTrackStructuralBands(mNorm, seed);
+                const mHalf = mh / 2;
+                const bAmp = bass * (mHalf - 2);
+                const tAmp = treble * (mHalf - 4);
 
-            mCtx.fillStyle = '#06b6d4';
-            mCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
+                oCtx.fillStyle = '#2563eb';
+                oCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
+
+                oCtx.fillStyle = '#06b6d4';
+                oCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
+            }
+
+            if (showTacticalAids) {
+                phases.forEach(ph => {
+                    const px1 = ph.start_pct * mw;
+                    const px2 = ph.end_pct * mw;
+                    oCtx.fillStyle = `${ph.color}25`;
+                    oCtx.fillRect(px1, 0, px2 - px1, mh);
+                    oCtx.fillStyle = ph.color;
+                    oCtx.fillRect(px1, 0, px2 - px1, 2);
+                });
+
+                cues.forEach(cue => {
+                    const cx = (cue.pct || 0) * mw;
+                    oCtx.fillStyle = cue.color || '#06b6d4';
+                    oCtx.fillRect(cx - 1, 0, 2, mh);
+                });
+            }
+
+            minimapCacheRef.current = { key: cacheKey, canvas: off };
         }
 
-        if (showTacticalAids) {
-            phases.forEach(ph => {
-                const px1 = ph.start_pct * mw;
-                const px2 = ph.end_pct * mw;
-                mCtx.fillStyle = `${ph.color}25`;
-                mCtx.fillRect(px1, 0, px2 - px1, mh);
-                mCtx.fillStyle = ph.color;
-                mCtx.fillRect(px1, 0, px2 - px1, 2);
-            });
+        // Dibujar el fondo estático precalculado instantáneamente
+        mCtx.drawImage(minimapCacheRef.current.canvas, 0, 0, mw, mh);
 
-            cues.forEach(cue => {
-                const cx = (cue.pct || 0) * mw;
-                mCtx.fillStyle = cue.color || '#06b6d4';
-                mCtx.fillRect(cx - 1, 0, 2, mh);
-            });
-        }
-
+        // Aguja playhead y ventana de zoom visible
         const vStart = Math.max(0, (startSec / durSec) * mw);
         const vEnd = Math.min(mw, (endSec / durSec) * mw);
         mCtx.fillStyle = 'rgba(255, 255, 255, 0.15)';
@@ -583,10 +613,13 @@ function LiveCopilotApp() {
         return () => clearInterval(timer);
     }, []);
 
-    // Polling de baja latencia (450ms) a /api/copilot/status
+    // Polling optimizado (1.5s) a /api/copilot/status (pausado si la pestaña no es visible)
     useEffect(() => {
         let isMounted = true;
+        let isFetching = false;
         const fetchStatus = async () => {
+            if (isFetching || document.hidden) return;
+            isFetching = true;
             const t0 = performance.now();
             try {
                 const res = await fetch('/api/copilot/status');
@@ -601,11 +634,13 @@ function LiveCopilotApp() {
                 }
             } catch (e) {
                 if (isMounted) setErrorCount(prev => prev + 1);
+            } finally {
+                isFetching = false;
             }
         };
 
         fetchStatus();
-        const interval = setInterval(fetchStatus, 450);
+        const interval = setInterval(fetchStatus, 1500);
         return () => {
             isMounted = false;
             clearInterval(interval);

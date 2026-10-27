@@ -108,6 +108,10 @@ class CopilotService:
         self._last_process_check = 0.0
         self._cached_running_process = ""
         self._sim_index = 0
+        self._cached_local_ip: Optional[str] = None
+        self._dsp_cache: Dict[str, Dict[str, Any]] = {}
+        self._last_live_state_time: float = 0.0
+        self._cached_live_state: Optional[Dict[str, Any]] = None
 
     # =========================================================================
     # DETECCIÓN DE RUTAS DE SOFTWARE
@@ -187,9 +191,9 @@ class CopilotService:
         return False
 
     def _get_running_dj_process(self) -> Optional[str]:
-        """Detecta si alguna de las suites DJ se encuentra en ejecución en macOS (cacheado 2s)."""
+        """Detecta si alguna de las suites DJ se encuentra en ejecución en macOS (cacheado 6s para evitar sobrecarga de CPU)."""
         now = time.time()
-        if now - self._last_process_check < 2.0:
+        if now - self._last_process_check < 6.0:
             return self._cached_running_process or None
         
         self._last_process_check = now
@@ -256,6 +260,7 @@ class CopilotService:
         valid_modes = ["auto", "serato", "rekordbox", "virtualdj", "traktor"]
         if mode in valid_modes:
             self.platform_mode = mode
+            self._cached_live_state = None
         return self.get_live_state()
 
     def get_available_platforms(self) -> List[Dict[str, Any]]:
@@ -282,7 +287,9 @@ class CopilotService:
     # =========================================================================
 
     def get_local_ip(self) -> str:
-        """Obtiene la dirección IP local de la máquina para conectar iPads/tablets."""
+        """Obtiene la dirección IP local de la máquina para conectar iPads/tablets (cacheada)."""
+        if self._cached_local_ip:
+            return self._cached_local_ip
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             s.connect(('8.8.8.8', 80))
@@ -291,6 +298,7 @@ class CopilotService:
             ip = '127.0.0.1'
         finally:
             s.close()
+        self._cached_local_ip = ip
         return ip
 
     def to_camelot(self, key_str: str) -> str:
@@ -305,7 +313,22 @@ class CopilotService:
         return self.KEY_TO_CAMELOT.get(clean, "8A")
 
     def _fetch_audit_dsp(self, filepath: str) -> Dict[str, Any]:
-        """Consulta la huella espectral y métricas de sonoridad de BeatWave para una pista."""
+        """Consulta la huella espectral y métricas de sonoridad de BeatWave para una pista (con cache en memoria)."""
+        if not filepath:
+            return {
+                "lufs": -6.8,
+                "low_ratio": 48.0,
+                "mid_ratio": 32.0,
+                "high_ratio": 20.0,
+                "acoustic_role": "Bass-Heavy Driver",
+                "is_audited": False,
+                "comment": "Intro limpia 32b • Drop contundente • Outro 64b"
+            }
+
+        clean_path = filepath if filepath.startswith("/") else "/" + filepath
+        if clean_path in self._dsp_cache:
+            return self._dsp_cache[clean_path]
+
         default_dsp = {
             "lufs": -6.8,
             "low_ratio": 48.0,
@@ -315,10 +338,10 @@ class CopilotService:
             "is_audited": False,
             "comment": "Intro limpia 32b • Drop contundente • Outro 64b"
         }
-        if not filepath or not os.path.exists(self.audit_cache_path):
+        if not os.path.exists(self.audit_cache_path):
+            self._dsp_cache[clean_path] = default_dsp
             return default_dsp
 
-        clean_path = filepath if filepath.startswith("/") else "/" + filepath
         try:
             conn = sqlite3.connect(f"file:{self.audit_cache_path}?mode=ro", uri=True)
             cursor = conn.cursor()
@@ -330,7 +353,7 @@ class CopilotService:
             conn.close()
             if row:
                 role = str(row[4]) if row[4] else "Club Master"
-                return {
+                res = {
                     "lufs": float(row[0]) if row[0] is not None else -6.8,
                     "low_ratio": float(row[1]) if row[1] is not None else 48.0,
                     "mid_ratio": float(row[2]) if row[2] is not None else 32.0,
@@ -339,8 +362,11 @@ class CopilotService:
                     "is_audited": True,
                     "comment": f"[{role}] Intro 32b • Drop contundente • Outro 64b"
                 }
+                self._dsp_cache[clean_path] = res
+                return res
         except Exception:
             pass
+        self._dsp_cache[clean_path] = default_dsp
         return default_dsp
 
     # =========================================================================
@@ -1154,12 +1180,19 @@ class CopilotService:
         }
 
     def get_live_state(self) -> Dict[str, Any]:
-        """Obtiene el estado táctico consolidado de la cabina adaptado al software DJ seleccionado."""
+        """Obtiene el estado táctico consolidado de la cabina adaptado al software DJ seleccionado (con cache TTL)."""
+        now = time.time()
+        if (now - self._last_live_state_time < 0.8) and (self._cached_live_state is not None):
+            return self._cached_live_state
+
         active_plat = self.detect_active_platform()
         spec = self.PLATFORM_SPECS.get(active_plat, self.PLATFORM_SPECS["serato"])
 
         if self.simulation_mode:
-            return self.get_simulation_state(active_plat)
+            state = self.get_simulation_state(active_plat)
+            self._last_live_state_time = time.time()
+            self._cached_live_state = state
+            return state
 
         # Ingesta según la plataforma activa
         entries = []
@@ -1180,6 +1213,8 @@ class CopilotService:
             state["source"] = f"{active_plat.upper()}_STANDBY"
             state["platform_status"] = "STANDBY"
             state["platform_detected"] = is_installed
+            self._last_live_state_time = time.time()
+            self._cached_live_state = state
             return state
 
         # Agrupar las pistas por Deck (1 y 2)
@@ -1329,7 +1364,7 @@ class CopilotService:
         bpm_delta = round(incoming_deck["bpm"] - master_deck["bpm"], 2)
         bpm_pct = round(((incoming_deck["bpm"] - master_deck["bpm"]) / (master_deck["bpm"] or 1)) * 100, 2)
 
-        return {
+        res = {
             "connected": True,
             "source": f"{active_plat.upper()}_LIVE",
             "platform": active_plat,
@@ -1353,5 +1388,8 @@ class CopilotService:
             "timestamp": time.time(),
             "last_updated": time.strftime("%H:%M:%S")
         }
+        self._last_live_state_time = time.time()
+        self._cached_live_state = res
+        return res
 
 copilot_service = CopilotService()
