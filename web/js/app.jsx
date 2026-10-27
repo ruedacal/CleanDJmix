@@ -18719,23 +18719,45 @@ const App = () => {
 
     // Estado Global de Tareas en Background & Tutorial de Bienvenida
     const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, progress: 0, statusMsg: '' });
-    const [tutorialOpen, setTutorialOpen] = useState(false);
+    const [tutorialOpen, setTutorialOpen] = useState(() => {
+        try {
+            return !localStorage.getItem('cleandjmix_tutorial_completed');
+        } catch (e) {
+            return false;
+        }
+    });
     const [tutorialInitialMode, setTutorialInitialMode] = useState('launcher');
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
     const [copilotModalOpen, setCopilotModalOpen] = useState(false);
 
-    // Secuencia Techno del Logo: vibraciones en bucle durante 10 segundos, luego estático
-    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState(true);
-    const logoTechnoTimerRef = useRef(null);
+    // Modo del Altavoz: 'neon' (nuevo con borde azul corporativo y efecto neón) | 'original' (preservado para recuperación)
+    const [speakerLogoMode, setSpeakerLogoMode] = useState(() => {
+        try {
+            return localStorage.getItem('cleandjmix_speaker_logo_mode') || 'neon';
+        } catch (e) {
+            return 'neon';
+        }
+    });
+
+    const handleSetSpeakerLogoMode = (mode) => {
+        setSpeakerLogoMode(mode);
+        try {
+            localStorage.setItem('cleandjmix_speaker_logo_mode', mode);
+        } catch (e) {}
+    };
 
     useEffect(() => {
-        logoTechnoTimerRef.current = setTimeout(() => {
-            setIsLogoTechnoActive(false);
-        }, 10000);
-        return () => {
-            if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
+        window.setSpeakerLogoMode = handleSetSpeakerLogoMode;
+        window.toggleSpeakerLogoMode = () => {
+            handleSetSpeakerLogoMode(speakerLogoMode === 'neon' ? 'original' : 'neon');
         };
-    }, []);
+    }, [speakerLogoMode]);
+
+    // Secuencia Techno del Logo: vibraciones en bucle durante 10 segundos, luego estático
+    // IMPORTANTE: Si salta el tutorial o alguna modal está abierta, NO debe iniciarse hasta que el usuario termine/cierre las modales
+    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState(false);
+    const logoTechnoTimerRef = useRef(null);
+    const initialTechnoPlayedRef = useRef(false);
 
     const triggerLogoTechno = () => {
         setIsLogoTechnoActive(true);
@@ -18745,17 +18767,29 @@ const App = () => {
         }, 10000);
     };
 
+    // La animación no debe iniciarse hasta que el usuario deje de ver el tutorial o cierre las modales
+    useEffect(() => {
+        if (tutorialOpen || copilotModalOpen) {
+            // Si el tutorial o modales están abiertos, asegurar que no corra la animación
+            if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
+            setIsLogoTechnoActive(false);
+        } else {
+            // Solo cuando el usuario no está viendo el tutorial ni ninguna modal
+            if (!initialTechnoPlayedRef.current) {
+                initialTechnoPlayedRef.current = true;
+                const timer = setTimeout(() => {
+                    triggerLogoTechno();
+                }, 400);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [tutorialOpen, copilotModalOpen]);
+
     useEffect(() => {
         window.abrirTutorial = (mode = 'launcher') => {
             setTutorialInitialMode(mode);
             setTutorialOpen(true);
         };
-        try {
-            const hasSeen = localStorage.getItem('cleandjmix_tutorial_completed');
-            if (!hasSeen) {
-                setTutorialOpen(true);
-            }
-        } catch (e) {}
     }, []);
 
     const handleAddTracksToSpotify = (tracksData, origin = 'taxonomy') => {
@@ -19185,136 +19219,284 @@ const App = () => {
                         className="flex items-center gap-3.5 select-none cursor-pointer group"
                         title={isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para reiniciar la secuencia techno (10s)"}
                     >
-                        {/* ISOTIPO FLAGSHIP: SUBWOOFER CLUB 3D BASADO EN FOTO (ORIENTADO A LA DERECHA, DISPARO BRUTAL HACIA EL TEXTO) */}
-                        <div className={`w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group ${isLogoTechnoActive ? 'anim-woofer-chassis' : ''}`} title="BeatWave Subwoofer Acústico Pro">
-                            <svg className="w-12 h-12 relative z-10 overflow-visible" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <defs>
-                                    {/* Gradiente metálico de la estructura del motor / imán doble posterior */}
-                                    <linearGradient id="subMagnetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="#252836" />
-                                        <stop offset="45%" stopColor="#151722" />
-                                        <stop offset="85%" stopColor="#0d0e15" />
-                                        <stop offset="100%" stopColor="#050609" />
-                                    </linearGradient>
+                        {speakerLogoMode === 'neon' ? (
+                            /* NUEVA VERSIÓN: SUBWOOFER CLUB 3D CON BORDE AZUL CORPORATIVO, EFECTO NEÓN Y BRILLO */
+                            <div className={`w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group rounded-2xl border-2 border-djcyan-400 bg-gradient-to-br from-djcyan-950/70 via-djzinc-950/95 to-black shadow-[0_0_20px_rgba(6,182,212,0.6),inset_0_0_12px_rgba(6,182,212,0.3)] transition-all duration-300 hover:border-djcyan-300 hover:shadow-[0_0_28px_rgba(34,211,238,0.8),inset_0_0_16px_rgba(6,182,212,0.4)] ${isLogoTechnoActive ? 'anim-woofer-chassis' : ''}`} title="BeatWave Subwoofer Acústico Pro (Borde Neón Corporativo - Clic para probar)">
+                                <svg className="w-12 h-12 relative z-10 overflow-visible" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        {/* Filtro Neón Azul Corporativo de Alta Intensidad */}
+                                        <filter id="subNeonCyanGlow" x="-40%" y="-40%" width="180%" height="180%">
+                                            <feGaussianBlur in="SourceGraphic" stdDeviation="1.6" result="blur1" />
+                                            <feGaussianBlur in="SourceGraphic" stdDeviation="4.0" result="blur2" />
+                                            <feMerge>
+                                                <feMergeNode in="blur2" />
+                                                <feMergeNode in="blur1" />
+                                                <feMergeNode in="SourceGraphic" />
+                                            </feMerge>
+                                        </filter>
 
-                                    {/* Gradiente cromado para placa posterior, polo ventilado y bornes de conexión */}
-                                    <linearGradient id="subChromeGrad" x1="20%" y1="0%" x2="80%" y2="100%">
-                                        <stop offset="0%" stopColor="#f8fafc" />
-                                        <stop offset="35%" stopColor="#94a3b8" />
-                                        <stop offset="70%" stopColor="#334155" />
-                                        <stop offset="100%" stopColor="#0f172a" />
-                                    </linearGradient>
+                                        <linearGradient id="neonCyanBrightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#a5f3fc" />
+                                            <stop offset="40%" stopColor="#22d3ee" />
+                                            <stop offset="80%" stopColor="#06b6d4" />
+                                            <stop offset="100%" stopColor="#0891b2" />
+                                        </linearGradient>
 
-                                    {/* Chasis de fundición de aluminio negro mate (Basket Rim) */}
-                                    <linearGradient id="subBasketGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="#2a2c3a" />
-                                        <stop offset="50%" stopColor="#181a24" />
-                                        <stop offset="100%" stopColor="#0c0d13" />
-                                    </linearGradient>
+                                        {/* Gradiente metálico del bloque motor / imán doble posterior */}
+                                        <linearGradient id="subMagnetGradNeon" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#2d3246" />
+                                            <stop offset="45%" stopColor="#181c2c" />
+                                            <stop offset="85%" stopColor="#0e111c" />
+                                            <stop offset="100%" stopColor="#060810" />
+                                        </linearGradient>
 
-                                    {/* Suspensión de goma sobredimensionada High-Roll (Surround Torus 3D) */}
-                                    <radialGradient id="subSurround3dGrad" cx="42%" cy="38%" r="62%">
-                                        <stop offset="0%" stopColor="#353748" />
-                                        <stop offset="35%" stopColor="#222432" />
-                                        <stop offset="75%" stopColor="#111219" />
-                                        <stop offset="100%" stopColor="#07070b" />
-                                    </radialGradient>
+                                        {/* Placa cromada trasera y ventilación */}
+                                        <linearGradient id="subChromeGradNeon" x1="20%" y1="0%" x2="80%" y2="100%">
+                                            <stop offset="0%" stopColor="#f8fafc" />
+                                            <stop offset="35%" stopColor="#94a3b8" />
+                                            <stop offset="70%" stopColor="#334155" />
+                                            <stop offset="100%" stopColor="#0f172a" />
+                                        </linearGradient>
 
-                                    {/* Cono profundo de polipropileno/carbono (Deep Cone Diaphragm) */}
-                                    <radialGradient id="subCone3dGrad" cx="48%" cy="45%" r="55%">
-                                        <stop offset="0%" stopColor="#05060a" />
-                                        <stop offset="35%" stopColor="#0e1017" />
-                                        <stop offset="75%" stopColor="#181a25" />
-                                        <stop offset="100%" stopColor="#0a0b10" />
-                                    </radialGradient>
+                                        {/* Chasis de fundición de aluminio con matiz cian */}
+                                        <linearGradient id="subBasketGradNeon" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#25293d" />
+                                            <stop offset="50%" stopColor="#131726" />
+                                            <stop offset="100%" stopColor="#090b14" />
+                                        </linearGradient>
 
-                                    {/* Cúpula central invertida (Dust Cap) */}
-                                    <radialGradient id="subCap3dGrad" cx="44%" cy="40%" r="58%">
-                                        <stop offset="0%" stopColor="#222533" />
-                                        <stop offset="30%" stopColor="#12131b" />
-                                        <stop offset="75%" stopColor="#06070a" />
-                                        <stop offset="100%" stopColor="#020204" />
-                                    </radialGradient>
-                                </defs>
+                                        {/* Suspensión de goma High-Roll con relieve 3D */}
+                                        <radialGradient id="subSurround3dGradNeon" cx="42%" cy="38%" r="62%">
+                                            <stop offset="0%" stopColor="#3d445c" />
+                                            <stop offset="35%" stopColor="#252b3e" />
+                                            <stop offset="75%" stopColor="#121624" />
+                                            <stop offset="100%" stopColor="#070912" />
+                                        </radialGradient>
 
-                                {/* 1. BLOQUE POSTERIOR: DOBLE IMÁN DE FERRITA PESADO & PLACA CROMADA TRASERA (A LA IZQUIERDA) */}
-                                <g id="subwoofer-motor-assembly">
-                                    {/* Sombra proyectada del imán */}
-                                    <ellipse cx="14" cy="38" rx="10" ry="14" fill="#000000" opacity="0.6" transform="rotate(-14 14 38)" />
-                                    
-                                    {/* Cilindro del bloque de imán de competición */}
-                                    <path d="M 8 23 C 13 21, 20 23, 22 28 L 22 41 C 20 46, 13 47, 8 43 Z" fill="url(#subMagnetGrad)" stroke="#1a1c26" strokeWidth="0.8" />
-                                    
-                                    {/* Placa trasera mecanizada con orificio de ventilación del polo central */}
-                                    <ellipse cx="9" cy="33" rx="4.5" ry="10" fill="url(#subChromeGrad)" stroke="#1e293b" strokeWidth="0.6" transform="rotate(-14 9 33)" />
-                                    <ellipse cx="8.8" cy="33" rx="1.6" ry="3.8" fill="#050608" stroke="#334155" strokeWidth="0.5" transform="rotate(-14 8.8 33)" />
+                                        {/* Cono acústico profundo de carbono */}
+                                        <radialGradient id="subCone3dGradNeon" cx="48%" cy="45%" r="55%">
+                                            <stop offset="0%" stopColor="#060912" />
+                                            <stop offset="35%" stopColor="#0f1524" />
+                                            <stop offset="75%" stopColor="#1c2338" />
+                                            <stop offset="100%" stopColor="#0b0e1a" />
+                                        </radialGradient>
 
-                                    {/* Bornes de conexión push-pin cromados en el lateral con detalle azul cian corporativo */}
-                                    <rect x="14" y="44" width="3" height="4.5" rx="1" fill="url(#subChromeGrad)" stroke="#0f172a" strokeWidth="0.4" />
-                                    <rect x="18" y="45.5" width="3" height="4.5" rx="1" fill="url(#subChromeGrad)" stroke="#0f172a" strokeWidth="0.4" />
-                                    <circle cx="15.5" cy="48" r="0.7" fill="#06b6d4" />
-                                    <circle cx="19.5" cy="49.5" r="0.7" fill="#06b6d4" />
+                                        {/* Cúpula central invertida (Dust Cap) con brillo */}
+                                        <radialGradient id="subCap3dGradNeon" cx="44%" cy="40%" r="58%">
+                                            <stop offset="0%" stopColor="#2c334d" />
+                                            <stop offset="30%" stopColor="#161a29" />
+                                            <stop offset="75%" stopColor="#090c17" />
+                                            <stop offset="100%" stopColor="#030408" />
+                                        </radialGradient>
+                                    </defs>
 
-                                    {/* Brazos estructurales del chasis de fundición (Basket Struts) con ventanas */}
-                                    <path d="M 18 24 L 28 14 L 32 17 L 21 27 Z" fill="url(#subBasketGrad)" stroke="#222432" strokeWidth="0.6" />
-                                    <path d="M 16 41 L 27 49 L 31 46 L 19 38 Z" fill="url(#subBasketGrad)" stroke="#222432" strokeWidth="0.6" />
-                                    <path d="M 17 32 L 25 32 L 26 35 L 18 35 Z" fill="#13141c" />
-                                </g>
+                                    {/* 1. BLOQUE POSTERIOR: DOBLE IMÁN DE FERRITA PESADO & PLACA CROMADA TRASERA */}
+                                    <g id="subwoofer-motor-assembly-neon">
+                                        <ellipse cx="14" cy="38" rx="10" ry="14" fill="#000000" opacity="0.6" transform="rotate(-14 14 38)" />
+                                        <path d="M 8 23 C 13 21, 20 23, 22 28 L 22 41 C 20 46, 13 47, 8 43 Z" fill="url(#subMagnetGradNeon)" stroke="#0891b2" strokeWidth="0.9" />
+                                        <ellipse cx="9" cy="33" rx="4.5" ry="10" fill="url(#subChromeGradNeon)" stroke="#22d3ee" strokeWidth="0.8" transform="rotate(-14 9 33)" />
+                                        <ellipse cx="8.8" cy="33" rx="1.6" ry="3.8" fill="#050608" stroke="#06b6d4" strokeWidth="0.6" transform="rotate(-14 8.8 33)" />
+                                        <rect x="14" y="44" width="3" height="4.5" rx="1" fill="url(#subChromeGradNeon)" stroke="#0f172a" strokeWidth="0.4" />
+                                        <rect x="18" y="45.5" width="3" height="4.5" rx="1" fill="url(#subChromeGradNeon)" stroke="#0f172a" strokeWidth="0.4" />
+                                        <circle cx="15.5" cy="48" r="0.9" fill="#22d3ee" filter="url(#subNeonCyanGlow)" />
+                                        <circle cx="19.5" cy="49.5" r="0.9" fill="#22d3ee" filter="url(#subNeonCyanGlow)" />
+                                        <path d="M 18 24 L 28 14 L 32 17 L 21 27 Z" fill="url(#subBasketGradNeon)" stroke="#06b6d4" strokeWidth="0.7" />
+                                        <path d="M 16 41 L 27 49 L 31 46 L 19 38 Z" fill="url(#subBasketGradNeon)" stroke="#06b6d4" strokeWidth="0.7" />
+                                        <path d="M 17 32 L 25 32 L 26 35 L 18 35 Z" fill="#0c101d" stroke="#0891b2" strokeWidth="0.5" />
+                                    </g>
 
-                                {/* 2. ONDAS DE CHOQUE SÓNICAS DISPARADAS HACIA LA DERECHA (DIRECTO HACIA EL TEXTO BEATWAVE) */}
-                                <g id="subwoofer-sound-blastwaves" className={`pointer-events-none transition-opacity duration-300 ${isLogoTechnoActive ? 'opacity-100' : 'opacity-0'}`}>
-                                    <path d="M 44 14 C 54 20, 54 38, 44 44" stroke="#06b6d4" strokeWidth="2.4" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} fill="none" opacity="1" />
-                                    <path d="M 49 10 C 61 18, 61 40, 49 48" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} fill="none" opacity="0.8" style={{ animationDelay: '0.06s' }} />
-                                    <path d="M 54 6 C 68 16, 68 42, 54 52" stroke="#67e8f9" strokeWidth="1.2" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} fill="none" opacity="0.6" style={{ animationDelay: '0.12s' }} />
-                                </g>
+                                    {/* 2. ONDAS DE CHOQUE SÓNICAS DISPARADAS HACIA LA DERECHA */}
+                                    <g id="subwoofer-sound-blastwaves-neon" className={`pointer-events-none transition-opacity duration-300 ${isLogoTechnoActive ? 'opacity-100' : 'opacity-0'}`}>
+                                        <path d="M 44 14 C 54 20, 54 38, 44 44" stroke="#06b6d4" strokeWidth="2.6" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} filter="url(#subNeonCyanGlow)" fill="none" opacity="1" />
+                                        <path d="M 49 10 C 61 18, 61 40, 49 48" stroke="#22d3ee" strokeWidth="2.0" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} filter="url(#subNeonCyanGlow)" fill="none" opacity="0.85" style={{ animationDelay: '0.06s' }} />
+                                        <path d="M 54 6 C 68 16, 68 42, 54 52" stroke="#67e8f9" strokeWidth="1.4" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} filter="url(#subNeonCyanGlow)" fill="none" opacity="0.7" style={{ animationDelay: '0.12s' }} />
+                                    </g>
 
-                                {/* 3. ARO FRONTAL EXTERIOR DE FUNDICIÓN (BASKET RIM EN PERSPECTIVA 3D TILTED) */}
-                                <g id="subwoofer-front-rim">
-                                    {/* Aro exterior de aluminio */}
-                                    <ellipse cx="36" cy="29" rx="18" ry="23" fill="url(#subBasketGrad)" stroke="#2f3244" strokeWidth="1.2" transform="rotate(-14 36 29)" />
-                                    <ellipse cx="36" cy="29" rx="16" ry="20.8" fill="none" stroke="#161720" strokeWidth="1" transform="rotate(-14 36 29)" />
-                                    
-                                    {/* Pernos Allen de montaje en acero perimetral */}
-                                    <circle cx="37" cy="7" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
-                                    <circle cx="51.5" cy="18" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
-                                    <circle cx="53" cy="35" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
-                                    <circle cx="39" cy="51" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
-                                    <circle cx="23" cy="44" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
-                                    <circle cx="20.5" cy="20" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
-                                </g>
+                                    {/* 3. ARO FRONTAL EXTERIOR CON BORDE NEÓN AZUL CORPORATIVO Y PERNOS DE MONTAJE */}
+                                    <g id="subwoofer-front-rim-neon">
+                                        {/* Contorno exterior resplandeciente con efecto Neón */}
+                                        <ellipse cx="36" cy="29" rx="18.5" ry="23.5" fill="none" stroke="url(#neonCyanBrightGrad)" strokeWidth="2.2" filter="url(#subNeonCyanGlow)" transform="rotate(-14 36 29)" />
+                                        {/* Chasis principal del aro */}
+                                        <ellipse cx="36" cy="29" rx="18" ry="23" fill="url(#subBasketGradNeon)" stroke="#22d3ee" strokeWidth="1.2" transform="rotate(-14 36 29)" />
+                                        <ellipse cx="36" cy="29" rx="16" ry="20.8" fill="none" stroke="#0891b2" strokeWidth="1" transform="rotate(-14 36 29)" />
+                                        
+                                        {/* 6 Pernos Allen perimetrales de acero con destello neón */}
+                                        <circle cx="37" cy="7" r="1.3" fill="#e0f2fe" stroke="#0891b2" strokeWidth="0.6" filter="url(#subNeonCyanGlow)" />
+                                        <circle cx="37" cy="7" r="0.6" fill="#0f172a" />
+                                        <circle cx="51.5" cy="18" r="1.3" fill="#e0f2fe" stroke="#0891b2" strokeWidth="0.6" filter="url(#subNeonCyanGlow)" />
+                                        <circle cx="51.5" cy="18" r="0.6" fill="#0f172a" />
+                                        <circle cx="53" cy="35" r="1.3" fill="#e0f2fe" stroke="#0891b2" strokeWidth="0.6" filter="url(#subNeonCyanGlow)" />
+                                        <circle cx="53" cy="35" r="0.6" fill="#0f172a" />
+                                        <circle cx="39" cy="51" r="1.3" fill="#e0f2fe" stroke="#0891b2" strokeWidth="0.6" filter="url(#subNeonCyanGlow)" />
+                                        <circle cx="39" cy="51" r="0.6" fill="#0f172a" />
+                                        <circle cx="23" cy="44" r="1.3" fill="#e0f2fe" stroke="#0891b2" strokeWidth="0.6" filter="url(#subNeonCyanGlow)" />
+                                        <circle cx="23" cy="44" r="0.6" fill="#0f172a" />
+                                        <circle cx="20.5" cy="20" r="1.3" fill="#e0f2fe" stroke="#0891b2" strokeWidth="0.6" filter="url(#subNeonCyanGlow)" />
+                                        <circle cx="20.5" cy="20" r="0.6" fill="#0f172a" />
+                                    </g>
 
-                                {/* 4. SUSPENSIÓN TOROIDAL DE GOMA SOBREDIMENSIONADA (HIGH-ROLL SURROUND 3D) */}
-                                <g className={isLogoTechnoActive ? "anim-woofer-surround-3d" : ""}>
-                                    <ellipse cx="36" cy="29" rx="14.8" ry="19.2" fill="url(#subSurround3dGrad)" stroke="#0e0f15" strokeWidth="1.4" transform="rotate(-14 36 29)" />
-                                    {/* Arco de luz especular 3D a lo largo del toroide de goma */}
-                                    <path d="M 28 13 C 39 8, 48 18, 50 31" stroke="#474b60" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.45" />
-                                </g>
+                                    {/* 4. SUSPENSIÓN TOROIDAL DE GOMA SOBREDIMENSIONADA (HIGH-ROLL SURROUND 3D) */}
+                                    <g className={isLogoTechnoActive ? "anim-woofer-surround-3d" : ""}>
+                                        <ellipse cx="36" cy="29" rx="14.8" ry="19.2" fill="url(#subSurround3dGradNeon)" stroke="#06b6d4" strokeWidth="1.2" transform="rotate(-14 36 29)" />
+                                        {/* Arco de luz especular 3D a lo largo del toroide */}
+                                        <path d="M 28 13 C 39 8, 48 18, 50 31" stroke="#38bdf8" strokeWidth="1.1" strokeLinecap="round" fill="none" opacity="0.8" />
+                                    </g>
 
-                                {/* 5. CONO PROFUNDO CON EXCURSIÓN BRUTAL 3D (MEMBRANA QUE CASI ESTALLA HACIA LA DERECHA) */}
-                                <g className={isLogoTechnoActive ? "anim-woofer-cone-3d" : ""}>
-                                    {/* Cono cónico profundo de carbono/polipropileno */}
-                                    <ellipse cx="36" cy="29" rx="12.2" ry="16" fill="url(#subCone3dGrad)" stroke="#1a1c26" strokeWidth="0.8" transform="rotate(-14 36 29)" />
+                                    {/* 5. CONO PROFUNDO CON EXCURSIÓN BRUTAL 3D */}
+                                    <g className={isLogoTechnoActive ? "anim-woofer-cone-3d" : ""}>
+                                        {/* Cono acústico con borde azul corporativo */}
+                                        <ellipse cx="36" cy="29" rx="12.2" ry="16" fill="url(#subCone3dGradNeon)" stroke="#22d3ee" strokeWidth="1.0" transform="rotate(-14 36 29)" />
 
-                                    {/* Nervaduras radiales de refuerzo acústico en la membrana */}
-                                    <line x1="36" y1="14" x2="36" y2="21" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
-                                    <line x1="36" y1="37" x2="36" y2="44" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
-                                    <line x1="25" y1="29" x2="30" y2="29" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
-                                    <line x1="42" y1="29" x2="47" y2="29" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
+                                        {/* Nervaduras radiales de refuerzo acústico en la membrana */}
+                                        <line x1="36" y1="14" x2="36" y2="21" stroke="#22d3ee" strokeWidth="1.0" strokeLinecap="round" opacity="0.85" transform="rotate(-14 36 29)" />
+                                        <line x1="36" y1="37" x2="36" y2="44" stroke="#22d3ee" strokeWidth="1.0" strokeLinecap="round" opacity="0.85" transform="rotate(-14 36 29)" />
+                                        <line x1="25" y1="29" x2="30" y2="29" stroke="#22d3ee" strokeWidth="1.0" strokeLinecap="round" opacity="0.85" transform="rotate(-14 36 29)" />
+                                        <line x1="42" y1="29" x2="47" y2="29" stroke="#22d3ee" strokeWidth="1.0" strokeLinecap="round" opacity="0.85" transform="rotate(-14 36 29)" />
 
-                                    {/* Detalle en azul cian corporativo: Anillo de bobina móvil de alta temperatura */}
-                                    <ellipse cx="36" cy="29" rx="7.4" ry="9.8" stroke="#06b6d4" strokeWidth="0.9" fill="none" opacity="0.95" transform="rotate(-14 36 29)" />
+                                        {/* Anillo de bobina móvil de alta temperatura con resplandor neón */}
+                                        <ellipse cx="36" cy="29" rx="7.4" ry="9.8" stroke="#67e8f9" strokeWidth="1.4" fill="none" filter="url(#subNeonCyanGlow)" opacity="1" transform="rotate(-14 36 29)" />
 
-                                    {/* 6. CÚPULA CENTRAL INVERTIDA (DUST CAP 3D) */}
-                                    <ellipse cx="36" cy="29" rx="5.8" ry="7.6" fill="url(#subCap3dGrad)" stroke="#161822" strokeWidth="0.8" className={isLogoTechnoActive ? "anim-woofer-dustcap-3d" : ""} transform="rotate(-14 36 29)" />
-                                    
-                                    {/* Micro-arco de luz en la concavidad del Dust Cap */}
-                                    <path d="M 33 25 Q 36 23 39 26" stroke="#ffffff" strokeWidth="0.6" strokeLinecap="round" opacity="0.4" fill="none" />
-                                    
-                                    {/* Detalle central en azul cian corporativo en la cúpula */}
-                                    <circle cx="36" cy="29" r="1.2" fill="#06b6d4" opacity="0.9" />
-                                </g>
-                            </svg>
-                        </div>
+                                        {/* 6. CÚPULA CENTRAL INVERTIDA (DUST CAP 3D) */}
+                                        <ellipse cx="36" cy="29" rx="5.8" ry="7.6" fill="url(#subCap3dGradNeon)" stroke="#38bdf8" strokeWidth="1.1" className={isLogoTechnoActive ? "anim-woofer-dustcap-3d" : ""} transform="rotate(-14 36 29)" />
+                                        
+                                        {/* Micro-arco de luz especular y brillo en el centro */}
+                                        <path d="M 33 25 Q 36 23 39 26" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" opacity="0.85" fill="none" />
+                                        <circle cx="36" cy="29" r="1.4" fill="#22d3ee" filter="url(#subNeonCyanGlow)" opacity="1" />
+                                    </g>
+                                </svg>
+                            </div>
+                        ) : (
+                            /* VERSIÓN ORIGINAL PRESERVADA PARA PODER RECUPERARLA */
+                            <div className={`w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group ${isLogoTechnoActive ? 'anim-woofer-chassis' : ''}`} title="BeatWave Subwoofer Acústico Pro (Versión Original)">
+                                <svg className="w-12 h-12 relative z-10 overflow-visible" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        {/* Gradiente metálico de la estructura del motor / imán doble posterior */}
+                                        <linearGradient id="subMagnetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#252836" />
+                                            <stop offset="45%" stopColor="#151722" />
+                                            <stop offset="85%" stopColor="#0d0e15" />
+                                            <stop offset="100%" stopColor="#050609" />
+                                        </linearGradient>
+
+                                        {/* Gradiente cromado para placa posterior, polo ventilado y bornes de conexión */}
+                                        <linearGradient id="subChromeGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+                                            <stop offset="0%" stopColor="#f8fafc" />
+                                            <stop offset="35%" stopColor="#94a3b8" />
+                                            <stop offset="70%" stopColor="#334155" />
+                                            <stop offset="100%" stopColor="#0f172a" />
+                                        </linearGradient>
+
+                                        {/* Chasis de fundición de aluminio negro mate (Basket Rim) */}
+                                        <linearGradient id="subBasketGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#2a2c3a" />
+                                            <stop offset="50%" stopColor="#181a24" />
+                                            <stop offset="100%" stopColor="#0c0d13" />
+                                        </linearGradient>
+
+                                        {/* Suspensión de goma sobredimensionada High-Roll (Surround Torus 3D) */}
+                                        <radialGradient id="subSurround3dGrad" cx="42%" cy="38%" r="62%">
+                                            <stop offset="0%" stopColor="#353748" />
+                                            <stop offset="35%" stopColor="#222432" />
+                                            <stop offset="75%" stopColor="#111219" />
+                                            <stop offset="100%" stopColor="#07070b" />
+                                        </radialGradient>
+
+                                        {/* Cono profundo de polipropileno/carbono (Deep Cone Diaphragm) */}
+                                        <radialGradient id="subCone3dGrad" cx="48%" cy="45%" r="55%">
+                                            <stop offset="0%" stopColor="#05060a" />
+                                            <stop offset="35%" stopColor="#0e1017" />
+                                            <stop offset="75%" stopColor="#181a25" />
+                                            <stop offset="100%" stopColor="#0a0b10" />
+                                        </radialGradient>
+
+                                        {/* Cúpula central invertida (Dust Cap) */}
+                                        <radialGradient id="subCap3dGrad" cx="44%" cy="40%" r="58%">
+                                            <stop offset="0%" stopColor="#222533" />
+                                            <stop offset="30%" stopColor="#12131b" />
+                                            <stop offset="75%" stopColor="#06070a" />
+                                            <stop offset="100%" stopColor="#020204" />
+                                        </radialGradient>
+                                    </defs>
+
+                                    {/* 1. BLOQUE POSTERIOR: DOBLE IMÁN DE FERRITA PESADO & PLACA CROMADA TRASERA (A LA IZQUIERDA) */}
+                                    <g id="subwoofer-motor-assembly">
+                                        {/* Sombra proyectada del imán */}
+                                        <ellipse cx="14" cy="38" rx="10" ry="14" fill="#000000" opacity="0.6" transform="rotate(-14 14 38)" />
+                                        
+                                        {/* Cilindro del bloque de imán de competición */}
+                                        <path d="M 8 23 C 13 21, 20 23, 22 28 L 22 41 C 20 46, 13 47, 8 43 Z" fill="url(#subMagnetGrad)" stroke="#1a1c26" strokeWidth="0.8" />
+                                        
+                                        {/* Placa trasera mecanizada con orificio de ventilación del polo central */}
+                                        <ellipse cx="9" cy="33" rx="4.5" ry="10" fill="url(#subChromeGrad)" stroke="#1e293b" strokeWidth="0.6" transform="rotate(-14 9 33)" />
+                                        <ellipse cx="8.8" cy="33" rx="1.6" ry="3.8" fill="#050608" stroke="#334155" strokeWidth="0.5" transform="rotate(-14 8.8 33)" />
+
+                                        {/* Bornes de conexión push-pin cromados en el lateral con detalle azul cian corporativo */}
+                                        <rect x="14" y="44" width="3" height="4.5" rx="1" fill="url(#subChromeGrad)" stroke="#0f172a" strokeWidth="0.4" />
+                                        <rect x="18" y="45.5" width="3" height="4.5" rx="1" fill="url(#subChromeGrad)" stroke="#0f172a" strokeWidth="0.4" />
+                                        <circle cx="15.5" cy="48" r="0.7" fill="#06b6d4" />
+                                        <circle cx="19.5" cy="49.5" r="0.7" fill="#06b6d4" />
+
+                                        {/* Brazos estructurales del chasis de fundición (Basket Struts) con ventanas */}
+                                        <path d="M 18 24 L 28 14 L 32 17 L 21 27 Z" fill="url(#subBasketGrad)" stroke="#222432" strokeWidth="0.6" />
+                                        <path d="M 16 41 L 27 49 L 31 46 L 19 38 Z" fill="url(#subBasketGrad)" stroke="#222432" strokeWidth="0.6" />
+                                        <path d="M 17 32 L 25 32 L 26 35 L 18 35 Z" fill="#13141c" />
+                                    </g>
+
+                                    {/* 2. ONDAS DE CHOQUE SÓNICAS DISPARADAS HACIA LA DERECHA (DIRECTO HACIA EL TEXTO BEATWAVE) */}
+                                    <g id="subwoofer-sound-blastwaves" className={`pointer-events-none transition-opacity duration-300 ${isLogoTechnoActive ? 'opacity-100' : 'opacity-0'}`}>
+                                        <path d="M 44 14 C 54 20, 54 38, 44 44" stroke="#06b6d4" strokeWidth="2.4" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} fill="none" opacity="1" />
+                                        <path d="M 49 10 C 61 18, 61 40, 49 48" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} fill="none" opacity="0.8" style={{ animationDelay: '0.06s' }} />
+                                        <path d="M 54 6 C 68 16, 68 42, 54 52" stroke="#67e8f9" strokeWidth="1.2" strokeLinecap="round" className={isLogoTechnoActive ? "anim-woofer-blastwave" : ""} fill="none" opacity="0.6" style={{ animationDelay: '0.12s' }} />
+                                    </g>
+
+                                    {/* 3. ARO FRONTAL EXTERIOR DE FUNDICIÓN (BASKET RIM EN PERSPECTIVA 3D TILTED) */}
+                                    <g id="subwoofer-front-rim">
+                                        {/* Aro exterior de aluminio */}
+                                        <ellipse cx="36" cy="29" rx="18" ry="23" fill="url(#subBasketGrad)" stroke="#2f3244" strokeWidth="1.2" transform="rotate(-14 36 29)" />
+                                        <ellipse cx="36" cy="29" rx="16" ry="20.8" fill="none" stroke="#161720" strokeWidth="1" transform="rotate(-14 36 29)" />
+                                        
+                                        {/* Pernos Allen de montaje en acero perimetral */}
+                                        <circle cx="37" cy="7" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                        <circle cx="51.5" cy="18" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                        <circle cx="53" cy="35" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                        <circle cx="39" cy="51" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                        <circle cx="23" cy="44" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                        <circle cx="20.5" cy="20" r="1.1" fill="#64748b" stroke="#0f172a" strokeWidth="0.4" />
+                                    </g>
+
+                                    {/* 4. SUSPENSIÓN TOROIDAL DE GOMA SOBREDIMENSIONADA (HIGH-ROLL SURROUND 3D) */}
+                                    <g className={isLogoTechnoActive ? "anim-woofer-surround-3d" : ""}>
+                                        <ellipse cx="36" cy="29" rx="14.8" ry="19.2" fill="url(#subSurround3dGrad)" stroke="#0e0f15" strokeWidth="1.4" transform="rotate(-14 36 29)" />
+                                        {/* Arco de luz especular 3D a lo largo del toroide de goma */}
+                                        <path d="M 28 13 C 39 8, 48 18, 50 31" stroke="#474b60" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.45" />
+                                    </g>
+
+                                    {/* 5. CONO PROFUNDO CON EXCURSIÓN BRUTAL 3D (MEMBRANA QUE CASI ESTALLA HACIA LA DERECHA) */}
+                                    <g className={isLogoTechnoActive ? "anim-woofer-cone-3d" : ""}>
+                                        {/* Cono cónico profundo de carbono/polipropileno */}
+                                        <ellipse cx="36" cy="29" rx="12.2" ry="16" fill="url(#subCone3dGrad)" stroke="#1a1c26" strokeWidth="0.8" transform="rotate(-14 36 29)" />
+
+                                        {/* Nervaduras radiales de refuerzo acústico en la membrana */}
+                                        <line x1="36" y1="14" x2="36" y2="21" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
+                                        <line x1="36" y1="37" x2="36" y2="44" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
+                                        <line x1="25" y1="29" x2="30" y2="29" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
+                                        <line x1="42" y1="29" x2="47" y2="29" stroke="#222533" strokeWidth="0.7" strokeLinecap="round" transform="rotate(-14 36 29)" />
+
+                                        {/* Detalle en azul cian corporativo: Anillo de bobina móvil de alta temperatura */}
+                                        <ellipse cx="36" cy="29" rx="7.4" ry="9.8" stroke="#06b6d4" strokeWidth="0.9" fill="none" opacity="0.95" transform="rotate(-14 36 29)" />
+
+                                        {/* 6. CÚPULA CENTRAL INVERTIDA (DUST CAP 3D) */}
+                                        <ellipse cx="36" cy="29" rx="5.8" ry="7.6" fill="url(#subCap3dGrad)" stroke="#161822" strokeWidth="0.8" className={isLogoTechnoActive ? "anim-woofer-dustcap-3d" : ""} transform="rotate(-14 36 29)" />
+                                        
+                                        {/* Micro-arco de luz en la concavidad del Dust Cap */}
+                                        <path d="M 33 25 Q 36 23 39 26" stroke="#ffffff" strokeWidth="0.6" strokeLinecap="round" opacity="0.4" fill="none" />
+                                        
+                                        {/* Detalle central en azul cian corporativo en la cúpula */}
+                                        <circle cx="36" cy="29" r="1.2" fill="#06b6d4" opacity="0.9" />
+                                    </g>
+                                </svg>
+                            </div>
+                        )}
 
                         {/* RÓTULO BEATWAVE PRO CON DISTORSIÓN VERTICAL SINCRONIZADA */}
                         <div className="flex flex-col min-w-0 shrink-0">
