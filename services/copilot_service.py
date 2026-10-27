@@ -793,6 +793,27 @@ class CopilotService:
         rec_same = f"{num}{mode}"
         rec_up = f"{up_num}{mode}"
 
+        DEFAULT_CUES_1 = [
+            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.04, "time": "00:00.25"},
+            {"id": 2, "name": "Intro Perc", "color": "#f97316", "pct": 0.16, "time": "01:04.00"},
+            {"id": 3, "name": "Bassline In", "color": "#eab308", "pct": 0.32, "time": "02:08.00"},
+            {"id": 4, "name": "MAIN DROP", "color": "#10b981", "pct": 0.48, "time": "03:12.00"},
+            {"id": 5, "name": "Breakdown", "color": "#06b6d4", "pct": 0.62, "time": "04:16.00"},
+            {"id": 6, "name": "Climax 2", "color": "#3b82f6", "pct": 0.74, "time": "05:04.00"},
+            {"id": 7, "name": "Outro 32b", "color": "#8b5cf6", "pct": 0.86, "time": "06:08.00"},
+            {"id": 8, "name": "Cut / Fade", "color": "#ec4899", "pct": 0.96, "time": "07:15.00"}
+        ]
+        DEFAULT_CUES_2 = [
+            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.05, "time": "00:00.30"},
+            {"id": 2, "name": "Vocal Hook", "color": "#f97316", "pct": 0.19, "time": "01:08.00"},
+            {"id": 3, "name": "Build-Up 16b", "color": "#eab308", "pct": 0.35, "time": "02:16.00"},
+            {"id": 4, "name": "PEAK DROP", "color": "#10b981", "pct": 0.50, "time": "03:20.00"},
+            {"id": 5, "name": "Acid Meltdown", "color": "#06b6d4", "pct": 0.64, "time": "04:24.00"},
+            {"id": 6, "name": "Second Drop", "color": "#3b82f6", "pct": 0.76, "time": "05:12.00"},
+            {"id": 7, "name": "Outro Limpio", "color": "#8b5cf6", "pct": 0.88, "time": "06:16.00"},
+            {"id": 8, "name": "Fade Out", "color": "#ec4899", "pct": 0.97, "time": "06:45.00"}
+        ]
+
         candidates = [
             {
                 "id": "rec_1",
@@ -803,6 +824,11 @@ class CopilotService:
                 "role": "Percussive Tool",
                 "lufs": -6.5,
                 "low_ratio": 36.0,
+                "genre": "Acid / Peak Techno",
+                "energy": 94,
+                "format": "FLAC 24-bit",
+                "duration": "06:12",
+                "cover": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
                 "strategy": "Mezcla Armónica Segura",
                 "reason": f"Mismo tono ({rec_same}) y espectro percusivo limpio. Cero riesgo de embarre en graves."
             },
@@ -815,6 +841,11 @@ class CopilotService:
                 "role": "Peak Time Driver",
                 "lufs": -5.9,
                 "low_ratio": 49.0,
+                "genre": "Drumcode Techno",
+                "energy": 96,
+                "format": "FLAC Hi-Res",
+                "duration": "07:22",
+                "cover": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
                 "strategy": "Subidón de Energía (+1)",
                 "reason": f"Aumento armónico a {rec_up} con +1.0 BPM. Eleva la intensidad del club para el clímax."
             },
@@ -827,6 +858,11 @@ class CopilotService:
                 "role": "Percussive Descongestor",
                 "lufs": -7.1,
                 "low_ratio": 32.0,
+                "genre": "Hypnotic / Raw",
+                "energy": 88,
+                "format": "WAV 24-bit",
+                "duration": "05:48",
+                "cover": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop",
                 "strategy": "Descongestión de Sala",
                 "reason": "Textura enfocada en medios y agudos. Ideal para limpiar la sala tras un drop saturado."
             }
@@ -845,16 +881,106 @@ class CopilotService:
         """Genera un estado dinámico simulado para pruebas de cabina."""
         sim_decks = [
             (
-                {"artist": "Mauro Picotto", "name": "Komodo (Megavoices Claxixx Mix)", "bpm": 137.68, "raw_key": "Bm", "file": "Mauro Picotto - Komodo.flac"},
-                {"artist": "Marco Bailey / Sigvard", "name": "Smooth Mind", "bpm": 140.0, "raw_key": "Gm", "file": "Sigvard - Smooth Mind.flac"}
+                {
+                    "artist": "Mauro Picotto",
+                    "name": "Komodo (Megavoices Claxixx Mix)",
+                    "bpm": 137.68,
+                    "raw_key": "Bm",
+                    "file": "Mauro Picotto - Komodo.flac",
+                    "genre": "Trance / Hard Techno",
+                    "subgenre": "Peak Classics",
+                    "energy": 94,
+                    "danceability": 89,
+                    "format": "FLAC 24-bit 44.1kHz",
+                    "duration": "08:15",
+                    "phase": "Peak Time Climax",
+                    "year": "2000",
+                    "cover": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop"
+                },
+                {
+                    "artist": "Marco Bailey / Sigvard",
+                    "name": "Smooth Mind",
+                    "bpm": 140.0,
+                    "raw_key": "Gm",
+                    "file": "Sigvard - Smooth Mind.flac",
+                    "genre": "Raw / Deep Techno",
+                    "subgenre": "Drumcode Peak",
+                    "energy": 91,
+                    "danceability": 95,
+                    "format": "FLAC 16-bit 44.1kHz",
+                    "duration": "05:48",
+                    "phase": "Hypnotic Groove",
+                    "year": "2023",
+                    "cover": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop"
+                }
             ),
             (
-                {"artist": "Charlotte de Witte", "name": "Doppler", "bpm": 132.0, "raw_key": "Am", "file": "Charlotte de Witte - Doppler.flac"},
-                {"artist": "Enrico Sangiuliano", "name": "Future Acid", "bpm": 132.5, "raw_key": "Em", "file": "Enrico Sangiuliano - Future Acid.flac"}
+                {
+                    "artist": "Charlotte de Witte",
+                    "name": "Doppler",
+                    "bpm": 132.0,
+                    "raw_key": "Am",
+                    "file": "Charlotte de Witte - Doppler.flac",
+                    "genre": "Acid Techno",
+                    "subgenre": "KNTXT Peak",
+                    "energy": 96,
+                    "danceability": 88,
+                    "format": "FLAC Hi-Res 24-bit",
+                    "duration": "06:45",
+                    "phase": "Acid Peak",
+                    "year": "2021",
+                    "cover": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop"
+                },
+                {
+                    "artist": "Enrico Sangiuliano",
+                    "name": "Future Acid",
+                    "bpm": 132.5,
+                    "raw_key": "Em",
+                    "file": "Enrico Sangiuliano - Future Acid.flac",
+                    "genre": "Peak Time Techno",
+                    "subgenre": "NINETOZERO Core",
+                    "energy": 93,
+                    "danceability": 91,
+                    "format": "FLAC 24-bit 96kHz",
+                    "duration": "06:38",
+                    "phase": "Cosmic Drive",
+                    "year": "2022",
+                    "cover": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop"
+                }
             ),
             (
-                {"artist": "Hertz", "name": "Old School", "bpm": 142.0, "raw_key": "Abm", "file": "Hertz - Old School.flac"},
-                {"artist": "James Ruskin", "name": "Detached", "bpm": 136.0, "raw_key": "Em", "file": "James Ruskin - Detached.flac"}
+                {
+                    "artist": "Hertz",
+                    "name": "Old School",
+                    "bpm": 142.0,
+                    "raw_key": "Abm",
+                    "file": "Hertz - Old School.flac",
+                    "genre": "Hard Techno Industrial",
+                    "subgenre": "Sway Records",
+                    "energy": 98,
+                    "danceability": 86,
+                    "format": "WAV 24-bit Master",
+                    "duration": "05:12",
+                    "phase": "Industrial Assault",
+                    "year": "2024",
+                    "cover": "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&h=300&fit=crop"
+                },
+                {
+                    "artist": "James Ruskin",
+                    "name": "Detached",
+                    "bpm": 136.0,
+                    "raw_key": "Em",
+                    "file": "James Ruskin - Detached.flac",
+                    "genre": "Minimal / Deep Techno",
+                    "subgenre": "Blueprint",
+                    "energy": 87,
+                    "danceability": 94,
+                    "format": "FLAC 16-bit 44.1kHz",
+                    "duration": "06:14",
+                    "phase": "Warm-Up Driver",
+                    "year": "2019",
+                    "cover": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=300&fit=crop"
+                }
             )
         ]
         
@@ -864,6 +990,27 @@ class CopilotService:
         t1, t2 = pair[0], pair[1]
         c1 = self.to_camelot(t1["raw_key"])
         c2 = self.to_camelot(t2["raw_key"])
+
+        deck_1_cues = [
+            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.04, "time": "00:00.25"},
+            {"id": 2, "name": "Intro Perc", "color": "#f97316", "pct": 0.16, "time": "01:04.00"},
+            {"id": 3, "name": "Bassline In", "color": "#eab308", "pct": 0.32, "time": "02:08.00"},
+            {"id": 4, "name": "MAIN DROP", "color": "#10b981", "pct": 0.48, "time": "03:12.00"},
+            {"id": 5, "name": "Breakdown", "color": "#06b6d4", "pct": 0.62, "time": "04:16.00"},
+            {"id": 6, "name": "Climax 2", "color": "#3b82f6", "pct": 0.74, "time": "05:04.00"},
+            {"id": 7, "name": "Outro 32b", "color": "#8b5cf6", "pct": 0.86, "time": "06:08.00"},
+            {"id": 8, "name": "Cut / Fade", "color": "#ec4899", "pct": 0.96, "time": "07:15.00"}
+        ]
+        deck_2_cues = [
+            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.05, "time": "00:00.30"},
+            {"id": 2, "name": "Vocal Hook", "color": "#f97316", "pct": 0.19, "time": "01:08.00"},
+            {"id": 3, "name": "Build-Up 16b", "color": "#eab308", "pct": 0.35, "time": "02:16.00"},
+            {"id": 4, "name": "PEAK DROP", "color": "#10b981", "pct": 0.50, "time": "03:20.00"},
+            {"id": 5, "name": "Acid Meltdown", "color": "#06b6d4", "pct": 0.64, "time": "04:24.00"},
+            {"id": 6, "name": "Second Drop", "color": "#3b82f6", "pct": 0.76, "time": "05:12.00"},
+            {"id": 7, "name": "Outro Limpio", "color": "#8b5cf6", "pct": 0.88, "time": "06:16.00"},
+            {"id": 8, "name": "Fade Out", "color": "#ec4899", "pct": 0.97, "time": "06:45.00"}
+        ]
 
         deck_1 = {
             "deck_num": "1",
@@ -876,6 +1023,16 @@ class CopilotService:
             "camelot_color": self.CAMELOT_COLORS.get(c1, "#06b6d4"),
             "raw_key": t1["raw_key"],
             "file_path": t1["file"],
+            "genre": t1.get("genre", "Melodic Techno"),
+            "subgenre": t1.get("subgenre", "Peak Time"),
+            "energy": t1.get("energy", 92),
+            "danceability": t1.get("danceability", 88),
+            "format": t1.get("format", "FLAC 24-bit"),
+            "duration": t1.get("duration", "06:30"),
+            "phase": t1.get("phase", "Peak Time"),
+            "year": t1.get("year", "2024"),
+            "cover": t1.get("cover", ""),
+            "cues": deck_1_cues,
             "lufs": -6.6,
             "low_ratio": 48.0,
             "mid_ratio": 32.0,
@@ -897,6 +1054,16 @@ class CopilotService:
             "camelot_color": self.CAMELOT_COLORS.get(c2, "#06b6d4"),
             "raw_key": t2["raw_key"],
             "file_path": t2["file"],
+            "genre": t2.get("genre", "Raw / Deep Techno"),
+            "subgenre": t2.get("subgenre", "Drumcode Core"),
+            "energy": t2.get("energy", 91),
+            "danceability": t2.get("danceability", 95),
+            "format": t2.get("format", "FLAC 16-bit"),
+            "duration": t2.get("duration", "05:48"),
+            "phase": t2.get("phase", "Hypnotic Groove"),
+            "year": t2.get("year", "2023"),
+            "cover": t2.get("cover", ""),
+            "cues": deck_2_cues,
             "lufs": -6.3,
             "low_ratio": 51.0,
             "mid_ratio": 31.0,
@@ -1014,6 +1181,25 @@ class CopilotService:
             "camelot_color": self.CAMELOT_COLORS.get(c1, "#06b6d4"),
             "raw_key": deck_1_raw.get("raw_key", ""),
             "file_path": deck_1_raw.get("file_path", ""),
+            "genre": deck_1_raw.get("genre") or "Melodic Techno",
+            "subgenre": deck_1_raw.get("subgenre") or "Club Master",
+            "energy": deck_1_raw.get("energy", 92),
+            "danceability": deck_1_raw.get("danceability", 88),
+            "format": deck_1_raw.get("format") or ("FLAC 24-bit" if str(deck_1_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k"),
+            "duration": deck_1_raw.get("duration") or "06:30",
+            "phase": deck_1_raw.get("phase") or "Peak Time",
+            "year": deck_1_raw.get("year") or "2024",
+            "cover": deck_1_raw.get("cover") or (f"/cover?path={deck_1_raw['file_path']}" if deck_1_raw.get("file_path") else ""),
+            "cues": deck_1_raw.get("cues") or [
+                {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.04, "time": "00:00.25"},
+                {"id": 2, "name": "Intro Perc", "color": "#f97316", "pct": 0.16, "time": "01:04.00"},
+                {"id": 3, "name": "Bassline In", "color": "#eab308", "pct": 0.32, "time": "02:08.00"},
+                {"id": 4, "name": "MAIN DROP", "color": "#10b981", "pct": 0.48, "time": "03:12.00"},
+                {"id": 5, "name": "Breakdown", "color": "#06b6d4", "pct": 0.62, "time": "04:16.00"},
+                {"id": 6, "name": "Climax 2", "color": "#3b82f6", "pct": 0.74, "time": "05:04.00"},
+                {"id": 7, "name": "Outro 32b", "color": "#8b5cf6", "pct": 0.86, "time": "06:08.00"},
+                {"id": 8, "name": "Cut / Fade", "color": "#ec4899", "pct": 0.96, "time": "07:15.00"}
+            ],
             "lufs": dsp_1["lufs"],
             "low_ratio": dsp_1["low_ratio"],
             "mid_ratio": dsp_1["mid_ratio"],
@@ -1035,6 +1221,25 @@ class CopilotService:
             "camelot_color": self.CAMELOT_COLORS.get(c2, "#06b6d4"),
             "raw_key": deck_2_raw.get("raw_key", ""),
             "file_path": deck_2_raw.get("file_path", ""),
+            "genre": deck_2_raw.get("genre") or "Raw / Deep Techno",
+            "subgenre": deck_2_raw.get("subgenre") or "Drumcode Core",
+            "energy": deck_2_raw.get("energy", 91),
+            "danceability": deck_2_raw.get("danceability", 95),
+            "format": deck_2_raw.get("format") or ("FLAC 16-bit" if str(deck_2_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k"),
+            "duration": deck_2_raw.get("duration") or "05:48",
+            "phase": deck_2_raw.get("phase") or "Hypnotic Groove",
+            "year": deck_2_raw.get("year") or "2023",
+            "cover": deck_2_raw.get("cover") or (f"/cover?path={deck_2_raw['file_path']}" if deck_2_raw.get("file_path") else ""),
+            "cues": deck_2_raw.get("cues") or [
+                {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.05, "time": "00:00.30"},
+                {"id": 2, "name": "Vocal Hook", "color": "#f97316", "pct": 0.19, "time": "01:08.00"},
+                {"id": 3, "name": "Build-Up 16b", "color": "#eab308", "pct": 0.35, "time": "02:16.00"},
+                {"id": 4, "name": "PEAK DROP", "color": "#10b981", "pct": 0.50, "time": "03:20.00"},
+                {"id": 5, "name": "Acid Meltdown", "color": "#06b6d4", "pct": 0.64, "time": "04:24.00"},
+                {"id": 6, "name": "Second Drop", "color": "#3b82f6", "pct": 0.76, "time": "05:12.00"},
+                {"id": 7, "name": "Outro Limpio", "color": "#8b5cf6", "pct": 0.88, "time": "06:16.00"},
+                {"id": 8, "name": "Fade Out", "color": "#ec4899", "pct": 0.97, "time": "06:45.00"}
+            ],
             "lufs": dsp_2["lufs"],
             "low_ratio": dsp_2["low_ratio"],
             "mid_ratio": dsp_2["mid_ratio"],

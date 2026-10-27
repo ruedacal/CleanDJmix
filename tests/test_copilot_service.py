@@ -71,8 +71,15 @@ def test_copilot_simulation_mode():
     assert "deck_2" in state
     assert "comment" in state["deck_1"]
     assert "tactical_comment" in state["deck_1"]
+    assert "genre" in state["deck_1"]
+    assert "cues" in state["deck_1"]
+    assert len(state["deck_1"]["cues"]) == 8
+    assert "energy" in state["deck_1"]
+    assert "format" in state["deck_1"]
     assert "comment" in state["deck_2"]
     assert len(state["recommendations"]) == 3
+    assert "cover" in state["recommendations"][0]
+    assert "genre" in state["recommendations"][0]
     assert "local_ip" in state
     assert "platform" in state
     assert "platform_icon" in state

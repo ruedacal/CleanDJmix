@@ -1,5 +1,80 @@
 const { useState, useEffect, useRef } = React;
 
+// Carátula por defecto (SVG Vinilo Minimalista DJ)
+const DEFAULT_VINYL_SVG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="12" fill="#0d0d14"/><circle cx="80" cy="80" r="58" fill="#14141f" stroke="#27273a" stroke-width="2"/><circle cx="80" cy="80" r="44" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/><circle cx="80" cy="80" r="30" fill="none" stroke="#3b82f6" stroke-width="1.5" opacity="0.5"/><circle cx="80" cy="80" r="14" fill="#06b6d4"/><circle cx="80" cy="80" r="5" fill="#09090b"/></svg>');
+
+function getValidCover(c) {
+    if (!c || typeof c !== 'string') return DEFAULT_VINYL_SVG;
+    if (c.startsWith("data:") || c.startsWith("http://") || c.startsWith("https://") || c.startsWith("/")) return c;
+    return "https://i.scdn.co/image/" + c;
+}
+
+// =======================================================
+// VECTOR SVG BRAND LOGOS PARA SUITES DJ DE CABINA
+// =======================================================
+const PlatformSeratoLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+        <rect width="32" height="32" rx="7" fill="#021a24" />
+        <path d="M7 21.5L12.5 9H16.5L11 21.5H7Z" fill="#00d1e8" />
+        <path d="M14 23L19.5 10.5H23.5L18 23H14Z" fill="#00d1e8" />
+        <path d="M21 21.5L24.5 13.5H27.5L24 21.5H21Z" fill="#22d3ee" fillOpacity="0.8" />
+        <circle cx="26" cy="23" r="1.5" fill="#00d1e8" />
+    </svg>
+);
+
+const PlatformRekordboxLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+        <rect width="32" height="32" rx="7" fill="#091b33" />
+        <circle cx="16" cy="16" r="9" stroke="#38bdf8" strokeWidth="2" strokeDasharray="3 1.5" />
+        <circle cx="16" cy="16" r="5" stroke="#00e5ff" strokeWidth="1.8" />
+        <circle cx="16" cy="16" r="2" fill="#38bdf8" />
+        <path d="M16 4V8M16 24V28M4 16H8M24 16H28" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+);
+
+const PlatformVirtualDjLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+        <rect width="32" height="32" rx="7" fill="#2a1202" />
+        <circle cx="16" cy="16" r="10" stroke="#f97316" strokeWidth="1.6" />
+        <circle cx="16" cy="16" r="6.5" stroke="#fb923c" strokeWidth="0.8" strokeDasharray="1.5 1.5" />
+        <text x="16" y="19" textAnchor="middle" fill="#ffedd5" fontSize="8" fontWeight="900" fontFamily="system-ui, sans-serif" letterSpacing="0.5">VDJ</text>
+    </svg>
+);
+
+const PlatformTraktorLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+        <rect width="32" height="32" rx="7" fill="#241a02" />
+        <rect x="7" y="8" width="18" height="4" rx="1" fill="#facc15" />
+        <path d="M13.5 12H18.5V23.5C18.5 24.3 17.8 25 17 25H15C14.2 25 13.5 24.3 13.5 23.5V12Z" fill="#facc15" />
+        <circle cx="22" cy="19" r="2" fill="#eab308" />
+    </svg>
+);
+
+const PlatformAutoLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+        <rect width="32" height="32" rx="7" fill="#1e0c2e" />
+        <circle cx="16" cy="16" r="9" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="3 2" />
+        <circle cx="16" cy="16" r="5" stroke="#c084fc" strokeWidth="1.5" />
+        <circle cx="16" cy="16" r="2" fill="#e9d5ff" />
+        <path d="M16 6L18.5 10.5L16 9.2L13.5 10.5L16 6Z" fill="#a855f7" />
+        <path d="M16 26L13.5 21.5L16 22.8L18.5 21.5L16 26Z" fill="#a855f7" />
+    </svg>
+);
+
+const PlatformLogos = {
+    auto: PlatformAutoLogo,
+    serato: PlatformSeratoLogo,
+    rekordbox: PlatformRekordboxLogo,
+    virtualdj: PlatformVirtualDjLogo,
+    traktor: PlatformTraktorLogo
+};
+
+const renderPlatformLogo = (id, size = 20, className = "") => {
+    const key = (id || 'auto').toLowerCase();
+    const Comp = PlatformLogos[key] || PlatformLogos.auto;
+    return <Comp size={size} className={className} />;
+};
+
 function LiveCopilotApp() {
     const [state, setState] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -93,11 +168,11 @@ function LiveCopilotApp() {
     const companionUrl = `http://${local_ip || '127.0.0.1'}:8000/copilot.html`;
 
     const platformsList = [
-        { id: 'auto', label: 'Auto', icon: '🔄', color: '#a855f7' },
-        { id: 'serato', label: 'Serato', icon: '💿', color: '#06b6d4' },
-        { id: 'rekordbox', label: 'Rekordbox', icon: '🎛️', color: '#3b82f6' },
-        { id: 'virtualdj', label: 'VirtualDJ', icon: '🎧', color: '#f97316' },
-        { id: 'traktor', label: 'Traktor', icon: '⚡', color: '#eab308' }
+        { id: 'auto', label: 'Auto', color: '#a855f7' },
+        { id: 'serato', label: 'Serato', color: '#00d1e8' },
+        { id: 'rekordbox', label: 'Rekordbox', color: '#38bdf8' },
+        { id: 'virtualdj', label: 'VirtualDJ', color: '#f97316' },
+        { id: 'traktor', label: 'Traktor', color: '#facc15' }
     ];
 
     const isLive = state.source && state.source.endsWith('_LIVE');
@@ -121,10 +196,10 @@ function LiveCopilotApp() {
                         </h1>
                     </div>
 
-                    {/* BADGE DEL SOFTWARE ACTIVO */}
+                    {/* BADGE DEL SOFTWARE ACTIVO CON LOGO OFICIAL */}
                     <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-xs">
-                        <span>{platform_icon || '🎛️'}</span>
-                        <strong style={{ color: platform_color || '#06b6d4' }}>{platform_name || 'DJ LINK'}</strong>
+                        {renderPlatformLogo(platform || 'serato', 16)}
+                        <strong style={{ color: platform_color || '#00d1e8' }}>{platform_name || 'DJ LINK'}</strong>
                         <span className="text-zinc-600">|</span>
                         <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-blue-400' : 'text-amber-400 font-bold'}>
                             {platform_status || (isLive ? 'LIVE' : 'STANDBY')}
@@ -138,7 +213,7 @@ function LiveCopilotApp() {
 
                 {/* SELECTOR DE PLATAFORMA & CONTROLES */}
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-between md:justify-end">
-                    {/* SELECTOR DE PLATAFORMA MULTI-DJ */}
+                    {/* SELECTOR DE PLATAFORMA MULTI-DJ CON LOGOS OFICIALES */}
                     <div className="flex items-center p-1 bg-zinc-950/90 rounded-xl border border-zinc-800/90 shadow-inner">
                         {platformsList.map(p => {
                             const isSelected = (platform_mode === p.id) || (platform_mode === 'auto' && p.id === 'auto');
@@ -147,7 +222,7 @@ function LiveCopilotApp() {
                                     key={p.id}
                                     type="button"
                                     onClick={() => setPlatform(p.id)}
-                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
                                         isSelected 
                                         ? 'bg-zinc-800 text-white shadow-md border border-zinc-600'
                                         : 'text-zinc-400 hover:text-zinc-200'
@@ -155,7 +230,7 @@ function LiveCopilotApp() {
                                     style={isSelected ? { color: p.color, borderColor: `${p.color}66` } : {}}
                                     title={`Conectar con ${p.label}`}
                                 >
-                                    <span className="text-xs">{p.icon}</span>
+                                    {renderPlatformLogo(p.id, 16)}
                                     <span className="hidden sm:inline text-[11px]">{p.label}</span>
                                 </button>
                             );
@@ -202,7 +277,7 @@ function LiveCopilotApp() {
                 </div>
             </header>
 
-            {/* CUERPO PRINCIPAL: DUAL DECK HEADS-UP DISPLAY */}
+            {/* CUERPO PRINCIPAL: DUAL DECK HEADS-UP DISPLAY ENRIQUECIDO */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                 <DeckCard deck={deck_1} side="A" isMaster={deck_1.is_master} />
                 <DeckCard deck={deck_2} side="B" isMaster={deck_2.is_master} />
@@ -269,7 +344,7 @@ function LiveCopilotApp() {
                 </div>
             </section>
 
-            {/* SECCIÓN DE RECOMENDACIONES TÁCTICAS INMEDIATAS */}
+            {/* SECCIÓN DE RECOMENDACIONES TÁCTICAS INMEDIATAS ENRIQUECIDAS */}
             <section className="mt-auto">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -289,20 +364,36 @@ function LiveCopilotApp() {
                             key={rec.id}
                             className="p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 hover:border-djcyan-500/50 hover:bg-zinc-900/60 transition-all flex flex-col justify-between group"
                         >
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                                <div className="min-w-0">
-                                    <div className="font-syne font-bold text-sm text-white group-hover:text-djcyan-400 transition-colors truncate">
-                                        {rec.title}
+                            <div className="flex items-start gap-3 mb-2">
+                                {/* Thumbnail Carátula */}
+                                <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-zinc-700/60 bg-black">
+                                    <img 
+                                        src={getValidCover(rec.cover)} 
+                                        alt="Cover" 
+                                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-1">
+                                        <div className="font-syne font-bold text-sm text-white group-hover:text-djcyan-400 transition-colors truncate">
+                                            {rec.title}
+                                        </div>
+                                        <div 
+                                            className="px-2 py-0.5 rounded-lg font-orbitron font-bold text-xs text-black shrink-0"
+                                            style={{ backgroundColor: rec.camelot_color }}
+                                        >
+                                            {rec.camelot}
+                                        </div>
                                     </div>
                                     <div className="font-syne text-xs text-zinc-400 truncate">
                                         {rec.artist}
                                     </div>
-                                </div>
-                                <div 
-                                    className="px-2 py-0.5 rounded-lg font-orbitron font-bold text-xs text-black shrink-0"
-                                    style={{ backgroundColor: rec.camelot_color }}
-                                >
-                                    {rec.camelot}
+                                    <div className="flex items-center gap-2 mt-1 text-[10px] font-mono">
+                                        <span className="text-djcyan-400 font-bold">{rec.bpm} BPM</span>
+                                        {rec.genre && <span className="text-zinc-500 truncate">• {rec.genre}</span>}
+                                        {rec.energy && <span className="text-amber-400 font-bold shrink-0">⚡{rec.energy}%</span>}
+                                    </div>
                                 </div>
                             </div>
 
@@ -311,8 +402,8 @@ function LiveCopilotApp() {
                             </div>
 
                             <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-500">
-                                <span>{rec.bpm} BPM</span>
                                 <span className="text-djcyan-400 font-bold uppercase">{rec.strategy}</span>
+                                <span>Sub: {rec.low_ratio}%</span>
                                 <span>{rec.lufs} dB</span>
                             </div>
                         </div>
@@ -362,18 +453,18 @@ function LiveCopilotApp() {
     );
 }
 
-// Subcomponente de Tarjeta de Deck A/B
+// Subcomponente de Tarjeta de Deck A/B Enriquecido
 function DeckCard({ deck, side, isMaster }) {
     if (!deck) return null;
 
     return (
-        <div className={`p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden ${
+        <div className={`p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${
             isMaster 
             ? 'bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]' 
             : 'bg-[#07070f] border-zinc-800 hover:border-zinc-700'
         }`}>
             {/* CABECERA DEL DECK */}
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60">
                 <div className="flex items-center gap-2">
                     <span className="font-orbitron font-black text-base sm:text-lg text-zinc-400">
                         DECK {side}
@@ -385,49 +476,152 @@ function DeckCard({ deck, side, isMaster }) {
                     }`}>
                         {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
                     </span>
+                    {deck.phase && (
+                        <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 uppercase">
+                            ✨ {deck.phase}
+                        </span>
+                    )}
                 </div>
-                <span className="font-mono text-xs text-zinc-500 uppercase">
-                    {deck.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP'}
-                </span>
+                <div className="flex items-center gap-2 font-mono text-xs text-zinc-500 uppercase">
+                    {deck.format && (
+                        <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[10px] font-bold text-zinc-300">
+                            {deck.format}
+                        </span>
+                    )}
+                    <span>{deck.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP'}</span>
+                </div>
             </div>
 
-            {/* TÍTULO Y ARTISTA (GIGANTES PARA CABINA) */}
-            <div className="mb-4">
-                <h2 className="font-syne font-black text-xl sm:text-2xl lg:text-3xl text-white tracking-wide leading-tight line-clamp-1">
-                    {deck.title}
-                </h2>
-                <p className="font-syne font-bold text-sm sm:text-base text-zinc-400 mt-0.5 line-clamp-1">
-                    {deck.artist}
-                </p>
+            {/* SECCIÓN CARÁTULA 1:1 + TÍTULO / ARTISTA / GÉNERO / DURACIÓN */}
+            <div className="flex items-start gap-3.5 mb-3.5">
+                {/* CARÁTULA 1:1 CON BADGE */}
+                <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-2xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-lg bg-black group">
+                    <img 
+                        src={getValidCover(deck.cover)} 
+                        alt="Carátula" 
+                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
+                    {deck.duration && (
+                        <span className="absolute bottom-1 right-1.5 px-1.5 py-0.2 rounded bg-black/85 text-[9px] font-mono font-bold text-zinc-300">
+                            {deck.duration}
+                        </span>
+                    )}
+                    {deck.year && (
+                        <span className="absolute top-1 left-1.5 px-1 py-0.2 rounded bg-black/75 text-[9px] font-mono text-zinc-400">
+                            {deck.year}
+                        </span>
+                    )}
+                </div>
+
+                {/* TÍTULO Y ARTISTA */}
+                <div className="min-w-0 flex-1">
+                    <h2 className="font-syne font-black text-xl sm:text-2xl lg:text-3xl text-white tracking-wide leading-tight line-clamp-1" title={deck.title}>
+                        {deck.title}
+                    </h2>
+                    <p className="font-syne font-bold text-sm sm:text-base text-zinc-400 mt-0.5 line-clamp-1" title={deck.artist}>
+                        {deck.artist}
+                    </p>
+                    {/* BADGES TAXONOMÍA */}
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                        {deck.genre && (
+                            <span className="px-2 py-0.5 rounded-md bg-djcyan-950/60 border border-djcyan-500/40 text-[10px] font-mono font-bold text-djcyan-300">
+                                {deck.genre}
+                            </span>
+                        )}
+                        {deck.subgenre && (
+                            <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-700/60 text-[10px] font-mono text-zinc-400">
+                                {deck.subgenre}
+                            </span>
+                        )}
+                    </div>
+                </div>
             </div>
 
-            {/* CAMELOT BADGE & BPM HERO */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* CAMELOT BADGE, BPM HERO & ENERGÍA/DANCEABILITY */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-3.5">
                 {/* INSIGNIA CAMELOT */}
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-zinc-800/80">
+                <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80">
                     <div 
-                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-orbitron font-black text-lg sm:text-xl text-black shadow-[0_0_15px_rgba(0,0,0,0.8)] shrink-0"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-orbitron font-black text-base sm:text-lg text-black shadow-lg shrink-0"
                         style={{ backgroundColor: deck.camelot_color }}
                     >
                         {deck.camelot}
                     </div>
-                    <div>
-                        <div className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Tonalidad</div>
-                        <div className="font-syne font-bold text-sm sm:text-base text-white">{deck.raw_key || deck.camelot}</div>
+                    <div className="min-w-0">
+                        <div className="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">Tonalidad</div>
+                        <div className="font-syne font-bold text-xs sm:text-sm text-white truncate">{deck.raw_key || deck.camelot}</div>
                     </div>
                 </div>
 
                 {/* BPM & TEMPO */}
-                <div className="p-3 rounded-2xl bg-black/40 border border-zinc-800/80 flex flex-col justify-center">
-                    <div className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Tempo Estricto</div>
-                    <div className="font-orbitron font-black text-xl sm:text-2xl text-white">
-                        {deck.bpm ? Number(deck.bpm).toFixed(2) : '130.00'} <span className="text-xs font-normal text-zinc-400">BPM</span>
+                <div className="p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 flex flex-col justify-center">
+                    <div className="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">Tempo Estricto</div>
+                    <div className="font-orbitron font-black text-lg sm:text-xl text-white">
+                        {deck.bpm ? Number(deck.bpm).toFixed(2) : '130.00'} <span className="text-[10px] font-normal text-zinc-400 font-mono">BPM</span>
+                    </div>
+                </div>
+
+                {/* ENERGÍA & DANCEABILITY */}
+                <div className="col-span-2 sm:col-span-1 p-2 rounded-2xl bg-black/40 border border-zinc-800/80 flex flex-col justify-center gap-1">
+                    <div className="flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-amber-400 font-bold flex items-center gap-1">⚡ ENERGÍA</span>
+                        <span className="text-white font-bold">{deck.energy || 90}%</span>
+                    </div>
+                    <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${deck.energy || 90}%` }}></div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono pt-0.5">
+                        <span className="text-purple-400 font-bold flex items-center gap-1">🕺 GROOVE</span>
+                        <span className="text-white font-bold">{deck.danceability || 88}%</span>
                     </div>
                 </div>
             </div>
 
+            {/* TIRA VISUAL DE 8 HOT CUES DE CABINA */}
+            <div className="mb-3 p-2.5 rounded-2xl bg-black/60 border border-zinc-800/80">
+                <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[9px] font-mono uppercase text-zinc-400 tracking-wider font-bold flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-djcyan-400"></span> 8 HOT CUES DE CABINA
+                    </span>
+                    <span className="text-[9px] font-mono text-zinc-500">Puntos de Salto & Estructura</span>
+                </div>
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                    {(deck.cues || [
+                        { id: 1, name: "Downbeat", color: "#ef4444", time: "00:00" },
+                        { id: 2, name: "Intro", color: "#f97316", time: "01:04" },
+                        { id: 3, name: "Bass In", color: "#eab308", time: "02:08" },
+                        { id: 4, name: "MAIN DROP", color: "#10b981", time: "03:12" },
+                        { id: 5, name: "Break", color: "#06b6d4", time: "04:16" },
+                        { id: 6, name: "Climax", color: "#3b82f6", time: "05:04" },
+                        { id: 7, name: "Outro 32b", color: "#8b5cf6", time: "06:08" },
+                        { id: 8, name: "Cut / Fade", color: "#ec4899", time: "07:15" },
+                    ]).map((cue, cIdx) => (
+                        <div 
+                            key={cue.id || cIdx}
+                            className="p-1 rounded-xl border flex flex-col justify-between transition-all bg-zinc-950/80 hover:bg-zinc-900 cursor-default"
+                            style={{ borderColor: `${cue.color || '#06b6d4'}55` }}
+                        >
+                            <div className="flex items-center justify-between">
+                                <span 
+                                    className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black text-black font-mono shadow-sm"
+                                    style={{ backgroundColor: cue.color || '#06b6d4' }}
+                                >
+                                    {cue.id || (cIdx + 1)}
+                                </span>
+                                <span className="text-[8px] font-mono text-zinc-500">{cue.time || '--:--'}</span>
+                            </div>
+                            <div className="text-[8px] font-syne font-bold text-zinc-200 truncate mt-1" title={cue.name}>
+                                {cue.name}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
             {/* HUELLA ESPECTRAL ACÚSTICA (SUB / MED / HI) */}
-            <div className="space-y-2 pt-2 border-t border-zinc-800/60 font-mono text-xs">
+            <div className="space-y-1.5 pt-2 border-t border-zinc-800/60 font-mono text-xs">
                 <div className="flex items-center justify-between text-zinc-400">
                     <span>Densidad Sub-Graves (Sub-Bass)</span>
                     <span className={deck.low_ratio >= 44 ? 'text-red-400 font-bold' : 'text-zinc-200'}>{deck.low_ratio}%</span>
@@ -441,7 +635,7 @@ function DeckCard({ deck, side, isMaster }) {
                     ></div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1">
+                <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-0.5">
                     <span>Medios: {deck.mid_ratio}%</span>
                     <span>Agudos: {deck.high_ratio}%</span>
                     <span>LUFS: <strong className="text-zinc-300">{deck.lufs} dB</strong></span>
@@ -449,10 +643,10 @@ function DeckCard({ deck, side, isMaster }) {
             </div>
 
             {/* COMENTARIO TÁCTICO CABINA */}
-            <div className="mt-3 p-2.5 rounded-2xl bg-black/50 border border-zinc-800/80 flex items-start gap-2.5">
+            <div className="mt-2.5 p-2.5 rounded-2xl bg-black/50 border border-zinc-800/80 flex items-start gap-2.5">
                 <span className="text-emerald-400 text-sm shrink-0">💬</span>
                 <div className="min-w-0 flex-1">
-                    <div className="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ</div>
+                    <div className="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ (Tag ID3)</div>
                     <div className="font-mono text-xs text-zinc-200 truncate" title={deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}>
                         {deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}
                     </div>
