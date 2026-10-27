@@ -19256,8 +19256,8 @@ const App = () => {
                         title={isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para reiniciar la secuencia techno (10s)"}
                     >
                         {speakerLogoMode === 'neon' ? (
-                            /* NUEVA VERSIÓN: SUBWOOFER CLUB 3D CON BORDE AZUL CORPORATIVO, EFECTO NEÓN Y BRILLO */
-                            <div className={`w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group rounded-2xl border-2 border-djcyan-400 bg-gradient-to-br from-djcyan-950/70 via-djzinc-950/95 to-black shadow-[0_0_20px_rgba(6,182,212,0.6),inset_0_0_12px_rgba(6,182,212,0.3)] transition-all duration-300 hover:border-djcyan-300 hover:shadow-[0_0_28px_rgba(34,211,238,0.8),inset_0_0_16px_rgba(6,182,212,0.4)] ${isLogoTechnoActive ? 'anim-woofer-chassis' : ''}`} title="BeatWave Subwoofer Acústico Pro (Borde Neón Corporativo - Clic para probar)">
+                            /* NUEVA VERSIÓN: SUBWOOFER CLUB 3D CON BORDE NEÓN EXTERIOR (SIN RECUADRO Y SIN LÍNEAS INTERIORES) */
+                            <div className={`w-12 h-12 sm:w-13 sm:h-13 flex items-center justify-center relative shrink-0 select-none cursor-pointer group ${isLogoTechnoActive ? 'anim-woofer-chassis' : ''}`} title="BeatWave Subwoofer Acústico Pro (Borde Neón Exterior - Clic para probar)">
                                 <svg className="w-12 h-12 relative z-10 overflow-visible" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <defs>
                                         {/* Filtro Neón Azul Corporativo de Alta Intensidad */}
@@ -19351,7 +19351,7 @@ const App = () => {
                                     {/* 3. ARO FRONTAL EXTERIOR CON BORDE NEÓN AZUL CORPORATIVO Y PERNOS DE MONTAJE */}
                                     <g id="subwoofer-front-rim-neon">
                                         {/* Contorno exterior resplandeciente con efecto Neón */}
-                                        <ellipse cx="36" cy="29" rx="18.5" ry="23.5" fill="none" stroke="url(#neonCyanBrightGrad)" strokeWidth="2.2" filter="url(#subNeonCyanGlow)" transform="rotate(-14 36 29)" />
+                                        <ellipse cx="36" cy="29" rx="18.5" ry="23.5" fill="none" stroke="url(#neonCyanBrightGrad)" strokeWidth="2.4" filter="url(#subNeonCyanGlow)" transform="rotate(-14 36 29)" />
                                         {/* Chasis principal del aro */}
                                         <ellipse cx="36" cy="29" rx="18" ry="23" fill="url(#subBasketGradNeon)" stroke="#22d3ee" strokeWidth="1.2" transform="rotate(-14 36 29)" />
                                         <ellipse cx="36" cy="29" rx="16" ry="20.8" fill="none" stroke="#0891b2" strokeWidth="1" transform="rotate(-14 36 29)" />
@@ -19378,26 +19378,13 @@ const App = () => {
                                         <path d="M 28 13 C 39 8, 48 18, 50 31" stroke="#38bdf8" strokeWidth="1.1" strokeLinecap="round" fill="none" opacity="0.8" />
                                     </g>
 
-                                    {/* 5. CONO PROFUNDO CON EXCURSIÓN BRUTAL 3D */}
+                                    {/* 5. CONO PROFUNDO LIMPIO (SIN LÍNEAS INTERIORES, SOLO EL EXTERIOR DEL ALTAVOZ) */}
                                     <g className={isLogoTechnoActive ? "anim-woofer-cone-3d" : ""}>
-                                        {/* Cono acústico con borde azul corporativo */}
-                                        <ellipse cx="36" cy="29" rx="12.2" ry="16" fill="url(#subCone3dGradNeon)" stroke="#22d3ee" strokeWidth="1.0" transform="rotate(-14 36 29)" />
+                                        {/* Cono acústico limpio con gradiente de profundidad */}
+                                        <ellipse cx="36" cy="29" rx="12.2" ry="16" fill="url(#subCone3dGradNeon)" stroke="#1a1c26" strokeWidth="0.8" transform="rotate(-14 36 29)" />
 
-                                        {/* Nervaduras radiales de refuerzo acústico en la membrana */}
-                                        <line x1="36" y1="14" x2="36" y2="21" stroke="#22d3ee" strokeWidth="1.0" strokeLinecap="round" opacity="0.85" transform="rotate(-14 36 29)" />
-                                        <line x1="36" y1="37" x2="36" y2="44" stroke="#22d3ee" strokeWidth="1.0" strokeLinecap="round" opacity="0.85" transform="rotate(-14 36 29)" />
-                                        <line x1="25" y1="29" x2="30" y2="29" stroke="#22d3ee" strokeWidth="1.0" strokeLinecap="round" opacity="0.85" transform="rotate(-14 36 29)" />
-                                        <line x1="42" y1="29" x2="47" y2="29" stroke="#22d3ee" strokeWidth="1.0" strokeLinecap="round" opacity="0.85" transform="rotate(-14 36 29)" />
-
-                                        {/* Anillo de bobina móvil de alta temperatura con resplandor neón */}
-                                        <ellipse cx="36" cy="29" rx="7.4" ry="9.8" stroke="#67e8f9" strokeWidth="1.4" fill="none" filter="url(#subNeonCyanGlow)" opacity="1" transform="rotate(-14 36 29)" />
-
-                                        {/* 6. CÚPULA CENTRAL INVERTIDA (DUST CAP 3D) */}
-                                        <ellipse cx="36" cy="29" rx="5.8" ry="7.6" fill="url(#subCap3dGradNeon)" stroke="#38bdf8" strokeWidth="1.1" className={isLogoTechnoActive ? "anim-woofer-dustcap-3d" : ""} transform="rotate(-14 36 29)" />
-                                        
-                                        {/* Micro-arco de luz especular y brillo en el centro */}
-                                        <path d="M 33 25 Q 36 23 39 26" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" opacity="0.85" fill="none" />
-                                        <circle cx="36" cy="29" r="1.4" fill="#22d3ee" filter="url(#subNeonCyanGlow)" opacity="1" />
+                                        {/* 6. CÚPULA CENTRAL INVERTIDA (DUST CAP 3D) LIMPIA */}
+                                        <ellipse cx="36" cy="29" rx="5.8" ry="7.6" fill="url(#subCap3dGradNeon)" stroke="#161822" strokeWidth="0.8" className={isLogoTechnoActive ? "anim-woofer-dustcap-3d" : ""} transform="rotate(-14 36 29)" />
                                     </g>
                                 </svg>
                             </div>
