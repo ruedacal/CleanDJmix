@@ -9,6 +9,68 @@ function getValidCover(c) {
     return "https://i.scdn.co/image/" + c;
 }
 
+// Función auxiliar para calcular la envolvente estructural profesional por componentes DJ:
+// - bass: Sub-graves (bombo 4x4, sub-bass 30-100Hz) en Azul Cobalto / Índigo profundo
+// - drums: Pegada y caja (kick punch, snare, claps 100-500Hz) en Bermellón enérgico
+// - vocals: Vocales y leads melódicos (sintetizadores, formantes vocales 500-3000Hz) en Ámbar / Verde Esmeralda
+// - treble: Agudos y platos (hi-hats, shakers, cymbals, aire >3000Hz) en Cian / Blanco Eléctrico
+function computeTrackStructuralBands(xNorm, seed) {
+    const s = ((seed % 17) - 8) * 0.006;
+    const b1Start = Math.max(0.16, 0.22 + s);
+    const b1End = b1Start + 0.12;
+    const drop1End = b1End + 0.24;
+    const b2Start = drop1End;
+    const b2End = b2Start + 0.14;
+    const drop2End = Math.min(0.88, b2End + 0.20);
+
+    let bass = 0.15, drums = 0.15, vocals = 0.15, treble = 0.15;
+    let isBreak = false;
+
+    const beatGridKick = Math.pow(Math.abs(Math.cos(xNorm * 180 + seed)), 8);
+    const snareHit = Math.pow(Math.abs(Math.sin(xNorm * 90 + seed)), 10);
+    const hatPattern = 0.4 + 0.6 * Math.pow(Math.abs(Math.sin(xNorm * 360)), 3);
+
+    if (xNorm < b1Start) {
+        const p = xNorm / b1Start;
+        bass = (0.70 + 0.25 * beatGridKick);
+        drums = (0.50 + 0.35 * snareHit) * Math.min(1, p * 1.5);
+        vocals = 0.20 + 0.25 * p * (0.6 + 0.4 * Math.sin(xNorm * 40));
+        treble = (0.30 + 0.45 * p) * hatPattern;
+    } else if (xNorm >= b1Start && xNorm < b1End) {
+        isBreak = true;
+        const p = (xNorm - b1Start) / (b1End - b1Start);
+        bass = 0.04 + 0.03 * Math.sin(xNorm * 15);
+        drums = 0.10 + 0.40 * Math.pow(p, 2) * snareHit;
+        vocals = 0.85 + 0.15 * Math.sin(p * Math.PI) * (0.8 + 0.2 * Math.cos(xNorm * 30));
+        treble = 0.40 + 0.55 * Math.pow(p, 1.8);
+    } else if (xNorm >= b1End && xNorm < drop1End) {
+        bass = 0.92 + 0.08 * beatGridKick;
+        drums = 0.88 + 0.12 * snareHit;
+        vocals = 0.65 + 0.25 * Math.sin(xNorm * 35);
+        treble = 0.82 + 0.18 * hatPattern;
+    } else if (xNorm >= b2Start && xNorm < b2End) {
+        isBreak = true;
+        const p = (xNorm - b2Start) / (b2End - b2Start);
+        bass = 0.03 + 0.02 * Math.cos(xNorm * 10);
+        drums = 0.08 + 0.50 * Math.pow(p, 2.5) * snareHit;
+        vocals = 0.95 + 0.05 * Math.sin(p * Math.PI);
+        treble = 0.45 + 0.50 * p;
+    } else if (xNorm >= b2End && xNorm < drop2End) {
+        bass = 0.98 + 0.02 * beatGridKick;
+        drums = 0.92 + 0.08 * snareHit;
+        vocals = 0.70 + 0.20 * Math.sin(xNorm * 45);
+        treble = 0.88 + 0.12 * hatPattern;
+    } else {
+        const p = (xNorm - drop2End) / (1 - drop2End);
+        bass = Math.max(0.08, (0.75 - 0.60 * p) * (0.8 + 0.2 * beatGridKick));
+        drums = Math.max(0.08, (0.55 - 0.45 * p));
+        vocals = Math.max(0.05, (0.35 - 0.30 * p));
+        treble = Math.max(0.05, (0.45 - 0.38 * p));
+    }
+
+    return { bass, drums, vocals, treble, isBreak };
+}
+
 // =======================================================
 // VECTOR SVG BRAND LOGOS PARA SUITES DJ DE CABINA
 // =======================================================
@@ -73,6 +135,435 @@ const renderPlatformLogo = (id, size = 20, className = "") => {
     const key = (id || 'auto').toLowerCase();
     const Comp = PlatformLogos[key] || PlatformLogos.auto;
     return <Comp size={size} className={className} />;
+};
+
+// =======================================================
+// WAVEFORM SERATO EN TIEMPO REAL CON ZOOM Y AYUDAS TÁCTICAS
+// =======================================================
+const CopilotSeratoWaveform = ({
+    deck,
+    side = "1",
+    antiMuddy = null,
+    partnerDeck = null
+}) => {
+    const canvasRef = useRef(null);
+    const minimapRef = useRef(null);
+    const [zoom, setZoom] = useState(4); // 2x, 4x, 8x, 16x
+    const [showTacticalAids, setShowTacticalAids] = useState(true);
+    const [progress, setProgress] = useState(deck.play_progress || 0.15);
+    const progressRef = useRef(deck.play_progress || 0.15);
+    const isPlayingRef = useRef(deck.is_playing || deck.is_master || false);
+    const bpmRef = useRef(deck.bpm || 130.0);
+    const durationSecRef = useRef(deck.duration_sec || 390.0);
+
+    useEffect(() => {
+        if (deck.play_progress !== undefined) {
+            const diff = Math.abs(progressRef.current - deck.play_progress);
+            if (diff > 0.02) {
+                progressRef.current = deck.play_progress;
+                setProgress(deck.play_progress);
+            }
+        }
+        isPlayingRef.current = (deck.is_playing !== undefined) ? deck.is_playing : (deck.is_master || false);
+        bpmRef.current = parseFloat(deck.bpm) || 130.0;
+        durationSecRef.current = parseFloat(deck.duration_sec) || 390.0;
+    }, [deck.play_progress, deck.is_playing, deck.is_master, deck.bpm, deck.duration_sec]);
+
+    // Reproducción continua en tiempo real (60fps)
+    useEffect(() => {
+        let animId;
+        let lastTime = performance.now();
+
+        const tick = (now) => {
+            const dt = (now - lastTime) / 1000.0;
+            lastTime = now;
+
+            if (isPlayingRef.current && durationSecRef.current > 0) {
+                const advance = dt / durationSecRef.current;
+                const next = (progressRef.current + advance) % 1.0;
+                progressRef.current = next;
+                setProgress(next);
+            }
+            animId = requestAnimationFrame(tick);
+        };
+        animId = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(animId);
+    }, []);
+
+    const rawId = deck.file_path || deck.title || "1";
+    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const durSec = deck.duration_sec || 390.0;
+    const elapsedSec = progress * durSec;
+    const remainSec = Math.max(0, durSec - elapsedSec);
+
+    const formatSec = (s) => {
+        const m = Math.floor(s / 60);
+        const sec = Math.floor(s % 60);
+        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    };
+
+    const cues = deck.cues || [];
+    const phases = deck.structural_phases || [
+        { id: "intro", name: "Intro", start_pct: 0.0, end_pct: 0.16, type: "intro", label: "Intro 32b • Mezcla In", color: "#06b6d4" },
+        { id: "build", name: "Bassline In", start_pct: 0.16, end_pct: 0.35, type: "build", label: "Bassline Activa", color: "#eab308" },
+        { id: "break", name: "Breakdown", start_pct: 0.35, end_pct: 0.48, type: "break", label: "Breakdown (Sin Graves)", color: "#38bdf8" },
+        { id: "drop", name: "MAIN DROP", start_pct: 0.48, end_pct: 0.74, type: "drop", label: "⚡ DROP PRINCIPAL (Clímax)", color: "#ef4444" },
+        { id: "break2", name: "Segundo Parón", start_pct: 0.74, end_pct: 0.82, type: "break", label: "Puente Melódico", color: "#a855f7" },
+        { id: "outro", name: "Outro", start_pct: 0.82, end_pct: 1.0, type: "outro", label: "🟢 MEZCLA SEGURA (Outro)", color: "#10b981" }
+    ];
+
+    const nextCue = cues.find(c => (c.pct || 0) > progress);
+    const beatsToNextCue = nextCue && deck.bpm ? Math.round(((nextCue.pct - progress) * durSec) / (60.0 / deck.bpm)) : null;
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const w = rect.width || canvas.parentElement.clientWidth || 550;
+        const h = 100;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        const ctx = canvas.getContext('2d');
+        if (ctx.resetTransform) ctx.resetTransform(); else ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+
+        ctx.fillStyle = '#05050a';
+        ctx.fillRect(0, 0, w, h);
+
+        const midY = h / 2;
+        const playheadX = w / 2;
+
+        const windowSec = durSec / zoom;
+        const halfWindowSec = windowSec / 2;
+        const currentSec = progress * durSec;
+        const startSec = currentSec - halfWindowSec;
+        const endSec = currentSec + halfWindowSec;
+
+        // Rejilla de compases (Beatgrid Serato)
+        const bpm = deck.bpm || 130.0;
+        const beatSec = 60.0 / bpm;
+        if (beatSec > 0) {
+            const firstBeatIdx = Math.floor(startSec / beatSec);
+            const lastBeatIdx = Math.ceil(endSec / beatSec);
+            for (let b = firstBeatIdx; b <= lastBeatIdx; b++) {
+                const bSec = b * beatSec;
+                const bx = playheadX + ((bSec - currentSec) / windowSec) * w;
+                if (bx >= 0 && bx <= w) {
+                    const isBar = (b % 4 === 0);
+                    const isPhrase = (b % 16 === 0);
+                    ctx.strokeStyle = isPhrase ? 'rgba(255, 255, 255, 0.40)' : isBar ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.07)';
+                    ctx.lineWidth = isPhrase ? 1.5 : 1;
+                    ctx.beginPath();
+                    ctx.moveTo(bx, isBar ? 8 : 16);
+                    ctx.lineTo(bx, h - (isBar ? 8 : 16));
+                    ctx.stroke();
+
+                    if (isBar && bx > 15 && bx < w - 25) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                        ctx.font = '8px monospace';
+                        ctx.fillText(`${Math.floor(b / 4) + 1}`, bx + 2, 14);
+                    }
+                }
+            }
+        }
+
+        // Zonas y Ayudas Tácticas en el Waveform
+        if (showTacticalAids) {
+            phases.forEach(ph => {
+                const phStartSec = ph.start_pct * durSec;
+                const phEndSec = ph.end_pct * durSec;
+                if (phEndSec >= startSec && phStartSec <= endSec) {
+                    const x1 = Math.max(0, playheadX + ((phStartSec - currentSec) / windowSec) * w);
+                    const x2 = Math.min(w, playheadX + ((phEndSec - currentSec) / windowSec) * w);
+                    if (x2 > x1) {
+                        ctx.fillStyle = `${ph.color}15`;
+                        ctx.fillRect(x1, 0, x2 - x1, h);
+
+                        ctx.fillStyle = `${ph.color}88`;
+                        ctx.fillRect(x1, 0, x2 - x1, 2);
+
+                        if (x2 - x1 > 70) {
+                            ctx.fillStyle = ph.color;
+                            ctx.font = 'bold 9px sans-serif';
+                            ctx.fillText(ph.label, x1 + 6, 15);
+                        }
+                    }
+                }
+            });
+
+            if (antiMuddy && antiMuddy.status === 'danger' && (deck.low_ratio || 0) >= 44) {
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+                ctx.fillRect(playheadX - 50, 0, 100, h);
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(playheadX - 50, 0, 100, h);
+            }
+        }
+
+        // Espectro Dinámico 3-Bandas
+        const stepPx = 2;
+        const totalSlices = Math.ceil(w / stepPx);
+        for (let i = 0; i < totalSlices; i++) {
+            const x = i * stepPx;
+            const sliceSec = startSec + (x / w) * windowSec;
+            const sliceNorm = sliceSec / durSec;
+
+            if (sliceNorm >= 0.0 && sliceNorm <= 1.0) {
+                const { bass, drums, vocals, treble } = computeTrackStructuralBands(sliceNorm, seed);
+                const maxAmp = (h / 2) - 10;
+
+                const bassAmp = bass * maxAmp * 0.95;
+                ctx.fillStyle = '#2563eb';
+                ctx.fillRect(x, midY - bassAmp, stepPx - 0.4, bassAmp * 2);
+
+                const midAmp = Math.max(drums, vocals) * maxAmp * 0.75;
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(x, midY - midAmp, stepPx - 0.4, midAmp * 2);
+
+                const trebAmp = treble * maxAmp * 0.5;
+                ctx.fillStyle = '#06b6d4';
+                ctx.fillRect(x, midY - trebAmp, stepPx - 0.4, trebAmp * 2);
+
+                if (bass > 0.8 || treble > 0.8) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(x, midY - 1, stepPx - 0.4, 2);
+                }
+            }
+        }
+
+        // Pines y Banderines de Hot Cues (1 a 8)
+        if (showTacticalAids) {
+            cues.forEach(cue => {
+                const cueSec = (cue.pct !== undefined ? cue.pct : 0) * durSec;
+                if (cueSec >= startSec && cueSec <= endSec) {
+                    const cx = playheadX + ((cueSec - currentSec) / windowSec) * w;
+                    if (cx >= 0 && cx <= w) {
+                        ctx.strokeStyle = cue.color || '#06b6d4';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(cx, 0);
+                        ctx.lineTo(cx, h);
+                        ctx.stroke();
+
+                        ctx.fillStyle = cue.color || '#06b6d4';
+                        if (ctx.roundRect) {
+                            ctx.beginPath();
+                            ctx.roundRect(cx - 2, 4, 38, 14, 3);
+                            ctx.fill();
+                        } else {
+                            ctx.fillRect(cx - 2, 4, 38, 14);
+                        }
+
+                        ctx.fillStyle = '#000000';
+                        ctx.font = 'bold 9px monospace';
+                        ctx.fillText(`C${cue.id || ''}`, cx + 2, 14);
+                    }
+                }
+            });
+        }
+
+        // Aguja Central Playhead Serato (Línea Blanca con Flechas)
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(playheadX, 0);
+        ctx.lineTo(playheadX, h);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(playheadX - 6, 0);
+        ctx.lineTo(playheadX + 6, 0);
+        ctx.lineTo(playheadX, 9);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(playheadX - 6, h);
+        ctx.lineTo(playheadX + 6, h);
+        ctx.lineTo(playheadX, h - 9);
+        ctx.closePath();
+        ctx.fill();
+
+        // Insignias Flotantes Tácticas
+        if (showTacticalAids) {
+            if (antiMuddy && antiMuddy.status === 'danger' && (deck.low_ratio || 0) >= 44) {
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.95)';
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(playheadX - 70, h - 26, 140, 20, 5);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(playheadX - 70, h - 26, 140, 20);
+                }
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('🛡️ BASS CLASH: Cortar Low EQ', playheadX, h - 13);
+                ctx.textAlign = 'left';
+            } else if (beatsToNextCue !== null && beatsToNextCue > 0 && beatsToNextCue <= 32) {
+                ctx.fillStyle = 'rgba(234, 179, 8, 0.95)';
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(playheadX - 60, h - 26, 120, 20, 5);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(playheadX - 60, h - 26, 120, 20);
+                }
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`⚡ ${nextCue.name || 'CUE'} en ${beatsToNextCue}b`, playheadX, h - 13);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        // Minimapa Overview de la Pista Completa
+        const miniCanvas = minimapRef.current;
+        if (!miniCanvas) return;
+        const mRect = miniCanvas.getBoundingClientRect();
+        const mw = mRect.width || miniCanvas.parentElement.clientWidth || 550;
+        const mh = 26;
+        miniCanvas.width = Math.round(mw * dpr);
+        miniCanvas.height = Math.round(mh * dpr);
+        const mCtx = miniCanvas.getContext('2d');
+        if (mCtx.resetTransform) mCtx.resetTransform(); else mCtx.setTransform(1, 0, 0, 1, 0, 0);
+        mCtx.scale(dpr, dpr);
+
+        mCtx.fillStyle = '#06060e';
+        mCtx.fillRect(0, 0, mw, mh);
+
+        const mStep = 2;
+        const mSlices = Math.ceil(mw / mStep);
+        for (let j = 0; j < mSlices; j++) {
+            const mx = j * mStep;
+            const mNorm = mx / mw;
+            const { bass, treble } = computeTrackStructuralBands(mNorm, seed);
+            const mHalf = mh / 2;
+            const bAmp = bass * (mHalf - 2);
+            const tAmp = treble * (mHalf - 4);
+
+            mCtx.fillStyle = '#2563eb';
+            mCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
+
+            mCtx.fillStyle = '#06b6d4';
+            mCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
+        }
+
+        if (showTacticalAids) {
+            phases.forEach(ph => {
+                const px1 = ph.start_pct * mw;
+                const px2 = ph.end_pct * mw;
+                mCtx.fillStyle = `${ph.color}25`;
+                mCtx.fillRect(px1, 0, px2 - px1, mh);
+                mCtx.fillStyle = ph.color;
+                mCtx.fillRect(px1, 0, px2 - px1, 2);
+            });
+
+            cues.forEach(cue => {
+                const cx = (cue.pct || 0) * mw;
+                mCtx.fillStyle = cue.color || '#06b6d4';
+                mCtx.fillRect(cx - 1, 0, 2, mh);
+            });
+        }
+
+        const vStart = Math.max(0, (startSec / durSec) * mw);
+        const vEnd = Math.min(mw, (endSec / durSec) * mw);
+        mCtx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        mCtx.fillRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
+        mCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        mCtx.lineWidth = 1;
+        mCtx.strokeRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
+
+        const mPlayheadX = progress * mw;
+        mCtx.fillStyle = '#ffffff';
+        mCtx.fillRect(mPlayheadX - 1, 0, 2, mh);
+    }, [zoom, showTacticalAids, progress, deck, antiMuddy]);
+
+    const handleMinimapClick = (e) => {
+        const miniCanvas = minimapRef.current;
+        if (!miniCanvas) return;
+        const rect = miniCanvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const newPct = Math.max(0, Math.min(1, clickX / rect.width));
+        progressRef.current = newPct;
+        setProgress(newPct);
+    };
+
+    return (
+        <div className="flex flex-col gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-[#030308] border border-zinc-800/90 shadow-inner">
+            {/* Barra de Control del Waveform */}
+            <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-mono">
+                {/* BOTÓN TOGGLE DE AYUDAS TÁCTICAS DJ */}
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setShowTacticalAids(!showTacticalAids)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${
+                            showTacticalAids
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
+                            : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
+                        }`}
+                        title="Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
+                    >
+                        <span>{showTacticalAids ? '🎯' : '⚪'}</span>
+                        <span>{showTacticalAids ? 'Ayudas DJ: ACTIVAS' : 'Ayudas DJ: OFF'}</span>
+                    </button>
+
+                    <span className="hidden sm:inline-block text-[10px] text-zinc-500">
+                        {showTacticalAids ? 'Drops & Cues Visibles' : 'Puro Serato'}
+                    </span>
+                </div>
+
+                {/* CONTROLES DE ZOOM Y TIEMPOS */}
+                <div className="flex items-center gap-2">
+                    {/* Zoom Presets */}
+                    <div className="flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px]">
+                        {[2, 4, 8, 16].map(z => (
+                            <button
+                                key={z}
+                                type="button"
+                                onClick={() => setZoom(z)}
+                                className={`px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer ${
+                                    zoom === z ? 'bg-djcyan-500 text-black shadow' : 'text-zinc-400 hover:text-white'
+                                }`}
+                            >
+                                {z}x
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tiempo Transcurrido y Restante */}
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[10px] sm:text-[11px]">
+                        <span className="text-white font-bold">{formatSec(elapsedSec)}</span>
+                        <span className="text-zinc-600">/</span>
+                        <span className="text-zinc-400">-{formatSec(remainSec)}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Canvas Waveform Zoom Serato (Centrado en Playhead) */}
+            <div className="relative w-full rounded-xl overflow-hidden border border-zinc-800/80 bg-[#05050b]">
+                <canvas
+                    ref={canvasRef}
+                    style={{ width: '100%', height: '100px', display: 'block' }}
+                />
+            </div>
+
+            {/* Canvas Minimap Track Overview Completo (0-100%) */}
+            <div 
+                onClick={handleMinimapClick}
+                className="relative w-full rounded-lg overflow-hidden border border-zinc-800/60 bg-[#06060e] cursor-pointer hover:border-zinc-700 transition-colors"
+                title="Haz clic en cualquier punto para saltar en la pista"
+            >
+                <canvas
+                    ref={minimapRef}
+                    style={{ width: '100%', height: '26px', display: 'block' }}
+                />
+            </div>
+        </div>
+    );
 };
 
 function LiveCopilotApp() {
@@ -279,8 +770,8 @@ function LiveCopilotApp() {
 
             {/* CUERPO PRINCIPAL: DUAL DECK HEADS-UP DISPLAY ENRIQUECIDO */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
-                <DeckCard deck={deck_1} side="A" isMaster={deck_1.is_master} />
-                <DeckCard deck={deck_2} side="B" isMaster={deck_2.is_master} />
+                <DeckCard deck={deck_1} side="A" isMaster={deck_1.is_master} antiMuddy={anti_muddy} partnerDeck={deck_2} />
+                <DeckCard deck={deck_2} side="B" isMaster={deck_2.is_master} antiMuddy={anti_muddy} partnerDeck={deck_1} />
             </div>
 
             {/* GUARDIÁN TÁCTICO ANTI-MUDDY & RADAR ARMÓNICO */}
@@ -365,7 +856,6 @@ function LiveCopilotApp() {
                             className="p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 hover:border-djcyan-500/50 hover:bg-zinc-900/60 transition-all flex flex-col justify-between group"
                         >
                             <div className="flex items-start gap-3 mb-2">
-                                {/* Thumbnail Carátula */}
                                 <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-zinc-700/60 bg-black">
                                     <img 
                                         src={getValidCover(rec.cover)} 
@@ -454,7 +944,7 @@ function LiveCopilotApp() {
 }
 
 // Subcomponente de Tarjeta de Deck A/B Enriquecido
-function DeckCard({ deck, side, isMaster }) {
+function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }) {
     if (!deck) return null;
 
     return (
@@ -618,6 +1108,16 @@ function DeckCard({ deck, side, isMaster }) {
                         </div>
                     ))}
                 </div>
+            </div>
+
+            {/* WAVEFORM SERATO EN TIEMPO REAL CON ZOOM Y AYUDAS TÁCTICAS */}
+            <div className="mb-3">
+                <CopilotSeratoWaveform 
+                    deck={deck} 
+                    side={side} 
+                    antiMuddy={antiMuddy} 
+                    partnerDeck={partnerDeck} 
+                />
             </div>
 
             {/* HUELLA ESPECTRAL ACÚSTICA (SUB / MED / HI) */}

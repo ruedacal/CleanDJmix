@@ -76,6 +76,10 @@ def test_copilot_simulation_mode():
     assert len(state["deck_1"]["cues"]) == 8
     assert "energy" in state["deck_1"]
     assert "format" in state["deck_1"]
+    assert "duration_sec" in state["deck_1"]
+    assert "play_progress" in state["deck_1"]
+    assert "structural_phases" in state["deck_1"]
+    assert len(state["deck_1"]["structural_phases"]) >= 4
     assert "comment" in state["deck_2"]
     assert len(state["recommendations"]) == 3
     assert "cover" in state["recommendations"][0]

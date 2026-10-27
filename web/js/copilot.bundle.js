@@ -5,6 +5,58 @@ function getValidCover(c) {
   if (c.startsWith("data:") || c.startsWith("http://") || c.startsWith("https://") || c.startsWith("/")) return c;
   return "https://i.scdn.co/image/" + c;
 }
+function computeTrackStructuralBands(xNorm, seed) {
+  const s = (seed % 17 - 8) * 6e-3;
+  const b1Start = Math.max(0.16, 0.22 + s);
+  const b1End = b1Start + 0.12;
+  const drop1End = b1End + 0.24;
+  const b2Start = drop1End;
+  const b2End = b2Start + 0.14;
+  const drop2End = Math.min(0.88, b2End + 0.2);
+  let bass = 0.15, drums = 0.15, vocals = 0.15, treble = 0.15;
+  let isBreak = false;
+  const beatGridKick = Math.pow(Math.abs(Math.cos(xNorm * 180 + seed)), 8);
+  const snareHit = Math.pow(Math.abs(Math.sin(xNorm * 90 + seed)), 10);
+  const hatPattern = 0.4 + 0.6 * Math.pow(Math.abs(Math.sin(xNorm * 360)), 3);
+  if (xNorm < b1Start) {
+    const p = xNorm / b1Start;
+    bass = 0.7 + 0.25 * beatGridKick;
+    drums = (0.5 + 0.35 * snareHit) * Math.min(1, p * 1.5);
+    vocals = 0.2 + 0.25 * p * (0.6 + 0.4 * Math.sin(xNorm * 40));
+    treble = (0.3 + 0.45 * p) * hatPattern;
+  } else if (xNorm >= b1Start && xNorm < b1End) {
+    isBreak = true;
+    const p = (xNorm - b1Start) / (b1End - b1Start);
+    bass = 0.04 + 0.03 * Math.sin(xNorm * 15);
+    drums = 0.1 + 0.4 * Math.pow(p, 2) * snareHit;
+    vocals = 0.85 + 0.15 * Math.sin(p * Math.PI) * (0.8 + 0.2 * Math.cos(xNorm * 30));
+    treble = 0.4 + 0.55 * Math.pow(p, 1.8);
+  } else if (xNorm >= b1End && xNorm < drop1End) {
+    bass = 0.92 + 0.08 * beatGridKick;
+    drums = 0.88 + 0.12 * snareHit;
+    vocals = 0.65 + 0.25 * Math.sin(xNorm * 35);
+    treble = 0.82 + 0.18 * hatPattern;
+  } else if (xNorm >= b2Start && xNorm < b2End) {
+    isBreak = true;
+    const p = (xNorm - b2Start) / (b2End - b2Start);
+    bass = 0.03 + 0.02 * Math.cos(xNorm * 10);
+    drums = 0.08 + 0.5 * Math.pow(p, 2.5) * snareHit;
+    vocals = 0.95 + 0.05 * Math.sin(p * Math.PI);
+    treble = 0.45 + 0.5 * p;
+  } else if (xNorm >= b2End && xNorm < drop2End) {
+    bass = 0.98 + 0.02 * beatGridKick;
+    drums = 0.92 + 0.08 * snareHit;
+    vocals = 0.7 + 0.2 * Math.sin(xNorm * 45);
+    treble = 0.88 + 0.12 * hatPattern;
+  } else {
+    const p = (xNorm - drop2End) / (1 - drop2End);
+    bass = Math.max(0.08, (0.75 - 0.6 * p) * (0.8 + 0.2 * beatGridKick));
+    drums = Math.max(0.08, 0.55 - 0.45 * p);
+    vocals = Math.max(0.05, 0.35 - 0.3 * p);
+    treble = Math.max(0.05, 0.45 - 0.38 * p);
+  }
+  return { bass, drums, vocals, treble, isBreak };
+}
 const PlatformSeratoLogo = ({ size = 20, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "none", xmlns: "http://www.w3.org/2000/svg", className }, /* @__PURE__ */ React.createElement("rect", { width: "32", height: "32", rx: "7", fill: "#021a24" }), /* @__PURE__ */ React.createElement("path", { d: "M7 21.5L12.5 9H16.5L11 21.5H7Z", fill: "#00d1e8" }), /* @__PURE__ */ React.createElement("path", { d: "M14 23L19.5 10.5H23.5L18 23H14Z", fill: "#00d1e8" }), /* @__PURE__ */ React.createElement("path", { d: "M21 21.5L24.5 13.5H27.5L24 21.5H21Z", fill: "#22d3ee", fillOpacity: "0.8" }), /* @__PURE__ */ React.createElement("circle", { cx: "26", cy: "23", r: "1.5", fill: "#00d1e8" }));
 const PlatformRekordboxLogo = ({ size = 20, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "none", xmlns: "http://www.w3.org/2000/svg", className }, /* @__PURE__ */ React.createElement("rect", { width: "32", height: "32", rx: "7", fill: "#091b33" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "9", stroke: "#38bdf8", strokeWidth: "2", strokeDasharray: "3 1.5" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "5", stroke: "#00e5ff", strokeWidth: "1.8" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "2", fill: "#38bdf8" }), /* @__PURE__ */ React.createElement("path", { d: "M16 4V8M16 24V28M4 16H8M24 16H28", stroke: "#00e5ff", strokeWidth: "1.5", strokeLinecap: "round" }));
 const PlatformVirtualDjLogo = ({ size = 20, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "none", xmlns: "http://www.w3.org/2000/svg", className }, /* @__PURE__ */ React.createElement("rect", { width: "32", height: "32", rx: "7", fill: "#2a1202" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "10", stroke: "#f97316", strokeWidth: "1.6" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "6.5", stroke: "#fb923c", strokeWidth: "0.8", strokeDasharray: "1.5 1.5" }), /* @__PURE__ */ React.createElement("text", { x: "16", y: "19", textAnchor: "middle", fill: "#ffedd5", fontSize: "8", fontWeight: "900", fontFamily: "system-ui, sans-serif", letterSpacing: "0.5" }, "VDJ"));
@@ -21,6 +73,351 @@ const renderPlatformLogo = (id, size = 20, className = "") => {
   const key = (id || "auto").toLowerCase();
   const Comp = PlatformLogos[key] || PlatformLogos.auto;
   return /* @__PURE__ */ React.createElement(Comp, { size, className });
+};
+const CopilotSeratoWaveform = ({
+  deck,
+  side = "1",
+  antiMuddy = null,
+  partnerDeck = null
+}) => {
+  const canvasRef = useRef(null);
+  const minimapRef = useRef(null);
+  const [zoom, setZoom] = useState(4);
+  const [showTacticalAids, setShowTacticalAids] = useState(true);
+  const [progress, setProgress] = useState(deck.play_progress || 0.15);
+  const progressRef = useRef(deck.play_progress || 0.15);
+  const isPlayingRef = useRef(deck.is_playing || deck.is_master || false);
+  const bpmRef = useRef(deck.bpm || 130);
+  const durationSecRef = useRef(deck.duration_sec || 390);
+  useEffect(() => {
+    if (deck.play_progress !== void 0) {
+      const diff = Math.abs(progressRef.current - deck.play_progress);
+      if (diff > 0.02) {
+        progressRef.current = deck.play_progress;
+        setProgress(deck.play_progress);
+      }
+    }
+    isPlayingRef.current = deck.is_playing !== void 0 ? deck.is_playing : deck.is_master || false;
+    bpmRef.current = parseFloat(deck.bpm) || 130;
+    durationSecRef.current = parseFloat(deck.duration_sec) || 390;
+  }, [deck.play_progress, deck.is_playing, deck.is_master, deck.bpm, deck.duration_sec]);
+  useEffect(() => {
+    let animId;
+    let lastTime = performance.now();
+    const tick = (now) => {
+      const dt = (now - lastTime) / 1e3;
+      lastTime = now;
+      if (isPlayingRef.current && durationSecRef.current > 0) {
+        const advance = dt / durationSecRef.current;
+        const next = (progressRef.current + advance) % 1;
+        progressRef.current = next;
+        setProgress(next);
+      }
+      animId = requestAnimationFrame(tick);
+    };
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+  const rawId = deck.file_path || deck.title || "1";
+  const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+  const durSec = deck.duration_sec || 390;
+  const elapsedSec = progress * durSec;
+  const remainSec = Math.max(0, durSec - elapsedSec);
+  const formatSec = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  };
+  const cues = deck.cues || [];
+  const phases = deck.structural_phases || [
+    { id: "intro", name: "Intro", start_pct: 0, end_pct: 0.16, type: "intro", label: "Intro 32b \u2022 Mezcla In", color: "#06b6d4" },
+    { id: "build", name: "Bassline In", start_pct: 0.16, end_pct: 0.35, type: "build", label: "Bassline Activa", color: "#eab308" },
+    { id: "break", name: "Breakdown", start_pct: 0.35, end_pct: 0.48, type: "break", label: "Breakdown (Sin Graves)", color: "#38bdf8" },
+    { id: "drop", name: "MAIN DROP", start_pct: 0.48, end_pct: 0.74, type: "drop", label: "\u26A1 DROP PRINCIPAL (Cl\xEDmax)", color: "#ef4444" },
+    { id: "break2", name: "Segundo Par\xF3n", start_pct: 0.74, end_pct: 0.82, type: "break", label: "Puente Mel\xF3dico", color: "#a855f7" },
+    { id: "outro", name: "Outro", start_pct: 0.82, end_pct: 1, type: "outro", label: "\u{1F7E2} MEZCLA SEGURA (Outro)", color: "#10b981" }
+  ];
+  const nextCue = cues.find((c) => (c.pct || 0) > progress);
+  const beatsToNextCue = nextCue && deck.bpm ? Math.round((nextCue.pct - progress) * durSec / (60 / deck.bpm)) : null;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width || canvas.parentElement.clientWidth || 550;
+    const h = 100;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    const ctx = canvas.getContext("2d");
+    if (ctx.resetTransform) ctx.resetTransform();
+    else ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    ctx.fillStyle = "#05050a";
+    ctx.fillRect(0, 0, w, h);
+    const midY = h / 2;
+    const playheadX = w / 2;
+    const windowSec = durSec / zoom;
+    const halfWindowSec = windowSec / 2;
+    const currentSec = progress * durSec;
+    const startSec = currentSec - halfWindowSec;
+    const endSec = currentSec + halfWindowSec;
+    const bpm = deck.bpm || 130;
+    const beatSec = 60 / bpm;
+    if (beatSec > 0) {
+      const firstBeatIdx = Math.floor(startSec / beatSec);
+      const lastBeatIdx = Math.ceil(endSec / beatSec);
+      for (let b = firstBeatIdx; b <= lastBeatIdx; b++) {
+        const bSec = b * beatSec;
+        const bx = playheadX + (bSec - currentSec) / windowSec * w;
+        if (bx >= 0 && bx <= w) {
+          const isBar = b % 4 === 0;
+          const isPhrase = b % 16 === 0;
+          ctx.strokeStyle = isPhrase ? "rgba(255, 255, 255, 0.40)" : isBar ? "rgba(255, 255, 255, 0.20)" : "rgba(255, 255, 255, 0.07)";
+          ctx.lineWidth = isPhrase ? 1.5 : 1;
+          ctx.beginPath();
+          ctx.moveTo(bx, isBar ? 8 : 16);
+          ctx.lineTo(bx, h - (isBar ? 8 : 16));
+          ctx.stroke();
+          if (isBar && bx > 15 && bx < w - 25) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+            ctx.font = "8px monospace";
+            ctx.fillText(`${Math.floor(b / 4) + 1}`, bx + 2, 14);
+          }
+        }
+      }
+    }
+    if (showTacticalAids) {
+      phases.forEach((ph) => {
+        const phStartSec = ph.start_pct * durSec;
+        const phEndSec = ph.end_pct * durSec;
+        if (phEndSec >= startSec && phStartSec <= endSec) {
+          const x1 = Math.max(0, playheadX + (phStartSec - currentSec) / windowSec * w);
+          const x2 = Math.min(w, playheadX + (phEndSec - currentSec) / windowSec * w);
+          if (x2 > x1) {
+            ctx.fillStyle = `${ph.color}15`;
+            ctx.fillRect(x1, 0, x2 - x1, h);
+            ctx.fillStyle = `${ph.color}88`;
+            ctx.fillRect(x1, 0, x2 - x1, 2);
+            if (x2 - x1 > 70) {
+              ctx.fillStyle = ph.color;
+              ctx.font = "bold 9px sans-serif";
+              ctx.fillText(ph.label, x1 + 6, 15);
+            }
+          }
+        }
+      });
+      if (antiMuddy && antiMuddy.status === "danger" && (deck.low_ratio || 0) >= 44) {
+        ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
+        ctx.fillRect(playheadX - 50, 0, 100, h);
+        ctx.strokeStyle = "rgba(239, 68, 68, 0.7)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(playheadX - 50, 0, 100, h);
+      }
+    }
+    const stepPx = 2;
+    const totalSlices = Math.ceil(w / stepPx);
+    for (let i = 0; i < totalSlices; i++) {
+      const x = i * stepPx;
+      const sliceSec = startSec + x / w * windowSec;
+      const sliceNorm = sliceSec / durSec;
+      if (sliceNorm >= 0 && sliceNorm <= 1) {
+        const { bass, drums, vocals, treble } = computeTrackStructuralBands(sliceNorm, seed);
+        const maxAmp = h / 2 - 10;
+        const bassAmp = bass * maxAmp * 0.95;
+        ctx.fillStyle = "#2563eb";
+        ctx.fillRect(x, midY - bassAmp, stepPx - 0.4, bassAmp * 2);
+        const midAmp = Math.max(drums, vocals) * maxAmp * 0.75;
+        ctx.fillStyle = "#f59e0b";
+        ctx.fillRect(x, midY - midAmp, stepPx - 0.4, midAmp * 2);
+        const trebAmp = treble * maxAmp * 0.5;
+        ctx.fillStyle = "#06b6d4";
+        ctx.fillRect(x, midY - trebAmp, stepPx - 0.4, trebAmp * 2);
+        if (bass > 0.8 || treble > 0.8) {
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(x, midY - 1, stepPx - 0.4, 2);
+        }
+      }
+    }
+    if (showTacticalAids) {
+      cues.forEach((cue) => {
+        const cueSec = (cue.pct !== void 0 ? cue.pct : 0) * durSec;
+        if (cueSec >= startSec && cueSec <= endSec) {
+          const cx = playheadX + (cueSec - currentSec) / windowSec * w;
+          if (cx >= 0 && cx <= w) {
+            ctx.strokeStyle = cue.color || "#06b6d4";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, h);
+            ctx.stroke();
+            ctx.fillStyle = cue.color || "#06b6d4";
+            if (ctx.roundRect) {
+              ctx.beginPath();
+              ctx.roundRect(cx - 2, 4, 38, 14, 3);
+              ctx.fill();
+            } else {
+              ctx.fillRect(cx - 2, 4, 38, 14);
+            }
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 9px monospace";
+            ctx.fillText(`C${cue.id || ""}`, cx + 2, 14);
+          }
+        }
+      });
+    }
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(playheadX, 0);
+    ctx.lineTo(playheadX, h);
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(playheadX - 6, 0);
+    ctx.lineTo(playheadX + 6, 0);
+    ctx.lineTo(playheadX, 9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(playheadX - 6, h);
+    ctx.lineTo(playheadX + 6, h);
+    ctx.lineTo(playheadX, h - 9);
+    ctx.closePath();
+    ctx.fill();
+    if (showTacticalAids) {
+      if (antiMuddy && antiMuddy.status === "danger" && (deck.low_ratio || 0) >= 44) {
+        ctx.fillStyle = "rgba(239, 68, 68, 0.95)";
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(playheadX - 70, h - 26, 140, 20, 5);
+          ctx.fill();
+        } else {
+          ctx.fillRect(playheadX - 70, h - 26, 140, 20);
+        }
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 9px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("\u{1F6E1}\uFE0F BASS CLASH: Cortar Low EQ", playheadX, h - 13);
+        ctx.textAlign = "left";
+      } else if (beatsToNextCue !== null && beatsToNextCue > 0 && beatsToNextCue <= 32) {
+        ctx.fillStyle = "rgba(234, 179, 8, 0.95)";
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(playheadX - 60, h - 26, 120, 20, 5);
+          ctx.fill();
+        } else {
+          ctx.fillRect(playheadX - 60, h - 26, 120, 20);
+        }
+        ctx.fillStyle = "#000000";
+        ctx.font = "bold 9px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`\u26A1 ${nextCue.name || "CUE"} en ${beatsToNextCue}b`, playheadX, h - 13);
+        ctx.textAlign = "left";
+      }
+    }
+    const miniCanvas = minimapRef.current;
+    if (!miniCanvas) return;
+    const mRect = miniCanvas.getBoundingClientRect();
+    const mw = mRect.width || miniCanvas.parentElement.clientWidth || 550;
+    const mh = 26;
+    miniCanvas.width = Math.round(mw * dpr);
+    miniCanvas.height = Math.round(mh * dpr);
+    const mCtx = miniCanvas.getContext("2d");
+    if (mCtx.resetTransform) mCtx.resetTransform();
+    else mCtx.setTransform(1, 0, 0, 1, 0, 0);
+    mCtx.scale(dpr, dpr);
+    mCtx.fillStyle = "#06060e";
+    mCtx.fillRect(0, 0, mw, mh);
+    const mStep = 2;
+    const mSlices = Math.ceil(mw / mStep);
+    for (let j = 0; j < mSlices; j++) {
+      const mx = j * mStep;
+      const mNorm = mx / mw;
+      const { bass, treble } = computeTrackStructuralBands(mNorm, seed);
+      const mHalf = mh / 2;
+      const bAmp = bass * (mHalf - 2);
+      const tAmp = treble * (mHalf - 4);
+      mCtx.fillStyle = "#2563eb";
+      mCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
+      mCtx.fillStyle = "#06b6d4";
+      mCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
+    }
+    if (showTacticalAids) {
+      phases.forEach((ph) => {
+        const px1 = ph.start_pct * mw;
+        const px2 = ph.end_pct * mw;
+        mCtx.fillStyle = `${ph.color}25`;
+        mCtx.fillRect(px1, 0, px2 - px1, mh);
+        mCtx.fillStyle = ph.color;
+        mCtx.fillRect(px1, 0, px2 - px1, 2);
+      });
+      cues.forEach((cue) => {
+        const cx = (cue.pct || 0) * mw;
+        mCtx.fillStyle = cue.color || "#06b6d4";
+        mCtx.fillRect(cx - 1, 0, 2, mh);
+      });
+    }
+    const vStart = Math.max(0, startSec / durSec * mw);
+    const vEnd = Math.min(mw, endSec / durSec * mw);
+    mCtx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    mCtx.fillRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
+    mCtx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+    mCtx.lineWidth = 1;
+    mCtx.strokeRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
+    const mPlayheadX = progress * mw;
+    mCtx.fillStyle = "#ffffff";
+    mCtx.fillRect(mPlayheadX - 1, 0, 2, mh);
+  }, [zoom, showTacticalAids, progress, deck, antiMuddy]);
+  const handleMinimapClick = (e) => {
+    const miniCanvas = minimapRef.current;
+    if (!miniCanvas) return;
+    const rect = miniCanvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const newPct = Math.max(0, Math.min(1, clickX / rect.width));
+    progressRef.current = newPct;
+    setProgress(newPct);
+  };
+  return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-[#030308] border border-zinc-800/90 shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 flex-wrap text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowTacticalAids(!showTacticalAids),
+      className: `flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${showTacticalAids ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`,
+      title: "Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
+    },
+    /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "\u{1F3AF}" : "\u26AA"),
+    /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "Ayudas DJ: ACTIVAS" : "Ayudas DJ: OFF")
+  ), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-block text-[10px] text-zinc-500" }, showTacticalAids ? "Drops & Cues Visibles" : "Puro Serato")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px]" }, [2, 4, 8, 16].map((z) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: z,
+      type: "button",
+      onClick: () => setZoom(z),
+      className: `px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer ${zoom === z ? "bg-djcyan-500 text-black shadow" : "text-zinc-400 hover:text-white"}`
+    },
+    z,
+    "x"
+  ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[10px] sm:text-[11px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, formatSec(elapsedSec)), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "/"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "-", formatSec(remainSec))))), /* @__PURE__ */ React.createElement("div", { className: "relative w-full rounded-xl overflow-hidden border border-zinc-800/80 bg-[#05050b]" }, /* @__PURE__ */ React.createElement(
+    "canvas",
+    {
+      ref: canvasRef,
+      style: { width: "100%", height: "100px", display: "block" }
+    }
+  )), /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      onClick: handleMinimapClick,
+      className: "relative w-full rounded-lg overflow-hidden border border-zinc-800/60 bg-[#06060e] cursor-pointer hover:border-zinc-700 transition-colors",
+      title: "Haz clic en cualquier punto para saltar en la pista"
+    },
+    /* @__PURE__ */ React.createElement(
+      "canvas",
+      {
+        ref: minimapRef,
+        style: { width: "100%", height: "26px", display: "block" }
+      }
+    )
+  ));
 };
 function LiveCopilotApp() {
   const [state, setState] = useState(null);
@@ -149,7 +546,7 @@ function LiveCopilotApp() {
       title: "Alternar Pantalla Completa (F11)"
     },
     /* @__PURE__ */ React.createElement("svg", { className: "w-4 h-4 sm:w-5 sm:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" }))
-  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6" }, /* @__PURE__ */ React.createElement(DeckCard, { deck: deck_1, side: "A", isMaster: deck_1.is_master }), /* @__PURE__ */ React.createElement(DeckCard, { deck: deck_2, side: "B", isMaster: deck_2.is_master })), /* @__PURE__ */ React.createElement("section", { className: "mb-4 sm:mb-6" }, /* @__PURE__ */ React.createElement("div", { className: `p-4 sm:p-5 rounded-2xl border transition-all ${anti_muddy.status === "danger" ? "bg-red-950/25 border-red-500/80 animate-danger-pulse" : anti_muddy.status === "warning" ? "bg-amber-950/25 border-amber-500/80 animate-warning-pulse" : "bg-emerald-950/20 border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)]"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-3 mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl sm:text-2xl" }, anti_muddy.status === "danger" ? "\u{1F6E1}\uFE0F" : anti_muddy.status === "warning" ? "\u26A1" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-base sm:text-lg text-white tracking-wide" }, anti_muddy.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs sm:text-sm text-zinc-300 mt-0.5" }, anti_muddy.message))), /* @__PURE__ */ React.createElement("div", { className: "px-3.5 py-1.5 rounded-xl bg-black/60 border border-zinc-700/60 font-mono text-xs flex items-center gap-2 self-start md:self-auto" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500 uppercase tracking-wider" }, "ACCI\xD3N:"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, anti_muddy.action))), /* @__PURE__ */ React.createElement("div", { className: "pt-3 mt-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "Transici\xF3n Arm\xF3nica:"), /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6" }, /* @__PURE__ */ React.createElement(DeckCard, { deck: deck_1, side: "A", isMaster: deck_1.is_master, antiMuddy: anti_muddy, partnerDeck: deck_2 }), /* @__PURE__ */ React.createElement(DeckCard, { deck: deck_2, side: "B", isMaster: deck_2.is_master, antiMuddy: anti_muddy, partnerDeck: deck_1 })), /* @__PURE__ */ React.createElement("section", { className: "mb-4 sm:mb-6" }, /* @__PURE__ */ React.createElement("div", { className: `p-4 sm:p-5 rounded-2xl border transition-all ${anti_muddy.status === "danger" ? "bg-red-950/25 border-red-500/80 animate-danger-pulse" : anti_muddy.status === "warning" ? "bg-amber-950/25 border-amber-500/80 animate-warning-pulse" : "bg-emerald-950/20 border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)]"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-3 mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl sm:text-2xl" }, anti_muddy.status === "danger" ? "\u{1F6E1}\uFE0F" : anti_muddy.status === "warning" ? "\u26A1" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-base sm:text-lg text-white tracking-wide" }, anti_muddy.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs sm:text-sm text-zinc-300 mt-0.5" }, anti_muddy.message))), /* @__PURE__ */ React.createElement("div", { className: "px-3.5 py-1.5 rounded-xl bg-black/60 border border-zinc-700/60 font-mono text-xs flex items-center gap-2 self-start md:self-auto" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500 uppercase tracking-wider" }, "ACCI\xD3N:"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, anti_muddy.action))), /* @__PURE__ */ React.createElement("div", { className: "pt-3 mt-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "Transici\xF3n Arm\xF3nica:"), /* @__PURE__ */ React.createElement(
     "span",
     {
       className: "px-2 py-0.5 rounded-lg font-bold text-black uppercase text-[10px]",
@@ -209,7 +606,7 @@ function LiveCopilotApp() {
     "Copiar Enlace Directo"
   ))));
 }
-function DeckCard({ deck, side, isMaster }) {
+function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }) {
   if (!deck) return null;
   return /* @__PURE__ */ React.createElement("div", { className: `p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-base sm:text-lg text-zinc-400" }, "DECK ", side), /* @__PURE__ */ React.createElement("span", { className: `px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black uppercase tracking-wider ${isMaster ? "bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse" : "bg-zinc-800 text-zinc-300"}` }, isMaster ? "\u{1F50A} MASTER (ON AIR)" : "\u{1F3A7} EN CUE (PREPARADO)"), deck.phase && /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 uppercase" }, "\u2728 ", deck.phase)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-xs text-zinc-500 uppercase" }, deck.format && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[10px] font-bold text-zinc-300" }, deck.format), /* @__PURE__ */ React.createElement("span", null, deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-3.5 mb-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-18 h-18 sm:w-22 sm:h-22 rounded-2xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-lg bg-black group" }, /* @__PURE__ */ React.createElement(
     "img",
@@ -254,7 +651,15 @@ function DeckCard({ deck, side, isMaster }) {
       cue.id || cIdx + 1
     ), /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono text-zinc-500" }, cue.time || "--:--")),
     /* @__PURE__ */ React.createElement("div", { className: "text-[8px] font-syne font-bold text-zinc-200 truncate mt-1", title: cue.name }, cue.name)
-  )))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 pt-2 border-t border-zinc-800/60 font-mono text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-zinc-400" }, /* @__PURE__ */ React.createElement("span", null, "Densidad Sub-Graves (Sub-Bass)"), /* @__PURE__ */ React.createElement("span", { className: deck.low_ratio >= 44 ? "text-red-400 font-bold" : "text-zinc-200" }, deck.low_ratio, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-2 overflow-hidden flex" }, /* @__PURE__ */ React.createElement(
+  )))), /* @__PURE__ */ React.createElement("div", { className: "mb-3" }, /* @__PURE__ */ React.createElement(
+    CopilotSeratoWaveform,
+    {
+      deck,
+      side,
+      antiMuddy,
+      partnerDeck
+    }
+  )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 pt-2 border-t border-zinc-800/60 font-mono text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-zinc-400" }, /* @__PURE__ */ React.createElement("span", null, "Densidad Sub-Graves (Sub-Bass)"), /* @__PURE__ */ React.createElement("span", { className: deck.low_ratio >= 44 ? "text-red-400 font-bold" : "text-zinc-200" }, deck.low_ratio, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-2 overflow-hidden flex" }, /* @__PURE__ */ React.createElement(
     "div",
     {
       className: `h-full transition-all duration-300 ${deck.low_ratio >= 44 ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "bg-djcyan-400"}`,

@@ -781,6 +781,30 @@ class CopilotService:
                 "color": "#ef4444"
             }
 
+    @staticmethod
+    def _parse_duration_sec(dur_str: str) -> float:
+        try:
+            parts = str(dur_str).strip().split(":")
+            if len(parts) == 2:
+                return float(parts[0]) * 60.0 + float(parts[1])
+            elif len(parts) == 3:
+                return float(parts[0]) * 3600.0 + float(parts[1]) * 60.0 + float(parts[2])
+        except Exception:
+            pass
+        return 360.0
+
+    @staticmethod
+    def _generate_structural_phases(cues: list, duration_sec: float) -> list:
+        """Genera las fases tácticas de la pista (Intro, Drop, Break, Outro) sincronizadas con los Hot Cues."""
+        return [
+            {"id": "intro", "name": "Intro Percusiva", "start_pct": 0.0, "end_pct": 0.16, "type": "intro", "label": "Intro 32b • Mezcla In", "color": "#06b6d4"},
+            {"id": "build", "name": "Bassline In", "start_pct": 0.16, "end_pct": 0.35, "type": "build", "label": "Bassline Activa", "color": "#eab308"},
+            {"id": "break", "name": "Breakdown", "start_pct": 0.35, "end_pct": 0.48, "type": "break", "label": "Breakdown (Sin Graves)", "color": "#38bdf8"},
+            {"id": "drop", "name": "MAIN DROP", "start_pct": 0.48, "end_pct": 0.74, "type": "drop", "label": "⚡ DROP PRINCIPAL (Clímax)", "color": "#ef4444"},
+            {"id": "break2", "name": "Segundo Parón", "start_pct": 0.74, "end_pct": 0.82, "type": "break", "label": "Puente Melódico", "color": "#a855f7"},
+            {"id": "outro", "name": "Outro Limpio", "start_pct": 0.82, "end_pct": 1.0, "type": "outro", "label": "🟢 OUTRO SEGURO • Mezcla Out", "color": "#10b981"}
+        ]
+
     def _get_tactical_recommendations(self, master_track: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Genera 3 recomendaciones tácticas de rescate y progresión desde la biblioteca auditada."""
         base_bpm = master_track.get("bpm", 130.0)
@@ -1012,10 +1036,20 @@ class CopilotService:
             {"id": 8, "name": "Fade Out", "color": "#ec4899", "pct": 0.97, "time": "06:45.00"}
         ]
 
+        now = time.time()
+        dur_1_sec = self._parse_duration_sec(t1.get("duration", "08:15"))
+        elapsed_1 = round((now * 1.0) % dur_1_sec, 2)
+        prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
+
+        dur_2_sec = self._parse_duration_sec(t2.get("duration", "05:48"))
+        elapsed_2 = round(((now * 0.95) + 35) % dur_2_sec, 2)
+        prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
+
         deck_1 = {
             "deck_num": "1",
             "status": "ON AIR (MASTER)",
             "is_master": True,
+            "is_playing": True,
             "artist": t1["artist"],
             "title": t1["name"],
             "bpm": t1["bpm"],
@@ -1029,10 +1063,14 @@ class CopilotService:
             "danceability": t1.get("danceability", 88),
             "format": t1.get("format", "FLAC 24-bit"),
             "duration": t1.get("duration", "06:30"),
+            "duration_sec": dur_1_sec,
+            "elapsed_sec": elapsed_1,
+            "play_progress": prog_1,
             "phase": t1.get("phase", "Peak Time"),
             "year": t1.get("year", "2024"),
             "cover": t1.get("cover", ""),
             "cues": deck_1_cues,
+            "structural_phases": self._generate_structural_phases(deck_1_cues, dur_1_sec),
             "lufs": -6.6,
             "low_ratio": 48.0,
             "mid_ratio": 32.0,
@@ -1047,6 +1085,7 @@ class CopilotService:
             "deck_num": "2",
             "status": "CUE / CARGADO",
             "is_master": False,
+            "is_playing": False,
             "artist": t2["artist"],
             "title": t2["name"],
             "bpm": t2["bpm"],
@@ -1060,10 +1099,14 @@ class CopilotService:
             "danceability": t2.get("danceability", 95),
             "format": t2.get("format", "FLAC 16-bit"),
             "duration": t2.get("duration", "05:48"),
+            "duration_sec": dur_2_sec,
+            "elapsed_sec": elapsed_2,
+            "play_progress": prog_2,
             "phase": t2.get("phase", "Hypnotic Groove"),
             "year": t2.get("year", "2023"),
             "cover": t2.get("cover", ""),
             "cues": deck_2_cues,
+            "structural_phases": self._generate_structural_phases(deck_2_cues, dur_2_sec),
             "lufs": -6.3,
             "low_ratio": 51.0,
             "mid_ratio": 31.0,
@@ -1170,10 +1213,44 @@ class CopilotService:
         t2_start = deck_2_raw.get("start_time", 0)
         deck_1_is_master = t1_start >= t2_start
 
+        now = time.time()
+        dur_1_sec = self._parse_duration_sec(deck_1_raw.get("duration") or "06:30")
+        t1_st = float(t1_start) if t1_start else (now - 60.0)
+        elapsed_1 = round(max(0.0, now - t1_st) % dur_1_sec, 2)
+        prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
+
+        dur_2_sec = self._parse_duration_sec(deck_2_raw.get("duration") or "05:48")
+        t2_st = float(t2_start) if t2_start else (now - 25.0)
+        elapsed_2 = round(max(0.0, now - t2_st) % dur_2_sec, 2)
+        prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
+
+        deck_1_cues_list = deck_1_raw.get("cues") or [
+            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.04, "time": "00:00.25"},
+            {"id": 2, "name": "Intro Perc", "color": "#f97316", "pct": 0.16, "time": "01:04.00"},
+            {"id": 3, "name": "Bassline In", "color": "#eab308", "pct": 0.32, "time": "02:08.00"},
+            {"id": 4, "name": "MAIN DROP", "color": "#10b981", "pct": 0.48, "time": "03:12.00"},
+            {"id": 5, "name": "Breakdown", "color": "#06b6d4", "pct": 0.62, "time": "04:16.00"},
+            {"id": 6, "name": "Climax 2", "color": "#3b82f6", "pct": 0.74, "time": "05:04.00"},
+            {"id": 7, "name": "Outro 32b", "color": "#8b5cf6", "pct": 0.86, "time": "06:08.00"},
+            {"id": 8, "name": "Cut / Fade", "color": "#ec4899", "pct": 0.96, "time": "07:15.00"}
+        ]
+
+        deck_2_cues_list = deck_2_raw.get("cues") or [
+            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.05, "time": "00:00.30"},
+            {"id": 2, "name": "Vocal Hook", "color": "#f97316", "pct": 0.19, "time": "01:08.00"},
+            {"id": 3, "name": "Build-Up 16b", "color": "#eab308", "pct": 0.35, "time": "02:16.00"},
+            {"id": 4, "name": "PEAK DROP", "color": "#10b981", "pct": 0.50, "time": "03:20.00"},
+            {"id": 5, "name": "Acid Meltdown", "color": "#06b6d4", "pct": 0.64, "time": "04:24.00"},
+            {"id": 6, "name": "Second Drop", "color": "#3b82f6", "pct": 0.76, "time": "05:12.00"},
+            {"id": 7, "name": "Outro Limpio", "color": "#8b5cf6", "pct": 0.88, "time": "06:16.00"},
+            {"id": 8, "name": "Fade Out", "color": "#ec4899", "pct": 0.97, "time": "06:45.00"}
+        ]
+
         deck_1 = {
             "deck_num": "1",
             "status": "ON AIR (MASTER)" if deck_1_is_master else "CUE / PREPARADO",
             "is_master": deck_1_is_master,
+            "is_playing": deck_1_is_master,
             "artist": deck_1_raw.get("artist", "Desconocido"),
             "title": deck_1_raw.get("name", "Pista 1"),
             "bpm": deck_1_raw.get("bpm", 130.0),
@@ -1187,19 +1264,14 @@ class CopilotService:
             "danceability": deck_1_raw.get("danceability", 88),
             "format": deck_1_raw.get("format") or ("FLAC 24-bit" if str(deck_1_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k"),
             "duration": deck_1_raw.get("duration") or "06:30",
+            "duration_sec": dur_1_sec,
+            "elapsed_sec": elapsed_1,
+            "play_progress": prog_1,
             "phase": deck_1_raw.get("phase") or "Peak Time",
             "year": deck_1_raw.get("year") or "2024",
             "cover": deck_1_raw.get("cover") or (f"/cover?path={deck_1_raw['file_path']}" if deck_1_raw.get("file_path") else ""),
-            "cues": deck_1_raw.get("cues") or [
-                {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.04, "time": "00:00.25"},
-                {"id": 2, "name": "Intro Perc", "color": "#f97316", "pct": 0.16, "time": "01:04.00"},
-                {"id": 3, "name": "Bassline In", "color": "#eab308", "pct": 0.32, "time": "02:08.00"},
-                {"id": 4, "name": "MAIN DROP", "color": "#10b981", "pct": 0.48, "time": "03:12.00"},
-                {"id": 5, "name": "Breakdown", "color": "#06b6d4", "pct": 0.62, "time": "04:16.00"},
-                {"id": 6, "name": "Climax 2", "color": "#3b82f6", "pct": 0.74, "time": "05:04.00"},
-                {"id": 7, "name": "Outro 32b", "color": "#8b5cf6", "pct": 0.86, "time": "06:08.00"},
-                {"id": 8, "name": "Cut / Fade", "color": "#ec4899", "pct": 0.96, "time": "07:15.00"}
-            ],
+            "cues": deck_1_cues_list,
+            "structural_phases": self._generate_structural_phases(deck_1_cues_list, dur_1_sec),
             "lufs": dsp_1["lufs"],
             "low_ratio": dsp_1["low_ratio"],
             "mid_ratio": dsp_1["mid_ratio"],
@@ -1214,6 +1286,7 @@ class CopilotService:
             "deck_num": "2",
             "status": "ON AIR (MASTER)" if not deck_1_is_master else "CUE / PREPARADO",
             "is_master": not deck_1_is_master,
+            "is_playing": not deck_1_is_master,
             "artist": deck_2_raw.get("artist", "Desconocido"),
             "title": deck_2_raw.get("name", "Pista 2"),
             "bpm": deck_2_raw.get("bpm", 130.0),
@@ -1227,19 +1300,14 @@ class CopilotService:
             "danceability": deck_2_raw.get("danceability", 95),
             "format": deck_2_raw.get("format") or ("FLAC 16-bit" if str(deck_2_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k"),
             "duration": deck_2_raw.get("duration") or "05:48",
+            "duration_sec": dur_2_sec,
+            "elapsed_sec": elapsed_2,
+            "play_progress": prog_2,
             "phase": deck_2_raw.get("phase") or "Hypnotic Groove",
             "year": deck_2_raw.get("year") or "2023",
             "cover": deck_2_raw.get("cover") or (f"/cover?path={deck_2_raw['file_path']}" if deck_2_raw.get("file_path") else ""),
-            "cues": deck_2_raw.get("cues") or [
-                {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.05, "time": "00:00.30"},
-                {"id": 2, "name": "Vocal Hook", "color": "#f97316", "pct": 0.19, "time": "01:08.00"},
-                {"id": 3, "name": "Build-Up 16b", "color": "#eab308", "pct": 0.35, "time": "02:16.00"},
-                {"id": 4, "name": "PEAK DROP", "color": "#10b981", "pct": 0.50, "time": "03:20.00"},
-                {"id": 5, "name": "Acid Meltdown", "color": "#06b6d4", "pct": 0.64, "time": "04:24.00"},
-                {"id": 6, "name": "Second Drop", "color": "#3b82f6", "pct": 0.76, "time": "05:12.00"},
-                {"id": 7, "name": "Outro Limpio", "color": "#8b5cf6", "pct": 0.88, "time": "06:16.00"},
-                {"id": 8, "name": "Fade Out", "color": "#ec4899", "pct": 0.97, "time": "06:45.00"}
-            ],
+            "cues": deck_2_cues_list,
+            "structural_phases": self._generate_structural_phases(deck_2_cues_list, dur_2_sec),
             "lufs": dsp_2["lufs"],
             "low_ratio": dsp_2["low_ratio"],
             "mid_ratio": dsp_2["mid_ratio"],
