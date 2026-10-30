@@ -282,6 +282,13 @@ def build_vendor():
             checksums[dest.name] = sha256_file(dest)
 
     checksum_file.write_text(json.dumps(checksums, indent=2))
+    
+    # Asegurar nombres canónicos react.min.js y react-dom.min.js
+    if (VENDOR / "react.production.min.js").exists():
+        (VENDOR / "react.min.js").write_bytes((VENDOR / "react.production.min.js").read_bytes())
+    if (VENDOR / "react-dom.production.min.js").exists():
+        (VENDOR / "react-dom.min.js").write_bytes((VENDOR / "react-dom.production.min.js").read_bytes())
+    ok("react.min.js y react-dom.min.js preparados en web/vendor/")
     ok("checksums.json actualizado")
 
 
@@ -507,14 +514,22 @@ def patch_html():
         content = html_path.read_text(encoding="utf-8")
         original = content
 
-        # ── React + ReactDOM CDN → vendor local
+        # ── React + ReactDOM CDN / production → vendor local (/vendor/react.min.js)
         content = content.replace(
             'src="https://unpkg.com/react@18/umd/react.production.min.js"',
+            'src="/vendor/react.min.js"',
+        )
+        content = content.replace(
             'src="/vendor/react.production.min.js"',
+            'src="/vendor/react.min.js"',
         )
         content = content.replace(
             'src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"',
+            'src="/vendor/react-dom.min.js"',
+        )
+        content = content.replace(
             'src="/vendor/react-dom.production.min.js"',
+            'src="/vendor/react-dom.min.js"',
         )
 
         # ── Tailwind CDN script → CSS estático precompilado
