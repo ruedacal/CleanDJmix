@@ -613,37 +613,72 @@ function LiveCopilotApp() {
         return () => clearInterval(timer);
     }, []);
 
-    // Polling optimizado (1.5s) a /api/copilot/status (pausado si la pestaña no es visible)
+    // Conexión en tiempo real: Server-Sent Events (SSE) con fallback a Polling
     useEffect(() => {
         let isMounted = true;
+        let eventSource = null;
         let isFetching = false;
-        const fetchStatus = async () => {
-            if (isFetching || document.hidden) return;
-            isFetching = true;
-            const t0 = performance.now();
-            try {
-                const res = await fetch('/api/copilot/status');
-                if (res.ok) {
-                    const data = await res.json();
-                    const dt = Math.round(performance.now() - t0);
-                    if (isMounted) {
-                        setState(data);
-                        setLatency(dt > 0 ? dt : 2);
-                        setErrorCount(0);
+        let fallbackInterval = null;
+
+        const startPollingFallback = () => {
+            if (fallbackInterval) return;
+            const fetchStatus = async () => {
+                if (isFetching || document.hidden) return;
+                isFetching = true;
+                const t0 = performance.now();
+                try {
+                    const res = await fetch('/api/copilot/status');
+                    if (res.ok) {
+                        const data = await res.json();
+                        const dt = Math.round(performance.now() - t0);
+                        if (isMounted) {
+                            setState(data);
+                            setLatency(dt > 0 ? dt : 2);
+                            setErrorCount(0);
+                        }
                     }
+                } catch (e) {
+                    if (isMounted) setErrorCount(prev => prev + 1);
+                } finally {
+                    isFetching = false;
                 }
-            } catch (e) {
-                if (isMounted) setErrorCount(prev => prev + 1);
-            } finally {
-                isFetching = false;
-            }
+            };
+            fetchStatus();
+            fallbackInterval = setInterval(fetchStatus, 1500);
         };
 
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 1500);
+        // 1. Intentar Server-Sent Events (SSE) para latencia instantánea (<10ms)
+        if (typeof EventSource !== 'undefined') {
+            try {
+                eventSource = new EventSource('/api/copilot/stream');
+                eventSource.onmessage = (event) => {
+                    if (!isMounted) return;
+                    try {
+                        const data = JSON.parse(event.data);
+                        setState(data);
+                        setLatency(2);
+                        setErrorCount(0);
+                    } catch (_) {}
+                };
+                eventSource.onerror = () => {
+                    // Si SSE falla, activar polling transparente
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                    startPollingFallback();
+                };
+            } catch (_) {
+                startPollingFallback();
+            }
+        } else {
+            startPollingFallback();
+        }
+
         return () => {
             isMounted = false;
-            clearInterval(interval);
+            if (eventSource) eventSource.close();
+            if (fallbackInterval) clearInterval(fallbackInterval);
         };
     }, []);
 

@@ -284,6 +284,11 @@ def calcular_trim_downbeat_track(filepath, track_id=None):
     return audit_svc.analizar_trim_downbeat(filepath, track_id)
 
 @eel.expose
+def detectar_bpm_tonalidad_local(filepath):
+    """Calcula BPM y escala Camelot localmente vía Librosa/FFT (100% offline)."""
+    return audit_svc.detectar_bpm_tonalidad_librosa(filepath)
+
+@eel.expose
 def calcular_hot_cues_fraseo(duration_ms, bpm, downbeat_ms=0):
     from infrastructure.audio_processor import AudioProcessorService
     return AudioProcessorService.calcular_8_hot_cues_fraseo(
@@ -864,6 +869,32 @@ def api_copilot_status():
     bottle.response.content_type = 'application/json'
     import json
     return json.dumps(copilot_service.get_live_state())
+
+@bottle.route('/api/copilot/stream')
+def api_copilot_stream():
+    """Endpoint SSE (Server-Sent Events) para Live Copilot en tiempo real (baja latencia sin polling)."""
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'text/event-stream'
+    bottle.response.cache_control = 'no-cache'
+    bottle.response.set_header('Connection', 'keep-alive')
+    bottle.response.set_header('X-Accel-Buffering', 'no')
+
+    def event_stream():
+        import json, time
+        for _ in range(600):
+            try:
+                state = copilot_service.get_live_state()
+                raw = json.dumps(state)
+                yield f"data: {raw}\n\n"
+                time.sleep(0.5)
+            except Exception:
+                break
+
+    return event_stream()
 
 @bottle.route('/api/copilot/platforms', method=['GET', 'OPTIONS'])
 def api_copilot_platforms():

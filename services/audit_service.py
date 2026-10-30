@@ -823,6 +823,80 @@ class AuditService:
             "first_downbeat_ms": downbeat_ms
         }
 
+    @staticmethod
+    def detectar_bpm_tonalidad_librosa(filepath: str, duration_sec: float = 40.0) -> dict:
+        """Calcula BPM y Tonalidad Camelot de forma 100% nativa y offline mediante Librosa/DSP.
+        Analiza un segmento de audio del tema con perfil de armónicos Krumhansl-Schmuckler."""
+        if not filepath or not os.path.exists(filepath):
+            return {"status": "error", "msg": "Archivo no encontrado"}
+
+        try:
+            import librosa
+            import numpy as np
+
+            # Carga de segmento central (25s a 65s) para capturar el drop/ritmo
+            y, sr = librosa.load(filepath, sr=22050, mono=True, offset=25.0, duration=duration_sec)
+            if len(y) == 0:
+                y, sr = librosa.load(filepath, sr=22050, mono=True, duration=duration_sec)
+            if len(y) == 0:
+                return {"status": "error", "msg": "Audio vacío o ilegible"}
+
+            # 1. Detección de BPM
+            tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+            bpm_float = float(tempo[0] if isinstance(tempo, (list, np.ndarray)) else tempo)
+            if bpm_float < 70 and bpm_float > 0:
+                bpm_float *= 2.0
+            elif bpm_float > 180:
+                bpm_float /= 2.0
+            bpm_res = round(bpm_float, 2)
+
+            # 2. Detección de Tonalidad Musical mediante Correlación Cromagrama Krumhansl-Schmuckler
+            chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
+            chroma_avg = np.mean(chroma, axis=1)
+
+            major_profile = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
+            minor_profile = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
+            pitches = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+            camelot_map = {
+                ('C', 'maj'): '8B', ('G', 'maj'): '9B', ('D', 'maj'): '10B', ('A', 'maj'): '11B',
+                ('E', 'maj'): '12B', ('B', 'maj'): '1B', ('F#', 'maj'): '2B', ('C#', 'maj'): '3B',
+                ('G#', 'maj'): '4B', ('D#', 'maj'): '5B', ('A#', 'maj'): '6B', ('F', 'maj'): '7B',
+                ('A', 'min'): '8A', ('E', 'min'): '9A', ('B', 'min'): '10A', ('F#', 'min'): '11A',
+                ('C#', 'min'): '12A', ('G#', 'min'): '1A', ('D#', 'min'): '2A', ('A#', 'min'): '3A',
+                ('F', 'min'): '4A', ('C', 'min'): '5A', ('G', 'min'): '6A', ('D', 'min'): '7A',
+            }
+
+            best_r = -2.0
+            best_pitch = 'C'
+            best_mode = 'maj'
+
+            for i in range(12):
+                r_maj = float(np.corrcoef(chroma_avg, np.roll(major_profile, i))[0, 1])
+                if r_maj > best_r:
+                    best_r = r_maj
+                    best_pitch = pitches[i]
+                    best_mode = 'maj'
+                r_min = float(np.corrcoef(chroma_avg, np.roll(minor_profile, i))[0, 1])
+                if r_min > best_r:
+                    best_r = r_min
+                    best_pitch = pitches[i]
+                    best_mode = 'min'
+
+            camelot_key = camelot_map.get((best_pitch, best_mode), '8A')
+            classical_name = f"{best_pitch} {'Major' if best_mode == 'maj' else 'minor'}"
+
+            return {
+                "status": "ok",
+                "bpm": bpm_res,
+                "key": camelot_key,
+                "classical_key": classical_name,
+                "confidence": round(float(best_r), 3)
+            }
+        except Exception as e:
+            print(f"[LIBROSA DSP] Error analizando {os.path.basename(filepath)}: {e}")
+            return {"status": "error", "msg": str(e)}
+
     def iniciar_auditoria(self, ruta_directorio, emitir_log_cb=None, progreso_cb=None, opts=None):
         if not ruta_directorio:
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
@@ -914,7 +988,23 @@ class AuditService:
             key_val = info.get("key")
             is_missing = bool(info.get("missing_meta", False) or not bpm_val or not key_val or str(bpm_val) == "--" or str(key_val) == "--")
             if is_missing:
-                sin_meta_count += 1
+                # Fallback acústico nativo offline: análisis local de BPM y Camelot Key vía Librosa/FFT
+                try:
+                    local_dsp = self.detectar_bpm_tonalidad_librosa(full_path)
+                    if local_dsp and local_dsp.get("status") == "ok":
+                        if not bpm_val or str(bpm_val) == "--":
+                            bpm_val = str(local_dsp.get("bpm"))
+                            info["bpm"] = bpm_val
+                            info["b"] = bpm_val
+                        if not key_val or str(key_val) == "--":
+                            key_val = str(local_dsp.get("key"))
+                            info["key"] = key_val
+                            info["k"] = key_val
+                        is_missing = False
+                    else:
+                        sin_meta_count += 1
+                except Exception:
+                    sin_meta_count += 1
 
             cutoff_khz = float(info.get("cutoff_khz") or 22.0)
             perdida = 0
