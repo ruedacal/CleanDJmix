@@ -26,6 +26,8 @@ dist/
 *.spec
 assets_extracted/
 CleanDJmix_PRO_Assets.zip
+*.xlsx
+*carpeta(s)*/
 
 # macOS metadata
 .DS_Store
