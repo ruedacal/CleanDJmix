@@ -34,3 +34,9 @@ CleanDJmix_PRO_Assets.zip
 # Scratch and manual tests
 /test_*.py
 scripts/manual_tests/
+
+node_modules/
+web/vendor/checksums.json
+web/css/tailwind.input.css
+tailwind.config.js
+*.cdn-backup

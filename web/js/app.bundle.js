@@ -648,6 +648,7 @@ const RekordboxWaveform = ({
   onToggleSnap,
   onToggleGrid
 }) => {
+  var _a, _b;
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [draggingCueIdx, setDraggingCueIdx] = useState(null);
@@ -909,8 +910,8 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         className: "absolute top-1 pointer-events-none z-50 px-2 py-0.5 bg-black/90 border border-djcyan-400 rounded shadow-xl text-center transform -translate-x-1/2 flex items-center gap-1.5",
         style: { left: `${Math.min(92, Math.max(8, dragInfo.pct))}%` }
       },
-      /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: activeCues[dragInfo.idx]?.color || "#ef4444" } }),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", activeCues[dragInfo.idx]?.id || dragInfo.idx + 1, ":"),
+      /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: ((_a = activeCues[dragInfo.idx]) == null ? void 0 : _a.color) || "#ef4444" } }),
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", ((_b = activeCues[dragInfo.idx]) == null ? void 0 : _b.id) || dragInfo.idx + 1, ":"),
       /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-djcyan-400" }, dragInfo.time),
       /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono text-gray-300" }, "(", dragInfo.bar, ")"),
       snapToGrid && /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-bold text-emerald-400 uppercase bg-emerald-950/80 px-1 rounded" }, "Snap")
@@ -981,6 +982,7 @@ const ZoomableRekordboxWaveform = ({
   height = 160,
   lang = "es"
 }) => {
+  var _a, _b;
   const scrollContainerRef = useRef(null);
   const canvasRef = useRef(null);
   const minimapCanvasRef = useRef(null);
@@ -1339,7 +1341,7 @@ const ZoomableRekordboxWaveform = ({
         return /* @__PURE__ */ React.createElement(
           "div",
           {
-            key: `${track?.id || "trk"}_wave_cue_${idx}`,
+            key: `${(track == null ? void 0 : track.id) || "trk"}_wave_cue_${idx}`,
             style: {
               left: `${cuePct}%`,
               animation: "cuePointCascadeBeam 0.65s cubic-bezier(0.16, 1, 0.3, 1) both",
@@ -1392,8 +1394,8 @@ const ZoomableRekordboxWaveform = ({
           className: "absolute -top-7 -translate-x-1/2 bg-djzinc-900 text-white px-2 py-0.5 rounded border border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.5)] flex items-center gap-1.5 pointer-events-none z-30 whitespace-nowrap",
           style: { left: `${Math.min(92, Math.max(8, dragInfo.pct))}%` }
         },
-        /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: activeCues[dragInfo.idx]?.color || "#ef4444" } }),
-        /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", activeCues[dragInfo.idx]?.id || dragInfo.idx + 1, ":"),
+        /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: ((_a = activeCues[dragInfo.idx]) == null ? void 0 : _a.color) || "#ef4444" } }),
+        /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", ((_b = activeCues[dragInfo.idx]) == null ? void 0 : _b.id) || dragInfo.idx + 1, ":"),
         /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-djcyan-400" }, dragInfo.time),
         /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono text-gray-300" }, "(", dragInfo.bar, ")"),
         snapToGrid && /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-bold text-emerald-400 uppercase bg-emerald-950/80 px-1 rounded" }, "Snap")
@@ -2251,7 +2253,8 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues 
     const w = el.clientWidth || 640;
     buildBitmap(w);
     const ro = new ResizeObserver((entries) => {
-      const newW = entries[0]?.contentRect.width | 0;
+      var _a;
+      const newW = ((_a = entries[0]) == null ? void 0 : _a.contentRect.width) | 0;
       if (newW > 0) buildBitmap(newW);
     });
     ro.observe(el);
@@ -3011,6 +3014,7 @@ const DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDe
     });
   }
   const handleConfirmDelete = async () => {
+    var _a;
     const pathsToDelete = Object.keys(selectedToDelete).filter((p) => selectedToDelete[p]);
     if (pathsToDelete.length === 0) {
       alert("No has seleccionado ninguna pista duplicada para eliminar.");
@@ -3032,7 +3036,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           }
           onClose();
         } else {
-          alert(`Error al eliminar: ${res?.errores?.join(", ") || "Fallo de permisos en disco"}`);
+          alert(`Error al eliminar: ${((_a = res == null ? void 0 : res.errores) == null ? void 0 : _a.join(", ")) || "Fallo de permisos en disco"}`);
         }
       }
     } catch (err) {
@@ -3114,6 +3118,7 @@ const AuditWorkspace = ({
   audioRef,
   onAuditProgressChange
 }) => {
+  var _a;
   const [localRutaOrigen, setLocalRutaOrigen] = useState("");
   const rutaOrigen = currentFolder || localRutaOrigen;
   const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
@@ -3536,7 +3541,7 @@ const AuditWorkspace = ({
           setSaveFeedback("\u2713 Enrutado a Crate Serato");
           setTimeout(() => setSaveFeedback(""), 3e3);
         } else {
-          setBatchStatusMsg(res?.msg || "Error al enrutar archivo.");
+          setBatchStatusMsg((res == null ? void 0 : res.msg) || "Error al enrutar archivo.");
         }
       }
     } catch (err) {
@@ -3724,7 +3729,7 @@ const AuditWorkspace = ({
           setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
         }
         setBatchProgress(100);
-        setBatchStatusMsg(`\u2713 Completado: ${res?.total || 0} pistas cargadas.`);
+        setBatchStatusMsg(`\u2713 Completado: ${(res == null ? void 0 : res.total) || 0} pistas cargadas.`);
       } catch (e) {
         console.error("Fallo carga metadatos de directorio:", e);
         setBatchStatusMsg("Error al leer metadatos del directorio.");
@@ -3771,7 +3776,7 @@ const AuditWorkspace = ({
           });
         }
         setBatchProgress(100);
-        setBatchStatusMsg(`\u2713 Auditor\xEDa completada: ${res?.total || 0} pistas procesadas.`);
+        setBatchStatusMsg(`\u2713 Auditor\xEDa completada: ${(res == null ? void 0 : res.total) || 0} pistas procesadas.`);
       } catch (e) {
         console.error("Fallo auditor\xEDa:", e);
         setBatchStatusMsg("Error durante la auditor\xEDa.");
@@ -3803,7 +3808,7 @@ const AuditWorkspace = ({
           setTimeout(() => setSaveFeedback(""), 4e3);
         } else {
           setBatchStatusMsg("Error al exportar a Excel.");
-          alert(res?.msg || "Error al exportar a Excel.");
+          alert((res == null ? void 0 : res.msg) || "Error al exportar a Excel.");
         }
       } catch (e) {
         console.error("Error al exportar XLS:", e);
@@ -3836,7 +3841,7 @@ const AuditWorkspace = ({
           setTimeout(() => setSaveFeedback(""), 4e3);
         } else {
           setBatchStatusMsg("Error al exportar crates de Serato.");
-          alert(res?.msg || "Error al exportar crates de Serato.");
+          alert((res == null ? void 0 : res.msg) || "Error al exportar crates de Serato.");
         }
       } catch (e) {
         console.error("Error al exportar crates Serato:", e);
@@ -3869,7 +3874,7 @@ const AuditWorkspace = ({
           setTimeout(() => setSaveFeedback(""), 4e3);
         } else {
           setBatchStatusMsg("Error al exportar rekordbox.xml.");
-          alert(res?.msg || "Error al exportar rekordbox.xml.");
+          alert((res == null ? void 0 : res.msg) || "Error al exportar rekordbox.xml.");
         }
       } catch (e) {
         console.error("Error al exportar rekordbox XML:", e);
@@ -3885,7 +3890,7 @@ const AuditWorkspace = ({
   };
   const handleAbrirFftModal = async (trackParaAnalisis) => {
     const trk = trackParaAnalisis || currentTrack;
-    const targetPath = trk?.path || trk?.f;
+    const targetPath = (trk == null ? void 0 : trk.path) || (trk == null ? void 0 : trk.f);
     if (!targetPath) {
       alert("No hay ruta de archivo disponible para el an\xE1lisis espectral FFT.");
       return;
@@ -3926,8 +3931,8 @@ const AuditWorkspace = ({
           setSaveFeedback("\u2713 Guardado en disco e inyectado");
           setTimeout(() => setSaveFeedback(""), 3e3);
         } else {
-          setBatchStatusMsg(res?.msg || "Error al inyectar metadatos.");
-          alert(res?.msg || "Error al inyectar metadatos.");
+          setBatchStatusMsg((res == null ? void 0 : res.msg) || "Error al inyectar metadatos.");
+          alert((res == null ? void 0 : res.msg) || "Error al inyectar metadatos.");
         }
       }
     } catch (err) {
@@ -4089,75 +4094,75 @@ const AuditWorkspace = ({
       const term = busqueda.toLowerCase();
       if (parsed && parsed.tokens && parsed.tokens.length > 0) {
         if (parsed.targetBpm) {
-          const trkBpm = parseFloat(t2?.bpm || t2?.b) || 0;
+          const trkBpm = parseFloat((t2 == null ? void 0 : t2.bpm) || (t2 == null ? void 0 : t2.b)) || 0;
           if (trkBpm > 0 && Math.abs(trkBpm - parsed.targetBpm) > 4.5) return false;
         } else if (parsed.minBpm && parsed.maxBpm) {
-          const trkBpm = parseFloat(t2?.bpm || t2?.b) || 0;
+          const trkBpm = parseFloat((t2 == null ? void 0 : t2.bpm) || (t2 == null ? void 0 : t2.b)) || 0;
           if (trkBpm < parsed.minBpm || trkBpm > parsed.maxBpm) return false;
         }
         if (parsed.key) {
-          const trkKey = (t2?.key || t2?.k || "").toUpperCase();
+          const trkKey = ((t2 == null ? void 0 : t2.key) || (t2 == null ? void 0 : t2.k) || "").toUpperCase();
           if (trkKey !== parsed.key && !parsed.compatibleKeys.includes(trkKey)) return false;
         }
         if (parsed.acousticRole) {
-          if (t2?.acoustic_role !== parsed.acousticRole) return false;
+          if ((t2 == null ? void 0 : t2.acoustic_role) !== parsed.acousticRole) return false;
         }
         if (parsed.minEnergy) {
-          const trkE = Number(t2?.e || t2?.energy || 80);
+          const trkE = Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 80);
           if (trkE < parsed.minEnergy) return false;
         }
         if (parsed.maxEnergy) {
-          const trkE = Number(t2?.e || t2?.energy || 80);
+          const trkE = Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 80);
           if (trkE > parsed.maxEnergy) return false;
         }
         if (parsed.subgenre) {
-          const sub = (t2?.subgenre || t2?.genre || "").toLowerCase();
+          const sub = ((t2 == null ? void 0 : t2.subgenre) || (t2 == null ? void 0 : t2.genre) || "").toLowerCase();
           if (!sub.includes(parsed.subgenre.toLowerCase())) return false;
         } else if (parsed.genre) {
-          const g = (t2?.genre || "").toLowerCase();
+          const g = ((t2 == null ? void 0 : t2.genre) || "").toLowerCase();
           if (!g.includes(parsed.genre.toLowerCase())) return false;
         }
       } else {
-        const m = (t2?.t || t2?.title || "").toLowerCase().includes(term) || (t2?.a || t2?.artist || "").toLowerCase().includes(term) || (t2?.f || t2?.filename || "").toLowerCase().includes(term);
+        const m = ((t2 == null ? void 0 : t2.t) || (t2 == null ? void 0 : t2.title) || "").toLowerCase().includes(term) || ((t2 == null ? void 0 : t2.a) || (t2 == null ? void 0 : t2.artist) || "").toLowerCase().includes(term) || ((t2 == null ? void 0 : t2.f) || (t2 == null ? void 0 : t2.filename) || "").toLowerCase().includes(term);
         if (!m) return false;
       }
-      if (filtro === "missing") return t2?.b === "--" || t2?.k === "--";
-      if (filtro === "missing_title") return Boolean(t2?.missing_title || !t2?.title || t2?.title.toLowerCase().trim() === "untitled");
-      if (filtro === "missing_artist") return Boolean(t2?.missing_artist || !t2?.artist || t2?.artist.toLowerCase().trim() === "desconocido");
-      if (filtro === "missing_cover") return Boolean(t2?.missing_cover || !t2?.cover);
-      if (filtro === "error") return Boolean(t2?.es_fake) || t2?.format === "FLAC" && String(t2?.status || "").includes("Fake");
+      if (filtro === "missing") return (t2 == null ? void 0 : t2.b) === "--" || (t2 == null ? void 0 : t2.k) === "--";
+      if (filtro === "missing_title") return Boolean((t2 == null ? void 0 : t2.missing_title) || !(t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.title.toLowerCase().trim()) === "untitled");
+      if (filtro === "missing_artist") return Boolean((t2 == null ? void 0 : t2.missing_artist) || !(t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.artist.toLowerCase().trim()) === "desconocido");
+      if (filtro === "missing_cover") return Boolean((t2 == null ? void 0 : t2.missing_cover) || !(t2 == null ? void 0 : t2.cover));
+      if (filtro === "error") return Boolean(t2 == null ? void 0 : t2.es_fake) || (t2 == null ? void 0 : t2.format) === "FLAC" && String((t2 == null ? void 0 : t2.status) || "").includes("Fake");
       if (filtro === "bad_quality") return isBadQualityTrack(t2);
       if (filterHeaderSearch) {
         const hTerm = filterHeaderSearch.toLowerCase();
-        const matchHeader = (t2?.t || t2?.title || "").toLowerCase().includes(hTerm) || (t2?.a || t2?.artist || "").toLowerCase().includes(hTerm) || (t2?.f || t2?.filename || "").toLowerCase().includes(hTerm);
+        const matchHeader = ((t2 == null ? void 0 : t2.t) || (t2 == null ? void 0 : t2.title) || "").toLowerCase().includes(hTerm) || ((t2 == null ? void 0 : t2.a) || (t2 == null ? void 0 : t2.artist) || "").toLowerCase().includes(hTerm) || ((t2 == null ? void 0 : t2.f) || (t2 == null ? void 0 : t2.filename) || "").toLowerCase().includes(hTerm);
         if (!matchHeader) return false;
       }
       if (filterHeaderFormat !== "ALL") {
-        if (String(t2?.format || "").toUpperCase() !== filterHeaderFormat) return false;
+        if (String((t2 == null ? void 0 : t2.format) || "").toUpperCase() !== filterHeaderFormat) return false;
       }
       if (filterHeaderQuality !== "ALL") {
-        if (!String(t2?.calidad || "").toLowerCase().includes(filterHeaderQuality.toLowerCase())) return false;
+        if (!String((t2 == null ? void 0 : t2.calidad) || "").toLowerCase().includes(filterHeaderQuality.toLowerCase())) return false;
       }
       if (filterHeaderStatus !== "ALL") {
-        const isFake = Boolean(t2?.es_fake || t2?.format === "FLAC" && String(t2?.status || "").includes("Fake"));
+        const isFake = Boolean((t2 == null ? void 0 : t2.es_fake) || (t2 == null ? void 0 : t2.format) === "FLAC" && String((t2 == null ? void 0 : t2.status) || "").includes("Fake"));
         if (filterHeaderStatus === "FAKE" && !isFake) return false;
-        if (filterHeaderStatus === "LOSSLESS" && (isFake || !String(t2?.status || "").includes("Lossless") && !String(t2?.status || "").includes("VERDADERO") && !String(t2?.status || "").includes("HI-RES"))) return false;
-        if (filterHeaderStatus === "MP3" && (t2?.format !== "MP3" && !String(t2?.status || "").includes("MP3"))) return false;
+        if (filterHeaderStatus === "LOSSLESS" && (isFake || !String((t2 == null ? void 0 : t2.status) || "").includes("Lossless") && !String((t2 == null ? void 0 : t2.status) || "").includes("VERDADERO") && !String((t2 == null ? void 0 : t2.status) || "").includes("HI-RES"))) return false;
+        if (filterHeaderStatus === "MP3" && ((t2 == null ? void 0 : t2.format) !== "MP3" && !String((t2 == null ? void 0 : t2.status) || "").includes("MP3"))) return false;
       }
       if (filterHeaderEnergy !== "ALL") {
-        const eVal = Number(t2?.e || t2?.energy || 80);
+        const eVal = Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 80);
         if (filterHeaderEnergy === "HIGH" && eVal < 80) return false;
         if (filterHeaderEnergy === "MED" && (eVal < 65 || eVal >= 80)) return false;
         if (filterHeaderEnergy === "LOW" && eVal >= 65) return false;
       }
       if (filterHeaderDance !== "ALL") {
-        const dVal = Number(t2?.dance || t2?.danceability || 80);
+        const dVal = Number((t2 == null ? void 0 : t2.dance) || (t2 == null ? void 0 : t2.danceability) || 80);
         if (filterHeaderDance === "HIGH" && dVal < 80) return false;
         if (filterHeaderDance === "MED" && (dVal < 65 || dVal >= 80)) return false;
         if (filterHeaderDance === "LOW" && dVal >= 65) return false;
       }
       if (filterHeaderAcousticRole !== "ALL") {
-        if (t2?.acoustic_role !== filterHeaderAcousticRole) return false;
+        if ((t2 == null ? void 0 : t2.acoustic_role) !== filterHeaderAcousticRole) return false;
       }
       return true;
     });
@@ -4938,7 +4943,7 @@ const AuditWorkspace = ({
   }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Dividir por 2" }, "/2"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     const v = parseFloat(currentTrack.b);
     if (!isNaN(v)) updateCurrentTrackField("b", (v * 2).toFixed(2));
-  }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", CAMELOT_WHEEL_DATA[currentTrack.k]?.classical || "Am", ")")), /* @__PURE__ */ React.createElement(
+  }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", ((_a = CAMELOT_WHEEL_DATA[currentTrack.k]) == null ? void 0 : _a.classical) || "Am", ")")), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -5426,7 +5431,7 @@ const HotCuesWorkspace = ({
     const clamped = Math.max(-pitchRange, Math.min(pitchRange, Math.round(newPitch * 100) / 100));
     setPitchPercent(clamped);
     const rate = 1 + clamped / 100;
-    const audio = audioRef?.current || window.__bwGlobalAudio;
+    const audio = (audioRef == null ? void 0 : audioRef.current) || window.__bwGlobalAudio;
     if (audio) {
       audio.playbackRate = Math.max(0.2, Math.min(2, rate));
     }
@@ -5435,7 +5440,7 @@ const HotCuesWorkspace = ({
     handlePitchChange(pitchPercent + delta);
   };
   const handleEqChange = (band, val) => {
-    const audio = audioRef?.current || window.__bwGlobalAudio;
+    const audio = (audioRef == null ? void 0 : audioRef.current) || window.__bwGlobalAudio;
     const nodes = getAudioEQNodes(audio);
     if (band === "bass") {
       setEqBass(val);
@@ -5473,7 +5478,7 @@ const HotCuesWorkspace = ({
     }
   };
   const audioDurMs = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
-  const durMs = audioDurMs || parseDurationMs(currentTrack?.duration || "05:00");
+  const durMs = audioDurMs || parseDurationMs((currentTrack == null ? void 0 : currentTrack.duration) || "05:00");
   const bpm = currentTrack && (currentTrack.bpm || currentTrack.b) ? Math.max(30, parseFloat(currentTrack.bpm || currentTrack.b) || 128) : 128;
   const beatMs = 6e4 / bpm;
   const barMs = beatMs * 4;
@@ -5526,12 +5531,12 @@ const HotCuesWorkspace = ({
   const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
   const [cueNameInput, setCueNameInput] = useState(currentCue.name || "");
   const [cueTimeInput, setCueTimeInput] = useState(currentCue.time || "00:00.00");
-  const [tacticalComment, setTacticalComment] = useState(currentTrack?.comment || "");
+  const [tacticalComment, setTacticalComment] = useState((currentTrack == null ? void 0 : currentTrack.comment) || "");
   useEffect(() => {
     if (currentTrack) {
       setTacticalComment(currentTrack.comment || "");
     }
-  }, [currentTrack?.id, currentTrack?.comment]);
+  }, [currentTrack == null ? void 0 : currentTrack.id, currentTrack == null ? void 0 : currentTrack.comment]);
   useEffect(() => {
     setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
     setCueTimeInput(currentCue.time || "00:00.00");
@@ -5607,7 +5612,7 @@ const HotCuesWorkspace = ({
   };
   const handleJumpToCue = (cue) => {
     if (!currentTrack || !onPlayTrack) return;
-    const audio = audioRef?.current;
+    const audio = audioRef == null ? void 0 : audioRef.current;
     const audioDur = audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0.5 ? audio.duration : durMs / 1e3;
     let posMs = cue.pos_ms !== void 0 ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
     let targetSec = posMs / 1e3;
@@ -5697,7 +5702,7 @@ const HotCuesWorkspace = ({
         if (res && res.status === "ok") {
           setSaveStatus("\u2713 Pista guardada en disco con \xE9xito");
         } else {
-          setSaveStatus(res?.msg || "Error al guardar pista");
+          setSaveStatus((res == null ? void 0 : res.msg) || "Error al guardar pista");
         }
       }
     } catch (e) {
@@ -5799,7 +5804,7 @@ const HotCuesWorkspace = ({
     const q = filterQuery.toLowerCase();
     return (t2.title || t2.t || "").toLowerCase().includes(q) || (t2.artist || t2.a || "").toLowerCase().includes(q) || (t2.bpm || t2.b || "").toLowerCase().includes(q) || (t2.key || t2.k || "").toLowerCase().includes(q);
   });
-  const isCurrentPlayingThis = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack?.id) || nowPlayingTrack.path === currentTrack?.path || nowPlayingTrack.f === currentTrack?.f);
+  const isCurrentPlayingThis = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack == null ? void 0 : currentTrack.id) || nowPlayingTrack.path === (currentTrack == null ? void 0 : currentTrack.path) || nowPlayingTrack.f === (currentTrack == null ? void 0 : currentTrack.f));
   return /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200" }, /* @__PURE__ */ React.createElement("header", { className: "border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]", title: currentFolder }, /* @__PURE__ */ React.createElement(Icons.Folder, null), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, currentFolder ? currentFolder.split("/").pop() || currentFolder : "Sin carpeta")), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6101,7 +6106,7 @@ const HotCuesWorkspace = ({
     return /* @__PURE__ */ React.createElement(
       "div",
       {
-        key: `${currentTrack?.id || "cue"}_pad_${idx}`,
+        key: `${(currentTrack == null ? void 0 : currentTrack.id) || "cue"}_pad_${idx}`,
         onClick: () => {
           setSelectedCueId(padNum);
           handleJumpToCue(cue);
@@ -6727,7 +6732,7 @@ const SpotifyWorkspace = ({
         setXlsToast(`\u2713 Reporte Excel generado (${res.descargadas} descargadas, ${res.fallidas} fallidas) en: ${res.path}`);
         setTimeout(() => setXlsToast(""), 6e3);
       } else {
-        alert(`Error al generar reporte: ${res?.msg || "Error desconocido"}`);
+        alert(`Error al generar reporte: ${(res == null ? void 0 : res.msg) || "Error desconocido"}`);
       }
     } catch (err) {
       console.error("Error exportando reporte XLS:", err);
@@ -7063,7 +7068,7 @@ const SpotifyWorkspace = ({
           setDownloadingMsg(`[DESCARGANDO] Lote en segundo plano (${listaPistas.length} pistas) hacia: ${res.dest || destDir}`);
           setDownloadProgress(35);
         } else {
-          setDownloadingMsg(`[ERROR] ${res?.msg || "Error al iniciar descarga"}`);
+          setDownloadingMsg(`[ERROR] ${(res == null ? void 0 : res.msg) || "Error al iniciar descarga"}`);
           setIsDownloading(false);
           setDownloadProgress(0);
         }
@@ -7916,7 +7921,7 @@ const TaxonomyWorkspace = ({
         if (res && res.status === "ok") {
           setFeedbackMsg(`\u2713 Pista enrutada a Crate /${trk.displayGenre}/${trk.displaySubgenre}/`);
         } else {
-          setFeedbackMsg(`\u26A0 ${res?.msg || "Error al enrutar pista"}`);
+          setFeedbackMsg(`\u26A0 ${(res == null ? void 0 : res.msg) || "Error al enrutar pista"}`);
         }
         setTimeout(() => setFeedbackMsg(""), 3500);
       }
@@ -7950,8 +7955,8 @@ const TaxonomyWorkspace = ({
           setRouteProgress(100);
           setRouteStatusMsg(`\u2713 Lote completado: ${res.procesados} pistas organizadas.`);
         } else {
-          setResultSummary({ status: "error", msg: res?.msg || "Error en el ruteo de lote." });
-          setRouteStatusMsg(res?.msg || "Error durante la operaci\xF3n.");
+          setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error en el ruteo de lote." });
+          setRouteStatusMsg((res == null ? void 0 : res.msg) || "Error durante la operaci\xF3n.");
         }
       }
     } catch (err) {
@@ -7980,7 +7985,7 @@ const TaxonomyWorkspace = ({
             msg: `\u2713 ${res.total_crates} crates generados exitosamente en ${res.destino}`
           });
         } else {
-          setResultSummary({ status: "error", msg: res?.msg || "Error al exportar crates Serato." });
+          setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error al exportar crates Serato." });
         }
       }
     } catch (err) {
@@ -8008,7 +8013,7 @@ const TaxonomyWorkspace = ({
             msg: `\u2713 Archivo rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists) en ${res.path}`
           });
         } else {
-          setResultSummary({ status: "error", msg: res?.msg || "Error al exportar rekordbox.xml." });
+          setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error al exportar rekordbox.xml." });
         }
       }
     } catch (err) {
@@ -9376,6 +9381,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         if (e.data && e.data.size > 0) chunks.push(e.data);
       };
       mediaRecorder.onstop = async () => {
+        var _a;
         if (animFrameRef.current) {
           cancelAnimationFrame(animFrameRef.current);
           animFrameRef.current = null;
@@ -9404,7 +9410,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
         if (maxRecordedLevel < 3 && samplesRecordedCount > 5) {
           console.warn("Nivel de micro ambiental pr\xE1cticamente nulo");
         }
-        const actualMime = chunks[0]?.type || selectedMime || "audio/webm";
+        const actualMime = ((_a = chunks[0]) == null ? void 0 : _a.type) || selectedMime || "audio/webm";
         const ext = actualMime.includes("mp4") ? "m4a" : actualMime.includes("ogg") ? "ogg" : "webm";
         const audioBlob = new Blob(chunks, { type: actualMime });
         const reader = new FileReader();
@@ -9529,7 +9535,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     } else if (res && res.status === "silence") {
       setStatusMsg(res.msg || "\u26A0\uFE0F Micr\xF3fono en silencio o inaudible. Acerca la fuente de sonido y revisa Ajustes de macOS > Privacidad > Micr\xF3fono.");
     } else {
-      setStatusMsg(res?.msg || "No se encontraron coincidencias para este fragmento de audio.");
+      setStatusMsg((res == null ? void 0 : res.msg) || "No se encontraron coincidencias para este fragmento de audio.");
     }
   };
   const handleSendToAuditInternal = (trk) => {
@@ -10503,8 +10509,8 @@ function evaluateLufsTransition(lufsA, lufsB) {
   };
 }
 function evaluateAntiMuddyTransition(trackA, trackB) {
-  const isBassA = (trackA?.low_ratio || 33) >= 45 || trackA?.acoustic_role === "Bass Driver";
-  const isBassB = (trackB?.low_ratio || 33) >= 45 || trackB?.acoustic_role === "Bass Driver";
+  const isBassA = ((trackA == null ? void 0 : trackA.low_ratio) || 33) >= 45 || (trackA == null ? void 0 : trackA.acoustic_role) === "Bass Driver";
+  const isBassB = ((trackB == null ? void 0 : trackB.low_ratio) || 33) >= 45 || (trackB == null ? void 0 : trackB.acoustic_role) === "Bass Driver";
   if (isBassA && isBassB) {
     return {
       isCollision: true,
@@ -10513,8 +10519,8 @@ function evaluateAntiMuddyTransition(trackA, trackB) {
       advice: "Ambos temas son Bass Drivers. Cortar EQ Low del tema saliente antes del drop para evitar barrizal de graves y cancelaci\xF3n de fase."
     };
   }
-  const isCompA = isBassA && (trackB?.acoustic_role === "Vocal / Lead" || trackB?.acoustic_role === "Percussive Tool");
-  const isCompB = isBassB && (trackA?.acoustic_role === "Vocal / Lead" || trackA?.acoustic_role === "Percussive Tool");
+  const isCompA = isBassA && ((trackB == null ? void 0 : trackB.acoustic_role) === "Vocal / Lead" || (trackB == null ? void 0 : trackB.acoustic_role) === "Percussive Tool");
+  const isCompB = isBassB && ((trackA == null ? void 0 : trackA.acoustic_role) === "Vocal / Lead" || (trackA == null ? void 0 : trackA.acoustic_role) === "Percussive Tool");
   if (isCompA || isCompB) {
     return {
       isCollision: false,
