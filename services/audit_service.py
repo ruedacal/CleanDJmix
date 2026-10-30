@@ -1821,6 +1821,9 @@ class AuditService:
         if not paths or not isinstance(paths, list):
             return {"status": "error", "msg": "Lista de rutas vacía", "eliminados": 0, "errores": []}
 
+        # Directorio base de la biblioteca auditada (puede ser None en primera carga)
+        directorio_base = os.path.realpath(self.directorio_actual) if self.directorio_actual else None
+
         eliminados = 0
         errores = []
         paths_eliminados = []
@@ -1838,25 +1841,48 @@ class AuditService:
                 errores.append(f"Archivo no encontrado: {p}")
                 continue
 
+            # ── Seguridad: verificar que el archivo pertenece al directorio auditado ──
+            real_abs = os.path.realpath(real_path)
+            if directorio_base:
+                try:
+                    common = os.path.commonpath([real_abs, directorio_base])
+                    if common != directorio_base:
+                        errores.append(f"Denegado (fuera de la biblioteca): {os.path.basename(real_path)}")
+                        continue
+                except ValueError:
+                    errores.append(f"Denegado (rutas incompatibles): {os.path.basename(real_path)}")
+                    continue
+
             try:
-                # Intentar mover a papelera de macOS para seguridad máxima
-                script = f'tell application "Finder" to delete POSIX file "{real_path}"'
-                res_proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=10)
+                # Mover a la papelera de macOS usando AppleScript con argumentos separados
+                # (nunca interpolamos la ruta dentro del script para evitar inyección)
+                script_lines = [
+                    "on run argv",
+                    "  tell application \"Finder\" to delete POSIX file (item 1 of argv)",
+                    "end run",
+                ]
+                osa_script = "\n".join(script_lines)
+                res_proc = subprocess.run(
+                    ["osascript", "-e", osa_script, real_abs],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
                 if res_proc.returncode == 0:
                     eliminados += 1
-                    paths_eliminados.append(real_path)
+                    paths_eliminados.append(real_abs)
                 else:
-                    # Fallback a os.remove directo si AppleScript no tiene permisos Finder
-                    os.remove(real_path)
+                    # Fallback: borrado directo si Finder no tiene permisos
+                    os.remove(real_abs)
                     eliminados += 1
-                    paths_eliminados.append(real_path)
+                    paths_eliminados.append(real_abs)
             except Exception as e:
                 try:
-                    os.remove(real_path)
+                    os.remove(real_abs)
                     eliminados += 1
-                    paths_eliminados.append(real_path)
+                    paths_eliminados.append(real_abs)
                 except Exception as del_err:
-                    errores.append(f"No se pudo eliminar {os.path.basename(real_path)}: {del_err}")
+                    errores.append(f"No se pudo eliminar {os.path.basename(real_abs)}: {del_err}")
 
         return {
             "status": "ok" if eliminados > 0 or len(errores) == 0 else "error",

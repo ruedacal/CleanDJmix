@@ -1,5 +1,7 @@
 import sys
 import os
+import secrets
+import uuid
 
 # Asegurar que el directorio raíz del proyecto esté en sys.path y como cwd
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -11,6 +13,76 @@ import subprocess
 import atexit
 import eel
 import bottle
+
+# ─── SEGURIDAD: Token de sesión efímero para el modo remoto (tablet/móvil) ───
+# Si el servidor escucha en 0.0.0.0 (--remote), los endpoints de mutación
+# exigen este token como cabecera X-Session-Token o parámetro ?token=
+_REMOTE_MODE = False          # se activa con el argumento --remote al arrancar
+_SESSION_TOKEN: str = secrets.token_hex(24)   # 48 caracteres hex aleatorios
+
+def _cors_localhost_only():
+    """Establece cabeceras CORS restringidas al origen localhost."""
+    origin = bottle.request.environ.get("HTTP_ORIGIN", "")
+    # Permitimos solo orígenes del propio host local
+    allowed_origins = {
+        "http://localhost:8000", "http://127.0.0.1:8000",
+        "http://localhost",      "http://127.0.0.1",
+    }
+    if origin in allowed_origins:
+        bottle.response.set_header("Access-Control-Allow-Origin", origin)
+    else:
+        # Sin cabecera → el navegador bloqueará peticiones cross-origin no locales
+        pass
+    bottle.response.set_header("Access-Control-Allow-Headers", "X-Session-Token, Content-Type, Range")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
+    bottle.response.set_header("Vary", "Origin")
+
+# Directorios base autorizados para servir archivos. Se amplían dinámicamente.
+_DIRECTORIOS_AUTORIZADOS: list = []
+
+def _registrar_directorio_autorizado(ruta: str):
+    """Registra un directorio de música como autorizado para servir archivos."""
+    real = os.path.realpath(ruta)
+    if real and os.path.isdir(real) and real not in _DIRECTORIOS_AUTORIZADOS:
+        _DIRECTORIOS_AUTORIZADOS.append(real)
+
+def es_ruta_segura(ruta_solicitada: str) -> bool:
+    """
+    Verifica que la ruta resuelta pertenezca a alguno de los directorios
+    autorizados (biblioteca de música o carpeta de descargas).
+    Rechaza cualquier intento de path-traversal o acceso a rutas del sistema.
+
+    Returns True si la ruta es segura, False en caso contrario.
+    """
+    if not ruta_solicitada:
+        return False
+    real = os.path.realpath(ruta_solicitada)
+    if not os.path.isfile(real):
+        return False
+    for base in _DIRECTORIOS_AUTORIZADOS:
+        try:
+            common = os.path.commonpath([real, base])
+            if common == base:
+                return True
+        except ValueError:
+            continue
+    return False
+
+def _verificar_token_remoto():
+    """
+    En modo remoto verifica que la petición incluya el token de sesión.
+    Devuelve None si es válido o una respuesta HTTP 403 si no lo es.
+    """
+    if not _REMOTE_MODE:
+        return None
+    token = (
+        bottle.request.headers.get("X-Session-Token", "")
+        or bottle.request.query.get("token", "")
+        or (bottle.request.json or {}).get("token", "")
+    )
+    if not secrets.compare_digest(token, _SESSION_TOKEN):
+        bottle.response.status = 403
+        return {"status": "error", "msg": "Token de sesión inválido o ausente."}
 
 # CRÍTICO: Permitir subidas de audio en Base64 desde micrófono y archivos (hasta 50 MB)
 # Evita el fallo HTTP 413 ('Request entity too large') que bloqueaba la escucha de Shazam (100 KB por defecto)
@@ -70,15 +142,28 @@ taxonomy_svc = TaxonomyService()
 shazam_svc = ShazamRecognitionService()
 
 @bottle.route('/cover')
+@bottle.route('/cover', method='OPTIONS')
 def get_cover():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+    _cors_localhost_only()
     if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
         return ""
     file_path = bottle.request.query.get('path', '')
     real_path = audio_playback_svc._resolver_ruta(file_path) if file_path else ''
     target = real_path if real_path else file_path
+
+    # ── Seguridad: bloquear path-traversal fuera de directorios autorizados ──
+    if target and not es_ruta_segura(target):
+        # Si no hay directorios registrados aún (arranque frío), solo validamos
+        # que no sea una ruta de sistema crítico
+        ruta_real_abs = os.path.realpath(target) if target else ''
+        rutas_sistema = ['/etc', '/usr', '/bin', '/sbin', '/System', '/private',
+                         '/Library/Keychains', os.path.expanduser('~/.ssh'),
+                         os.path.expanduser('~/.gnupg')]
+        if any(ruta_real_abs.startswith(r) for r in rutas_sistema):
+            bottle.response.status = 403
+            return "Acceso denegado"
+
     data, mime = media_svc.obtener_caratula_binaria(target)
     if data and mime:
         bottle.response.content_type = mime
@@ -86,16 +171,26 @@ def get_cover():
     return bottle.redirect("https://placehold.co/100x100/18181b/22d3ee?text=CleanDJ")
 
 @bottle.route('/stream_audio')
+@bottle.route('/stream_audio', method='OPTIONS')
 def stream_audio():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+    _cors_localhost_only()
     if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
         return ""
     file_path = bottle.request.query.get('path', '')
     if file_path:
         real_path = audio_playback_svc._resolver_ruta(file_path)
         if real_path and os.path.exists(real_path) and os.path.isfile(real_path):
+            # ── Seguridad: verificar que el archivo pertenece a un directorio autorizado ──
+            if not es_ruta_segura(real_path):
+                # Si la colección aún no se ha registrado, permitir si la ruta no es de sistema
+                ruta_real_abs = os.path.realpath(real_path)
+                rutas_sistema = ['/etc', '/usr', '/bin', '/sbin', '/System', '/private',
+                                 '/Library/Keychains', os.path.expanduser('~/.ssh'),
+                                 os.path.expanduser('~/.gnupg')]
+                if any(ruta_real_abs.startswith(r) for r in rutas_sistema):
+                    bottle.response.status = 403
+                    return "Acceso denegado"
             dir_name = os.path.dirname(real_path)
             file_name = os.path.basename(real_path)
             ext = os.path.splitext(file_name)[1].lower()
@@ -109,7 +204,7 @@ def stream_audio():
                 '.aiff': 'audio/aiff',
                 '.aif': 'audio/aiff'
             }
-            mime = mime_map.get(ext, True)
+            mime = mime_map.get(ext, 'audio/mpeg')
             return bottle.static_file(file_name, root=dir_name, mimetype=mime)
     bottle.response.status = 404
     return "Audio file not found"
@@ -153,17 +248,23 @@ def listar_subcarpetas_sistema(ruta_base=""):
 @eel.expose
 def cargar_metadatos_directorio(ruta_directorio):
     if isinstance(ruta_directorio, (list, tuple)) and len(ruta_directorio) > 0:
-        audio_playback_svc.establecer_directorio(os.path.dirname(ruta_directorio[0]))
+        dir_base = os.path.dirname(ruta_directorio[0])
+        audio_playback_svc.establecer_directorio(dir_base)
+        _registrar_directorio_autorizado(dir_base)
     elif isinstance(ruta_directorio, str):
         audio_playback_svc.establecer_directorio(ruta_directorio)
+        _registrar_directorio_autorizado(ruta_directorio)
     return audit_svc.cargar_metadatos_directorio(ruta_directorio, _emitir_progreso_batch)
 
 @eel.expose
 def iniciar_auditoria(ruta_directorio, opts=None):
     if isinstance(ruta_directorio, (list, tuple)) and len(ruta_directorio) > 0:
-        audio_playback_svc.establecer_directorio(os.path.dirname(ruta_directorio[0]))
+        dir_base = os.path.dirname(ruta_directorio[0])
+        audio_playback_svc.establecer_directorio(dir_base)
+        _registrar_directorio_autorizado(dir_base)
     elif isinstance(ruta_directorio, str):
         audio_playback_svc.establecer_directorio(ruta_directorio)
+        _registrar_directorio_autorizado(ruta_directorio)
     return audit_svc.iniciar_auditoria(ruta_directorio, _emitir_log_ui, _emitir_progreso_batch, opts=opts)
 
 @eel.expose
@@ -314,9 +415,14 @@ def regenerar_mood_y_comentario(track, lang="es"):
 
 @bottle.route('/api/cancelar_procesos', method=['GET', 'POST', 'OPTIONS'])
 def api_cancelar_procesos():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    # ── Seguridad: en modo remoto esta acción de mutación requiere token ──
+    err = _verificar_token_remoto()
+    if err is not None:
+        return err
     audit_svc.cancelar_proceso()
     download_svc.cancelar_descarga()
     media_svc.cancelar_busqueda()
@@ -492,15 +598,20 @@ def api_listar_subcarpetas():
 
 @bottle.route('/api/directorio_descarga', method=['GET', 'POST', 'OPTIONS'])
 def api_directorio_descarga():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    _cors_localhost_only()
     if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
         return ""
-    if bottle.request.method == 'POST' and bottle.request.json:
-        nueva_ruta = bottle.request.json.get('path', '')
-        if nueva_ruta and os.path.isdir(nueva_ruta):
-            download_svc.directorio_descargas = nueva_ruta
+    # ── Seguridad: el cambio de directorio es una operación de mutación; verificar token en modo remoto ──
+    if bottle.request.method == 'POST':
+        err = _verificar_token_remoto()
+        if err is not None:
+            return err
+        if bottle.request.json:
+            nueva_ruta = bottle.request.json.get('path', '')
+            if nueva_ruta and os.path.isdir(nueva_ruta):
+                download_svc.directorio_descargas = nueva_ruta
+                _registrar_directorio_autorizado(nueva_ruta)
     return {"status": "ok", "path": download_svc.obtener_directorio_actual()}
 
 @bottle.route('/api/resolver_stream_preescucha', method=['GET', 'POST', 'OPTIONS'])
@@ -857,6 +968,17 @@ def eel_copilot_get_info():
     }
 
 if __name__ == "__main__":
+    # ── Modo de red: por defecto solo localhost; --remote habilita LAN con token ──
+    if "--remote" in sys.argv:
+        _REMOTE_MODE = True
+        _host = "0.0.0.0"
+        print(f"\n[BEATWAVE PRO] ⚠️  Modo REMOTO activado.")
+        print(f"[BEATWAVE PRO] 🔑 Token de sesión (cópialo al dispositivo remoto):")
+        print(f"               {_SESSION_TOKEN}\n")
+    else:
+        _REMOTE_MODE = False
+        _host = "127.0.0.1"
+
     try:
         try:
             cmd = "system_profiler SPDisplaysDataType | grep Resolution"
@@ -868,7 +990,7 @@ if __name__ == "__main__":
 
         eel.start(
             "index.html",
-            host="0.0.0.0",
+            host=_host,
             mode="chrome",
             size=(w, h),
             position=(0, 0),
