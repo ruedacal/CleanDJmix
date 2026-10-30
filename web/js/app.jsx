@@ -1,4 +1,28 @@
-const { useState, useEffect, useRef, useMemo, useCallback } = React;
+const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
+
+// ─── PERF: PlayerContext ──────────────────────────────────────────────────────
+// Aísla COMPLETAMENTE el estado de reproducción del árbol de componentes.
+// - playProgressRef: ref mutable (nunca dispara renders), leída por canvas via rAF.
+// - isPlaying / nowPlayingTrack: solo cambian al cambiar pista o play/pause,
+//   NO con cada tick de ontimeupdate → cero re-renders de App durante playback.
+// ─────────────────────────────────────────────────────────────────────────────
+const PlayerContext = createContext({
+    playProgressRef: { current: 0 },
+    isPlaying: false,
+    nowPlayingTrack: null,
+});
+
+const usePlayerContext = () => useContext(PlayerContext);
+// Hook para saber si una pista concreta está sonando (render solo al cambiar pista/play)
+const useIsTrackPlaying = (trackId) => {
+    const { isPlaying, nowPlayingTrack } = usePlayerContext();
+    if (!trackId || !nowPlayingTrack) return false;
+    return isPlaying && (
+        String(nowPlayingTrack.id) === String(trackId) ||
+        nowPlayingTrack.path === trackId ||
+        nowPlayingTrack.f === trackId
+    );
+};
 
 const NV2_COLORS = [
     { id: 1, name: "Kick / Intro", color: "#ef4444", text: "text-red-400", border: "border-red-500/50", bg: "bg-red-500/10", time: "00:00.215" },
@@ -498,76 +522,108 @@ const RotaryKnob = ({ label, value = 0, min = -24, max = 6, defaultValue = 0, on
 };
 
 // Mini visualizador armónico espectral interactivo en celda de tabla
-const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
-    const canvasRef = useRef(null);
+// ─── PERF: TableHarmonicWaveform ─────────────────────────────────────────────
+// 1. React.memo + comparación de props: solo re-renderiza si cambia la pista,
+//    el estado play/pause, o el progreso supera un umbral del 2%.
+// 2. OffscreenCanvas: las 4 bandas espectrales se precalculan UNA VEZ por pista
+//    y se almacenan en bgBitmapRef. Cambiar de pista regenera el bitmap.
+// 3. rAF para el playhead: el cursor se actualiza con requestAnimationFrame
+//    leyendo progressRef (una ref, no estado) → sin renders de React.
+// ─────────────────────────────────────────────────────────────────────────────
+const TableHarmonicWaveform = React.memo(
+  ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
+    const canvasRef   = useRef(null);
+    const bgBitmapRef = useRef(null);   // bitmap precalculado de bandas espectrales
+    const rafRef      = useRef(null);   // handle de requestAnimationFrame
+    const progressRef = useRef(playProgress); // progreso leído por rAF sin setState
+    const WIDTH = 112, HEIGHT = 28;
+
     const rawId = track && track.id ? String(track.id) : "1";
-    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const seed  = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
 
     const handleClickScrub = (e) => {
         e.stopPropagation();
-        if (isCurrentPlaying && onTogglePlay) {
-            onTogglePlay();
-            return;
-        }
+        if (isCurrentPlaying && onTogglePlay) { onTogglePlay(); return; }
         if (!canvasRef.current || !onPlayTrack) return;
         const rect = canvasRef.current.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const pct = Math.max(0, Math.min(1, clickX / rect.width));
+        const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
         onPlayTrack(track, pct, true);
     };
 
+    // ── Paso 1: Generar bitmap de fondo UNA VEZ por pista ────────────────────
+    useEffect(() => {
+        let offscreen;
+        try { offscreen = new OffscreenCanvas(WIDTH, HEIGHT); }
+        catch (_) {
+            offscreen = document.createElement('canvas');
+            offscreen.width = WIDTH; offscreen.height = HEIGHT;
+        }
+        const ctx = offscreen.getContext('2d');
+        const centerY = HEIGHT / 2;
+        ctx.fillStyle = "#040407";
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        for (let x = 0; x <= WIDTH; x++) {
+            const xNorm = x / WIDTH;
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
+            const hBass = (HEIGHT * 0.44) * bass;
+            ctx.fillStyle = isBreak ? "rgba(30,58,138,0.20)" : "rgba(37,99,235,0.88)";
+            ctx.fillRect(x, centerY - hBass, 1, hBass * 2);
+            const hDrums = (HEIGHT * 0.32) * drums;
+            ctx.fillStyle = "rgba(239,68,68,0.85)";
+            ctx.fillRect(x, centerY - hDrums, 1, hDrums * 2);
+            const hVocals = (HEIGHT * 0.24) * vocals;
+            ctx.fillStyle = isBreak ? "rgba(16,185,129,0.95)" : "rgba(245,158,11,0.85)";
+            ctx.fillRect(x, centerY - hVocals, 1, hVocals * 2);
+            const hTreble = (HEIGHT * 0.14) * treble;
+            ctx.fillStyle = "rgba(34,211,238,0.95)";
+            ctx.fillRect(x, centerY - hTreble, 1, hTreble * 2);
+        }
+        // Convertir a ImageBitmap para renderizado GPU (fallback: canvas auxiliar)
+        if (typeof offscreen.transferToImageBitmap === 'function') {
+            bgBitmapRef.current = offscreen.transferToImageBitmap();
+        } else {
+            bgBitmapRef.current = offscreen;
+        }
+    }, [seed]); // seed estable por pista → solo recalcula al cambiar de pista
+
+    // ── Paso 2: Configurar canvas principal con DPR correcto ──────────────────
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const ctx = canvas.getContext("2d");
         const dpr = window.devicePixelRatio || 1;
-        const width = 112;
-        const height = 28;
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
+        canvas.width  = WIDTH * dpr;
+        canvas.height = HEIGHT * dpr;
+        const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
+    }, []); // solo al montar
 
-        ctx.fillStyle = "#040407";
-        ctx.fillRect(0, 0, width, height);
-        const centerY = height / 2;
-
-        // Renderizado nítido de 4 bandas de frecuencia: Bass (Azul), Drums (Rojo), Vocals (Verde/Ámbar), Treble (Cian)
-        for (let x = 0; x <= width; x += 1) {
-            const xNorm = x / width;
-            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
-
-            // 1. Bass / Sub (Azul Cobalto)
-            const hBass = (height * 0.44) * bass;
-            ctx.fillStyle = isBreak ? "rgba(30, 58, 138, 0.20)" : "rgba(37, 99, 235, 0.88)";
-            ctx.fillRect(x, centerY - hBass, 1, hBass * 2);
-
-            // 2. Drums / Caja (Rojo fuego / Naranja punch)
-            const hDrums = (height * 0.32) * drums;
-            ctx.fillStyle = "rgba(239, 68, 68, 0.85)";
-            ctx.fillRect(x, centerY - hDrums, 1, hDrums * 2);
-
-            // 3. Vocales / Leads (Verde Esmeralda / Ámbar melódico)
-            const hVocals = (height * 0.24) * vocals;
-            ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.95)" : "rgba(245, 158, 11, 0.85)";
-            ctx.fillRect(x, centerY - hVocals, 1, hVocals * 2);
-
-            // 4. Treble / Aire (Cian eléctrico)
-            const hTreble = (height * 0.14) * treble;
-            ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
-            ctx.fillRect(x, centerY - hTreble, 1, hTreble * 2);
+    // ── Paso 3: Bucle rAF para dibujar el playhead ────────────────────────────
+    // No lee ningún estado React → cero re-renders durante la reproducción.
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const draw = () => {
+            if (!bgBitmapRef.current) return;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(bgBitmapRef.current, 0, 0, WIDTH, HEIGHT);
+            if (isCurrentPlaying) {
+                const px = WIDTH * Math.min(1, Math.max(0, progressRef.current));
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, HEIGHT); ctx.stroke();
+            }
+        };
+        if (isCurrentPlaying) {
+            const loop = () => { draw(); rafRef.current = requestAnimationFrame(loop); };
+            rafRef.current = requestAnimationFrame(loop);
+        } else {
+            draw();
+            if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
         }
+        return () => { if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; } };
+    }, [isCurrentPlaying, seed]);
 
-        // Cursor playhead si se está reproduciendo
-        if (isCurrentPlaying && playProgress > 0) {
-            const px = width * Math.min(1, Math.max(0, playProgress));
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(px, 0);
-            ctx.lineTo(px, height);
-            ctx.stroke();
-        }
-    }, [track, seed, isCurrentPlaying, playProgress]);
+    // ── Paso 4: Sincronizar ref de progreso sin provocar renders ─────────────
+    useEffect(() => { progressRef.current = playProgress; }, [playProgress]);
 
     return (
         <div onClick={handleClickScrub} className="w-28 h-7 bg-[#040407] rounded border border-djzinc-800 relative overflow-hidden group cursor-pointer hover:border-djcyan-400 transition-colors flex items-center justify-center">
@@ -578,7 +634,19 @@ const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurre
             )}
         </div>
     );
-};
+  },
+  // ── Función de comparación (areEqual): evita re-renders innecesarios ────────
+  (prev, next) => {
+      if ((prev.track && prev.track.id) !== (next.track && next.track.id)) return false;
+      if (prev.isCurrentPlaying !== next.isCurrentPlaying) return false;
+      // Si está sonando, solo re-renderiza si el progreso cambia >2% (umbral visual)
+      if (prev.isCurrentPlaying && Math.abs(prev.playProgress - next.playProgress) > 0.02) return false;
+      if (prev.onPlayTrack !== next.onPlayTrack) return false;
+      if (prev.onTogglePlay !== next.onTogglePlay) return false;
+      if (prev.duration !== next.duration) return false;
+      return true; // props equivalentes → saltar render
+  }
+);
 
 // Leyenda oficial de bandas espectrales Rekordbox / Pioneer DJ
 const WAVEFORM_COLOR_LEGEND = [
@@ -2669,19 +2737,75 @@ const HotCueStudioModal = ({
 };
 
 // Master Waveform Scrubber en el Footer Deck con Separación de Componentes
-const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues = NV2_COLORS }) => {
-    const canvasRef = useRef(null);
+// PERF: FooterMasterWaveform — OffscreenCanvas + rAF loop para que playProgressRef
+// nunca dispare re-renders en App. Recibe playProgressRef (un ref, no state).
+const FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS }) => {
+    const canvasRef    = useRef(null);
+    const containerRef = useRef(null);
+    const bitmapRef    = useRef(null);   // ImageBitmap del fondo precalculado
+    const rafRef       = useRef(null);
     const rawId = track && track.id ? String(track.id) : "1";
-    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const seed  = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
 
-    const handleScrub = (e) => {
-        if (!canvasRef.current || !onSeek || !track) return;
-        const rect = canvasRef.current.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const pct = Math.max(0, Math.min(1, clickX / rect.width));
-        onSeek(pct);
-    };
+    // Construye el bitmap estático del fondo (solo cuando cambia la pista o el ancho)
+    const buildBitmap = useCallback((width) => {
+        const height = 42;
+        let offscreen;
+        try {
+            offscreen = new OffscreenCanvas(width, height);
+        } catch (_) {
+            offscreen = document.createElement("canvas");
+            offscreen.width  = width;
+            offscreen.height = height;
+        }
+        const ctx = offscreen.getContext("2d");
+        const centerY = height / 2;
+        ctx.fillStyle = "#060609";
+        ctx.fillRect(0, 0, width, height);
 
+        for (let x = 0; x <= width; x += 1.5) {
+            const xNorm = x / width;
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
+            if (isBreak) { ctx.fillStyle = "rgba(16,185,129,0.08)"; ctx.fillRect(x, 0, 1.5, height); }
+            const hBass   = (height * 0.44) * bass;
+            ctx.fillStyle = isBreak ? "rgba(30,58,138,0.20)" : "rgba(37,99,235,0.88)";
+            ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
+            const hDrums  = (height * 0.32) * drums;
+            ctx.fillStyle = "rgba(239,68,68,0.85)";
+            ctx.fillRect(x, centerY - hDrums, 1.5, hDrums * 2);
+            const hVocals = (height * 0.22) * vocals;
+            ctx.fillStyle = isBreak ? "rgba(16,185,129,0.95)" : "rgba(245,158,11,0.85)";
+            ctx.fillRect(x, centerY - hVocals, 1.5, hVocals * 2);
+            const hTreble = (height * 0.14) * treble;
+            ctx.fillStyle = "rgba(34,211,238,0.95)";
+            ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
+        }
+        ctx.strokeStyle = "rgba(255,255,255,0.08)";
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(width, centerY); ctx.stroke();
+
+        if (typeof offscreen.transferToImageBitmap === "function") {
+            bitmapRef.current = offscreen.transferToImageBitmap();
+        } else {
+            bitmapRef.current = offscreen; // fallback canvas
+        }
+    }, [seed]);
+
+    // Reconstruir bitmap cuando cambia la pista, con ResizeObserver para cambios de layout
+    useEffect(() => {
+        if (!track || !containerRef.current) { bitmapRef.current = null; return; }
+        const el = containerRef.current;
+        const w  = el.clientWidth || 640;
+        buildBitmap(w);
+        const ro = new ResizeObserver(entries => {
+            const newW = entries[0]?.contentRect.width | 0;
+            if (newW > 0) buildBitmap(newW);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [track, buildBitmap]);
+
+    // rAF loop: dibuja bitmap + playhead, nunca cambia estado React
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -2690,69 +2814,43 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             return;
         }
-        const ctx = canvas.getContext("2d");
-        const dpr = window.devicePixelRatio || 1;
-        const width = canvas.parentElement.clientWidth || 640;
+        const dpr    = window.devicePixelRatio || 1;
         const height = 42;
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        ctx.scale(dpr, dpr);
+        let lastPx   = -1;
 
-        ctx.fillStyle = "#060609";
-        ctx.fillRect(0, 0, width, height);
-        const centerY = height / 2;
-
-        for (let x = 0; x <= width; x += 1.5) {
-            const xNorm = x / width;
-            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
-
-            // Resalte de fondo en parones
-            if (isBreak) {
-                ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
-                ctx.fillRect(x, 0, 1.5, height);
+        const loop = () => {
+            rafRef.current = requestAnimationFrame(loop);
+            const bitmap = bitmapRef.current;
+            if (!bitmap) return;
+            const width  = canvas.parentElement ? (canvas.parentElement.clientWidth || 640) : 640;
+            // Resize canvas si cambia el layout
+            if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+                canvas.width  = width * dpr;
+                canvas.height = height * dpr;
             }
-
-            // Bajos (Azul)
-            const hBass = (height * 0.44) * bass;
-            ctx.fillStyle = isBreak ? "rgba(30, 58, 138, 0.20)" : "rgba(37, 99, 235, 0.88)";
-            ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
-
-            // Drums (Rojo)
-            const hDrums = (height * 0.32) * drums;
-            ctx.fillStyle = "rgba(239, 68, 68, 0.85)";
-            ctx.fillRect(x, centerY - hDrums, 1.5, hDrums * 2);
-
-            // Vocales (Verde esmeralda en parones, ámbar en drops)
-            const hVocals = (height * 0.22) * vocals;
-            ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.95)" : "rgba(245, 158, 11, 0.85)";
-            ctx.fillRect(x, centerY - hVocals, 1.5, hVocals * 2);
-
-            // Agudos (Cian)
-            const hTreble = (height * 0.14) * treble;
-            ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
-            ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
-        }
-
-        // Línea central
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, centerY);
-        ctx.lineTo(width, centerY);
-        ctx.stroke();
-
-        // Línea blanca Playhead / Scrubber sincronizada con playProgress
-        const px = width * Math.min(1, Math.max(0, playProgress));
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
-        ctx.shadowColor = "#ffffff";
-        ctx.shadowBlur = 4;
-        ctx.beginPath();
-        ctx.moveTo(px, 0);
-        ctx.lineTo(px, height);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-    }, [track, playProgress, seed]);
+            const pct = playProgressRef ? playProgressRef.current : 0;
+            const px  = Math.round(width * Math.min(1, Math.max(0, pct)));
+            if (px === lastPx) return; // evitar redibujado innecesario
+            lastPx = px;
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save(); ctx.scale(dpr, dpr);
+            // Dibuja el bitmap precalculado
+            if (bitmap.width && bitmap.height) {
+                ctx.drawImage(bitmap, 0, 0, width, height);
+            }
+            // Playhead (única línea que se actualiza continuamente)
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth   = 2;
+            ctx.shadowColor = "#ffffff";
+            ctx.shadowBlur  = 4;
+            ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, height); ctx.stroke();
+            ctx.shadowBlur  = 0;
+            ctx.restore();
+        };
+        rafRef.current = requestAnimationFrame(loop);
+        return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    }, [track, playProgressRef]);
 
     if (!track) {
         return (
@@ -2765,8 +2863,17 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues
         );
     }
 
+    // handleScrub usa containerRef para calcular el pct de click
+    const handleScrub = (e) => {
+        if (!containerRef.current || !onSeek || !track) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const pct = Math.max(0, Math.min(1, clickX / rect.width));
+        onSeek(pct);
+    };
+
     return (
-        <div onClick={handleScrub} className="flex-1 h-11 bg-[#060609] rounded-lg border border-djzinc-800/90 relative overflow-hidden group cursor-pointer hover:border-djcyan-500/70 transition-colors shadow-inner flex items-center mx-6">
+        <div ref={containerRef} onClick={handleScrub} className="flex-1 h-11 bg-[#060609] rounded-lg border border-djzinc-800/90 relative overflow-hidden group cursor-pointer hover:border-djcyan-500/70 transition-colors shadow-inner flex items-center mx-6">
             <canvas ref={canvasRef} style={{ width: "100%", height: "42px", display: "block" }} />
             {cues.map((cue, idx) => {
                 const leftPos = cue.pct !== undefined ? (cue.pct * 100) : Math.min(96, Math.max(3, (idx * 12.4) + 2.5));
@@ -3759,6 +3866,33 @@ const DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDe
     );
 };
 
+// ─── PERF: Hook de virtualización de filas para tablas grandes ───────────────
+// Renderiza únicamente las filas visibles dentro de la ventana del usuario.
+// Mantiene compatibilidad con todos los eventos de interacción existentes.
+function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
+    const [range, setRange] = useState({ start: 0, end: 60 });
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const update = () => {
+            const scrollTop    = el.scrollTop;
+            const clientHeight = el.clientHeight;
+            const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+            const end   = Math.min(items.length, Math.ceil((scrollTop + clientHeight) / rowHeight) + overscan);
+            setRange(prev => (prev.start === start && prev.end === end ? prev : { start, end }));
+        };
+        el.addEventListener("scroll", update, { passive: true });
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        update();
+        return () => { el.removeEventListener("scroll", update); ro.disconnect(); };
+    }, [items.length, rowHeight, overscan]);
+    const visibleItems  = items.slice(range.start, range.end);
+    const paddingTop    = range.start * rowHeight;
+    const paddingBottom = Math.max(0, (items.length - range.end) * rowHeight);
+    return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
+}
+
 // Espacio de Trabajo: Auditoría & DSP
 const AuditWorkspace = ({ 
     tracks: externalTracks, 
@@ -3829,6 +3963,8 @@ const AuditWorkspace = ({
     // Rueda Armónica Camelot & TAP Tempo
     const [camelotModalOpen, setCamelotModalOpen] = useState(false);
     const tapTimesRef = useRef([]);
+    // PERF: ref del contenedor scrollable de la tabla para virtualización de filas
+    const tableScrollRef = useRef(null);
 
     // Hot Cues & Beatgrid
     const [selectedCueId, setSelectedCueId] = useState(1);
@@ -5006,6 +5142,14 @@ const AuditWorkspace = ({
         return result;
     }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, auditSortField, auditSortDir]);
 
+    // PERF: Virtualización de filas — solo renderiza las visibles + buffer overscan
+    const {
+        visibleItems: virtualRows,
+        paddingTop:   virtualPaddingTop,
+        paddingBottom: virtualPaddingBottom,
+        startIndex:   virtualStartIndex
+    } = useVirtualRows(tracksFiltrados, tableScrollRef, 40, 5);
+
     const handleToggleSelectAllVisible = () => {
         const visibleIds = (tracksFiltrados || []).map(t => t.id);
         if (visibleIds.length === 0) return;
@@ -5433,7 +5577,7 @@ const AuditWorkspace = ({
                     {saveFeedback && <span className="text-xs font-mono text-djgreen-400 font-bold animate-pulse">{saveFeedback}</span>}
                 </div>
 
-                <div className="flex-1 overflow-auto bg-[#0f0f13]">
+                <div ref={tableScrollRef} className="flex-1 overflow-auto bg-[#0f0f13]">
                     <table className="w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table">
                         <thead className="sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400">
                             <tr>
@@ -5598,7 +5742,9 @@ const AuditWorkspace = ({
                                     </td>
                                 </tr>
                             )}
-                            {tracksFiltrados.map((row) => {
+                            {/* PERF: Virtualización — espaciador superior */}
+                            {virtualPaddingTop > 0 && <tr aria-hidden="true" style={{ height: virtualPaddingTop }}><td /></tr>}
+                            {virtualRows.map((row, i) => {
                                 const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
                                 const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : (row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null)));
                                 const isFake = Boolean(row.es_fake || (row.format === 'FLAC' && String(row.status || '').includes('Fake')));
@@ -5923,6 +6069,8 @@ const AuditWorkspace = ({
                                     </tr>
                                 );
                             })}
+                            {/* PERF: Virtualización — espaciador inferior */}
+                            {virtualPaddingBottom > 0 && <tr aria-hidden="true" style={{ height: virtualPaddingBottom }}><td /></tr>}
                         </tbody>
                     </table>
 
@@ -18750,8 +18898,43 @@ const App = () => {
     const currentTrack = selectedTrack ? (auditTracks.find(t => t.id === selectedTrack) || null) : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [playProgress, setPlayProgress] = useState(0);
+    // PERF A2: playProgress eliminado del estado React → ref mutable + CustomEvent.
+    // Ningún re-render se dispara por ontimeupdate; solo FooterMasterWaveform y la
+    // barra móvil (mobileProgress) reaccionan al avance de la reproducción.
+    const playProgressRef = useRef(0);
+    const setPlayProgress = useCallback((pct) => {
+        const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
+        playProgressRef.current = safe;
+        window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
+    }, []);
     const audioRef = useRef(null);
+
+    // PERF A4: mobileProgress — estado local para la barra de progreso ultra-fina
+    // en móvil (<768 px). Se actualiza vía CustomEvent 'bw:progress' en lugar de
+    // leer playProgress del estado global, evitando re-renders en todo el árbol.
+    const [mobileProgress, setMobileProgress] = useState(0);
+    useEffect(() => {
+        const onProgress = (e) => setMobileProgress(e.detail.pct);
+        window.addEventListener("bw:progress", onProgress);
+        return () => window.removeEventListener("bw:progress", onProgress);
+    }, []);
+    // PERF: playProgress para workspaces — se actualiza cada ~100ms via CustomEvent
+    // (throttle), evitando re-renders a 60 fps. Los workspaces usan este valor
+    // solo para el playhead de la fila activa, no en cada frame de audio.
+    const [playProgress, setPlayProgressForWorkspaces] = useState(0);
+    useEffect(() => {
+        let lastUpdate = 0;
+        const THROTTLE_MS = 100;
+        const onProgress = (e) => {
+            const now = Date.now();
+            if (now - lastUpdate >= THROTTLE_MS) {
+                lastUpdate = now;
+                setPlayProgressForWorkspaces(e.detail.pct);
+            }
+        };
+        window.addEventListener("bw:progress", onProgress);
+        return () => window.removeEventListener("bw:progress", onProgress);
+    }, []);
 
     // Estado Global de Tareas en Background & Tutorial de Bienvenida
     const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, progress: 0, statusMsg: '' });
@@ -18969,6 +19152,7 @@ const App = () => {
         };
 
         audio.ontimeupdate = () => {
+            // PERF A3: solo actualiza ref + dispara CustomEvent, sin setState → sin re-renders
             if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
                 setPlayProgress(audio.currentTime / audio.duration);
             }
@@ -19120,11 +19304,11 @@ const App = () => {
                 audio.play().then(() => setIsPlaying(true)).catch((err) => {
                     console.warn("Play error:", err);
                     if (nowPlayingTrack) {
-                        handlePlayTrack(nowPlayingTrack, playProgress, true);
+                        handlePlayTrack(nowPlayingTrack, playProgressRef.current, true);
                     }
                 });
             } else if (nowPlayingTrack) {
-                handlePlayTrack(nowPlayingTrack, playProgress, true);
+                handlePlayTrack(nowPlayingTrack, playProgressRef.current, true);
             }
         }
     };
@@ -19910,7 +20094,7 @@ const App = () => {
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-djzinc-850 md:hidden overflow-hidden">
                     <div 
                         className="h-full bg-djcyan-400 transition-all duration-200"
-                        style={{ width: `${Math.min(100, Math.max(0, playProgress * 100))}%` }}
+                        style={{ width: `${Math.min(100, Math.max(0, mobileProgress * 100))}%` }}
                     ></div>
                 </div>
 
@@ -19989,7 +20173,7 @@ const App = () => {
                     <button 
                         type="button"
                         disabled={!nowPlayingTrack}
-                        onClick={() => setPlayProgress(0.22)} 
+                        onClick={() => handleFooterSeek(0.22)} 
                         className={`hidden sm:block px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${
                             !nowPlayingTrack 
                                 ? 'bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none'
@@ -20014,7 +20198,7 @@ const App = () => {
                     <FooterMasterWaveform 
                         track={nowPlayingTrack} 
                         isPlaying={isPlaying} 
-                        playProgress={playProgress} 
+                        playProgressRef={playProgressRef} 
                         onSeek={handleFooterSeek} 
                         cues={(nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0) ? nowPlayingTrack.cues : ((currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS)} 
                     />

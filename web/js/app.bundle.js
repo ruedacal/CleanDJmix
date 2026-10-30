@@ -1,4 +1,15 @@
-const { useState, useEffect, useRef, useMemo, useCallback } = React;
+const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
+const PlayerContext = createContext({
+  playProgressRef: { current: 0 },
+  isPlaying: false,
+  nowPlayingTrack: null
+});
+const usePlayerContext = () => useContext(PlayerContext);
+const useIsTrackPlaying = (trackId) => {
+  const { isPlaying, nowPlayingTrack } = usePlayerContext();
+  if (!trackId || !nowPlayingTrack) return false;
+  return isPlaying && (String(nowPlayingTrack.id) === String(trackId) || nowPlayingTrack.path === trackId || nowPlayingTrack.f === trackId);
+};
 const NV2_COLORS = [
   { id: 1, name: "Kick / Intro", color: "#ef4444", text: "text-red-400", border: "border-red-500/50", bg: "bg-red-500/10", time: "00:00.215" },
   { id: 2, name: "Hi-Hats In", color: "#f97316", text: "text-orange-400", border: "border-orange-500/50", bg: "bg-orange-500/10", time: "00:15.110" },
@@ -454,63 +465,123 @@ const RotaryKnob = ({ label, value = 0, min = -24, max = 6, defaultValue = 0, on
     /* @__PURE__ */ React.createElement("div", { className: "w-4 h-4 rounded-full bg-[#1e1e2c] border border-djzinc-600 pointer-events-none flex items-center justify-center shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "w-1 h-1 rounded-full bg-djzinc-500" }))
   ), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-gray-300 font-extrabold" }, value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7.5px] text-gray-500 font-normal" }, "dB")));
 };
-const TableHarmonicWaveform = ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
-  const canvasRef = useRef(null);
-  const rawId = track && track.id ? String(track.id) : "1";
-  const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
-  const handleClickScrub = (e) => {
-    e.stopPropagation();
-    if (isCurrentPlaying && onTogglePlay) {
-      onTogglePlay();
-      return;
-    }
-    if (!canvasRef.current || !onPlayTrack) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const pct = Math.max(0, Math.min(1, clickX / rect.width));
-    onPlayTrack(track, pct, true);
-  };
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    const width = 112;
-    const height = 28;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.fillStyle = "#040407";
-    ctx.fillRect(0, 0, width, height);
-    const centerY = height / 2;
-    for (let x = 0; x <= width; x += 1) {
-      const xNorm = x / width;
-      const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
-      const hBass = height * 0.44 * bass;
-      ctx.fillStyle = isBreak ? "rgba(30, 58, 138, 0.20)" : "rgba(37, 99, 235, 0.88)";
-      ctx.fillRect(x, centerY - hBass, 1, hBass * 2);
-      const hDrums = height * 0.32 * drums;
-      ctx.fillStyle = "rgba(239, 68, 68, 0.85)";
-      ctx.fillRect(x, centerY - hDrums, 1, hDrums * 2);
-      const hVocals = height * 0.24 * vocals;
-      ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.95)" : "rgba(245, 158, 11, 0.85)";
-      ctx.fillRect(x, centerY - hVocals, 1, hVocals * 2);
-      const hTreble = height * 0.14 * treble;
-      ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
-      ctx.fillRect(x, centerY - hTreble, 1, hTreble * 2);
-    }
-    if (isCurrentPlaying && playProgress > 0) {
-      const px = width * Math.min(1, Math.max(0, playProgress));
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(px, 0);
-      ctx.lineTo(px, height);
-      ctx.stroke();
-    }
-  }, [track, seed, isCurrentPlaying, playProgress]);
-  return /* @__PURE__ */ React.createElement("div", { onClick: handleClickScrub, className: "w-28 h-7 bg-[#040407] rounded border border-djzinc-800 relative overflow-hidden group cursor-pointer hover:border-djcyan-400 transition-colors flex items-center justify-center" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: "112px", height: "28px", display: "block" } }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-0.5 right-1 text-[8px] font-mono text-gray-400 opacity-60 group-hover:opacity-100" }, duration), isCurrentPlaying && /* @__PURE__ */ React.createElement("div", { className: "absolute top-1 left-1 w-2 h-2 rounded-full bg-djcyan-400 animate-pulse" }));
-};
+const TableHarmonicWaveform = React.memo(
+  ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
+    const canvasRef = useRef(null);
+    const bgBitmapRef = useRef(null);
+    const rafRef = useRef(null);
+    const progressRef = useRef(playProgress);
+    const WIDTH = 112, HEIGHT = 28;
+    const rawId = track && track.id ? String(track.id) : "1";
+    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const handleClickScrub = (e) => {
+      e.stopPropagation();
+      if (isCurrentPlaying && onTogglePlay) {
+        onTogglePlay();
+        return;
+      }
+      if (!canvasRef.current || !onPlayTrack) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      onPlayTrack(track, pct, true);
+    };
+    useEffect(() => {
+      let offscreen;
+      try {
+        offscreen = new OffscreenCanvas(WIDTH, HEIGHT);
+      } catch (_) {
+        offscreen = document.createElement("canvas");
+        offscreen.width = WIDTH;
+        offscreen.height = HEIGHT;
+      }
+      const ctx = offscreen.getContext("2d");
+      const centerY = HEIGHT / 2;
+      ctx.fillStyle = "#040407";
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      for (let x = 0; x <= WIDTH; x++) {
+        const xNorm = x / WIDTH;
+        const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
+        const hBass = HEIGHT * 0.44 * bass;
+        ctx.fillStyle = isBreak ? "rgba(30,58,138,0.20)" : "rgba(37,99,235,0.88)";
+        ctx.fillRect(x, centerY - hBass, 1, hBass * 2);
+        const hDrums = HEIGHT * 0.32 * drums;
+        ctx.fillStyle = "rgba(239,68,68,0.85)";
+        ctx.fillRect(x, centerY - hDrums, 1, hDrums * 2);
+        const hVocals = HEIGHT * 0.24 * vocals;
+        ctx.fillStyle = isBreak ? "rgba(16,185,129,0.95)" : "rgba(245,158,11,0.85)";
+        ctx.fillRect(x, centerY - hVocals, 1, hVocals * 2);
+        const hTreble = HEIGHT * 0.14 * treble;
+        ctx.fillStyle = "rgba(34,211,238,0.95)";
+        ctx.fillRect(x, centerY - hTreble, 1, hTreble * 2);
+      }
+      if (typeof offscreen.transferToImageBitmap === "function") {
+        bgBitmapRef.current = offscreen.transferToImageBitmap();
+      } else {
+        bgBitmapRef.current = offscreen;
+      }
+    }, [seed]);
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = WIDTH * dpr;
+      canvas.height = HEIGHT * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+    }, []);
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const draw = () => {
+        if (!bgBitmapRef.current) return;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(bgBitmapRef.current, 0, 0, WIDTH, HEIGHT);
+        if (isCurrentPlaying) {
+          const px = WIDTH * Math.min(1, Math.max(0, progressRef.current));
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(px, 0);
+          ctx.lineTo(px, HEIGHT);
+          ctx.stroke();
+        }
+      };
+      if (isCurrentPlaying) {
+        const loop = () => {
+          draw();
+          rafRef.current = requestAnimationFrame(loop);
+        };
+        rafRef.current = requestAnimationFrame(loop);
+      } else {
+        draw();
+        if (rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
+      }
+      return () => {
+        if (rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
+      };
+    }, [isCurrentPlaying, seed]);
+    useEffect(() => {
+      progressRef.current = playProgress;
+    }, [playProgress]);
+    return /* @__PURE__ */ React.createElement("div", { onClick: handleClickScrub, className: "w-28 h-7 bg-[#040407] rounded border border-djzinc-800 relative overflow-hidden group cursor-pointer hover:border-djcyan-400 transition-colors flex items-center justify-center" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: "112px", height: "28px", display: "block" } }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-0.5 right-1 text-[8px] font-mono text-gray-400 opacity-60 group-hover:opacity-100" }, duration), isCurrentPlaying && /* @__PURE__ */ React.createElement("div", { className: "absolute top-1 left-1 w-2 h-2 rounded-full bg-djcyan-400 animate-pulse" }));
+  },
+  // ── Función de comparación (areEqual): evita re-renders innecesarios ────────
+  (prev, next) => {
+    if ((prev.track && prev.track.id) !== (next.track && next.track.id)) return false;
+    if (prev.isCurrentPlaying !== next.isCurrentPlaying) return false;
+    if (prev.isCurrentPlaying && Math.abs(prev.playProgress - next.playProgress) > 0.02) return false;
+    if (prev.onPlayTrack !== next.onPlayTrack) return false;
+    if (prev.onTogglePlay !== next.onTogglePlay) return false;
+    if (prev.duration !== next.duration) return false;
+    return true;
+  }
+);
 const WAVEFORM_COLOR_LEGEND = [
   { name: "Bass / Sub", color: "#2563eb", rgb: [37, 99, 235], hex: "#2563EB", desc: "Subgraves y pegada de bombos (<150Hz)", text: "text-blue-400", dot: "bg-blue-500" },
   { name: "Drums / Impact", color: "#ef4444", rgb: [239, 68, 68], hex: "#EF4444", desc: "Cajas, claps y transitorios r\xEDtmicos (150-1kHz)", text: "text-red-400", dot: "bg-red-500" },
@@ -2118,76 +2189,132 @@ const HotCueStudioModal = ({
     /* @__PURE__ */ React.createElement("span", null, isSavingLocal ? "Guardando en Archivo..." : "Guardar Pista en Fichero")
   )))));
 };
-const FooterMasterWaveform = ({ track, isPlaying, playProgress = 0, onSeek, cues = NV2_COLORS }) => {
+const FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS }) => {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const bitmapRef = useRef(null);
+  const rafRef = useRef(null);
   const rawId = track && track.id ? String(track.id) : "1";
   const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
-  const handleScrub = (e) => {
-    if (!canvasRef.current || !onSeek || !track) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const pct = Math.max(0, Math.min(1, clickX / rect.width));
-    onSeek(pct);
-  };
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (!track) {
-      const ctx2 = canvas.getContext("2d");
-      ctx2.clearRect(0, 0, canvas.width, canvas.height);
-      return;
-    }
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    const width = canvas.parentElement.clientWidth || 640;
+  const buildBitmap = useCallback((width) => {
     const height = 42;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
+    let offscreen;
+    try {
+      offscreen = new OffscreenCanvas(width, height);
+    } catch (_) {
+      offscreen = document.createElement("canvas");
+      offscreen.width = width;
+      offscreen.height = height;
+    }
+    const ctx = offscreen.getContext("2d");
+    const centerY = height / 2;
     ctx.fillStyle = "#060609";
     ctx.fillRect(0, 0, width, height);
-    const centerY = height / 2;
     for (let x = 0; x <= width; x += 1.5) {
       const xNorm = x / width;
       const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
       if (isBreak) {
-        ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
+        ctx.fillStyle = "rgba(16,185,129,0.08)";
         ctx.fillRect(x, 0, 1.5, height);
       }
       const hBass = height * 0.44 * bass;
-      ctx.fillStyle = isBreak ? "rgba(30, 58, 138, 0.20)" : "rgba(37, 99, 235, 0.88)";
+      ctx.fillStyle = isBreak ? "rgba(30,58,138,0.20)" : "rgba(37,99,235,0.88)";
       ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
       const hDrums = height * 0.32 * drums;
-      ctx.fillStyle = "rgba(239, 68, 68, 0.85)";
+      ctx.fillStyle = "rgba(239,68,68,0.85)";
       ctx.fillRect(x, centerY - hDrums, 1.5, hDrums * 2);
       const hVocals = height * 0.22 * vocals;
-      ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.95)" : "rgba(245, 158, 11, 0.85)";
+      ctx.fillStyle = isBreak ? "rgba(16,185,129,0.95)" : "rgba(245,158,11,0.85)";
       ctx.fillRect(x, centerY - hVocals, 1.5, hVocals * 2);
       const hTreble = height * 0.14 * treble;
-      ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
+      ctx.fillStyle = "rgba(34,211,238,0.95)";
       ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
     }
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, centerY);
     ctx.lineTo(width, centerY);
     ctx.stroke();
-    const px = width * Math.min(1, Math.max(0, playProgress));
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
-    ctx.shadowColor = "#ffffff";
-    ctx.shadowBlur = 4;
-    ctx.beginPath();
-    ctx.moveTo(px, 0);
-    ctx.lineTo(px, height);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-  }, [track, playProgress, seed]);
+    if (typeof offscreen.transferToImageBitmap === "function") {
+      bitmapRef.current = offscreen.transferToImageBitmap();
+    } else {
+      bitmapRef.current = offscreen;
+    }
+  }, [seed]);
+  useEffect(() => {
+    if (!track || !containerRef.current) {
+      bitmapRef.current = null;
+      return;
+    }
+    const el = containerRef.current;
+    const w = el.clientWidth || 640;
+    buildBitmap(w);
+    const ro = new ResizeObserver((entries) => {
+      const newW = entries[0]?.contentRect.width | 0;
+      if (newW > 0) buildBitmap(newW);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [track, buildBitmap]);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (!track) {
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+    const dpr = window.devicePixelRatio || 1;
+    const height = 42;
+    let lastPx = -1;
+    const loop = () => {
+      rafRef.current = requestAnimationFrame(loop);
+      const bitmap = bitmapRef.current;
+      if (!bitmap) return;
+      const width = canvas.parentElement ? canvas.parentElement.clientWidth || 640 : 640;
+      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+      }
+      const pct = playProgressRef ? playProgressRef.current : 0;
+      const px = Math.round(width * Math.min(1, Math.max(0, pct)));
+      if (px === lastPx) return;
+      lastPx = px;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      if (bitmap.width && bitmap.height) {
+        ctx.drawImage(bitmap, 0, 0, width, height);
+      }
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.shadowColor = "#ffffff";
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.moveTo(px, 0);
+      ctx.lineTo(px, height);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [track, playProgressRef]);
   if (!track) {
     return /* @__PURE__ */ React.createElement("div", { className: "flex-1 h-11 bg-[#060609]/70 rounded-lg border border-djzinc-850/80 mx-6 flex items-center justify-center select-none shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-gray-600" }), /* @__PURE__ */ React.createElement("span", null, "DECK 1 STANDBY \u2022 COMENTARIO T\xC1CTICO & WAVEFORM LISTOS")));
   }
-  return /* @__PURE__ */ React.createElement("div", { onClick: handleScrub, className: "flex-1 h-11 bg-[#060609] rounded-lg border border-djzinc-800/90 relative overflow-hidden group cursor-pointer hover:border-djcyan-500/70 transition-colors shadow-inner flex items-center mx-6" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: "100%", height: "42px", display: "block" } }), cues.map((cue, idx) => {
+  const handleScrub = (e) => {
+    if (!containerRef.current || !onSeek || !track) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    onSeek(pct);
+  };
+  return /* @__PURE__ */ React.createElement("div", { ref: containerRef, onClick: handleScrub, className: "flex-1 h-11 bg-[#060609] rounded-lg border border-djzinc-800/90 relative overflow-hidden group cursor-pointer hover:border-djcyan-500/70 transition-colors shadow-inner flex items-center mx-6" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: "100%", height: "42px", display: "block" } }), cues.map((cue, idx) => {
     const leftPos = cue.pct !== void 0 ? cue.pct * 100 : Math.min(96, Math.max(3, idx * 12.4 + 2.5));
     return /* @__PURE__ */ React.createElement("div", { key: cue.id || idx, className: "absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10", style: { left: `${leftPos}%` } }, /* @__PURE__ */ React.createElement("div", { className: "w-3.5 h-3 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow", style: { backgroundColor: cue.color || "#ef4444" } }, cue.id || idx + 1), /* @__PURE__ */ React.createElement("div", { className: "w-[1px] h-full opacity-50", style: { backgroundColor: cue.color || "#ef4444" } }));
   }));
@@ -2938,6 +3065,32 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     deleting ? "Eliminando..." : `\u{1F5D1}\uFE0F Eliminar Duplicados Seleccionados (${countSelected})`
   )))));
 };
+function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
+  const [range, setRange] = useState({ start: 0, end: 60 });
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const scrollTop = el.scrollTop;
+      const clientHeight = el.clientHeight;
+      const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+      const end = Math.min(items.length, Math.ceil((scrollTop + clientHeight) / rowHeight) + overscan);
+      setRange((prev) => prev.start === start && prev.end === end ? prev : { start, end });
+    };
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    update();
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [items.length, rowHeight, overscan]);
+  const visibleItems = items.slice(range.start, range.end);
+  const paddingTop = range.start * rowHeight;
+  const paddingBottom = Math.max(0, (items.length - range.end) * rowHeight);
+  return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
+}
 const AuditWorkspace = ({
   tracks: externalTracks,
   setTracks: setExternalTracks,
@@ -2999,6 +3152,7 @@ const AuditWorkspace = ({
   const [fsLoading, setFsLoading] = useState(false);
   const [camelotModalOpen, setCamelotModalOpen] = useState(false);
   const tapTimesRef = useRef([]);
+  const tableScrollRef = useRef(null);
   const [selectedCueId, setSelectedCueId] = useState(1);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showBeatgrid, setShowBeatgrid] = useState(true);
@@ -4047,6 +4201,12 @@ const AuditWorkspace = ({
     });
     return result;
   }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, auditSortField, auditSortDir]);
+  const {
+    visibleItems: virtualRows,
+    paddingTop: virtualPaddingTop,
+    paddingBottom: virtualPaddingBottom,
+    startIndex: virtualStartIndex
+  } = useVirtualRows(tracksFiltrados, tableScrollRef, 40, 5);
   const handleToggleSelectAllVisible = () => {
     const visibleIds = (tracksFiltrados || []).map((t2) => t2.id);
     if (visibleIds.length === 0) return;
@@ -4285,7 +4445,7 @@ const AuditWorkspace = ({
     " (",
     metrics.errors || 0,
     ")"
-  ))), saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse" }, saveFeedback)), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-auto bg-[#0f0f13]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-12 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1" }, /* @__PURE__ */ React.createElement(
+  ))), saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse" }, saveFeedback)), /* @__PURE__ */ React.createElement("div", { ref: tableScrollRef, className: "flex-1 overflow-auto bg-[#0f0f13]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-12 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1" }, /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "checkbox",
@@ -4388,7 +4548,7 @@ const AuditWorkspace = ({
     /* @__PURE__ */ React.createElement("option", { value: "LOSSLESS" }, "Lossless"),
     /* @__PURE__ */ React.createElement("option", { value: "MP3" }, "MP3"),
     /* @__PURE__ */ React.createElement("option", { value: "FAKE" }, "FLAC Fake")
-  )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: "21", className: "py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4" }, 'No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".')), tracksFiltrados.map((row) => {
+  )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: "21", className: "py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4" }, 'No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".')), virtualPaddingTop > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingTop } }, /* @__PURE__ */ React.createElement("td", null)), virtualRows.map((row, i) => {
     const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
     const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
     const isFake = Boolean(row.es_fake || row.format === "FLAC" && String(row.status || "").includes("Fake"));
@@ -4528,7 +4688,7 @@ const AuditWorkspace = ({
       },
       /* @__PURE__ */ React.createElement("span", { className: "text-xs" }, "\u{1F5D1}\uFE0F")
     )));
-  }))), /* @__PURE__ */ React.createElement("div", { className: "block md:hidden p-2 space-y-2.5 pb-36" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 font-mono text-xs" }, "No hay pistas cargadas en esta vista. Selecciona una carpeta o audita pistas sueltas."), tracksFiltrados.map((row) => {
+  }), virtualPaddingBottom > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingBottom } }, /* @__PURE__ */ React.createElement("td", null)))), /* @__PURE__ */ React.createElement("div", { className: "block md:hidden p-2 space-y-2.5 pb-36" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 font-mono text-xs" }, "No hay pistas cargadas en esta vista. Selecciona una carpeta o audita pistas sueltas."), tracksFiltrados.map((row) => {
     const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
     const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
     const isFake = Boolean(row.es_fake || row.format === "FLAC" && String(row.status || "").includes("Fake"));
@@ -12769,8 +12929,33 @@ const App = () => {
   const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
   const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playProgress, setPlayProgress] = useState(0);
+  const playProgressRef = useRef(0);
+  const setPlayProgress = useCallback((pct) => {
+    const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
+    playProgressRef.current = safe;
+    window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
+  }, []);
   const audioRef = useRef(null);
+  const [mobileProgress, setMobileProgress] = useState(0);
+  useEffect(() => {
+    const onProgress = (e) => setMobileProgress(e.detail.pct);
+    window.addEventListener("bw:progress", onProgress);
+    return () => window.removeEventListener("bw:progress", onProgress);
+  }, []);
+  const [playProgress, setPlayProgressForWorkspaces] = useState(0);
+  useEffect(() => {
+    let lastUpdate = 0;
+    const THROTTLE_MS = 100;
+    const onProgress = (e) => {
+      const now = Date.now();
+      if (now - lastUpdate >= THROTTLE_MS) {
+        lastUpdate = now;
+        setPlayProgressForWorkspaces(e.detail.pct);
+      }
+    };
+    window.addEventListener("bw:progress", onProgress);
+    return () => window.removeEventListener("bw:progress", onProgress);
+  }, []);
   const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, progress: 0, statusMsg: "" });
   const [tutorialOpen, setTutorialOpen] = useState(() => {
     try {
@@ -13102,11 +13287,11 @@ const App = () => {
         audio.play().then(() => setIsPlaying(true)).catch((err) => {
           console.warn("Play error:", err);
           if (nowPlayingTrack) {
-            handlePlayTrack(nowPlayingTrack, playProgress, true);
+            handlePlayTrack(nowPlayingTrack, playProgressRef.current, true);
           }
         });
       } else if (nowPlayingTrack) {
-        handlePlayTrack(nowPlayingTrack, playProgress, true);
+        handlePlayTrack(nowPlayingTrack, playProgressRef.current, true);
       }
     }
   };
@@ -13506,7 +13691,7 @@ const App = () => {
     "div",
     {
       className: "h-full bg-djcyan-400 transition-all duration-200",
-      style: { width: `${Math.min(100, Math.max(0, playProgress * 100))}%` }
+      style: { width: `${Math.min(100, Math.max(0, mobileProgress * 100))}%` }
     }
   )), !nowPlayingTrack ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 min-w-0 flex-1 md:w-80 md:flex-initial shrink-0 opacity-50 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 md:w-11 md:h-11 rounded-md bg-[#0a0a0f] border border-djzinc-850 flex items-center justify-center text-gray-600 shadow-inner shrink-0" }, /* @__PURE__ */ React.createElement("svg", { className: "w-5 h-5 text-gray-600", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "10", strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "3" }))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-400 uppercase tracking-wider" }, "DECK 1 STANDBY"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate" }, "\u{1F4AC} Comentario t\xE1ctico visible al cargar pista"))) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 md:gap-3 min-w-0 flex-1 md:w-80 md:flex-initial pr-2" }, /* @__PURE__ */ React.createElement(
     "img",
@@ -13542,7 +13727,7 @@ const App = () => {
     {
       type: "button",
       disabled: !nowPlayingTrack,
-      onClick: () => setPlayProgress(0.22),
+      onClick: () => handleFooterSeek(0.22),
       className: `hidden sm:block px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${!nowPlayingTrack ? "bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none" : "bg-[#16161d] hover:bg-[#20202a] text-gray-300 border-djzinc-700 active:translate-y-[1px] cursor-pointer"}`
     },
     "SYNC"
@@ -13551,7 +13736,7 @@ const App = () => {
     {
       track: nowPlayingTrack,
       isPlaying,
-      playProgress,
+      playProgressRef,
       onSeek: handleFooterSeek,
       cues: nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0 ? nowPlayingTrack.cues : currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS
     }
