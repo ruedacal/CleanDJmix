@@ -435,3 +435,57 @@
 .b3-epic { animation: bounce3 0.96s infinite cubic-bezier(0.16,1,0.3,1), chroma3 2.8s infinite; }
 .b4-epic { animation: bounce4 0.65s infinite cubic-bezier(0.16,1,0.3,1), chroma4 1.2s infinite; filter: drop-shadow(0 0 8px rgba(6,182,212,0.6)); }
 .b5-epic { animation: bounce5 0.88s infinite cubic-bezier(0.16,1,0.3,1), chroma5 2.6s infinite; }
+
+/* ─── HIGH-CONTRAST CLUB MODE (Modo Cabina Oscura) ────────────────────────── */
+/* Diseñado para visibilidad óptima en cabina con baja iluminación, humo y LEDs. */
+body.club-mode,
+.club-mode {
+    --bg-club-base: #000000;
+    --border-club-focus: #00f0ff;
+    background-color: #000000 !important;
+}
+
+.club-mode table,
+.club-mode .bg-\[\#0f0f13\],
+.club-mode .bg-djzinc-950,
+.club-mode .bg-\[\#06060c\],
+.club-mode .bg-\[\#0a0a0e\] {
+    background-color: #000000 !important;
+}
+
+.club-mode .border-djzinc-800,
+.club-mode .border-djzinc-850 {
+    border-color: #1a1a24 !important;
+}
+
+/* Tipografías e información táctica hiper-legible */
+.club-mode .font-mono {
+    letter-spacing: 0.04em;
+}
+
+.club-mode .text-djcyan-400,
+.club-mode .text-djcyan-300 {
+    color: #00f0ff !important;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.45);
+}
+
+.club-mode .text-amber-400,
+.club-mode .text-amber-300 {
+    color: #ffb700 !important;
+    text-shadow: 0 0 8px rgba(255, 183, 0, 0.45);
+}
+
+.club-mode .text-djgreen-400 {
+    color: #00ff66 !important;
+    text-shadow: 0 0 8px rgba(0, 255, 102, 0.45);
+}
+
+.club-mode tr:hover {
+    background-color: rgba(0, 240, 255, 0.08) !important;
+}
+
+.club-mode .bg-djcyan-950\/40 {
+    background-color: rgba(0, 240, 255, 0.16) !important;
+    border-left-color: #00f0ff !important;
+}
+

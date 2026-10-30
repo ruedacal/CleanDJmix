@@ -3893,6 +3893,115 @@ function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
     return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
 }
 
+// ─── UX CABINA: Modal de Atajos de Teclado Profesionales (DJ Cheatsheet) ─────
+const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
+    if (!isOpen) return null;
+
+    const shortcutGroups = [
+        {
+            title: "Transporte & Mezcla",
+            icon: "🎛️",
+            items: [
+                { key: "Espacio", desc: "Play / Pausa del tema activo o seleccionado" },
+                { key: "C", desc: "CUE: Pausa y regresa al inicio (00:00)" },
+                { key: "1 a 8", desc: "Salto directo a Hot Cue 1-8 (Intro, Drop, Break, Outro...)" },
+            ]
+        },
+        {
+            title: "Navegación en Cabina",
+            icon: "📋",
+            items: [
+                { key: "↑ / ↓", desc: "Navegar hacia arriba o abajo en la tabla de temas" },
+                { key: "M", desc: "Plegar / Desplegar panel de métricas (más espacio vertical)" },
+            ]
+        },
+        {
+            title: "Entorno & Visibilidad",
+            icon: "🕶️",
+            items: [
+                { key: "L", desc: "Alternar Modo Cabina Oscura (High-Contrast Club Mode)" },
+                { key: "? / H", desc: "Abrir o cerrar esta guía de atajos" },
+                { key: "ESC", desc: "Cerrar cualquier ventana modal activa" },
+            ]
+        }
+    ];
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
+            <div 
+                className="w-full max-w-2xl bg-[#09090f] border border-djcyan-500/50 rounded-2xl shadow-[0_0_40px_rgba(6,182,212,0.3)] overflow-hidden flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-djzinc-800 bg-[#0d0d14] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-xl">⌨️</span>
+                        <div>
+                            <h3 className="text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
+                                ATAJOS DE TECLADO — CABINA PROFESIONAL
+                                <span className="text-[10px] bg-djcyan-950 text-djcyan-400 border border-djcyan-500/40 px-2 py-0.5 rounded-full">
+                                    PRO DJ
+                                </span>
+                            </h3>
+                            <p className="text-[11px] text-gray-400 font-mono">
+                                Control instantáneo sin tocar el ratón durante la sesión en vivo
+                            </p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* Body: Grupos de Atajos */}
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
+                    {shortcutGroups.map((grp, gIdx) => (
+                        <div key={gIdx} className={`p-4 rounded-xl border border-djzinc-800 bg-[#0c0c14] flex flex-col gap-3 ${gIdx === 2 ? 'md:col-span-2' : ''}`}>
+                            <div className="flex items-center gap-2 text-xs font-mono font-bold text-djcyan-300 uppercase">
+                                <span>{grp.icon}</span>
+                                <span>{grp.title}</span>
+                            </div>
+                            <div className="space-y-2">
+                                {grp.items.map((item, iIdx) => (
+                                    <div key={iIdx} className="flex items-center justify-between gap-3 text-xs font-mono">
+                                        <span className="text-gray-300">{item.desc}</span>
+                                        <kbd className="px-2.5 py-1 bg-djzinc-900 border border-djzinc-700 rounded-md text-djcyan-400 font-bold text-[11px] shadow-inner shrink-0 tracking-wider">
+                                            {item.key}
+                                        </kbd>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Footer con toggle de Modo Club */}
+                <div className="px-6 py-3.5 bg-[#0b0b12] border-t border-djzinc-800 flex items-center justify-between">
+                    <button
+                        onClick={onToggleClubMode}
+                        className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all flex items-center gap-2 cursor-pointer ${
+                            clubMode 
+                                ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                                : 'bg-djzinc-900 text-gray-300 border-djzinc-750 hover:border-djcyan-500/50 hover:text-white'
+                        }`}
+                    >
+                        <span>{clubMode ? '🕶️ Modo Cabina Oscura: ACTIVO' : '🕶️ Activar Modo Cabina Oscura'}</span>
+                    </button>
+                    <button 
+                        onClick={onClose}
+                        className="px-4 py-1.5 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-white font-mono text-xs font-bold transition-colors cursor-pointer"
+                    >
+                        Entendido (ESC)
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Espacio de Trabajo: Auditoría & DSP
 const AuditWorkspace = ({ 
     tracks: externalTracks, 
@@ -3965,6 +4074,29 @@ const AuditWorkspace = ({
     const tapTimesRef = useRef([]);
     // PERF: ref del contenedor scrollable de la tabla para virtualización de filas
     const tableScrollRef = useRef(null);
+
+    // UX CABINA: Estado de colapso de las 8 tarjetas de métricas (maximiza espacio vertical para ver más pistas y waveforms)
+    const [metricsCollapsed, setMetricsCollapsed] = useState(() => {
+        try {
+            return localStorage.getItem('bw_metrics_collapsed') === 'true';
+        } catch (e) {
+            return false;
+        }
+    });
+
+    const toggleMetricsCollapsed = () => {
+        setMetricsCollapsed(prev => {
+            const next = !prev;
+            try { localStorage.setItem('bw_metrics_collapsed', String(next)); } catch (e) {}
+            return next;
+        });
+    };
+
+    useEffect(() => {
+        const handleToggleEvent = () => toggleMetricsCollapsed();
+        window.addEventListener('bw:toggle-metrics', handleToggleEvent);
+        return () => window.removeEventListener('bw:toggle-metrics', handleToggleEvent);
+    }, []);
 
     // Hot Cues & Beatgrid
     const [selectedCueId, setSelectedCueId] = useState(1);
@@ -5332,6 +5464,21 @@ const AuditWorkspace = ({
                         )}
 
                         <button
+                            type="button"
+                            onClick={toggleMetricsCollapsed}
+                            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                metricsCollapsed 
+                                    ? 'bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner' 
+                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
+                            }`}
+                            title={metricsCollapsed ? "Desplegar métricas completas (M)" : "Plegar métricas para ganar espacio vertical (M)"}
+                        >
+                            <span>▤</span>
+                            <span className="hidden sm:inline">Métricas</span>
+                            <kbd className="text-[9px] bg-black/50 px-1 rounded border border-djzinc-700">M</kbd>
+                        </button>
+
+                        <button
                             onClick={() => setSidebarOpen(prev => !prev)}
                             className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
                                 sidebarOpen 
@@ -5373,53 +5520,95 @@ const AuditWorkspace = ({
                     </div>
                 )}
 
-                <div data-tour="tour-audit-table" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-px bg-djzinc-800 border-b border-djzinc-800 shrink-0">
-                    <div onClick={() => setFiltro('todos')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'todos' ? 'bg-djcyan-950/40 border-b-2 border-djcyan-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">{t('metric_total') || 'Total Pistas'}</span>
-                        <span className="text-xl font-mono text-white font-bold">{(metrics.total || 0).toLocaleString()}</span>
-                    </div>
-                    <div onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'bad_quality' ? 'bg-amber-950/50 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase">Mala Calidad</span>
-                            {badQualityTracks.length > 0 && <span className="text-[8px] bg-amber-900 text-amber-200 px-1 rounded font-mono font-bold">HD</span>}
-                        </div>
-                        <span className={`text-xl font-mono font-bold ${badQualityTracks.length > 0 ? 'text-amber-400 animate-pulse' : 'text-gray-400'}`}>
-                            {badQualityTracks.length.toLocaleString()}
-                        </span>
-                    </div>
-                    <div onClick={() => setFiltro('missing')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta BPM/Key</span>
-                        <span className="text-xl font-mono text-amber-400 font-bold">{(metrics.missing || 0).toLocaleString()}</span>
-                    </div>
-                    <div onClick={() => setFiltro('missing_title')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing_title' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta Título</span>
-                        <span className="text-xl font-mono text-amber-300 font-bold">{(metrics.missing_title || 0).toLocaleString()}</span>
-                    </div>
-                    <div onClick={() => setFiltro('missing_artist')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing_artist' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta Artista</span>
-                        <span className="text-xl font-mono text-amber-300 font-bold">{(metrics.missing_artist || 0).toLocaleString()}</span>
-                    </div>
-                    <div onClick={() => setFiltro('missing_cover')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing_cover' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta Cover</span>
-                        <span className="text-xl font-mono text-amber-300 font-bold">{(metrics.missing_cover || 0).toLocaleString()}</span>
-                    </div>
-                    <div onClick={() => setDuplicateModalOpen(true)} className="p-3.5 bg-djzinc-950 hover:bg-djzinc-900 flex flex-col justify-center cursor-pointer transition-colors group">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase">Duplicados</span>
-                            <span className="text-[9px] font-mono text-amber-400 bg-amber-950/80 px-1 rounded border border-amber-800">Comparar ⚖️</span>
-                        </div>
-                        <span className="text-xl font-mono text-amber-400 font-bold group-hover:text-amber-300">{(metrics.duplicates || 0).toLocaleString()}</span>
-                    </div>
-                    <div onClick={() => setFiltro('error')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'error' ? 'bg-red-950/40 border-b-2 border-red-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">{t('metric_lossless') || 'Cert. Lossless'}</span>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-mono text-djcyan-400 font-bold">
-                                {tracks.filter(t => t.cutoff_khz && !String(t.status || '').includes('Fake')).length}
+                {/* UX CABINA: Panel de Métricas Colapsable (Tecla M o Botón) */}
+                {metricsCollapsed ? (
+                    <div className="px-4 py-2 bg-[#08080d] border-b border-djzinc-800 flex items-center justify-between text-xs font-mono shrink-0 select-none shadow-inner">
+                        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
+                            <span className="text-white font-bold flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-djcyan-400"></span>
+                                {(metrics.total || 0).toLocaleString()} pistas
                             </span>
-                            <span className="text-[10px] font-mono text-gray-500">/ {tracks.length} PASS</span>
+                            <span className="text-djzinc-600">•</span>
+                            <span className={badQualityTracks.length > 0 ? "text-amber-400 font-bold" : "text-gray-400"}>
+                                {badQualityTracks.length.toLocaleString()} mala calidad
+                            </span>
+                            <span className="text-djzinc-600">•</span>
+                            <span className="text-amber-300">{(metrics.missing || 0).toLocaleString()} falta BPM/Key</span>
+                            <span className="text-djzinc-600">•</span>
+                            <span className="text-djcyan-400 font-bold">
+                                {tracks.filter(t => t.cutoff_khz && !String(t.status || '').includes('Fake')).length} Lossless
+                            </span>
                         </div>
+                        <button 
+                            type="button"
+                            onClick={toggleMetricsCollapsed} 
+                            className="px-2.5 py-1 rounded text-[11px] font-mono text-djcyan-400 hover:text-djcyan-300 hover:bg-djcyan-950/60 border border-djcyan-800/60 cursor-pointer transition-colors shrink-0 flex items-center gap-1.5 shadow"
+                            title="Desplegar las 8 tarjetas de métricas completas (Tecla M)"
+                        >
+                            <span>▼ Desplegar métricas</span>
+                            <kbd className="text-[9px] bg-djzinc-900 border border-djzinc-700 px-1 rounded font-bold">M</kbd>
+                        </button>
                     </div>
-                </div>
+                ) : (
+                    <div className="relative group shrink-0">
+                        <div data-tour="tour-audit-table" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-px bg-djzinc-800 border-b border-djzinc-800">
+                            <div onClick={() => setFiltro('todos')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'todos' ? 'bg-djcyan-950/40 border-b-2 border-djcyan-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">{t('metric_total') || 'Total Pistas'}</span>
+                                <span className="text-xl font-mono text-white font-bold">{(metrics.total || 0).toLocaleString()}</span>
+                            </div>
+                            <div onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'bad_quality' ? 'bg-amber-950/50 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase">Mala Calidad</span>
+                                    {badQualityTracks.length > 0 && <span className="text-[8px] bg-amber-900 text-amber-200 px-1 rounded font-mono font-bold">HD</span>}
+                                </div>
+                                <span className={`text-xl font-mono font-bold ${badQualityTracks.length > 0 ? 'text-amber-400 animate-pulse' : 'text-gray-400'}`}>
+                                    {badQualityTracks.length.toLocaleString()}
+                                </span>
+                            </div>
+                            <div onClick={() => setFiltro('missing')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta BPM/Key</span>
+                                <span className="text-xl font-mono text-amber-400 font-bold">{(metrics.missing || 0).toLocaleString()}</span>
+                            </div>
+                            <div onClick={() => setFiltro('missing_title')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing_title' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta Título</span>
+                                <span className="text-xl font-mono text-amber-300 font-bold">{(metrics.missing_title || 0).toLocaleString()}</span>
+                            </div>
+                            <div onClick={() => setFiltro('missing_artist')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing_artist' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta Artista</span>
+                                <span className="text-xl font-mono text-amber-300 font-bold">{(metrics.missing_artist || 0).toLocaleString()}</span>
+                            </div>
+                            <div onClick={() => setFiltro('missing_cover')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing_cover' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta Cover</span>
+                                <span className="text-xl font-mono text-amber-300 font-bold">{(metrics.missing_cover || 0).toLocaleString()}</span>
+                            </div>
+                            <div onClick={() => setDuplicateModalOpen(true)} className="p-3.5 bg-djzinc-950 hover:bg-djzinc-900 flex flex-col justify-center cursor-pointer transition-colors group">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase">Duplicados</span>
+                                    <span className="text-[9px] font-mono text-amber-400 bg-amber-950/80 px-1 rounded border border-amber-800">Comparar ⚖️</span>
+                                </div>
+                                <span className="text-xl font-mono text-amber-400 font-bold group-hover:text-amber-300">{(metrics.duplicates || 0).toLocaleString()}</span>
+                            </div>
+                            <div onClick={() => setFiltro('error')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'error' ? 'bg-red-950/40 border-b-2 border-red-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">{t('metric_lossless') || 'Cert. Lossless'}</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-mono text-djcyan-400 font-bold">
+                                        {tracks.filter(t => t.cutoff_khz && !String(t.status || '').includes('Fake')).length}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-gray-500">/ {tracks.length} PASS</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={toggleMetricsCollapsed}
+                            className="absolute top-2 right-2 z-10 opacity-60 hover:opacity-100 px-2 py-0.5 rounded text-[10px] font-mono bg-djzinc-900/90 text-gray-400 hover:text-white border border-djzinc-750 cursor-pointer transition-all flex items-center gap-1 shadow-md"
+                            title="Plegar métricas para maximizar espacio vertical (Tecla M)"
+                        >
+                            <span>▲ Plegar</span>
+                            <kbd className="text-[8px] bg-black px-1 rounded border border-djzinc-700">M</kbd>
+                        </button>
+                    </div>
+                )}
 
                 <div className="px-4 py-2 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2 flex-1 flex-wrap">
@@ -18949,6 +19138,25 @@ const App = () => {
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
     const [copilotModalOpen, setCopilotModalOpen] = useState(false);
 
+    // UX CABINA: Modo Cabina Oscura (High-Contrast Club Mode) y Modal de Atajos DJ
+    const [clubMode, setClubMode] = useState(() => {
+        try {
+            return localStorage.getItem('bw_club_mode') === 'true';
+        } catch (e) {
+            return false;
+        }
+    });
+
+    const toggleClubMode = () => {
+        setClubMode(prev => {
+            const next = !prev;
+            try { localStorage.setItem('bw_club_mode', String(next)); } catch (e) {}
+            return next;
+        });
+    };
+
+    const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
+
     // Modo del Altavoz: 'neon' (nuevo con borde azul corporativo y efecto neón) | 'original' (preservado para recuperación)
     const [speakerLogoMode, setSpeakerLogoMode] = useState(() => {
         try {
@@ -19328,6 +19536,105 @@ const App = () => {
         }
     };
 
+    // ─── UX CABINA: Atajos de Teclado Profesionales DJ en Vivo ────────────────
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // 1. Ignorar atajos si el usuario está enfocado en un campo de texto o buscador
+            const active = document.activeElement;
+            if (active) {
+                const tag = active.tagName.toLowerCase();
+                if (tag === 'input' || tag === 'textarea' || tag === 'select' || active.isContentEditable) {
+                    return;
+                }
+            }
+
+            // 2. ESC: Cerrar modal de atajos
+            if (e.key === 'Escape') {
+                if (shortcutsModalOpen) {
+                    e.preventDefault();
+                    setShortcutsModalOpen(false);
+                    return;
+                }
+            }
+
+            // 3. ? o H: Abrir / cerrar Cheatsheet de atajos
+            if (e.key === '?' || (e.key === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey)) {
+                e.preventDefault();
+                setShortcutsModalOpen(prev => !prev);
+                return;
+            }
+
+            // 4. ESPACIO: Play / Pausa
+            if (e.code === 'Space' || e.key === ' ') {
+                e.preventDefault();
+                if (nowPlayingTrack) {
+                    togglePlayPause();
+                } else if (currentTrack) {
+                    handlePlayTrack(currentTrack, 0, true);
+                }
+                return;
+            }
+
+            // 5. C: Volver a CUE
+            if (e.key === 'c' || e.key === 'C') {
+                e.preventDefault();
+                handleCue();
+                return;
+            }
+
+            // 6. Teclas 1 a 8: Salto directo a Hot Cues
+            if (e.key >= '1' && e.key <= '8' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                const cueNum = parseInt(e.key, 10);
+                const targetTrack = nowPlayingTrack || currentTrack;
+                if (targetTrack) {
+                    const cues = (targetTrack.cues && targetTrack.cues.length > 0) ? targetTrack.cues : NV2_COLORS;
+                    const cue = cues[cueNum - 1] || cues.find(c => c.id === cueNum);
+                    if (cue && typeof cue.pct === 'number') {
+                        e.preventDefault();
+                        handleFooterSeek(cue.pct);
+                    }
+                }
+                return;
+            }
+
+            // 7. ↑ / ↓: Navegar entre pistas en la tabla
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                if (auditTracks && auditTracks.length > 0) {
+                    e.preventDefault();
+                    const curIdx = auditTracks.findIndex(t => t.id === selectedTrack);
+                    let targetIdx = 0;
+                    if (e.key === 'ArrowUp') {
+                        targetIdx = curIdx <= 0 ? auditTracks.length - 1 : curIdx - 1;
+                    } else {
+                        targetIdx = curIdx === -1 || curIdx >= auditTracks.length - 1 ? 0 : curIdx + 1;
+                    }
+                    const nextTrk = auditTracks[targetIdx];
+                    if (nextTrk) {
+                        setSelectedTrack(nextTrk.id);
+                    }
+                }
+                return;
+            }
+
+            // 8. M: Plegar / Desplegar panel de métricas
+            if (e.key === 'm' || e.key === 'M') {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('bw:toggle-metrics'));
+                return;
+            }
+
+            // 9. L: Alternar Modo Cabina Oscura (High Contrast Club Mode)
+            if (e.key === 'l' || e.key === 'L') {
+                e.preventDefault();
+                toggleClubMode();
+                return;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [nowPlayingTrack, currentTrack, auditTracks, selectedTrack, shortcutsModalOpen, togglePlayPause, handlePlayTrack, handleCue, handleFooterSeek, toggleClubMode]);
+
     // Gestión Global de Eliminación de Pistas del Análisis
     const handleRemoveTrackGlobal = (trackId) => {
         if (!trackId && trackId !== 0) return;
@@ -19379,7 +19686,7 @@ const App = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none">
+        <div className={`flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none ${clubMode ? 'club-mode' : ''}`}>
             {/* TOP NAVIGATION BAR CON MÁXIMA JERARQUÍA VISUAL & CAPSULE DOCK */}
             <header className="h-16 w-full max-w-full border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md overflow-x-hidden">
                 {/* MOTOR DE DISTORSIÓN FRACTAL VERTICAL ULTRA-BRUTAL: SECUENCIA TECHNO 4/4 (2.0s) */}
@@ -19910,6 +20217,33 @@ const App = () => {
                         <span className="font-bold">{globalAuditInfo.progress}%</span>
                     </div>
                 )}
+
+                {/* Control Modo Cabina Oscura (High Contrast Club Mode) */}
+                <button
+                    type="button"
+                    onClick={toggleClubMode}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-inner shrink-0 ${
+                        clubMode
+                            ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                            : 'bg-djzinc-900 text-gray-400 border-djzinc-800 hover:text-white hover:border-djzinc-700'
+                    }`}
+                    title={clubMode ? "Modo Cabina Oscura: Activo (Tecla L)" : "Activar Modo Cabina Oscura (Tecla L)"}
+                >
+                    <span>{clubMode ? '🕶️ Club' : '🕶️ Normal'}</span>
+                    <kbd className="hidden md:inline text-[9px] bg-black/40 px-1 rounded border border-djzinc-750">L</kbd>
+                </button>
+
+                {/* Botón de Atajos de Teclado DJ Cheatsheet */}
+                <button
+                    type="button"
+                    onClick={() => setShortcutsModalOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-500/50 text-xs font-mono font-bold shadow-inner cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+                    title="Atajos de Teclado DJ (Tecla ? o H)"
+                >
+                    <span>⌨️</span>
+                    <span className="hidden lg:inline">Atajos</span>
+                    <kbd className="hidden md:inline text-[9px] bg-black/40 px-1 rounded border border-djzinc-750">?</kbd>
+                </button>
 
                 {/* Selector de Idioma (Español / Inglés) */}
                 <button
@@ -20478,6 +20812,14 @@ const App = () => {
                     setActiveTab('copilot');
                     setCopilotModalOpen(false);
                 }}
+            />
+
+            {/* UX CABINA: MODAL DE ATAJOS DE TECLADO DJ PROFESIONAL */}
+            <DJShortcutsModal 
+                isOpen={shortcutsModalOpen}
+                onClose={() => setShortcutsModalOpen(false)}
+                clubMode={clubMode}
+                onToggleClubMode={toggleClubMode}
             />
         </div>
     );
