@@ -4,7 +4,7 @@ import struct
 import base64
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC, FLACNoHeaderError, Picture
-from mutagen.id3 import ID3, TIT1, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, APIC, ID3NoHeaderError
+from mutagen.id3 import ID3, TIT1, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, APIC, TPE4, TCOM, TYER, ID3NoHeaderError
 from mutagen.aiff import AIFF
 from mutagen.mp4 import MP4, MP4Cover
 
@@ -337,26 +337,39 @@ class AudioProcessorService:
         beat_ms = 60000.0 / bpm_clean
         bar_ms = beat_ms * 4.0
 
-        # Total de compases en el track
+        # Total de compases enteros en el track disponible
         usable_dur = max(1000, dur_clean - downbeat_clean)
-        total_bars = max(8.0, usable_dur / bar_ms)
+        total_bars = max(8, int(usable_dur / bar_ms))
 
-        # Distribución armónica de frases según la longitud del track
-        if total_bars >= 144:
-            bar_offsets = [0, 16, 32, 64, 96, 128, 160]
-            outro_offset = max(bar_offsets[-1] + 16, int(total_bars - 16))
-            bar_offsets.append(outro_offset)
-        elif total_bars >= 96:
-            bar_offsets = [0, 16, 32, 48, 64, 80, 96]
-            outro_offset = max(bar_offsets[-1] + 8, int(total_bars - 16))
-            bar_offsets.append(outro_offset)
-        elif total_bars >= 48:
-            bar_offsets = [0, 8, 16, 24, 32, 40, 48]
-            outro_offset = max(bar_offsets[-1] + 8, int(total_bars - 8))
-            bar_offsets.append(outro_offset)
+        # Distribución armónica y proporcional según la estructura musical 4/4 real de club
+        o1 = 0
+        if total_bars >= 112:
+            o2 = 16
+            o3 = 32
+            o4 = max(o3 + 8, int((total_bars * 0.36) / 8) * 8)
+            o5 = max(o4 + 8, int((total_bars * 0.50) / 8) * 8)
+            o6 = max(o5 + 8, int((total_bars * 0.68) / 8) * 8)
+            o7 = max(o6 + 8, int((total_bars * 0.82) / 8) * 8)
+            o8 = max(o7 + 4, int(max(0, total_bars - 16) / 4) * 4)
+        elif total_bars >= 64:
+            o2 = 8
+            o3 = 16
+            o4 = max(o3 + 4, int((total_bars * 0.35) / 4) * 4)
+            o5 = max(o4 + 4, int((total_bars * 0.50) / 4) * 4)
+            o6 = max(o5 + 4, int((total_bars * 0.68) / 4) * 4)
+            o7 = max(o6 + 4, int((total_bars * 0.82) / 4) * 4)
+            o8 = max(o7 + 4, int(max(0, total_bars - 8) / 4) * 4)
         else:
-            step = max(1.0, total_bars / 8.0)
-            bar_offsets = [int(i * step) for i in range(8)]
+            step = max(1, total_bars // 8)
+            o2, o3, o4, o5, o6, o7, o8 = [min(total_bars - (8 - i), i * step) for i in range(1, 8)]
+
+        bar_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
+        # Garantía matemática de orden estrictamente ascendente dentro de los límites del track
+        for i in range(1, 8):
+            if bar_offsets[i] <= bar_offsets[i - 1]:
+                bar_offsets[i] = bar_offsets[i - 1] + 1
+            if bar_offsets[i] >= total_bars:
+                bar_offsets[i] = max(bar_offsets[i - 1] + 1, total_bars - (8 - i))
 
         cue_configs = [
             {"id": 1, "name": "Kick / Intro", "color": "#ef4444", "rgb": (239, 68, 68), "text": "text-red-400", "border": "border-red-500/50", "bg": "bg-red-500/10"},
@@ -433,15 +446,35 @@ class AudioProcessorService:
         beat_ms = 60000.0 / bpm_clean
         bar_ms = beat_ms * 4.0
         usable_dur = max(1000, dur_clean - downbeat_clean)
-        total_bars = max(8.0, usable_dur / bar_ms)
+        total_bars = max(8, int(usable_dur / bar_ms))
 
-        if total_bars >= 128:
-            bar_offsets = [0, 32, 64, 80, 96, 112, max(116, int(total_bars - 32)), max(124, int(total_bars - 8))]
+        o1 = 0
+        if total_bars >= 112:
+            o2 = 16
+            o3 = 32
+            o4 = max(o3 + 8, int((total_bars * 0.36) / 8) * 8)
+            o5 = max(o4 + 8, int((total_bars * 0.50) / 8) * 8)
+            o6 = max(o5 + 8, int((total_bars * 0.68) / 8) * 8)
+            o7 = max(o6 + 8, int((total_bars * 0.82) / 8) * 8)
+            o8 = max(o7 + 4, int(max(0, total_bars - 16) / 4) * 4)
         elif total_bars >= 64:
-            bar_offsets = [0, 16, 32, 40, 48, 56, max(58, int(total_bars - 16)), max(62, int(total_bars - 4))]
+            o2 = 8
+            o3 = 16
+            o4 = max(o3 + 4, int((total_bars * 0.35) / 4) * 4)
+            o5 = max(o4 + 4, int((total_bars * 0.50) / 4) * 4)
+            o6 = max(o5 + 4, int((total_bars * 0.68) / 4) * 4)
+            o7 = max(o6 + 4, int((total_bars * 0.82) / 4) * 4)
+            o8 = max(o7 + 4, int(max(0, total_bars - 8) / 4) * 4)
         else:
-            step = max(1.0, total_bars / 8.0)
-            bar_offsets = [int(i * step) for i in range(8)]
+            step = max(1, total_bars // 8)
+            o2, o3, o4, o5, o6, o7, o8 = [min(total_bars - (8 - i), i * step) for i in range(1, 8)]
+
+        bar_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
+        for i in range(1, 8):
+            if bar_offsets[i] <= bar_offsets[i - 1]:
+                bar_offsets[i] = bar_offsets[i - 1] + 1
+            if bar_offsets[i] >= total_bars:
+                bar_offsets[i] = max(bar_offsets[i - 1] + 1, total_bars - (8 - i))
 
         template_configs = [
             {"id": 1, "name": "Intro / Downbeat", "color": "#ef4444", "rgb": (239, 68, 68)},
@@ -486,7 +519,21 @@ class AudioProcessorService:
 
     @staticmethod
     def generar_serato_markers2(duration_ms: int = 300000, bpm: float = 128.0, cues: list = None, downbeat_ms: int = 0) -> bytes:
-        """Construye el bloque binario base64 compatible con Serato Markers2 (Pads 1-8 Numark/Pioneer)."""
+        """Construye el bloque binario base64 compatible con Serato Markers2 (Pads 1-8 Numark/Pioneer).
+        Estructura oficial:
+        - Cabecera binaria (2 bytes): \\x01\\x01
+        - Bloque COLOR (RGB cian oficial #06b6d4)
+        - Bloque BPMLOCK (1 byte = 0 desbloqueado)
+        - Bloques CUE (13 bytes base + nombre con terminación null):
+            Offset 00: \\x00 (padding)
+            Offset 01: cid (uint8, 0..7)
+            Offset 02..05: pos_ms (uint32 BE)
+            Offset 06: \\x00
+            Offset 07..09: RGB (3 bytes)
+            Offset 10..11: \\x00\\x00 (padding)
+            Offset 12+: nombre UTF-8 terminado en \\x00
+        - Cierre (1 byte): \\x00
+        """
         out = bytearray(b"\x01\x01")
         # Color del track en Serato (Cian #06b6d4)
         out.extend(b"COLOR\x00" + struct.pack(">I", 4) + b"\x00\x06\xb6\xd4")
@@ -541,18 +588,94 @@ class AudioProcessorService:
                 except Exception:
                     rgb = (6, 182, 212)
 
+            # Estructura binaria canónica CUE Serato Markers2 (Offset 00: 0x00, Offset 01: cid, Offset 02..05: pos_ms BE)
             cdata = bytearray()
-            cdata.append(cid & 0xFF)
-            cdata.extend(struct.pack(">I", max(0, pos_ms)))
-            cdata.append(0x00)
-            cdata.extend(bytes([rgb[0], rgb[1], rgb[2]]))
-            cdata.extend(b"\x00\x00")
-            cdata.extend(cname)
+            cdata.append(0x00) # Offset 00
+            cdata.append(cid & 0xFF) # Offset 01: Cue Index
+            cdata.extend(struct.pack(">I", max(0, pos_ms))) # Offset 02..05: Posición ms (uint32 BE)
+            cdata.append(0x00) # Offset 06
+            cdata.extend(bytes([rgb[0], rgb[1], rgb[2]])) # Offset 07..09: RGB
+            cdata.extend(b"\x00\x00") # Offset 10..11: Padding
+            cdata.extend(cname) # Offset 12: Nombre UTF-8 null-terminated
 
             out.extend(b"CUE\x00" + struct.pack(">I", len(cdata)) + cdata)
 
-        out.extend(b"\x00\x00")
-        return base64.b64encode(out)
+        # Cierre canónico Serato Markers2: un byte null (0x00)
+        out.append(0x00)
+        return base64.b64encode(bytes(out))
+
+    @staticmethod
+    def generar_serato_markers_v1(cues: list = None, duration_ms: int = 300000) -> bytes:
+        """Construye el bloque binario oficial compatible con Serato Markers_ (Legacy v1, 14 entradas).
+        Permite compatibilidad total con versiones antiguas de Serato DJ / Scratch Live."""
+        out = bytearray()
+        out.extend(b"\x02\x05") # Magic header
+        out.extend(struct.pack(">I", 14)) # 14 entries (5 cues + 9 loops)
+
+        def to_serato32(val: int) -> bytes:
+            a = (val >> 16) & 0xFF
+            b = (val >> 8) & 0xFF
+            c = val & 0xFF
+            z = c & 0x7F
+            y = ((c >> 7) | (b << 1)) & 0x7F
+            x = ((b >> 6) | (a << 2)) & 0x7F
+            w = (a >> 5) & 0x7F
+            return bytes([w, x, y, z])
+
+        active_cues = cues or []
+        for i in range(5):
+            if i < len(active_cues) and active_cues[i]:
+                c = active_cues[i]
+                pos_ms = int(c.get("pos_ms", 0))
+                rgb = c.get("rgb") or (6, 182, 212)
+                if isinstance(rgb, str) and rgb.startswith("#"):
+                    try:
+                        h = rgb.lstrip("#")
+                        rgb = tuple(int(h[x:x+2], 16) for x in (0, 2, 4))
+                    except Exception:
+                        rgb = (6, 182, 212)
+                rgb_int = (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]
+                entry = bytearray()
+                entry.append(0x00) # Start set: True (0x00)
+                entry.extend(to_serato32(pos_ms)) # Start pos ms (4 bytes serato32)
+                entry.append(0x7F) # End set: False
+                entry.extend(b"\x7F\x7F\x7F\x7F") # End pos: None
+                entry.extend(b"\x00\x7F\x7F\x7F\x7F\x7F") # 6 bytes
+                entry.extend(to_serato32(rgb_int)) # Color serato32
+                entry.append(0x01) # Type: Cue (0x01)
+                entry.append(0x00) # Locked: False
+                out.extend(entry)
+            else:
+                entry = bytearray(b"\x7F" * 22)
+                entry[10] = 0x00
+                entry[16:20] = b"\x00\x00\x00\x00"
+                entry[20] = 0x01
+                entry[21] = 0x00
+                out.extend(entry)
+
+        # 9 Loops vacíos
+        for _ in range(9):
+            entry = bytearray(b"\x7F" * 22)
+            entry[10] = 0x00
+            entry[16:20] = b"\x00\x00\x00\x00"
+            entry[20] = 0x03 # Type Loop
+            entry[21] = 0x00
+            out.extend(entry)
+
+        out.extend(b"\x07\x7F\x7F\x7F") # Footer
+        return bytes(out)
+
+    @staticmethod
+    def empaquetar_geob_serato_markers2(serato_b64: bytes) -> bytes:
+        """Envuelve la carga base64 en la cabecera canónica de Serato Markers2 (\\x01\\x01 + base64 con saltos cada 72 bytes)
+        y rellena con null bytes hasta alcanzar el mínimo canónico de 470 bytes requerido por Serato DJ Pro."""
+        b64_str = serato_b64.decode("ascii") if isinstance(serato_b64, bytes) else str(serato_b64)
+        # Inserción de salto de línea \n cada 72 caracteres según especificación oficial de Serato
+        b64_lines = "\n".join(b64_str[i:i+72] for i in range(0, len(b64_str), 72))
+        geob_data = b"\x01\x01" + b64_lines.encode("ascii")
+        if len(geob_data) < 470:
+            geob_data = geob_data.ljust(470, b"\x00")
+        return geob_data
 
     @staticmethod
     def serializar_serato_beatgrid(bpm: float = 128.0, downbeat_ms: float = 0.0) -> bytes:
@@ -768,25 +891,58 @@ class AudioProcessorService:
         dance_val = int(meta_track.get("danceability") or meta_track.get("dance") or 85)
         mood_val = str(meta_track.get("mood") or "Peak Time")
         cues_list = meta_track.get("cues") or []
+        remixer_val = str(meta_track.get("remixer") or meta_track.get("version") or "").strip()
+        composer_val = str(meta_track.get("composer") or meta_track.get("acoustic_role") or f"⚡E:{dance_val}% 🕺D:{dance_val}%").strip()
+        year_raw = str(meta_track.get("year") or meta_track.get("y") or meta_track.get("date") or "").strip()
+        year_match = re.search(r'\b(19\d\d|20\d\d)\b', year_raw)
+        year_str = year_match.group(1) if year_match else ""
 
+        # Serato Markers2 (GEOB binario oficial + base64)
         serato_b64 = AudioProcessorService.generar_serato_markers2(
             duration_ms=dur_ms,
             bpm=bpm_float,
             cues=cues_list,
             downbeat_ms=downbeat_ms
         )
+        serato_markers2_geob = AudioProcessorService.empaquetar_geob_serato_markers2(serato_b64)
+
+        # Serato Markers_ (Legacy v1 binario para compatibilidad universal)
+        serato_markers_v1_bin = AudioProcessorService.generar_serato_markers_v1(
+            cues=cues_list,
+            duration_ms=dur_ms
+        )
+
+        # Serato BeatGrid binario oficial
         serato_beatgrid_bin = AudioProcessorService.serializar_serato_beatgrid(
             bpm=bpm_float,
             downbeat_ms=downbeat_ms
         )
+
+        # Serato Autotags binario oficial
+        autotags_data = b"\x01\x01" + f"{bpm_str}\x00-3.000\x000.000\x00".encode("ascii")
+
+        # Payloads empaquetados para contenedores FLAC y MP4
+        flac_markers2_payload = b"application/octet-stream\x00\x00Serato Markers2\x00" + serato_markers2_geob
+        flac_markers2_b64 = base64.b64encode(flac_markers2_payload).decode("ascii")
+        flac_markers2_str = "\n".join(flac_markers2_b64[i:i+72] for i in range(0, len(flac_markers2_b64), 72))
+
+        flac_markers1_payload = b"application/octet-stream\x00\x00Serato Markers_\x00" + serato_markers_v1_bin
+        flac_markers1_b64 = base64.b64encode(flac_markers1_payload).decode("ascii")
+        flac_markers1_str = "\n".join(flac_markers1_b64[i:i+72] for i in range(0, len(flac_markers1_b64), 72))
+
+        flac_beatgrid_payload = b"application/octet-stream\x00\x00Serato BeatGrid\x00" + serato_beatgrid_bin
+        flac_beatgrid_b64 = base64.b64encode(flac_beatgrid_payload).decode("ascii")
+
+        flac_autotags_payload = b"application/octet-stream\x00\x00Serato Autotags\x00" + autotags_data
+        flac_autotags_b64 = base64.b64encode(flac_autotags_payload).decode("ascii")
 
         cover_source = cover_url or meta_track.get("cover") or meta_track.get("cover_url") or meta_track.get("image_url")
         if not cover_source:
             cover_source = AudioProcessorService.resolver_caratula_local_o_remota(ruta, artist, title)
         cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
 
-        grouping_val = f"{mood_val} • E:{dance_val}% • D:{dance_val}%"
-        tactical_comment = f"[{mood_val} | E:{dance_val}% | D:{dance_val}%] {comment}" if not str(comment).startswith("[") else comment
+        grouping_val = f"{mood_val} • ⚡{dance_val}% • 🕺{dance_val}% • {genre_val}"
+        tactical_comment = f"[{mood_val} | ⚡{dance_val}% | 🕺{dance_val}% | {key_camelot}] {comment}" if not str(comment).startswith("[") else comment
 
         try:
             if ext == ".flac":
@@ -809,6 +965,13 @@ class AudioProcessorService:
                 audio["GENRE"] = [genre_full]
                 if subgenre_val:
                     audio["SUBGENRE"] = [subgenre_val]
+                if remixer_val:
+                    audio["REMIXER"] = [remixer_val]
+                if composer_val:
+                    audio["COMPOSER"] = [composer_val]
+                if year_str:
+                    audio["DATE"] = [year_str]
+                    audio["YEAR"] = [year_str]
                 if isrc:
                     audio["ISRC"] = [isrc]
                 audio["DANCEABILITY"] = [str(dance_val)]
@@ -819,8 +982,12 @@ class AudioProcessorService:
                     audio["TRIM_START_MS"] = [f"{trim_ms:.1f}"]
                 if downbeat_ms > 0:
                     audio["FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}"]
-                audio["SERATO_MARKERS_V2"] = [serato_b64.decode("ascii")]
-                audio["SERATO_BEATGRID"] = [base64.b64encode(serato_beatgrid_bin).decode("ascii")]
+
+                # Metadatos nativos Serato DJ en VORBIS_COMMENT
+                audio["SERATO_MARKERS_V2"] = [flac_markers2_str]
+                audio["SERATO_MARKERS"] = [flac_markers1_str]
+                audio["SERATO_BEATGRID"] = [flac_beatgrid_b64]
+                audio["SERATO_AUTOGAIN"] = [flac_autotags_b64]
 
                 if cover_bytes:
                     try:
@@ -854,8 +1021,10 @@ class AudioProcessorService:
                 id3.add(TBPM(encoding=1, text=[bpm_str]))
                 if key_camelot:
                     id3.add(TKEY(encoding=1, text=[key_camelot]))
+                    id3.add(TXXX(encoding=1, desc="INITIALKEY", text=[key_camelot]))
+                    id3.add(TXXX(encoding=1, desc="KEY", text=[key_camelot]))
 
-                # Inyección de Grouping (TIT1): Columna visible inmediatamente en Serato DJ Pro para Danceability, Energy y Mood
+                # Inyección de Grouping (TIT1): Columna visible en Serato DJ Pro para Danceability, Energy y Mood
                 id3.add(TIT1(encoding=1, text=[grouping_val]))
 
                 # Inyección de Comentario Táctico con desglose armónico y de energía
@@ -863,6 +1032,12 @@ class AudioProcessorService:
                 id3.add(TCON(encoding=1, text=[genre_full]))
                 if subgenre_val:
                     id3.add(TXXX(encoding=1, desc="SUBGENRE", text=[subgenre_val]))
+                if remixer_val:
+                    id3.add(TPE4(encoding=1, text=[remixer_val]))
+                if composer_val:
+                    id3.add(TCOM(encoding=1, text=[composer_val]))
+                if year_str:
+                    id3.add(TYER(encoding=1, text=[year_str]))
                 if isrc:
                     id3.add(TSRC(encoding=1, text=[isrc]))
 
@@ -876,22 +1051,28 @@ class AudioProcessorService:
                 if downbeat_ms > 0:
                     id3.add(TXXX(encoding=1, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
 
-                # Inyección GEOB para Serato Markers2 (8 Hot Cues oficiales con pad colors)
+                # Inyección GEOB Serato Markers2 (Moderna con cabecera binaria oficial \x01\x01 y padding)
                 id3.add(GEOB(
                     encoding=0,
                     mime="application/octet-stream",
                     desc="Serato Markers2",
-                    data=serato_b64
+                    data=serato_markers2_geob
                 ))
-                # Inyección GEOB para Serato BeatGrid
+                # Inyección GEOB Serato Markers_ (Legacy v1 para compatibilidad histórica)
+                id3.add(GEOB(
+                    encoding=0,
+                    mime="application/octet-stream",
+                    desc="Serato Markers_",
+                    data=serato_markers_v1_bin
+                ))
+                # Inyección GEOB Serato BeatGrid
                 id3.add(GEOB(
                     encoding=0,
                     mime="application/octet-stream",
                     desc="Serato BeatGrid",
                     data=serato_beatgrid_bin
                 ))
-                # Inyección GEOB para Serato Autotags
-                autotags_data = b"\x01\x01" + f"{bpm_str}\x000.000\x000.000\x00".encode("ascii")
+                # Inyección GEOB Serato Autotags
                 id3.add(GEOB(
                     encoding=0,
                     mime="application/octet-stream",
@@ -927,11 +1108,19 @@ class AudioProcessorService:
                 tags.add(TBPM(encoding=1, text=[bpm_str]))
                 if key_camelot:
                     tags.add(TKEY(encoding=1, text=[key_camelot]))
+                    tags.add(TXXX(encoding=1, desc="INITIALKEY", text=[key_camelot]))
+                    tags.add(TXXX(encoding=1, desc="KEY", text=[key_camelot]))
                 tags.add(TIT1(encoding=1, text=[grouping_val]))
                 tags.add(COMM(encoding=1, lang="eng", desc="", text=[tactical_comment]))
                 tags.add(TCON(encoding=1, text=[genre_full]))
                 if subgenre_val:
                     tags.add(TXXX(encoding=1, desc="SUBGENRE", text=[subgenre_val]))
+                if remixer_val:
+                    tags.add(TPE4(encoding=1, text=[remixer_val]))
+                if composer_val:
+                    tags.add(TCOM(encoding=1, text=[composer_val]))
+                if year_str:
+                    tags.add(TYER(encoding=1, text=[year_str]))
                 tags.add(TXXX(encoding=1, desc="DANCEABILITY", text=[str(dance_val)]))
                 tags.add(TXXX(encoding=1, desc="ENERGY", text=[str(dance_val)]))
                 tags.add(TXXX(encoding=1, desc="MOOD", text=[mood_val]))
@@ -940,8 +1129,10 @@ class AudioProcessorService:
                     tags.add(TXXX(encoding=1, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
                 if downbeat_ms > 0:
                     tags.add(TXXX(encoding=1, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
-                tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Markers2", data=serato_b64))
+                tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Markers2", data=serato_markers2_geob))
+                tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Markers_", data=serato_markers_v1_bin))
                 tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato BeatGrid", data=serato_beatgrid_bin))
+                tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Autotags", data=autotags_data))
 
                 if cover_bytes:
                     try:
@@ -968,18 +1159,33 @@ class AudioProcessorService:
                     audio["tmpo"] = [int(bpm_float)]
                 except Exception:
                     pass
-                audio["\xa9cmt"] = [comment]
+                audio["\xa9cmt"] = [tactical_comment]
                 audio["\xa9gen"] = [genre_full]
+                audio["\xa9grp"] = [grouping_val]
                 if subgenre_val:
                     audio["----:com.apple.iTunes:SUBGENRE"] = [subgenre_val.encode("utf-8")]
                 if key_camelot:
                     audio["----:com.apple.iTunes:initialkey"] = [key_camelot.encode("utf-8")]
+                    audio["----:com.apple.iTunes:KEY"] = [key_camelot.encode("utf-8")]
+                if remixer_val:
+                    audio["----:com.apple.iTunes:REMIXER"] = [remixer_val.encode("utf-8")]
+                if composer_val:
+                    audio["\xa9wrt"] = [composer_val]
+                if year_str:
+                    audio["\xa9day"] = [year_str]
                 audio["----:com.apple.iTunes:DANCEABILITY"] = [str(dance_val).encode("utf-8")]
+                audio["----:com.apple.iTunes:ENERGY"] = [str(dance_val).encode("utf-8")]
                 audio["----:com.apple.iTunes:MOOD"] = [mood_val.encode("utf-8")]
                 if trim_ms > 0:
                     audio["----:com.apple.iTunes:TRIM_START_MS"] = [f"{trim_ms:.1f}".encode("utf-8")]
                 if downbeat_ms > 0:
                     audio["----:com.apple.iTunes:FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}".encode("utf-8")]
+
+                # Inyección oficial de átomos Serato DJ en MP4/M4A
+                audio["----:com.serato.dj:markersv2"] = [flac_markers2_str.encode("ascii")]
+                audio["----:com.serato.dj:markers"] = [flac_markers1_str.encode("ascii")]
+                audio["----:com.serato.dj:beatgrid"] = [flac_beatgrid_b64.encode("ascii")]
+                audio["----:com.serato.dj:autgain"] = [flac_autotags_b64.encode("ascii")]
 
                 if cover_bytes:
                     try:

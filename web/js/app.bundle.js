@@ -3733,6 +3733,7 @@ const AuditWorkspace = ({
       setBatchProgress(90);
       setBatchStatusMsg(`\u2713 ${results.length} pistas encontradas en Spotify HD. Redirigiendo a Spotify Ingest...`);
       const formattedTracks = results.map((r, i) => {
+        var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
         const isVerified = (r.match_score !== void 0 ? r.match_score >= 80 : true) && r.es_misma_pista !== false;
         return {
           id: `sp_hd_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
@@ -3744,11 +3745,13 @@ const AuditWorkspace = ({
           cover: r.cover || null,
           duration: r.duration || "03:45",
           origin: "audit_upgrade",
-          reemplazo_de: r.reemplazo_de || r.filename || null,
-          original_file: r.original_file || r.filename || null,
-          original_path: r.original_path || null,
-          original_duration: r.original_duration || null,
-          original_calidad: r.original_calidad || null,
+          reemplazo_de: r.reemplazo_de || r.filename || (targetTracks[i] ? `${targetTracks[i].artist || targetTracks[i].a || ""} - ${targetTracks[i].title || targetTracks[i].t || ""}` : null),
+          original_file: r.original_file || r.filename || ((_a2 = targetTracks[i]) == null ? void 0 : _a2.filename) || ((_b = targetTracks[i]) == null ? void 0 : _b.f) || null,
+          original_path: r.original_path || ((_c = targetTracks[i]) == null ? void 0 : _c.path) || ((_d = targetTracks[i]) == null ? void 0 : _d.filepath) || ((_e = targetTracks[i]) == null ? void 0 : _e.f) || null,
+          original_duration: r.original_duration || ((_f = targetTracks[i]) == null ? void 0 : _f.duration) || null,
+          original_artist: r.original_artist || ((_g = targetTracks[i]) == null ? void 0 : _g.artist) || ((_h = targetTracks[i]) == null ? void 0 : _h.a) || "Desconocido",
+          original_title: r.original_title || ((_i = targetTracks[i]) == null ? void 0 : _i.title) || ((_j = targetTracks[i]) == null ? void 0 : _j.t) || "Sin T\xEDtulo",
+          original_calidad: r.original_calidad || ((_k = targetTracks[i]) == null ? void 0 : _k.calidad) || null,
           downloaded: false,
           selected: isVerified,
           // Solo pre-marcar las que tienen match verificado 100%
@@ -7381,6 +7384,7 @@ const SpotifyWorkspace = ({
   lang = "es",
   t = (k) => k
 }) => {
+  var _a, _b;
   const [internalTracks, setInternalTracks] = useState([]);
   const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
   const setTracks = externalSetTracks !== void 0 ? externalSetTracks : setInternalTracks;
@@ -7894,6 +7898,96 @@ const SpotifyWorkspace = ({
       }, seekPct || 0, true, startSec);
     }
   };
+  const isTrackLocalPlaying = (targetTrack) => {
+    if (!nowPlayingTrack || !isPlaying || !targetTrack) return false;
+    const localPath = targetTrack.original_path || targetTrack.path || targetTrack.filepath || targetTrack.f;
+    if (localPath && (nowPlayingTrack.path === localPath || nowPlayingTrack.f === localPath)) return true;
+    const localTitle = targetTrack.original_title || targetTrack.title || "";
+    return Boolean(nowPlayingTrack.is_local_preview && localTitle && nowPlayingTrack.title && nowPlayingTrack.title.includes(localTitle));
+  };
+  const isTrackCandPlaying = (cand) => {
+    if (!nowPlayingTrack || !isPlaying || !cand) return false;
+    if (cand.preview_url && (nowPlayingTrack.path === cand.preview_url || nowPlayingTrack.preview_url === cand.preview_url)) return true;
+    if (cand.id && String(nowPlayingTrack.id) === String(cand.id)) return true;
+    return Boolean(nowPlayingTrack.title === `[DESCARGA] ${cand.title}` || nowPlayingTrack.title === cand.title);
+  };
+  const handlePlayLocalTrack = (targetTrack, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!targetTrack) return;
+    const localPath = targetTrack.original_path || targetTrack.path || targetTrack.filepath || targetTrack.f;
+    if (!localPath) {
+      alert("No se encontr\xF3 la ruta del archivo local en disco para esta pista.");
+      return;
+    }
+    if (isTrackLocalPlaying(targetTrack)) {
+      if (onTogglePlay) onTogglePlay();
+      return;
+    }
+    if (onPlayTrack) {
+      onPlayTrack({
+        id: `local_prev_${Date.now()}`,
+        path: localPath,
+        f: localPath,
+        title: `[LOCAL] ${targetTrack.original_title || targetTrack.title || "Pista Local"}`,
+        artist: targetTrack.original_artist || targetTrack.artist || "Local",
+        album: "Biblioteca Local",
+        duration: targetTrack.original_duration || targetTrack.duration || "04:00",
+        bpm: targetTrack.bpm || 128,
+        key: targetTrack.key || "8A",
+        is_local_preview: true
+      }, 0, true);
+    }
+  };
+  const handlePlayCandidateTrack = async (cand, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!cand) return;
+    if (isTrackCandPlaying(cand)) {
+      if (onTogglePlay) onTogglePlay();
+      return;
+    }
+    let streamUrl = cand.preview_url;
+    let coverHd = cand.cover;
+    if (!streamUrl) {
+      setCandidateModal((prev) => ({ ...prev, searchMsg: `Resolviendo audio de preescucha para: ${cand.title}...` }));
+      try {
+        if (window.eel && window.eel.resolver_stream_preescucha) {
+          const res = await window.eel.resolver_stream_preescucha(cand.title, cand.artist)();
+          if (res && res.stream_url) {
+            streamUrl = res.stream_url;
+            if (res.cover) coverHd = res.cover;
+          }
+        }
+        if (!streamUrl) {
+          const resp = await fetch(`/api/resolver_stream_preescucha?titulo=${encodeURIComponent(cand.title)}&artista=${encodeURIComponent(cand.artist)}`);
+          if (resp.ok) {
+            const res = await resp.json();
+            if (res && res.stream_url) {
+              streamUrl = res.stream_url;
+              if (res.cover) coverHd = res.cover;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Fallo resolviendo stream para candidato:", err);
+      }
+      setCandidateModal((prev) => ({ ...prev, searchMsg: "" }));
+    }
+    if (onPlayTrack) {
+      onPlayTrack({
+        id: cand.id || `cand_${Date.now()}`,
+        path: streamUrl || cand.spotify_url || "",
+        preview_url: streamUrl,
+        title: `[DESCARGA] ${cand.title}`,
+        artist: cand.artist,
+        album: cand.album || "Oficial HD",
+        cover: coverHd || cand.cover,
+        duration: cand.duration || "03:45",
+        bpm: cand.bpm || 128,
+        key: cand.key || "8A",
+        is_cand_preview: true
+      }, 0, true);
+    }
+  };
   const handleAnalizar = async (queryOverride = null) => {
     const queryToSearch = (typeof queryOverride === "string" ? queryOverride : spotifyUrl).trim();
     if (!queryToSearch) {
@@ -8311,7 +8405,27 @@ Se detectaron ${dudosas.length} pista(s) con coincidencia dudosa (<75%) que podr
       /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("img", { src: getValidCover(row.cover), alt: "Cover", onError: (e) => {
         e.target.onerror = null;
         e.target.src = DEFAULT_VINYL_SVG;
-      }, className: "w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 min-w-0" }, isAuditUpgrade && /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0", title: "Pista de reemplazo HD para audio de baja calidad" }), isTaxonomy && /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0", title: "Pista importada desde Taxonom\xEDa" }), /* @__PURE__ */ React.createElement("span", { className: `text-xs truncate max-w-sm ${isAuditUpgrade ? "font-bold text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.35)]" : isTaxonomy ? "font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]" : "font-semibold text-djcyan-400"}`, title: row.title }, row.title), isAuditUpgrade && /* @__PURE__ */ React.createElement("span", { className: "text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-900/90 text-amber-200 border border-amber-600/80 shrink-0" }, "REEMPLAZO HD"), isTaxonomy && /* @__PURE__ */ React.createElement("span", { className: "text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-600/70 shrink-0" }, "TAXONOM\xCDA")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate max-w-sm", title: row.album }, row.album), row.reemplazo_de && /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-amber-400/90 font-mono truncate max-w-sm flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Sustituye a:"), " ", /* @__PURE__ */ React.createElement("span", { className: "underline decoration-amber-500/50" }, row.reemplazo_de)), row.match_score !== void 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-0.5" }, row.match_score >= 80 ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-600/70 inline-flex items-center gap-1 shadow-sm" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3AF}"), " ", /* @__PURE__ */ React.createElement("span", null, row.match_score, "% Match Verificado")) : /* @__PURE__ */ React.createElement(
+      }, className: "w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 min-w-0" }, isAuditUpgrade && /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0", title: "Pista de reemplazo HD para audio de baja calidad" }), isTaxonomy && /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0", title: "Pista importada desde Taxonom\xEDa" }), /* @__PURE__ */ React.createElement("span", { className: `text-xs truncate max-w-sm ${isAuditUpgrade ? "font-bold text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.35)]" : isTaxonomy ? "font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]" : "font-semibold text-djcyan-400"}`, title: row.title }, row.title), isAuditUpgrade && /* @__PURE__ */ React.createElement("span", { className: "text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-900/90 text-amber-200 border border-amber-600/80 shrink-0" }, "REEMPLAZO HD"), isTaxonomy && /* @__PURE__ */ React.createElement("span", { className: "text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-600/70 shrink-0" }, "TAXONOM\xCDA")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate max-w-sm", title: row.album }, row.album), row.reemplazo_de && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap mt-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-amber-400/90 font-mono truncate max-w-[200px] flex items-center gap-1", title: row.reemplazo_de }, /* @__PURE__ */ React.createElement("span", null, "Sustituye a:"), " ", /* @__PURE__ */ React.createElement("span", { className: "underline decoration-amber-500/50" }, row.reemplazo_de)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: (e) => handlePlayLocalTrack(row, e),
+          className: `px-1.5 py-0.5 rounded text-[8.5px] font-mono font-bold flex items-center gap-0.5 cursor-pointer transition-colors ${isTrackLocalPlaying(row) ? "bg-amber-400 text-black shadow-sm font-black" : "bg-djzinc-800 hover:bg-amber-950/80 text-amber-300 border border-amber-700/50"}`,
+          title: "Escuchar audio de tu pista local en disco"
+        },
+        /* @__PURE__ */ React.createElement("span", null, isTrackLocalPlaying(row) ? "\u23F8\uFE0F" : "\u{1F3A7}"),
+        /* @__PURE__ */ React.createElement("span", null, "Local")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: (e) => handlePlayPreview(row, e),
+          className: `px-1.5 py-0.5 rounded text-[8.5px] font-mono font-bold flex items-center gap-0.5 cursor-pointer transition-colors ${nowPlayingTrack && (String(nowPlayingTrack.id) === String(row.id) || nowPlayingTrack.title === row.title) && isPlaying ? "bg-djcyan-400 text-black shadow-sm font-black" : "bg-djzinc-800 hover:bg-djcyan-950/80 text-djcyan-300 border border-djcyan-700/50"}`,
+          title: "Escuchar audio oficial a descargar"
+        },
+        /* @__PURE__ */ React.createElement("span", null, nowPlayingTrack && (String(nowPlayingTrack.id) === String(row.id) || nowPlayingTrack.title === row.title) && isPlaying ? "\u23F8\uFE0F" : "\u2601\uFE0F"),
+        /* @__PURE__ */ React.createElement("span", null, "Spotify")
+      ))), row.match_score !== void 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-0.5" }, row.match_score >= 80 ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-600/70 inline-flex items-center gap-1 shadow-sm" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3AF}"), " ", /* @__PURE__ */ React.createElement("span", null, row.match_score, "% Match Verificado")) : /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
@@ -8420,7 +8534,45 @@ Se detectaron ${dudosas.length} pista(s) con coincidencia dudosa (<75%) que podr
       className: "w-8 h-8 rounded-lg bg-djzinc-800 hover:bg-djzinc-700 text-gray-400 hover:text-white flex items-center justify-center text-sm transition-colors cursor-pointer"
     },
     "\u2715"
-  )), candidateModal.targetTrack && /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-djzinc-950/50 border-b border-djzinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-1 rounded bg-djzinc-800 text-[10px] font-mono text-gray-400 uppercase tracking-wider shrink-0" }, "Pista en tu Biblioteca"), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold text-white truncate inline-block max-w-[280px]" }, candidateModal.targetTrack.original_artist || candidateModal.targetTrack.artist || "Desconocido"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 mx-1.5" }, "\u2014"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-medium truncate inline-block max-w-[320px]" }, candidateModal.targetTrack.original_title || candidateModal.targetTrack.title || "Sin T\xEDtulo"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 shrink-0 text-[11px] font-mono text-gray-400" }, candidateModal.targetTrack.bpm && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-800/80 text-gray-300" }, "\u{1F941} ", candidateModal.targetTrack.bpm, " BPM"), candidateModal.targetTrack.original_duration && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-800/80 text-gray-300" }, "\u23F1\uFE0F ", Math.floor(candidateModal.targetTrack.original_duration / 60), ":", Math.floor(candidateModal.targetTrack.original_duration % 60).toString().padStart(2, "0")), candidateModal.targetTrack.calidad && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/40" }, "Calidad actual: ", candidateModal.targetTrack.calidad))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-3 top-2.5 text-gray-500 text-xs" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement(
+  )), candidateModal.targetTrack && /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-djzinc-950/70 border-b border-djzinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-1 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40 text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4C1}"), " ", /* @__PURE__ */ React.createElement("span", null, "Tu Pista Local")), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold text-white truncate inline-block max-w-[280px]" }, candidateModal.targetTrack.original_artist || candidateModal.targetTrack.artist || "Desconocido"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 mx-1.5" }, "\u2014"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-medium truncate inline-block max-w-[320px]" }, candidateModal.targetTrack.original_title || candidateModal.targetTrack.title || "Sin T\xEDtulo"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 shrink-0 text-[11px] font-mono text-gray-400" }, candidateModal.targetTrack.bpm && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-800/80 text-gray-300" }, "\u{1F941} ", candidateModal.targetTrack.bpm, " BPM"), candidateModal.targetTrack.original_duration && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-800/80 text-gray-300" }, "\u23F1\uFE0F ", Math.floor(candidateModal.targetTrack.original_duration / 60), ":", Math.floor(candidateModal.targetTrack.original_duration % 60).toString().padStart(2, "0")), candidateModal.targetTrack.calidad && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/40" }, "Calidad: ", candidateModal.targetTrack.calidad), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: (e) => handlePlayLocalTrack(candidateModal.targetTrack, e),
+      className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow active:scale-95 ${isTrackLocalPlaying(candidateModal.targetTrack) ? "bg-amber-400 text-black shadow-[0_0_12px_rgba(251,191,36,0.6)] animate-pulse font-black" : "bg-djzinc-850 hover:bg-amber-950/80 text-amber-300 border border-amber-600/60"}`,
+      title: "Reproducir archivo local de tu biblioteca para comparar ac\xFAsticamente"
+    },
+    /* @__PURE__ */ React.createElement("span", null, isTrackLocalPlaying(candidateModal.targetTrack) ? "\u23F8\uFE0F" : "\u{1F3A7}"),
+    /* @__PURE__ */ React.createElement("span", null, isTrackLocalPlaying(candidateModal.targetTrack) ? "Pausar Local (A)" : "O\xEDr Local (Deck A)")
+  ))), candidateModal.targetTrack && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-[#090912] border-b border-djzinc-800/90 flex flex-wrap items-center justify-between gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 uppercase tracking-wider font-bold" }, "Comparador A/B:"), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: (e) => handlePlayLocalTrack(candidateModal.targetTrack, e),
+      className: `px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${isTrackLocalPlaying(candidateModal.targetTrack) ? "bg-amber-400 text-black font-black shadow-[0_0_10px_rgba(251,191,36,0.6)]" : "bg-djzinc-900 text-amber-400 border border-amber-800/50 hover:bg-djzinc-800"}`,
+      title: "Escuchar tu archivo original de baja calidad (Deck A)"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F170}\uFE0F"),
+    " ",
+    /* @__PURE__ */ React.createElement("span", null, "Pista Local (Disco)"),
+    isTrackLocalPlaying(candidateModal.targetTrack) && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-black animate-ping" })
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: (e) => {
+        var _a2, _b2;
+        const currentOrTop = ((_a2 = candidateModal.candidates) == null ? void 0 : _a2.find((c) => candidateModal.targetTrack && (candidateModal.targetTrack.spotify_url === c.spotify_url || candidateModal.targetTrack.title === c.title))) || ((_b2 = candidateModal.candidates) == null ? void 0 : _b2[0]);
+        if (currentOrTop) handlePlayCandidateTrack(currentOrTop, e);
+      },
+      className: `px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${((_a = candidateModal.candidates) == null ? void 0 : _a.some((c) => isTrackCandPlaying(c))) ? "bg-djcyan-400 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.6)]" : "bg-djzinc-900 text-djcyan-300 border border-djcyan-800/50 hover:bg-djzinc-800"}`,
+      title: "Escuchar la versi\xF3n oficial encontrada para descargar (Deck B)"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F171}\uFE0F"),
+    " ",
+    /* @__PURE__ */ React.createElement("span", null, "Versi\xF3n Descarga (Spotify/Apple)"),
+    ((_b = candidateModal.candidates) == null ? void 0 : _b.some((c) => isTrackCandPlaying(c))) && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-black animate-ping" })
+  )), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 hidden md:block" }, "\u{1F4A1} Compara A vs B para comprobar que intro, remix y mezcla sean exactamente iguales")), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-3 top-2.5 text-gray-500 text-xs" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "text",
@@ -8441,11 +8593,11 @@ Se detectaron ${dudosas.length} pista(s) con coincidencia dudosa (<75%) que podr
     },
     candidateModal.isSearching ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", null, "Buscando...")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", null, "Buscar Versiones"))
   )), candidateModal.searchMsg && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-1.5 bg-djzinc-950/70 border-b border-djzinc-800 text-[11px] font-mono text-gray-400 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "\u2139\uFE0F"), /* @__PURE__ */ React.createElement("span", null, candidateModal.searchMsg)), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 space-y-2.5" }, candidateModal.candidates && candidateModal.candidates.length > 0 ? candidateModal.candidates.map((cand, idx) => {
-    var _a, _b;
+    var _a2, _b2;
     const score = cand.match_score !== void 0 ? cand.match_score : cand.score || 0;
     const conf = cand.match_confianza || (score >= 80 ? "ALTA" : score >= 50 ? "MEDIA" : "BAJA");
     const hasAlert = !!cand.alerta_version;
-    const targetDur = ((_a = candidateModal.targetTrack) == null ? void 0 : _a.original_duration) || ((_b = candidateModal.targetTrack) == null ? void 0 : _b.duration) || 0;
+    const targetDur = ((_a2 = candidateModal.targetTrack) == null ? void 0 : _a2.original_duration) || ((_b2 = candidateModal.targetTrack) == null ? void 0 : _b2.duration) || 0;
     const candDur = cand.duration || 0;
     const durDiff = Math.abs(candDur - targetDur);
     const isCurrentlySelected = candidateModal.targetTrack && (candidateModal.targetTrack.spotify_url === cand.spotify_url || candidateModal.targetTrack.apple_url === cand.apple_url || candidateModal.targetTrack.title === cand.title && candidateModal.targetTrack.artist === cand.artist);
@@ -8474,6 +8626,16 @@ Se detectaron ${dudosas.length} pista(s) con coincidencia dudosa (<75%) que podr
         "\u25B6"
       )), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-white truncate max-w-[260px]" }, cand.artist), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-xs" }, "\u2014"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-medium text-djcyan-300 truncate max-w-[300px]" }, cand.title), isCurrentlySelected && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9px] font-bold bg-djcyan-500 text-black" }, "SELECCIONADA ACTUALMENTE")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 mt-1 text-[11px] text-gray-400 font-mono flex-wrap" }, cand.album && /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[200px]", title: cand.album }, "\u{1F4BF} ", cand.album), cand.duration > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "\u23F1\uFE0F ", Math.floor(cand.duration / 60), ":", Math.floor(cand.duration % 60).toString().padStart(2, "0")), targetDur > 0 && candDur > 0 && /* @__PURE__ */ React.createElement("span", { className: `text-[10px] px-1.5 py-0.5 rounded ${durDiff <= 5 ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40" : durDiff <= 25 ? "bg-amber-950/60 text-amber-400 border border-amber-800/40" : "bg-rose-950/60 text-rose-400 border border-rose-800/40"}` }, durDiff <= 5 ? "\u2713 Misma duraci\xF3n" : `\u0394 ${durDiff > 0 ? candDur > targetDur ? "+" : "-" : ""}${Math.round(durDiff)}s`), cand.bpm && /* @__PURE__ */ React.createElement("span", null, "\u{1F941} ", cand.bpm, " BPM"), cand.isrc && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "ISRC: ", cand.isrc)), hasAlert && /* @__PURE__ */ React.createElement("div", { className: "mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded border border-rose-800/30" }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("span", null, cand.alerta_version)), cand.match_recomendacion && !hasAlert && /* @__PURE__ */ React.createElement("div", { className: "mt-1 text-[10px] text-gray-400 italic" }, cand.match_recomendacion))),
       /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 shrink-0 self-end md:self-center" }, /* @__PURE__ */ React.createElement("div", { className: `px-2.5 py-1 rounded-lg border text-center ${score >= 80 ? "bg-emerald-950/50 border-emerald-700/60 text-emerald-300" : score >= 50 ? "bg-amber-950/50 border-amber-700/60 text-amber-300" : "bg-rose-950/50 border-rose-700/60 text-rose-300"}` }, /* @__PURE__ */ React.createElement("div", { className: "text-xs font-black font-mono" }, score, "%"), /* @__PURE__ */ React.createElement("div", { className: "text-[8px] font-bold tracking-wider uppercase" }, conf)), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: (e) => handlePlayCandidateTrack(cand, e),
+          className: `px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${isTrackCandPlaying(cand) ? "bg-djcyan-400 text-black shadow-[0_0_12px_rgba(6,182,212,0.6)] animate-pulse font-black" : "bg-djzinc-850 hover:bg-djcyan-950/80 text-djcyan-300 border border-djcyan-700/60"}`,
+          title: "Escuchar audio de preescucha oficial de esta versi\xF3n (Deck B)"
+        },
+        /* @__PURE__ */ React.createElement("span", null, isTrackCandPlaying(cand) ? "\u23F8\uFE0F" : "\u25B6"),
+        /* @__PURE__ */ React.createElement("span", null, isTrackCandPlaying(cand) ? "Pausar (B)" : "O\xEDr (B)")
+      ), /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: () => handleSeleccionarVersionCandidato(cand),

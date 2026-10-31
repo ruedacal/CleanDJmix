@@ -4797,11 +4797,13 @@ const AuditWorkspace = ({
                     cover: r.cover || null,
                     duration: r.duration || '03:45',
                     origin: 'audit_upgrade',
-                    reemplazo_de: r.reemplazo_de || r.filename || null,
-                    original_file: r.original_file || r.filename || null,
-                    original_path: r.original_path || null,
-                    original_duration: r.original_duration || null,
-                    original_calidad: r.original_calidad || null,
+                    reemplazo_de: r.reemplazo_de || r.filename || (targetTracks[i] ? `${targetTracks[i].artist || targetTracks[i].a || ''} - ${targetTracks[i].title || targetTracks[i].t || ''}` : null),
+                    original_file: r.original_file || r.filename || targetTracks[i]?.filename || targetTracks[i]?.f || null,
+                    original_path: r.original_path || targetTracks[i]?.path || targetTracks[i]?.filepath || targetTracks[i]?.f || null,
+                    original_duration: r.original_duration || targetTracks[i]?.duration || null,
+                    original_artist: r.original_artist || targetTracks[i]?.artist || targetTracks[i]?.a || 'Desconocido',
+                    original_title: r.original_title || targetTracks[i]?.title || targetTracks[i]?.t || 'Sin Título',
+                    original_calidad: r.original_calidad || targetTracks[i]?.calidad || null,
                     downloaded: false,
                     selected: isVerified, // Solo pre-marcar las que tienen match verificado 100%
                     format: 'FLAC',
@@ -10786,6 +10788,102 @@ const SpotifyWorkspace = ({
         }
     };
 
+    const isTrackLocalPlaying = (targetTrack) => {
+        if (!nowPlayingTrack || !isPlaying || !targetTrack) return false;
+        const localPath = targetTrack.original_path || targetTrack.path || targetTrack.filepath || targetTrack.f;
+        if (localPath && (nowPlayingTrack.path === localPath || nowPlayingTrack.f === localPath)) return true;
+        const localTitle = targetTrack.original_title || targetTrack.title || '';
+        return Boolean(nowPlayingTrack.is_local_preview && localTitle && nowPlayingTrack.title && nowPlayingTrack.title.includes(localTitle));
+    };
+
+    const isTrackCandPlaying = (cand) => {
+        if (!nowPlayingTrack || !isPlaying || !cand) return false;
+        if (cand.preview_url && (nowPlayingTrack.path === cand.preview_url || nowPlayingTrack.preview_url === cand.preview_url)) return true;
+        if (cand.id && String(nowPlayingTrack.id) === String(cand.id)) return true;
+        return Boolean(nowPlayingTrack.title === `[DESCARGA] ${cand.title}` || nowPlayingTrack.title === cand.title);
+    };
+
+    const handlePlayLocalTrack = (targetTrack, e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (!targetTrack) return;
+        const localPath = targetTrack.original_path || targetTrack.path || targetTrack.filepath || targetTrack.f;
+        if (!localPath) {
+            alert("No se encontró la ruta del archivo local en disco para esta pista.");
+            return;
+        }
+        if (isTrackLocalPlaying(targetTrack)) {
+            if (onTogglePlay) onTogglePlay();
+            return;
+        }
+        if (onPlayTrack) {
+            onPlayTrack({
+                id: `local_prev_${Date.now()}`,
+                path: localPath,
+                f: localPath,
+                title: `[LOCAL] ${targetTrack.original_title || targetTrack.title || 'Pista Local'}`,
+                artist: targetTrack.original_artist || targetTrack.artist || 'Local',
+                album: 'Biblioteca Local',
+                duration: targetTrack.original_duration || targetTrack.duration || '04:00',
+                bpm: targetTrack.bpm || 128,
+                key: targetTrack.key || '8A',
+                is_local_preview: true
+            }, 0, true);
+        }
+    };
+
+    const handlePlayCandidateTrack = async (cand, e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (!cand) return;
+        if (isTrackCandPlaying(cand)) {
+            if (onTogglePlay) onTogglePlay();
+            return;
+        }
+
+        let streamUrl = cand.preview_url;
+        let coverHd = cand.cover;
+        if (!streamUrl) {
+            setCandidateModal(prev => ({ ...prev, searchMsg: `Resolviendo audio de preescucha para: ${cand.title}...` }));
+            try {
+                if (window.eel && window.eel.resolver_stream_preescucha) {
+                    const res = await window.eel.resolver_stream_preescucha(cand.title, cand.artist)();
+                    if (res && res.stream_url) {
+                        streamUrl = res.stream_url;
+                        if (res.cover) coverHd = res.cover;
+                    }
+                }
+                if (!streamUrl) {
+                    const resp = await fetch(`/api/resolver_stream_preescucha?titulo=${encodeURIComponent(cand.title)}&artista=${encodeURIComponent(cand.artist)}`);
+                    if (resp.ok) {
+                        const res = await resp.json();
+                        if (res && res.stream_url) {
+                            streamUrl = res.stream_url;
+                            if (res.cover) coverHd = res.cover;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn("Fallo resolviendo stream para candidato:", err);
+            }
+            setCandidateModal(prev => ({ ...prev, searchMsg: '' }));
+        }
+
+        if (onPlayTrack) {
+            onPlayTrack({
+                id: cand.id || `cand_${Date.now()}`,
+                path: streamUrl || cand.spotify_url || '',
+                preview_url: streamUrl,
+                title: `[DESCARGA] ${cand.title}`,
+                artist: cand.artist,
+                album: cand.album || 'Oficial HD',
+                cover: coverHd || cand.cover,
+                duration: cand.duration || '03:45',
+                bpm: cand.bpm || 128,
+                key: cand.key || '8A',
+                is_cand_preview: true
+            }, 0, true);
+        }
+    };
+
     const handleAnalizar = async (queryOverride = null) => {
         const queryToSearch = (typeof queryOverride === 'string' ? queryOverride : spotifyUrl).trim();
         if (!queryToSearch) {
@@ -11442,9 +11540,39 @@ const SpotifyWorkspace = ({
                                                     </div>
                                                     <span className="text-[10px] text-gray-500 font-mono truncate max-w-sm" title={row.album}>{row.album}</span>
                                                     {row.reemplazo_de && (
-                                                        <span className="text-[9px] text-amber-400/90 font-mono truncate max-w-sm flex items-center gap-1">
-                                                            <span>Sustituye a:</span> <span className="underline decoration-amber-500/50">{row.reemplazo_de}</span>
-                                                        </span>
+                                                        <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                                            <span className="text-[9px] text-amber-400/90 font-mono truncate max-w-[200px] flex items-center gap-1" title={row.reemplazo_de}>
+                                                                <span>Sustituye a:</span> <span className="underline decoration-amber-500/50">{row.reemplazo_de}</span>
+                                                            </span>
+                                                            <div className="flex items-center gap-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => handlePlayLocalTrack(row, e)}
+                                                                    className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono font-bold flex items-center gap-0.5 cursor-pointer transition-colors ${
+                                                                        isTrackLocalPlaying(row)
+                                                                            ? 'bg-amber-400 text-black shadow-sm font-black'
+                                                                            : 'bg-djzinc-800 hover:bg-amber-950/80 text-amber-300 border border-amber-700/50'
+                                                                    }`}
+                                                                    title="Escuchar audio de tu pista local en disco"
+                                                                >
+                                                                    <span>{isTrackLocalPlaying(row) ? '⏸️' : '🎧'}</span>
+                                                                    <span>Local</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => handlePlayPreview(row, e)}
+                                                                    className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono font-bold flex items-center gap-0.5 cursor-pointer transition-colors ${
+                                                                        (nowPlayingTrack && (String(nowPlayingTrack.id) === String(row.id) || nowPlayingTrack.title === row.title) && isPlaying)
+                                                                            ? 'bg-djcyan-400 text-black shadow-sm font-black'
+                                                                            : 'bg-djzinc-800 hover:bg-djcyan-950/80 text-djcyan-300 border border-djcyan-700/50'
+                                                                    }`}
+                                                                    title="Escuchar audio oficial a descargar"
+                                                                >
+                                                                    <span>{(nowPlayingTrack && (String(nowPlayingTrack.id) === String(row.id) || nowPlayingTrack.title === row.title) && isPlaying) ? '⏸️' : '☁️'}</span>
+                                                                    <span>Spotify</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     )}
                                                     {row.match_score !== undefined && (
                                                         <div className="flex items-center gap-1.5 mt-0.5">
@@ -11869,10 +11997,10 @@ const SpotifyWorkspace = ({
 
                         {/* Pista de Referencia / Origen */}
                         {candidateModal.targetTrack && (
-                            <div className="p-3.5 bg-djzinc-950/50 border-b border-djzinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div className="p-3.5 bg-djzinc-950/70 border-b border-djzinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
                                 <div className="flex items-center gap-3 min-w-0">
-                                    <span className="px-2 py-1 rounded bg-djzinc-800 text-[10px] font-mono text-gray-400 uppercase tracking-wider shrink-0">
-                                        Pista en tu Biblioteca
+                                    <span className="px-2 py-1 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40 text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 flex items-center gap-1">
+                                        <span>📁</span> <span>Tu Pista Local</span>
                                     </span>
                                     <div className="min-w-0">
                                         <span className="font-bold text-white truncate inline-block max-w-[280px]">
@@ -11884,7 +12012,7 @@ const SpotifyWorkspace = ({
                                         </span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 shrink-0 text-[11px] font-mono text-gray-400">
+                                <div className="flex items-center gap-2.5 shrink-0 text-[11px] font-mono text-gray-400">
                                     {candidateModal.targetTrack.bpm && (
                                         <span className="px-2 py-0.5 rounded bg-djzinc-800/80 text-gray-300">
                                             🥁 {candidateModal.targetTrack.bpm} BPM
@@ -11897,9 +12025,64 @@ const SpotifyWorkspace = ({
                                     )}
                                     {candidateModal.targetTrack.calidad && (
                                         <span className="px-2 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/40">
-                                            Calidad actual: {candidateModal.targetTrack.calidad}
+                                            Calidad: {candidateModal.targetTrack.calidad}
                                         </span>
                                     )}
+                                    {/* Botón de Preescucha de la Pista Local del Usuario */}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => handlePlayLocalTrack(candidateModal.targetTrack, e)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow active:scale-95 ${
+                                            isTrackLocalPlaying(candidateModal.targetTrack)
+                                                ? 'bg-amber-400 text-black shadow-[0_0_12px_rgba(251,191,36,0.6)] animate-pulse font-black'
+                                                : 'bg-djzinc-850 hover:bg-amber-950/80 text-amber-300 border border-amber-600/60'
+                                        }`}
+                                        title="Reproducir archivo local de tu biblioteca para comparar acústicamente"
+                                    >
+                                        <span>{isTrackLocalPlaying(candidateModal.targetTrack) ? '⏸️' : '🎧'}</span>
+                                        <span>{isTrackLocalPlaying(candidateModal.targetTrack) ? 'Pausar Local (A)' : 'Oír Local (Deck A)'}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Barra de Control y Comparativa A/B Rápida */}
+                        {candidateModal.targetTrack && (
+                            <div className="px-4 py-2 bg-[#090912] border-b border-djzinc-800/90 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Comparador A/B:</span>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => handlePlayLocalTrack(candidateModal.targetTrack, e)}
+                                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                            isTrackLocalPlaying(candidateModal.targetTrack)
+                                                ? 'bg-amber-400 text-black font-black shadow-[0_0_10px_rgba(251,191,36,0.6)]'
+                                                : 'bg-djzinc-900 text-amber-400 border border-amber-800/50 hover:bg-djzinc-800'
+                                        }`}
+                                        title="Escuchar tu archivo original de baja calidad (Deck A)"
+                                    >
+                                        <span>🅰️</span> <span>Pista Local (Disco)</span>
+                                        {isTrackLocalPlaying(candidateModal.targetTrack) && <span className="w-1.5 h-1.5 rounded-full bg-black animate-ping" />}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            const currentOrTop = candidateModal.candidates?.find(c => candidateModal.targetTrack && (candidateModal.targetTrack.spotify_url === c.spotify_url || candidateModal.targetTrack.title === c.title)) || candidateModal.candidates?.[0];
+                                            if (currentOrTop) handlePlayCandidateTrack(currentOrTop, e);
+                                        }}
+                                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                            candidateModal.candidates?.some(c => isTrackCandPlaying(c))
+                                                ? 'bg-djcyan-400 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.6)]'
+                                                : 'bg-djzinc-900 text-djcyan-300 border border-djcyan-800/50 hover:bg-djzinc-800'
+                                        }`}
+                                        title="Escuchar la versión oficial encontrada para descargar (Deck B)"
+                                    >
+                                        <span>🅱️</span> <span>Versión Descarga (Spotify/Apple)</span>
+                                        {candidateModal.candidates?.some(c => isTrackCandPlaying(c)) && <span className="w-1.5 h-1.5 rounded-full bg-black animate-ping" />}
+                                    </button>
+                                </div>
+                                <div className="text-[10px] text-gray-500 hidden md:block">
+                                    💡 Compara A vs B para comprobar que intro, remix y mezcla sean exactamente iguales
                                 </div>
                             </div>
                         )}
@@ -12079,6 +12262,21 @@ const SpotifyWorkspace = ({
                                                         {conf}
                                                     </div>
                                                 </div>
+
+                                                {/* Preescucha de la Versión Candidata */}
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handlePlayCandidateTrack(cand, e)}
+                                                    className={`px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
+                                                        isTrackCandPlaying(cand)
+                                                            ? 'bg-djcyan-400 text-black shadow-[0_0_12px_rgba(6,182,212,0.6)] animate-pulse font-black'
+                                                            : 'bg-djzinc-850 hover:bg-djcyan-950/80 text-djcyan-300 border border-djcyan-700/60'
+                                                    }`}
+                                                    title="Escuchar audio de preescucha oficial de esta versión (Deck B)"
+                                                >
+                                                    <span>{isTrackCandPlaying(cand) ? '⏸️' : '▶'}</span>
+                                                    <span>{isTrackCandPlaying(cand) ? 'Pausar (B)' : 'Oír (B)'}</span>
+                                                </button>
 
                                                 {/* Seleccionar Button */}
                                                 <button

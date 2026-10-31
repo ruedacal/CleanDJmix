@@ -597,7 +597,7 @@ class MediaService:
                 "origin": "audit_upgrade",
                 "reemplazo_de": reemplazo_de,
                 "original_file": orig_file,
-                "original_path": t.get("path") or "",
+                "original_path": t.get("path") or t.get("filepath") or t.get("f") or "",
                 "original_duration": orig_dur,
                 "original_artist": orig_artist,
                 "original_title": orig_title,
