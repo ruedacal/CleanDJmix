@@ -3321,6 +3321,7 @@ const AuditWorkspace = ({
   const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState(null);
   const [selectedAuditIds, setSelectedAuditIds] = useState(/* @__PURE__ */ new Set());
   const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState(false);
+  const [deleteModalState, setDeleteModalState] = useState({ open: false, tracks: [], mode: "trash" });
   const [internalTracks, setInternalTracks] = useState([]);
   const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
   const setTracks = setExternalTracks !== void 0 ? setExternalTracks : setInternalTracks;
@@ -3393,7 +3394,7 @@ const AuditWorkspace = ({
       const missing = tracks.filter((t2) => !t2.b || t2.b === "--" || !t2.k || t2.k === "--").length;
       const missing_title = tracks.filter((t2) => t2.missing_title || !t2.t || t2.t === "Desconocido").length;
       const missing_artist = tracks.filter((t2) => t2.missing_artist || !t2.a || t2.a === "Artista Desconocido").length;
-      const missing_cover = tracks.filter((t2) => t2.missing_cover || !t2.cover).length;
+      const missing_cover = tracks.filter((t2) => t2.missing_cover === true || !t2.cover && !t2.has_cover).length;
       const errors = tracks.filter((x) => Boolean(x.es_fake) || x.format === "FLAC" && String(x.status || "").includes("Fake")).length;
       const ready = Math.max(0, total - missing);
       setMetrics((prev) => ({
@@ -3408,23 +3409,49 @@ const AuditWorkspace = ({
       }));
     }
   }, [tracks]);
-  const handleRemoveSingleTrack = (trackId, e) => {
+  const solicitarEliminarPistas = (tracksToDelete, defaultMode = "trash", e) => {
     if (e && e.stopPropagation) e.stopPropagation();
-    if (!trackId && trackId !== 0) return;
-    setSelectedAuditIds((prev) => {
-      const next = new Set(prev);
-      next.delete(trackId);
-      return next;
+    if (!tracksToDelete || tracksToDelete.length === 0) return;
+    setDeleteModalState({
+      open: true,
+      tracks: tracksToDelete,
+      mode: defaultMode
     });
-    if (onRemoveTrack) {
-      onRemoveTrack(trackId);
+  };
+  const ejecutarEliminarPistas = async (modo) => {
+    const toDelete = deleteModalState.tracks;
+    if (!toDelete || toDelete.length === 0) {
+      setDeleteModalState({ open: false, tracks: [], mode: "trash" });
+      return;
+    }
+    const count = toDelete.length;
+    const idsToRemove = new Set(toDelete.map((t2) => String(t2.id)));
+    const pathsToRemove = toDelete.map((t2) => t2.path || t2.f).filter(Boolean);
+    if (modo === "trash" || modo === "permanent") {
+      const permanente = modo === "permanent";
+      try {
+        if (window.eel && window.eel.eliminar_pistas_disco) {
+          await window.eel.eliminar_pistas_disco(pathsToRemove, permanente)();
+        } else {
+          await fetch("/api/eliminar_pistas_disco", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paths: pathsToRemove, permanente })
+          });
+        }
+      } catch (err) {
+        console.error("Error al eliminar pistas del disco:", err);
+      }
+    }
+    if (onRemoveMultipleTracks) {
+      onRemoveMultipleTracks(Array.from(idsToRemove));
     } else {
-      setTracks((prev) => prev.filter((t2) => String(t2.id) !== String(trackId) && t2.path !== trackId));
-      if (selectedTrack === trackId) {
-        const remaining = tracks.filter((t2) => String(t2.id) !== String(trackId));
+      setTracks((prev) => prev.filter((t2) => !idsToRemove.has(String(t2.id)) && !idsToRemove.has(String(t2.path))));
+      if (selectedTrack && idsToRemove.has(String(selectedTrack))) {
+        const remaining = tracks.filter((t2) => !idsToRemove.has(String(t2.id)));
         setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
       }
-      if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(trackId) || nowPlayingTrack.path === trackId)) {
+      if (nowPlayingTrack && (idsToRemove.has(String(nowPlayingTrack.id)) || idsToRemove.has(String(nowPlayingTrack.path)))) {
         if (audioRef && audioRef.current) {
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
@@ -3432,36 +3459,33 @@ const AuditWorkspace = ({
         if (onPlayTrack) onPlayTrack(null);
       }
     }
-    setSaveFeedback(lang === "en" ? "\u2713 Track removed from analysis" : "\u2713 Pista excluida del an\xE1lisis.");
-    setTimeout(() => setSaveFeedback(""), 2500);
+    setSelectedAuditIds((prev) => {
+      const next = new Set(prev);
+      toDelete.forEach((t2) => next.delete(t2.id));
+      return next;
+    });
+    setDeleteModalState({ open: false, tracks: [], mode: "trash" });
+    const feedbackMsg = modo === "list_only" ? lang === "en" ? `\u2713 ${count} track(s) removed from list.` : `\u2713 ${count} pista(s) quitada(s) de la lista.` : modo === "permanent" ? lang === "en" ? `\u2713 ${count} file(s) permanently deleted from disk.` : `\u2713 ${count} archivo(s) eliminados definitivamente del disco.` : lang === "en" ? `\u2713 ${count} file(s) moved to Trash.` : `\u2713 ${count} archivo(s) trasladados a la Papelera de reciclaje.`;
+    setSaveFeedback(feedbackMsg);
+    setTimeout(() => setSaveFeedback(""), 3e3);
+  };
+  const handleRemoveSingleTrack = (trackId, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!trackId && trackId !== 0) return;
+    const targetTrack = tracks.find((t2) => String(t2.id) === String(trackId) || t2.path === trackId);
+    if (targetTrack) {
+      solicitarEliminarPistas([targetTrack], "trash", e);
+    } else {
+      setTracks((prev) => prev.filter((t2) => String(t2.id) !== String(trackId) && t2.path !== trackId));
+    }
   };
   const handleRemoveSelectedTracks = (e) => {
     if (e && e.stopPropagation) e.stopPropagation();
     if (!selectedAuditIds || selectedAuditIds.size === 0) return;
-    const count = selectedAuditIds.size;
-    const idsToRemove = Array.from(selectedAuditIds);
-    const confirmMsg = lang === "en" ? `Remove ${count} selected track(s) from the global analysis?` : `\xBFQuitar las ${count} pistas seleccionadas del an\xE1lisis global?`;
-    if (!window.confirm(confirmMsg)) return;
-    if (onRemoveMultipleTracks) {
-      onRemoveMultipleTracks(idsToRemove);
-    } else {
-      const idSet = new Set(idsToRemove.map((id) => String(id)));
-      setTracks((prev) => prev.filter((t2) => !idSet.has(String(t2.id)) && !idSet.has(String(t2.path))));
-      if (selectedTrack && idSet.has(String(selectedTrack))) {
-        const remaining = tracks.filter((t2) => !idSet.has(String(t2.id)));
-        setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
-      }
-      if (nowPlayingTrack && (idSet.has(String(nowPlayingTrack.id)) || idSet.has(String(nowPlayingTrack.path)))) {
-        if (audioRef && audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
-        }
-        if (onPlayTrack) onPlayTrack(null);
-      }
+    const toDelete = tracks.filter((t2) => selectedAuditIds.has(t2.id));
+    if (toDelete.length > 0) {
+      solicitarEliminarPistas(toDelete, "trash", e);
     }
-    setSelectedAuditIds(/* @__PURE__ */ new Set());
-    setSaveFeedback(lang === "en" ? `\u2713 ${count} tracks removed from analysis.` : `\u2713 ${count} pistas eliminadas del an\xE1lisis.`);
-    setTimeout(() => setSaveFeedback(""), 2500);
   };
   const handleClearAllTracks = (e) => {
     if (e && e.stopPropagation) e.stopPropagation();
@@ -4375,7 +4399,7 @@ const AuditWorkspace = ({
       if (filtro === "missing") return (t2 == null ? void 0 : t2.b) === "--" || (t2 == null ? void 0 : t2.k) === "--";
       if (filtro === "missing_title") return Boolean((t2 == null ? void 0 : t2.missing_title) || !(t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.title.toLowerCase().trim()) === "untitled");
       if (filtro === "missing_artist") return Boolean((t2 == null ? void 0 : t2.missing_artist) || !(t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.artist.toLowerCase().trim()) === "desconocido");
-      if (filtro === "missing_cover") return Boolean((t2 == null ? void 0 : t2.missing_cover) || !(t2 == null ? void 0 : t2.cover));
+      if (filtro === "missing_cover") return Boolean((t2 == null ? void 0 : t2.missing_cover) === true || !(t2 == null ? void 0 : t2.cover) && !(t2 == null ? void 0 : t2.has_cover));
       if (filtro === "error") return Boolean(t2 == null ? void 0 : t2.es_fake) || (t2 == null ? void 0 : t2.format) === "FLAC" && String((t2 == null ? void 0 : t2.status) || "").includes("Fake");
       if (filtro === "bad_quality") return isBadQualityTrack(t2);
       if (filterHeaderSearch) {
@@ -4825,6 +4849,16 @@ const AuditWorkspace = ({
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F6A8}"),
     /* @__PURE__ */ React.createElement("span", null, "Mala Calidad (", badQualityTracks.length, ")")
+  ), badQualityTracks.length > 0 && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: (e) => solicitarEliminarPistas(badQualityTracks, "trash", e),
+      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-700 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm",
+      title: "Purgar o borrar del disco las pistas de baja calidad / fakes detectadas"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, "Purgar Fakes (", badQualityTracks.length, ")")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -5835,6 +5869,97 @@ const AuditWorkspace = ({
         setSidebarOpen(true);
       }
     }
+  ), deleteModalState.open && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      className: "fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn",
+      onClick: () => setDeleteModalState((prev) => ({ ...prev, open: false }))
+    },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "bg-[#0f0f18] border border-red-500/40 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col",
+        onClick: (e) => e.stopPropagation()
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-gradient-to-r from-red-950 via-[#180808] to-zinc-950 border-b border-red-900/40 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-2xl p-2 rounded-xl bg-red-900/60 border border-red-500/50 text-red-300" }, "\u{1F5D1}\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-white text-base tracking-wide flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "GESTI\xD3N DE ELIMINACI\xD3N DE PISTAS"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-950 text-red-300 border border-red-700" }, deleteModalState.tracks.length, " ", deleteModalState.tracks.length === 1 ? "pista" : "pistas")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-red-300/80 font-mono mt-0.5" }, "Selecciona si deseas quitar del an\xE1lisis o eliminar f\xEDsicamente del disco"))), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => setDeleteModalState((prev) => ({ ...prev, open: false })),
+          className: "w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer"
+        },
+        "\u2715"
+      )),
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-[#0a0a12] border-b border-zinc-800 max-h-48 overflow-y-auto space-y-1.5 font-mono text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1" }, "PISTAS AFECTADAS:"), deleteModalState.tracks.map((t2, idx) => /* @__PURE__ */ React.createElement("div", { key: t2.id || idx, className: "flex items-center justify-between p-2 rounded bg-zinc-900/70 border border-zinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1 pr-2" }, /* @__PURE__ */ React.createElement("div", { className: "text-white font-bold truncate" }, t2.title || t2.t || t2.f), /* @__PURE__ */ React.createElement("div", { className: "text-[11px] text-gray-400 truncate" }, t2.artist || t2.a, " \u2022 ", t2.format || "AUDIO")), isBadQualityTrack(t2) && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 text-[9px] font-bold bg-amber-950 text-amber-300 border border-amber-700/60 rounded shrink-0" }, t2.es_fake ? "FLAC FAKE" : "BAJA CALIDAD")))),
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 space-y-3 bg-[#0d0d16]" }, /* @__PURE__ */ React.createElement(
+        "label",
+        {
+          className: `p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-all ${deleteModalState.mode === "trash" ? "bg-red-950/40 border-red-500/70 shadow" : "bg-zinc-900/60 border-zinc-800 hover:bg-zinc-850"}`,
+          onClick: () => setDeleteModalState((prev) => ({ ...prev, mode: "trash" }))
+        },
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "radio",
+            name: "deleteMode",
+            checked: deleteModalState.mode === "trash",
+            onChange: () => setDeleteModalState((prev) => ({ ...prev, mode: "trash" })),
+            className: "mt-1 accent-red-500"
+          }
+        ),
+        /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-sm font-bold text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F Mover a la Papelera de reciclaje"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono" }, "Recomendado")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-0.5" }, "Mueve los archivos f\xEDsicos a la Papelera de macOS. Los archivos se quitan de tu biblioteca pero podr\xE1s recuperarlos si te arrepientes."))
+      ), /* @__PURE__ */ React.createElement(
+        "label",
+        {
+          className: `p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-all ${deleteModalState.mode === "list_only" ? "bg-amber-950/30 border-amber-500/70 shadow" : "bg-zinc-900/60 border-zinc-800 hover:bg-zinc-850"}`,
+          onClick: () => setDeleteModalState((prev) => ({ ...prev, mode: "list_only" }))
+        },
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "radio",
+            name: "deleteMode",
+            checked: deleteModalState.mode === "list_only",
+            onChange: () => setDeleteModalState((prev) => ({ ...prev, mode: "list_only" })),
+            className: "mt-1 accent-amber-500"
+          }
+        ),
+        /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-sm font-bold text-white" }, "Quitar solo de la lista (Conservar en disco)"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-0.5" }, "Quita las canciones de la vista de an\xE1lisis sin tocar ni borrar tus archivos f\xEDsicos en la computadora."))
+      ), /* @__PURE__ */ React.createElement(
+        "label",
+        {
+          className: `p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-all ${deleteModalState.mode === "permanent" ? "bg-red-950/60 border-red-600 shadow" : "bg-zinc-900/40 border-zinc-800/80 hover:bg-zinc-850"}`,
+          onClick: () => setDeleteModalState((prev) => ({ ...prev, mode: "permanent" }))
+        },
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "radio",
+            name: "deleteMode",
+            checked: deleteModalState.mode === "permanent",
+            onChange: () => setDeleteModalState((prev) => ({ ...prev, mode: "permanent" })),
+            className: "mt-1 accent-red-600"
+          }
+        ),
+        /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-sm font-bold text-red-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F Eliminaci\xF3n f\xEDsica permanente"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-700 font-mono" }, "Irreversible")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-0.5" }, "Borra los archivos de audio del disco duro directamente sin pasar por la papelera para liberar espacio inmediato."))
+      )),
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-[#0a0a12] border-t border-zinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setDeleteModalState((prev) => ({ ...prev, open: false })),
+          className: "px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-gray-300 font-mono font-bold text-xs cursor-pointer"
+        },
+        "Cancelar"
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => ejecutarEliminarPistas(deleteModalState.mode),
+          className: `px-5 py-2 rounded-xl text-xs font-mono font-black cursor-pointer shadow-lg transition-all active:scale-95 flex items-center gap-2 ${deleteModalState.mode === "list_only" ? "bg-amber-500 hover:bg-amber-400 text-black" : "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-900/40"}`
+        },
+        /* @__PURE__ */ React.createElement("span", null, deleteModalState.mode === "list_only" ? "Quitar de la Lista" : "Confirmar Eliminaci\xF3n")
+      ))
+    )
   ));
 };
 const HotCuesWorkspace = ({

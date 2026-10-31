@@ -321,6 +321,25 @@ def eliminar_pistas_duplicadas(paths):
     return audit_svc.eliminar_pistas_duplicadas(paths)
 
 @eel.expose
+def eliminar_pistas_disco(paths, permanente=False):
+    """Elimina pistas físicas del disco o las traslada a la Papelera de reciclaje."""
+    return audit_svc.eliminar_pistas_disco(paths, permanente=permanente)
+
+@bottle.route('/api/eliminar_pistas_disco', method=['POST', 'OPTIONS'])
+def api_eliminar_pistas_disco():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    auth_err = _verificar_token_remoto()
+    if auth_err:
+        return auth_err
+    data = bottle.request.json or {}
+    paths = data.get("paths", [])
+    permanente = bool(data.get("permanente", False))
+    return audit_svc.eliminar_pistas_disco(paths, permanente=permanente)
+
+@eel.expose
 def guardar_cambios_track(track):
     if not track or not isinstance(track, dict):
         return {"status": "error", "msg": "Datos inválidos"}

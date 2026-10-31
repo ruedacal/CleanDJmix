@@ -4,7 +4,7 @@ import struct
 import base64
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC, FLACNoHeaderError, Picture
-from mutagen.id3 import ID3, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, APIC, ID3NoHeaderError
+from mutagen.id3 import ID3, TIT1, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, APIC, ID3NoHeaderError
 from mutagen.aiff import AIFF
 from mutagen.mp4 import MP4, MP4Cover
 
@@ -640,6 +640,51 @@ class AudioProcessorService:
             return b""
 
     @staticmethod
+    def tiene_caratula(ruta: str) -> bool:
+        """Determina de forma ultrarrápida si el archivo contiene carátula incrustada o en su carpeta."""
+        if not ruta or not os.path.exists(ruta):
+            return False
+        ext = os.path.splitext(ruta)[1].lower()
+        try:
+            if ext == ".flac":
+                f = FLAC(ruta)
+                if f.pictures and len(f.pictures) > 0:
+                    return True
+            elif ext in (".mp3", ".aiff", ".aif"):
+                try:
+                    id3 = ID3(ruta)
+                    if id3.getall("APIC"):
+                        return True
+                except Exception:
+                    pass
+            elif ext in (".m4a", ".aac"):
+                try:
+                    m = MP4(ruta)
+                    if m.tags and "covr" in m.tags and m.tags["covr"]:
+                        return True
+                except Exception:
+                    pass
+            else:
+                m = MutagenFile(ruta)
+                if m:
+                    if hasattr(m, "pictures") and m.pictures:
+                        return True
+                    if hasattr(m, "tags") and m.tags:
+                        for tag in m.tags.values():
+                            if getattr(tag, "FrameID", None) == "APIC":
+                                return True
+        except Exception:
+            pass
+
+        # Chequeo en carpeta
+        directorio = os.path.dirname(ruta)
+        if directorio and os.path.exists(directorio):
+            for cand in ("cover.jpg", "folder.jpg", "front.jpg", "cover.png", "folder.png", "album.jpg"):
+                if os.path.exists(os.path.join(directorio, cand)):
+                    return True
+        return False
+
+    @staticmethod
     def resolver_caratula_local_o_remota(ruta: str, artist: str = "", title: str = "") -> str:
         """Busca carátula de alta resolución en la carpeta local o vía API de iTunes si la pista no tiene carátula."""
         if not ruta:
@@ -740,6 +785,9 @@ class AudioProcessorService:
             cover_source = AudioProcessorService.resolver_caratula_local_o_remota(ruta, artist, title)
         cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
 
+        grouping_val = f"{mood_val} • E:{dance_val}% • D:{dance_val}%"
+        tactical_comment = f"[{mood_val} | E:{dance_val}% | D:{dance_val}%] {comment}" if not str(comment).startswith("[") else comment
+
         try:
             if ext == ".flac":
                 with open(ruta, "rb") as f_check:
@@ -755,15 +803,18 @@ class AudioProcessorService:
                 if key_camelot:
                     audio["INITIALKEY"] = [key_camelot]
                     audio["KEY"] = [key_camelot]
-                audio["COMMENT"] = [comment]
-                audio["DESCRIPTION"] = [comment]
+                audio["GROUPING"] = [grouping_val]
+                audio["COMMENT"] = [tactical_comment]
+                audio["DESCRIPTION"] = [tactical_comment]
                 audio["GENRE"] = [genre_full]
                 if subgenre_val:
                     audio["SUBGENRE"] = [subgenre_val]
                 if isrc:
                     audio["ISRC"] = [isrc]
                 audio["DANCEABILITY"] = [str(dance_val)]
+                audio["ENERGY"] = [str(dance_val)]
                 audio["MOOD"] = [mood_val]
+                audio["SERATO_PLAYLIST"] = [mood_val]
                 if trim_ms > 0:
                     audio["TRIM_START_MS"] = [f"{trim_ms:.1f}"]
                 if downbeat_ms > 0:
@@ -795,28 +846,37 @@ class AudioProcessorService:
                 except ID3NoHeaderError:
                     id3 = ID3()
 
-                id3.add(TIT2(encoding=3, text=[title]))
-                id3.add(TPE1(encoding=3, text=[artist]))
-                id3.add(TALB(encoding=3, text=[album]))
-                id3.add(TBPM(encoding=3, text=[bpm_str]))
+                # ID3v2.3 (estándar nativo Serato DJ Pro / CDJ Pioneer)
+                # encoding=1 (UTF-16 con BOM) requerido para compatibilidad absoluta en Serato
+                id3.add(TIT2(encoding=1, text=[title]))
+                id3.add(TPE1(encoding=1, text=[artist]))
+                id3.add(TALB(encoding=1, text=[album]))
+                id3.add(TBPM(encoding=1, text=[bpm_str]))
                 if key_camelot:
-                    id3.add(TKEY(encoding=3, text=[key_camelot]))
-                id3.add(COMM(encoding=3, lang="eng", desc="", text=[comment]))
-                id3.add(TCON(encoding=3, text=[genre_full]))
-                if subgenre_val:
-                    id3.add(TXXX(encoding=3, desc="SUBGENRE", text=[subgenre_val]))
-                if isrc:
-                    id3.add(TSRC(encoding=3, text=[isrc]))
+                    id3.add(TKEY(encoding=1, text=[key_camelot]))
 
-                id3.add(TXXX(encoding=3, desc="DANCEABILITY", text=[str(dance_val)]))
-                id3.add(TXXX(encoding=3, desc="MOOD", text=[mood_val]))
+                # Inyección de Grouping (TIT1): Columna visible inmediatamente en Serato DJ Pro para Danceability, Energy y Mood
+                id3.add(TIT1(encoding=1, text=[grouping_val]))
+
+                # Inyección de Comentario Táctico con desglose armónico y de energía
+                id3.add(COMM(encoding=1, lang="eng", desc="", text=[tactical_comment]))
+                id3.add(TCON(encoding=1, text=[genre_full]))
+                if subgenre_val:
+                    id3.add(TXXX(encoding=1, desc="SUBGENRE", text=[subgenre_val]))
+                if isrc:
+                    id3.add(TSRC(encoding=1, text=[isrc]))
+
+                id3.add(TXXX(encoding=1, desc="DANCEABILITY", text=[str(dance_val)]))
+                id3.add(TXXX(encoding=1, desc="ENERGY", text=[str(dance_val)]))
+                id3.add(TXXX(encoding=1, desc="MOOD", text=[mood_val]))
+                id3.add(TXXX(encoding=1, desc="SERATO_PLAYLIST", text=[mood_val]))
 
                 if trim_ms > 0:
-                    id3.add(TXXX(encoding=3, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
+                    id3.add(TXXX(encoding=1, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
                 if downbeat_ms > 0:
-                    id3.add(TXXX(encoding=3, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
+                    id3.add(TXXX(encoding=1, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
 
-                # Inyección GEOB para Serato Markers2 (Cues oficiales)
+                # Inyección GEOB para Serato Markers2 (8 Hot Cues oficiales con pad colors)
                 id3.add(GEOB(
                     encoding=0,
                     mime="application/octet-stream",
@@ -843,7 +903,7 @@ class AudioProcessorService:
                     try:
                         id3.delall("APIC")
                         id3.add(APIC(
-                            encoding=3,
+                            encoding=0,
                             mime="image/jpeg",
                             type=3,
                             desc="Cover",
@@ -852,7 +912,8 @@ class AudioProcessorService:
                     except Exception as a_err:
                         print(f"[ARTWORK WARN] Fallo incrustando carátula MP3: {a_err}")
 
-                id3.save(ruta, v2_version=4)
+                # Guardar siempre como ID3v2.3 para compatibilidad nativa Serato DJ Pro
+                id3.save(ruta, v2_version=3)
                 return True
 
             elif ext in (".aiff", ".aif"):
@@ -860,22 +921,25 @@ class AudioProcessorService:
                 if audio.tags is None:
                     audio.add_tags()
                 tags = audio.tags
-                tags.add(TIT2(encoding=3, text=[title]))
-                tags.add(TPE1(encoding=3, text=[artist]))
-                tags.add(TALB(encoding=3, text=[album]))
-                tags.add(TBPM(encoding=3, text=[bpm_str]))
+                tags.add(TIT2(encoding=1, text=[title]))
+                tags.add(TPE1(encoding=1, text=[artist]))
+                tags.add(TALB(encoding=1, text=[album]))
+                tags.add(TBPM(encoding=1, text=[bpm_str]))
                 if key_camelot:
-                    tags.add(TKEY(encoding=3, text=[key_camelot]))
-                tags.add(COMM(encoding=3, lang="eng", desc="", text=[comment]))
-                tags.add(TCON(encoding=3, text=[genre_full]))
+                    tags.add(TKEY(encoding=1, text=[key_camelot]))
+                tags.add(TIT1(encoding=1, text=[grouping_val]))
+                tags.add(COMM(encoding=1, lang="eng", desc="", text=[tactical_comment]))
+                tags.add(TCON(encoding=1, text=[genre_full]))
                 if subgenre_val:
-                    tags.add(TXXX(encoding=3, desc="SUBGENRE", text=[subgenre_val]))
-                tags.add(TXXX(encoding=3, desc="DANCEABILITY", text=[str(dance_val)]))
-                tags.add(TXXX(encoding=3, desc="MOOD", text=[mood_val]))
+                    tags.add(TXXX(encoding=1, desc="SUBGENRE", text=[subgenre_val]))
+                tags.add(TXXX(encoding=1, desc="DANCEABILITY", text=[str(dance_val)]))
+                tags.add(TXXX(encoding=1, desc="ENERGY", text=[str(dance_val)]))
+                tags.add(TXXX(encoding=1, desc="MOOD", text=[mood_val]))
+                tags.add(TXXX(encoding=1, desc="SERATO_PLAYLIST", text=[mood_val]))
                 if trim_ms > 0:
-                    tags.add(TXXX(encoding=3, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
+                    tags.add(TXXX(encoding=1, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
                 if downbeat_ms > 0:
-                    tags.add(TXXX(encoding=3, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
+                    tags.add(TXXX(encoding=1, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
                 tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Markers2", data=serato_b64))
                 tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato BeatGrid", data=serato_beatgrid_bin))
 
@@ -883,7 +947,7 @@ class AudioProcessorService:
                     try:
                         tags.delall("APIC")
                         tags.add(APIC(
-                            encoding=3,
+                            encoding=0,
                             mime="image/jpeg",
                             type=3,
                             desc="Cover",

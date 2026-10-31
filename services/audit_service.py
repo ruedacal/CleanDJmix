@@ -5,6 +5,9 @@ import threading
 import hashlib
 import sqlite3
 import json
+import time
+import urllib.parse
+import shutil
 import numpy as np
 import soundfile as sf
 import eel
@@ -1054,9 +1057,10 @@ class AuditService:
                 if diag.get("es_fake", False):
                     fake_count += 1
 
-            # Inyección opcional de carátulas durante la auditoría por lote
-            track_cover = str(info.get("cover") or "")
-            if inyectar_covers:
+            # Detección ultrarrápida y/o inyección de carátulas durante la auditoría
+            has_cover = AudioProcessorService.tiene_caratula(full_path)
+            track_cover = f"/cover?path={urllib.parse.quote(full_path)}" if has_cover else str(info.get("cover") or "")
+            if inyectar_covers and not has_cover:
                 resolved_c = AudioProcessorService.resolver_caratula_local_o_remota(
                     full_path, 
                     str(info.get("artist") or ""), 
@@ -1064,16 +1068,8 @@ class AuditService:
                 )
                 if resolved_c:
                     track_cover = resolved_c
+                    has_cover = True
                     AudioProcessorService.escribir_metadatos_pro(full_path, info, cover_url=resolved_c)
-
-            if not track_cover:
-                # Comprobar carátula local de carpeta
-                dir_p = os.path.dirname(full_path)
-                for c_name in ("cover.jpg", "folder.jpg", "front.jpg", "cover.png", "folder.png"):
-                    c_cand = os.path.join(dir_p, c_name)
-                    if os.path.exists(c_cand):
-                        track_cover = f"/cover?path={full_path}"
-                        break
 
             # Clasificación de Fase en Sesión DJ
             bpm_num = float(bpm_val) if bpm_val and str(bpm_val) != "--" else 126.0
@@ -1094,7 +1090,6 @@ class AuditService:
             artist_str = str(info.get("artist") or "Desconocido")
             has_title = bool(title_str and title_str.lower().strip() not in ("untitled", "desconocido", "unknown", "track", "pista"))
             has_artist = bool(artist_str and artist_str.lower().strip() not in ("desconocido", "unknown", "various artists", "various", "artist"))
-            has_cover = bool(track_cover)
 
             tactical_comment = str(info.get("comment") or "")
             if not tactical_comment or "Intro" not in tactical_comment:
@@ -1153,6 +1148,7 @@ class AuditService:
                 "missing_title": not has_title,
                 "missing_artist": not has_artist,
                 "missing_cover": not has_cover,
+                "has_cover": bool(has_cover),
                 "duration": str(info.get("duration") or "05:30"),
                 "cover": track_cover,
                 "format": str(diag.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
@@ -1429,14 +1425,9 @@ class AuditService:
                 fmt=tech.get("format", ext.replace(".", "").upper())
             )
 
-            # Búsqueda rápida de carátula local
-            track_cover = ""
-            dir_p = os.path.dirname(full_path)
-            for c_name in ("cover.jpg", "folder.jpg", "front.jpg", "cover.png", "folder.png"):
-                c_cand = os.path.join(dir_p, c_name)
-                if os.path.exists(c_cand):
-                    track_cover = f"/cover?path={full_path}"
-                    break
+            # Detección ultrarrápida de carátula incrustada o en carpeta
+            has_cover = AudioProcessorService.tiene_caratula(full_path)
+            track_cover = f"/cover?path={urllib.parse.quote(full_path)}" if has_cover else ""
 
             # Estimación inicial de energía, danceability y fase DJ
             if bpm_str != "--":
@@ -1465,7 +1456,6 @@ class AuditService:
 
             has_title = bool(title and str(title).strip().lower() not in ("untitled", "desconocido", "unknown", "track", "pista"))
             has_artist = bool(artist and str(artist).strip().lower() not in ("desconocido", "unknown", "various artists", "various", "artist"))
-            has_cover = bool(track_cover)
 
             initial_comment = f"[{bpm_str} BPM | {key_str} | {fase_init['fase_badge']}] Intro 32b • Drop contundente • Outro 64b"
 
@@ -1494,6 +1484,7 @@ class AuditService:
                 "missing_title": not has_title,
                 "missing_artist": not has_artist,
                 "missing_cover": not has_cover,
+                "has_cover": bool(has_cover),
                 "genre": genre_str,
                 "subgenre": subgenre_str,
                 "duration": dur_str,
@@ -1906,13 +1897,20 @@ class AuditService:
             "grupos": grupos_resultado
         }
 
-    def eliminar_pistas_duplicadas(self, paths: list) -> dict:
-        """Elimina de forma segura del almacenamiento local las pistas duplicadas seleccionadas."""
+    def eliminar_pistas_disco(self, paths: list, permanente: bool = False) -> dict:
+        """Elimina de forma segura del almacenamiento local pistas seleccionadas (o las traslada a la Papelera de macOS)."""
         if not paths or not isinstance(paths, list):
             return {"status": "error", "msg": "Lista de rutas vacía", "eliminados": 0, "errores": []}
 
-        # Directorio base de la biblioteca auditada (puede ser None en primera carga)
-        directorio_base = os.path.realpath(self.directorio_actual) if self.directorio_actual else None
+        extensiones_validas = {".mp3", ".flac", ".wav", ".aiff", ".aif", ".m4a", ".aac", ".ogg"}
+        rutas_sistema = [
+            '/etc', '/usr', '/bin', '/sbin', '/System',
+            '/Library/Keychains', '/private/etc',
+            os.path.expanduser('~/.ssh'), os.path.expanduser('~/.gnupg')
+        ]
+
+        trash_dir = os.path.expanduser("~/.Trash")
+        tiene_trash = os.path.isdir(trash_dir) and os.access(trash_dir, os.W_OK)
 
         eliminados = 0
         errores = []
@@ -1931,52 +1929,66 @@ class AuditService:
                 errores.append(f"Archivo no encontrado: {p}")
                 continue
 
-            # ── Seguridad: verificar que el archivo pertenece al directorio auditado ──
             real_abs = os.path.realpath(real_path)
-            if directorio_base:
-                try:
-                    common = os.path.commonpath([real_abs, directorio_base])
-                    if common != directorio_base:
-                        errores.append(f"Denegado (fuera de la biblioteca): {os.path.basename(real_path)}")
-                        continue
-                except ValueError:
-                    errores.append(f"Denegado (rutas incompatibles): {os.path.basename(real_path)}")
-                    continue
+            ext = os.path.splitext(real_abs)[1].lower()
+
+            # Seguridad: solo permitir eliminar archivos con extensiones de audio y fuera de rutas críticas de sistema
+            if ext not in extensiones_validas:
+                errores.append(f"Denegado (no es un archivo de audio válido): {os.path.basename(real_abs)}")
+                continue
+
+            if any(real_abs.startswith(r) for r in rutas_sistema):
+                errores.append(f"Denegado (ruta protegida de sistema): {os.path.basename(real_abs)}")
+                continue
 
             try:
-                # Mover a la papelera de macOS usando AppleScript con argumentos separados
-                # (nunca interpolamos la ruta dentro del script para evitar inyección)
-                script_lines = [
-                    "on run argv",
-                    "  tell application \"Finder\" to delete POSIX file (item 1 of argv)",
-                    "end run",
-                ]
-                osa_script = "\n".join(script_lines)
-                res_proc = subprocess.run(
-                    ["osascript", "-e", osa_script, real_abs],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
-                if res_proc.returncode == 0:
-                    eliminados += 1
-                    paths_eliminados.append(real_abs)
-                else:
-                    # Fallback: borrado directo si Finder no tiene permisos
-                    os.remove(real_abs)
-                    eliminados += 1
-                    paths_eliminados.append(real_abs)
+                if not permanente:
+                    # Intento 1: AppleScript vía Finder (Papelera nativa de macOS)
+                    script_lines = [
+                        "on run argv",
+                        "  tell application \"Finder\" to delete POSIX file (item 1 of argv)",
+                        "end run",
+                    ]
+                    osa_script = "\n".join(script_lines)
+                    res_proc = subprocess.run(
+                        ["osascript", "-e", osa_script, real_abs],
+                        capture_output=True,
+                        text=True,
+                        timeout=6
+                    )
+                    if res_proc.returncode == 0:
+                        eliminados += 1
+                        paths_eliminados.append(real_abs)
+                        continue
+
+                    # Intento 2: Mover directamente a ~/.Trash
+                    if tiene_trash:
+                        base_name = os.path.basename(real_abs)
+                        dest_path = os.path.join(trash_dir, base_name)
+                        if os.path.exists(dest_path):
+                            name_root, name_ext = os.path.splitext(base_name)
+                            dest_path = os.path.join(trash_dir, f"{name_root}_{int(time.time()*1000)}{name_ext}")
+                        shutil.move(real_abs, dest_path)
+                        eliminados += 1
+                        paths_eliminados.append(real_abs)
+                        continue
+
+                # Borrado permanente directo con os.remove
+                os.remove(real_abs)
+                eliminados += 1
+                paths_eliminados.append(real_abs)
+
             except Exception as e:
-                try:
-                    os.remove(real_abs)
-                    eliminados += 1
-                    paths_eliminados.append(real_abs)
-                except Exception as del_err:
-                    errores.append(f"No se pudo eliminar {os.path.basename(real_abs)}: {del_err}")
+                errores.append(f"No se pudo eliminar {os.path.basename(real_abs)}: {e}")
 
         return {
             "status": "ok" if eliminados > 0 or len(errores) == 0 else "error",
             "eliminados": eliminados,
             "paths_eliminados": paths_eliminados,
-            "errores": errores
+            "errores": errores,
+            "mensaje": f"{eliminados} pista(s) trasladada(s) a la Papelera de reciclaje." if not permanente else f"{eliminados} pista(s) eliminada(s) definitivamente del disco."
         }
+
+    def eliminar_pistas_duplicadas(self, paths: list) -> dict:
+        """Elimina de forma segura del almacenamiento local las pistas duplicadas seleccionadas."""
+        return self.eliminar_pistas_disco(paths, permanente=False)
