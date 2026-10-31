@@ -4019,7 +4019,7 @@ function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
     return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
 }
 
-// ─── ESPACIO DE USUARIO, LOGIN & GESTIÓN DE SESIONES Y ESTADOS ──────────────
+// ─── ESPACIO DE USUARIO, LOGIN & GESTIÓN DE SESIONES Y ESTADOS (DRAWER LATERAL DERECHO) ───
 const UserAccountModal = ({ 
     isOpen, 
     onClose, 
@@ -4029,129 +4029,473 @@ const UserAccountModal = ({
     onSaveCurrentSession, 
     onLoadSession, 
     onDeleteSession,
-    currentSessionSnapshot = {}
+    currentSessionSnapshot = {},
+    onNavigateTab,
+    onOpenShortcuts
 }) => {
     if (!isOpen) return null;
 
-    const [activeTab, setActiveTab] = useState('sessions'); // 'sessions' | 'profile' | 'preferences'
+    const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'sessions' | 'preferences'
     const [alias, setAlias] = useState((userProfile && userProfile.alias) || 'DJ Alex BeatWave');
+    const [fullName, setFullName] = useState((userProfile && userProfile.fullName) || 'Alejandro Rueda');
+    const [email, setEmail] = useState((userProfile && userProfile.email) || 'alex.dj@beatwave.pro');
+    const [address, setAddress] = useState((userProfile && userProfile.address) || 'Gran Vía 28, 4º B');
+    const [city, setCity] = useState((userProfile && userProfile.city) || 'Madrid');
+    const [country, setCountry] = useState((userProfile && userProfile.country) || 'España');
+    const [phone, setPhone] = useState((userProfile && userProfile.phone) || '+34 612 345 678');
+    const [avatarUrl, setAvatarUrl] = useState((userProfile && userProfile.avatarUrl) || '');
+
+    // Gestión de contraseña
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordMsg, setPasswordMsg] = useState({ text: '', type: '' });
+
+    // Configuración de Cabina
     const [djSoftware, setDjSoftware] = useState((userProfile && userProfile.djSoftware) || 'Serato DJ Pro');
     const [audioInterface, setAudioInterface] = useState((userProfile && userProfile.audioInterface) || 'Focusrite Scarlett 2i2 / Serato Club Kit');
     const [targetLufs, setTargetLufs] = useState((userProfile && userProfile.targetLufs) || -9.0);
     const [autoSaveEnabled, setAutoSaveEnabled] = useState(userProfile ? userProfile.autoSave !== false : true);
+    
+    // Sesiones
     const [sessionNameInput, setSessionNameInput] = useState('');
     const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
 
-    const handleSaveProfile = () => {
-        onUpdateProfile({
-            ...userProfile,
-            alias,
-            djSoftware,
-            audioInterface,
-            targetLufs,
-            autoSave: autoSaveEnabled
-        });
-        setSaveSuccessMsg('✓ Perfil y configuración de cabina guardados');
+    const fileInputRef = React.useRef(null);
+
+    const handleAvatarUpload = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const dataUrl = ev.target.result;
+                setAvatarUrl(dataUrl);
+                if (onUpdateProfile) {
+                    onUpdateProfile({ ...userProfile, avatarUrl: dataUrl });
+                }
+                setSaveSuccessMsg('✓ Imagen de perfil actualizada');
+                setTimeout(() => setSaveSuccessMsg(''), 3000);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSelectPresetAvatar = (url) => {
+        setAvatarUrl(url);
+        if (onUpdateProfile) {
+            onUpdateProfile({ ...userProfile, avatarUrl: url });
+        }
+        setSaveSuccessMsg('✓ Avatar DJ aplicado');
         setTimeout(() => setSaveSuccessMsg(''), 3000);
+    };
+
+    const handleSavePersonalData = () => {
+        if (onUpdateProfile) {
+            onUpdateProfile({
+                ...userProfile,
+                alias,
+                fullName,
+                email,
+                address,
+                city,
+                country,
+                phone,
+                avatarUrl,
+                djSoftware,
+                audioInterface,
+                targetLufs,
+                autoSave: autoSaveEnabled
+            });
+        }
+        setSaveSuccessMsg('✓ Datos personales y de cabina guardados');
+        setTimeout(() => setSaveSuccessMsg(''), 3000);
+    };
+
+    const handleUpdatePassword = (e) => {
+        if (e) e.preventDefault();
+        if (!newPassword || newPassword.length < 4) {
+            setPasswordMsg({ text: '⚠️ La nueva contraseña debe tener al menos 4 caracteres', type: 'error' });
+            setTimeout(() => setPasswordMsg({ text: '', type: '' }), 3500);
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setPasswordMsg({ text: '❌ Las contraseñas no coinciden', type: 'error' });
+            setTimeout(() => setPasswordMsg({ text: '', type: '' }), 3500);
+            return;
+        }
+        if (onUpdateProfile) {
+            onUpdateProfile({ ...userProfile, passwordUpdated: Date.now() });
+        }
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setPasswordMsg({ text: '✓ Contraseña actualizada correctamente en el sistema', type: 'success' });
+        setTimeout(() => setPasswordMsg({ text: '', type: '' }), 3500);
     };
 
     const handleCreateSnapshot = (e) => {
         if (e) e.preventDefault();
         const name = sessionNameInput.trim() || `Sesión ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString().slice(0, 5)}`;
-        onSaveCurrentSession(name);
+        if (onSaveCurrentSession) onSaveCurrentSession(name);
         setSessionNameInput('');
         setSaveSuccessMsg(`✓ Sesión "${name}" guardada con éxito`);
         setTimeout(() => setSaveSuccessMsg(''), 3000);
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
+        <div className="fixed inset-0 z-50 overflow-hidden select-none">
+            {/* Backdrop con Blur Suave */}
             <div 
-                className="w-full max-w-2xl bg-[#0a0a14] border border-cyan-500/40 rounded-3xl shadow-[0_0_50px_rgba(6,182,212,0.25)] overflow-hidden flex flex-col font-sans text-gray-200 max-h-[90vh]"
+                className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn" 
+                onClick={onClose}
+            />
+
+            {/* Columna Lateral Derecha (Slide-over Drawer) */}
+            <aside 
+                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[500px] md:w-[530px] max-w-[95vw] h-full bg-[#080812]/98 border-l border-cyan-500/50 shadow-[-25px_0_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl flex flex-col font-sans text-gray-200 animate-slideInRight"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Cabecera de la Cuenta de Usuario */}
-                <div className="px-5 py-4 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-black font-black text-lg shadow-[0_0_15px_rgba(6,182,212,0.5)]">
-                                🎧
+                {/* Cabecera del Perfil con Avatar y Datos Rápidos */}
+                <div className="p-4 sm:p-5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3.5">
+                        {/* Círculo de Perfil / Avatar con Botón de Cambio */}
+                        <div className="relative group shrink-0">
+                            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-cyan-400 bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
+                                {avatarUrl ? (
+                                    <img src={avatarUrl} alt="Avatar DJ" className="w-full h-full object-cover" />
+                                ) : (
+                                    <span>🎧</span>
+                                )}
                             </div>
-                            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-black" title="En Línea • Cabina Activa"></span>
+
+                            {/* Botón flotante para cambiar foto del círculo */}
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-cyan-400 hover:bg-cyan-300 text-black flex items-center justify-center text-[10px] font-black border-2 border-[#0d0e1c] shadow cursor-pointer transition-transform hover:scale-110"
+                                title="Cambiar imagen del círculo (Subir foto)"
+                            >
+                                📷
+                            </button>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleAvatarUpload} 
+                                accept="image/*" 
+                                className="hidden" 
+                            />
                         </div>
-                        <div>
+
+                        <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                <h3 className="text-base font-mono font-black uppercase text-white tracking-wider">
+                                <h3 className="text-base font-mono font-black uppercase text-white tracking-wider truncate max-w-[210px]">
                                     {alias}
                                 </h3>
-                                <span className="text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 px-2 py-0.5 rounded-full font-black">
+                                <span className="text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 px-2 py-0.5 rounded-full font-black shrink-0">
                                     {(userProfile && userProfile.plan) || 'PRO CABINA VIP'}
                                 </span>
                             </div>
-                            <p className="text-[11px] text-gray-400 font-mono">
-                                {(userProfile && userProfile.email) || 'alex.dj@beatwave.pro'} • Sesión y Estados Sincronizados
+                            <p className="text-[11px] text-gray-400 font-mono truncate max-w-[240px]">
+                                {email}
                             </p>
+                            <div className="flex items-center gap-1.5 mt-0.5 text-[10px] font-mono text-emerald-400">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                <span>Cabina Activa • 0 Latencia</span>
+                            </div>
                         </div>
                     </div>
 
                     <button 
                         type="button"
                         onClick={onClose}
-                        className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
+                        className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer shrink-0"
                         title="Cerrar (ESC)"
                     >
                         ✕
                     </button>
                 </div>
 
-                {/* Sub-navegación por Pestañas */}
-                <div className="px-5 py-2 bg-[#080811] border-b border-djzinc-800 flex items-center gap-2 font-mono text-xs shrink-0">
+                {/* Acceso Rápido Integrado: Atajos, Trends y Guías (Reubicados para Descongestionar el Menú) */}
+                <div className="p-3 bg-[#0a0a16] border-b border-djzinc-800 grid grid-cols-3 gap-2 shrink-0">
                     <button
                         type="button"
-                        onClick={() => setActiveTab('sessions')}
-                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                            activeTab === 'sessions'
-                                ? 'bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
-                        }`}
+                        onClick={() => {
+                            onClose();
+                            if (onNavigateTab) onNavigateTab('trends');
+                        }}
+                        className="p-2.5 rounded-xl bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
+                        title="Explorar Tendencias Musicales Globales y Festivales"
                     >
-                        <span>💾</span> <span>Sesiones & Continuidad</span>
+                        <span className="text-base group-hover:scale-110 transition-transform">📈</span>
+                        <span className="truncate">Trends</span>
                     </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            onClose();
+                            if (onNavigateTab) onNavigateTab('knowledge');
+                        }}
+                        className="p-2.5 rounded-xl bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
+                        title="Academia de Guías, Armonía y Teoría DJ"
+                    >
+                        <span className="text-base group-hover:scale-110 transition-transform">🎓</span>
+                        <span className="truncate">Guías</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            onClose();
+                            if (onOpenShortcuts) onOpenShortcuts();
+                        }}
+                        className="p-2.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-700/60 text-cyan-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
+                        title="Ver Chuleta de Atajos de Teclado DJ"
+                    >
+                        <span className="text-base group-hover:scale-110 transition-transform">⌨️</span>
+                        <span className="truncate">Atajos</span>
+                    </button>
+                </div>
+
+                {/* Sub-navegación por Pestañas */}
+                <div className="px-4 py-2 bg-[#06070e] border-b border-djzinc-800 flex items-center gap-2 font-mono text-xs shrink-0 overflow-x-auto no-scrollbar">
                     <button
                         type="button"
                         onClick={() => setActiveTab('profile')}
-                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                             activeTab === 'profile'
                                 ? 'bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                         }`}
                     >
-                        <span>👤</span> <span>Perfil DJ & Suite</span>
+                        <span>👤</span> <span>Datos & Seguridad</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('sessions')}
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                            activeTab === 'sessions'
+                                ? 'bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
+                        }`}
+                    >
+                        <span>💾</span> <span>Sesiones & Estados</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('preferences')}
-                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                             activeTab === 'preferences'
                                 ? 'bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                         }`}
                     >
-                        <span>⚙️</span> <span>Ajustes & Guardado</span>
+                        <span>🎛️</span> <span>Suite & Audio</span>
                     </button>
                 </div>
 
-                {/* Mensaje de Confirmación */}
+                {/* Mensaje de Confirmación Global */}
                 {saveSuccessMsg && (
-                    <div className="px-5 py-2 bg-emerald-950/80 border-b border-emerald-600/60 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0">
+                    <div className="px-4 py-2 bg-emerald-950/90 border-b border-emerald-600/70 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0">
                         <span>✨</span>
                         <span>{saveSuccessMsg}</span>
                     </div>
                 )}
 
                 {/* Contenido Scrollable */}
-                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 space-y-5">
-                    {/* PESTAÑA 1: SESIONES Y CONTINUIDAD */}
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-5">
+                    {/* PESTAÑA 1: DATOS PERSONALES, FOTO & CONTRASEÑA */}
+                    {activeTab === 'profile' && (
+                        <div className="space-y-5">
+                            {/* Selector de Avatares Predefinidos */}
+                            <div className="p-3.5 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-2">
+                                <label className="text-[11px] font-mono text-gray-400 uppercase font-bold block">
+                                    Avatares DJ de Cabina Rápidos
+                                </label>
+                                <div className="flex items-center gap-2 overflow-x-auto py-1">
+                                    {[
+                                        { label: 'Cyber', icon: '🎧', bg: 'from-cyan-500 to-blue-600' },
+                                        { label: 'Vinilo', icon: '💽', bg: 'from-purple-500 to-indigo-600' },
+                                        { label: 'Neon', icon: '⚡', bg: 'from-pink-500 to-rose-600' },
+                                        { label: 'Club', icon: '🕶️', bg: 'from-amber-500 to-orange-600' },
+                                        { label: 'Vocal', icon: '🎙️', bg: 'from-emerald-500 to-teal-600' }
+                                    ].map((preset, pIdx) => (
+                                        <button
+                                            key={pIdx}
+                                            type="button"
+                                            onClick={() => handleSelectPresetAvatar(`data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="%230c0c16"/><text x="40" y="48" font-size="34" text-anchor="middle" dominant-baseline="middle">${preset.icon}</text></svg>`)}
+                                            className="px-2.5 py-1.5 rounded-xl bg-djzinc-950 border border-djzinc-750 hover:border-cyan-400 flex items-center gap-1.5 text-xs font-mono font-bold cursor-pointer transition-all hover:scale-105 shrink-0"
+                                        >
+                                            <span>{preset.icon}</span>
+                                            <span>{preset.label}</span>
+                                        </button>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                                        className="px-3 py-1.5 rounded-xl bg-cyan-950 border border-cyan-600 text-cyan-300 font-mono font-bold text-xs hover:bg-cyan-900 cursor-pointer shrink-0"
+                                    >
+                                        + Subir Foto
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Formulario de Datos Personales */}
+                            <div className="space-y-3 p-4 rounded-2xl bg-[#0c0d18] border border-djzinc-800">
+                                <h4 className="text-xs font-mono font-black uppercase text-cyan-300 tracking-wider flex items-center gap-1.5">
+                                    <span>📋</span> <span>Datos Personales & Facturación</span>
+                                </h4>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">Alias / Nombre Artístico</label>
+                                        <input 
+                                            type="text"
+                                            value={alias}
+                                            onChange={(e) => setAlias(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                            placeholder="DJ Alex"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">Nombre Completo</label>
+                                        <input 
+                                            type="text"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                            placeholder="Alejandro Rueda"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">Correo Electrónico</label>
+                                        <input 
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                            placeholder="alex.dj@beatwave.pro"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">Teléfono / Móvil</label>
+                                        <input 
+                                            type="tel"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                            placeholder="+34 612 345 678"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">Dirección de Cabina / Residencia</label>
+                                    <input 
+                                        type="text"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                        placeholder="Gran Vía 28, 4º B"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">Ciudad</label>
+                                        <input 
+                                            type="text"
+                                            value={city}
+                                            onChange={(e) => setCity(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                            placeholder="Madrid"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">País</label>
+                                        <input 
+                                            type="text"
+                                            value={country}
+                                            onChange={(e) => setCountry(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                            placeholder="España"
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleSavePersonalData}
+                                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md mt-2"
+                                >
+                                    💾 Guardar Datos Personales
+                                </button>
+                            </div>
+
+                            {/* Sección: Modificar Contraseña de Acceso */}
+                            <form onSubmit={handleUpdatePassword} className="space-y-3 p-4 rounded-2xl bg-[#0c0d18] border border-djzinc-800">
+                                <h4 className="text-xs font-mono font-black uppercase text-pink-400 tracking-wider flex items-center gap-1.5">
+                                    <span>🔒</span> <span>Modificar Contraseña de Acceso</span>
+                                </h4>
+
+                                {passwordMsg.text && (
+                                    <div className={`p-2 rounded-xl text-xs font-mono font-bold animate-fadeIn ${
+                                        passwordMsg.type === 'success' 
+                                            ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700' 
+                                            : 'bg-rose-950/80 text-rose-300 border border-rose-700'
+                                    }`}>
+                                        {passwordMsg.text}
+                                    </div>
+                                )}
+
+                                <div className="space-y-1">
+                                    <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">Contraseña Actual</label>
+                                    <input 
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-pink-500 outline-none"
+                                        placeholder="••••••••••••"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">Nueva Contraseña</label>
+                                        <input 
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-pink-500 outline-none"
+                                            placeholder="Nueva clave..."
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10.5px] font-mono text-gray-400 uppercase font-bold block">Repetir Nueva Contraseña</label>
+                                        <input 
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-pink-500 outline-none"
+                                            placeholder="Confirmar clave..."
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md mt-2"
+                                >
+                                    🔑 Actualizar Contraseña
+                                </button>
+                            </form>
+                        </div>
+                    )}
+
+                    {/* PESTAÑA 2: SESIONES Y CONTINUIDAD */}
                     {activeTab === 'sessions' && (
                         <div className="space-y-4">
                             {/* Card de Sesión Activa */}
@@ -4221,7 +4565,7 @@ const UserAccountModal = ({
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            onLoadSession(sess);
+                                                            if (onLoadSession) onLoadSession(sess);
                                                             setSaveSuccessMsg(`✓ Sesión "${sess.name}" cargada. ¡Listo para mezclar!`);
                                                             setTimeout(() => setSaveSuccessMsg(''), 3000);
                                                         }}
@@ -4233,7 +4577,7 @@ const UserAccountModal = ({
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => onDeleteSession(sess.id)}
+                                                        onClick={() => onDeleteSession && onDeleteSession(sess.id)}
                                                         className="p-1 rounded-lg bg-djzinc-900 hover:bg-rose-950 text-gray-500 hover:text-rose-400 text-xs transition-colors cursor-pointer"
                                                         title="Eliminar sesión guardada"
                                                     >
@@ -4248,19 +4592,10 @@ const UserAccountModal = ({
                         </div>
                     )}
 
-                    {/* PESTAÑA 2: PERFIL DJ & SUITE */}
-                    {activeTab === 'profile' && (
+                    {/* PESTAÑA 3: SUITE & PREFERENCIAS */}
+                    {activeTab === 'preferences' && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-mono text-gray-400 uppercase font-bold block">Alias / Nombre Artístico</label>
-                                    <input 
-                                        type="text"
-                                        value={alias}
-                                        onChange={(e) => setAlias(e.target.value)}
-                                        className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
-                                    />
-                                </div>
                                 <div className="space-y-1">
                                     <label className="text-[11px] font-mono text-gray-400 uppercase font-bold block">Software DJ Principal</label>
                                     <select
@@ -4275,16 +4610,16 @@ const UserAccountModal = ({
                                         <option value="Engine DJ">Engine DJ (Denon DJ)</option>
                                     </select>
                                 </div>
-                            </div>
 
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-mono text-gray-400 uppercase font-bold block">Interfaz de Audio / Tarjeta de Sonido</label>
-                                <input 
-                                    type="text"
-                                    value={audioInterface}
-                                    onChange={(e) => setAudioInterface(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
-                                />
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-mono text-gray-400 uppercase font-bold block">Interfaz de Audio</label>
+                                    <input 
+                                        type="text"
+                                        value={audioInterface}
+                                        onChange={(e) => setAudioInterface(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                    />
+                                </div>
                             </div>
 
                             <div className="p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 space-y-2">
@@ -4306,22 +4641,9 @@ const UserAccountModal = ({
                                 </p>
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={handleSaveProfile}
-                                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md"
-                            >
-                                Guardar Datos de Perfil
-                            </button>
-                        </div>
-                    )}
-
-                    {/* PESTAÑA 3: PREFERENCIAS & AJUSTES */}
-                    {activeTab === 'preferences' && (
-                        <div className="space-y-4 font-mono text-xs">
                             <div className="p-3.5 rounded-xl bg-[#0c0d18] border border-djzinc-800 flex items-center justify-between">
                                 <div>
-                                    <div className="font-bold text-white">Auto-Guardado Continuo de Estados</div>
+                                    <div className="font-bold text-white text-xs font-mono">Auto-Guardado Continuo de Estados</div>
                                     <div className="text-[10px] text-gray-400">Guarda carpetas, listas y filtros al vuelo en segundo plano</div>
                                 </div>
                                 <input 
@@ -4332,40 +4654,21 @@ const UserAccountModal = ({
                                 />
                             </div>
 
-                            <div className="p-3.5 rounded-xl bg-[#0c0d18] border border-djzinc-800 space-y-2">
-                                <div className="font-bold text-white">Cerrar Sesión / Cambiar de Usuario (Mock)</div>
-                                <div className="text-[10px] text-gray-400">Permite alternar entre diferentes cuentas de DJ o modo invitado</div>
-                                <div className="flex gap-2 pt-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setAlias('DJ Invitado');
-                                            handleSaveProfile();
-                                        }}
-                                        className="px-3 py-1.5 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-bold text-xs cursor-pointer"
-                                    >
-                                        Modo Invitado
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setAlias('DJ Alex BeatWave');
-                                            handleSaveProfile();
-                                        }}
-                                        className="px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 font-bold text-xs cursor-pointer"
-                                    >
-                                        Restaurar DJ Alex
-                                    </button>
-                                </div>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={handleSavePersonalData}
+                                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md"
+                            >
+                                Guardar Preferencias de Cabina
+                            </button>
                         </div>
                     )}
                 </div>
 
-                {/* Pie de la Modal */}
+                {/* Pie del Drawer */}
                 <div className="px-5 py-3 bg-[#080811] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
                     <span className="text-[10px] text-gray-500">
-                        BeatWave Pro v1.0.0 • Cuenta de Usuario & Estado Persistente
+                        BeatWave Pro v1.0.0 • Centro de Control DJ
                     </span>
                     <button
                         type="button"
@@ -4375,7 +4678,7 @@ const UserAccountModal = ({
                         Cerrar (ESC)
                     </button>
                 </div>
-            </div>
+            </aside>
         </div>
     );
 };
@@ -4795,7 +5098,7 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
 };
 
 // =========================================================================
-// 📖 MODAL: MANUAL INTERACTIVO & MASTERCLASS BEATWAVE PRO (8 SECCIONES)
+// 📖 MANUAL INTERACTIVO & MASTERCLASS BEATWAVE PRO (8 SECCIONES & DRAWER 60% PLEGABLE)
 // =========================================================================
 
 const MANUAL_SECTIONS = {
@@ -4821,6 +5124,14 @@ const MANUAL_SECTIONS = {
             "4. Ajusta la ganancia siguiendo la recomendación de Trim para que ambos temas entren con el mismo impacto sonoro."
         ],
         proTip: "No te fíes nunca de la ganancia automática de tu software DJ. El oído humano percibe el volumen según la escala LUFS (rango dinámico integrado). Si Copilot te marca '+1.8 dB', sube ese toque de ganancia antes de soltar el drop: el tema nuevo entrará con la misma pegada que el que estaba sonando.",
+        controls: [
+            { btn: "[ COPILOT ] (Barra Superior / F2)", desc: "Abre o cierra el monitor táctico de cabina Live Copilot en tiempo real.", when: "Siempre activo durante tu sesión en directo." },
+            { btn: "[ Serato Link 0-Latencia ]", desc: "Activa la sincronización con el motor de memoria de Serato DJ Pro sin cables.", when: "Al conectar tu controladora o reproductores CDJ." },
+            { btn: "[ Radar Anti-Muddy DSP ]", desc: "Monitorea en tiempo real las frecuencias <100Hz para prevenir cancelaciones de fase.", when: "Antes de soltar el drop en una mezcla de dos pistas." },
+            { btn: "[ Trim Differential dB ]", desc: "Calcula la diferencia de sonoridad perceptual (LUFS) entre Deck 1 y Deck 2.", when: "Ajusta la ganancia del canal entrante para evitar caídas de volumen." },
+            { btn: "[ Espectrograma Dual en Vivo ]", desc: "Radiografía acústica de ambos decks comparando subgraves, medios y agudos.", when: "Para ecualizar con precisión quirúrgica antes del corte." },
+            { btn: "[ Ventana Flotante / Popout ]", desc: "Separa el Copilot en una ventana independiente para enviarla a un segundo monitor.", when: "Si tienes un portátil secundario o tablet en cabina." }
+        ],
         simulationSteps: [
             { label: "Deck 1 & 2 Activos", desc: "Detección instantánea de pistas en cabina con lectura de BPM, tonalidad y espectro", focus: "decks" },
             { label: "Análisis Anti-Muddy", desc: "El motor DSP compara las frecuencias bajas (<100Hz) en busca de cancelaciones de fase", focus: "dsp" },
@@ -4850,6 +5161,15 @@ const MANUAL_SECTIONS = {
             "4. Pulsa '🗑️ Purgar Fakes' para borrar las pistas que no cumplen el estándar o llévatelas con un clic a la pestaña POOL para descargarlas en FLAC auténtico."
         ],
         proTip: "Si una canción de tu biblioteca tiene corte por debajo de 16kHz, bórrala sin dudarlo. En un sistema de sonido profesional, pinchar un transcode falso daña la experiencia del público y hace que la cabina suene amateur. Usa el botón de auditar siempre antes de cada fin de semana.",
+        controls: [
+            { btn: "[ 📂 Abrir / Directorio ]", desc: "Selecciona una carpeta del disco duro para cargar todas sus canciones.", when: "Al iniciar una sesión de preparación musical o tras descargar temas." },
+            { btn: "[ ⚡ Auditar Todo ]", desc: "Ejecuta el análisis espectral FFT, cálculo de BPM, Key Camelot y LUFS en lote.", when: "Para procesar tu biblioteca al completo de manera desatendida." },
+            { btn: "[ 🏷️ Escribir Tags ID3 ]", desc: "Graba de forma permanente los metadatos analizados (BPM, Key, Rol) en los archivos.", when: "Para que Serato, Rekordbox y Traktor lean los datos automáticamente." },
+            { btn: "[ 🗑️ Purgar Fakes ]", desc: "Elimina del disco o mueve a cuarentena los temas que no pasan la prueba de 16kHz.", when: "Para limpiar tu colección de ripeos de mala calidad de YouTube/SoundCloud." },
+            { btn: "[ 💎 Reemplazos HD a Pool ]", desc: "Envía pistas defectuosas a la cola de descarga SuperFLAC para bajarlas en alta fidelidad.", when: "Para sustituir MP3 viejos por archivos FLAC de 24 bits auténticos." },
+            { btn: "[ 📊 Reporte Excel (.xlsx) ]", desc: "Genera una hoja de cálculo con la radiografía técnica y diagnóstico de cada tema.", when: "Para auditar tu biblioteca o entregar un informe a promotores." },
+            { btn: "[ 🔍 Espectrograma FFT ]", desc: "Visualizador interactivo de frecuencias que muestra la pendiente espectral en tiempo real.", when: "Al hacer clic en cualquier pista para verificar su techo de frecuencia." }
+        ],
         simulationSteps: [
             { label: "Ingesta de Pistas", desc: "Carga simultánea de 12 canciones locales con lectura de cabeceras ID3 y duración", focus: "ingest" },
             { label: "Radiografía FFT", desc: "El motor acústico descompone el espectro de 20 Hz a 24.000 Hz en tiempo real", focus: "fft" },
@@ -4879,6 +5199,14 @@ const MANUAL_SECTIONS = {
             "4. Observa cómo se colocan las 8 banderas sobre la forma de onda; puedes ajustar milimétricamente cualquier punto o exportarlos directamente a Serato y Rekordbox."
         ],
         proTip: "Usa el Cue 3 (Breakdown) como tu punto de salvación en directo: si estás en cabina y ves que te estás quedando sin tiempo en el tema saliente, salta directamente al Cue 3 del tema nuevo; como entra sin bombos agresivos, la transición quedará superlimpia y tendrás 32 tiempos de relax para preparar la siguiente mezcla.",
+        controls: [
+            { btn: "[ ⚡ Generar 8 Hot Cues ]", desc: "Calcula matemáticamente las 8 marcas oficiales de cabina respetando el fraseo musical.", when: "Para preparar pistas nuevas en cuestión de segundos sin hacerlo a mano." },
+            { btn: "[ 🎯 Selector de Perfil ]", desc: "Alterna entre 'Club Mainstage' (drops rápidos) y 'Extended Journey' (transiciones progresivas).", when: "Según el estilo de música (Techno/EDM vs Deep/House progresivo)." },
+            { btn: "[ 🎚️ Waveform Scrubbing ]", desc: "Permite desplazarte por la forma de onda milisegundo a milisegundo con lupa de aumento.", when: "Para ajustar manualmente la posición exacta de un golpe o vocal." },
+            { btn: "[ 🎨 Codificación de Color CDJ ]", desc: "Aplica los colores oficiales de Pioneer y Serato (Verde=Intro, Naranja=Breakdown, Rojo=Drop).", when: "Para que en la pantalla de la CDJ identifiques la sección al instante." },
+            { btn: "[ 💾 Inyectar en Metadatos ]", desc: "Escribe las 8 marcas de Hot Cues directamente en la base de datos de Serato y Rekordbox.", when: "Antes de exportar tus canciones al pendrive USB de cabina." },
+            { btn: "[ 🔄 Resetear Cues ]", desc: "Borra todas las marcas para volver a calcular desde cero o redefinir puntos.", when: "Si deseas reestructurar una canción con otro perfil de fraseo." }
+        ],
         simulationSteps: [
             { label: "Detección de Downbeat", desc: "El analizador localiza el compás 1.1 exacto donde arranca la energía rítmica", focus: "downbeat" },
             { label: "Mapeo de 32 Tiempos", desc: "Cálculo de la estructura musical en múltiplos de 8 compases (32 / 64 beats)", focus: "phrasing" },
@@ -4902,12 +5230,21 @@ const MANUAL_SECTIONS = {
             { term: "Curva de Progresión de BPM", desc: "El lienzo visual que dibuja la pendiente de tempo y energía de tu set para asegurar que la sesión va 'in crescendo' y no pega bajones involuntarios." }
         ],
         steps: [
-            "1. Añade canciones al set arrastrándolas o usa '📁 Añadir Carpeta' para cargar un lote completo de música.",
-            "2. Cambia a la pestaña '🕸️ Graph Playlists (DJOID)' para ver el mapa de transiciones y alternativas de mezcla recomendadas.",
-            "3. Pulsa '🤖 Asesor AI & Calidad' para que Gemini AI audite el flujo global de la sesión.",
-            "4. Revisa las 3 propuestas automáticas de sesión ('Escalada Peak-Time', 'Viaje Armónico Continuo', 'Onda Dinámica') y aplícalas con un solo clic si te convencen."
+            "1. Pulsa '🕸️ GENERAR FLUJO DE SESIÓN' para convertir cualquier conjunto de pistas en un grafo DAG no lineal.",
+            "2. Usa '📁 Añadir Carpeta' para cargar un lote completo de música de un solo golpe.",
+            "3. Explora las ramas alternativas con el botón '⇄ Sustituir' o '+ Puente' para salvar saltos tonales.",
+            "4. Pulsa '🤖 Asesor AI & Calidad' para que Google Gemini 2.5 Flash califique tu set del 0 al 100% y exporta a M3U8 para tu software DJ."
         ],
         proTip: "Presta especial atención al Score Armónico global. Un set con una puntuación superior al 85% crea un efecto hipnótico en el público: la gente no puede parar de bailar porque las melodías y notas de los temas parecen pertenecer a una misma obra sinfónica continua.",
+        controls: [
+            { btn: "[ 🕸️ GENERAR FLUJO DE SESIÓN ]", desc: "¡El botón estrella estilo DJOID! Construye el mapa interactivo en grafo DAG con alternativas y compatibilidad armónica.", when: "Al planificar tu sesión para tener alternativas listas según la reacción de la pista." },
+            { btn: "[ 📁 Añadir Carpeta ]", desc: "Permite seleccionar un directorio completo e inyectar todas sus canciones en el set en 1 clic.", when: "Para preparar sets rápidos a partir de carpetas de música recién adquirida." },
+            { btn: "[ ⚡ Auto-Optimizar Pro ]", desc: "Reorganiza las pistas matemáticamente para maximizar el flujo armónico Camelot y suavizar saltos de BPM.", when: "Cuando tienes muchas pistas sueltas y quieres un orden perfecto automático." },
+            { btn: "[ 🤖 Asesor AI & Calidad ]", desc: "Auditoría inteligente con Google Gemini 2.5 Flash y DSP acústico. Genera una nota del 0 al 100%.", when: "Antes de dar por cerrado un set para asegurarte de que no hay choques tonales." },
+            { btn: "[ 🌉 Inyectar Pista Puente ]", desc: "Busca en tu colección canciones intermedias que sirvan de puente armónico entre dos tonos disonantes.", when: "Para pasar suavemente de una tonalidad lejana a otra sin corte abrupto." },
+            { btn: "[ 💾 Exportar (.M3U8) ]", desc: "Genera el archivo M3U8 compatible con Rekordbox, Serato, Traktor y VirtualDJ.", when: "Para llevar la lista directamente al pendrive o a tu software de directo." },
+            { btn: "[ 📈 Lienzo de Curva de BPM ]", desc: "Visualizador SVG interactivo con nodos clickeables para preescuchar cada punto del set.", when: "Para comprobar visualmente que la energía va en crescendo y no hay baches." }
+        ],
         simulationSteps: [
             { label: "Construcción de Secuencia", desc: "Curva continua de BPM y energía renderizada en lienzo interactivo sin saltos", focus: "curve" },
             { label: "Bifurcaciones DAG", desc: "Alternativas armónicas desplegadas paso a paso con botones de sustitución rápida", focus: "dag" },
@@ -4937,6 +5274,15 @@ const MANUAL_SECTIONS = {
             "4. Dale a '▶ Escuchar Preview' para preescucharla, o usa la cruceta y el fader de zoom de la derecha para explorar el mapa con total fluidez."
         ],
         proTip: "Usa la herramienta Lasso en la esquina superior derecha del mapa (zona Peak Time: alta energía y alta bailabilidad) para armar en 30 segundos la hora dorada de tu set del sábado por la noche.",
+        controls: [
+            { btn: "[ 🎡 Rueda Camelot 60% Alpha ]", desc: "Visualizador armónico circular con transparencias en la esquina superior izquierda. Resalta la clave de la pista y sus adyacentes.", when: "Para ver qué temas son armónicamente compatibles (+1, -1, cambios de modo A/B)." },
+            { btn: "[ 🧭 Cruceta D-Pad de 4 Flechas ]", desc: "Controles analógicos de navegación fluida continua para desplazarte suavemente por el cosmos sonoro.", when: "Para explorar galaxias acústicas de tu biblioteca sin usar el ratón." },
+            { btn: "[ 🎚️ Fader Zoom Hardware ]", desc: "Deslizador de zoom continuo inspirado en los faders de pitch de los platos Technics y CDJs.", when: "Para acercarte a un racimo denso de temas o alejarte para ver la biblioteca completa." },
+            { btn: "[ ✏️ Herramienta Lasso ]", desc: "Dibuja un lazo a mano alzada para capturar un área de temas afines y mandarlos al Set.", when: "Para recolectar en bloque 5 a 10 canciones que vibran en la misma frecuencia." },
+            { btn: "[ ⬚ Herramienta Caja ]", desc: "Selección rectangular rápida de pistas por zona de coordenadas acústicas.", when: "Para capturar rangos específicos de tempo o energía en bloque." },
+            { btn: "[ 🎛️ Modos de Proyección ]", desc: "Alterna entre '⚡ Energía / Dance', '🥁 BPM / Energía' y '☸ Rueda Camelot'.", when: "Para analizar tu música desde diferentes perspectivas acústicas." },
+            { btn: "[ ▶ Escuchar Preview (0.8ms) ]", desc: "Reproductor de pre-escucha ultraveloz con audio precargado en memoria.", when: "Para escuchar fragmentos clave de las pistas sin cortes ni esperas." }
+        ],
         simulationSteps: [
             { label: "Constelación Espacial", desc: "Pistas proyectadas en 2D donde la cercanía física representa afinidad acústica", focus: "constellation" },
             { label: "Rueda Camelot 60%", desc: "Sectores tonales iluminados con compatibilidad armónica adyacente (+1, -1, Modo)", focus: "camelot" },
@@ -4966,6 +5312,14 @@ const MANUAL_SECTIONS = {
             "4. Al completarse, la pista se audita automáticamente por FFT y queda guardada con carátula HD en tu carpeta de música de cabina."
         ],
         proTip: "Si en la auditoría tienes canciones marcadas en rojo como 'Mala Calidad', usa el botón 'Llevar Reemplazos HD a Pool'. Te las importará en bloque para que las sustituyas por copias Lossless impecables sin tener que buscarlas una por una.",
+        controls: [
+            { btn: "[ 🔍 Buscar / Analizar ]", desc: "Resuelve metadatos de enlaces de Spotify (canción, álbum, playlist) o búsquedas de texto directo.", when: "Para encontrar cualquier tema que quieras incorporar a tu maleta." },
+            { btn: "[ ⬇️ Descargar (Lote) ]", desc: "Inicia la descarga paralela multihilo del máster original de estudio en alta resolución.", when: "Para descargar temas individuales o listas completas de 50 temas a la vez." },
+            { btn: "[ 🎛️ Formato: FLAC 24b / 16b / MP3 ]", desc: "Selector de códec y tasa de bits para la descarga (FLAC Hi-Res, WAV, AIFF, MP3 320k).", when: "Elige FLAC Hi-Res para directos y MP3 320k para ahorrar espacio." },
+            { btn: "[ 🎧 Pre-escucha Dual A/B ]", desc: "Alterna en tiempo real entre la versión que ya tenías en local y la nueva descarga.", when: "Para certificar que la descarga es la versión Club Extended correcta." },
+            { btn: "[ ⚡ Certificación FFT en Vuelo ]", desc: "Comprobación matemática inmediata del techo de frecuencias tras finalizar la descarga.", when: "Garantiza que ningún archivo descargado sea un transcode falso." },
+            { btn: "[ 📁 Cambiar Carpeta Destino ]", desc: "Configura el directorio local donde se guardan tus canciones descargadas.", when: "Para dirigir la música a tu disco duro externo o carpeta de Serato/Rekordbox." }
+        ],
         simulationSteps: [
             { label: "Búsqueda o Link", desc: "Resolución de catálogo de Spotify con localización de máster de estudio en SuperFLAC", focus: "search" },
             { label: "Streaming Lossless", desc: "Descarga segura en FLAC 24-bit / 16-bit con gestión dinámica de tokens CSRF", focus: "download" },
@@ -4995,6 +5349,13 @@ const MANUAL_SECTIONS = {
             "4. Añade los descubrimientos a tu cola de descargas de POOL o directamente a tu Set Builder con un solo clic."
         ],
         proTip: "Dedica 15 minutos cada jueves a mirar el Radar. Descubrir dos o tres temas exclusivos antes del fin de semana es la diferencia entre ser un DJ más del cartel o ser el que se lleva las felicitaciones del promotor y del público al terminar la noche.",
+        controls: [
+            { btn: "[ 🎙️ Escuchar con Micrófono ]", desc: "Reconocimiento acústico estilo Shazam en tiempo real de lo que suena en la sala o altavoces.", when: "Cuando estás en un club o viendo un streaming y quieres identificar el track al vuelo." },
+            { btn: "[ 📡 Escáner 1001Tracklists ]", desc: "Monitoriza sesiones de DJs headliners en festivales mundiales (Tomorrowland, Ultra, Awakenings).", when: "Para ver qué IDs y temas inéditos están pinchando los mejores del mundo." },
+            { btn: "[ 📈 Velocidad de Tendencia ]", desc: "Métrica que indica si un tema está creciendo exponencialmente en las pistas de baile.", when: "Para comprar y pinchar canciones antes de que se vuelvan virales comerciales." },
+            { btn: "[ 🧩 Filtro por Micro-Géneros ]", desc: "Segmenta las tendencias por corrientes emergentes (Afro-Melodic, Hard Groove, Indie Dance).", when: "Para encontrar música que encaje al 100% con tu estilo de cabina." },
+            { btn: "[ ➕ Añadir a POOL / SET ]", desc: "Envía los temas identificados directamente a tu cola de descarga FLAC o a tu Set Builder.", when: "Para incorporar descubrimientos sin perder tiempo buscándolos manualmente." }
+        ],
         simulationSteps: [
             { label: "Escaneo Global", desc: "Monitorización de sesiones en festivales internacionales y charts especializados", focus: "scan" },
             { label: "Mapeo de Micro-Géneros", desc: "Detección de corrientes emergentes antes de su difusión comercial masiva", focus: "genres" },
@@ -5015,7 +5376,7 @@ const MANUAL_SECTIONS = {
         jargon: [
             { term: "Estructura Binaria .crate de Serato", desc: "Archivos propietarios que Serato guarda en su subcarpeta oculta de usuario. BeatWave genera directamente estos archivos binarios sin necesidad de abrir la aplicación." },
             { term: "Rekordbox XML Interoperability", desc: "El formato de intercambio profesional estándar que leen las librerías de Pioneer DJ para sincronizar hot cues, tonalidades y carpetas a pendrives USB." },
-            { term: "Taxonomía de 2 Niveles (Género / Subgénero)", desc: "Organización en dos capas (ej. Tech House $\rightarrow$ Latin Groove / Acid Tech) para encontrar cualquier canción en menos de 5 segundos en cabina." }
+            { term: "Taxonomía de 2 Niveles (Género / Subgénero)", desc: "Organización en dos capas (ej. Tech House $\\rightarrow$ Latin Groove / Acid Tech) para encontrar cualquier canción en menos de 5 segundos en cabina." }
         ],
         steps: [
             "1. Entra en CRATES / TAXONOMÍA para visualizar tu árbol jerárquico de estilos y energía.",
@@ -5024,6 +5385,14 @@ const MANUAL_SECTIONS = {
             "4. Pulsa '🛂 Pasaporte Universal DJ': BeatWave inyectará simultáneamente los crates en Serato, Rekordbox, Traktor y VDJ en cuestión de segundos."
         ],
         proTip: "Organiza tus crates por momentos de la noche (01_Warmup, 02_PeakTime, 03_Afterhours) en lugar de solo por géneros musicales. Cuando la pista te pida subir la intensidad a las 3:00 AM, sabrás exactamente a qué crate acudir sin dudar un milisegundo.",
+        controls: [
+            { btn: "[ 🛂 Pasaporte Universal DJ ]", desc: "Sincroniza simultáneamente toda tu colección hacia Serato (.crate), Rekordbox (XML), Traktor (NML) y VDJ.", when: "Antes de preparar tus pendrives USB para actuar en cualquier club o festival." },
+            { btn: "[ 🌳 Árbol Jerárquico de 2 Niveles ]", desc: "Estructura de navegación por Género Principal y Subgénero Tímbrico real sin basarse solo en BPM.", when: "Para organizar y catalogar miles de canciones de manera coherente y rápida." },
+            { btn: "[ 🎭 Clasificación por Roles Acústicos ]", desc: "Asigna roles según su función sonora: Bass Driver, Vocal Lead, Percussive Tool, Synth Riser.", when: "Para saber exactamente qué función cumple cada tema en la mezcla." },
+            { btn: "[ 🏷️ Batch Tagging Masivo ]", desc: "Modifica o enriquece metadatos de decenas de pistas seleccionadas en un solo paso.", when: "Para unificar nombres de sellos discográficos, años o géneros." },
+            { btn: "[ 📁 Exportar Crates Serato (.crate) ]", desc: "Generación binaria directa de cajas para Serato DJ sin abrir la app.", when: "Para usuarios de Serato que quieren mantener sus crates sincronizados." },
+            { btn: "[ 🎧 Exportar Rekordbox XML ]", desc: "Genera el archivo XML universal listo para importar en Rekordbox 6 y 7.", when: "Para usuarios de Pioneer CDJ-3000 / CDJ-2000NXS2." }
+        ],
         simulationSteps: [
             { label: "Árbol Jerárquico", desc: "Organización en dos capas: Género musical principal y Subgénero timbral", focus: "tree" },
             { label: "Roles Acústicos", desc: "Clasificación espectral: Bass Driver, Vocal Lead, Percussive Tool, Balanced", focus: "roles" },
@@ -5036,10 +5405,10 @@ const MANUAL_SECTIONS = {
 const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onNavigateTab, lang = 'es' }) => {
     if (!isOpen) return null;
 
-    // Modo de Visualización del Manual:
-    // 'drawer': Columna lateral derecha ocupando el 40% del ancho, no bloqueante (interactúa con la app en vivo)
-    // 'modal': Ventana centrada amplia tipo Masterclass en dos columnas
-    // 'minimized': Píldora flotante en la esquina inferior derecha
+    // Estado de Plegado / Desplegado: Permite colapsar el manual al borde derecho para interactuar con la app
+    const [isFolded, setIsFolded] = useState(false);
+
+    // Modo de Vista: 'drawer' (Columna lateral al 60% de ancho) | 'modal' (Ventana central completa)
     const [viewMode, setViewMode] = useState(() => {
         try {
             return localStorage.getItem('bw_manual_viewmode') || 'drawer';
@@ -5058,7 +5427,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     const [simStep, setSimStep] = useState(0);
     const [isSimPlaying, setIsSimPlaying] = useState(true);
     const [spotlightZoom, setSpotlightZoom] = useState(true);
-    const [drawerTab, setDrawerTab] = useState('all'); // 'all' | 'sim' | 'story'
+    const [activeManualTab, setActiveManualTab] = useState('all'); // 'all' | 'sim' | 'controls' | 'guide'
 
     useEffect(() => {
         if (initialSection && MANUAL_SECTIONS[initialSection]) {
@@ -5067,7 +5436,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         }
     }, [initialSection]);
 
-    // Temporizador de Simulación Automática (Auto-Play)
+    // Auto-Play del Simulador Visual Animado (3.2s por paso)
     useEffect(() => {
         if (!isSimPlaying) return;
         const timer = setInterval(() => {
@@ -5076,7 +5445,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         return () => clearInterval(timer);
     }, [isSimPlaying, activeSectionKey]);
 
-    // Tecla Escape para cerrar
+    // Tecla Escape para cerrar o desdoblar
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') onClose();
@@ -5085,21 +5454,21 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
-    // Render del Simulador Visual Animado según la sección activa
+    // Render del Simulador Visual Animado de Alta Fidelidad (Estilo djoid.io)
     const renderVisualSimulator = () => {
         const stepInfo = (activeSec.simulationSteps && activeSec.simulationSteps[simStep]) || { label: "Paso Activo", desc: "Simulación en curso", focus: "default" };
 
         return (
             <div className="flex flex-col h-full justify-between gap-3 select-none">
-                {/* Barra de Controles del Reproductor de Simulación */}
-                <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#0d0e1a] border border-djzinc-800">
+                {/* Barra de Controles de Reproducción y Pasos */}
+                <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#0b0c16] border border-djzinc-800">
                     <div className="flex items-center gap-1.5">
                         <button
                             type="button"
                             onClick={() => setIsSimPlaying(prev => !prev)}
                             className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
                                 isSimPlaying 
-                                    ? 'bg-pink-600 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]' 
+                                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-[0_0_12px_rgba(236,72,153,0.5)]' 
                                     : 'bg-djzinc-800 text-gray-300 hover:text-white'
                             }`}
                             title={isSimPlaying ? "Pausar simulación" : "Reproducir simulación continua"}
@@ -5139,10 +5508,10 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     </button>
                 </div>
 
-                {/* Lienzo Visual Animado con Spotlight */}
-                <div className="flex-1 min-h-[240px] rounded-2xl bg-gradient-to-b from-[#090a14] to-[#040407] border border-djzinc-800 relative overflow-hidden flex flex-col items-center justify-center p-3 shadow-inner">
-                    {/* Rejilla de Fondo Estilo Monitor de Cabina */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#131422_1px,transparent_1px),linear-gradient(to_bottom,#131422_1px,transparent_1px)] bg-[size:24px_24px] opacity-40"></div>
+                {/* Lienzo Visual Animado con Renderizado Dinámico */}
+                <div className="flex-1 min-h-[260px] rounded-2xl bg-gradient-to-b from-[#080914] to-[#040408] border border-djzinc-800 relative overflow-hidden flex flex-col items-center justify-center p-3 shadow-inner">
+                    {/* Rejilla de Fondo Estilo Monitor DJ */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#121324_1px,transparent_1px),linear-gradient(to_bottom,#121324_1px,transparent_1px)] bg-[size:24px_24px] opacity-40"></div>
 
                     {/* Contenido Visual Específico */}
                     <div className={`w-full h-full flex flex-col justify-center items-center relative z-10 transition-transform duration-500 ${spotlightZoom ? 'scale-105' : 'scale-100'}`}>
@@ -5180,7 +5549,6 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                     </div>
                                 </div>
 
-                                {/* Banner Táctico Dinámico */}
                                 <div className={`p-3 rounded-xl border text-center font-mono text-xs font-bold transition-all duration-300 ${
                                     simStep >= 2 
                                         ? 'bg-rose-950/80 border-rose-500 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.4)] animate-pulse'
@@ -5202,25 +5570,23 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         )}
 
                         {activeSec.id === 'audit' && (
-                            <div className="w-full max-w-sm flex flex-col gap-3">
-                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-djzinc-750 font-mono">
+                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
+                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-djzinc-750">
                                     <div className="flex items-center justify-between text-[11px] mb-2 font-bold">
                                         <span className="text-gray-300">Espectrograma FFT Comparativo</span>
                                         <span className="text-cyan-400">20Hz - 22kHz</span>
                                     </div>
                                     
-                                    {/* Onda Real Lossless */}
                                     <div className="mb-2">
                                         <div className="flex justify-between text-[9px] text-emerald-400 mb-1">
                                             <span>FLAC Lossless 24-bit Genuino</span>
                                             <span>Techo 22.05 kHz ✓</span>
                                         </div>
                                         <div className="h-6 w-full rounded bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-400 flex items-center justify-end pr-2 text-[8px] font-black text-black">
-                                            RANGO COMPLETO
+                                            RANGO COMPLETO LOSSLESS
                                         </div>
                                     </div>
 
-                                    {/* Onda Fake MP3 */}
                                     <div>
                                         <div className="flex justify-between text-[9px] text-rose-400 mb-1">
                                             <span>Fake Transcode MP3 128k</span>
@@ -5233,7 +5599,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                     </div>
                                 </div>
 
-                                <div className="p-2 rounded-xl bg-cyan-950/70 border border-cyan-600 text-center text-[10px] font-mono text-cyan-200 font-bold">
+                                <div className="p-2 rounded-xl bg-cyan-950/70 border border-cyan-600 text-center text-[10px] text-cyan-200 font-bold">
                                     ✓ Purgadas 4 pistas con transcode falso • 100% Colección Certificada
                                 </div>
                             </div>
@@ -5247,11 +5613,9 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                         <span>FRASEO: 32 BEATS</span>
                                     </div>
 
-                                    {/* Waveform simulada con Cues */}
                                     <div className="h-10 w-full bg-[#0a0a14] rounded-lg relative overflow-hidden flex items-center border border-djzinc-800">
                                         <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 opacity-60 w-full animate-pulse"></div>
                                         
-                                        {/* Banderas de Cues */}
                                         <div className="absolute left-[10%] top-1 bottom-1 w-0.5 bg-emerald-400 z-20 flex flex-col justify-between">
                                             <span className="px-1 py-0.2 bg-emerald-500 text-black text-[7px] font-black rounded -ml-2">1 CUE</span>
                                         </div>
@@ -5265,7 +5629,6 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                             <span className="px-1 py-0.2 bg-rose-500 text-white text-[7px] font-black rounded -ml-2">7 DROP</span>
                                         </div>
 
-                                        {/* Playhead */}
                                         <div className="absolute left-[65%] h-full w-1 bg-white shadow-[0_0_10px_#ffffff] z-30 animate-ping"></div>
                                     </div>
                                 </div>
@@ -5287,38 +5650,33 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                         <span className="px-2 py-0.5 bg-purple-950 text-purple-200 border border-purple-700 rounded-full">Score AI: 96%</span>
                                     </div>
 
-                                    {/* Grafo de Nodos Simulado */}
-                                    <div className="flex items-center justify-between gap-2 p-2 bg-[#090912] rounded-lg border border-djzinc-800">
-                                        <div className="flex flex-col items-center">
-                                            <div className="w-8 h-8 rounded-full bg-cyan-500 text-black font-black text-xs flex items-center justify-center shadow-[0_0_12px_#06b6d4]">
-                                                8A
-                                            </div>
-                                            <span className="text-[8px] text-gray-400 mt-1">Track 1</span>
-                                        </div>
+                                    {/* Grafo de Nodos con Curvas Bezier Animadas */}
+                                    <div className="p-2.5 bg-[#080812] rounded-lg border border-djzinc-800 relative">
+                                        <svg viewBox="0 0 300 90" className="w-full h-24 overflow-visible">
+                                            {/* Curva Principal */}
+                                            <path d="M 40 45 Q 110 20 150 45 T 260 45" fill="none" stroke="#a855f7" strokeWidth="2.5" />
+                                            {/* Curva Alternativa / Rama Bifurcada */}
+                                            <path d="M 150 45 Q 190 75 230 75" fill="none" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3 3" />
 
-                                        <div className="flex-1 flex flex-col items-center">
-                                            <span className="text-[8px] text-emerald-400 font-bold">100% Match</span>
-                                            <div className="w-full h-0.5 bg-gradient-to-r from-cyan-400 via-emerald-400 to-purple-400"></div>
-                                        </div>
+                                            {/* Nodo 1 */}
+                                            <circle cx="40" cy="45" r="14" fill="#06b6d4" className="shadow-lg" />
+                                            <text x="40" y="49" fill="#000" fontSize="9" fontWeight="900" textAnchor="middle">8A</text>
 
-                                        <div className="flex flex-col items-center">
-                                            <div className="w-8 h-8 rounded-full bg-purple-600 text-white font-black text-xs flex items-center justify-center shadow-[0_0_12px_#9333ea]">
-                                                9A
-                                            </div>
-                                            <span className="text-[8px] text-gray-400 mt-1">Track 2</span>
-                                        </div>
+                                            {/* Nodo 2 */}
+                                            <circle cx="150" cy="45" r="16" fill="#a855f7" stroke="#ffffff" strokeWidth="2" className="animate-pulse" />
+                                            <text x="150" y="49" fill="#fff" fontSize="9" fontWeight="900" textAnchor="middle">9A</text>
 
-                                        <div className="flex-1 flex flex-col items-center">
-                                            <span className="text-[8px] text-amber-400 font-bold">Rama Alt</span>
-                                            <div className="w-full h-0.5 bg-dashed border-t border-amber-400"></div>
-                                        </div>
+                                            {/* Nodo 3 (Principal) */}
+                                            <circle cx="260" cy="45" r="14" fill="#ec4899" />
+                                            <text x="260" y="49" fill="#fff" fontSize="9" fontWeight="900" textAnchor="middle">10A</text>
 
-                                        <div className="flex flex-col items-center">
-                                            <div className="w-8 h-8 rounded-full bg-amber-500 text-black font-black text-xs flex items-center justify-center shadow-[0_0_12px_#f59e0b]">
-                                                9B
-                                            </div>
-                                            <span className="text-[8px] text-gray-400 mt-1">Alt Path</span>
-                                        </div>
+                                            {/* Nodo Alternativo */}
+                                            <circle cx="230" cy="75" r="11" fill="#f59e0b" />
+                                            <text x="230" y="79" fill="#000" fontSize="8" fontWeight="900" textAnchor="middle">9B</text>
+
+                                            <text x="95" y="30" fill="#34d399" fontSize="7.5" fontWeight="bold">100% Match</text>
+                                            <text x="195" y="83" fill="#f59e0b" fontSize="7.5" fontWeight="bold">Rama Alt</text>
+                                        </svg>
                                     </div>
                                 </div>
 
@@ -5332,11 +5690,11 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                             <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
                                 <div className="p-3 rounded-xl bg-djzinc-900/90 border border-teal-700/60 shadow-lg relative overflow-hidden">
                                     <div className="flex items-center justify-between text-[10px] text-teal-300 font-bold mb-2">
-                                        <span>CONSTELACIÓN ACÚSTICA 2D</span>
-                                        <span className="text-teal-400 font-bold">Lasso Active</span>
+                                        <span>CONSTELACIÓN ACÚSTICA 2D & LASSO</span>
+                                        <span className="text-teal-400 font-bold">Spatial Collect</span>
                                     </div>
 
-                                    {/* Mini mapa de nodos con carátulas */}
+                                    {/* Mini mapa de nodos con lasso animado */}
                                     <div className="h-28 w-full bg-[#05060b] rounded-lg relative overflow-hidden border border-djzinc-800 flex items-center justify-center">
                                         <div className="absolute left-[20%] top-[30%] w-6 h-6 rounded-full bg-emerald-500 text-black text-[8px] font-black flex items-center justify-center shadow-[0_0_10px_#10b981]">
                                             8A
@@ -5351,9 +5709,9 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                             8B
                                         </div>
 
-                                        {/* Trazo del Lazo de Selección */}
+                                        {/* Trazo del Lazo de Selección Dinámico */}
                                         <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                                            <path d="M 40 40 Q 140 10 220 50 T 150 100 Z" fill="rgba(6,182,212,0.15)" stroke="#06b6d4" strokeWidth="1.5" strokeDasharray="3 3" />
+                                            <path d="M 40 40 Q 140 10 220 50 T 150 100 Z" fill="rgba(6,182,212,0.18)" stroke="#06b6d4" strokeWidth="1.5" strokeDasharray="4 4" className="animate-pulse" />
                                         </svg>
                                     </div>
                                 </div>
@@ -5383,7 +5741,6 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                             </div>
                                         </div>
 
-                                        {/* Selector A/B */}
                                         <div className="grid grid-cols-2 gap-2 text-center text-[9px] font-bold">
                                             <button type="button" className="p-1.5 rounded bg-djzinc-800 text-gray-400 border border-djzinc-700">
                                                 A: Local (MP3 128k)
@@ -5409,14 +5766,12 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                         <span className="text-indigo-400 font-bold">Tomorrowland Scanner</span>
                                     </div>
 
-                                    {/* Simulación de Radar Giratorio */}
                                     <div className="h-28 w-full bg-[#05060d] rounded-lg relative overflow-hidden border border-djzinc-800 flex items-center justify-center">
                                         <div className="w-24 h-24 rounded-full border border-indigo-800/60 flex items-center justify-center">
                                             <div className="w-16 h-16 rounded-full border border-indigo-700/50 flex items-center justify-center">
                                                 <div className="w-8 h-8 rounded-full border border-indigo-600/40"></div>
                                             </div>
                                         </div>
-                                        {/* Rayo giratorio */}
                                         <div className="absolute w-12 h-12 bg-gradient-to-tr from-indigo-500/30 to-transparent rounded-full animate-spin"></div>
                                         <span className="absolute text-[9px] font-bold text-indigo-300 px-2 py-0.5 bg-indigo-950/80 rounded border border-indigo-700">
                                             +340% Afro Melodic
@@ -5461,7 +5816,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         )}
                     </div>
 
-                    {/* Badge de Paso Explicado en Foco */}
+                    {/* Badge de Paso Explicado */}
                     <div className="w-full mt-2 pt-2 border-t border-djzinc-800/80 flex items-center justify-between text-[10px] font-mono z-10">
                         <span className="text-pink-400 font-bold flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping"></span>
@@ -5474,9 +5829,9 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         );
     };
 
-    // Renderizador de la Tarjeta del Simulador Visual Animado
+    // Render de la Tarjeta del Simulador
     const renderSimulatorCard = (isDrawer = false) => (
-        <div className={`flex flex-col gap-2.5 bg-[#07070e] border border-djzinc-800 rounded-2xl p-3 sm:p-4 shadow-inner relative overflow-hidden ${isDrawer ? 'h-[300px] shrink-0' : 'flex-1 min-h-[360px]'}`}>
+        <div className={`flex flex-col gap-2.5 bg-[#07070e] border border-djzinc-800 rounded-2xl p-3 sm:p-4 shadow-inner relative overflow-hidden ${isDrawer ? 'h-[330px] shrink-0' : 'flex-1 min-h-[380px]'}`}>
             <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 shrink-0">
                 <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
@@ -5490,17 +5845,58 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 </span>
             </div>
 
-            {/* Visualizador Animado */}
             <div className="flex-1 min-h-0 overflow-hidden">
                 {renderVisualSimulator()}
             </div>
         </div>
     );
 
-    // Renderizador del Relato Humano, Glosario Táctico y Flujo Paso a Paso
+    // Render del Catálogo Completo de Botones y Controles
+    const renderControlsCatalog = () => (
+        <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+                <h4 className="text-xs font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
+                    <span>🎛️</span>
+                    <span>Guía Completa de Botones & Funcionalidades</span>
+                </h4>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pink-950 text-pink-300 border border-pink-700/60 font-bold">
+                    {(activeSec.controls || []).length} Controles
+                </span>
+            </div>
+            <p className="text-xs font-sans text-gray-400">
+                A continuación tienes el detalle de cada botón, selector y atajo disponible en el módulo <strong className="text-white">{activeSec.badge}</strong>:
+            </p>
+
+            <div className="grid grid-cols-1 gap-2.5">
+                {(activeSec.controls || []).map((ctrl, cIdx) => (
+                    <div key={cIdx} className="p-3.5 rounded-2xl bg-[#0b0c16] border border-djzinc-800 hover:border-pink-500/50 transition-all shadow-sm">
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className="font-mono text-xs font-bold text-pink-300 bg-pink-950/60 px-2 py-0.5 rounded border border-pink-800/40">
+                                {ctrl.btn}
+                            </span>
+                            <span className="text-[10px] font-mono text-gray-500 uppercase">
+                                Control #{cIdx + 1}
+                            </span>
+                        </div>
+                        <p className="text-xs font-sans text-gray-300 leading-relaxed mb-2">
+                            {ctrl.desc}
+                        </p>
+                        <div className="p-2 rounded-xl bg-djzinc-950 border border-djzinc-800/80 text-[11px] font-sans text-amber-300/90 flex items-start gap-1.5">
+                            <span className="shrink-0 text-amber-400">🎯</span>
+                            <div>
+                                <strong className="font-mono text-[10px] uppercase text-amber-400 mr-1">En Cabina:</strong>
+                                <span>{ctrl.when}</span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
+    // Render del Relato Humano, Glosario y Pro Tip
     const renderSectionStoryAndDetails = () => (
         <div className="flex flex-col gap-4">
-            {/* Cabecera de la Sección */}
             <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black text-white" style={{ backgroundColor: activeSec.color }}>
@@ -5518,12 +5914,12 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 </div>
             </div>
 
-            {/* Historia y Explicación Cercana */}
+            {/* Historia Cercana */}
             <div className="p-4 rounded-2xl bg-djzinc-900/70 border border-djzinc-800 text-xs font-sans text-gray-300 leading-relaxed space-y-2">
                 <p>{activeSec.story}</p>
             </div>
 
-            {/* Tecnicismos Explicados para Todo el Mundo */}
+            {/* Tecnicismos Explicados */}
             <div className="space-y-2">
                 <h4 className="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
                     <span>💡</span> <span>Conceptos Clave Explicados Fácilmente</span>
@@ -5565,7 +5961,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 </div>
             </div>
 
-            {/* Botón de Llamada a la Acción (Ir a la sección activa) */}
+            {/* Botón de Acción Directo */}
             <div className="pt-2 pb-4">
                 <button
                     type="button"
@@ -5575,7 +5971,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         }
                         onClose();
                     }}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.4)] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 via-fuchsia-600 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.4)] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                     <span>🚀</span>
                     <span>Abrir e Ir a la Sección {activeSec.badge} Ahora</span>
@@ -5584,25 +5980,26 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         </div>
     );
 
-    // Botones de Gestión de Ventana (Minimizar, Alternar Columna 40% / Modal, Cerrar)
+    // Controles de Cabecera (Plegar, Alternar 60% / Modal, Cerrar)
     const renderHeaderControls = () => (
         <div className="flex items-center gap-1.5 shrink-0">
-            {/* Botón Minimizar */}
+            {/* Botón Plegar / Desplegar */}
             <button 
                 type="button"
-                onClick={() => setModeAndPersist('minimized')}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 hover:text-white flex items-center justify-center font-mono text-xs border border-djzinc-750 transition-colors cursor-pointer"
-                title="Minimizar a píldora flotante para interactuar libremente con la app"
+                onClick={() => setIsFolded(true)}
+                className="px-2.5 py-1 rounded-xl bg-djzinc-850 hover:bg-pink-950/80 text-gray-300 hover:text-pink-300 flex items-center gap-1 font-mono text-xs border border-djzinc-750 hover:border-pink-500/60 transition-colors cursor-pointer"
+                title="Plegar manual a pestaña lateral para interactuar libremente con la cabina"
             >
-                🗕
+                <span>⇥</span>
+                <span className="hidden sm:inline">Plegar</span>
             </button>
 
-            {/* Alternar Columna 40% vs Modal Completa */}
+            {/* Alternar Drawer 60% vs Modal Centrada */}
             <button 
                 type="button"
                 onClick={() => setModeAndPersist(viewMode === 'drawer' ? 'modal' : 'drawer')}
                 className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 hover:text-white flex items-center justify-center font-mono text-xs border border-djzinc-750 transition-colors cursor-pointer"
-                title={viewMode === 'drawer' ? "Expandir a Modal Centrada Pantalla Completa" : "Plegar a Columna Lateral 40% (Interactiva con Cabina)"}
+                title={viewMode === 'drawer' ? "Expandir a Modal Centrada Pantalla Completa" : "Plegar a Columna Lateral 60% (Interactiva con Cabina)"}
             >
                 {viewMode === 'drawer' ? "⧉" : "▯"}
             </button>
@@ -5619,9 +6016,9 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         </div>
     );
 
-    // Selector Horizontal de las 8 Secciones Maestras
+    // Barra de las 8 Secciones Maestras
     const renderSectionsBar = () => (
-        <div className="px-3 sm:px-4 py-2 bg-[#07070d] border-b border-djzinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+        <div className="px-3 sm:px-4 py-2 bg-[#06060c] border-b border-djzinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
             {Object.values(MANUAL_SECTIONS).map(sec => {
                 const isActive = activeSectionKey === sec.id;
                 return (
@@ -5647,60 +6044,51 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     );
 
     // ─────────────────────────────────────────────────────────────────────────
-    // MODO 1: PÍLDORA FLOTANTE MINIMIZADA (Permite interactuar 100% con la App)
+    // ESTADO PLEGADO: Pestaña vertical adherida al borde derecho
     // ─────────────────────────────────────────────────────────────────────────
-    if (viewMode === 'minimized') {
+    if (isFolded) {
         return (
             <div 
-                className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-[#090912]/95 border border-pink-500/80 shadow-[0_0_25px_rgba(236,72,153,0.5)] backdrop-blur-md cursor-pointer hover:scale-105 transition-all text-white font-mono text-xs select-none animate-fadeIn"
-                onClick={() => setModeAndPersist('drawer')}
-                title="Haga clic para desplegar el manual interactivo en la columna derecha"
+                onClick={() => setIsFolded(false)}
+                className="fixed top-1/2 -translate-y-1/2 right-0 z-50 bg-[#090915] border-l-2 border-y border-pink-500 shadow-[0_0_25px_rgba(236,72,153,0.5)] px-3 py-4 rounded-l-2xl cursor-pointer hover:bg-pink-950 hover:translate-x-[-4px] transition-all flex flex-col items-center gap-2 text-white font-mono text-xs select-none animate-fadeIn"
+                title="Haga clic para desplegar el Manual Interactivo al 60% de pantalla"
             >
                 <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
-                <span className="font-black text-pink-300 flex items-center gap-1">
-                    <span>📖 MANUAL</span>
+                <span className="font-black text-pink-300 [writing-mode:vertical-rl] tracking-wider uppercase text-[11px] rotate-180 flex items-center gap-1.5">
+                    📖 MANUAL 60% • {activeSec.badge}
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-pink-950/80 border border-pink-700/60 font-bold uppercase" style={{ color: activeSec.color }}>
-                    {activeSec.badge}
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-pink-950 text-pink-300 border border-pink-700/60 font-bold uppercase">
+                    ◀ Desplegar
                 </span>
-                <span className="text-gray-400 text-[10px] hidden sm:inline">P{simStep + 1} ↗</span>
-                <button 
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onClose(); }}
-                    className="w-5 h-5 rounded-full bg-djzinc-850 hover:bg-djzinc-700 text-gray-400 hover:text-white flex items-center justify-center text-[10px] ml-1 cursor-pointer"
-                    title="Cerrar manual"
-                >
-                    ✕
-                </button>
             </div>
         );
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // MODO 2: COLUMNA LATERAL DERECHA (40% de ancho, no bloqueante, interactiva)
+    // MODO 1: COLUMNA LATERAL DERECHA AL 60% DE ANCHO (Interactiva y Plegable)
     // ─────────────────────────────────────────────────────────────────────────
     if (viewMode === 'drawer') {
         return (
             <aside 
-                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[480px] md:w-[45%] lg:w-[40%] xl:w-[40%] 2xl:w-[38%] min-w-[360px] max-w-[700px] h-full bg-[#080811]/98 border-l border-pink-500/60 shadow-[-20px_0_50px_rgba(0,0,0,0.85)] backdrop-blur-xl flex flex-col font-sans text-gray-200 animate-fadeIn select-none"
+                className="fixed top-0 bottom-0 right-0 z-50 w-full lg:w-[60vw] xl:w-[60vw] 2xl:w-[60vw] min-w-[360px] h-full bg-[#080811]/98 border-l border-pink-500/60 shadow-[-25px_0_60px_rgba(0,0,0,0.9)] backdrop-blur-2xl flex flex-col font-sans text-gray-200 animate-fadeIn select-none"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Drawer */}
-                <div className="px-4 py-3 border-b border-djzinc-800 bg-[#0d0d18] flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-base shadow-[0_0_12px_rgba(236,72,153,0.5)] shrink-0">
+                <div className="px-5 py-3 border-b border-djzinc-800 bg-[#0c0d18] flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0">
                             📖
                         </div>
                         <div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                                 <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
-                                    MANUAL CABINA
+                                    MANUAL CABINA PRO
                                 </h3>
-                                <span className="text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-1.5 py-0.2 rounded-full font-bold">
-                                    40% PRO
+                                <span className="text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold">
+                                    60% ANCHO • PLEGABLE
                                 </span>
                             </div>
-                            <p className="text-[10px] text-gray-400 font-mono truncate max-w-[200px] sm:max-w-[260px]">
+                            <p className="text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]">
                                 {activeSec.tag}
                             </p>
                         </div>
@@ -5709,24 +6097,25 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     {renderHeaderControls()}
                 </div>
 
-                {/* Selector Horizontal de Secciones */}
+                {/* Barra de Secciones */}
                 {renderSectionsBar()}
 
-                {/* Subtabs del Drawer: [ 🌟 Todo ] [ 🎬 Simulador ] [ 📖 Guía ] */}
-                <div className="px-4 py-1.5 bg-[#0a0a14] border-b border-djzinc-800/60 flex items-center justify-between text-[11px] font-mono shrink-0">
-                    <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Filtro de Contenido:</span>
-                    <div className="flex items-center gap-1 bg-djzinc-900 p-0.5 rounded-lg border border-djzinc-800">
+                {/* Subtabs del Drawer: [ 🌟 Todo ] [ 🎬 Simulador ] [ 🎛️ Controles ] [ 📖 Guía ] */}
+                <div className="px-5 py-2 bg-[#090a12] border-b border-djzinc-800/80 flex items-center justify-between text-xs font-mono shrink-0">
+                    <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider hidden sm:inline">Vistas de Contenido:</span>
+                    <div className="flex items-center gap-1 bg-djzinc-900 p-0.5 rounded-xl border border-djzinc-800">
                         {[
                             { id: 'all', label: '🌟 Todo' },
                             { id: 'sim', label: '🎬 Simulador' },
-                            { id: 'story', label: '📖 Guía' }
+                            { id: 'controls', label: `🎛️ Controles (${activeSec.controls ? activeSec.controls.length : 0})` },
+                            { id: 'guide', label: '📖 Guía Pro' }
                         ].map(tb => (
                             <button
                                 key={tb.id}
                                 type="button"
-                                onClick={() => setDrawerTab(tb.id)}
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                                    drawerTab === tb.id 
+                                onClick={() => setActiveManualTab(tb.id)}
+                                className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                    activeManualTab === tb.id 
                                         ? 'bg-pink-500 text-black font-black shadow-sm' 
                                         : 'text-gray-400 hover:text-white'
                                 }`}
@@ -5738,24 +6127,30 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 </div>
 
                 {/* Cuerpo Scrollable del Drawer */}
-                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-4">
-                    {(drawerTab === 'all' || drawerTab === 'sim') && (
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 space-y-5">
+                    {(activeManualTab === 'all' || activeManualTab === 'sim') && (
                         renderSimulatorCard(true)
                     )}
-                    {(drawerTab === 'all' || drawerTab === 'story') && (
+
+                    {(activeManualTab === 'all' || activeManualTab === 'controls') && (
+                        renderControlsCatalog()
+                    )}
+
+                    {(activeManualTab === 'all' || activeManualTab === 'guide') && (
                         renderSectionStoryAndDetails()
                     )}
                 </div>
 
                 {/* Pie del Drawer */}
-                <div className="px-4 py-2.5 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
-                    <span className="text-gray-400 text-[10px] flex items-center gap-1">
-                        <span>💡 Interactúa libremente con la cabina a la izquierda</span>
+                <div className="px-5 py-3 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
+                    <span className="text-gray-400 text-[10.5px] flex items-center gap-1.5">
+                        <span>💡</span>
+                        <span>Pulsa <strong>Plegar</strong> para interactuar con la cabina a la izquierda sin cerrar</span>
                     </span>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-3 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold text-xs transition-colors cursor-pointer"
+                        className="px-3.5 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold text-xs transition-colors cursor-pointer"
                     >
                         Cerrar (ESC)
                     </button>
@@ -5765,15 +6160,14 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // MODO 3: MODAL CENTRADA AMPLIA (Masterclass de pantalla completa)
+    // MODO 2: MODAL CENTRADA PANTALLA COMPLETA
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
             <div 
-                className="w-full max-w-6xl h-[92vh] max-h-[900px] bg-[#090912] border border-pink-500/50 rounded-3xl shadow-[0_0_50px_rgba(236,72,153,0.3)] overflow-hidden flex flex-col font-sans text-gray-200"
+                className="w-full max-w-7xl h-[92vh] max-h-[920px] bg-[#090912] border border-pink-500/50 rounded-3xl shadow-[0_0_60px_rgba(236,72,153,0.35)] overflow-hidden flex flex-col font-sans text-gray-200"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Cabecera Maestra */}
                 <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0d18] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0">
@@ -5784,7 +6178,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                 <h3 className="text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
                                     <span>BEATWAVE PRO • MANUAL MAESTRO DE CABINA</span>
                                     <span className="text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold">
-                                        GUÍA MASTERCLASS
+                                        MASTERCLASS
                                     </span>
                                 </h3>
                             </div>
@@ -5797,23 +6191,19 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     {renderHeaderControls()}
                 </div>
 
-                {/* Selector Horizontal de las 8 Secciones */}
                 {renderSectionsBar()}
 
-                {/* Cuerpo Principal en 2 Columnas con Scroll Completo */}
                 <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 sm:p-6 overflow-hidden">
-                    {/* Columna Izquierda: Narrativa y Paso a Paso con Scroll */}
-                    <div className="lg:col-span-7 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="lg:col-span-7 flex flex-col gap-5 overflow-y-auto pr-2 custom-scrollbar">
+                        {renderControlsCatalog()}
                         {renderSectionStoryAndDetails()}
                     </div>
 
-                    {/* Columna Derecha: Simulador Animado */}
-                    <div className="lg:col-span-5 flex flex-col min-h-[360px]">
+                    <div className="lg:col-span-5 flex flex-col min-h-[380px]">
                         {renderSimulatorCard(false)}
                     </div>
                 </div>
 
-                {/* Footer de la Modal */}
                 <div className="px-5 py-3 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
                     <span className="text-gray-500 text-[11px] hidden sm:inline">
                         Presiona <kbd className="px-1.5 py-0.5 bg-djzinc-900 border border-djzinc-750 rounded text-gray-300">ESC</kbd> o haz clic fuera para volver a la cabina.
@@ -5830,6 +6220,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         </div>
     );
 };
+
 const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayTrack, onSelectTrack }) => {
     if (!isOpen || !currentTrack) return null;
 
@@ -7615,6 +8006,18 @@ const AuditWorkspace = ({
 
                     {/* DERECHA: Acciones Maestras, Hub de Exportación & Guardar */}
                     <div className="flex items-center gap-1.5 shrink-0">
+                        {/* ACCESO RÁPIDO A GENERAR FLUJO DE SESIÓN */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (onNavigateTab) onNavigateTab('setbuilder');
+                            }}
+                            className="bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-200 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow shrink-0"
+                            title="Generar flujo no lineal de sesión (Graph Playlists estilo DJOID)"
+                        >
+                            <span>🕸️</span>
+                            <span className="hidden sm:inline">Flujo Sesión</span>
+                        </button>
                         {/* HUB UNIFICADO DE EXPORTACIÓN */}
                         <div data-tour="tour-export-crates" className="relative shrink-0">
                             <button 
@@ -19951,6 +20354,31 @@ const SetBuilderWorkspace = ({
 
                     {/* Acciones principales con Scroll Táctil */}
                     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-1 w-full lg:w-auto shrink-0">
+                        {/* BOTÓN PROMINENTE: GENERAR FLUJO DE SESIÓN (GRAPH PLAYLISTS ESTILO DJOID) */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setViewMode('graph');
+                                if (!setTracks || setTracks.length === 0) {
+                                    if (auditTracks && auditTracks.length > 0) {
+                                        setSetTracks([...auditTracks.slice(0, 10)]);
+                                    } else {
+                                        handleLoadDemoSet();
+                                    }
+                                }
+                                setTimeout(() => {
+                                    handleCargarGrafo();
+                                }, 80);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.55)] border border-purple-400/80 transition-all active:scale-95 cursor-pointer shrink-0 animate-pulse"
+                            title="Generar flujo no lineal de sesión estilo DJOID Graph Playlists con alternativas y compatibilidad armónica"
+                        >
+                            <span>🕸️</span>
+                            <span>GENERAR FLUJO DE SESIÓN</span>
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/40 text-purple-200 border border-purple-400/50">
+                                GRAPH DAG
+                            </span>
+                        </button>
                         {/* Botón Auditar Pistas del Set si hay pistas sin auditar */}
                         {stats.pendingAuditCount > 0 && (
                             <button
@@ -21438,6 +21866,17 @@ const MapWorkspace = ({
 
                 {/* LADO DERECHO: BUSCADOR EN VIVO Y CONTROLES */}
                 <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (onNavigateTab) onNavigateTab('setbuilder');
+                        }}
+                        className="bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-200 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow shrink-0"
+                        title="Ir a Set Builder para generar el flujo de sesión en Grafo DAG (DJOID Graph Playlists)"
+                    >
+                        <span>🕸️</span>
+                        <span className="hidden md:inline">Graph Playlists</span>
+                    </button>
                     {/* BUSCADOR: Limpio, sin artefactos, con icono SVG */}
                     <div className="relative flex items-center">
                         <span className="absolute left-2.5 text-gray-500 pointer-events-none flex items-center">
@@ -22069,7 +22508,22 @@ const MapWorkspace = ({
                                     className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer active:scale-95 transition-all"
                                     title="Enviar pistas capturadas en esta zona directamente al Set Builder"
                                 >
-                                    <span>⚡</span> <span>Enviar a Set Builder</span>
+                                    <span>⚡</span> <span>Enviar a Set</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (onAddTracksToSet) {
+                                            onAddTracksToSet(selectedMapTracks);
+                                        }
+                                        if (onNavigateTab) {
+                                            onNavigateTab('setbuilder');
+                                        }
+                                    }}
+                                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-500/30 cursor-pointer active:scale-95 transition-all"
+                                    title="Enviar pistas capturadas y generar Flujo de Sesión (Graph Playlists)"
+                                >
+                                    <span>🕸️</span> <span>Flujo Sesión (DAG)</span>
                                 </button>
                             </div>
                         </div>
@@ -25948,45 +26402,10 @@ const App = () => {
                             <Icons.Routing /> <span>{t('nav_tab_crates') || 'Crates'}</span>
                         </button>
                     </div>
-
-                    {/* SEPARADOR FÍSICO */}
-                    <div className="flex items-center px-1.5 select-none" title="Separación de Entorno: Cabina DJ vs. Estudio & Aprendizaje">
-                        <div className="h-5 w-[1px] bg-djzinc-700"></div>
-                    </div>
-
-                    {/* BAHÍA 2: STUDIO LAB & ACADEMIA */}
-                    <div className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-xl bg-indigo-950/20 border border-indigo-900/30">
-                        <button 
-                            type="button"
-                            onClick={() => setActiveTab('trends')} 
-                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] 2xl:text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
-                                activeTab === 'trends' 
-                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.5)] font-black' 
-                                : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60'
-                            }`}
-                            title="Tendencias Globales de Pistas, Festivales y Sonidos"
-                        >
-                            <Icons.Trends /> 
-                            <span>{t('nav_tab_trends') || 'Trends'}</span>
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => setActiveTab('knowledge')} 
-                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] 2xl:text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
-                                activeTab === 'knowledge' 
-                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.5)] font-black' 
-                                : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60'
-                            }`}
-                            title="Base de Conocimiento, Teoría y Guías DJ"
-                        >
-                            <Icons.Knowledge /> 
-                            <span>{t('nav_tab_guides') || 'Guías'}</span>
-                        </button>
-                    </div>
                 </nav>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {/* Botón Live Copilot Compacto Móvil (< 1280px) */}
                 <button
                     type="button"
@@ -26054,30 +26473,22 @@ const App = () => {
                     <span className="hidden xl:inline text-[11px]">{t('nav_bitacora') || 'Bitácora'}</span>
                 </button>
 
-                {/* Cuenta de Usuario & Sesiones Guardadas */}
+                {/* Cuenta de Usuario & Centro de Control DJ (Integra Atajos, Trends y Guías) */}
                 <button
                     type="button"
                     onClick={() => setUserModalOpen(true)}
-                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/80 to-blue-950/80 hover:from-cyan-900 hover:to-blue-900 text-cyan-300 hover:text-white border border-cyan-500/50 text-xs font-mono font-bold shadow-md cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
-                    title="Cuenta de Usuario, Login & Continuidad de Sesiones"
+                    className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 text-cyan-300 hover:text-white border border-cyan-500/60 text-xs font-mono font-bold shadow-md cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+                    title="Centro de Control DJ: Perfil, Atajos, Trends, Guías y Continuidad de Sesión"
                 >
-                    <div className="w-4 h-4 rounded-full bg-cyan-400 text-black flex items-center justify-center text-[9px] font-black">
-                        DJ
+                    <div className="w-5 h-5 rounded-full overflow-hidden border border-cyan-400 bg-cyan-900 flex items-center justify-center shrink-0">
+                        {userProfile.avatarUrl ? (
+                            <img src={userProfile.avatarUrl} alt="DJ" className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-[10px]">🎧</span>
+                        )}
                     </div>
-                    <span className="hidden xl:inline text-[11px] truncate max-w-[90px]">{userProfile.alias || 'DJ Alex'}</span>
+                    <span className="hidden xl:inline text-[11px] truncate max-w-[95px] font-bold text-white">{userProfile.alias || 'DJ Alex'}</span>
                     <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-950 text-cyan-400 border border-cyan-700/60 font-black hidden 2xl:inline">PRO</span>
-                </button>
-
-                {/* Botón de Atajos de Teclado DJ Cheatsheet */}
-                <button
-                    type="button"
-                    onClick={() => setShortcutsModalOpen(true)}
-                    className="px-2 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-500/50 text-xs font-mono font-bold shadow-inner cursor-pointer transition-all flex items-center gap-1 shrink-0"
-                    title="Atajos de Teclado DJ (Tecla ? o H)"
-                >
-                    <span>⌨️</span>
-                    <span className="hidden 2xl:inline text-[11px]">{t('nav_shortcuts') || 'Atajos'}</span>
-                    <kbd className="text-[9px] bg-black/40 px-1 py-0.2 rounded border border-djzinc-750">?</kbd>
                 </button>
 
                 {/* Selector de Idioma (Toggle compacto ES / EN) */}
@@ -26696,6 +27107,8 @@ const App = () => {
                     tracksCount: auditTracks.length,
                     activeTab: activeTab
                 }}
+                onNavigateTab={setActiveTab}
+                onOpenShortcuts={() => setShortcutsModalOpen(true)}
             />
 
             {/* CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS AUDITABLE */}
