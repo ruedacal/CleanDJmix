@@ -576,6 +576,25 @@ def buscar_reemplazos_spotify_batch(tracks):
     return media_svc.buscar_reemplazos_spotify_batch(tracks)
 
 @eel.expose
+def buscar_candidatos_manuales_spotify(query, pista_origen=None):
+    """Búsqueda manual de versiones alternativas en Spotify/Apple Music con validación de coincidencia."""
+    return media_svc.buscar_candidatos_manuales_spotify(query, pista_origen=pista_origen)
+
+@bottle.route('/api/buscar_candidatos_manuales_spotify', method=['POST', 'OPTIONS'])
+def api_buscar_candidatos_manuales_spotify():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    auth_err = _verificar_token_remoto()
+    if auth_err:
+        return auth_err
+    data = bottle.request.json or {}
+    query = data.get('query', '')
+    pista_origen = data.get('pista_origen', None)
+    return media_svc.buscar_candidatos_manuales_spotify(query, pista_origen=pista_origen)
+
+@eel.expose
 def cancelar_procesos_activos():
     audit_svc.cancelar_proceso()
     download_svc.cancelar_descarga()

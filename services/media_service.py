@@ -8,6 +8,7 @@ import urllib.request
 import urllib.parse
 import concurrent.futures
 from mutagen import File as MutagenFile
+from services.track_matcher import TrackMatcher
 
 try:
     import spotipy
@@ -473,7 +474,8 @@ class MediaService:
         """
         Toma una lista de pistas (ej. identificadas como FLAC Fake o baja calidad en auditoría)
         y busca en paralelo sus versiones oficiales de alta calidad en Spotify / iTunes.
-        Devuelve la lista estandarizada para ingesta directa en la tabla de Spotify.
+        Aplica validación de fidelidad estricta (TrackMatcher) para evitar descargar temas equivocados,
+        Radio Edits o versiones no deseadas.
         """
         if not tracks or not isinstance(tracks, list):
             return {"status": "error", "msg": "Lista de pistas vacía", "tracks": [], "count": 0}
@@ -489,79 +491,134 @@ class MediaService:
             orig_artist = str(t.get("artist") or t.get("a") or "").strip()
             orig_title = str(t.get("title") or t.get("t") or "").strip()
             orig_file = str(t.get("filename") or t.get("f") or "")
+            orig_dur = str(t.get("duration") or "05:00")
+            orig_bpm = str(t.get("bpm") or t.get("b") or bpms_tech[idx % len(bpms_tech)])
+            orig_key = str(t.get("key") or t.get("k") or keys_camelot[idx % len(keys_camelot)])
             reemplazo_de = f"{orig_artist} - {orig_title}" if orig_artist and orig_title else (orig_title or orig_file)
 
-            # Limpiar nombre para la búsqueda (quitar corchetes de calidad/spam)
+            # Limpiar nombre para la búsqueda
             q = f"{orig_artist} {orig_title}".strip()
             if not q or q == "-":
                 q = os.path.splitext(orig_file)[0]
             q_clean = re.sub(r'\[.*?\]|\(.*?\)', '', q).strip()
             q_clean = re.sub(r'\s+', ' ', q_clean)
 
-            # 1. Intento primario vía Spotipy
+            candidatos_raw = []
+
+            # 1. Búsqueda Multi-Candidato en Spotify (limit=8)
             if self._sp:
                 try:
-                    r = self._sp.search(q=q_clean, type='track', limit=1)
+                    r = self._sp.search(q=q_clean, type='track', limit=8)
                     items = r.get('tracks', {}).get('items', [])
-                    if items:
-                        it = items[0]
+                    for it in items:
                         dur_sec = it.get('duration_ms', 240000) // 1000
                         imgs = it.get('album', {}).get('images', [])
                         cover = imgs[0]['url'] if imgs else ''
-                        prev_url = it.get('preview_url') or ''
-                        ed_calc = self.calcular_energia_y_danceability(t, idx)
-                        return {
+                        candidatos_raw.append({
                             "id": str(it['id']),
                             "title": it['name'],
                             "artist": ", ".join(a['name'] for a in it.get('artists', [])) or orig_artist,
                             "album": it.get('album', {}).get('name', 'Single / EP'),
                             "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
-                            "bpm": str(t.get("bpm") or t.get("b") or bpms_tech[idx % len(bpms_tech)]),
-                            "key": str(t.get("key") or t.get("k") or keys_camelot[idx % len(keys_camelot)]),
+                            "dur_sec": dur_sec,
                             "cover": cover,
-                            "preview_url": prev_url,
-                            "selected": True,
-                            "origin": "audit_upgrade",
-                            "reemplazo_de": reemplazo_de,
-                            "format": "FLAC",
-                            "energy": int(t.get("energy") or t.get("e") or ed_calc["energy"]),
-                            "danceability": int(t.get("danceability") or t.get("dance") or ed_calc["danceability"]),
-                            "status": "Listo para Descarga"
-                        }
+                            "preview_url": it.get('preview_url') or '',
+                            "spotify_url": it.get('external_urls', {}).get('spotify', ''),
+                            "isrc": it.get('external_ids', {}).get('isrc', ''),
+                            "origen": "Spotify"
+                        })
                 except Exception as e:
                     print(f"[REEMPLAZO SPOTIFY WARN] Fallo búsqueda Spotipy '{q_clean}': {e}")
 
-            # 2. Respaldo rápido vía iTunes
+            # 2. Respaldo / Complemento en iTunes (limit=8)
             try:
-                res_it = self.buscar_metadata_itunes(q_clean, limit=1)
-                if res_it:
-                    it = res_it[0]
+                res_it = self.buscar_metadata_itunes(q_clean, limit=8)
+                for it in res_it:
                     dur_ms = it.get("trackTimeMillis", 240000)
                     dur_sec = int(dur_ms // 1000)
                     cover = (it.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
-                    ed_calc = self.calcular_energia_y_danceability(t, idx)
-                    return {
+                    candidatos_raw.append({
                         "id": str(it.get("trackId") or f"rep_{idx}_{int(time.time())}"),
                         "title": it.get("trackName", orig_title),
                         "artist": it.get("artistName", orig_artist),
                         "album": it.get("collectionName", "Single / EP"),
                         "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
-                        "bpm": str(t.get("bpm") or t.get("b") or bpms_tech[idx % len(bpms_tech)]),
-                        "key": str(t.get("key") or t.get("k") or keys_camelot[idx % len(keys_camelot)]),
+                        "dur_sec": dur_sec,
                         "cover": cover,
                         "preview_url": it.get("previewUrl", ""),
-                        "selected": True,
-                        "origin": "audit_upgrade",
-                        "reemplazo_de": reemplazo_de,
-                        "format": "FLAC",
-                        "energy": int(t.get("energy") or t.get("e") or ed_calc["energy"]),
-                        "danceability": int(t.get("danceability") or t.get("dance") or ed_calc["danceability"]),
-                        "status": "Listo para Descarga"
-                    }
+                        "apple_url": it.get("trackViewUrl", "").split("&uo=")[0],
+                        "isrc": it.get("isrc", ""),
+                        "origen": "Apple Music"
+                    })
             except Exception as e:
                 print(f"[REEMPLAZO ITUNES WARN] Fallo búsqueda iTunes '{q_clean}': {e}")
 
-            return None
+            if not candidatos_raw:
+                return None
+
+            # 3. Evaluación de Fidelidad con TrackMatcher para cada candidato
+            candidatos_evaluados = []
+            for c in candidatos_raw:
+                match_res = TrackMatcher.evaluar_coincidencia(t, c)
+                c_data = {
+                    **c,
+                    "match_score": match_res["score"],
+                    "match_confianza": match_res["confianza"],
+                    "match_badge_color": match_res["badge_color"],
+                    "es_misma_pista": match_res["es_misma_pista"],
+                    "match_recomendacion": match_res["recomendacion"],
+                    "alerta_version": match_res.get("alerta_version"),
+                    "alerta_duracion": match_res.get("alerta_duracion"),
+                    "diff_duracion_sec": match_res.get("diff_duracion_sec", 0),
+                    "duracion_origen": match_res.get("duracion_origen"),
+                    "duracion_candidato": match_res.get("duracion_candidato")
+                }
+                candidatos_evaluados.append(c_data)
+
+            # Ordenar candidatos de mayor a menor score
+            candidatos_evaluados.sort(key=lambda x: x["match_score"], reverse=True)
+            mejor = candidatos_evaluados[0]
+            otros_candidatos = candidatos_evaluados[1:6]
+
+            ed_calc = self.calcular_energia_y_danceability(t, idx)
+            es_seguro = bool(mejor["match_score"] >= 80 and mejor["es_misma_pista"])
+
+            return {
+                "id": str(mejor.get("id") or f"sp_hd_{idx}_{int(time.time())}"),
+                "title": mejor["title"],
+                "artist": mejor["artist"],
+                "album": mejor.get("album", "Single / EP"),
+                "duration": mejor["duration"],
+                "bpm": orig_bpm,
+                "key": orig_key,
+                "cover": mejor.get("cover", ""),
+                "preview_url": mejor.get("preview_url", ""),
+                "selected": es_seguro, # Solo pre-seleccionar si el match es 100% verificado
+                "origin": "audit_upgrade",
+                "reemplazo_de": reemplazo_de,
+                "original_file": orig_file,
+                "original_path": t.get("path") or "",
+                "original_duration": orig_dur,
+                "original_artist": orig_artist,
+                "original_title": orig_title,
+                "original_calidad": t.get("calidad") or (("FLAC FAKE") if t.get("es_fake") else "Baja Calidad"),
+                "format": "FLAC",
+                "energy": int(t.get("energy") or t.get("e") or ed_calc["energy"]),
+                "danceability": int(t.get("danceability") or t.get("dance") or ed_calc["danceability"]),
+                "status": "Listo para Descarga (Match Verificado)" if es_seguro else "Revisión Requerida (Match Dudoso)",
+                "match_score": mejor["match_score"],
+                "match_confianza": mejor["match_confianza"],
+                "match_badge_color": mejor["match_badge_color"],
+                "es_misma_pista": mejor["es_misma_pista"],
+                "match_recomendacion": mejor["match_recomendacion"],
+                "alerta_version": mejor.get("alerta_version"),
+                "alerta_duracion": mejor.get("alerta_duracion"),
+                "candidatos_alternativos": otros_candidatos,
+                "todos_candidatos": candidatos_evaluados[:6],
+                "spotify_url": mejor.get("spotify_url", ""),
+                "apple_url": mejor.get("apple_url", ""),
+                "isrc": mejor.get("isrc", "")
+            }
 
         tracks_con_idx = list(enumerate(tracks))
         workers = min(8, max(1, len(tracks)))
@@ -570,9 +627,98 @@ class MediaService:
 
         enriquecidos = self._enriquecer_tracks_con_pre_auditoria(encontrados)
 
+        verificados_count = sum(1 for trk in enriquecidos if trk.get("match_score", 0) >= 80)
+        dudosos_count = len(enriquecidos) - verificados_count
+
         return {
             "status": "ok",
             "tracks": enriquecidos,
             "count": len(enriquecidos),
+            "verificados_count": verificados_count,
+            "dudosos_count": dudosos_count,
             "total_solicitados": len(tracks)
+        }
+
+    def buscar_candidatos_manuales_spotify(self, query: str, pista_origen: dict = None) -> dict:
+        """
+        Búsqueda manual en tiempo real de versiones alternativas en Spotify e iTunes.
+        Calcula el match score contra la pista original para que el DJ elija con seguridad.
+        """
+        if not query or not str(query).strip():
+            return {"status": "error", "msg": "Término de búsqueda vacío", "candidatos": []}
+
+        q_clean = str(query).strip()
+        candidatos_raw = []
+
+        if not self._sp:
+            self._sp = self._inicializar_spotipy()
+
+        # Búsqueda en Spotify
+        if self._sp:
+            try:
+                r = self._sp.search(q=q_clean, type='track', limit=10)
+                for it in r.get('tracks', {}).get('items', []):
+                    dur_sec = it.get('duration_ms', 240000) // 1000
+                    imgs = it.get('album', {}).get('images', [])
+                    candidatos_raw.append({
+                        "id": str(it['id']),
+                        "title": it['name'],
+                        "artist": ", ".join(a['name'] for a in it.get('artists', [])),
+                        "album": it.get('album', {}).get('name', ''),
+                        "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
+                        "dur_sec": dur_sec,
+                        "cover": imgs[0]['url'] if imgs else '',
+                        "preview_url": it.get('preview_url') or '',
+                        "spotify_url": it.get('external_urls', {}).get('spotify', ''),
+                        "isrc": it.get('external_ids', {}).get('isrc', ''),
+                        "origen": "Spotify"
+                    })
+            except Exception as e:
+                print(f"[BUSQUEDA MANUAL SPOTIFY WARN] {e}")
+
+        # Búsqueda complementaria en iTunes
+        try:
+            itunes_res = self.buscar_metadata_itunes(q_clean, limit=12)
+            for it in itunes_res:
+                dur_ms = it.get("trackTimeMillis", 240000)
+                dur_sec = int(dur_ms // 1000)
+                candidatos_raw.append({
+                    "id": str(it.get("trackId") or f"it_{int(time.time()*1000)}"),
+                    "title": it.get("trackName", ""),
+                    "artist": it.get("artistName", ""),
+                    "album": it.get("collectionName", ""),
+                    "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
+                    "dur_sec": dur_sec,
+                    "cover": (it.get("artworkUrl100") or "").replace("100x100bb", "600x600bb"),
+                    "preview_url": it.get("previewUrl", ""),
+                    "apple_url": it.get("trackViewUrl", "").split("&uo=")[0],
+                    "isrc": it.get("isrc", ""),
+                    "origen": "Apple Music"
+                })
+        except Exception as e:
+            print(f"[BUSQUEDA MANUAL ITUNES WARN] {e}")
+
+        # Evaluar contra pista_origen si fue provista
+        p_eval = pista_origen or {"title": q_clean, "artist": ""}
+        candidatos_finales = []
+        for c in candidatos_raw:
+            m = TrackMatcher.evaluar_coincidencia(p_eval, c)
+            candidatos_finales.append({
+                **c,
+                "match_score": m["score"],
+                "match_confianza": m["confianza"],
+                "match_badge_color": m["badge_color"],
+                "es_misma_pista": m["es_misma_pista"],
+                "match_recomendacion": m["recomendacion"],
+                "alerta_version": m.get("alerta_version"),
+                "alerta_duracion": m.get("alerta_duracion"),
+                "diff_duracion_sec": m.get("diff_duracion_sec", 0)
+            })
+
+        candidatos_finales.sort(key=lambda x: x["match_score"], reverse=True)
+        return {
+            "status": "ok",
+            "query": q_clean,
+            "candidatos": candidatos_finales,
+            "count": len(candidatos_finales)
         }

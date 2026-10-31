@@ -10,6 +10,7 @@ import requests
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from infrastructure.audio_processor import AudioProcessorService
+from services.track_matcher import TrackMatcher
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config_ingest.json")
 
@@ -98,17 +99,43 @@ class SpotifyFlacIngestService:
             print(f"[SpotifyFlacIngest] Error iniciando Spotipy: {e}")
             return None
 
-    def _resolver_apple_music_url(self, artist: str, title: str, music_url_actual: str = "") -> str:
+    def _resolver_apple_music_url(self, artist: str, title: str, music_url_actual: str = "", meta_track: dict = None) -> str:
         if music_url_actual and "music.apple.com" in music_url_actual:
             return music_url_actual.split("&uo=")[0]
         try:
             q = urllib.parse.quote(f"{artist} {title}")
-            url = f"https://itunes.apple.com/search?term={q}&country=es&entity=song&limit=5"
+            url = f"https://itunes.apple.com/search?term={q}&country=es&entity=song&limit=8"
             r = requests.get(url, timeout=8)
             if r.status_code == 200:
                 results = r.json().get("results", [])
                 if results:
-                    track_view = results[0].get("trackViewUrl", "")
+                    # Si no hay metadatos para comparar, fallback al primero
+                    if not meta_track:
+                        track_view = results[0].get("trackViewUrl", "")
+                        return track_view.split("&uo=")[0]
+
+                    # Evaluación de Fidelidad con TrackMatcher para asegurar que sea la misma pista y versión
+                    pista_referencia = {
+                        "artist": artist,
+                        "title": title,
+                        "duration": meta_track.get("original_duration") or meta_track.get("duration") or "05:00",
+                        "bpm": meta_track.get("bpm") or 0.0
+                    }
+
+                    candidatos_puntuados = []
+                    for res in results:
+                        match_info = TrackMatcher.evaluar_coincidencia(pista_referencia, res)
+                        candidatos_puntuados.append((match_info["score"], res))
+
+                    candidatos_puntuados.sort(key=lambda x: x[0], reverse=True)
+                    mejor_score, mejor_res = candidatos_puntuados[0]
+
+                    # Si el mejor score es menor a 45%, se rechaza la descarga ciega para evitar temas incorrectos
+                    if mejor_score < 45:
+                        print(f"[SUPERFLAC WARN] Coincidencia de Apple Music muy baja ({mejor_score}%) para '{artist} - {title}'. Descarga evitada para proteger la biblioteca.")
+                        return ""
+
+                    track_view = mejor_res.get("trackViewUrl", "")
                     return track_view.split("&uo=")[0]
         except Exception as e:
             print(f"[SUPERFLAC WARN] Error resolviendo Apple Music URL: {e}")
@@ -306,7 +333,8 @@ class SpotifyFlacIngestService:
         music_url = self._resolver_apple_music_url(
             safe_artist,
             safe_title,
-            meta_track.get("apple_url", "")
+            meta_track.get("apple_url", ""),
+            meta_track=meta_track
         )
         if not music_url:
             return {"status": "error", "msg": "No se pudo resolver el music_url de Apple Music para SuperFLAC", "path": ""}

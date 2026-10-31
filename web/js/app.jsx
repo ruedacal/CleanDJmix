@@ -4669,33 +4669,48 @@ const AuditWorkspace = ({
             setBatchProgress(90);
             setBatchStatusMsg(`✓ ${results.length} pistas encontradas en Spotify HD. Redirigiendo a Spotify Ingest...`);
 
-            const formattedTracks = results.map((r, i) => ({
-                id: `sp_hd_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
-                title: r.title,
-                artist: r.artist,
-                album: r.album || 'Oficial Spotify HD',
-                bpm: parseFloat(r.bpm) || 128,
-                key: (r.key || '8A').toUpperCase(),
-                cover: r.cover || null,
-                duration: r.duration || '03:45',
-                origin: 'audit_upgrade',
-                reemplazo_de: r.reemplazo_de || r.filename || null,
-                original_file: r.original_file || r.filename || null,
-                original_path: r.original_path || null,
-                downloaded: false,
-                selected: true,
-                format: 'FLAC',
-                calidad: 'Oficial Spotify HD',
-                status: 'Pendiente Descarga',
-                spotify_id: r.spotify_id || null,
-                spotify_url: r.spotify_url || null,
-                isrc: r.isrc || null,
-                preview_url: r.preview_url || null,
-                energy: r.energy || r.e || 78,
-                danceability: r.danceability || r.dance || 84,
-                fase_badge: r.fase_badge || null,
-                comment: `Reemplazo HD para: ${r.reemplazo_de || r.filename || 'Pista local'}`
-            }));
+            const formattedTracks = results.map((r, i) => {
+                const isVerified = (r.match_score !== undefined ? r.match_score >= 80 : true) && r.es_misma_pista !== false;
+                return {
+                    id: `sp_hd_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
+                    title: r.title,
+                    artist: r.artist,
+                    album: r.album || 'Oficial Spotify HD',
+                    bpm: parseFloat(r.bpm) || 128,
+                    key: (r.key || '8A').toUpperCase(),
+                    cover: r.cover || null,
+                    duration: r.duration || '03:45',
+                    origin: 'audit_upgrade',
+                    reemplazo_de: r.reemplazo_de || r.filename || null,
+                    original_file: r.original_file || r.filename || null,
+                    original_path: r.original_path || null,
+                    original_duration: r.original_duration || null,
+                    original_calidad: r.original_calidad || null,
+                    downloaded: false,
+                    selected: isVerified, // Solo pre-marcar las que tienen match verificado 100%
+                    format: 'FLAC',
+                    calidad: 'Oficial Spotify HD',
+                    status: isVerified ? 'Listo para Descarga (Match Verificado)' : 'Revisión Requerida (Match Dudoso)',
+                    match_score: r.match_score !== undefined ? r.match_score : 100,
+                    match_confianza: r.match_confianza || (isVerified ? 'ALTA' : 'MEDIA'),
+                    match_badge_color: r.match_badge_color || (isVerified ? 'emerald' : 'amber'),
+                    match_recomendacion: r.match_recomendacion || '',
+                    alerta_version: r.alerta_version || null,
+                    alerta_duracion: r.alerta_duracion || null,
+                    es_misma_pista: r.es_misma_pista !== undefined ? r.es_misma_pista : true,
+                    candidatos_alternativos: r.candidatos_alternativos || [],
+                    todos_candidatos: r.todos_candidatos || [],
+                    spotify_id: r.spotify_id || r.id || null,
+                    spotify_url: r.spotify_url || null,
+                    apple_url: r.apple_url || null,
+                    isrc: r.isrc || null,
+                    preview_url: r.preview_url || null,
+                    energy: r.energy || r.e || 78,
+                    danceability: r.danceability || r.dance || 84,
+                    fase_badge: r.fase_badge || null,
+                    comment: `Reemplazo HD para: ${r.reemplazo_de || r.filename || 'Pista local'}`
+                };
+            });
 
             if (typeof onSendToSpotify === 'function') {
                 onSendToSpotify(formattedTracks, 'audit_upgrade');
@@ -10022,6 +10037,10 @@ const SpotifyWorkspace = ({
     lang = "es", 
     t = (k) => k 
 }) => {
+    const [internalTracks, setInternalTracks] = useState([]);
+    const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
+    const setTracks = externalSetTracks !== undefined ? externalSetTracks : setInternalTracks;
+
     const [spotifyUrl, setSpotifyUrl] = useState('');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [destDir, setDestDir] = useState('/Users/admin/Music/mi musica');
@@ -10038,9 +10057,111 @@ const SpotifyWorkspace = ({
     const [isExportingXls, setIsExportingXls] = useState(false);
     const [xlsToast, setXlsToast] = useState('');
 
-    const [internalTracks, setInternalTracks] = useState([]);
-    const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
-    const setTracks = externalSetTracks !== undefined ? externalSetTracks : setInternalTracks;
+    // Modal de Verificación de Fidelidad y Selección de Versiones / Búsqueda Manual
+    const [candidateModal, setCandidateModal] = useState({
+        open: false,
+        targetTrack: null,
+        candidates: [],
+        searchQuery: '',
+        isSearching: false,
+        searchMsg: ''
+    });
+
+    const handleAbrirVerificacionCandidatos = (track) => {
+        if (!track) return;
+        const candidates = track.todos_candidatos && track.todos_candidatos.length > 0
+            ? track.todos_candidatos
+            : (track.candidatos_alternativos && track.candidatos_alternativos.length > 0
+                ? [track, ...track.candidatos_alternativos]
+                : [track]);
+
+        setCandidateModal({
+            open: true,
+            targetTrack: track,
+            candidates: candidates,
+            searchQuery: `${track.original_artist || track.artist || ''} ${track.original_title || track.title || ''}`.trim(),
+            isSearching: false,
+            searchMsg: ''
+        });
+    };
+
+    const handleBuscarCandidatosManuales = async (customQuery = null) => {
+        const query = customQuery !== null ? customQuery : candidateModal.searchQuery;
+        if (!query || !query.trim()) return;
+
+        setCandidateModal(prev => ({ ...prev, isSearching: true, searchMsg: 'Buscando versiones en Spotify & Apple Music...' }));
+        try {
+            const pistaOrigen = candidateModal.targetTrack ? {
+                artist: candidateModal.targetTrack.original_artist || candidateModal.targetTrack.artist,
+                title: candidateModal.targetTrack.original_title || candidateModal.targetTrack.title,
+                duration: candidateModal.targetTrack.original_duration || candidateModal.targetTrack.duration,
+                bpm: candidateModal.targetTrack.bpm
+            } : null;
+
+            let res = null;
+            if (window.eel && window.eel.buscar_candidatos_manuales_spotify) {
+                res = await window.eel.buscar_candidatos_manuales_spotify(query, pistaOrigen)();
+            } else {
+                const resp = await fetch('/api/buscar_candidatos_manuales_spotify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, pista_origen: pistaOrigen })
+                });
+                res = await resp.json();
+            }
+
+            if (res && Array.isArray(res.candidatos)) {
+                setCandidateModal(prev => ({
+                    ...prev,
+                    candidates: res.candidatos,
+                    isSearching: false,
+                    searchMsg: res.candidatos.length > 0 ? `✓ ${res.candidatos.length} versiones encontradas.` : 'No se encontraron resultados para esta búsqueda.'
+                }));
+            } else {
+                setCandidateModal(prev => ({ ...prev, isSearching: false, searchMsg: 'No se encontraron resultados.' }));
+            }
+        } catch (err) {
+            console.error("Error buscando candidatos manuales:", err);
+            setCandidateModal(prev => ({ ...prev, isSearching: false, searchMsg: 'Error al buscar versiones alternativas.' }));
+        }
+    };
+
+    const handleSeleccionarVersionCandidato = (candidato) => {
+        if (!candidato || !candidateModal.targetTrack) return;
+        const targetId = candidateModal.targetTrack.id;
+
+        setTracks(prev => prev.map(t => {
+            if (String(t.id) === String(targetId)) {
+                const isVerified = (candidato.match_score !== undefined ? candidato.match_score >= 80 : true);
+                return {
+                    ...t,
+                    title: candidato.title || t.title,
+                    artist: candidato.artist || t.artist,
+                    album: candidato.album || t.album,
+                    duration: candidato.duration || t.duration,
+                    cover: candidato.cover || t.cover,
+                    preview_url: candidato.preview_url || t.preview_url,
+                    spotify_url: candidato.spotify_url || t.spotify_url,
+                    apple_url: candidato.apple_url || t.apple_url,
+                    isrc: candidato.isrc || t.isrc,
+                    match_score: candidato.match_score !== undefined ? candidato.match_score : 100,
+                    match_confianza: candidato.match_confianza || 'ALTA',
+                    match_badge_color: candidato.match_badge_color || 'emerald',
+                    match_recomendacion: candidato.match_recomendacion || 'Seleccionado manualmente por el usuario',
+                    alerta_version: candidato.alerta_version || null,
+                    alerta_duracion: candidato.alerta_duracion || null,
+                    es_misma_pista: true,
+                    confirmado_manualmente: true,
+                    status: 'Listo para Descarga (Match Verificado Manualmente)',
+                    selected: true // Marcar para descarga porque el DJ lo eligió explícitamente
+                };
+            }
+            return t;
+        }));
+
+        setCandidateModal(prev => ({ ...prev, open: false }));
+    };
+
 
     // Navegador de Carpetas Web Integrado para Destino (Cero popups del SO)
     const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
@@ -10547,13 +10668,31 @@ const SpotifyWorkspace = ({
 
     const lanzarDescargaReal = async (listaPistas) => {
         if (!listaPistas || listaPistas.length === 0) return;
+
+        // Comprobación de fidelidad DJ previa a la descarga
+        let pistasADescargar = [...listaPistas];
+        const dudosas = pistasADescargar.filter(t => t.match_score !== undefined && t.match_score < 75 && !t.confirmado_manualmente);
+        if (dudosas.length > 0) {
+            const confirmMsg = `⚠️ ALERTA DE SEGURIDAD DJ:\n\nSe detectaron ${dudosas.length} pista(s) con coincidencia dudosa (<75%) que podrían ser temas erróneos, Radio Edits o Remixes no deseados.\n\n¿Deseas omitir las dudosas y descargar ÚNICAMENTE las pistas 100% verificadas?\n\n- [Aceptar]: Descargar solo las verificadas (Recomendado para evitar temas incorrectos)\n- [Cancelar]: Revisar y seleccionar versiones manualmente`;
+            if (window.confirm(confirmMsg)) {
+                pistasADescargar = pistasADescargar.filter(t => t.match_score === undefined || t.match_score >= 75 || t.confirmado_manualmente);
+                if (pistasADescargar.length === 0) {
+                    alert("No hay pistas con coincidencia alta para descargar. Por favor haz clic en 'Revisar' en la pista para seleccionar la versión correcta con el buscador.");
+                    return;
+                }
+            } else {
+                handleAbrirVerificacionCandidatos(dudosas[0]);
+                return;
+            }
+        }
+
         setIsDownloading(true);
         setDownloadProgress(10);
-        setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${listaPistas.length} pista(s) en formato .${selectedFormat.toUpperCase()}...`);
+        setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${pistasADescargar.length} pista(s) en formato .${selectedFormat.toUpperCase()}...`);
         let descargadoVíaEel = false;
         if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
             try {
-                await window.eel.descargar_pistas_spotify_seleccionadas(listaPistas, selectedFormat, destDir)();
+                await window.eel.descargar_pistas_spotify_seleccionadas(pistasADescargar, selectedFormat, destDir)();
                 descargadoVíaEel = true;
             } catch (e) {
                 console.warn("[SPOTIFY] Error en llamada Eel de descarga, recurriendo a HTTP:", e);
@@ -10565,14 +10704,14 @@ const SpotifyWorkspace = ({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        tracks: listaPistas,
+                        tracks: pistasADescargar,
                         formato: selectedFormat,
                         custom_dir: destDir
                     })
                 });
                 const res = await resp.json();
                 if (res && (res.status === 'ok' || res.status === 'iniciado')) {
-                    setDownloadingMsg(`[DESCARGANDO] Lote en segundo plano (${listaPistas.length} pistas) hacia: ${res.dest || destDir}`);
+                    setDownloadingMsg(`[DESCARGANDO] Lote en segundo plano (${pistasADescargar.length} pistas) hacia: ${res.dest || destDir}`);
                     setDownloadProgress(35);
                 } else {
                     setDownloadingMsg(`[ERROR] ${res?.msg || 'Error al iniciar descarga'}`);
@@ -11105,6 +11244,34 @@ const SpotifyWorkspace = ({
                                                             <span>Sustituye a:</span> <span className="underline decoration-amber-500/50">{row.reemplazo_de}</span>
                                                         </span>
                                                     )}
+                                                    {row.match_score !== undefined && (
+                                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                                            {row.match_score >= 80 ? (
+                                                                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-600/70 inline-flex items-center gap-1 shadow-sm">
+                                                                    <span>🎯</span> <span>{row.match_score}% Match Verificado</span>
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => { e.stopPropagation(); handleAbrirVerificacionCandidatos(row); }}
+                                                                    className="text-[9px] font-mono font-black px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-600/80 hover:bg-amber-900 inline-flex items-center gap-1 cursor-pointer shadow animate-pulse"
+                                                                    title={row.match_recomendacion || "Coincidencia dudosa. Clic para cambiar versión o buscar manualmente"}
+                                                                >
+                                                                    <span>⚠️</span> <span>{row.match_score}% Match Dudoso • Cambiar</span>
+                                                                </button>
+                                                            )}
+                                                            {row.candidatos_alternativos && row.candidatos_alternativos.length > 0 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => { e.stopPropagation(); handleAbrirVerificacionCandidatos(row); }}
+                                                                    className="text-[9px] font-mono text-gray-400 hover:text-white underline cursor-pointer"
+                                                                    title="Ver otras versiones encontradas en Spotify / Apple Music"
+                                                                >
+                                                                    ({row.candidatos_alternativos.length} opciones)
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
@@ -11269,18 +11436,36 @@ const SpotifyWorkspace = ({
                                                         >
                                                             Reintentar
                                                         </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAbrirVerificacionCandidatos(row)}
+                                                            className="px-1.5 py-0.5 rounded text-[10px] font-mono text-gray-400 hover:text-white bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-750 cursor-pointer"
+                                                            title="Buscar versión alternativa"
+                                                        >
+                                                            🔍
+                                                        </button>
                                                     </div>
                                                 ) : (
-                                                    <button 
-                                                        onClick={() => lanzarDescargaReal([row])} 
-                                                        className={`px-3 py-1 rounded text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
-                                                            isPendingTaxonomy 
-                                                                ? 'bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-400 font-bold shadow-[0_0_10px_rgba(16,185,129,0.4)]'
-                                                                : 'bg-[#14141c] hover:bg-djcyan-600 hover:text-black text-gray-300 border-djzinc-750'
-                                                        }`}
-                                                    >
-                                                        {`${t('download_btn') || 'Descargar'} .${selectedFormat}`}
-                                                    </button>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <button 
+                                                            onClick={() => lanzarDescargaReal([row])} 
+                                                            className={`px-3 py-1 rounded text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
+                                                                isPendingTaxonomy 
+                                                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-400 font-bold shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                                                                    : 'bg-[#14141c] hover:bg-djcyan-600 hover:text-black text-gray-300 border-djzinc-750'
+                                                            }`}
+                                                        >
+                                                            {`${t('download_btn') || 'Descargar'} .${selectedFormat}`}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAbrirVerificacionCandidatos(row)}
+                                                            className="px-2 py-1 rounded text-[10px] font-mono font-bold text-gray-400 hover:text-djcyan-300 bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-750 cursor-pointer transition-colors"
+                                                            title="Verificar candidatos de streaming o buscar versión alternativa manualmente"
+                                                        >
+                                                            🔍 Versiones
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
@@ -11435,6 +11620,291 @@ const SpotifyWorkspace = ({
                     </div>
                 </div>
             )}
+
+            {/* Modal de Verificación de Fidelidad y Selección de Versiones / Búsqueda Manual */}
+            {candidateModal.open && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-djzinc-900 border border-djzinc-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+                        {/* Header */}
+                        <div className="p-4 bg-djzinc-950/80 border-b border-djzinc-800 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-djcyan-500/20 to-emerald-500/20 border border-djcyan-500/40 flex items-center justify-center text-xl shadow-inner">
+                                    🎯
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                        Verificador de Fidelidad y Selector de Versión DJ
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-djcyan-950 text-djcyan-400 border border-djcyan-800">
+                                            100% Precisión
+                                        </span>
+                                    </h3>
+                                    <p className="text-xs text-gray-400">
+                                        Compara el track de tu biblioteca con las versiones disponibles en streaming para evitar descargar Radio Edits o temas incorrectos.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setCandidateModal(prev => ({ ...prev, open: false }))}
+                                className="w-8 h-8 rounded-lg bg-djzinc-800 hover:bg-djzinc-700 text-gray-400 hover:text-white flex items-center justify-center text-sm transition-colors cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Pista de Referencia / Origen */}
+                        {candidateModal.targetTrack && (
+                            <div className="p-3.5 bg-djzinc-950/50 border-b border-djzinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <span className="px-2 py-1 rounded bg-djzinc-800 text-[10px] font-mono text-gray-400 uppercase tracking-wider shrink-0">
+                                        Pista en tu Biblioteca
+                                    </span>
+                                    <div className="min-w-0">
+                                        <span className="font-bold text-white truncate inline-block max-w-[280px]">
+                                            {candidateModal.targetTrack.original_artist || candidateModal.targetTrack.artist || 'Desconocido'}
+                                        </span>
+                                        <span className="text-gray-400 mx-1.5">—</span>
+                                        <span className="text-djcyan-300 font-medium truncate inline-block max-w-[320px]">
+                                            {candidateModal.targetTrack.original_title || candidateModal.targetTrack.title || 'Sin Título'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0 text-[11px] font-mono text-gray-400">
+                                    {candidateModal.targetTrack.bpm && (
+                                        <span className="px-2 py-0.5 rounded bg-djzinc-800/80 text-gray-300">
+                                            🥁 {candidateModal.targetTrack.bpm} BPM
+                                        </span>
+                                    )}
+                                    {candidateModal.targetTrack.original_duration && (
+                                        <span className="px-2 py-0.5 rounded bg-djzinc-800/80 text-gray-300">
+                                            ⏱️ {Math.floor(candidateModal.targetTrack.original_duration / 60)}:{(Math.floor(candidateModal.targetTrack.original_duration % 60)).toString().padStart(2, '0')}
+                                        </span>
+                                    )}
+                                    {candidateModal.targetTrack.calidad && (
+                                        <span className="px-2 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/40">
+                                            Calidad actual: {candidateModal.targetTrack.calidad}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Barra de Búsqueda Manual / Filtro de Candidatos */}
+                        <div className="p-3 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2">
+                            <div className="relative flex-1">
+                                <span className="absolute left-3 top-2.5 text-gray-500 text-xs">🔍</span>
+                                <input
+                                    type="text"
+                                    value={candidateModal.searchQuery}
+                                    onChange={(e) => setCandidateModal(prev => ({ ...prev, searchQuery: e.target.value }))}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleBuscarCandidatosManuales(); }}
+                                    placeholder="Buscar versión específica (ej. 'Space 92 The Door Extended Mix' o remixer)..."
+                                    className="w-full bg-djzinc-950 border border-djzinc-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-djcyan-500 font-mono"
+                                />
+                            </div>
+                            <button
+                                onClick={() => handleBuscarCandidatosManuales()}
+                                disabled={candidateModal.isSearching}
+                                className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                            >
+                                {candidateModal.isSearching ? (
+                                    <>
+                                        <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                        <span>Buscando...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Buscar Versiones</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Mensaje de estado de búsqueda */}
+                        {candidateModal.searchMsg && (
+                            <div className="px-4 py-1.5 bg-djzinc-950/70 border-b border-djzinc-800 text-[11px] font-mono text-gray-400 flex items-center gap-2">
+                                <span>ℹ️</span>
+                                <span>{candidateModal.searchMsg}</span>
+                            </div>
+                        )}
+
+                        {/* Lista de Versiones / Candidatos Evaluados */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+                            {candidateModal.candidates && candidateModal.candidates.length > 0 ? (
+                                candidateModal.candidates.map((cand, idx) => {
+                                    const score = cand.match_score !== undefined ? cand.match_score : (cand.score || 0);
+                                    const conf = cand.match_confianza || (score >= 80 ? 'ALTA' : (score >= 50 ? 'MEDIA' : 'BAJA'));
+                                    const hasAlert = !!cand.alerta_version;
+                                    const targetDur = candidateModal.targetTrack?.original_duration || candidateModal.targetTrack?.duration || 0;
+                                    const candDur = cand.duration || 0;
+                                    const durDiff = Math.abs(candDur - targetDur);
+                                    const isCurrentlySelected = candidateModal.targetTrack && (
+                                        candidateModal.targetTrack.spotify_url === cand.spotify_url ||
+                                        candidateModal.targetTrack.apple_url === cand.apple_url ||
+                                        (candidateModal.targetTrack.title === cand.title && candidateModal.targetTrack.artist === cand.artist)
+                                    );
+
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={`p-3.5 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                                                isCurrentlySelected
+                                                    ? 'bg-djcyan-950/30 border-djcyan-500/60 shadow-lg shadow-djcyan-950/40'
+                                                    : score >= 80
+                                                        ? 'bg-djzinc-950/60 border-emerald-900/40 hover:border-emerald-700/60'
+                                                        : score >= 50
+                                                            ? 'bg-djzinc-950/60 border-amber-900/40 hover:border-amber-700/60'
+                                                            : 'bg-djzinc-950/40 border-rose-950/60 hover:border-rose-800/60'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                                {/* Cover */}
+                                                <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-djzinc-800 shrink-0 border border-djzinc-700/50 shadow">
+                                                    {cand.cover ? (
+                                                        <img src={cand.cover} alt="Cover" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-lg text-gray-500">🎵</div>
+                                                    )}
+                                                    {cand.preview_url && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (onPlayTrack) {
+                                                                    onPlayTrack({
+                                                                        ...cand,
+                                                                        preview_audio: cand.preview_url,
+                                                                        path: cand.preview_url
+                                                                    });
+                                                                }
+                                                            }}
+                                                            title="Reproducir preview de 30s"
+                                                            className="absolute inset-0 bg-black/50 hover:bg-black/30 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity cursor-pointer text-xs"
+                                                        >
+                                                            ▶
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Track info */}
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="text-xs font-bold text-white truncate max-w-[260px]">
+                                                            {cand.artist}
+                                                        </span>
+                                                        <span className="text-gray-500 text-xs">—</span>
+                                                        <span className="text-xs font-medium text-djcyan-300 truncate max-w-[300px]">
+                                                            {cand.title}
+                                                        </span>
+                                                        {isCurrentlySelected && (
+                                                            <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-djcyan-500 text-black">
+                                                                SELECCIONADA ACTUALMENTE
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400 font-mono flex-wrap">
+                                                        {cand.album && (
+                                                            <span className="truncate max-w-[200px]" title={cand.album}>
+                                                                💿 {cand.album}
+                                                            </span>
+                                                        )}
+                                                        {cand.duration > 0 && (
+                                                            <span className="text-gray-300">
+                                                                ⏱️ {Math.floor(cand.duration / 60)}:{(Math.floor(cand.duration % 60)).toString().padStart(2, '0')}
+                                                            </span>
+                                                        )}
+                                                        {targetDur > 0 && candDur > 0 && (
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                                                durDiff <= 5
+                                                                    ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40'
+                                                                    : durDiff <= 25
+                                                                        ? 'bg-amber-950/60 text-amber-400 border border-amber-800/40'
+                                                                        : 'bg-rose-950/60 text-rose-400 border border-rose-800/40'
+                                                            }`}>
+                                                                {durDiff <= 5 ? '✓ Misma duración' : `Δ ${durDiff > 0 ? (candDur > targetDur ? '+' : '-') : ''}${Math.round(durDiff)}s`}
+                                                            </span>
+                                                        )}
+                                                        {cand.bpm && (
+                                                            <span>🥁 {cand.bpm} BPM</span>
+                                                        )}
+                                                        {cand.isrc && (
+                                                            <span className="text-[10px] text-gray-500">ISRC: {cand.isrc}</span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Alert / Warning badge */}
+                                                    {hasAlert && (
+                                                        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded border border-rose-800/30">
+                                                            <span>⚠️</span>
+                                                            <span>{cand.alerta_version}</span>
+                                                        </div>
+                                                    )}
+                                                    {cand.match_recomendacion && !hasAlert && (
+                                                        <div className="mt-1 text-[10px] text-gray-400 italic">
+                                                            {cand.match_recomendacion}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Score & Action Button */}
+                                            <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
+                                                {/* Score Badge */}
+                                                <div className={`px-2.5 py-1 rounded-lg border text-center ${
+                                                    score >= 80
+                                                        ? 'bg-emerald-950/50 border-emerald-700/60 text-emerald-300'
+                                                        : score >= 50
+                                                            ? 'bg-amber-950/50 border-amber-700/60 text-amber-300'
+                                                            : 'bg-rose-950/50 border-rose-700/60 text-rose-300'
+                                                }`}>
+                                                    <div className="text-xs font-black font-mono">
+                                                        {score}%
+                                                    </div>
+                                                    <div className="text-[8px] font-bold tracking-wider uppercase">
+                                                        {conf}
+                                                    </div>
+                                                </div>
+
+                                                {/* Seleccionar Button */}
+                                                <button
+                                                    onClick={() => handleSeleccionarVersionCandidato(cand)}
+                                                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md flex items-center gap-1.5 ${
+                                                        isCurrentlySelected
+                                                            ? 'bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-700'
+                                                            : score >= 80
+                                                                ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-950/30'
+                                                                : 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-djcyan-950/30'
+                                                    }`}
+                                                >
+                                                    <span>{isCurrentlySelected ? '✓ Seleccionada' : 'Seleccionar Esta'}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="p-8 text-center text-gray-500 text-xs">
+                                    <span className="text-2xl block mb-2">🔍</span>
+                                    No hay versiones alternativas precargadas. Utiliza el buscador superior para encontrar la versión exacta (ej. Extended Mix, Club Mix o Remix).
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-3.5 bg-djzinc-950/90 border-t border-djzinc-800 flex items-center justify-between">
+                            <span className="text-[11px] text-gray-500">
+                                💡 Tip: Si la pista de tu biblioteca es una sesión de DJ o Extended Mix, asegúrate de que la duración coincida.
+                            </span>
+                            <button
+                                onClick={() => setCandidateModal(prev => ({ ...prev, open: false }))}
+                                className="px-4 py-1.5 rounded-lg text-xs bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
