@@ -1,8 +1,93 @@
 {
-  "last_crawled_at": "2026-10-26 01:15:00",
-  "next_scheduled_run": "2026-10-27 23:00:00",
-  "crawler_status": "iniciado_ok",
+  "last_crawled_at": "2026-10-31 22:32:16",
+  "next_scheduled_run": "2026-11-03 23:00:00",
+  "crawler_status": "sincronizado_ok",
+  "total_items": 10,
   "items": [
+    {
+      "id": "crawled_1793482335_1068",
+      "title": "Cevin Fisher, celebrated New Jersey house DJ and producer, dies aged 63",
+      "category": "Festivales & Eventos",
+      "category_badge": "🌐 DJ MAG GLOBAL",
+      "badge_color": "bg-cyan-500/20 text-cyan-300 border-cyan-500/40",
+      "source": "DJ Mag Global",
+      "author": "DJ Mag Global",
+      "date": "Fri, 30 Oct 2026",
+      "read_time": "3 min lectura",
+      "image_url": "https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?w=900&auto=format&fit=crop&q=80",
+      "summary": "A fixture of the US house scene for four decades, Fisher was behind anthems including ‘The Freaks Come Out’ and ‘(You Got Me) Burnin’ Up’",
+      "content": "A fixture of the US house scene for four decades, Fisher was behind anthems including ‘The Freaks Come Out’ and ‘(You Got Me) Burnin’ Up’",
+      "url": "https://djmag.com/news/cevin-fisher-celebrated-new-jersey-house-dj-and-producer-dies-aged-63",
+      "reference": "DJ Mag Global Online Release",
+      "key_tags": [
+        "Noticia Web",
+        "Festivales & Eventos",
+        "Crawler Live"
+      ]
+    },
+    {
+      "id": "crawled_1793482335_3022",
+      "title": "New book, How Music Can Save The World, explores how music can drive social change",
+      "category": "Festivales & Eventos",
+      "category_badge": "🌐 DJ MAG GLOBAL",
+      "badge_color": "bg-cyan-500/20 text-cyan-300 border-cyan-500/40",
+      "source": "DJ Mag Global",
+      "author": "DJ Mag Global",
+      "date": "Fri, 30 Oct 2026",
+      "read_time": "3 min lectura",
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=900&auto=format&fit=crop&q=80",
+      "summary": "Written by author and speaker Shain Shapiro, the book tells stories of music’s power from across the world",
+      "content": "Written by author and speaker Shain Shapiro, the book tells stories of music’s power from across the world",
+      "url": "https://djmag.com/news/new-book-how-music-can-save-world-explores-how-music-can-drive-social-change",
+      "reference": "DJ Mag Global Online Release",
+      "key_tags": [
+        "Noticia Web",
+        "Festivales & Eventos",
+        "Crawler Live"
+      ]
+    },
+    {
+      "id": "crawled_1793482335_3475",
+      "title": "Watch Robyn cover Tinashe’s ‘Popstar’ in the BBC Live Lounge",
+      "category": "Festivales & Eventos",
+      "category_badge": "🌐 DJ MAG GLOBAL",
+      "badge_color": "bg-cyan-500/20 text-cyan-300 border-cyan-500/40",
+      "source": "DJ Mag Global",
+      "author": "DJ Mag Global",
+      "date": "Fri, 30 Oct 2026",
+      "read_time": "3 min lectura",
+      "image_url": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=900&auto=format&fit=crop&q=80",
+      "summary": "Her version also featured Teddybears’ 2000 single ‘Punkrocker’",
+      "content": "Her version also featured Teddybears’ 2000 single ‘Punkrocker’",
+      "url": "https://djmag.com/news/watch-robyn-cover-tinashes-popstar-bbc-live-lounge",
+      "reference": "DJ Mag Global Online Release",
+      "key_tags": [
+        "Noticia Web",
+        "Festivales & Eventos",
+        "Crawler Live"
+      ]
+    },
+    {
+      "id": "crawled_1793482335_349",
+      "title": "Cloudy launches new FLINTA*-focused event series, ANGELS",
+      "category": "Festivales & Eventos",
+      "category_badge": "🌐 DJ MAG GLOBAL",
+      "badge_color": "bg-cyan-500/20 text-cyan-300 border-cyan-500/40",
+      "source": "DJ Mag Global",
+      "author": "DJ Mag Global",
+      "date": "Fri, 30 Oct 2026",
+      "read_time": "3 min lectura",
+      "image_url": "https://images.unsplash.com/photo-1541689592655-f5f52825a3b8?w=900&auto=format&fit=crop&q=80",
+      "summary": "The inaugural edition of the event series took place at THE LOFT in Amsterdam last weekend",
+      "content": "The inaugural edition of the event series took place at THE LOFT in Amsterdam last weekend",
+      "url": "https://djmag.com/news/cloudy-launches-new-flinta-focused-event-series-angels",
+      "reference": "DJ Mag Global Online Release",
+      "key_tags": [
+        "Noticia Web",
+        "Festivales & Eventos",
+        "Crawler Live"
+      ]
+    },
     {
       "id": "trend_01",
       "title": "Auge del Afro House y Percussive Tech: El sonido que domina los sets globales",

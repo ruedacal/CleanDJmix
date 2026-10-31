@@ -4144,15 +4144,15 @@ const UserAccountModal = ({
 
     return (
         <div className="fixed inset-0 z-50 overflow-hidden select-none">
-            {/* Backdrop con Blur Suave */}
+            {/* Backdrop Sólido Plano sin Blur Transparente */}
             <div 
-                className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn" 
+                className="fixed inset-0 bg-[#000000] opacity-85 transition-opacity animate-fadeIn" 
                 onClick={onClose}
             />
 
-            {/* Columna Lateral Derecha (Slide-over Drawer) */}
+            {/* Columna Lateral Derecha (Slide-over Drawer) - Fondo Plano Sólido 100% Opaco */}
             <aside 
-                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[500px] md:w-[530px] max-w-[95vw] h-full bg-[#080812]/98 border-l border-cyan-500/50 shadow-[-25px_0_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl flex flex-col font-sans text-gray-200 animate-slideInRight"
+                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[500px] md:w-[530px] max-w-[95vw] h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Perfil con Avatar y Datos Rápidos */}
@@ -4216,14 +4216,14 @@ const UserAccountModal = ({
                 </div>
 
                 {/* Acceso Rápido Integrado: Atajos, Trends y Guías (Reubicados para Descongestionar el Menú) */}
-                <div className="p-3 bg-[#0a0a16] border-b border-djzinc-800 grid grid-cols-3 gap-2 shrink-0">
+                <div className="p-3 bg-[#0d0e1a] border-b border-djzinc-800 grid grid-cols-3 gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => {
                             onClose();
                             if (onNavigateTab) onNavigateTab('trends');
                         }}
-                        className="p-2.5 rounded-xl bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
+                        className="p-2.5 rounded-xl bg-[#141528] hover:bg-[#1c1e38] border border-indigo-700/60 text-indigo-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
                         title="Explorar Tendencias Musicales Globales y Festivales"
                     >
                         <span className="text-base group-hover:scale-110 transition-transform">📈</span>
@@ -4236,7 +4236,7 @@ const UserAccountModal = ({
                             onClose();
                             if (onNavigateTab) onNavigateTab('knowledge');
                         }}
-                        className="p-2.5 rounded-xl bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
+                        className="p-2.5 rounded-xl bg-[#181329] hover:bg-[#231a3d] border border-purple-700/60 text-purple-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
                         title="Academia de Guías, Armonía y Teoría DJ"
                     >
                         <span className="text-base group-hover:scale-110 transition-transform">🎓</span>
@@ -4249,7 +4249,7 @@ const UserAccountModal = ({
                             onClose();
                             if (onOpenShortcuts) onOpenShortcuts();
                         }}
-                        className="p-2.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-700/60 text-cyan-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
+                        className="p-2.5 rounded-xl bg-[#0f1d2a] hover:bg-[#14283b] border border-cyan-700/60 text-cyan-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
                         title="Ver Chuleta de Atajos de Teclado DJ"
                     >
                         <span className="text-base group-hover:scale-110 transition-transform">⌨️</span>
@@ -18090,11 +18090,15 @@ const TrendsWorkspace = ({ lang = "es" }) => {
         festivals_calendar: [],
         set_breakdowns: [],
         interviews: [],
+        controllers: [],
+        gadgets: [],
+        dj_gear: [],
         trends_radar: []
     });
     const [loading, setLoading] = useState(true);
     const [isCrawling, setIsCrawling] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("todas");
+    const [selectedCity, setSelectedCity] = useState("Madrid");
     const [searchQuery, setSearchQuery] = useState("");
     const [dateFilter, setDateFilter] = useState("all"); // 'all' | '7days' | '30days' | '90days'
     const [readingArticle, setReadingArticle] = useState(null);
@@ -18102,13 +18106,15 @@ const TrendsWorkspace = ({ lang = "es" }) => {
 
     const categories = [
         { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "🌐" },
-        { id: "Tendencias", label: lang === "en" ? "Trends & Sounds" : "Tendencias Globales", icon: "🔥" },
-        { id: "Festivales & Eventos", label: lang === "en" ? "Festivals & Clubs (Calendar)" : "Festivales & Clubs (Calendario)", icon: "🎪" },
-        { id: "SetBreakdowns", label: lang === "en" ? "Set Breakdowns" : "Análisis de Sesiones Pasadas", icon: "🎛️" },
-        { id: "Entrevistas", label: lang === "en" ? "Interviews" : "Entrevistas Exclusivas", icon: "🎙️" },
-        { id: "Radar", label: lang === "en" ? "Tech Radar & DSP" : "Radar Nuevos Temas & DSP", icon: "📡" },
-        { id: "Tecnología & Hardware", label: lang === "en" ? "Tech & Audio DSP" : "Tecnología & Hardware", icon: "🔧" },
-        { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Lanzamientos & Charts", icon: "📈" }
+        { id: "Festivales & Eventos", label: lang === "en" ? "Events (Time To House)" : "Eventos & Clubs (Time To House)", icon: "🎪" },
+        { id: "Entrevistas", label: lang === "en" ? "DJ Interviews" : "Entrevistas DJs", icon: "🎙️" },
+        { id: "Controladoras", label: lang === "en" ? "DJ Controllers" : "Controladoras DJ", icon: "🎛️" },
+        { id: "Gadgets", label: lang === "en" ? "Booth Gadgets" : "Gadgets de Cabina", icon: "🔌" },
+        { id: "Material DJ", label: lang === "en" ? "Pro DJ Gear" : "Material DJ Pro", icon: "🎧" },
+        { id: "Tendencias", label: lang === "en" ? "Trends & News" : "Tendencias Globales", icon: "🔥" },
+        { id: "SetBreakdowns", label: lang === "en" ? "Set Breakdowns" : "Análisis de Sesiones", icon: "📊" },
+        { id: "Radar", label: lang === "en" ? "Tech Radar & DSP" : "Radar & DSP", icon: "📡" },
+        { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Charts & Labels", icon: "📈" }
     ];
 
     const fetchTrends = async () => {
@@ -18194,7 +18200,10 @@ const TrendsWorkspace = ({ lang = "es" }) => {
     }, [trendsData, selectedCategory, searchQuery, dateFilter]);
 
     const festivals = useMemo(() => {
-        const list = trendsData.festivals_calendar || [];
+        let list = trendsData.festivals_calendar || [];
+        if (selectedCity && selectedCity !== "Todas") {
+            list = list.filter(f => (f.city || "").toLowerCase() === selectedCity.toLowerCase());
+        }
         const q = searchQuery.toLowerCase().trim();
         if (!q) return list;
         return list.filter(f => 
@@ -18203,7 +18212,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
             (f.venue || "").toLowerCase().includes(q) ||
             (f.headliners || []).some(h => h.toLowerCase().includes(q))
         );
-    }, [trendsData, searchQuery]);
+    }, [trendsData, selectedCity, searchQuery]);
 
     const setBreakdowns = useMemo(() => {
         const list = trendsData.set_breakdowns || [];
@@ -18224,6 +18233,40 @@ const TrendsWorkspace = ({ lang = "es" }) => {
             (it.artist || "").toLowerCase().includes(q) || 
             (it.headline || "").toLowerCase().includes(q) || 
             (it.quote || "").toLowerCase().includes(q)
+        );
+    }, [trendsData, searchQuery]);
+
+    const controllers = useMemo(() => {
+        const list = trendsData.controllers || [];
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return list;
+        return list.filter(c => 
+            (c.name || "").toLowerCase().includes(q) || 
+            (c.brand || "").toLowerCase().includes(q) || 
+            (c.description || "").toLowerCase().includes(q)
+        );
+    }, [trendsData, searchQuery]);
+
+    const gadgets = useMemo(() => {
+        const list = trendsData.gadgets || [];
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return list;
+        return list.filter(g => 
+            (g.name || "").toLowerCase().includes(q) || 
+            (g.category || "").toLowerCase().includes(q) || 
+            (g.utility || "").toLowerCase().includes(q)
+        );
+    }, [trendsData, searchQuery]);
+
+    const djGear = useMemo(() => {
+        const list = trendsData.dj_gear || [];
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return list;
+        return list.filter(dg => 
+            (dg.name || "").toLowerCase().includes(q) || 
+            (dg.brand || "").toLowerCase().includes(q) || 
+            (dg.type || "").toLowerCase().includes(q) || 
+            (dg.description || "").toLowerCase().includes(q)
         );
     }, [trendsData, searchQuery]);
 
@@ -18295,6 +18338,9 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                             else if (cat.id === "Festivales & Eventos") count = (trendsData.festivals_calendar || []).length;
                             else if (cat.id === "SetBreakdowns") count = (trendsData.set_breakdowns || []).length;
                             else if (cat.id === "Entrevistas") count = (trendsData.interviews || []).length;
+                            else if (cat.id === "Controladoras") count = (trendsData.controllers || []).length;
+                            else if (cat.id === "Gadgets") count = (trendsData.gadgets || []).length;
+                            else if (cat.id === "Material DJ") count = (trendsData.dj_gear || []).length;
                             else if (cat.id === "Radar") count = (trendsData.trends_radar || []).length;
                             else count = (trendsData.items || []).filter(i => i.category === cat.id).length;
 
@@ -18362,117 +18408,410 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 </div>
             </div>
 
-            {/* SECCIÓN 1: CALENDARIO DE FESTIVALES & CLUBS (Cuando está en la pestaña Festivales & Eventos) */}
+            {/* SECCIÓN 1: CALENDARIO DE EVENTOS & CLUBS (Diseño Time To House - Default Madrid) */}
             {selectedCategory === "Festivales & Eventos" && (
                 <div className="p-4 md:p-6 space-y-4">
-                    <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                    {/* Cabecera de Eventos */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-djzinc-800 pb-3 gap-2">
                         <div className="flex items-center gap-2">
                             <span className="text-xl">🎪</span>
-                            <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
-                                Calendario Oficial de Festivales & Clubs (Temporada 2026 - 2027)
-                            </h2>
+                            <div>
+                                <h2 className="text-base font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                                    <span>Eventos & Clubs Time To House</span>
+                                    <span className="px-2 py-0.5 rounded text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-500/50">
+                                        timetohouse.com/es
+                                    </span>
+                                </h2>
+                                <p className="text-xs text-gray-400">
+                                    Agenda de clubs y sesiones electrónicas por ciudades con line-ups, horarios y entradas oficiales.
+                                </p>
+                            </div>
                         </div>
-                        <span className="text-xs font-mono text-djcyan-400">
-                            {festivals.length} Eventos Confirmados
+                        <span className="text-xs font-mono text-cyan-400 font-bold self-start sm:self-auto">
+                            {festivals.length} Eventos en {selectedCity}
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {festivals.map(fest => (
-                            <div 
-                                key={fest.id}
-                                className="bg-[#0e0e16] border border-djzinc-800/90 hover:border-amber-500/50 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(245,158,11,0.15)] flex flex-col group cursor-pointer"
-                                onClick={() => setReadingArticle({
-                                    id: fest.id,
-                                    title: `${fest.name} (${fest.city}, ${fest.country})`,
-                                    category: "Festivales & Clubs",
-                                    category_badge: "🎪 FESTIVAL OFICIAL",
-                                    source: "Tour Calendar Global",
-                                    author: fest.venue,
-                                    date: fest.dates,
-                                    read_time: "Guía de Cabina",
-                                    image_url: fest.image_url,
-                                    summary: fest.description,
-                                    content: `${fest.name} se celebra en ${fest.venue}. Sistema de sonido oficial: ${fest.sound_system}. Line-up confirmado: ${fest.headliners.join(", ")}. Se recomienda a los DJs preparar sus pistas en rangos de ${fest.recommended_bpm} con mastering certificado sin cortes lossy.`,
-                                    takeaways: [
-                                        `Fechas: ${fest.dates} en ${fest.city} (${fest.country})`,
-                                        `Sistema de Sonido: ${fest.sound_system}`,
-                                        `BPM Recomendado: ${fest.recommended_bpm}`,
-                                        `Line-up: ${fest.headliners.join(" • ")}`
-                                    ],
-                                    reference: fest.reference,
-                                    url: fest.ticket_url,
-                                    key_tags: [fest.city, fest.country, "Festival 2026", fest.sound_system.split(" ")[0]]
-                                })}
+                    {/* Selector de Ciudades (Por defecto Madrid) */}
+                    <div className="p-3 bg-[#0d0e1c] rounded-2xl border border-djzinc-800 flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-gray-300 mr-1 shrink-0">
+                            <span>📍 Seleccionar Ciudad:</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                            {["Madrid", "Barcelona", "Ibiza", "Valencia", "Sevilla", "Bilbao", "Ámsterdam", "Berlín", "Londres", "Miami", "Todas"].map(city => {
+                                const isCityActive = selectedCity.toLowerCase() === city.toLowerCase();
+                                return (
+                                    <button
+                                        key={city}
+                                        type="button"
+                                        onClick={() => setSelectedCity(city)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${
+                                            isCityActive
+                                                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]"
+                                                : "bg-[#141525] text-gray-400 hover:text-white hover:bg-[#1c1d35] border border-djzinc-800"
+                                        }`}
+                                    >
+                                        {city === "Madrid" ? "🇪🇸 Madrid (Default)" : city === "Barcelona" ? "🇪🇸 Barcelona" : city === "Ibiza" ? "🏝️ Ibiza" : city === "Valencia" ? "🇪🇸 Valencia" : city === "Sevilla" ? "🇪🇸 Sevilla" : city === "Bilbao" ? "🇪🇸 Bilbao" : city === "Ámsterdam" ? "🇳🇱 Ámsterdam" : city === "Berlín" ? "🇩🇪 Berlín" : city === "Londres" ? "🇬🇧 Londres" : city === "Miami" ? "🇺🇸 Miami" : "🌐 Todas"}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div className="ml-auto text-[11px] font-mono text-gray-400 shrink-0">
+                            <a 
+                                href={`https://timetohouse.com/es/events?city=${selectedCity.toLowerCase() === 'todas' ? 'madrid' : selectedCity.toLowerCase()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
                             >
-                                <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
-                                    <img 
-                                        src={fest.image_url} 
-                                        alt={fest.name} 
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/40"></div>
-                                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                                        <span className="text-xl">{fest.flag}</span>
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-black/80 text-amber-300 border border-amber-500/50">
-                                            {fest.dates}
-                                        </span>
-                                    </div>
-                                    <div className="absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-200 bg-black/80 px-2 py-0.5 rounded border border-djzinc-750">
-                                        📍 {fest.city}
-                                    </div>
-                                </div>
+                                <span>timetohouse.com/es/events</span>
+                                <span>↗</span>
+                            </a>
+                        </div>
+                    </div>
 
-                                <div className="p-4 flex-1 flex flex-col justify-between gap-3">
-                                    <div className="space-y-2">
-                                        <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
-                                            {fest.name}
-                                        </h3>
-                                        <p className="text-xs text-gray-400 line-clamp-2">
-                                            {fest.description}
-                                        </p>
+                    {/* Grid de Eventos con diseño Time To House */}
+                    {festivals.length === 0 ? (
+                        <div className="p-8 text-center bg-[#0e0f1c] rounded-2xl border border-djzinc-800 text-gray-400 font-mono text-xs">
+                            No hay eventos listados para {selectedCity} con el término de búsqueda actual.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {festivals.map(fest => (
+                                <div 
+                                    key={fest.id}
+                                    className="bg-[#0e0f1c] border border-djzinc-800 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(6,182,212,0.18)] flex flex-col group cursor-pointer"
+                                    onClick={() => setReadingArticle({
+                                        id: fest.id,
+                                        title: `${fest.name} @ ${fest.venue} (${fest.city})`,
+                                        category: "Eventos & Clubs",
+                                        category_badge: `🎪 ${fest.city.toUpperCase()}`,
+                                        source: "Time To House (timetohouse.com/es)",
+                                        author: fest.venue,
+                                        date: fest.dates,
+                                        read_time: "Guía de Sesión",
+                                        image_url: fest.image_url,
+                                        summary: fest.description,
+                                        content: `${fest.name} se celebra en ${fest.venue} (${fest.city}, ${fest.country}). Horario: ${fest.dates}. Sistema de sonido certificado: ${fest.sound_system}. Line-up confirmado: ${fest.headliners.join(", ")}. Precio de entrada: ${fest.price || 'Consultar'}.\n\nRecomendaciones para cabina: Tempo recomendado en torno a ${fest.recommended_bpm}.`,
+                                        takeaways: [
+                                            `Fecha: ${fest.dates} (${fest.city}, ${fest.country})`,
+                                            `Club / Sala: ${fest.venue}`,
+                                            `Sistema Acústico: ${fest.sound_system}`,
+                                            `Line-up: ${fest.headliners.join(" • ")}`,
+                                            `Precio: ${fest.price || 'Entradas anticipadas disponibles'}`
+                                        ],
+                                        reference: fest.reference || "https://timetohouse.com/es/events?city=madrid",
+                                        url: fest.ticket_url || "https://timetohouse.com/es/events?city=madrid",
+                                        key_tags: [fest.city, "Time To House", fest.venue, "Eventos 2026"]
+                                    })}
+                                >
+                                    <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
+                                        <img 
+                                            src={fest.image_url} 
+                                            alt={fest.name} 
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/40 to-transparent"></div>
+                                        
+                                        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                                            <span className="text-lg">{fest.flag}</span>
+                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-cyan-300 border border-cyan-500/50">
+                                                {fest.city}
+                                            </span>
+                                        </div>
 
-                                        <div className="p-2 bg-[#12121c] rounded-lg border border-djzinc-800 space-y-1 text-[11px] font-mono">
-                                            <div className="flex items-center justify-between text-gray-400">
-                                                <span>🔊 Sistema:</span>
-                                                <span className="text-djcyan-400 font-bold truncate max-w-[170px]" title={fest.sound_system}>{fest.sound_system}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-gray-400">
-                                                <span>🎛️ BPM Óptimo:</span>
-                                                <span className="text-amber-400 font-bold">{fest.recommended_bpm}</span>
-                                            </div>
+                                        <div className="absolute top-3 right-3">
+                                            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 shadow">
+                                                {fest.price || "Entradas"}
+                                            </span>
+                                        </div>
+
+                                        <div className="absolute bottom-2.5 left-3 text-[11px] font-mono font-bold text-white bg-black/85 px-2.5 py-1 rounded-lg border border-djzinc-750 flex items-center gap-1.5">
+                                            <span>🏛️</span>
+                                            <span>{fest.venue}</span>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <div className="flex flex-wrap gap-1">
-                                            {fest.headliners.slice(0, 3).map((hl, i) => (
-                                                <span key={i} className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-gray-300 border border-djzinc-800">
-                                                    ★ {hl}
-                                                </span>
-                                            ))}
-                                            {fest.headliners.length > 3 && (
-                                                <span className="text-[9px] font-mono text-gray-500 self-center">
-                                                    +{fest.headliners.length - 3} más
-                                                </span>
-                                            )}
+                                    <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                                        <div className="space-y-3">
+                                            <div className="flex items-start gap-3">
+                                                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-[#161729] border border-cyan-500/50 text-center shrink-0 shadow">
+                                                    <span className="text-[9px] font-mono font-black text-cyan-400 uppercase">{fest.month_badge || 'OCT'}</span>
+                                                    <span className="text-lg font-mono font-black text-white leading-none">{fest.day_badge || '31'}</span>
+                                                </div>
+
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="text-sm font-black text-white group-hover:text-cyan-300 transition-colors leading-snug">
+                                                        {fest.name}
+                                                    </h3>
+                                                    <p className="text-[11px] text-gray-400 line-clamp-2 mt-0.5">
+                                                        {fest.description}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-2.5 bg-[#121324] rounded-xl border border-djzinc-800 space-y-1 text-[11px] font-mono">
+                                                <div className="flex items-center justify-between text-gray-400">
+                                                    <span>🔊 Sound System:</span>
+                                                    <span className="text-cyan-300 font-bold truncate max-w-[170px]" title={fest.sound_system}>{fest.sound_system}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-gray-400">
+                                                    <span>⏱️ Fechas / Horario:</span>
+                                                    <span className="text-amber-300 font-bold">{fest.dates}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <span className="text-[10px] font-mono text-gray-500 uppercase font-bold block">Line-up Confirmado:</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {(fest.headliners || []).map((hl, i) => (
+                                                        <span key={i} className="text-[9.5px] font-mono px-2 py-0.5 rounded-md bg-[#161729] text-gray-200 border border-djzinc-750 font-bold">
+                                                            ★ {hl}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div className="pt-2 border-t border-djzinc-800/80 flex items-center justify-between">
-                                            <span className="text-[9.5px] font-mono text-gray-400 truncate max-w-[140px]" title={fest.venue}>
-                                                🏛️ {fest.venue}
+                                        <div className="pt-2.5 border-t border-djzinc-800 flex items-center justify-between">
+                                            <span className="text-[9.5px] font-mono text-gray-500 flex items-center gap-1">
+                                                <span>Fuente:</span>
+                                                <span className="text-cyan-400 font-bold">Time To House</span>
                                             </span>
                                             <a
-                                                href={fest.ticket_url}
+                                                href={fest.ticket_url || "https://timetohouse.com/es/events?city=madrid"}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black rounded text-[10px] font-mono font-black flex items-center gap-1 transition-colors"
+                                                className="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 transition-transform active:scale-95 shadow-md"
                                             >
                                                 <span>Entradas</span>
                                                 <span>↗</span>
                                             </a>
                                         </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* SECCIÓN NUEVA: CONTROLADORAS DJ */}
+            {selectedCategory === "Controladoras" && (
+                <div className="p-4 md:p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">🎛️</span>
+                            <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                                Controladoras DJ Profesionales & Sistemas Todo-en-Uno (2026)
+                            </h2>
+                        </div>
+                        <span className="text-xs font-mono text-cyan-400">
+                            {controllers.length} Modelos Analizados
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {controllers.map(item => (
+                            <div key={item.id} className="bg-[#0e0f1c] border border-djzinc-800 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
+                                <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
+                                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent"></div>
+                                    <div className="absolute top-3 left-3">
+                                        <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-cyan-300 border border-cyan-500/50">
+                                            {item.target}
+                                        </span>
+                                    </div>
+                                    <div className="absolute top-3 right-3">
+                                        <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-amber-950/90 text-amber-300 border border-amber-500/60">
+                                            {item.price}
+                                        </span>
+                                    </div>
+                                    <div className="absolute bottom-2.5 left-3 text-xs font-mono font-bold text-white bg-black/85 px-2 py-0.5 rounded border border-djzinc-750">
+                                        {item.brand}
+                                    </div>
+                                </div>
+
+                                <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                                            <span className="text-cyan-400 font-bold">{item.brand}</span>
+                                            <span>{item.date}</span>
+                                        </div>
+                                        <h3 className="text-sm font-black text-white group-hover:text-cyan-300 transition-colors">
+                                            {item.name}
+                                        </h3>
+                                        <p className="text-xs text-gray-400 leading-relaxed">
+                                            {item.description}
+                                        </p>
+
+                                        <div className="p-2.5 bg-[#121324] rounded-xl border border-djzinc-800 space-y-1.5 text-xs font-mono">
+                                            <div className="text-[10px] text-gray-400 uppercase font-bold">Compatibilidad Software:</div>
+                                            <div className="flex flex-wrap gap-1">
+                                                {(item.software_support || []).map((sw, idx) => (
+                                                    <span key={idx} className="px-2 py-0.5 rounded bg-djzinc-900 text-cyan-300 border border-djzinc-750 text-[10px]">
+                                                        {sw}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1 text-xs font-mono">
+                                            {(item.key_features || []).map((feat, fIdx) => (
+                                                <div key={fIdx} className="flex items-center gap-1.5 text-gray-300 text-[11px]">
+                                                    <span className="text-cyan-400 font-bold">✓</span>
+                                                    <span>{feat}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400">
+                                        <span>Fuente: {item.source}</span>
+                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1">
+                                            <span>Ver Análisis</span>
+                                            <span>↗</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* SECCIÓN NUEVA: GADGETS DE CABINA */}
+            {selectedCategory === "Gadgets" && (
+                <div className="p-4 md:p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">🔌</span>
+                            <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                                Gadgets Indispensables de Cabina & Accesorios Pro
+                            </h2>
+                        </div>
+                        <span className="text-xs font-mono text-cyan-400">
+                            {gadgets.length} Gadgets Esenciales
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {gadgets.map(item => (
+                            <div key={item.id} className="bg-[#0e0f1c] border border-djzinc-800 hover:border-emerald-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
+                                <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
+                                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent"></div>
+                                    <div className="absolute top-3 left-3">
+                                        <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-emerald-300 border border-emerald-500/50">
+                                            {item.category}
+                                        </span>
+                                    </div>
+                                    <div className="absolute top-3 right-3">
+                                        <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-emerald-950/90 text-emerald-300 border border-emerald-500/60">
+                                            {item.price}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                                            <span className="text-emerald-400 font-bold">{item.brand}</span>
+                                            <span>{item.date}</span>
+                                        </div>
+                                        <h3 className="text-sm font-black text-white group-hover:text-emerald-300 transition-colors">
+                                            {item.name}
+                                        </h3>
+                                        <div className="p-2.5 bg-[#121824] rounded-xl border border-emerald-900/50 text-xs font-mono text-emerald-200">
+                                            💡 {item.utility}
+                                        </div>
+
+                                        <div className="space-y-1 text-xs font-mono">
+                                            {(item.specs || []).map((sp, sIdx) => (
+                                                <div key={sIdx} className="flex items-center gap-1.5 text-gray-300 text-[11px]">
+                                                    <span className="text-emerald-400 font-bold">•</span>
+                                                    <span>{sp}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400">
+                                        <span>Fuente: {item.source}</span>
+                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1">
+                                            <span>Ver Ficha</span>
+                                            <span>↗</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* SECCIÓN NUEVA: MATERIAL DJ PRO */}
+            {selectedCategory === "Material DJ" && (
+                <div className="p-4 md:p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">🎧</span>
+                            <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                                Material DJ Profesional: Auriculares, Giradiscos & Cápsulas
+                            </h2>
+                        </div>
+                        <span className="text-xs font-mono text-cyan-400">
+                            {djGear.length} Equipos de Referencia
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {djGear.map(item => (
+                            <div key={item.id} className="bg-[#0e0f1c] border border-djzinc-800 hover:border-purple-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
+                                <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
+                                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent"></div>
+                                    <div className="absolute top-3 left-3">
+                                        <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-purple-300 border border-purple-500/50">
+                                            {item.type}
+                                        </span>
+                                    </div>
+                                    <div className="absolute top-3 right-3">
+                                        <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-purple-950/90 text-purple-300 border border-purple-500/60">
+                                            {item.price}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                                            <span className="text-purple-400 font-bold">{item.brand}</span>
+                                            <span>{item.date}</span>
+                                        </div>
+                                        <h3 className="text-sm font-black text-white group-hover:text-purple-300 transition-colors">
+                                            {item.name}
+                                        </h3>
+                                        <p className="text-xs text-gray-400 leading-relaxed">
+                                            {item.description}
+                                        </p>
+
+                                        <div className="space-y-1 text-xs font-mono">
+                                            {(item.specs || []).map((sp, sIdx) => (
+                                                <div key={sIdx} className="flex items-center gap-1.5 text-gray-300 text-[11px]">
+                                                    <span className="text-purple-400 font-bold">✓</span>
+                                                    <span>{sp}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400">
+                                        <span>Fuente: {item.source}</span>
+                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1">
+                                            <span>Especificaciones</span>
+                                            <span>↗</span>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -22538,11 +22877,12 @@ const MapWorkspace = ({
 // ESPACIO DE TRABAJO: CONOCIMIENTO (CURSOS, VÍDEOS Y MANUALES DJ)
 // =========================================================================
 const KnowledgeWorkspace = ({ lang = "es" }) => {
-    const [activeSection, setActiveSection] = useState("courses"); // 'courses' | 'videos' | 'manuals' | 'glossary'
+    const [activeSection, setActiveSection] = useState("courses"); // 'courses' | 'videos' | 'manuals' | 'tricks' | 'glossary'
     const [knowledgeData, setKnowledgeData] = useState({
         courses: [],
         videos: [],
         manuals: [],
+        tricks: [],
         glossary: []
     });
     const [loading, setLoading] = useState(true);
@@ -22680,6 +23020,20 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                         <span>📄 Manuales & Guías Técnicas</span>
                         <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-djzinc-800 text-gray-300">
                             {(knowledgeData.manuals || []).length}
+                        </span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveSection("tricks")}
+                        className={`px-4 py-2 text-xs font-mono font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                            activeSection === "tricks"
+                                ? "border-amber-400 text-amber-300 bg-amber-950/30"
+                                : "border-transparent text-gray-400 hover:text-white"
+                        }`}
+                    >
+                        <span>⚡ Hacks & Curiosidades Acústicas</span>
+                        <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-djzinc-800 text-gray-300">
+                            {(knowledgeData.tricks || []).length}
                         </span>
                     </button>
                     <button
@@ -22907,7 +23261,78 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                     </div>
                 )}
 
-                {/* SECCIÓN 4: GLOSARIO ACÚSTICO DJ */}
+                {/* SECCIÓN 4: HACKS & CURIOSIDADES ACÚSTICAS */}
+                {activeSection === "tricks" && (
+                    <div className="space-y-6">
+                        <div className="p-4 bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-cyan-950/40 border border-amber-500/40 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div className="space-y-1">
+                                <h3 className="text-base font-black text-amber-300 font-mono flex items-center gap-2">
+                                    <span>⚡</span> <span>Hacks Creativos de Cabina & Secretos Psicoacústicos</span>
+                                </h3>
+                                <p className="text-xs text-gray-300">
+                                    Técnicas no convencionales aplicadas por DJs internacionales: polirritmias métricas, trucos de pads, transiciones wordplay y secretos de sonido de salas icónicas como Berghain.
+                                </p>
+                            </div>
+                            <span className="px-3 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/50 shrink-0">
+                                EXPERIMENTACIÓN PRO
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            {(knowledgeData.tricks || []).map(trick => (
+                                <div 
+                                    key={trick.id}
+                                    className="p-5 bg-[#0e0f1c] border border-djzinc-800 hover:border-amber-500/50 rounded-2xl shadow-lg flex flex-col justify-between gap-4 transition-all hover:shadow-[0_4px_24px_rgba(245,158,11,0.12)]"
+                                >
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-2xl">{trick.icon}</span>
+                                                <div>
+                                                    <span className={`px-2 py-0.5 rounded text-[9.5px] font-mono font-black uppercase border ${trick.badge_color || 'bg-amber-950 text-amber-300 border-amber-500/50'}`}>
+                                                        {trick.badge}
+                                                    </span>
+                                                    <h4 className="text-sm font-black text-white mt-1">
+                                                        {trick.title}
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-xs text-gray-300 leading-relaxed font-sans">
+                                            {trick.summary}
+                                        </p>
+
+                                        {/* Pasos de Ejecución */}
+                                        <div className="p-3 bg-[#131424] rounded-xl border border-djzinc-800 space-y-2">
+                                            <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block">
+                                                Ejecución en Cabina:
+                                            </span>
+                                            <div className="space-y-1.5 text-xs text-gray-300 font-mono">
+                                                {(trick.step_by_step || []).map((step, sIdx) => (
+                                                    <div key={sIdx} className="flex items-start gap-2">
+                                                        <span className="text-amber-400 font-bold shrink-0">▸</span>
+                                                        <span className="text-[11.5px] leading-snug">{step}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Pro Tip */}
+                                        {trick.pro_tip && (
+                                            <div className="p-2.5 bg-purple-950/40 rounded-xl border border-purple-500/40 text-xs font-mono text-purple-200 flex items-center gap-2">
+                                                <span>💡</span>
+                                                <span className="text-[11px] leading-tight font-medium"><strong>Pro Tip:</strong> {trick.pro_tip}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* SECCIÓN 5: GLOSARIO ACÚSTICO DJ */}
                 {activeSection === "glossary" && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between gap-3 max-w-md">

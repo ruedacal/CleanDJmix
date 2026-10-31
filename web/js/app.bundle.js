@@ -3332,13 +3332,13 @@ const UserAccountModal = ({
   return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 overflow-hidden select-none" }, /* @__PURE__ */ React.createElement(
     "div",
     {
-      className: "fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn",
+      className: "fixed inset-0 bg-[#000000] opacity-85 transition-opacity animate-fadeIn",
       onClick: onClose
     }
   ), /* @__PURE__ */ React.createElement(
     "aside",
     {
-      className: "fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[500px] md:w-[530px] max-w-[95vw] h-full bg-[#080812]/98 border-l border-cyan-500/50 shadow-[-25px_0_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl flex flex-col font-sans text-gray-200 animate-slideInRight",
+      className: "fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[500px] md:w-[530px] max-w-[95vw] h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight",
       onClick: (e) => e.stopPropagation()
     },
     /* @__PURE__ */ React.createElement("div", { className: "p-4 sm:p-5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-full overflow-hidden border-2 border-cyan-400 bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]" }, avatarUrl ? /* @__PURE__ */ React.createElement("img", { src: avatarUrl, alt: "Avatar DJ", className: "w-full h-full object-cover" }) : /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7}")), /* @__PURE__ */ React.createElement(
@@ -3369,7 +3369,7 @@ const UserAccountModal = ({
       },
       "\u2715"
     )),
-    /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#0a0a16] border-b border-djzinc-800 grid grid-cols-3 gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#0d0e1a] border-b border-djzinc-800 grid grid-cols-3 gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -3377,7 +3377,7 @@ const UserAccountModal = ({
           onClose();
           if (onNavigateTab) onNavigateTab("trends");
         },
-        className: "p-2.5 rounded-xl bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
+        className: "p-2.5 rounded-xl bg-[#141528] hover:bg-[#1c1e38] border border-indigo-700/60 text-indigo-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
         title: "Explorar Tendencias Musicales Globales y Festivales"
       },
       /* @__PURE__ */ React.createElement("span", { className: "text-base group-hover:scale-110 transition-transform" }, "\u{1F4C8}"),
@@ -3390,7 +3390,7 @@ const UserAccountModal = ({
           onClose();
           if (onNavigateTab) onNavigateTab("knowledge");
         },
-        className: "p-2.5 rounded-xl bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
+        className: "p-2.5 rounded-xl bg-[#181329] hover:bg-[#231a3d] border border-purple-700/60 text-purple-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
         title: "Academia de Gu\xEDas, Armon\xEDa y Teor\xEDa DJ"
       },
       /* @__PURE__ */ React.createElement("span", { className: "text-base group-hover:scale-110 transition-transform" }, "\u{1F393}"),
@@ -3403,7 +3403,7 @@ const UserAccountModal = ({
           onClose();
           if (onOpenShortcuts) onOpenShortcuts();
         },
-        className: "p-2.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-700/60 text-cyan-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
+        className: "p-2.5 rounded-xl bg-[#0f1d2a] hover:bg-[#14283b] border border-cyan-700/60 text-cyan-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
         title: "Ver Chuleta de Atajos de Teclado DJ"
       },
       /* @__PURE__ */ React.createElement("span", { className: "text-base group-hover:scale-110 transition-transform" }, "\u2328\uFE0F"),
@@ -12419,24 +12419,30 @@ const TrendsWorkspace = ({ lang = "es" }) => {
     festivals_calendar: [],
     set_breakdowns: [],
     interviews: [],
+    controllers: [],
+    gadgets: [],
+    dj_gear: [],
     trends_radar: []
   });
   const [loading, setLoading] = useState(true);
   const [isCrawling, setIsCrawling] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("todas");
+  const [selectedCity, setSelectedCity] = useState("Madrid");
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [readingArticle, setReadingArticle] = useState(null);
   const [copiedRef, setCopiedRef] = useState(false);
   const categories = [
     { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "\u{1F310}" },
-    { id: "Tendencias", label: lang === "en" ? "Trends & Sounds" : "Tendencias Globales", icon: "\u{1F525}" },
-    { id: "Festivales & Eventos", label: lang === "en" ? "Festivals & Clubs (Calendar)" : "Festivales & Clubs (Calendario)", icon: "\u{1F3AA}" },
-    { id: "SetBreakdowns", label: lang === "en" ? "Set Breakdowns" : "An\xE1lisis de Sesiones Pasadas", icon: "\u{1F39B}\uFE0F" },
-    { id: "Entrevistas", label: lang === "en" ? "Interviews" : "Entrevistas Exclusivas", icon: "\u{1F399}\uFE0F" },
-    { id: "Radar", label: lang === "en" ? "Tech Radar & DSP" : "Radar Nuevos Temas & DSP", icon: "\u{1F4E1}" },
-    { id: "Tecnolog\xEDa & Hardware", label: lang === "en" ? "Tech & Audio DSP" : "Tecnolog\xEDa & Hardware", icon: "\u{1F527}" },
-    { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Lanzamientos & Charts", icon: "\u{1F4C8}" }
+    { id: "Festivales & Eventos", label: lang === "en" ? "Events (Time To House)" : "Eventos & Clubs (Time To House)", icon: "\u{1F3AA}" },
+    { id: "Entrevistas", label: lang === "en" ? "DJ Interviews" : "Entrevistas DJs", icon: "\u{1F399}\uFE0F" },
+    { id: "Controladoras", label: lang === "en" ? "DJ Controllers" : "Controladoras DJ", icon: "\u{1F39B}\uFE0F" },
+    { id: "Gadgets", label: lang === "en" ? "Booth Gadgets" : "Gadgets de Cabina", icon: "\u{1F50C}" },
+    { id: "Material DJ", label: lang === "en" ? "Pro DJ Gear" : "Material DJ Pro", icon: "\u{1F3A7}" },
+    { id: "Tendencias", label: lang === "en" ? "Trends & News" : "Tendencias Globales", icon: "\u{1F525}" },
+    { id: "SetBreakdowns", label: lang === "en" ? "Set Breakdowns" : "An\xE1lisis de Sesiones", icon: "\u{1F4CA}" },
+    { id: "Radar", label: lang === "en" ? "Tech Radar & DSP" : "Radar & DSP", icon: "\u{1F4E1}" },
+    { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Charts & Labels", icon: "\u{1F4C8}" }
   ];
   const fetchTrends = async () => {
     try {
@@ -12512,13 +12518,16 @@ const TrendsWorkspace = ({ lang = "es" }) => {
     });
   }, [trendsData, selectedCategory, searchQuery, dateFilter]);
   const festivals = useMemo(() => {
-    const list = trendsData.festivals_calendar || [];
+    let list = trendsData.festivals_calendar || [];
+    if (selectedCity && selectedCity !== "Todas") {
+      list = list.filter((f) => (f.city || "").toLowerCase() === selectedCity.toLowerCase());
+    }
     const q = searchQuery.toLowerCase().trim();
     if (!q) return list;
     return list.filter(
       (f) => (f.name || "").toLowerCase().includes(q) || (f.city || "").toLowerCase().includes(q) || (f.venue || "").toLowerCase().includes(q) || (f.headliners || []).some((h) => h.toLowerCase().includes(q))
     );
-  }, [trendsData, searchQuery]);
+  }, [trendsData, selectedCity, searchQuery]);
   const setBreakdowns = useMemo(() => {
     const list = trendsData.set_breakdowns || [];
     const q = searchQuery.toLowerCase().trim();
@@ -12533,6 +12542,30 @@ const TrendsWorkspace = ({ lang = "es" }) => {
     if (!q) return list;
     return list.filter(
       (it) => (it.artist || "").toLowerCase().includes(q) || (it.headline || "").toLowerCase().includes(q) || (it.quote || "").toLowerCase().includes(q)
+    );
+  }, [trendsData, searchQuery]);
+  const controllers = useMemo(() => {
+    const list = trendsData.controllers || [];
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return list;
+    return list.filter(
+      (c) => (c.name || "").toLowerCase().includes(q) || (c.brand || "").toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q)
+    );
+  }, [trendsData, searchQuery]);
+  const gadgets = useMemo(() => {
+    const list = trendsData.gadgets || [];
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return list;
+    return list.filter(
+      (g) => (g.name || "").toLowerCase().includes(q) || (g.category || "").toLowerCase().includes(q) || (g.utility || "").toLowerCase().includes(q)
+    );
+  }, [trendsData, searchQuery]);
+  const djGear = useMemo(() => {
+    const list = trendsData.dj_gear || [];
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return list;
+    return list.filter(
+      (dg) => (dg.name || "").toLowerCase().includes(q) || (dg.brand || "").toLowerCase().includes(q) || (dg.type || "").toLowerCase().includes(q) || (dg.description || "").toLowerCase().includes(q)
     );
   }, [trendsData, searchQuery]);
   const radarItems = useMemo(() => {
@@ -12561,6 +12594,9 @@ const TrendsWorkspace = ({ lang = "es" }) => {
     else if (cat.id === "Festivales & Eventos") count = (trendsData.festivals_calendar || []).length;
     else if (cat.id === "SetBreakdowns") count = (trendsData.set_breakdowns || []).length;
     else if (cat.id === "Entrevistas") count = (trendsData.interviews || []).length;
+    else if (cat.id === "Controladoras") count = (trendsData.controllers || []).length;
+    else if (cat.id === "Gadgets") count = (trendsData.gadgets || []).length;
+    else if (cat.id === "Material DJ") count = (trendsData.dj_gear || []).length;
     else if (cat.id === "Radar") count = (trendsData.trends_radar || []).length;
     else count = (trendsData.items || []).filter((i) => i.category === cat.id).length;
     return /* @__PURE__ */ React.createElement(
@@ -12604,32 +12640,57 @@ const TrendsWorkspace = ({ lang = "es" }) => {
       className: "absolute right-2.5 top-1.5 text-gray-500 hover:text-white text-xs cursor-pointer"
     },
     "\u2715"
-  ))))), selectedCategory === "Festivales & Eventos" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F3AA}"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Calendario Oficial de Festivales & Clubs (Temporada 2026 - 2027)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djcyan-400" }, festivals.length, " Eventos Confirmados")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, festivals.map((fest) => /* @__PURE__ */ React.createElement(
+  ))))), selectedCategory === "Festivales & Eventos" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between border-b border-djzinc-800 pb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F3AA}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "Eventos & Clubs Time To House"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-500/50" }, "timetohouse.com/es")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400" }, "Agenda de clubs y sesiones electr\xF3nicas por ciudades con line-ups, horarios y entradas oficiales."))), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400 font-bold self-start sm:self-auto" }, festivals.length, " Eventos en ", selectedCity)), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#0d0e1c] rounded-2xl border border-djzinc-800 flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-xs font-mono font-bold text-gray-300 mr-1 shrink-0" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4CD} Seleccionar Ciudad:")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" }, ["Madrid", "Barcelona", "Ibiza", "Valencia", "Sevilla", "Bilbao", "\xC1msterdam", "Berl\xEDn", "Londres", "Miami", "Todas"].map((city) => {
+    const isCityActive = selectedCity.toLowerCase() === city.toLowerCase();
+    return /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: city,
+        type: "button",
+        onClick: () => setSelectedCity(city),
+        className: `px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${isCityActive ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "bg-[#141525] text-gray-400 hover:text-white hover:bg-[#1c1d35] border border-djzinc-800"}`
+      },
+      city === "Madrid" ? "\u{1F1EA}\u{1F1F8} Madrid (Default)" : city === "Barcelona" ? "\u{1F1EA}\u{1F1F8} Barcelona" : city === "Ibiza" ? "\u{1F3DD}\uFE0F Ibiza" : city === "Valencia" ? "\u{1F1EA}\u{1F1F8} Valencia" : city === "Sevilla" ? "\u{1F1EA}\u{1F1F8} Sevilla" : city === "Bilbao" ? "\u{1F1EA}\u{1F1F8} Bilbao" : city === "\xC1msterdam" ? "\u{1F1F3}\u{1F1F1} \xC1msterdam" : city === "Berl\xEDn" ? "\u{1F1E9}\u{1F1EA} Berl\xEDn" : city === "Londres" ? "\u{1F1EC}\u{1F1E7} Londres" : city === "Miami" ? "\u{1F1FA}\u{1F1F8} Miami" : "\u{1F310} Todas"
+    );
+  })), /* @__PURE__ */ React.createElement("div", { className: "ml-auto text-[11px] font-mono text-gray-400 shrink-0" }, /* @__PURE__ */ React.createElement(
+    "a",
+    {
+      href: `https://timetohouse.com/es/events?city=${selectedCity.toLowerCase() === "todas" ? "madrid" : selectedCity.toLowerCase()}`,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      className: "text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "timetohouse.com/es/events"),
+    /* @__PURE__ */ React.createElement("span", null, "\u2197")
+  ))), festivals.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-8 text-center bg-[#0e0f1c] rounded-2xl border border-djzinc-800 text-gray-400 font-mono text-xs" }, "No hay eventos listados para ", selectedCity, " con el t\xE9rmino de b\xFAsqueda actual.") : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, festivals.map((fest) => /* @__PURE__ */ React.createElement(
     "div",
     {
       key: fest.id,
-      className: "bg-[#0e0e16] border border-djzinc-800/90 hover:border-amber-500/50 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(245,158,11,0.15)] flex flex-col group cursor-pointer",
+      className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(6,182,212,0.18)] flex flex-col group cursor-pointer",
       onClick: () => setReadingArticle({
         id: fest.id,
-        title: `${fest.name} (${fest.city}, ${fest.country})`,
-        category: "Festivales & Clubs",
-        category_badge: "\u{1F3AA} FESTIVAL OFICIAL",
-        source: "Tour Calendar Global",
+        title: `${fest.name} @ ${fest.venue} (${fest.city})`,
+        category: "Eventos & Clubs",
+        category_badge: `\u{1F3AA} ${fest.city.toUpperCase()}`,
+        source: "Time To House (timetohouse.com/es)",
         author: fest.venue,
         date: fest.dates,
-        read_time: "Gu\xEDa de Cabina",
+        read_time: "Gu\xEDa de Sesi\xF3n",
         image_url: fest.image_url,
         summary: fest.description,
-        content: `${fest.name} se celebra en ${fest.venue}. Sistema de sonido oficial: ${fest.sound_system}. Line-up confirmado: ${fest.headliners.join(", ")}. Se recomienda a los DJs preparar sus pistas en rangos de ${fest.recommended_bpm} con mastering certificado sin cortes lossy.`,
+        content: `${fest.name} se celebra en ${fest.venue} (${fest.city}, ${fest.country}). Horario: ${fest.dates}. Sistema de sonido certificado: ${fest.sound_system}. Line-up confirmado: ${fest.headliners.join(", ")}. Precio de entrada: ${fest.price || "Consultar"}.
+
+Recomendaciones para cabina: Tempo recomendado en torno a ${fest.recommended_bpm}.`,
         takeaways: [
-          `Fechas: ${fest.dates} en ${fest.city} (${fest.country})`,
-          `Sistema de Sonido: ${fest.sound_system}`,
-          `BPM Recomendado: ${fest.recommended_bpm}`,
-          `Line-up: ${fest.headliners.join(" \u2022 ")}`
+          `Fecha: ${fest.dates} (${fest.city}, ${fest.country})`,
+          `Club / Sala: ${fest.venue}`,
+          `Sistema Ac\xFAstico: ${fest.sound_system}`,
+          `Line-up: ${fest.headliners.join(" \u2022 ")}`,
+          `Precio: ${fest.price || "Entradas anticipadas disponibles"}`
         ],
-        reference: fest.reference,
-        url: fest.ticket_url,
-        key_tags: [fest.city, fest.country, "Festival 2026", fest.sound_system.split(" ")[0]]
+        reference: fest.reference || "https://timetohouse.com/es/events?city=madrid",
+        url: fest.ticket_url || "https://timetohouse.com/es/events?city=madrid",
+        key_tags: [fest.city, "Time To House", fest.venue, "Eventos 2026"]
       })
     },
     /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement(
@@ -12639,20 +12700,20 @@ const TrendsWorkspace = ({ lang = "es" }) => {
         alt: fest.name,
         className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/40" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, fest.flag), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-black/80 text-amber-300 border border-amber-500/50" }, fest.dates)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-200 bg-black/80 px-2 py-0.5 rounded border border-djzinc-750" }, "\u{1F4CD} ", fest.city)),
-    /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-amber-300 transition-colors" }, fest.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 line-clamp-2" }, fest.description), /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-[#12121c] rounded-lg border border-djzinc-800 space-y-1 text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F50A} Sistema:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold truncate max-w-[170px]", title: fest.sound_system }, fest.sound_system)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F BPM \xD3ptimo:"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold" }, fest.recommended_bpm)))), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, fest.headliners.slice(0, 3).map((hl, i) => /* @__PURE__ */ React.createElement("span", { key: i, className: "text-[9.5px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-gray-300 border border-djzinc-800" }, "\u2605 ", hl)), fest.headliners.length > 3 && /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-gray-500 self-center" }, "+", fest.headliners.length - 3, " m\xE1s")), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800/80 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-400 truncate max-w-[140px]", title: fest.venue }, "\u{1F3DB}\uFE0F ", fest.venue), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/40 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg" }, fest.flag), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-cyan-300 border border-cyan-500/50" }, fest.city)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 shadow" }, fest.price || "Entradas")), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 left-3 text-[11px] font-mono font-bold text-white bg-black/85 px-2.5 py-1 rounded-lg border border-djzinc-750 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3DB}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, fest.venue))),
+    /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-[#161729] border border-cyan-500/50 text-center shrink-0 shadow" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-black text-cyan-400 uppercase" }, fest.month_badge || "OCT"), /* @__PURE__ */ React.createElement("span", { className: "text-lg font-mono font-black text-white leading-none" }, fest.day_badge || "31")), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-cyan-300 transition-colors leading-snug" }, fest.name), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 line-clamp-2 mt-0.5" }, fest.description))), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#121324] rounded-xl border border-djzinc-800 space-y-1 text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F50A} Sound System:"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-300 font-bold truncate max-w-[170px]", title: fest.sound_system }, fest.sound_system)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "\u23F1\uFE0F Fechas / Horario:"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-300 font-bold" }, fest.dates))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 uppercase font-bold block" }, "Line-up Confirmado:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, (fest.headliners || []).map((hl, i) => /* @__PURE__ */ React.createElement("span", { key: i, className: "text-[9.5px] font-mono px-2 py-0.5 rounded-md bg-[#161729] text-gray-200 border border-djzinc-750 font-bold" }, "\u2605 ", hl))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2.5 border-t border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-500 flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Fuente:"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "Time To House")), /* @__PURE__ */ React.createElement(
       "a",
       {
-        href: fest.ticket_url,
+        href: fest.ticket_url || "https://timetohouse.com/es/events?city=madrid",
         target: "_blank",
         rel: "noopener noreferrer",
         onClick: (e) => e.stopPropagation(),
-        className: "px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black rounded text-[10px] font-mono font-black flex items-center gap-1 transition-colors"
+        className: "px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 transition-transform active:scale-95 shadow-md"
       },
       /* @__PURE__ */ React.createElement("span", null, "Entradas"),
       /* @__PURE__ */ React.createElement("span", null, "\u2197")
-    ))))
-  )))), selectedCategory === "SetBreakdowns" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Desglose T\xE9cnico de Sesiones Hist\xF3ricas (Harmonic & Energy Flow)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-purple-400" }, setBreakdowns.length, " Sesiones Auditadas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-5" }, setBreakdowns.map((sb) => /* @__PURE__ */ React.createElement(
+    )))
+  )))), selectedCategory === "Controladoras" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Controladoras DJ Profesionales & Sistemas Todo-en-Uno (2026)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400" }, controllers.length, " Modelos Analizados")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, controllers.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group" }, /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: item.image_url, alt: item.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-cyan-300 border border-cyan-500/50" }, item.target)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-amber-950/90 text-amber-300 border border-amber-500/60" }, item.price)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 left-3 text-xs font-mono font-bold text-white bg-black/85 px-2 py-0.5 rounded border border-djzinc-750" }, item.brand)), /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, item.brand), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-cyan-300 transition-colors" }, item.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, item.description), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#121324] rounded-xl border border-djzinc-800 space-y-1.5 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400 uppercase font-bold" }, "Compatibilidad Software:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, (item.software_support || []).map((sw, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "px-2 py-0.5 rounded bg-djzinc-900 text-cyan-300 border border-djzinc-750 text-[10px]" }, sw)))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1 text-xs font-mono" }, (item.key_features || []).map((feat, fIdx) => /* @__PURE__ */ React.createElement("div", { key: fIdx, className: "flex items-center gap-1.5 text-gray-300 text-[11px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "\u2713"), /* @__PURE__ */ React.createElement("span", null, feat))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Fuente: ", item.source), /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noopener noreferrer", className: "text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Ver An\xE1lisis"), /* @__PURE__ */ React.createElement("span", null, "\u2197")))))))), selectedCategory === "Gadgets" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F50C}"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Gadgets Indispensables de Cabina & Accesorios Pro")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400" }, gadgets.length, " Gadgets Esenciales")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, gadgets.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-emerald-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group" }, /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: item.image_url, alt: item.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-emerald-300 border border-emerald-500/50" }, item.category)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-emerald-950/90 text-emerald-300 border border-emerald-500/60" }, item.price))), /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, item.brand), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-emerald-300 transition-colors" }, item.name), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#121824] rounded-xl border border-emerald-900/50 text-xs font-mono text-emerald-200" }, "\u{1F4A1} ", item.utility), /* @__PURE__ */ React.createElement("div", { className: "space-y-1 text-xs font-mono" }, (item.specs || []).map((sp, sIdx) => /* @__PURE__ */ React.createElement("div", { key: sIdx, className: "flex items-center gap-1.5 text-gray-300 text-[11px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, sp))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Fuente: ", item.source), /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noopener noreferrer", className: "text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Ver Ficha"), /* @__PURE__ */ React.createElement("span", null, "\u2197")))))))), selectedCategory === "Material DJ" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F3A7}"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Material DJ Profesional: Auriculares, Giradiscos & C\xE1psulas")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400" }, djGear.length, " Equipos de Referencia")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, djGear.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-purple-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group" }, /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: item.image_url, alt: item.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-purple-300 border border-purple-500/50" }, item.type)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-purple-950/90 text-purple-300 border border-purple-500/60" }, item.price))), /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-purple-400 font-bold" }, item.brand), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-purple-300 transition-colors" }, item.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, item.description), /* @__PURE__ */ React.createElement("div", { className: "space-y-1 text-xs font-mono" }, (item.specs || []).map((sp, sIdx) => /* @__PURE__ */ React.createElement("div", { key: sIdx, className: "flex items-center gap-1.5 text-gray-300 text-[11px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-purple-400 font-bold" }, "\u2713"), /* @__PURE__ */ React.createElement("span", null, sp))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Fuente: ", item.source), /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noopener noreferrer", className: "text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Especificaciones"), /* @__PURE__ */ React.createElement("span", null, "\u2197")))))))), selectedCategory === "SetBreakdowns" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Desglose T\xE9cnico de Sesiones Hist\xF3ricas (Harmonic & Energy Flow)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-purple-400" }, setBreakdowns.length, " Sesiones Auditadas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-5" }, setBreakdowns.map((sb) => /* @__PURE__ */ React.createElement(
     "div",
     {
       key: sb.id,
@@ -15258,6 +15319,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
     courses: [],
     videos: [],
     manuals: [],
+    tricks: [],
     glossary: []
   });
   const [loading, setLoading] = useState(true);
@@ -15354,6 +15416,15 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
     "button",
     {
       type: "button",
+      onClick: () => setActiveSection("tricks"),
+      className: `px-4 py-2 text-xs font-mono font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${activeSection === "tricks" ? "border-amber-400 text-amber-300 bg-amber-950/30" : "border-transparent text-gray-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u26A1 Hacks & Curiosidades Ac\xFAsticas"),
+    /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded-full text-[9px] bg-djzinc-800 text-gray-300" }, (knowledgeData.tricks || []).length)
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
       onClick: () => setActiveSection("glossary"),
       className: `px-4 py-2 text-xs font-mono font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${activeSection === "glossary" ? "border-djcyan-400 text-djcyan-300 bg-djcyan-950/30" : "border-transparent text-gray-400 hover:text-white"}`
     },
@@ -15444,6 +15515,13 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
       },
       "Consultar \u2192"
     ))
+  )))), activeSection === "tricks" && /* @__PURE__ */ React.createElement("div", { className: "space-y-6" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-cyan-950/40 border border-amber-500/40 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("h3", { className: "text-base font-black text-amber-300 font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "\u26A1"), " ", /* @__PURE__ */ React.createElement("span", null, "Hacks Creativos de Cabina & Secretos Psicoac\xFAsticos")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-300" }, "T\xE9cnicas no convencionales aplicadas por DJs internacionales: polirritmias m\xE9tricas, trucos de pads, transiciones wordplay y secretos de sonido de salas ic\xF3nicas como Berghain.")), /* @__PURE__ */ React.createElement("span", { className: "px-3 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/50 shrink-0" }, "EXPERIMENTACI\xD3N PRO")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-5" }, (knowledgeData.tricks || []).map((trick) => /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      key: trick.id,
+      className: "p-5 bg-[#0e0f1c] border border-djzinc-800 hover:border-amber-500/50 rounded-2xl shadow-lg flex flex-col justify-between gap-4 transition-all hover:shadow-[0_4px_24px_rgba(245,158,11,0.12)]"
+    },
+    /* @__PURE__ */ React.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-2xl" }, trick.icon), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9.5px] font-mono font-black uppercase border ${trick.badge_color || "bg-amber-950 text-amber-300 border-amber-500/50"}` }, trick.badge), /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-black text-white mt-1" }, trick.title)))), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-300 leading-relaxed font-sans" }, trick.summary), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#131424] rounded-xl border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block" }, "Ejecuci\xF3n en Cabina:"), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 text-xs text-gray-300 font-mono" }, (trick.step_by_step || []).map((step, sIdx) => /* @__PURE__ */ React.createElement("div", { key: sIdx, className: "flex items-start gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold shrink-0" }, "\u25B8"), /* @__PURE__ */ React.createElement("span", { className: "text-[11.5px] leading-snug" }, step))))), trick.pro_tip && /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-purple-950/40 rounded-xl border border-purple-500/40 text-xs font-mono text-purple-200 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4A1}"), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] leading-tight font-medium" }, /* @__PURE__ */ React.createElement("strong", null, "Pro Tip:"), " ", trick.pro_tip)))
   )))), activeSection === "glossary" && /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3 max-w-md" }, /* @__PURE__ */ React.createElement(
     "input",
     {
