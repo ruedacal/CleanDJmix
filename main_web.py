@@ -42,9 +42,17 @@ _DIRECTORIOS_AUTORIZADOS: list = []
 
 def _registrar_directorio_autorizado(ruta: str):
     """Registra un directorio de música como autorizado para servir archivos."""
-    real = os.path.realpath(ruta)
-    if real and os.path.isdir(real) and real not in _DIRECTORIOS_AUTORIZADOS:
-        _DIRECTORIOS_AUTORIZADOS.append(real)
+    try:
+        real = os.path.realpath(os.path.expanduser(ruta))
+        if real and os.path.isdir(real) and real not in _DIRECTORIOS_AUTORIZADOS:
+            _DIRECTORIOS_AUTORIZADOS.append(real)
+    except Exception:
+        pass
+
+# Pre-autorizar bibliotecas de audio del sistema por defecto para arranque inmediato
+_registrar_directorio_autorizado("/Users/admin/Music/mi musica")
+_registrar_directorio_autorizado("~/Music")
+_registrar_directorio_autorizado("~/Downloads")
 
 def es_ruta_segura(ruta_solicitada: str) -> bool:
     """
@@ -457,10 +465,9 @@ def api_cancelar_procesos():
 
 @bottle.route('/api/analizar_spotify', method=['GET', 'POST', 'OPTIONS'])
 def api_analizar_spotify():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    _cors_localhost_only()
     if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
         return ""
     q = bottle.request.query.get('query', '')
     if not q and bottle.request.json:
@@ -661,10 +668,9 @@ def api_directorio_descarga():
 
 @bottle.route('/api/resolver_stream_preescucha', method=['GET', 'POST', 'OPTIONS'])
 def api_resolver_stream_preescucha():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    _cors_localhost_only()
     if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
         return ""
     titulo = bottle.request.query.get('titulo', '')
     artista = bottle.request.query.get('artista', '')

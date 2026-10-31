@@ -8758,6 +8758,10 @@ const SpotifyWorkspace = ({
         } catch (httpErr) {
         }
       }
+      if (streamUrl) {
+        track.preview_url = streamUrl;
+        if (coverHd) track.cover = coverHd;
+      }
     }
     if (onPlayTrack) {
       const durSec = parseDurationToSeconds(track.duration || 210);
@@ -8772,7 +8776,8 @@ const SpotifyWorkspace = ({
         b: track.bpm,
         k: track.key,
         duration: track.duration,
-        cover: coverHd,
+        cover: coverHd || track.cover,
+        preview_url: streamUrl || "",
         path: streamUrl || ""
       }, seekPct || 0, true, startSec);
     }
@@ -8850,12 +8855,16 @@ const SpotifyWorkspace = ({
         console.warn("Fallo resolviendo stream para candidato:", err);
       }
       setCandidateModal((prev) => ({ ...prev, searchMsg: "" }));
+      if (streamUrl) {
+        cand.preview_url = streamUrl;
+        if (coverHd) cand.cover = coverHd;
+      }
     }
     if (onPlayTrack) {
       onPlayTrack({
         id: cand.id || `cand_${Date.now()}`,
-        path: streamUrl || cand.spotify_url || "",
-        preview_url: streamUrl,
+        path: streamUrl || "",
+        preview_url: streamUrl || "",
         title: `[DESCARGA] ${cand.title}`,
         artist: cand.artist,
         album: cand.album || "Oficial HD",
@@ -16948,15 +16957,23 @@ const App = () => {
       const audio = audioRef.current;
       if (audio) {
         let targetSrc = "";
-        if (track.path && (track.path.startsWith("http://") || track.path.startsWith("https://"))) {
-          targetSrc = track.path;
-        } else if (track.preview_url && (track.preview_url.startsWith("http://") || track.preview_url.startsWith("https://"))) {
+        const isDirectAudioUrl = (url) => {
+          if (!url || typeof url !== "string") return false;
+          if (!url.startsWith("http://") && !url.startsWith("https://")) return false;
+          if (url.includes("open.spotify.com") || url.includes("music.apple.com") || url.includes("youtube.com/watch") || url.includes("youtu.be/")) {
+            return false;
+          }
+          return true;
+        };
+        if (isDirectAudioUrl(track.preview_url)) {
           targetSrc = track.preview_url;
-        } else if (track.previewUrl && (track.previewUrl.startsWith("http://") || track.previewUrl.startsWith("https://"))) {
+        } else if (isDirectAudioUrl(track.previewUrl)) {
           targetSrc = track.previewUrl;
-        } else if (track.path) {
+        } else if (isDirectAudioUrl(track.path)) {
+          targetSrc = track.path;
+        } else if (track.path && !track.path.startsWith("http")) {
           targetSrc = `/stream_audio?path=${encodeURIComponent(track.path)}`;
-        } else if (track.f) {
+        } else if (track.f && !track.f.startsWith("http")) {
           targetSrc = `/stream_audio?path=${encodeURIComponent(track.f)}`;
         }
         if (targetSrc) {
@@ -16990,31 +17007,22 @@ const App = () => {
             applyPosition();
             audio.play().then(() => setIsPlaying(true)).catch((err) => {
               console.warn("Audio HTML5 play error:", err);
-              if (track.path || track.f) {
-                if (window.eel && window.eel.reproducir_pista_mac) {
-                  window.eel.reproducir_pista_mac(track.path || track.f)();
-                  setIsPlaying(true);
-                }
-              }
             });
           } else {
+            audio.pause();
+            audio.preload = "auto";
             audio.src = targetSrc;
-            const onMeta = () => {
+            audio.load();
+            const onReady = () => {
               applyPosition();
-              audio.removeEventListener("loadedmetadata", onMeta);
+              audio.removeEventListener("canplay", onReady);
             };
-            audio.addEventListener("loadedmetadata", onMeta);
+            audio.addEventListener("canplay", onReady);
             audio.play().then(() => {
               setIsPlaying(true);
               applyPosition();
             }).catch((err) => {
-              console.warn("Audio HTML5 play fallback to afplay:", err);
-              if (track.path || track.f) {
-                if (window.eel && window.eel.reproducir_pista_mac) {
-                  window.eel.reproducir_pista_mac(track.path || track.f)();
-                  setIsPlaying(true);
-                }
-              }
+              console.warn("Audio HTML5 play error:", err);
             });
           }
         } else if (track.path || track.f) {

@@ -8,22 +8,49 @@ class AudioPlaybackService:
         self.directorio_base = "/Users/admin/Music/mi musica"
         self.pista_actual = ""
         self._lock = threading.Lock()
+        self._cache_rutas = {}
 
     def establecer_directorio(self, ruta: str):
         if ruta and os.path.isdir(ruta):
             self.directorio_base = ruta
+            self._cache_rutas.clear()
 
     def _resolver_ruta(self, identificador: str) -> str:
         if not identificador:
             return ""
+        
+        # 1. Búsqueda instantánea en caché en memoria
+        if identificador in self._cache_rutas:
+            ruta = self._cache_rutas[identificador]
+            if os.path.exists(ruta):
+                return ruta
+
+        # 2. Ruta absoluta directa
         if os.path.isabs(identificador) and os.path.exists(identificador):
+            self._cache_rutas[identificador] = identificador
             return identificador
+
+        # 3. Concatenación con directorio base
         candidato = os.path.join(self.directorio_base, identificador)
         if os.path.exists(candidato):
+            self._cache_rutas[identificador] = candidato
             return candidato
+
+        # 4. Búsqueda por nombre base en caché
+        base_name = os.path.basename(identificador)
+        if base_name in self._cache_rutas:
+            ruta = self._cache_rutas[base_name]
+            if os.path.exists(ruta):
+                self._cache_rutas[identificador] = ruta
+                return ruta
+
+        # 5. Escaneo en disco amortizado (se almacena de inmediato en caché)
         for root, _, files in os.walk(self.directorio_base):
-            if os.path.basename(identificador) in files:
-                return os.path.join(root, os.path.basename(identificador))
+            if base_name in files:
+                encontrada = os.path.join(root, base_name)
+                self._cache_rutas[identificador] = encontrada
+                self._cache_rutas[base_name] = encontrada
+                return encontrada
         return ""
 
     def reproducir_mac(self, nombre_o_ruta: str):

@@ -21,6 +21,7 @@ class MediaService:
     def __init__(self):
         self._cancelar_busqueda = False
         self._sp = self._inicializar_spotipy()
+        self._cache_preescucha = {}
 
     def cancelar_busqueda(self):
         """Activa la bandera de cancelación para abortar búsquedas en curso."""
@@ -455,19 +456,82 @@ class MediaService:
         return {"status": "error", "msg": "No se encontraron pistas para este enlace o búsqueda en Spotify.", "tracks": []}
 
     def resolver_stream_preescucha(self, titulo, artista):
-        res = self.buscar_metadata_itunes(f"{artista} {titulo}", limit=1)
-        if res and res[0].get("previewUrl"):
-            return {"status": "ok", "stream_url": res[0]["previewUrl"]}
+        cache_key = f"{str(artista).strip().lower()}|{str(titulo).strip().lower()}"
+        if hasattr(self, "_cache_preescucha") and cache_key in self._cache_preescucha:
+            hit = self._cache_preescucha[cache_key]
+            if isinstance(hit, dict):
+                return hit
+            return {"status": "ok", "stream_url": hit}
 
+        def _clean_str(s):
+            if not s:
+                return ""
+            s = re.sub(r'\(.*?\)|\[.*?\]|\{.*?\}', '', s)
+            s = re.sub(r'(?i)\b(original mix|extended mix|club mix|radio edit|dub mix|mix|remix|edit|vip)\b', '', s)
+            s = re.sub(r'(?i)\b(feat\.?|ft\.?)\s+.*', '', s)
+            return re.sub(r'\s+', ' ', s).strip()
+
+        clean_art = _clean_str(artista)
+        clean_tit = _clean_str(titulo)
+        pri_art = re.split(r'[,/&]', clean_art)[0].strip() if clean_art else ""
+
+        # Secuencia priorizada de consultas rápidas a iTunes
+        queries = []
+        if clean_art and clean_tit:
+            queries.append(f"{clean_art} {clean_tit}")
+        if pri_art and pri_art != clean_art and clean_tit:
+            queries.append(f"{pri_art} {clean_tit}")
+        if artista and titulo:
+            queries.append(f"{artista} {titulo}")
+        if clean_tit:
+            queries.append(clean_tit)
+
+        for q in queries:
+            if not q.strip():
+                continue
+            res = self.buscar_metadata_itunes(q.strip(), limit=3)
+            if res:
+                for r in res:
+                    p_url = r.get("previewUrl")
+                    if p_url:
+                        cover_hd = (r.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
+                        result_obj = {
+                            "status": "ok", 
+                            "stream_url": p_url,
+                            "cover": cover_hd,
+                            "track_name": r.get("trackName"),
+                            "artist_name": r.get("artistName")
+                        }
+                        if hasattr(self, "_cache_preescucha"):
+                            self._cache_preescucha[cache_key] = result_obj
+                            if clean_art and clean_tit:
+                                self._cache_preescucha[f"{clean_art.lower()}|{clean_tit.lower()}"] = result_obj
+                        return result_obj
+
+        # Fallback acelerado a yt-dlp con timeout estricto de 3.5s
         try:
-            query = f"ytsearch1:{artista} - {titulo} audio"
-            cmd = ["yt-dlp", "-g", "-f", "bestaudio/best", "--extractor-args", "youtube:player_client=default,mweb", query]
-            out = subprocess.check_output(cmd, text=True, timeout=10)
-            url = out.strip().splitlines()[0]
+            q_search = f"{clean_art or artista} - {clean_tit or titulo} audio"
+            cmd = [
+                "yt-dlp", 
+                "-g", 
+                "-f", "bestaudio/best", 
+                "--no-playlist", 
+                "--no-warnings", 
+                "--quiet", 
+                "--skip-download",
+                "--extractor-args", "youtube:player_client=default,mweb", 
+                f"ytsearch1:{q_search}"
+            ]
+            out = subprocess.check_output(cmd, text=True, timeout=3.5)
+            url = out.strip().splitlines()[0] if out.strip() else ""
             if url:
-                return {"status": "ok", "stream_url": url}
+                result_obj = {"status": "ok", "stream_url": url}
+                if hasattr(self, "_cache_preescucha"):
+                    self._cache_preescucha[cache_key] = result_obj
+                return result_obj
         except Exception as e:
-            print(f"[ERROR] Fallback yt-dlp falló: {e}")
+            print(f"[PREESCUCHA] Fallback yt-dlp omitido o excedió timeout: {e}")
+
         return {"status": "error", "stream_url": ""}
 
     def buscar_reemplazos_spotify_batch(self, tracks: list) -> dict:
@@ -578,6 +642,23 @@ class MediaService:
             # Ordenar candidatos de mayor a menor score
             candidatos_evaluados.sort(key=lambda x: x["match_score"], reverse=True)
             mejor = candidatos_evaluados[0]
+
+            # Optimización de latencia: Si el mejor resultado no trae preview_url directa (común en Spotify),
+            # heredar el audio stream verificado de cualquiera de los candidatos evaluados (ej. iTunes 30s AAC)
+            preview_res = mejor.get("preview_url") or ""
+            if not preview_res:
+                for c in candidatos_evaluados:
+                    if c.get("preview_url"):
+                        preview_res = c["preview_url"]
+                        mejor["preview_url"] = preview_res
+                        break
+
+            # Pre-calentar caché de preescucha en memoria para latencia cero al hacer clic en Play
+            if preview_res and hasattr(self, "_cache_preescucha"):
+                self._cache_preescucha[f"{str(mejor.get('artist', '')).strip().lower()}|{str(mejor.get('title', '')).strip().lower()}"] = preview_res
+                if orig_artist and orig_title:
+                    self._cache_preescucha[f"{str(orig_artist).strip().lower()}|{str(orig_title).strip().lower()}"] = preview_res
+
             otros_candidatos = candidatos_evaluados[1:6]
 
             ed_calc = self.calcular_energia_y_danceability(t, idx)
