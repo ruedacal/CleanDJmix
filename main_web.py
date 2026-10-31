@@ -773,13 +773,20 @@ def exportar_set_m3u(tracks, nombre_set="BeatWave_DJ_Set", destino_dir="/Users/a
     return export_svc.exportar_set_m3u(tracks, destino_dir, nombre_set)
 
 @eel.expose
-def seleccionar_carpeta_para_set():
+def seleccionar_carpeta_para_set(ruta_override=None):
     """Permite seleccionar una carpeta completa y cargar sus pistas directamente para Sets/SetBuilder."""
     try:
-        res = audit_svc.seleccionar_directorio()
-        if not res or not res.get("path"):
+        if ruta_override and os.path.isdir(ruta_override):
+            path = ruta_override
+        else:
+            ruta = audit_svc.seleccionar_directorio()
+            path = ""
+            if isinstance(ruta, dict):
+                path = ruta.get("path") or ruta.get("directorio") or ""
+            elif isinstance(ruta, str):
+                path = ruta.strip()
+        if not path or not os.path.isdir(path):
             return {"status": "cancelado", "tracks": []}
-        path = res.get("path")
         _registrar_directorio_autorizado(path)
         tracks = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
         return {"status": "ok", "path": path, "tracks": tracks}
@@ -797,7 +804,13 @@ def api_setbuilder_load_folder():
     data = bottle.request.json or {}
     path = data.get("path", "")
     if not path or not os.path.isdir(path):
-        return {"status": "error", "msg": "Ruta inválida", "tracks": []}
+        ruta = audit_svc.seleccionar_directorio()
+        if isinstance(ruta, dict):
+            path = ruta.get("path") or ""
+        elif isinstance(ruta, str):
+            path = ruta.strip()
+    if not path or not os.path.isdir(path):
+        return {"status": "error", "msg": "Ruta inválida o cancelada", "tracks": []}
     _registrar_directorio_autorizado(path)
     tracks = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
     return {"status": "ok", "path": path, "tracks": tracks}

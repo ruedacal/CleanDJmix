@@ -5407,21 +5407,6 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
     // Estado de Plegado / Desplegado: Permite colapsar el manual al borde derecho para interactuar con la app
     const [isFolded, setIsFolded] = useState(false);
-
-    // Modo de Vista: 'drawer' (Columna lateral al 60% de ancho) | 'modal' (Ventana central completa)
-    const [viewMode, setViewMode] = useState(() => {
-        try {
-            return localStorage.getItem('bw_manual_viewmode') || 'drawer';
-        } catch (e) {
-            return 'drawer';
-        }
-    });
-
-    const setModeAndPersist = (mode) => {
-        setViewMode(mode);
-        try { localStorage.setItem('bw_manual_viewmode', mode); } catch (e) {}
-    };
-
     const [activeSectionKey, setActiveSectionKey] = useState(initialSection || 'audit');
     const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
     const [simStep, setSimStep] = useState(0);
@@ -6065,16 +6050,23 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // MODO 1: COLUMNA LATERAL DERECHA AL 60% DE ANCHO (Interactiva y Plegable)
+    // MANUAL EXCLUSIVO: COLUMNA LATERAL DERECHA AL 60% DE ANCHO (Interactiva & Plegable)
     // ─────────────────────────────────────────────────────────────────────────
-    if (viewMode === 'drawer') {
-        return (
+    return (
+        <div className="fixed inset-0 z-50 overflow-hidden select-none">
+            {/* Backdrop sutil clicable para cerrar o plegar */}
+            <div 
+                className="fixed inset-0 bg-black/65 transition-opacity animate-fadeIn"
+                onClick={onClose}
+            />
+
+            {/* Columna Lateral Derecha al 60% de ancho con fondo sólido plano */}
             <aside 
-                className="fixed top-0 bottom-0 right-0 z-50 w-full lg:w-[60vw] xl:w-[60vw] 2xl:w-[60vw] min-w-[360px] h-full bg-[#080811]/98 border-l border-pink-500/60 shadow-[-25px_0_60px_rgba(0,0,0,0.9)] backdrop-blur-2xl flex flex-col font-sans text-gray-200 animate-fadeIn select-none"
+                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[85vw] md:w-[70vw] lg:w-[60vw] max-w-[60vw] h-full bg-[#0a0a14] border-l border-pink-500/70 shadow-[-25px_0_60px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-200 animate-slideInRight select-none"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Drawer */}
-                <div className="px-5 py-3 border-b border-djzinc-800 bg-[#0c0d18] flex items-center justify-between shrink-0">
+                <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0">
                             📖
@@ -6082,7 +6074,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
-                                    MANUAL CABINA PRO
+                                    MANUAL MAESTRO DE CABINA
                                 </h3>
                                 <span className="text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold">
                                     60% ANCHO • PLEGABLE
@@ -6094,16 +6086,37 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         </div>
                     </div>
 
-                    {renderHeaderControls()}
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* Botón Plegar */}
+                        <button 
+                            type="button"
+                            onClick={() => setIsFolded(true)}
+                            className="px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-pink-950/80 text-gray-300 hover:text-pink-300 flex items-center gap-1 font-mono text-xs border border-djzinc-750 hover:border-pink-500/60 transition-colors cursor-pointer"
+                            title="Plegar manual a pestaña lateral para interactuar libremente con la cabina"
+                        >
+                            <span>⇥</span>
+                            <span>Plegar</span>
+                        </button>
+
+                        {/* Cerrar */}
+                        <button 
+                            type="button"
+                            onClick={onClose}
+                            className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-pink-900/60 text-gray-400 hover:text-pink-300 flex items-center justify-center font-mono text-sm border border-djzinc-750 transition-colors cursor-pointer"
+                            title="Cerrar manual (ESC)"
+                        >
+                            ✕
+                        </button>
+                    </div>
                 </div>
 
                 {/* Barra de Secciones */}
                 {renderSectionsBar()}
 
-                {/* Subtabs del Drawer: [ 🌟 Todo ] [ 🎬 Simulador ] [ 🎛️ Controles ] [ 📖 Guía ] */}
-                <div className="px-5 py-2 bg-[#090a12] border-b border-djzinc-800/80 flex items-center justify-between text-xs font-mono shrink-0">
+                {/* Subtabs del Drawer */}
+                <div className="px-5 py-2 bg-[#0d0e1a] border-b border-djzinc-800/80 flex items-center justify-between text-xs font-mono shrink-0">
                     <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider hidden sm:inline">Vistas de Contenido:</span>
-                    <div className="flex items-center gap-1 bg-djzinc-900 p-0.5 rounded-xl border border-djzinc-800">
+                    <div className="flex items-center gap-1 bg-[#141525] p-0.5 rounded-xl border border-djzinc-800">
                         {[
                             { id: 'all', label: '🌟 Todo' },
                             { id: 'sim', label: '🎬 Simulador' },
@@ -6127,7 +6140,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 </div>
 
                 {/* Cuerpo Scrollable del Drawer */}
-                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 space-y-5">
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-6">
                     {(activeManualTab === 'all' || activeManualTab === 'sim') && (
                         renderSimulatorCard(true)
                     )}
@@ -6142,7 +6155,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 </div>
 
                 {/* Pie del Drawer */}
-                <div className="px-5 py-3 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
+                <div className="px-5 py-3 bg-[#0c0d18] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
                     <span className="text-gray-400 text-[10.5px] flex items-center gap-1.5">
                         <span>💡</span>
                         <span>Pulsa <strong>Plegar</strong> para interactuar con la cabina a la izquierda sin cerrar</span>
@@ -6150,73 +6163,12 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-3.5 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold text-xs transition-colors cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold text-xs transition-colors cursor-pointer"
                     >
                         Cerrar (ESC)
                     </button>
                 </div>
             </aside>
-        );
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // MODO 2: MODAL CENTRADA PANTALLA COMPLETA
-    // ─────────────────────────────────────────────────────────────────────────
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
-            <div 
-                className="w-full max-w-7xl h-[92vh] max-h-[920px] bg-[#090912] border border-pink-500/50 rounded-3xl shadow-[0_0_60px_rgba(236,72,153,0.35)] overflow-hidden flex flex-col font-sans text-gray-200"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0d18] flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0">
-                            📖
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
-                                    <span>BEATWAVE PRO • MANUAL MAESTRO DE CABINA</span>
-                                    <span className="text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold">
-                                        MASTERCLASS
-                                    </span>
-                                </h3>
-                            </div>
-                            <p className="text-[11px] text-gray-400 font-sans hidden sm:block">
-                                Domina cada herramienta al 100%, entiende los secretos acústicos y prepárate para sonar impecable en cualquier club.
-                            </p>
-                        </div>
-                    </div>
-
-                    {renderHeaderControls()}
-                </div>
-
-                {renderSectionsBar()}
-
-                <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 sm:p-6 overflow-hidden">
-                    <div className="lg:col-span-7 flex flex-col gap-5 overflow-y-auto pr-2 custom-scrollbar">
-                        {renderControlsCatalog()}
-                        {renderSectionStoryAndDetails()}
-                    </div>
-
-                    <div className="lg:col-span-5 flex flex-col min-h-[380px]">
-                        {renderSimulatorCard(false)}
-                    </div>
-                </div>
-
-                <div className="px-5 py-3 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
-                    <span className="text-gray-500 text-[11px] hidden sm:inline">
-                        Presiona <kbd className="px-1.5 py-0.5 bg-djzinc-900 border border-djzinc-750 rounded text-gray-300">ESC</kbd> o haz clic fuera para volver a la cabina.
-                    </span>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer ml-auto"
-                    >
-                        Entendido
-                    </button>
-                </div>
-            </div>
         </div>
     );
 };
@@ -21448,48 +21400,45 @@ const MapWorkspace = ({
     const imageCacheRef = useRef(new Map());
     const panTimerRef = useRef(null);
 
-    // Navegación continua y fluida por el mapa con flechas
+    // Transformación espacial cinemática (Pan & Zoom Lerp 60fps)
+    const transformRef = useRef({
+        scale: 1.0,
+        panX: 0,
+        panY: 0,
+        targetScale: 1.0,
+        targetPanX: 0,
+        targetPanY: 0,
+        isContinuousPanning: false,
+        continuousDx: 0,
+        continuousDy: 0,
+        isDragging: false,
+        dragStartX: 0,
+        dragStartY: 0
+    });
+
+    // Navegación continua y ultra fluida por el mapa con cinemática 60fps (sin saltos ni tirones)
     const startPan = (dx, dy) => {
-        transformRef.current.panX += dx;
-        transformRef.current.panY += dy;
-        if (panTimerRef.current) clearInterval(panTimerRef.current);
-        panTimerRef.current = setInterval(() => {
-            transformRef.current.panX += dx;
-            transformRef.current.panY += dy;
-        }, 30);
+        transformRef.current.isContinuousPanning = true;
+        transformRef.current.continuousDx = dx * 0.45;
+        transformRef.current.continuousDy = dy * 0.45;
+        transformRef.current.targetPanX += dx * 2.5;
+        transformRef.current.targetPanY += dy * 2.5;
     };
 
     const stopPan = () => {
-        if (panTimerRef.current) {
-            clearInterval(panTimerRef.current);
-            panTimerRef.current = null;
-        }
+        transformRef.current.isContinuousPanning = false;
+        transformRef.current.continuousDx = 0;
+        transformRef.current.continuousDy = 0;
     };
 
     const handleFaderZoom = (val) => {
         const parsed = parseFloat(val);
         if (!isNaN(parsed)) {
             const clamped = Math.max(0.4, Math.min(4.0, parsed));
-            transformRef.current.scale = clamped;
+            transformRef.current.targetScale = clamped;
             setZoomDisplay(clamped);
         }
     };
-
-    useEffect(() => {
-        return () => {
-            if (panTimerRef.current) clearInterval(panTimerRef.current);
-        };
-    }, []);
-
-    // Transformación espacial (Pan & Zoom)
-    const transformRef = useRef({
-        scale: 1.0,
-        panX: 0,
-        panY: 0,
-        isDragging: false,
-        dragStartX: 0,
-        dragStartY: 0
-    });
 
     // Puntos para herramienta de Selección (Lasso / Box)
     const selectionRef = useRef({
@@ -21619,7 +21568,18 @@ const MapWorkspace = ({
             ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, w, h);
 
-            const { scale, panX, panY } = transformRef.current;
+            // Cinemática suave y continua a 60fps (sin tirones)
+            const t = transformRef.current;
+            if (t.isContinuousPanning) {
+                t.targetPanX += t.continuousDx;
+                t.targetPanY += t.continuousDy;
+            }
+            t.panX += (t.targetPanX - t.panX) * 0.22;
+            t.panY += (t.targetPanY - t.panY) * 0.22;
+            t.scale += (t.targetScale - t.scale) * 0.22;
+            const scale = t.scale;
+            const panX = t.panX;
+            const panY = t.panY;
 
             // Función para transformar coord normalizada [0..1] a pixel de pantalla
             const toScreen = (nx, ny) => {
@@ -22043,7 +22003,7 @@ const MapWorkspace = ({
         }
     };
 
-    // Zoom con rueda centrado en puntero
+    // Zoom cinemático suave con rueda centrado en puntero
     const handleWheel = (e) => {
         e.preventDefault();
         const canvas = canvasRef.current;
@@ -22052,19 +22012,18 @@ const MapWorkspace = ({
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
-        const currentScale = transformRef.current.scale;
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+        const currentScale = transformRef.current.targetScale || transformRef.current.scale;
         const newScale = Math.max(0.4, Math.min(5.0, currentScale * zoomFactor));
 
-        // Ajustar pan para que el zoom sea hacia el puntero
         const w = rect.width;
         const h = rect.height;
         const cx = w / 2 + transformRef.current.panX;
         const cy = h / 2 + transformRef.current.panY;
 
-        transformRef.current.panX = mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2;
-        transformRef.current.panY = mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2;
-        transformRef.current.scale = newScale;
+        transformRef.current.targetPanX = mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2;
+        transformRef.current.targetPanY = mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2;
+        transformRef.current.targetScale = newScale;
         setZoomDisplay(newScale);
     };
 
@@ -22076,14 +22035,14 @@ const MapWorkspace = ({
     };
 
     const handleResetZoom = () => {
-        transformRef.current = {
-            scale: 1.0,
-            panX: 0,
-            panY: 0,
-            isDragging: false,
-            dragStartX: 0,
-            dragStartY: 0
-        };
+        transformRef.current.scale = 1.0;
+        transformRef.current.panX = 0;
+        transformRef.current.panY = 0;
+        transformRef.current.targetScale = 1.0;
+        transformRef.current.targetPanX = 0;
+        transformRef.current.targetPanY = 0;
+        transformRef.current.isContinuousPanning = false;
+        transformRef.current.isDragging = false;
         setZoomDisplay(1.0);
     };
 
@@ -25515,6 +25474,277 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
     );
 };
 
+// ==============================================================================
+// PRESENTACIÓN ESPECTACULAR A PANTALLA COMPLETA CON VÍDEO DE FONDO Y LÁSERES
+// ==============================================================================
+const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenManual }) => {
+    if (!isOpen) return null;
+
+    const [isMuted, setIsMuted] = useState(true);
+    const canvasRef = useRef(null);
+    const videoRef = useRef(null);
+
+    // Audio synthesizer Web Audio API para efectos de sonido de cabina
+    const playIntroSound = (type = 'enter') => {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const now = ctx.currentTime;
+            if (type === 'enter') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(65, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.6);
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(300, now);
+                filter.frequency.exponentialRampToValueAtTime(14000, now + 0.6);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.75);
+            }
+        } catch (_) {}
+    };
+
+    // Canvas de Respaldo: Visualizador de Ondas & Partículas Cyberpunk a 128 BPM
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let animId;
+        let t = 0;
+
+        const renderVisuals = () => {
+            t += 0.035;
+            const w = canvas.width = window.innerWidth;
+            const h = canvas.height = window.innerHeight;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Rayos Láser de Festival desde la parte superior
+            const laserCount = 8;
+            for (let i = 0; i < laserCount; i++) {
+                const angle = Math.sin(t * 0.75 + i * 0.8) * 0.42;
+                const startX = (w / (laserCount + 1)) * (i + 1);
+                ctx.beginPath();
+                ctx.moveTo(startX, 0);
+                ctx.lineTo(startX + Math.tan(angle) * h, h);
+                const laserGrad = ctx.createLinearGradient(startX, 0, startX + Math.tan(angle) * h, h);
+                laserGrad.addColorStop(0, i % 2 === 0 ? 'rgba(6, 182, 212, 0.6)' : 'rgba(236, 72, 153, 0.55)');
+                laserGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.strokeStyle = laserGrad;
+                ctx.lineWidth = 2.5 + Math.sin(t * 2 + i) * 1.5;
+                ctx.stroke();
+            }
+
+            // Barras de Espectro EQ Pulsante en el Fondo Inferior
+            const bars = 48;
+            const barWidth = w / bars;
+            for (let b = 0; b < bars; b++) {
+                const barH = (Math.sin(t * 3 + b * 0.4) * 0.5 + 0.5) * (h * 0.28) + (Math.cos(t * 1.8 + b * 0.2) * 0.3 + 0.3) * 60;
+                const bx = b * barWidth;
+                const by = h - barH;
+                const bGrad = ctx.createLinearGradient(0, by, 0, h);
+                bGrad.addColorStop(0, '#06b6d4');
+                bGrad.addColorStop(0.5, '#a855f7');
+                bGrad.addColorStop(1, '#090a14');
+                ctx.fillStyle = bGrad;
+                ctx.fillRect(bx + 1, by, barWidth - 2, barH);
+            }
+
+            animId = requestAnimationFrame(renderVisuals);
+        };
+
+        renderVisuals();
+        return () => cancelAnimationFrame(animId);
+    }, []);
+
+    const handleConfirmEnter = () => {
+        playIntroSound('enter');
+        onClose();
+    };
+
+    useEffect(() => {
+        const onKey = (e) => {
+            if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
+                handleConfirmEnter();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
+
+    return (
+        <div className="fixed inset-0 z-[120] bg-black overflow-hidden flex flex-col justify-between font-sans text-white select-none animate-fadeIn">
+            {/* VÍDEO DE FONDO EN LOOP CINEMÁTICO (FESTIVAL / CABINA DJ / LÁSERES) */}
+            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    loop
+                    muted={isMuted}
+                    playsInline
+                    poster="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1600&auto=format&fit=crop&q=80"
+                    className="w-full h-full object-cover opacity-50 filter contrast-125 brightness-90 scale-105 animate-pulse"
+                >
+                    <source src="https://assets.mixkit.co/videos/preview/mixkit-dj-mixing-music-at-a-club-stage-34538-large.mp4" type="video/mp4" />
+                    <source src="https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-dj-playing-music-at-a-party-41618-large.mp4" type="video/mp4" />
+                </video>
+                {/* Visualizador de Ondas & Láseres en Canvas de Apoyo */}
+                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-60 mix-blend-screen" />
+                {/* Degradados Cinemáticos para Legibilidad de Marca */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#05060b] via-[#05060b]/40 to-[#05060b]/80" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.15),transparent_70%)]" />
+            </div>
+
+            {/* BARRA SUPERIOR: LOGO Y BOTÓN SALTAR */}
+            <div className="relative z-10 p-5 sm:p-7 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.6)]">
+                        🎧
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <span className="font-syne font-black text-lg tracking-wider text-white">BEATWAVE PRO</span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black uppercase bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow">
+                                V2.4 STUDIO
+                            </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-gray-400">Intelligent DJ Suite & Sound Architecture</span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setIsMuted(prev => !prev)}
+                        className="px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 text-gray-300 hover:text-white border border-gray-700 text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1.5"
+                    >
+                        <span>{isMuted ? '🔇' : '🔊'}</span>
+                        <span className="hidden sm:inline">{isMuted ? 'Sonido Silenciado' : 'Sonido Cabina'}</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleConfirmEnter}
+                        className="px-3.5 py-1.5 rounded-xl bg-pink-950/70 hover:bg-pink-900 border border-pink-700 text-pink-200 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                        title="Saltar intro y entrar directamente a la cabina (ESC)"
+                    >
+                        <span>Saltar Intro</span>
+                        <span>✕</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* SECCIÓN HERO CENTRAL: TÍTULO GIGANTE 3D & BENEFICIOS DE ÉLITE */}
+            <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 max-w-4xl mx-auto my-auto py-6">
+                {/* Badge Neón Holográfico */}
+                <div className="mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-400/80 text-cyan-300 text-xs font-mono font-black uppercase tracking-widest shadow-[0_0_20px_rgba(6,182,212,0.4)] animate-pulse">
+                    <span>⚡</span> <span>MOTOR DSP • SUPERFLAC • MEZCLA ARMÓNICA 2D</span>
+                </div>
+
+                {/* Título Monumental de Marca */}
+                <h1 className="font-syne font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-none uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-cyan-400 drop-shadow-[0_0_40px_rgba(6,182,212,0.7)]">
+                    BEATWAVE PRO
+                </h1>
+
+                <p className="mt-3 text-sm sm:text-base md:text-lg text-gray-300 font-sans font-medium max-w-2xl leading-relaxed">
+                    La plataforma definitiva para DJs y Productores. Diagnóstico acústico FFT en tiempo real, armonía Camelot 2D y conexión invisible con tu cabina.
+                </p>
+
+                {/* Grid de 4 Cápsulas de Funcionalidad Pro */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mt-8 w-full max-w-3xl">
+                    <div className="p-3 rounded-2xl bg-black/60 border border-cyan-500/40 text-left shadow-lg backdrop-blur-md hover:border-cyan-400 transition-colors">
+                        <span className="text-xl block mb-1">💎</span>
+                        <h4 className="text-xs font-mono font-black uppercase text-cyan-300">SuperFLAC 24b</h4>
+                        <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Auditoría FFT y rechazo de fakes a 22kHz</p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-black/60 border border-purple-500/40 text-left shadow-lg backdrop-blur-md hover:border-purple-400 transition-colors">
+                        <span className="text-xl block mb-1">☸</span>
+                        <h4 className="text-xs font-mono font-black uppercase text-purple-300">Camelot 2D</h4>
+                        <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Scatter Map & Graph Playlists tipo DJOID</p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-black/60 border border-rose-500/40 text-left shadow-lg backdrop-blur-md hover:border-rose-400 transition-colors">
+                        <span className="text-xl block mb-1">🎧</span>
+                        <h4 className="text-xs font-mono font-black uppercase text-rose-300">Live Copilot</h4>
+                        <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Anti-Muddy DSP con Serato Link a 0ms</p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-black/60 border border-amber-500/40 text-left shadow-lg backdrop-blur-md hover:border-amber-400 transition-colors">
+                        <span className="text-xl block mb-1">🛂</span>
+                        <h4 className="text-xs font-mono font-black uppercase text-amber-300">Pasaporte DJ</h4>
+                        <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Sync universal a Rekordbox, Serato y Traktor</p>
+                    </div>
+                </div>
+
+                {/* BOTÓN ESTRELLA DE ENTRADA A CABINA */}
+                <div className="mt-8 flex flex-col items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={handleConfirmEnter}
+                        className="px-8 sm:px-12 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-syne font-black text-base sm:text-lg uppercase tracking-wider shadow-[0_0_40px_rgba(6,182,212,0.6)] hover:shadow-[0_0_60px_rgba(6,182,212,0.9)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-3"
+                    >
+                        <span>🎧</span>
+                        <span>ENTRAR A CABINA</span>
+                        <span className="text-xl">➔</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-gray-400">Pulsa Enter o haz clic para acceder al sistema</span>
+                </div>
+            </div>
+
+            {/* BARRA INFERIOR: ACCESOS DIRECTOS DE LANZAMIENTO RÁPIDO */}
+            <div className="relative z-10 p-4 sm:p-6 border-t border-djzinc-800/80 bg-black/60 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                <span className="text-gray-400 hidden sm:inline">Acciones Rápidas de Inicio:</span>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            handleConfirmEnter();
+                            if (onOpenFolder) onOpenFolder();
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-djzinc-900 hover:bg-cyan-950 text-cyan-300 hover:text-cyan-200 border border-djzinc-750 hover:border-cyan-500/60 font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                        <span>📂</span>
+                        <span>Cargar Carpeta de Música</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            handleConfirmEnter();
+                            if (onOpenDemo) onOpenDemo();
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-djzinc-900 hover:bg-purple-950 text-purple-300 hover:text-purple-200 border border-djzinc-750 hover:border-purple-500/60 font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                        <span>☸</span>
+                        <span>Explorar Scatter Map 2D</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            handleConfirmEnter();
+                            if (onOpenManual) onOpenManual();
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-djzinc-900 hover:bg-pink-950 text-pink-300 hover:text-pink-200 border border-djzinc-750 hover:border-pink-500/60 font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                        <span>📖</span>
+                        <span>Abrir Manual Maestro</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Componente Wrapper Orquestador del Tutorial (Deshabilitado a petición del usuario)
 const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = 'launcher' }) => {
     return null;
@@ -25522,6 +25752,15 @@ const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMod
 
 // Componente Principal de la Aplicación
 const App = () => {
+    // Intro Espectacular a Pantalla Completa con Video de Fondo
+    const [cinematicIntroOpen, setCinematicIntroOpen] = useState(() => {
+        try {
+            return !sessionStorage.getItem('bw_intro_viewed');
+        } catch (e) {
+            return true;
+        }
+    });
+
     const [lang, setLang] = useState(() => {
         try {
             return localStorage.getItem('beatwave_lang') || 'es';
@@ -26367,7 +26606,6 @@ const App = () => {
                 }
             }
             if (!target || target === 'cancelado') {
-                setActiveTab('audit');
                 return;
             }
             setCurrentFolder(target);
@@ -26375,14 +26613,14 @@ const App = () => {
                 const res = await window.eel.cargar_metadatos_directorio(target)();
                 if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {
                     setAuditTracks(res.tracks);
-                    setSelectedTrack(res.tracks[0].id);
+                    if (res.tracks[0] && res.tracks[0].id) {
+                        setSelectedTrack(res.tracks[0].id);
+                    }
                     return;
                 }
             }
-            setActiveTab('audit');
         } catch (e) {
             console.error("Error al cargar directorio:", e);
-            setActiveTab('audit');
         }
     };
 
@@ -26902,6 +27140,17 @@ const App = () => {
                     <span>🕶️</span>
                     <span className="hidden 2xl:inline text-[11px]">{clubMode ? (t('nav_club_mode') || 'Club') : (t('nav_normal_mode') || 'Normal')}</span>
                     <kbd className="text-[9px] bg-black/40 px-1 py-0.2 rounded border border-djzinc-750">L</kbd>
+                </button>
+
+                {/* Botón Intro Espectacular a Pantalla Completa con Video */}
+                <button
+                    type="button"
+                    onClick={() => setCinematicIntroOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-[#0e101f] hover:bg-[#161a33] text-cyan-300 hover:text-white border border-cyan-500/40 text-xs font-mono font-bold shadow-sm cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+                    title="Ver presentación e intro espectacular a pantalla completa con video"
+                >
+                    <span>🎬</span>
+                    <span className="hidden xl:inline text-[11px]">Intro</span>
                 </button>
 
                 {/* Botón Maestro del Manual Interactivo BeatWave (Rosa Morado Vibrante de Cabina) */}
@@ -27570,6 +27819,30 @@ const App = () => {
                 onClose={() => setBitacoraModalOpen(false)}
                 entries={bitacoraEntries}
                 onClearEntries={handleClearBitacora}
+            />
+
+            {/* PRESENTACIÓN CINEMÁTICA A PANTALLA COMPLETA CON VÍDEO DE FONDO */}
+            <AppCinematicIntro
+                isOpen={cinematicIntroOpen}
+                onClose={() => {
+                    setCinematicIntroOpen(false);
+                    try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
+                }}
+                onOpenFolder={() => {
+                    setCinematicIntroOpen(false);
+                    try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
+                    handleCargarDirectorioGlobal();
+                }}
+                onOpenDemo={() => {
+                    setCinematicIntroOpen(false);
+                    try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
+                    setActiveTab('map');
+                }}
+                onOpenManual={() => {
+                    setCinematicIntroOpen(false);
+                    try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
+                    handleOpenManual('audit');
+                }}
             />
         </div>
     );

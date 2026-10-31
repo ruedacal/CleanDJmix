@@ -524,9 +524,13 @@ class AuditService:
         if not self._lock.acquire(blocking=False):
             return ""
         try:
-            # Script estándar con timeout y captura segura
-            script = 'POSIX path of (choose folder with prompt "Selecciona tu carpeta de música DJ:")'
-            proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=60)
+            # Script con activación de System Events para ventana en primer plano sin lag
+            script = '''tell application "System Events"
+    activate
+    set folderPath to POSIX path of (choose folder with prompt "Selecciona tu carpeta de música DJ (FLAC, MP3, WAV):")
+end tell
+return folderPath'''
+            proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=30)
             if proc.returncode == 0 and proc.stdout.strip():
                 ruta = proc.stdout.strip()
                 if os.path.isdir(ruta):

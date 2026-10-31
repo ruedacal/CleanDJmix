@@ -4231,20 +4231,6 @@ const MANUAL_SECTIONS = {
 const InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onNavigateTab, lang = "es" }) => {
   if (!isOpen) return null;
   const [isFolded, setIsFolded] = useState(false);
-  const [viewMode, setViewMode] = useState(() => {
-    try {
-      return localStorage.getItem("bw_manual_viewmode") || "drawer";
-    } catch (e) {
-      return "drawer";
-    }
-  });
-  const setModeAndPersist = (mode) => {
-    setViewMode(mode);
-    try {
-      localStorage.setItem("bw_manual_viewmode", mode);
-    } catch (e) {
-    }
-  };
   const [activeSectionKey, setActiveSectionKey] = useState(initialSection || "audit");
   const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
   const [simStep, setSimStep] = useState(0);
@@ -4383,59 +4369,63 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onN
       /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.5 rounded bg-pink-950 text-pink-300 border border-pink-700/60 font-bold uppercase" }, "\u25C0 Desplegar")
     );
   }
-  if (viewMode === "drawer") {
-    return /* @__PURE__ */ React.createElement(
-      "aside",
-      {
-        className: "fixed top-0 bottom-0 right-0 z-50 w-full lg:w-[60vw] xl:w-[60vw] 2xl:w-[60vw] min-w-[360px] h-full bg-[#080811]/98 border-l border-pink-500/60 shadow-[-25px_0_60px_rgba(0,0,0,0.9)] backdrop-blur-2xl flex flex-col font-sans text-gray-200 animate-fadeIn select-none",
-        onClick: (e) => e.stopPropagation()
-      },
-      /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 border-b border-djzinc-800 bg-[#0c0d18] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0" }, "\u{1F4D6}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "MANUAL CABINA PRO"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold" }, "60% ANCHO \u2022 PLEGABLE")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, activeSec.tag))), renderHeaderControls()),
-      renderSectionsBar(),
-      /* @__PURE__ */ React.createElement("div", { className: "px-5 py-2 bg-[#090a12] border-b border-djzinc-800/80 flex items-center justify-between text-xs font-mono shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 font-bold uppercase text-[10px] tracking-wider hidden sm:inline" }, "Vistas de Contenido:"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-djzinc-900 p-0.5 rounded-xl border border-djzinc-800" }, [
-        { id: "all", label: "\u{1F31F} Todo" },
-        { id: "sim", label: "\u{1F3AC} Simulador" },
-        { id: "controls", label: `\u{1F39B}\uFE0F Controles (${activeSec.controls ? activeSec.controls.length : 0})` },
-        { id: "guide", label: "\u{1F4D6} Gu\xEDa Pro" }
-      ].map((tb) => /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          key: tb.id,
-          type: "button",
-          onClick: () => setActiveManualTab(tb.id),
-          className: `px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer whitespace-nowrap ${activeManualTab === tb.id ? "bg-pink-500 text-black font-black shadow-sm" : "text-gray-400 hover:text-white"}`
-        },
-        tb.label
-      )))),
-      /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 space-y-5" }, (activeManualTab === "all" || activeManualTab === "sim") && renderSimulatorCard(true), (activeManualTab === "all" || activeManualTab === "controls") && renderControlsCatalog(), (activeManualTab === "all" || activeManualTab === "guide") && renderSectionStoryAndDetails()),
-      /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[10.5px] flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4A1}"), /* @__PURE__ */ React.createElement("span", null, "Pulsa ", /* @__PURE__ */ React.createElement("strong", null, "Plegar"), " para interactuar con la cabina a la izquierda sin cerrar")), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: onClose,
-          className: "px-3.5 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold text-xs transition-colors cursor-pointer"
-        },
-        "Cerrar (ESC)"
-      ))
-    );
-  }
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn", onClick: onClose }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 overflow-hidden select-none" }, /* @__PURE__ */ React.createElement(
     "div",
     {
-      className: "w-full max-w-7xl h-[92vh] max-h-[920px] bg-[#090912] border border-pink-500/50 rounded-3xl shadow-[0_0_60px_rgba(236,72,153,0.35)] overflow-hidden flex flex-col font-sans text-gray-200",
+      className: "fixed inset-0 bg-black/65 transition-opacity animate-fadeIn",
+      onClick: onClose
+    }
+  ), /* @__PURE__ */ React.createElement(
+    "aside",
+    {
+      className: "fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[85vw] md:w-[70vw] lg:w-[60vw] max-w-[60vw] h-full bg-[#0a0a14] border-l border-pink-500/70 shadow-[-25px_0_60px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-200 animate-slideInRight select-none",
       onClick: (e) => e.stopPropagation()
     },
-    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0d18] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0" }, "\u{1F4D6}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "BEATWAVE PRO \u2022 MANUAL MAESTRO DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold" }, "MASTERCLASS"))), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans hidden sm:block" }, "Domina cada herramienta al 100%, entiende los secretos ac\xFAsticos y prep\xE1rate para sonar impecable en cualquier club."))), renderHeaderControls()),
-    renderSectionsBar(),
-    /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 sm:p-6 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "lg:col-span-7 flex flex-col gap-5 overflow-y-auto pr-2 custom-scrollbar" }, renderControlsCatalog(), renderSectionStoryAndDetails()), /* @__PURE__ */ React.createElement("div", { className: "lg:col-span-5 flex flex-col min-h-[380px]" }, renderSimulatorCard(false))),
-    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[11px] hidden sm:inline" }, "Presiona ", /* @__PURE__ */ React.createElement("kbd", { className: "px-1.5 py-0.5 bg-djzinc-900 border border-djzinc-750 rounded text-gray-300" }, "ESC"), " o haz clic fuera para volver a la cabina."), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0" }, "\u{1F4D6}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "MANUAL MAESTRO DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold" }, "60% ANCHO \u2022 PLEGABLE")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, activeSec.tag))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsFolded(true),
+        className: "px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-pink-950/80 text-gray-300 hover:text-pink-300 flex items-center gap-1 font-mono text-xs border border-djzinc-750 hover:border-pink-500/60 transition-colors cursor-pointer",
+        title: "Plegar manual a pesta\xF1a lateral para interactuar libremente con la cabina"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u21E5"),
+      /* @__PURE__ */ React.createElement("span", null, "Plegar")
+    ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: onClose,
-        className: "px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer ml-auto"
+        className: "w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-pink-900/60 text-gray-400 hover:text-pink-300 flex items-center justify-center font-mono text-sm border border-djzinc-750 transition-colors cursor-pointer",
+        title: "Cerrar manual (ESC)"
       },
-      "Entendido"
+      "\u2715"
+    ))),
+    renderSectionsBar(),
+    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-2 bg-[#0d0e1a] border-b border-djzinc-800/80 flex items-center justify-between text-xs font-mono shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 font-bold uppercase text-[10px] tracking-wider hidden sm:inline" }, "Vistas de Contenido:"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#141525] p-0.5 rounded-xl border border-djzinc-800" }, [
+      { id: "all", label: "\u{1F31F} Todo" },
+      { id: "sim", label: "\u{1F3AC} Simulador" },
+      { id: "controls", label: `\u{1F39B}\uFE0F Controles (${activeSec.controls ? activeSec.controls.length : 0})` },
+      { id: "guide", label: "\u{1F4D6} Gu\xEDa Pro" }
+    ].map((tb) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: tb.id,
+        type: "button",
+        onClick: () => setActiveManualTab(tb.id),
+        className: `px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer whitespace-nowrap ${activeManualTab === tb.id ? "bg-pink-500 text-black font-black shadow-sm" : "text-gray-400 hover:text-white"}`
+      },
+      tb.label
+    )))),
+    /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-6" }, (activeManualTab === "all" || activeManualTab === "sim") && renderSimulatorCard(true), (activeManualTab === "all" || activeManualTab === "controls") && renderControlsCatalog(), (activeManualTab === "all" || activeManualTab === "guide") && renderSectionStoryAndDetails()),
+    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#0c0d18] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[10.5px] flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4A1}"), /* @__PURE__ */ React.createElement("span", null, "Pulsa ", /* @__PURE__ */ React.createElement("strong", null, "Plegar"), " para interactuar con la cabina a la izquierda sin cerrar")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onClose,
+        className: "px-3.5 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold text-xs transition-colors cursor-pointer"
+      },
+      "Cerrar (ESC)"
     ))
   ));
 };
@@ -13040,7 +13030,7 @@ const SetBuilderWorkspace = ({
   const [isExporting, setIsExporting] = useState(false);
   const [isAuditingSet, setIsAuditingSet] = useState(false);
   const [auditSetProgress, setAuditSetProgress] = useState(0);
-  const [viewMode, setViewMode] = useState("list");
+  const [viewMode2, setViewMode] = useState("list");
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] });
   const [isLoadingGraph, setIsLoadingGraph] = useState(false);
   const [aiAuditResult, setAiAuditResult] = useState(null);
@@ -13930,7 +13920,7 @@ const SetBuilderWorkspace = ({
     {
       type: "button",
       onClick: () => setViewMode("list"),
-      className: `flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${viewMode === "list" ? "bg-djcyan-500 text-black shadow-lg shadow-djcyan-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+      className: `flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${viewMode2 === "list" ? "bg-djcyan-500 text-black shadow-lg shadow-djcyan-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white hover:bg-djzinc-850"}`
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2630"),
     /* @__PURE__ */ React.createElement("span", null, "Secuencia Lineal")
@@ -13944,7 +13934,7 @@ const SetBuilderWorkspace = ({
           handleCargarGrafo();
         }
       },
-      className: `flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${viewMode === "graph" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "bg-djzinc-900 text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+      className: `flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${viewMode2 === "graph" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "bg-djzinc-900 text-gray-400 hover:text-white hover:bg-djzinc-850"}`
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F578}\uFE0F"),
     /* @__PURE__ */ React.createElement("span", null, "Graph Playlists (DJOID)"),
@@ -13959,12 +13949,12 @@ const SetBuilderWorkspace = ({
           handleAuditarSesionAi();
         }
       },
-      className: `flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${viewMode === "ai_advisor" ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-black shadow-lg shadow-emerald-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+      className: `flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${viewMode2 === "ai_advisor" ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-black shadow-lg shadow-emerald-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white hover:bg-djzinc-850"}`
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F916}"),
     /* @__PURE__ */ React.createElement("span", null, "Asesor AI & Calidad (Gemini)"),
     /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800" }, "PRO")
-  )), /* @__PURE__ */ React.createElement("div", { className: "p-3 sm:p-4 md:p-6 flex flex-col gap-5 flex-1 pb-36 md:pb-8" }, viewMode === "graph" ? renderGraphPlaylists() : viewMode === "ai_advisor" ? renderSessionAiAdvisor() : /* @__PURE__ */ React.createElement(React.Fragment, null, renderFlowCanvas(), setTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center py-16 text-center border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-950/40 p-6" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-2xl bg-djzinc-900 flex items-center justify-center text-djcyan-400 mb-4 border border-djzinc-800" }, /* @__PURE__ */ React.createElement(Icons.Flow, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-mono font-bold text-gray-300" }, "Tu Set est\xE1 vac\xEDo"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-500 max-w-md mt-1 mb-5 font-sans" }, "Agrega pistas desde el bot\xF3n superior o carga una demostraci\xF3n para explorar el an\xE1lisis arm\xF3nico Camelot, compensaci\xF3n LUFS y Anti-Muddy en transiciones."), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { className: "p-3 sm:p-4 md:p-6 flex flex-col gap-5 flex-1 pb-36 md:pb-8" }, viewMode2 === "graph" ? renderGraphPlaylists() : viewMode2 === "ai_advisor" ? renderSessionAiAdvisor() : /* @__PURE__ */ React.createElement(React.Fragment, null, renderFlowCanvas(), setTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center py-16 text-center border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-950/40 p-6" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-2xl bg-djzinc-900 flex items-center justify-center text-djcyan-400 mb-4 border border-djzinc-800" }, /* @__PURE__ */ React.createElement(Icons.Flow, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-mono font-bold text-gray-300" }, "Tu Set est\xE1 vac\xEDo"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-500 max-w-md mt-1 mb-5 font-sans" }, "Agrega pistas desde el bot\xF3n superior o carga una demostraci\xF3n para explorar el an\xE1lisis arm\xF3nico Camelot, compensaci\xF3n LUFS y Anti-Muddy en transiciones."), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -14303,42 +14293,40 @@ const MapWorkspace = ({
   const animRef = useRef(null);
   const imageCacheRef = useRef(/* @__PURE__ */ new Map());
   const panTimerRef = useRef(null);
+  const transformRef = useRef({
+    scale: 1,
+    panX: 0,
+    panY: 0,
+    targetScale: 1,
+    targetPanX: 0,
+    targetPanY: 0,
+    isContinuousPanning: false,
+    continuousDx: 0,
+    continuousDy: 0,
+    isDragging: false,
+    dragStartX: 0,
+    dragStartY: 0
+  });
   const startPan = (dx, dy) => {
-    transformRef.current.panX += dx;
-    transformRef.current.panY += dy;
-    if (panTimerRef.current) clearInterval(panTimerRef.current);
-    panTimerRef.current = setInterval(() => {
-      transformRef.current.panX += dx;
-      transformRef.current.panY += dy;
-    }, 30);
+    transformRef.current.isContinuousPanning = true;
+    transformRef.current.continuousDx = dx * 0.45;
+    transformRef.current.continuousDy = dy * 0.45;
+    transformRef.current.targetPanX += dx * 2.5;
+    transformRef.current.targetPanY += dy * 2.5;
   };
   const stopPan = () => {
-    if (panTimerRef.current) {
-      clearInterval(panTimerRef.current);
-      panTimerRef.current = null;
-    }
+    transformRef.current.isContinuousPanning = false;
+    transformRef.current.continuousDx = 0;
+    transformRef.current.continuousDy = 0;
   };
   const handleFaderZoom = (val) => {
     const parsed = parseFloat(val);
     if (!isNaN(parsed)) {
       const clamped = Math.max(0.4, Math.min(4, parsed));
-      transformRef.current.scale = clamped;
+      transformRef.current.targetScale = clamped;
       setZoomDisplay(clamped);
     }
   };
-  useEffect(() => {
-    return () => {
-      if (panTimerRef.current) clearInterval(panTimerRef.current);
-    };
-  }, []);
-  const transformRef = useRef({
-    scale: 1,
-    panX: 0,
-    panY: 0,
-    isDragging: false,
-    dragStartX: 0,
-    dragStartY: 0
-  });
   const selectionRef = useRef({
     isSelecting: false,
     points: [],
@@ -14441,7 +14429,17 @@ const MapWorkspace = ({
       bgGrad.addColorStop(1, "#040408");
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, w, h);
-      const { scale, panX, panY } = transformRef.current;
+      const t = transformRef.current;
+      if (t.isContinuousPanning) {
+        t.targetPanX += t.continuousDx;
+        t.targetPanY += t.continuousDy;
+      }
+      t.panX += (t.targetPanX - t.panX) * 0.22;
+      t.panY += (t.targetPanY - t.panY) * 0.22;
+      t.scale += (t.targetScale - t.scale) * 0.22;
+      const scale = t.scale;
+      const panX = t.panX;
+      const panY = t.panY;
       const toScreen = (nx, ny) => {
         const cx = w / 2 + panX;
         const cy = h / 2 + panY;
@@ -14538,17 +14536,17 @@ const MapWorkspace = ({
       }
       const nowPlayingId = nowPlayingTrack ? nowPlayingTrack.id || nowPlayingTrack.path || nowPlayingTrack.title : null;
       const searchLower = searchQuery.trim().toLowerCase();
-      const selectedIdsSet = new Set(selectedMapTracks.map((t) => t.id || t.path || t.title));
+      const selectedIdsSet = new Set(selectedMapTracks.map((t2) => t2.id || t2.path || t2.title));
       nodes.forEach((node) => {
         const pt = toScreen(node.currX, node.currY);
         if (pt.x < -30 || pt.x > w + 30 || pt.y < -30 || pt.y > h + 30) return;
-        const t = node.track;
-        const isNowPlaying = Boolean(nowPlayingTrack && (nowPlayingTrack.id === t.id || nowPlayingTrack.path && t.path && nowPlayingTrack.path === t.path || nowPlayingTrack.title === t.title && nowPlayingTrack.artist === t.artist));
-        const isHovered = hoveredTrack && (hoveredTrack.id === t.id || hoveredTrack.title === t.title);
-        const isSelectedNode = selectedTrack && (selectedTrack.id === t.id || selectedTrack.title === t.title) || selectedIdsSet.has(node.id);
+        const t2 = node.track;
+        const isNowPlaying = Boolean(nowPlayingTrack && (nowPlayingTrack.id === t2.id || nowPlayingTrack.path && t2.path && nowPlayingTrack.path === t2.path || nowPlayingTrack.title === t2.title && nowPlayingTrack.artist === t2.artist));
+        const isHovered = hoveredTrack && (hoveredTrack.id === t2.id || hoveredTrack.title === t2.title);
+        const isSelectedNode = selectedTrack && (selectedTrack.id === t2.id || selectedTrack.title === t2.title) || selectedIdsSet.has(node.id);
         let matchesSearch = true;
         if (searchLower) {
-          const textContent = `${t.title} ${t.artist} ${node.genre} ${node.keyStr}`.toLowerCase();
+          const textContent = `${t2.title} ${t2.artist} ${node.genre} ${node.keyStr}`.toLowerCase();
           matchesSearch = textContent.includes(searchLower);
         }
         let matchesKey = true;
@@ -14565,7 +14563,7 @@ const MapWorkspace = ({
           const e = node.energy;
           nodeColor = e >= 90 ? "#ef4444" : e >= 75 ? "#f59e0b" : e >= 50 ? "#06b6d4" : "#3b82f6";
         } else if (colorMode === "quality") {
-          const isFakeOrBad = t.es_fake || t.calidad && String(t.calidad).includes("Baja");
+          const isFakeOrBad = t2.es_fake || t2.calidad && String(t2.calidad).includes("Baja");
           nodeColor = isFakeOrBad ? "#ef4444" : "#10b981";
         }
         const baseRadius = 5 + node.energy / 100 * 3;
@@ -14595,7 +14593,7 @@ const MapWorkspace = ({
           ctx.stroke();
         }
         const nodeRadius = isHovered || isSelectedNode ? Math.max(10, (baseRadius + 5) * Math.min(1.8, Math.max(1, scale))) : Math.max(7, baseRadius * Math.min(1.6, Math.max(1, scale)));
-        const coverSrc = t.cover || t.cover_url || (t.path ? `/cover?path=${encodeURIComponent(t.path)}` : null);
+        const coverSrc = t2.cover || t2.cover_url || (t2.path ? `/cover?path=${encodeURIComponent(t2.path)}` : null);
         let coverImg = null;
         if (coverSrc) {
           if (imageCacheRef.current.has(coverSrc)) {
@@ -14639,7 +14637,7 @@ const MapWorkspace = ({
         if (isHovered || isNowPlaying || scale >= 1.5) {
           ctx.font = "bold 9px monospace";
           ctx.fillStyle = isNowPlaying ? "#38bdf8" : isHovered ? "#ffffff" : "rgba(255, 255, 255, 0.65)";
-          const labelText = `${t.artist ? t.artist.slice(0, 16) : ""} - ${t.title ? t.title.slice(0, 18) : ""}`;
+          const labelText = `${t2.artist ? t2.artist.slice(0, 16) : ""} - ${t2.title ? t2.title.slice(0, 18) : ""}`;
           ctx.fillText(labelText, pt.x + nodeRadius + 4, pt.y + 3);
         }
       });
@@ -14803,16 +14801,16 @@ const MapWorkspace = ({
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-    const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
-    const currentScale = transformRef.current.scale;
+    const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+    const currentScale = transformRef.current.targetScale || transformRef.current.scale;
     const newScale = Math.max(0.4, Math.min(5, currentScale * zoomFactor));
     const w = rect.width;
     const h = rect.height;
     const cx = w / 2 + transformRef.current.panX;
     const cy = h / 2 + transformRef.current.panY;
-    transformRef.current.panX = mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2;
-    transformRef.current.panY = mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2;
-    transformRef.current.scale = newScale;
+    transformRef.current.targetPanX = mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2;
+    transformRef.current.targetPanY = mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2;
+    transformRef.current.targetScale = newScale;
     setZoomDisplay(newScale);
   };
   const handleClick = () => {
@@ -14821,14 +14819,14 @@ const MapWorkspace = ({
     }
   };
   const handleResetZoom = () => {
-    transformRef.current = {
-      scale: 1,
-      panX: 0,
-      panY: 0,
-      isDragging: false,
-      dragStartX: 0,
-      dragStartY: 0
-    };
+    transformRef.current.scale = 1;
+    transformRef.current.panX = 0;
+    transformRef.current.panY = 0;
+    transformRef.current.targetScale = 1;
+    transformRef.current.targetPanX = 0;
+    transformRef.current.targetPanY = 0;
+    transformRef.current.isContinuousPanning = false;
+    transformRef.current.isDragging = false;
     setZoomDisplay(1);
   };
   const selBpmAvg = selectedMapTracks.length > 0 ? Math.round(selectedMapTracks.reduce((acc, t) => acc + (parseFloat(t.bpm || t.b) || 126), 0) / selectedMapTracks.length) : 126;
@@ -16894,10 +16892,185 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
     )))
   ));
 };
+const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenManual }) => {
+  if (!isOpen) return null;
+  const [isMuted, setIsMuted] = useState(true);
+  const canvasRef = useRef(null);
+  const videoRef = useRef(null);
+  const playIntroSound = (type = "enter") => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+      if (type === "enter") {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(65, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.6);
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(300, now);
+        filter.frequency.exponentialRampToValueAtTime(14e3, now + 0.6);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(1e-3, now + 0.7);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.75);
+      }
+    } catch (_) {
+    }
+  };
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let animId;
+    let t = 0;
+    const renderVisuals = () => {
+      t += 0.035;
+      const w = canvas.width = window.innerWidth;
+      const h = canvas.height = window.innerHeight;
+      ctx.clearRect(0, 0, w, h);
+      const laserCount = 8;
+      for (let i = 0; i < laserCount; i++) {
+        const angle = Math.sin(t * 0.75 + i * 0.8) * 0.42;
+        const startX = w / (laserCount + 1) * (i + 1);
+        ctx.beginPath();
+        ctx.moveTo(startX, 0);
+        ctx.lineTo(startX + Math.tan(angle) * h, h);
+        const laserGrad = ctx.createLinearGradient(startX, 0, startX + Math.tan(angle) * h, h);
+        laserGrad.addColorStop(0, i % 2 === 0 ? "rgba(6, 182, 212, 0.6)" : "rgba(236, 72, 153, 0.55)");
+        laserGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.strokeStyle = laserGrad;
+        ctx.lineWidth = 2.5 + Math.sin(t * 2 + i) * 1.5;
+        ctx.stroke();
+      }
+      const bars = 48;
+      const barWidth = w / bars;
+      for (let b = 0; b < bars; b++) {
+        const barH = (Math.sin(t * 3 + b * 0.4) * 0.5 + 0.5) * (h * 0.28) + (Math.cos(t * 1.8 + b * 0.2) * 0.3 + 0.3) * 60;
+        const bx = b * barWidth;
+        const by = h - barH;
+        const bGrad = ctx.createLinearGradient(0, by, 0, h);
+        bGrad.addColorStop(0, "#06b6d4");
+        bGrad.addColorStop(0.5, "#a855f7");
+        bGrad.addColorStop(1, "#090a14");
+        ctx.fillStyle = bGrad;
+        ctx.fillRect(bx + 1, by, barWidth - 2, barH);
+      }
+      animId = requestAnimationFrame(renderVisuals);
+    };
+    renderVisuals();
+    return () => cancelAnimationFrame(animId);
+  }, []);
+  const handleConfirmEnter = () => {
+    playIntroSound("enter");
+    onClose();
+  };
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Enter" || e.key === "Escape" || e.key === " ") {
+        handleConfirmEnter();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[120] bg-black overflow-hidden flex flex-col justify-between font-sans text-white select-none animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 z-0 overflow-hidden pointer-events-none" }, /* @__PURE__ */ React.createElement(
+    "video",
+    {
+      ref: videoRef,
+      autoPlay: true,
+      loop: true,
+      muted: isMuted,
+      playsInline: true,
+      poster: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1600&auto=format&fit=crop&q=80",
+      className: "w-full h-full object-cover opacity-50 filter contrast-125 brightness-90 scale-105 animate-pulse"
+    },
+    /* @__PURE__ */ React.createElement("source", { src: "https://assets.mixkit.co/videos/preview/mixkit-dj-mixing-music-at-a-club-stage-34538-large.mp4", type: "video/mp4" }),
+    /* @__PURE__ */ React.createElement("source", { src: "https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-dj-playing-music-at-a-party-41618-large.mp4", type: "video/mp4" })
+  ), /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none opacity-60 mix-blend-screen" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#05060b] via-[#05060b]/40 to-[#05060b]/80" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.15),transparent_70%)]" })), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 p-5 sm:p-7 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.6)]" }, "\u{1F3A7}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-black text-lg tracking-wider text-white" }, "BEATWAVE PRO"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[9px] font-mono font-black uppercase bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow" }, "V2.4 STUDIO")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, "Intelligent DJ Suite & Sound Architecture"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setIsMuted((prev) => !prev),
+      className: "px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 text-gray-300 hover:text-white border border-gray-700 text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1.5"
+    },
+    /* @__PURE__ */ React.createElement("span", null, isMuted ? "\u{1F507}" : "\u{1F50A}"),
+    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, isMuted ? "Sonido Silenciado" : "Sonido Cabina")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleConfirmEnter,
+      className: "px-3.5 py-1.5 rounded-xl bg-pink-950/70 hover:bg-pink-900 border border-pink-700 text-pink-200 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1",
+      title: "Saltar intro y entrar directamente a la cabina (ESC)"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "Saltar Intro"),
+    /* @__PURE__ */ React.createElement("span", null, "\u2715")
+  ))), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 max-w-4xl mx-auto my-auto py-6" }, /* @__PURE__ */ React.createElement("div", { className: "mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-400/80 text-cyan-300 text-xs font-mono font-black uppercase tracking-widest shadow-[0_0_20px_rgba(6,182,212,0.4)] animate-pulse" }, /* @__PURE__ */ React.createElement("span", null, "\u26A1"), " ", /* @__PURE__ */ React.createElement("span", null, "MOTOR DSP \u2022 SUPERFLAC \u2022 MEZCLA ARM\xD3NICA 2D")), /* @__PURE__ */ React.createElement("h1", { className: "font-syne font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-none uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-cyan-400 drop-shadow-[0_0_40px_rgba(6,182,212,0.7)]" }, "BEATWAVE PRO"), /* @__PURE__ */ React.createElement("p", { className: "mt-3 text-sm sm:text-base md:text-lg text-gray-300 font-sans font-medium max-w-2xl leading-relaxed" }, "La plataforma definitiva para DJs y Productores. Diagn\xF3stico ac\xFAstico FFT en tiempo real, armon\xEDa Camelot 2D y conexi\xF3n invisible con tu cabina."), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mt-8 w-full max-w-3xl" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-2xl bg-black/60 border border-cyan-500/40 text-left shadow-lg backdrop-blur-md hover:border-cyan-400 transition-colors" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl block mb-1" }, "\u{1F48E}"), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-cyan-300" }, "SuperFLAC 24b"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 leading-tight mt-0.5" }, "Auditor\xEDa FFT y rechazo de fakes a 22kHz")), /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-2xl bg-black/60 border border-purple-500/40 text-left shadow-lg backdrop-blur-md hover:border-purple-400 transition-colors" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl block mb-1" }, "\u2638"), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-purple-300" }, "Camelot 2D"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 leading-tight mt-0.5" }, "Scatter Map & Graph Playlists tipo DJOID")), /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-2xl bg-black/60 border border-rose-500/40 text-left shadow-lg backdrop-blur-md hover:border-rose-400 transition-colors" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl block mb-1" }, "\u{1F3A7}"), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-rose-300" }, "Live Copilot"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 leading-tight mt-0.5" }, "Anti-Muddy DSP con Serato Link a 0ms")), /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-2xl bg-black/60 border border-amber-500/40 text-left shadow-lg backdrop-blur-md hover:border-amber-400 transition-colors" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl block mb-1" }, "\u{1F6C2}"), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-amber-300" }, "Pasaporte DJ"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 leading-tight mt-0.5" }, "Sync universal a Rekordbox, Serato y Traktor"))), /* @__PURE__ */ React.createElement("div", { className: "mt-8 flex flex-col items-center gap-3" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleConfirmEnter,
+      className: "px-8 sm:px-12 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-syne font-black text-base sm:text-lg uppercase tracking-wider shadow-[0_0_40px_rgba(6,182,212,0.6)] hover:shadow-[0_0_60px_rgba(6,182,212,0.9)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-3"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7}"),
+    /* @__PURE__ */ React.createElement("span", null, "ENTRAR A CABINA"),
+    /* @__PURE__ */ React.createElement("span", { className: "text-xl" }, "\u2794")
+  ), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, "Pulsa Enter o haz clic para acceder al sistema"))), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 p-4 sm:p-6 border-t border-djzinc-800/80 bg-black/60 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 hidden sm:inline" }, "Acciones R\xE1pidas de Inicio:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        handleConfirmEnter();
+        if (onOpenFolder) onOpenFolder();
+      },
+      className: "px-3.5 py-1.5 rounded-xl bg-djzinc-900 hover:bg-cyan-950 text-cyan-300 hover:text-cyan-200 border border-djzinc-750 hover:border-cyan-500/60 font-bold transition-all cursor-pointer flex items-center gap-1.5"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4C2}"),
+    /* @__PURE__ */ React.createElement("span", null, "Cargar Carpeta de M\xFAsica")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        handleConfirmEnter();
+        if (onOpenDemo) onOpenDemo();
+      },
+      className: "px-3.5 py-1.5 rounded-xl bg-djzinc-900 hover:bg-purple-950 text-purple-300 hover:text-purple-200 border border-djzinc-750 hover:border-purple-500/60 font-bold transition-all cursor-pointer flex items-center gap-1.5"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2638"),
+    /* @__PURE__ */ React.createElement("span", null, "Explorar Scatter Map 2D")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        handleConfirmEnter();
+        if (onOpenManual) onOpenManual();
+      },
+      className: "px-3.5 py-1.5 rounded-xl bg-djzinc-900 hover:bg-pink-950 text-pink-300 hover:text-pink-200 border border-djzinc-750 hover:border-pink-500/60 font-bold transition-all cursor-pointer flex items-center gap-1.5"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4D6}"),
+    /* @__PURE__ */ React.createElement("span", null, "Abrir Manual Maestro")
+  ))));
+};
 const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = "launcher" }) => {
   return null;
 };
 const App = () => {
+  const [cinematicIntroOpen, setCinematicIntroOpen] = useState(() => {
+    try {
+      return !sessionStorage.getItem("bw_intro_viewed");
+    } catch (e) {
+      return true;
+    }
+  });
   const [lang, setLang] = useState(() => {
     try {
       return localStorage.getItem("beatwave_lang") || "es";
@@ -17674,7 +17847,6 @@ const App = () => {
         }
       }
       if (!target || target === "cancelado") {
-        setActiveTab("audit");
         return;
       }
       setCurrentFolder(target);
@@ -17682,14 +17854,14 @@ const App = () => {
         const res = await window.eel.cargar_metadatos_directorio(target)();
         if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {
           setAuditTracks(res.tracks);
-          setSelectedTrack(res.tracks[0].id);
+          if (res.tracks[0] && res.tracks[0].id) {
+            setSelectedTrack(res.tracks[0].id);
+          }
           return;
         }
       }
-      setActiveTab("audit");
     } catch (e) {
       console.error("Error al cargar directorio:", e);
-      setActiveTab("audit");
     }
   };
   return /* @__PURE__ */ React.createElement("div", { className: `flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none ${clubMode ? "club-mode" : ""}` }, /* @__PURE__ */ React.createElement("header", { className: "h-16 w-full max-w-full border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md overflow-x-hidden" }, /* @__PURE__ */ React.createElement("svg", { width: "0", height: "0", className: "absolute pointer-events-none" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "waveDistortion", x: "-60%", y: "-120%", width: "220%", height: "340%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0 0.38", numOctaves: "3", result: "warp" }, /* @__PURE__ */ React.createElement(
@@ -17862,6 +18034,16 @@ const App = () => {
     /* @__PURE__ */ React.createElement("span", null, "\u{1F576}\uFE0F"),
     /* @__PURE__ */ React.createElement("span", { className: "hidden 2xl:inline text-[11px]" }, clubMode ? t("nav_club_mode") || "Club" : t("nav_normal_mode") || "Normal"),
     /* @__PURE__ */ React.createElement("kbd", { className: "text-[9px] bg-black/40 px-1 py-0.2 rounded border border-djzinc-750" }, "L")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setCinematicIntroOpen(true),
+      className: "px-2.5 py-1 rounded-lg bg-[#0e101f] hover:bg-[#161a33] text-cyan-300 hover:text-white border border-cyan-500/40 text-xs font-mono font-bold shadow-sm cursor-pointer transition-all flex items-center gap-1.5 shrink-0",
+      title: "Ver presentaci\xF3n e intro espectacular a pantalla completa con video"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F3AC}"),
+    /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline text-[11px]" }, "Intro")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -18348,6 +18530,42 @@ const App = () => {
       onClose: () => setBitacoraModalOpen(false),
       entries: bitacoraEntries,
       onClearEntries: handleClearBitacora
+    }
+  ), /* @__PURE__ */ React.createElement(
+    AppCinematicIntro,
+    {
+      isOpen: cinematicIntroOpen,
+      onClose: () => {
+        setCinematicIntroOpen(false);
+        try {
+          sessionStorage.setItem("bw_intro_viewed", "true");
+        } catch (e) {
+        }
+      },
+      onOpenFolder: () => {
+        setCinematicIntroOpen(false);
+        try {
+          sessionStorage.setItem("bw_intro_viewed", "true");
+        } catch (e) {
+        }
+        handleCargarDirectorioGlobal();
+      },
+      onOpenDemo: () => {
+        setCinematicIntroOpen(false);
+        try {
+          sessionStorage.setItem("bw_intro_viewed", "true");
+        } catch (e) {
+        }
+        setActiveTab("map");
+      },
+      onOpenManual: () => {
+        setCinematicIntroOpen(false);
+        try {
+          sessionStorage.setItem("bw_intro_viewed", "true");
+        } catch (e) {
+        }
+        handleOpenManual("audit");
+      }
     }
   ));
 };
