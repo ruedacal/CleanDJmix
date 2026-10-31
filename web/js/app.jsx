@@ -4044,6 +4044,7 @@ const AuditWorkspace = ({
     const [batchStatusMsg, setBatchStatusMsg] = useState('');
     const [saveFeedback, setSaveFeedback] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
 
     // Selección Multitrack & Ingesta de Reemplazos HD a Spotify
     const [selectedAuditIds, setSelectedAuditIds] = useState(new Set());
@@ -5304,11 +5305,13 @@ const AuditWorkspace = ({
     return (
         <div className="flex w-full h-full overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0">
-                <div className="p-2.5 sm:p-3.5 border-b border-djzinc-800 bg-djzinc-950 flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-2.5 overflow-hidden">
-                    <div data-tour="tour-audit-select" className="flex gap-2 items-center overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full md:w-auto shrink-0">
+                {/* BARRA DE COMANDO Y FLUJO DE TRABAJO TÁCTICO (NIVEL 1) */}
+                <div className="p-2 sm:p-2.5 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-2.5 z-20">
+                    {/* IZQUIERDA: Ingesta & Contexto Activo */}
+                    <div data-tour="tour-audit-select" className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full md:w-auto shrink-0">
                         <button 
                             onClick={handleExplorar} 
-                            className="bg-djcyan-500 hover:bg-djcyan-400 text-black font-black px-3 sm:px-4 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0" 
+                            className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black px-3.5 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0" 
                             title="Seleccionar carpetas completas y/o pistas sueltas navegando libremente por la biblioteca"
                         >
                             <span>📂</span>
@@ -5352,110 +5355,150 @@ const AuditWorkspace = ({
                             </button>
                         )}
                     </div>
+
+                    {/* CENTRO: Flujo de Trabajo en 3 Etapas Guíadas */}
+                    <div className="flex items-center bg-djzinc-950 p-1 rounded-lg border border-djzinc-800/90 shadow-inner shrink-0">
+                        <button 
+                            type="button"
+                            onClick={() => { setFiltro('todos'); }}
+                            className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                                filtro === 'todos' || filtro === 'bad_quality' || filtro === 'error'
+                                    ? 'bg-djzinc-850 text-djcyan-300 border border-djcyan-500/40 shadow-sm'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                            title="Etapa 1: Diagnóstico espectral DSP, corte de frecuencias y certificación lossless"
+                        >
+                            <span>1. Diagnóstico DSP</span>
+                            <span className="text-[10px] bg-djcyan-950 text-djcyan-400 px-1.5 py-0.2 rounded border border-djcyan-800/60">
+                                {metrics.errors > 0 ? `${metrics.errors} Fakes` : '100% OK'}
+                            </span>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => { setFiltro('missing'); }}
+                            className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                                ['missing', 'missing_title', 'missing_artist', 'missing_cover'].includes(filtro)
+                                    ? 'bg-djzinc-850 text-amber-300 border border-amber-500/40 shadow-sm'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                            title="Etapa 2: Curaduría de metadatos, tags ID3, artistas y portadas 1:1"
+                        >
+                            <span>2. Tags & Artwork</span>
+                            {(metrics.missing + metrics.missing_cover) > 0 && (
+                                <span className="text-[10px] bg-amber-950/80 text-amber-400 border border-amber-800/50 px-1.5 py-0.2 rounded">
+                                    {(metrics.missing + metrics.missing_cover)}
+                                </span>
+                            )}
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                if (onNavigateTab) {
+                                    onNavigateTab('hotcues');
+                                } else {
+                                    setCueStudioModalOpen(true);
+                                }
+                            }}
+                            className="px-3 py-1 rounded-md text-xs font-mono font-bold text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+                            title="Etapa 3: Preparación de Hot Cues 1-8, Beatgrid y primer Downbeat"
+                        >
+                            <span>3. Cues & Fraseo</span>
+                            <span className="text-[10px] bg-djzinc-900 text-gray-500 px-1.5 py-0.2 rounded border border-djzinc-800">
+                                8 Cues
+                            </span>
+                        </button>
+                    </div>
+
+                    {/* DERECHA: Acciones Maestras, Hub de Exportación & Inspector */}
                     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full md:w-auto shrink-0">
-                        {/* Bloque 1: Motor DSP (Primario & Configuración) */}
-                        <div className="flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm shrink-0">
-                            <button onClick={() => setBatchModalOpen(true)} className="bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 text-gray-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono shrink-0" title="Configurar opciones avanzadas de auditoría por lotes y carátulas">
-                                <Icons.Sliders /> <span className="hidden sm:inline">{t('btn_audit_batch') || 'Configurar'}</span>
-                            </button>
-                            <button onClick={() => handleAuditar()} disabled={isAuditing} className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 disabled:opacity-50 text-black px-4 sm:px-4.5 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-djcyan-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0">
-                                <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Todo')}
-                            </button>
-                        </div>
+                        {/* Configuración avanzada del batch */}
+                        <button 
+                            onClick={() => setBatchModalOpen(true)} 
+                            className="bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700 text-gray-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono shrink-0" 
+                            title="Configurar opciones avanzadas de auditoría por lotes y carátulas"
+                        >
+                            <Icons.Sliders /> <span className="hidden sm:inline">{t('btn_audit_batch') || 'Configurar'}</span>
+                        </button>
 
-                        {/* Bloque 2: Herramientas Tácticas y Enriquecimiento (Secundario Pro) */}
-                        <div className="flex items-center gap-1.5 bg-djzinc-900/90 p-1 rounded-lg border border-djzinc-800 shadow-sm shrink-0">
-                            <button onClick={handleInyectarCaratulasLote} disabled={isInjecting || tracks.length === 0} className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono shrink-0" title="Detecta o busca carátulas 1:1 e incrusta artwork (600x600) en todos los archivos de audio">
-                                <span>🖼️</span>
-                                <span>{t('btn_inject_covers') || 'Carátulas'}</span>
-                            </button>
+                        {/* Botón Maestro: Auditar Todo */}
+                        <button 
+                            onClick={() => handleAuditar()} 
+                            disabled={isAuditing} 
+                            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-black px-4 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0"
+                            title="Ejecutar análisis DSP completo sobre todas las pistas cargadas"
+                        >
+                            <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Todo')}
+                        </button>
+
+                        {/* HUB UNIFICADO DE EXPORTACIÓN (Sustituye 3 botones que colapsaban la barra) */}
+                        <div data-tour="tour-export-crates" className="relative shrink-0">
                             <button 
-                                onClick={handleSanitizarMetadatos} 
-                                disabled={isInjecting || tracks.length === 0} 
-                                className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50 transition-colors font-mono shrink-0" 
-                                title="Higieniza etiquetas: elimina spam [Free Download], URLs, calidades y normaliza feats y versiones DJ"
+                                type="button"
+                                onClick={() => setExportDropdownOpen(prev => !prev)}
+                                disabled={tracks.length === 0}
+                                className="bg-djzinc-900 hover:bg-djzinc-850 disabled:opacity-40 text-white font-mono font-bold text-xs px-3 py-1.5 rounded-lg border border-djzinc-750 flex items-center gap-1.5 cursor-pointer transition-all shadow"
+                                title="Desplegar opciones de exportación a Serato, Rekordbox y Excel"
                             >
-                                <span>🧹</span>
-                                <span>Limpiar</span>
+                                <span>🚀 Exportar</span>
+                                <span className="text-gray-400 text-[9px]">{exportDropdownOpen ? '▲' : '▼'}</span>
                             </button>
 
-                            {flacUpgradeTracks.length > 0 && (
-                                <button 
-                                    type="button"
-                                    onClick={() => handleBuscarReemplazosSpotify(flacUpgradeTracks)} 
-                                    disabled={isSearchingSpotifyHD || isAuditing}
-                                    className="bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 hover:border-djcyan-400 disabled:opacity-40 text-xs font-mono font-bold px-2.5 sm:px-3 py-1.5 rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
-                                    title="Detectados archivos FLAC que no cumplen con calidad Lossless (calidad media o transcode). Buscar masters oficiales en Spotify"
-                                >
-                                    <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '💎'}</span>
-                                    <span>SuperFLAC</span>
-                                    <span className="bg-djcyan-950 text-djcyan-300 text-[10px] px-1.5 py-0.2 rounded border border-djcyan-500/50 font-mono">
-                                        {flacUpgradeTracks.length}
-                                    </span>
-                                </button>
-                            )}
-
-                            <button 
-                                onClick={() => handleBuscarReemplazosSpotify()} 
-                                disabled={isSearchingSpotifyHD || isAuditing || (selectedAuditIds.size === 0 && badQualityTracks.length === 0)}
-                                className="bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white border border-djzinc-700 disabled:opacity-40 font-mono font-bold px-2.5 sm:px-3 py-1.5 rounded-lg text-xs shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
-                                title="Buscar versiones oficiales en Spotify Ingest para sustituir pistas de baja calidad o transcodes"
-                            >
-                                <span className={isSearchingSpotifyHD ? 'animate-spin' : ''}>{isSearchingSpotifyHD ? '⏳' : '📥'}</span>
-                                <span>{isSearchingSpotifyHD ? 'Buscando...' : 'Reemplazos HD'}</span>
-                                {(selectedAuditIds.size > 0 || badQualityTracks.length > 0) && (
-                                    <span className="bg-djzinc-950 text-amber-400 text-[10px] px-1.5 py-0.2 rounded border border-amber-600/50 font-mono">
-                                        {selectedAuditIds.size > 0 ? selectedAuditIds.size : badQualityTracks.length}
-                                    </span>
-                                )}
-                            </button>
-
-                            {selectedAuditIds.size > 0 && (
-                                <button 
-                                    type="button"
-                                    onClick={handleRemoveSelectedTracks} 
-                                    className="bg-red-950/80 hover:bg-red-900 text-red-300 hover:text-white border border-red-750 px-2.5 sm:px-3 py-1.5 rounded-lg font-mono font-bold text-xs shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0 animate-fadeIn"
-                                    title={`Eliminar las ${selectedAuditIds.size} pistas seleccionadas del análisis global`}
-                                >
-                                    <span>🗑️</span>
-                                    <span>{t('btn_remove_selected') || 'Quitar seleccionadas'}</span>
-                                    <span className="bg-red-900 text-white text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">
-                                        {selectedAuditIds.size}
-                                    </span>
-                                </button>
+                            {exportDropdownOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-56 bg-[#0c0c14] border border-djzinc-700 rounded-xl shadow-2xl p-1.5 z-50 animate-fadeIn font-mono">
+                                    <div className="px-3 py-1 text-[10px] text-gray-500 uppercase tracking-wider font-bold border-b border-djzinc-800">Destino DJ</div>
+                                    <button 
+                                        type="button"
+                                        onClick={() => { setExportDropdownOpen(false); handleExportarSeratoCrates(); }}
+                                        className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-gray-200 hover:text-djcyan-300 hover:bg-djzinc-850/80 flex items-center gap-2 transition-colors cursor-pointer"
+                                    >
+                                        <span>💽</span>
+                                        <div>
+                                            <div>Serato Crates (.crate)</div>
+                                            <div className="text-[10px] text-gray-500 font-normal">Crates nativos en ~/Music/_Serato_</div>
+                                        </div>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => { setExportDropdownOpen(false); handleExportarRekordboxXml(); }}
+                                        className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-gray-200 hover:text-djcyan-300 hover:bg-djzinc-850/80 flex items-center gap-2 transition-colors cursor-pointer"
+                                    >
+                                        <span>📋</span>
+                                        <div>
+                                            <div>Rekordbox XML v6</div>
+                                            <div className="text-[10px] text-gray-500 font-normal">Hot Cues A-H + Memory Cues</div>
+                                        </div>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => { setExportDropdownOpen(false); handleExportarXLS(); }}
+                                        className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-gray-200 hover:text-djcyan-300 hover:bg-djzinc-850/80 flex items-center gap-2 transition-colors cursor-pointer"
+                                    >
+                                        <span>📊</span>
+                                        <div>
+                                            <div>Informe Excel (.xlsx)</div>
+                                            <div className="text-[10px] text-gray-500 font-normal">Auditoría completa de calidad</div>
+                                        </div>
+                                    </button>
+                                </div>
                             )}
                         </div>
 
-                        {/* Bloque 3: Control Segmentado de Exportación (Neutral de Cabina) */}
-                        <div data-tour="tour-export-crates" className="flex items-center bg-[#09090f] p-1 rounded-lg border border-djzinc-800 shadow-inner">
-                            <span className="text-[10px] font-mono font-bold text-gray-500 uppercase px-2 hidden lg:inline">Exportar:</span>
-                            <button onClick={handleExportarXLS} disabled={tracks.length === 0} className="px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40" title="Exportar reporte de auditoría a Excel (.xlsx / .csv)">
-                                <Icons.Excel /> XLS
-                            </button>
-                            <button onClick={handleExportarSeratoCrates} disabled={tracks.length === 0} className="px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40" title="Exportar archivos .crate oficiales a Serato DJ Pro">
-                                <span>💽</span> Crates
-                            </button>
-                            <button onClick={handleExportarRekordboxXml} disabled={tracks.length === 0} className="px-2.5 py-1 rounded-md text-xs font-mono font-bold text-gray-300 hover:text-white hover:bg-djzinc-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-40" title="Exportar rekordbox.xml estándar Pioneer DJ">
-                                <span>📋</span> Rekordbox
-                            </button>
-                        </div>
-
-                        {/* Bloque 4: Persistencia Física en Disco (Éxito / Esmeralda) */}
+                        {/* Persistencia Física en Disco (Éxito / Esmeralda) */}
                         <button 
                             onClick={handleGuardarTodoEnFicheros} 
                             disabled={isInjecting || tracks.length === 0}
-                            className="bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 disabled:opacity-50 text-black px-4 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-300/50 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono"
+                            className="bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.35)] border border-emerald-300/50 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0"
                             title="Guarda y persiste todos los metadatos editados directamente en los archivos físicos de audio en disco"
                         >
                             <span>💾</span>
-                            <span>{t('btn_save_all') || 'Guardar en Archivos'} ({tracks.length})</span>
+                            <span>{t('btn_save_all') || 'Guardar'} ({tracks.length})</span>
                         </button>
 
-                        {/* Bloque 5: Cancelación & Toggle de Inspector */}
+                        {/* Cancelación de Proceso */}
                         {(isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && (
                             <button 
                                 onClick={handleCancelarProceso}
-                                className="bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 font-mono"
+                                className="bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0"
                                 title="Detener el proceso actual inmediatamente"
                             >
                                 <span>✕</span>
@@ -5463,10 +5506,11 @@ const AuditWorkspace = ({
                             </button>
                         )}
 
+                        {/* Toggle de Métricas */}
                         <button
                             type="button"
                             onClick={toggleMetricsCollapsed}
-                            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                 metricsCollapsed 
                                     ? 'bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner' 
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
@@ -5478,9 +5522,10 @@ const AuditWorkspace = ({
                             <kbd className="text-[9px] bg-black/50 px-1 rounded border border-djzinc-700">M</kbd>
                         </button>
 
+                        {/* Toggle de Inspector */}
                         <button
                             onClick={() => setSidebarOpen(prev => !prev)}
-                            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                 sidebarOpen 
                                     ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner' 
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
@@ -5520,13 +5565,17 @@ const AuditWorkspace = ({
                     </div>
                 )}
 
-                {/* UX CABINA: Panel de Métricas Colapsable (Tecla M o Botón) */}
+                {/* UX CABINA & PRECISION HUD: Métricas Inteligentes y Health Score Global */}
                 {metricsCollapsed ? (
                     <div className="px-4 py-2 bg-[#08080d] border-b border-djzinc-800 flex items-center justify-between text-xs font-mono shrink-0 select-none shadow-inner">
                         <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
                             <span className="text-white font-bold flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-djcyan-400"></span>
                                 {(metrics.total || 0).toLocaleString()} pistas
+                            </span>
+                            <span className="text-djzinc-600">•</span>
+                            <span className="text-emerald-400 font-bold">
+                                {metrics.total > 0 ? Math.max(0, Math.min(100, Math.round(((metrics.total - (badQualityTracks.length + metrics.missing + metrics.duplicates)) / metrics.total) * 100))) : 100}% Salud
                             </span>
                             <span className="text-djzinc-600">•</span>
                             <span className={badQualityTracks.length > 0 ? "text-amber-400 font-bold" : "text-gray-400"}>
@@ -5543,102 +5592,211 @@ const AuditWorkspace = ({
                             type="button"
                             onClick={toggleMetricsCollapsed} 
                             className="px-2.5 py-1 rounded text-[11px] font-mono text-djcyan-400 hover:text-djcyan-300 hover:bg-djcyan-950/60 border border-djcyan-800/60 cursor-pointer transition-colors shrink-0 flex items-center gap-1.5 shadow"
-                            title="Desplegar las 8 tarjetas de métricas completas (Tecla M)"
+                            title="Desplegar el HUD de métricas y salud de cabina (Tecla M)"
                         >
-                            <span>▼ Desplegar métricas</span>
+                            <span>▼ Desplegar HUD</span>
                             <kbd className="text-[9px] bg-djzinc-900 border border-djzinc-700 px-1 rounded font-bold">M</kbd>
                         </button>
                     </div>
                 ) : (
-                    <div className="relative group shrink-0">
-                        <div data-tour="tour-audit-table" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-px bg-djzinc-800 border-b border-djzinc-800">
-                            <div onClick={() => setFiltro('todos')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'todos' ? 'bg-djcyan-950/40 border-b-2 border-djcyan-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">{t('metric_total') || 'Total Pistas'}</span>
-                                <span className="text-xl font-mono text-white font-bold">{(metrics.total || 0).toLocaleString()}</span>
-                            </div>
-                            <div onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'bad_quality' ? 'bg-amber-950/50 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase">Mala Calidad</span>
-                                    {badQualityTracks.length > 0 && <span className="text-[8px] bg-amber-900 text-amber-200 px-1 rounded font-mono font-bold">HD</span>}
+                    <div className="relative group shrink-0 bg-[#07070c] border-b border-djzinc-800/90 p-2.5">
+                        <div data-tour="tour-audit-table" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                            {/* KPI 1: Health Score Global */}
+                            <div 
+                                onClick={() => setFiltro('todos')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'todos' 
+                                        ? 'bg-djcyan-950/30 border-djcyan-500/50 shadow-md shadow-djcyan-500/10' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase text-gray-400">
+                                    <span>Salud Global</span>
+                                    <span className="text-emerald-400 font-bold">
+                                        {metrics.total > 0 ? Math.max(0, Math.min(100, Math.round(((metrics.total - (badQualityTracks.length + metrics.missing + metrics.duplicates)) / metrics.total) * 100))) : 100}%
+                                    </span>
                                 </div>
-                                <span className={`text-xl font-mono font-bold ${badQualityTracks.length > 0 ? 'text-amber-400 animate-pulse' : 'text-gray-400'}`}>
-                                    {badQualityTracks.length.toLocaleString()}
-                                </span>
-                            </div>
-                            <div onClick={() => setFiltro('missing')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta BPM/Key</span>
-                                <span className="text-xl font-mono text-amber-400 font-bold">{(metrics.missing || 0).toLocaleString()}</span>
-                            </div>
-                            <div onClick={() => setFiltro('missing_title')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing_title' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta Título</span>
-                                <span className="text-xl font-mono text-amber-300 font-bold">{(metrics.missing_title || 0).toLocaleString()}</span>
-                            </div>
-                            <div onClick={() => setFiltro('missing_artist')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing_artist' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta Artista</span>
-                                <span className="text-xl font-mono text-amber-300 font-bold">{(metrics.missing_artist || 0).toLocaleString()}</span>
-                            </div>
-                            <div onClick={() => setFiltro('missing_cover')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'missing_cover' ? 'bg-amber-950/40 border-b-2 border-amber-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Falta Cover</span>
-                                <span className="text-xl font-mono text-amber-300 font-bold">{(metrics.missing_cover || 0).toLocaleString()}</span>
-                            </div>
-                            <div onClick={() => setDuplicateModalOpen(true)} className="p-3.5 bg-djzinc-950 hover:bg-djzinc-900 flex flex-col justify-center cursor-pointer transition-colors group">
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase">Duplicados</span>
-                                    <span className="text-[9px] font-mono text-amber-400 bg-amber-950/80 px-1 rounded border border-amber-800">Comparar ⚖️</span>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-lg font-mono font-black text-white">{(metrics.total || 0).toLocaleString()}</span>
+                                    <span className="text-[10px] font-mono text-gray-500">pistas</span>
                                 </div>
-                                <span className="text-xl font-mono text-amber-400 font-bold group-hover:text-amber-300">{(metrics.duplicates || 0).toLocaleString()}</span>
                             </div>
-                            <div onClick={() => setFiltro('error')} className={`p-3.5 flex flex-col justify-center cursor-pointer transition-colors ${filtro === 'error' ? 'bg-red-950/40 border-b-2 border-red-400' : 'bg-djzinc-950 hover:bg-djzinc-900'}`}>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">{t('metric_lossless') || 'Cert. Lossless'}</span>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-xl font-mono text-djcyan-400 font-bold">
+
+                            {/* KPI 2: Mala Calidad / Transcodes */}
+                            <div 
+                                onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'bad_quality' 
+                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md shadow-amber-500/10' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase text-gray-400">
+                                    <span>Mala Calidad</span>
+                                    {badQualityTracks.length > 0 && <span className="text-[9px] bg-amber-900 text-amber-200 px-1 rounded font-mono font-bold">HD</span>}
+                                </div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className={`text-lg font-mono font-black ${badQualityTracks.length > 0 ? 'text-amber-400' : 'text-gray-400'}`}>
+                                        {badQualityTracks.length.toLocaleString()}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-gray-500">transcodes</span>
+                                </div>
+                            </div>
+
+                            {/* KPI 3: Falta BPM / Key */}
+                            <div 
+                                onClick={() => setFiltro(filtro === 'missing' ? 'todos' : 'missing')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'missing' 
+                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md shadow-amber-500/10' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">Falta BPM/Key</div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-lg font-mono font-black text-amber-300">{(metrics.missing || 0).toLocaleString()}</span>
+                                    <span className="text-[10px] font-mono text-gray-500">sin pitch</span>
+                                </div>
+                            </div>
+
+                            {/* KPI 4: Falta Título */}
+                            <div 
+                                onClick={() => setFiltro(filtro === 'missing_title' ? 'todos' : 'missing_title')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'missing_title' 
+                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">Falta Título</div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-lg font-mono font-black text-amber-300">{(metrics.missing_title || 0).toLocaleString()}</span>
+                                    <span className="text-[10px] font-mono text-gray-500">crudo</span>
+                                </div>
+                            </div>
+
+                            {/* KPI 5: Falta Artista */}
+                            <div 
+                                onClick={() => setFiltro(filtro === 'missing_artist' ? 'todos' : 'missing_artist')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'missing_artist' 
+                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">Falta Artista</div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-lg font-mono font-black text-amber-300">{(metrics.missing_artist || 0).toLocaleString()}</span>
+                                    <span className="text-[10px] font-mono text-gray-500">sin autor</span>
+                                </div>
+                            </div>
+
+                            {/* KPI 6: Falta Cover */}
+                            <div 
+                                onClick={() => setFiltro(filtro === 'missing_cover' ? 'todos' : 'missing_cover')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'missing_cover' 
+                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">Falta Cover</div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-lg font-mono font-black text-amber-300">{(metrics.missing_cover || 0).toLocaleString()}</span>
+                                    <span className="text-[10px] font-mono text-gray-500">sin arte</span>
+                                </div>
+                            </div>
+
+                            {/* KPI 7: Duplicados */}
+                            <div 
+                                onClick={() => setDuplicateModalOpen(true)} 
+                                className="p-2.5 rounded-xl border bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-amber-500/40 flex flex-col justify-between cursor-pointer transition-all group"
+                            >
+                                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase text-gray-400">
+                                    <span>Duplicados</span>
+                                    <span className="text-[9px] font-mono text-amber-400 bg-amber-950/80 px-1 rounded border border-amber-800">⚖️</span>
+                                </div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-lg font-mono font-black text-amber-400 group-hover:text-amber-300">{(metrics.duplicates || 0).toLocaleString()}</span>
+                                    <span className="text-[10px] font-mono text-gray-500">resolver</span>
+                                </div>
+                            </div>
+
+                            {/* KPI 8: Certificación Lossless PASS */}
+                            <div 
+                                onClick={() => setFiltro(filtro === 'error' ? 'todos' : 'error')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'error' 
+                                        ? 'bg-red-950/40 border-red-500/60 shadow-md' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">{t('metric_lossless') || 'Cert. Lossless'}</div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-lg font-mono font-black text-djcyan-400">
                                         {tracks.filter(t => t.cutoff_khz && !String(t.status || '').includes('Fake')).length}
                                     </span>
-                                    <span className="text-[10px] font-mono text-gray-500">/ {tracks.length} PASS</span>
+                                    <span className="text-[10px] font-mono text-gray-500">PASS</span>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Botón Plegar HUD */}
                         <button 
                             type="button"
                             onClick={toggleMetricsCollapsed}
-                            className="absolute top-2 right-2 z-10 opacity-60 hover:opacity-100 px-2 py-0.5 rounded text-[10px] font-mono bg-djzinc-900/90 text-gray-400 hover:text-white border border-djzinc-750 cursor-pointer transition-all flex items-center gap-1 shadow-md"
-                            title="Plegar métricas para maximizar espacio vertical (Tecla M)"
+                            className="absolute top-1 right-2 z-10 opacity-70 hover:opacity-100 px-2 py-0.5 rounded text-[10px] font-mono bg-djzinc-900/90 text-gray-400 hover:text-white border border-djzinc-750 cursor-pointer transition-all flex items-center gap-1 shadow"
+                            title="Plegar HUD de métricas para maximizar espacio vertical (Tecla M)"
                         >
-                            <span>▲ Plegar</span>
+                            <span>▲ Plegar HUD</span>
                             <kbd className="text-[8px] bg-black px-1 rounded border border-djzinc-700">M</kbd>
                         </button>
                     </div>
                 )}
 
-                <div className="px-4 py-2 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2 flex-1 flex-wrap">
-                        <div className="flex items-center gap-2">
+                {/* BARRA DE BÚSQUEDA INTELIGENTE & FILTROS TÁCTICOS EN PÍLDORAS (NIVEL 3) */}
+                <div className="px-3.5 py-2 bg-[#0a0a10] border-b border-djzinc-800 flex items-center justify-between shrink-0 gap-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {/* Buscador de Cabina con Soporte AI DJ Query */}
+                        <div className="relative flex items-center flex-1 max-w-md">
+                            <span className="absolute left-3 text-gray-500 text-xs pointer-events-none">🔍</span>
                             <input 
                                 type="text" 
                                 value={busqueda} 
                                 onChange={(e) => setBusqueda(e.target.value)} 
-                                placeholder={t('search_placeholder') || "Buscar (ej: Tech House 126 bpm 8A enérgico con vocales)..."} 
-                                className="w-72 bg-djzinc-950 border border-djzinc-700 rounded-full px-4 py-1.5 text-xs text-gray-300 focus:border-djcyan-500 outline-none font-mono" 
+                                placeholder={t('search_placeholder') || "Buscar pista, BPM, Camelot, estilo o rol acústico..."} 
+                                className="w-full bg-djzinc-950 border border-djzinc-750 focus:border-djcyan-400 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 outline-none font-mono transition-colors shadow-inner" 
                             />
-                            {(() => {
-                                const p = (busqueda && busqueda.length > 2) ? parseAIDJQuery(busqueda) : null;
-                                if (!p || !p.tokens || p.tokens.length === 0) return null;
-                                return (
-                                    <div className="hidden lg:flex items-center gap-1.5 flex-wrap">
-                                        {p.tokens.map((tok, tIdx) => (
-                                            <span key={tIdx} className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-500/50 shadow-sm animate-fadeIn">
-                                                {tok.label}
-                                            </span>
-                                        ))}
-                                    </div>
-                                );
-                            })()}
+                            {busqueda && (
+                                <button 
+                                    onClick={() => setBusqueda('')} 
+                                    className="absolute right-2.5 text-gray-500 hover:text-gray-300 text-xs cursor-pointer"
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
-                        <div className="flex gap-1.5 ml-0 sm:ml-1 overflow-x-auto scrollbar-none pb-1 max-w-full items-center">
-                            {/* Filtro: Todos */}
+
+                        {/* Chips Inteligentes detectados por IA DJ */}
+                        {(() => {
+                            const p = (busqueda && busqueda.length > 2) ? parseAIDJQuery(busqueda) : null;
+                            if (!p || !p.tokens || p.tokens.length === 0) return null;
+                            return (
+                                <div className="hidden lg:flex items-center gap-1.5 flex-wrap">
+                                    {p.tokens.map((tok, tIdx) => (
+                                        <span key={tIdx} className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-500/50 shadow-sm animate-fadeIn">
+                                            {tok.label}
+                                        </span>
+                                    ))}
+                                </div>
+                            );
+                        })()}
+
+                        {/* Píldoras de Filtro Rápido */}
+                        <div className="flex gap-1.5 overflow-x-auto scrollbar-none items-center pl-1">
                             <button 
                                 onClick={() => setFiltro('todos')} 
-                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
                                     filtro === 'todos' 
                                         ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm shadow-djcyan-500/20' 
                                         : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
@@ -5647,56 +5805,21 @@ const AuditWorkspace = ({
                                 {t('filter_all') || 'Todos'} ({metrics.total || 0})
                             </button>
 
-                            {/* Acción Rápida: Seleccionar Malas */}
                             <button 
-                                onClick={handleSelectAllBadQuality}
-                                disabled={badQualityTracks.length === 0}
-                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1.5 border ${
-                                    badQualityTracks.length === 0
-                                        ? 'bg-djzinc-900/50 text-gray-600 border-djzinc-800/50 cursor-not-allowed'
-                                        : (selectedAuditIds.size > 0 && Array.from(selectedAuditIds).some(id => badQualityTracks.some(b => b.id === id)))
-                                            ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20 active:scale-95'
-                                            : 'bg-djzinc-850 hover:bg-djzinc-800 text-amber-400 border-amber-500/30 hover:border-amber-500/60 active:scale-95'
-                                }`}
-                                title="Seleccionar o deseleccionar todas las pistas de mala calidad"
-                            >
-                                <span>⚡</span>
-                                <span>Mala Calidad ({badQualityTracks.length})</span>
-                                {selectedAuditIds.size > 0 && (
-                                    <span className="bg-black/40 text-amber-300 text-[10px] px-1.5 py-0.2 rounded-full font-mono ml-0.5">
-                                        {selectedAuditIds.size}
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* Filtro: Ver Solo Malas */}
-                            <button 
-                                onClick={() => setFiltro('bad_quality')} 
-                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} 
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1 border ${
                                     filtro === 'bad_quality' 
                                         ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
                                         : 'bg-djzinc-900 text-gray-400 hover:text-amber-300 border-djzinc-800 hover:border-amber-500/40'
                                 }`}
                             >
-                                Ver Solo Malas ({badQualityTracks.length})
+                                <span>🚨</span>
+                                <span>Mala Calidad ({badQualityTracks.length})</span>
                             </button>
 
-                            {/* Acción Rápida: Quitar Seleccionadas */}
-                            {selectedAuditIds.size > 0 && (
-                                <button 
-                                    onClick={handleRemoveSelectedTracks}
-                                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1.5 border bg-red-950/80 hover:bg-red-900 text-red-300 border-red-750 shadow-sm active:scale-95 shrink-0"
-                                    title="Quitar las pistas seleccionadas del análisis"
-                                >
-                                    <span>🗑️</span>
-                                    <span>{t('btn_remove_selected') || 'Quitar'} ({selectedAuditIds.size})</span>
-                                </button>
-                            )}
-
-                            {/* Filtro: Falta BPM/Key */}
                             <button 
-                                onClick={() => setFiltro('missing')} 
-                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                onClick={() => setFiltro(filtro === 'missing' ? 'todos' : 'missing')} 
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
                                     filtro === 'missing' 
                                         ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
                                         : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
@@ -5705,65 +5828,40 @@ const AuditWorkspace = ({
                                 Falta BPM/Key ({metrics.missing || 0})
                             </button>
 
-                            {/* Filtro: Falta Título */}
                             <button 
-                                onClick={() => setFiltro('missing_title')} 
-                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
-                                    filtro === 'missing_title' 
-                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
-                                }`}
-                            >
-                                Falta Título ({metrics.missing_title || 0})
-                            </button>
-
-                            {/* Filtro: Falta Artista */}
-                            <button 
-                                onClick={() => setFiltro('missing_artist')} 
-                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
-                                    filtro === 'missing_artist' 
-                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
-                                }`}
-                            >
-                                Falta Artista ({metrics.missing_artist || 0})
-                            </button>
-
-                            {/* Filtro: Falta Cover */}
-                            <button 
-                                onClick={() => setFiltro('missing_cover')} 
-                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                onClick={() => setFiltro(filtro === 'missing_cover' ? 'todos' : 'missing_cover')} 
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
                                     filtro === 'missing_cover' 
                                         ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
                                         : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
                                 }`}
                             >
-                                Falta Cover ({metrics.missing_cover || 0})
+                                Sin Cover ({metrics.missing_cover || 0})
                             </button>
 
-                            {/* Modal Duplicados */}
+                            {flacUpgradeTracks.length > 0 && (
+                                <button 
+                                    onClick={() => handleBuscarReemplazosSpotify(flacUpgradeTracks)}
+                                    disabled={isSearchingSpotifyHD || isAuditing}
+                                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-400 border border-djcyan-500/40 flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                                    title="Buscar masters oficiales en Spotify para FLAC con corte o baja calidad"
+                                >
+                                    <span>💎</span>
+                                    <span>SuperFLAC ({flacUpgradeTracks.length})</span>
+                                </button>
+                            )}
+
                             <button 
                                 onClick={() => setDuplicateModalOpen(true)} 
-                                className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow transition-all active:scale-95"
+                                className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/40 cursor-pointer flex items-center gap-1 shadow transition-all active:scale-95"
                             >
                                 <span>⚖️</span>
                                 <span>Duplicados ({metrics.duplicates || 0})</span>
                             </button>
-
-                            {/* Filtro: FLAC Fake */}
-                            <button 
-                                onClick={() => setFiltro('error')} 
-                                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
-                                    filtro === 'error' 
-                                        ? 'bg-red-500 text-black border-red-400 font-black shadow-sm shadow-red-500/20' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-red-400 border-djzinc-800 hover:border-red-500/40'
-                                }`}
-                            >
-                                {t('filter_errors') || 'FLAC Fake'} ({metrics.errors || 0})
-                            </button>
                         </div>
                     </div>
-                    {saveFeedback && <span className="text-xs font-mono text-djgreen-400 font-bold animate-pulse">{saveFeedback}</span>}
+
+                    {saveFeedback && <span className="text-xs font-mono text-djgreen-400 font-bold animate-pulse shrink-0">{saveFeedback}</span>}
                 </div>
 
                 <div ref={tableScrollRef} className="flex-1 overflow-auto bg-[#0f0f13]">
@@ -6977,6 +7075,89 @@ const AuditWorkspace = ({
                     </button>
                 </div>
             </aside>
+            )}
+
+            {/* DOCK FLOTANTE DE ACCIONES POR LOTE (FLOATING BATCH DOCK) */}
+            {selectedAuditIds.size > 0 && (
+                <div 
+                    className="fixed bottom-24 md:bottom-20 inset-x-0 mx-auto max-w-2xl bg-[#0e0e18]/95 backdrop-blur-md rounded-2xl px-4 py-2.5 border border-djcyan-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_25px_rgba(6,182,212,0.25)] flex items-center justify-between gap-3 z-40 animate-fadeIn font-mono"
+                >
+                    <div className="flex items-center gap-2.5 pl-1">
+                        <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 animate-ping"></span>
+                        <span className="text-xs font-bold text-white">
+                            <strong className="text-djcyan-300 font-black">{selectedAuditIds.size} pistas</strong> seleccionadas
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Incrustar Carátulas en seleccionadas */}
+                        <button 
+                            type="button"
+                            onClick={handleInyectarCaratulasLote}
+                            disabled={isInjecting}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-200 border border-djzinc-750 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                            title="Buscar e incrustar carátulas 600x600 en las pistas seleccionadas"
+                        >
+                            <span>🖼️</span>
+                            <span>Carátulas</span>
+                        </button>
+
+                        {/* Higienizar metadatos */}
+                        <button 
+                            type="button"
+                            onClick={handleSanitizarMetadatos}
+                            disabled={isInjecting}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-200 border border-djzinc-750 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                            title="Eliminar spam y normalizar etiquetas de las pistas seleccionadas"
+                        >
+                            <span>🧹</span>
+                            <span>Limpiar</span>
+                        </button>
+
+                        {/* Reemplazos Spotify HD */}
+                        <button 
+                            type="button"
+                            onClick={() => handleBuscarReemplazosSpotify()}
+                            disabled={isSearchingSpotifyHD || isAuditing}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-djzinc-900 hover:bg-djzinc-850 text-amber-300 border border-amber-600/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                            title="Buscar versiones oficiales en Spotify para las pistas seleccionadas"
+                        >
+                            <span>💎</span>
+                            <span>Spotify HD</span>
+                        </button>
+
+                        {/* Guardar en Disco */}
+                        <button 
+                            type="button"
+                            onClick={handleGuardarTodoEnFicheros}
+                            disabled={isInjecting}
+                            className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black flex items-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95"
+                            title="Persistir cambios físicamente en disco"
+                        >
+                            <span>💾</span>
+                            <span>Guardar</span>
+                        </button>
+
+                        {/* Deseleccionar / Quitar Selección */}
+                        <button 
+                            type="button"
+                            onClick={handleRemoveSelectedTracks}
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                            title="Quitar las pistas seleccionadas del análisis"
+                        >
+                            <span>🗑️</span>
+                        </button>
+
+                        <button 
+                            type="button"
+                            onClick={() => setSelectedAuditIds(new Set())}
+                            className="px-2 py-1.5 rounded-xl text-[11px] font-bold text-gray-400 hover:text-white transition-colors cursor-pointer"
+                            title="Deseleccionar todas"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
             )}
 
             <BatchAuditorModal isOpen={batchModalOpen} onClose={() => setBatchModalOpen(false)} onRunBatch={async (opts) => {
