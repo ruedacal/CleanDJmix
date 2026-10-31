@@ -589,3 +589,144 @@ class ExportService:
             }
         except Exception as e:
             return {"status": "error", "msg": f"Error exportando M3U8: {str(e)}"}
+
+    def exportar_traktor_nml(
+        self,
+        tracks: List[Dict[str, Any]],
+        destino_dir: str = "/Users/admin/Music/mi musica"
+    ) -> Dict[str, Any]:
+        """Genera un archivo NML nativo de Traktor Pro (traktor_collection.nml) con Hot Cues y Beatgrids."""
+        if not tracks or not isinstance(tracks, list):
+            return {"status": "error", "msg": "No hay pistas para exportar Traktor NML."}
+
+        try:
+            os.makedirs(destino_dir, exist_ok=True)
+            filepath = os.path.join(destino_dir, "traktor_collection.nml")
+
+            root = ET.Element("NML", VERSION="19")
+            ET.SubElement(root, "HEAD", COMPANY="Native Instruments GmbH", PROGRAM="Traktor Pro via BeatWave")
+            collection = ET.SubElement(root, "COLLECTION", ENTRIES=str(len(tracks)))
+
+            for trk in tracks:
+                path = trk.get("path") or trk.get("filepath") or trk.get("f") or trk.get("filename") or ""
+                artist = trk.get("artist") or trk.get("a") or "Desconocido"
+                title = trk.get("title") or trk.get("t") or os.path.basename(path)
+
+                entry = ET.SubElement(collection, "ENTRY", ARTIST=artist, TITLE=title)
+                
+                # Descomponer ruta para Traktor: DIR, FILE, VOLUME
+                dir_name = os.path.dirname(path)
+                file_name = os.path.basename(path)
+                parts = [p for p in dir_name.strip("/").split("/") if p]
+                traktor_dir = "/:" + "/:".join(parts) + "/:" if parts else "/:"
+                
+                ET.SubElement(entry, "LOCATION", DIR=traktor_dir, FILE=file_name, VOLUME="/", VOLUMEID="")
+                
+                # INFO & Metadatos
+                dur_raw = trk.get("duration") or trk.get("duration_sec") or trk.get("d") or 300
+                dur_sec = 300
+                try:
+                    if isinstance(dur_raw, str) and ":" in dur_raw:
+                        p = dur_raw.split(":")
+                        dur_sec = int(p[0]) * 60 + int(p[1])
+                    else:
+                        dur_sec = int(float(dur_raw))
+                except Exception:
+                    dur_sec = 300
+
+                info = ET.SubElement(entry, "INFO", PLAYTIME=str(dur_sec), BITRATE=str(trk.get("bitrate_kbps") or 320))
+                if trk.get("comment"):
+                    info.set("COMMENT", str(trk.get("comment")))
+                if trk.get("genre"):
+                    info.set("GENRE", str(trk.get("genre")))
+
+                # TEMPO
+                bpm = float(trk.get("bpm") or trk.get("b") or 128.0)
+                ET.SubElement(entry, "TEMPO", BPM=f"{bpm:.6f}", BPM_QUALITY="100.000000")
+
+                # Cues 1-8 en Traktor (CUE_V2 con START en milisegundos)
+                cues = trk.get("cues") or []
+                for c_idx, cue in enumerate(cues[:8]):
+                    if not isinstance(cue, dict):
+                        continue
+                    pct = float(cue.get("pct") or 0.0)
+                    start_ms = float(pct * dur_sec * 1000.0)
+                    c_name = cue.get("name") or f"Cue {c_idx + 1}"
+                    # HOTCUE="0..7", TYPE="0" (Cue normal) o TYPE="5" (Grid)
+                    cue_type = "5" if c_idx == 0 else "0"
+                    ET.SubElement(
+                        entry, "CUE_V2",
+                        NAME=c_name,
+                        DISPL_ORDER="0",
+                        TYPE=cue_type,
+                        START=f"{start_ms:.3f}",
+                        LEN="0.000000",
+                        REPEATS="-1",
+                        HOTCUE=str(c_idx)
+                    )
+
+            # Formatear XML
+            raw_xml = ET.tostring(root, encoding="utf-8")
+            parsed = minidom.parseString(raw_xml)
+            pretty_xml = parsed.toprettyxml(indent="  ", encoding="utf-8")
+
+            with open(filepath, "wb") as f:
+                f.write(pretty_xml)
+
+            return {
+                "status": "ok",
+                "path": filepath,
+                "filename": "traktor_collection.nml",
+                "total_tracks": len(tracks)
+            }
+        except Exception as e:
+            return {"status": "error", "msg": f"Error exportando Traktor NML: {str(e)}"}
+
+    def sincronizar_pasaporte_universal(
+        self,
+        tracks: List[Dict[str, Any]],
+        destino_dir: str = "/Users/admin/Music/mi musica"
+    ) -> Dict[str, Any]:
+        """Ejecuta la sincronización universal DJ en 1 clic para Serato, Rekordbox, Traktor y VirtualDJ."""
+        if not tracks or not isinstance(tracks, list):
+            return {"status": "error", "msg": "No hay pistas para el Pasaporte Universal."}
+
+        results = {
+            "status": "ok",
+            "serato": None,
+            "rekordbox": None,
+            "traktor": None,
+            "virtualdj_m3u": None,
+            "total_tracks": len(tracks),
+            "errors": []
+        }
+
+        # 1. Serato Crates
+        try:
+            ser_res = self.exportar_serato_crates(tracks)
+            results["serato"] = ser_res
+        except Exception as e:
+            results["errors"].append(f"Serato: {str(e)}")
+
+        # 2. Rekordbox XML
+        try:
+            rek_res = self.exportar_rekordbox_xml(tracks, destino_dir=destino_dir)
+            results["rekordbox"] = rek_res
+        except Exception as e:
+            results["errors"].append(f"Rekordbox: {str(e)}")
+
+        # 3. Traktor Pro NML
+        try:
+            trk_res = self.exportar_traktor_nml(tracks, destino_dir=destino_dir)
+            results["traktor"] = trk_res
+        except Exception as e:
+            results["errors"].append(f"Traktor: {str(e)}")
+
+        # 4. VirtualDJ / Universal M3U8
+        try:
+            m3u_res = self.exportar_set_m3u(tracks, destino_dir=destino_dir, nombre_set="Universal_DJ_Passport")
+            results["virtualdj_m3u"] = m3u_res
+        except Exception as e:
+            results["errors"].append(f"M3U8: {str(e)}")
+
+        return results

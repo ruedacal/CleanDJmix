@@ -703,6 +703,26 @@ def exportar_rekordbox_xml(tracks, destino_dir="/Users/admin/Music/mi musica", n
     return export_svc.exportar_rekordbox_xml(tracks, destino_dir, nombre_archivo, incluir_memory_cues=True)
 
 @eel.expose
+def exportar_traktor_nml(tracks, destino_dir="/Users/admin/Music/mi musica"):
+    return export_svc.exportar_traktor_nml(tracks, destino_dir)
+
+@eel.expose
+def sincronizar_pasaporte_universal(tracks, destino_dir="/Users/admin/Music/mi musica"):
+    return export_svc.sincronizar_pasaporte_universal(tracks, destino_dir)
+
+@bottle.route('/api/export/universal_sync', method=['POST', 'OPTIONS'])
+def api_sincronizar_pasaporte_universal():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    data = bottle.request.json or {}
+    tracks = data.get("tracks", [])
+    destino_dir = data.get("destino_dir", "/Users/admin/Music/mi musica")
+    return json.dumps(export_svc.sincronizar_pasaporte_universal(tracks, destino_dir))
+
+@eel.expose
 def exportar_set_m3u(tracks, nombre_set="BeatWave_DJ_Set", destino_dir="/Users/admin/Music/mi musica"):
     return export_svc.exportar_set_m3u(tracks, destino_dir, nombre_set)
 
