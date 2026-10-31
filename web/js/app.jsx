@@ -77,29 +77,29 @@ const I18N_TRANSLATIONS = {
         nav_taxonomy: "Taxonomía",
         nav_logs: "Consola (Logs)",
         dsp_online: "DSP ENGINE ONLINE",
-        btn_audit_batch: "Configurar Lote",
-        btn_execute_audit: "Auditar Todo",
+        btn_audit_batch: "Lote",
+        btn_execute_audit: "Auditar",
         btn_inject_covers: "Inyectar Carátulas",
-        btn_save_all: "Guardar Todo en Ficheros",
+        btn_save_all: "Guardar",
         btn_export_xls: "Exportar Excel",
         btn_change_dir: "Cambiar Carpeta",
         btn_cancel: "Cancelar",
         btn_cancel_audit: "Detener Auditoría",
         btn_cancel_download: "Cancelar Descargas",
         btn_inspector: "Inspector",
-        btn_close_panel: "Cerrar Panel",
-        btn_edit_cues_studio: "Editar Hot Cues en Estudio →",
+        btn_close_panel: "Cerrar",
+        btn_edit_cues_studio: "Editar Hot Cues →",
         search_placeholder: "Buscar por título, artista, BPM o tono...",
         track: "Pista",
         bpm: "BPM",
         key: "Tono",
         energy: "Energía",
-        danceability: "Bailabilidad",
-        mood: "Atmósfera (Mood)",
+        danceability: "Dance",
+        mood: "Atmósfera",
         format: "Formato",
-        btn_remove_track: "Quitar pista del análisis",
+        btn_remove_track: "Quitar pista",
         btn_remove_selected: "Quitar seleccionadas",
-        btn_clear_all: "Vaciar Lista",
+        btn_clear_all: "Vaciar",
         th_remove: "Quitar",
         actions: "Acciones",
         cues_summary_title: "8 Hot Cues (Resumen Táctico)",
@@ -173,18 +173,18 @@ const I18N_TRANSLATIONS = {
         nav_taxonomy: "Taxonomy",
         nav_logs: "Console (Logs)",
         dsp_online: "DSP ENGINE ONLINE",
-        btn_audit_batch: "Batch Config",
-        btn_execute_audit: "Audit All",
+        btn_audit_batch: "Batch",
+        btn_execute_audit: "Audit",
         btn_inject_covers: "Inject Covers",
-        btn_save_all: "Save All to Files",
+        btn_save_all: "Save",
         btn_export_xls: "Export Excel",
         btn_change_dir: "Change Folder",
         btn_cancel: "Cancel",
         btn_cancel_audit: "Stop Audit",
         btn_cancel_download: "Cancel Downloads",
         btn_inspector: "Inspector",
-        btn_close_panel: "Close Panel",
-        btn_edit_cues_studio: "Edit Hot Cues in Studio →",
+        btn_close_panel: "Close",
+        btn_edit_cues_studio: "Edit Hot Cues →",
         search_placeholder: "Search by title, artist, BPM or key...",
         track: "Track",
         bpm: "BPM",
@@ -195,7 +195,7 @@ const I18N_TRANSLATIONS = {
         format: "Format",
         btn_remove_track: "Remove track from analysis",
         btn_remove_selected: "Remove selected",
-        btn_clear_all: "Clear List",
+        btn_clear_all: "Clear",
         th_remove: "Remove",
         actions: "Actions",
         cues_summary_title: "8 Hot Cues (Tactical Summary)",
@@ -5643,38 +5643,34 @@ const AuditWorkspace = ({
         <div className="flex w-full h-full overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0">
                 {/* BARRA DE COMANDO Y FLUJO DE TRABAJO TÁCTICO (NIVEL 1) */}
-                <div className="p-2 sm:p-2.5 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-2.5 z-20">
+                <div className="px-3 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-2 z-20 overflow-x-hidden">
                     {/* IZQUIERDA: Ingesta & Contexto Activo */}
-                    <div data-tour="tour-audit-select" className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full md:w-auto shrink-0">
+                    <div data-tour="tour-audit-select" className="flex items-center gap-1.5 shrink-0">
                         <button 
                             onClick={handleExplorar} 
-                            className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black px-3.5 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0" 
+                            className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black px-3 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0" 
                             title="Seleccionar carpetas completas y/o pistas sueltas navegando libremente por la biblioteca"
                         >
                             <span>📂</span>
-                            <span>Seleccionar</span>
+                            <span>Abrir</span>
                         </button>
 
                         {tracks && tracks.length > 0 ? (
-                            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-sm truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[160px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
                                 <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>
                                 <span className="truncate">
-                                    {typeof rutaOrigen === 'string' && rutaOrigen ? (rutaOrigen.split('/').pop() || rutaOrigen) : 'Colección Activa'}
+                                    {typeof rutaOrigen === 'string' && rutaOrigen ? (rutaOrigen.split('/').pop() || rutaOrigen) : 'Colección'}
                                 </span>
-                                <span className="px-2 py-0.5 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700">
-                                    {tracks.length} pistas
+                                <span className="px-1.5 py-0.2 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700">
+                                    {tracks.length}
                                 </span>
                             </div>
-                        ) : (
-                            <span className="text-xs font-mono text-gray-500 italic px-2 shrink-0">
-                                Ninguna carpeta o pista seleccionada
-                            </span>
-                        )}
+                        ) : null}
 
                         <button 
                             type="button" 
                             onClick={() => handleCargarDirectorio(resolveAuditTargets())} 
-                            className="px-2.5 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono" 
+                            className="p-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono" 
                             title="Recargar selección actual"
                         >
                             🔄
@@ -5684,43 +5680,43 @@ const AuditWorkspace = ({
                             <button 
                                 type="button" 
                                 onClick={handleClearAllTracks} 
-                                className="px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 rounded-lg border border-red-800/40 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono flex items-center gap-1.5" 
+                                className="px-2 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 rounded-lg border border-red-800/40 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono flex items-center gap-1" 
                                 title="Vaciar la lista y eliminar todas las pistas del análisis actual"
                             >
                                 <span>🗑️</span>
-                                <span className="hidden sm:inline">{t('btn_clear_all') || 'Vaciar Lista'}</span>
+                                <span className="hidden sm:inline text-xs">{t('btn_clear_all') || 'Vaciar'}</span>
                             </button>
                         )}
                     </div>
 
                     {/* CENTRO: Flujo de Trabajo en 3 Etapas Guíadas */}
-                    <div className="flex items-center bg-djzinc-950 p-1 rounded-lg border border-djzinc-800/90 shadow-inner shrink-0">
+                    <div className="hidden xl:flex items-center bg-djzinc-950 p-0.5 rounded-lg border border-djzinc-800/90 shadow-inner shrink-0 text-xs font-mono font-bold">
                         <button 
                             type="button"
                             onClick={() => { setFiltro('todos'); }}
-                            className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                            className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 ${
                                 filtro === 'todos' || filtro === 'bad_quality' || filtro === 'error'
                                     ? 'bg-djzinc-850 text-djcyan-300 border border-djcyan-500/40 shadow-sm'
                                     : 'text-gray-400 hover:text-white'
                             }`}
                             title="Etapa 1: Diagnóstico espectral DSP, corte de frecuencias y certificación lossless"
                         >
-                            <span>1. Diagnóstico DSP</span>
+                            <span>① DSP</span>
                             <span className="text-[10px] bg-djcyan-950 text-djcyan-400 px-1.5 py-0.2 rounded border border-djcyan-800/60">
-                                {metrics.errors > 0 ? `${metrics.errors} Fakes` : '100% OK'}
+                                {metrics.errors > 0 ? `${metrics.errors} Fakes` : 'OK'}
                             </span>
                         </button>
                         <button 
                             type="button"
                             onClick={() => { setFiltro('missing'); }}
-                            className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                            className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 ${
                                 ['missing', 'missing_title', 'missing_artist', 'missing_cover'].includes(filtro)
                                     ? 'bg-djzinc-850 text-amber-300 border border-amber-500/40 shadow-sm'
                                     : 'text-gray-400 hover:text-white'
                             }`}
                             title="Etapa 2: Curaduría de metadatos, tags ID3, artistas y portadas 1:1"
                         >
-                            <span>2. Tags & Artwork</span>
+                            <span>② Tags</span>
                             {(metrics.missing + metrics.missing_cover) > 0 && (
                                 <span className="text-[10px] bg-amber-950/80 text-amber-400 border border-amber-800/50 px-1.5 py-0.2 rounded">
                                     {(metrics.missing + metrics.missing_cover)}
@@ -5736,45 +5732,45 @@ const AuditWorkspace = ({
                                     setCueStudioModalOpen(true);
                                 }
                             }}
-                            className="px-3 py-1 rounded-md text-xs font-mono font-bold text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+                            className="px-2.5 py-1 rounded-md text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
                             title="Etapa 3: Preparación de Hot Cues 1-8, Beatgrid y primer Downbeat"
                         >
-                            <span>3. Cues & Fraseo</span>
+                            <span>③ Cues</span>
                             <span className="text-[10px] bg-djzinc-900 text-gray-500 px-1.5 py-0.2 rounded border border-djzinc-800">
-                                8 Cues
+                                8
                             </span>
                         </button>
                     </div>
 
-                    {/* DERECHA: Acciones Maestras, Hub de Exportación & Inspector */}
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 w-full md:w-auto shrink-0">
+                    {/* DERECHA: Acciones Maestras, Hub de Exportación & Guardar */}
+                    <div className="flex items-center gap-1.5 shrink-0">
                         {/* Configuración avanzada del batch */}
                         <button 
                             onClick={() => setBatchModalOpen(true)} 
-                            className="bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700 text-gray-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono shrink-0" 
+                            className="bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors font-mono shrink-0" 
                             title="Configurar opciones avanzadas de auditoría por lotes y carátulas"
                         >
-                            <Icons.Sliders /> <span className="hidden sm:inline">{t('btn_audit_batch') || 'Configurar'}</span>
+                            <Icons.Sliders /> <span className="hidden sm:inline">{t('btn_audit_batch') || 'Lote'}</span>
                         </button>
 
                         {/* Botón Maestro: Auditar Todo */}
                         <button 
                             onClick={() => handleAuditar()} 
                             disabled={isAuditing} 
-                            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-black px-4 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0"
+                            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0"
                             title="Ejecutar análisis DSP completo sobre todas las pistas cargadas"
                         >
-                            <Icons.Library /> {isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar Todo')}
+                            <Icons.Library /> <span>{isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar')}</span>
                         </button>
 
-                        {/* HUB UNIFICADO DE EXPORTACIÓN (Sustituye 3 botones que colapsaban la barra) */}
+                        {/* HUB UNIFICADO DE EXPORTACIÓN */}
                         <div data-tour="tour-export-crates" className="relative shrink-0">
                             <button 
                                 type="button"
                                 onClick={() => setExportDropdownOpen(prev => !prev)}
                                 disabled={tracks.length === 0}
-                                className="bg-djzinc-900 hover:bg-djzinc-850 disabled:opacity-40 text-white font-mono font-bold text-xs px-3 py-1.5 rounded-lg border border-djzinc-750 flex items-center gap-1.5 cursor-pointer transition-all shadow"
-                                title="Desplegar opciones de exportación a Serato, Rekordbox y Excel"
+                                className="bg-djzinc-900 hover:bg-djzinc-850 disabled:opacity-40 text-white font-mono font-bold text-xs px-2.5 sm:px-3 py-1.5 rounded-lg border border-djzinc-750 flex items-center gap-1.5 cursor-pointer transition-all shadow shrink-0"
+                                title="Desplegar opciones de exportación a Serato, Rekordbox, Traktor y Excel"
                             >
                                 <span>🚀 Exportar</span>
                                 <span className="text-gray-400 text-[9px]">{exportDropdownOpen ? '▲' : '▼'}</span>
@@ -5857,12 +5853,12 @@ const AuditWorkspace = ({
                             )}
                         </div>
 
-                        {/* Persistencia Física en Disco (Éxito / Esmeralda) */}
+                        {/* Persistencia Física en Disco (Guardar) */}
                         <button 
                             onClick={handleGuardarTodoEnFicheros} 
                             disabled={isInjecting || tracks.length === 0}
-                            className="bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.35)] border border-emerald-300/50 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0"
-                            title="Guarda y persiste todos los metadatos editados directamente en los archivos físicos de audio en disco"
+                            className="bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 disabled:opacity-50 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.35)] border border-emerald-300/50 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0"
+                            title="Guarda todos los metadatos editados directamente en los archivos de audio en disco"
                         >
                             <span>💾</span>
                             <span>{t('btn_save_all') || 'Guardar'} ({tracks.length})</span>
@@ -5872,7 +5868,7 @@ const AuditWorkspace = ({
                         {(isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && (
                             <button 
                                 onClick={handleCancelarProceso}
-                                className="bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0"
+                                className="bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-2.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0"
                                 title="Detener el proceso actual inmediatamente"
                             >
                                 <span>✕</span>
@@ -5880,26 +5876,26 @@ const AuditWorkspace = ({
                             </button>
                         )}
 
-                        {/* Toggle de Métricas */}
+                        {/* Toggle de Métricas HUD */}
                         <button
                             type="button"
                             onClick={toggleMetricsCollapsed}
-                            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                            className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
                                 metricsCollapsed 
                                     ? 'bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner' 
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
                             }`}
-                            title={metricsCollapsed ? "Desplegar métricas completas (M)" : "Plegar métricas para ganar espacio vertical (M)"}
+                            title={metricsCollapsed ? "Desplegar HUD de métricas completas (Tecla M)" : "Plegar métricas para ganar espacio vertical (Tecla M)"}
                         >
                             <span>▤</span>
-                            <span className="hidden sm:inline">Métricas</span>
+                            <span className="hidden xl:inline">HUD</span>
                             <kbd className="text-[9px] bg-black/50 px-1 rounded border border-djzinc-700">M</kbd>
                         </button>
 
                         {/* Toggle de Inspector */}
                         <button
                             onClick={() => setSidebarOpen(prev => !prev)}
-                            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                            className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
                                 sidebarOpen 
                                     ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner' 
                                     : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
@@ -5907,7 +5903,7 @@ const AuditWorkspace = ({
                             title={sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}
                         >
                             <span>◨</span>
-                            <span>{t('btn_inspector') || 'Inspector'}</span>
+                            <span className="hidden sm:inline">{t('btn_inspector') || 'Inspector'}</span>
                         </button>
                     </div>
                 </div>
@@ -20994,7 +20990,7 @@ const App = () => {
                     </defs>
                 </svg>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 shrink-0 min-w-max">
                     <div 
                         onClick={triggerLogoTechno} 
                         className="flex items-center gap-3.5 select-none cursor-pointer group"
@@ -21276,12 +21272,12 @@ const App = () => {
                                     PRO
                                 </span>
                             </div>
-                            <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5">
-                                <span className="hidden sm:flex text-[8.5px] uppercase tracking-wider font-mono font-bold items-center gap-1.5 text-gray-300 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="hidden 2xl:flex text-[8.5px] uppercase tracking-wider font-mono font-bold items-center gap-1.5 text-gray-400 whitespace-nowrap">
                                     <span className={`w-1.5 h-1.5 rounded-full bg-djcyan-400 ${isLogoTechnoActive ? 'animate-pulse' : ''}`}></span>
                                     PRECISION AUDIO INTELLIGENCE
                                 </span>
-                                <span className="flex sm:hidden text-[8px] uppercase tracking-wider font-mono font-bold items-center gap-1 text-djcyan-400 whitespace-nowrap">
+                                <span className="flex 2xl:hidden text-[8px] uppercase tracking-wider font-mono font-bold items-center gap-1 text-djcyan-400 whitespace-nowrap">
                                     <span className={`w-1 h-1 rounded-full bg-djcyan-400 ${isLogoTechnoActive ? 'animate-pulse' : ''}`}></span>
                                     DJ INTELLIGENCE
                                 </span>
@@ -21291,12 +21287,12 @@ const App = () => {
                 </div>
 
                 {/* CENTRO: BARRA TÁCTICA DE CABINA (LIVE COPILOT + CAPSULE DOCK) */}
-                <div className="hidden xl:flex items-center justify-center gap-2 2xl:gap-3 flex-1 min-w-0 px-2">
+                <div className="hidden xl:flex items-center justify-center gap-2 flex-1 min-w-0 px-1">
                     {/* BOTÓN LIVE COPILOT PRO DJ */}
                     <button
                         type="button"
                         onClick={() => setCopilotModalOpen(true)}
-                        className={`flex items-center gap-1.5 2xl:gap-2 px-2.5 2xl:px-3 py-1.5 rounded-xl border text-white shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95 group shrink-0 ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-white shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95 group shrink-0 ${
                             activeTab === 'copilot'
                             ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-600 border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.7)]'
                             : 'bg-gradient-to-r from-red-950/80 via-zinc-900 to-zinc-950 border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:border-red-400'
@@ -21305,21 +21301,18 @@ const App = () => {
                     >
                         <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse shrink-0"></span>
                         <span className="font-mono text-xs font-black uppercase tracking-wider text-red-200 group-hover:text-white whitespace-nowrap">
-                            LIVE COPILOT
-                        </span>
-                        <span className="hidden 2xl:inline-block text-[9px] font-mono px-1 py-0.2 rounded bg-red-500/30 text-red-300 border border-red-500/40">
-                            2ms
+                            COPILOT
                         </span>
                     </button>
 
                     {/* CAPSULE DOCK DE PESTAÑAS: SEGMENTACIÓN FÍSICA HARDWARE (CABINA DJ PRO vs. STUDIO LAB & ACADEMIA) */}
-                    <nav className="flex items-center p-1 2xl:p-1.5 rounded-2xl bg-[#080811]/95 border border-djzinc-800/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
+                    <nav className="flex items-center p-1 rounded-2xl bg-[#080811]/95 border border-djzinc-800/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
                     {/* BAHÍA 1: CABINA PRO & FLUJO DE MEZCLA */}
-                    <div className="flex items-center gap-0.5 2xl:gap-1">
+                    <div className="flex items-center gap-0.5">
                         <button 
                             type="button"
                             onClick={() => setActiveTab('audit')} 
-                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'audit' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
@@ -21336,7 +21329,7 @@ const App = () => {
                         <button 
                             type="button"
                             onClick={() => setActiveTab('hotcues')} 
-                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'hotcues' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
@@ -21348,31 +21341,31 @@ const App = () => {
                         <button 
                             type="button"
                             onClick={() => setActiveTab('setbuilder')} 
-                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'setbuilder' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                             }`}
                             title="Set Builder y Flujo de Energía BPM"
                         >
-                            <Icons.Flow /> <span>Set Builder</span>
+                            <Icons.Flow /> <span>Sets</span>
                         </button>
                         <button 
                             type="button"
                             onClick={() => setActiveTab('spotify')} 
-                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'spotify' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                             }`}
                             title="Descargas y Record Pool Ingest"
                         >
-                            <Icons.Spotify /> <span>Download</span>
+                            <Icons.Spotify /> <span>Pool</span>
                         </button>
                         <button 
                             type="button"
                             onClick={() => setActiveTab('shazam')} 
-                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'shazam' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
@@ -21384,59 +21377,49 @@ const App = () => {
                         <button 
                             type="button"
                             onClick={() => setActiveTab('taxonomy')} 
-                            className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'taxonomy' 
                                 ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
                             }`}
                             title="Taxonomía Musical y Subgéneros"
                         >
-                            <Icons.Routing /> <span>Taxonomia</span>
+                            <Icons.Routing /> <span>Crates</span>
                         </button>
                     </div>
 
-                    {/* SEPARADOR FÍSICO CON BISEL METÁLICO & INDICADOR DE ENTORNO */}
-                    <div className="flex items-center px-1.5 2xl:px-2 select-none" title="Separación de Entorno: Cabina DJ vs. Estudio & Aprendizaje">
-                        <div className="h-6 w-[1.5px] bg-gradient-to-b from-transparent via-djzinc-600 to-transparent rounded-full"></div>
+                    {/* SEPARADOR FÍSICO */}
+                    <div className="flex items-center px-1.5 select-none" title="Separación de Entorno: Cabina DJ vs. Estudio & Aprendizaje">
+                        <div className="h-5 w-[1px] bg-djzinc-700"></div>
                     </div>
 
-                    {/* BAHÍA 2: STUDIO LAB & ACADEMIA (ESPACIO DE INVESTIGACIÓN Y FORMACIÓN) */}
-                    <div className="flex items-center gap-0.5 2xl:gap-1 pl-1 pr-1 py-0.5 rounded-xl bg-indigo-950/25 border border-indigo-900/40">
+                    {/* BAHÍA 2: STUDIO LAB & ACADEMIA */}
+                    <div className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-xl bg-indigo-950/20 border border-indigo-900/30">
                         <button 
                             type="button"
                             onClick={() => setActiveTab('trends')} 
-                            className={`flex items-center gap-1.5 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] 2xl:text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'trends' 
-                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_18px_rgba(147,51,234,0.55),inset_0_1px_1px_rgba(255,255,255,0.5)] font-black scale-[1.02]' 
-                                : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60 border border-transparent hover:border-indigo-600/40'
+                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.5)] font-black' 
+                                : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60'
                             }`}
-                            title="Tendencias Globales de Pistas, Festivales y Sonidos (Espacio de Estudio)"
+                            title="Tendencias Globales de Pistas, Festivales y Sonidos"
                         >
                             <Icons.Trends /> 
-                            <span>Tendencias</span>
-                            <span className={`hidden 2xl:inline-block px-1 py-0.2 rounded text-[7.5px] font-mono uppercase tracking-widest ${
-                                activeTab === 'trends' ? 'bg-black/30 text-white font-black' : 'bg-indigo-900/70 text-indigo-300 border border-indigo-700/60'
-                            }`}>
-                                LAB
-                            </span>
+                            <span>Trends</span>
                         </button>
                         <button 
                             type="button"
                             onClick={() => setActiveTab('knowledge')} 
-                            className={`flex items-center gap-1.5 px-2 2xl:px-3 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] 2xl:text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'knowledge' 
-                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_18px_rgba(147,51,234,0.55),inset_0_1px_1px_rgba(255,255,255,0.5)] font-black scale-[1.02]' 
-                                : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60 border border-transparent hover:border-indigo-600/40'
+                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.5)] font-black' 
+                                : 'text-indigo-300/80 hover:text-white hover:bg-indigo-950/60'
                             }`}
-                            title="Base de Conocimiento, Teoría y Guías DJ (Espacio Educativo)"
+                            title="Base de Conocimiento, Teoría y Guías DJ"
                         >
                             <Icons.Knowledge /> 
-                            <span>Conocimiento</span>
-                            <span className={`hidden 2xl:inline-block px-1 py-0.2 rounded text-[7.5px] font-mono uppercase tracking-widest ${
-                                activeTab === 'knowledge' ? 'bg-black/30 text-white font-black' : 'bg-indigo-900/70 text-indigo-300 border border-indigo-700/60'
-                            }`}>
-                                EDU
-                            </span>
+                            <span>Guías</span>
                         </button>
                     </div>
                 </nav>
@@ -21472,60 +21455,43 @@ const App = () => {
                     </div>
                 )}
 
-                {/* Control Modo Cabina Oscura (High Contrast Club Mode) */}
+                {/* Control Modo Cabina Oscura */}
                 <button
                     type="button"
                     onClick={toggleClubMode}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-inner shrink-0 ${
+                    className={`px-2 py-1 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
                         clubMode
                             ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                             : 'bg-djzinc-900 text-gray-400 border-djzinc-800 hover:text-white hover:border-djzinc-700'
                     }`}
-                    title={clubMode ? "Modo Cabina Oscura: Activo (Tecla L)" : "Activar Modo Cabina Oscura (Tecla L)"}
+                    title={clubMode ? "Modo Cabina Oscura Activo (Tecla L)" : "Activar Modo Cabina Oscura (Tecla L)"}
                 >
-                    <span>{clubMode ? '🕶️ Club' : '🕶️ Normal'}</span>
-                    <kbd className="hidden md:inline text-[9px] bg-black/40 px-1 rounded border border-djzinc-750">L</kbd>
+                    <span>🕶️</span>
+                    <span className="hidden 2xl:inline text-[11px]">{clubMode ? 'Club' : 'Normal'}</span>
+                    <kbd className="text-[9px] bg-black/40 px-1 py-0.2 rounded border border-djzinc-750">L</kbd>
                 </button>
 
                 {/* Botón de Atajos de Teclado DJ Cheatsheet */}
                 <button
                     type="button"
                     onClick={() => setShortcutsModalOpen(true)}
-                    className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-500/50 text-xs font-mono font-bold shadow-inner cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+                    className="px-2 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-500/50 text-xs font-mono font-bold shadow-inner cursor-pointer transition-all flex items-center gap-1 shrink-0"
                     title="Atajos de Teclado DJ (Tecla ? o H)"
                 >
                     <span>⌨️</span>
-                    <span className="hidden lg:inline">Atajos</span>
-                    <kbd className="hidden md:inline text-[9px] bg-black/40 px-1 rounded border border-djzinc-750">?</kbd>
+                    <span className="hidden 2xl:inline text-[11px]">Atajos</span>
+                    <kbd className="text-[9px] bg-black/40 px-1 py-0.2 rounded border border-djzinc-750">?</kbd>
                 </button>
 
-                {/* Selector de Idioma (Español / Inglés) */}
+                {/* Selector de Idioma (Toggle compacto ES / EN) */}
                 <button
                     type="button"
                     onClick={() => changeLang(lang === 'es' ? 'en' : 'es')}
-                    className="flex sm:hidden px-2 py-1 rounded-lg bg-djzinc-900 border border-djzinc-800 text-[10px] font-mono font-bold text-djcyan-300 shadow-inner cursor-pointer shrink-0"
-                    title="Cambiar idioma / Switch language"
+                    className="px-2 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 border border-djzinc-800 hover:border-djzinc-700 text-xs font-mono font-bold text-gray-300 hover:text-white cursor-pointer transition-all flex items-center gap-1 shrink-0"
+                    title={lang === 'es' ? "Cambiar idioma a Inglés" : "Switch to Spanish"}
                 >
-                    {lang === 'es' ? '🇪🇸 ES' : '🇬🇧 EN'}
+                    <span>{lang === 'es' ? '🇪🇸 ES' : '🇬🇧 EN'}</span>
                 </button>
-                <div className="hidden sm:flex items-center bg-djzinc-900 border border-djzinc-800 rounded-lg p-0.5 text-[11px] font-mono font-bold shadow-inner shrink-0">
-                    <button
-                        type="button"
-                        onClick={() => changeLang('es')}
-                        className={`px-2 py-0.5 rounded cursor-pointer transition-all ${lang === 'es' ? 'bg-djcyan-500 text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
-                        title="Cambiar idioma a Español"
-                    >
-                        🇪🇸 ES
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => changeLang('en')}
-                        className={`px-2 py-0.5 rounded cursor-pointer transition-all ${lang === 'en' ? 'bg-djcyan-500 text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
-                        title="Switch language to English"
-                    >
-                        🇬🇧 EN
-                    </button>
-                </div>
             </div>
             </header>
 
