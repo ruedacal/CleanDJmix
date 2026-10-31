@@ -5178,7 +5178,7 @@ const AuditWorkspace = ({
         setSelectedLooseFiles([]);
         setRutaOrigen(fsCurrentPath);
         setFsBrowserOpen(false);
-        await handleCargarDirectorio2(fsCurrentPath);
+        await handleCargarDirectorio(fsCurrentPath);
       }
       return;
     }
@@ -5188,14 +5188,14 @@ const AuditWorkspace = ({
     if (stagedFiles.length > 0) descParts.push(`${stagedFiles.length} pista(s)`);
     setRutaOrigen(descParts.join(" + "));
     setFsBrowserOpen(false);
-    await handleCargarDirectorio2(combined);
+    await handleCargarDirectorio(combined);
   };
   const handleSeleccionarCarpetaUI = async (targetPath) => {
     const finalPath = targetPath || fsCurrentPath;
     setSelectedLooseFiles([]);
     setRutaOrigen(finalPath);
     setFsBrowserOpen(false);
-    await handleCargarDirectorio2(finalPath);
+    await handleCargarDirectorio(finalPath);
   };
   const handleExplorar = async () => {
     handleAbrirNavegadorCarpetas(rutaOrigen);
@@ -5224,7 +5224,7 @@ const AuditWorkspace = ({
     }
     return null;
   };
-  const handleCargarDirectorio2 = async (pathOverride) => {
+  const handleCargarDirectorio = async (pathOverride) => {
     const target = pathOverride || rutaOrigen;
     if (!target) return;
     if (window.eel && window.eel.cargar_metadatos_directorio) {
@@ -5832,7 +5832,7 @@ const AuditWorkspace = ({
     "button",
     {
       type: "button",
-      onClick: () => handleCargarDirectorio2(resolveAuditTargets()),
+      onClick: () => handleCargarDirectorio(resolveAuditTargets()),
       className: "p-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono",
       title: "Recargar selecci\xF3n actual"
     },
@@ -7789,7 +7789,7 @@ const HotCuesWorkspace = ({
       }
     }
   };
-  const handleCargarDirectorio2 = async (nuevaRuta) => {
+  const handleCargarDirectorio = async (nuevaRuta) => {
     setFsBrowserOpen(false);
     if (setCurrentFolder) setCurrentFolder(nuevaRuta);
     if (window.eel && window.eel.cargar_metadatos_directorio) {
@@ -7829,7 +7829,7 @@ const HotCuesWorkspace = ({
     "button",
     {
       type: "button",
-      onClick: () => handleCargarDirectorio2(currentFolder),
+      onClick: () => handleCargarDirectorio(currentFolder),
       className: "px-2.5 py-1.5 text-xs font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all shrink-0 active:scale-95",
       title: "Recargar directorio actual"
     },
@@ -7885,7 +7885,7 @@ const HotCuesWorkspace = ({
     "button",
     {
       type: "button",
-      onClick: () => handleCargarDirectorio2(currentFolder),
+      onClick: () => handleCargarDirectorio(currentFolder),
       className: "px-2 py-1 text-xs font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all shrink-0 active:scale-95",
       title: "Recargar directorio actual"
     },
@@ -8546,7 +8546,7 @@ const HotCuesWorkspace = ({
     "button",
     {
       type: "button",
-      onClick: () => handleCargarDirectorio2(rutaNavegacion),
+      onClick: () => handleCargarDirectorio(rutaNavegacion),
       className: "px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-mono font-bold rounded shadow cursor-pointer transition-transform active:scale-95"
     },
     "\u2713 Cargar Esta Carpeta"
@@ -17587,6 +17587,33 @@ const App = () => {
     setNowPlayingTrack(null);
     window.__bwCurrentTrack = null;
   };
+  const handleCargarDirectorioGlobal = async (pathOverride) => {
+    try {
+      let target = pathOverride;
+      if (!target) {
+        if (window.eel && window.eel.seleccionar_directorio) {
+          target = await window.eel.seleccionar_directorio()();
+        }
+      }
+      if (!target || target === "cancelado") {
+        setActiveTab("audit");
+        return;
+      }
+      setCurrentFolder(target);
+      if (window.eel && window.eel.cargar_metadatos_directorio) {
+        const res = await window.eel.cargar_metadatos_directorio(target)();
+        if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {
+          setAuditTracks(res.tracks);
+          setSelectedTrack(res.tracks[0].id);
+          return;
+        }
+      }
+      setActiveTab("audit");
+    } catch (e) {
+      console.error("Error al cargar directorio:", e);
+      setActiveTab("audit");
+    }
+  };
   return /* @__PURE__ */ React.createElement("div", { className: `flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none ${clubMode ? "club-mode" : ""}` }, /* @__PURE__ */ React.createElement("header", { className: "h-16 w-full max-w-full border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md overflow-x-hidden" }, /* @__PURE__ */ React.createElement("svg", { width: "0", height: "0", className: "absolute pointer-events-none" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "waveDistortion", x: "-60%", y: "-120%", width: "220%", height: "340%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0 0.38", numOctaves: "3", result: "warp" }, /* @__PURE__ */ React.createElement(
     "animate",
     {
@@ -17935,7 +17962,7 @@ const App = () => {
         setSetBuilderTracks((prev) => [...prev, ...newTracks]);
         setActiveTab("setbuilder");
       },
-      onSelectDirectory: () => handleCargarDirectorio(),
+      onSelectDirectory: () => handleCargarDirectorioGlobal(),
       lang
     }
   )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "knowledge" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(

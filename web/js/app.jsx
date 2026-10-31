@@ -25933,6 +25933,34 @@ const App = () => {
         window.__bwCurrentTrack = null;
     };
 
+    const handleCargarDirectorioGlobal = async (pathOverride) => {
+        try {
+            let target = pathOverride;
+            if (!target) {
+                if (window.eel && window.eel.seleccionar_directorio) {
+                    target = await window.eel.seleccionar_directorio()();
+                }
+            }
+            if (!target || target === 'cancelado') {
+                setActiveTab('audit');
+                return;
+            }
+            setCurrentFolder(target);
+            if (window.eel && window.eel.cargar_metadatos_directorio) {
+                const res = await window.eel.cargar_metadatos_directorio(target)();
+                if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {
+                    setAuditTracks(res.tracks);
+                    setSelectedTrack(res.tracks[0].id);
+                    return;
+                }
+            }
+            setActiveTab('audit');
+        } catch (e) {
+            console.error("Error al cargar directorio:", e);
+            setActiveTab('audit');
+        }
+    };
+
     return (
         <div className={`flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none ${clubMode ? 'club-mode' : ''}`}>
             {/* TOP NAVIGATION BAR CON MÁXIMA JERARQUÍA VISUAL & CAPSULE DOCK */}
@@ -26645,7 +26673,7 @@ const App = () => {
                             setSetBuilderTracks(prev => [...prev, ...newTracks]);
                             setActiveTab('setbuilder');
                         }}
-                        onSelectDirectory={() => handleCargarDirectorio()}
+                        onSelectDirectory={() => handleCargarDirectorioGlobal()}
                         lang={lang}
                     />
                 </div>
