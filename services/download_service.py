@@ -60,15 +60,26 @@ class DownloadService:
                 artista = t.get('artist', 'Artista')
                 spotify_id = t.get('id', '')
                 isrc = t.get('isrc', '')
+                spotify_url = t.get('spotify_url') or t.get('url') or ""
+                if not spotify_url and spotify_id:
+                    if "spotify.com" in str(spotify_id):
+                        spotify_url = str(spotify_id)
+                    elif len(str(spotify_id)) == 22:
+                        spotify_url = f"https://open.spotify.com/track/{spotify_id}"
 
                 meta = {
                     "id": str(spotify_id),
+                    "spotify_url": spotify_url,
                     "title": nombre,
                     "artist": artista,
                     "album": t.get("album", "CleanDJmix PRO"),
                     "cover_url": t.get("cover", t.get("cover_url", "")),
                     "bpm": t.get("bpm", 135.0),
                     "key": t.get("key", "8A"),
+                    "genre": t.get("genre", "Electronic"),
+                    "subgenre": t.get("subgenre", "Tech House"),
+                    "duration": t.get("duration", ""),
+                    "original_duration": t.get("original_duration", t.get("duration", "")),
                     "isrc": isrc,
                     "apple_url": t.get("apple_url", ""),
                     "format": formato.lower()

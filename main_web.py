@@ -99,6 +99,7 @@ from services.tag_sanitizer_service import TagSanitizerService
 from services.trends_service import trends_service
 from services.knowledge_service import knowledge_service
 from services.copilot_service import copilot_service
+from services.session_graph_advisor_service import SessionGraphAdvisorService
 
 def compilar_frontend_si_necesario():
     jsx_path = os.path.join("web", "js", "app.jsx")
@@ -140,6 +141,7 @@ download_svc = DownloadService()
 export_svc = ExportService()
 taxonomy_svc = TaxonomyService()
 shazam_svc = ShazamRecognitionService()
+session_advisor_svc = SessionGraphAdvisorService()
 
 @bottle.route('/cover')
 @bottle.route('/cover', method='OPTIONS')
@@ -763,6 +765,71 @@ def api_sincronizar_pasaporte_universal():
 @eel.expose
 def exportar_set_m3u(tracks, nombre_set="BeatWave_DJ_Set", destino_dir="/Users/admin/Music/mi musica"):
     return export_svc.exportar_set_m3u(tracks, destino_dir, nombre_set)
+
+@eel.expose
+def seleccionar_carpeta_para_set():
+    """Permite seleccionar una carpeta completa y cargar sus pistas directamente para Sets/SetBuilder."""
+    try:
+        res = audit_svc.seleccionar_directorio()
+        if not res or not res.get("path"):
+            return {"status": "cancelado", "tracks": []}
+        path = res.get("path")
+        _registrar_directorio_autorizado(path)
+        tracks = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
+        return {"status": "ok", "path": path, "tracks": tracks}
+    except Exception as e:
+        print(f"[SETBUILDER] Error cargando carpeta para set: {e}")
+        return {"status": "error", "msg": str(e), "tracks": []}
+
+@bottle.route('/api/setbuilder/load_folder', method=['POST', 'OPTIONS'])
+def api_setbuilder_load_folder():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    data = bottle.request.json or {}
+    path = data.get("path", "")
+    if not path or not os.path.isdir(path):
+        return {"status": "error", "msg": "Ruta inválida", "tracks": []}
+    _registrar_directorio_autorizado(path)
+    tracks = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
+    return {"status": "ok", "path": path, "tracks": tracks}
+
+@eel.expose
+def generar_grafo_playlist(set_tracks, library_tracks=None):
+    """Genera la estructura DAG para Graph Playlists (DJOID Graph)."""
+    return session_advisor_svc.generar_grafo_playlist(set_tracks, library_tracks)
+
+@bottle.route('/api/session/graph', method=['POST', 'OPTIONS'])
+def api_session_graph():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    data = bottle.request.json or {}
+    set_tracks = data.get("set_tracks", [])
+    library_tracks = data.get("library_tracks", [])
+    return session_advisor_svc.generar_grafo_playlist(set_tracks, library_tracks)
+
+@eel.expose
+def auditar_calidad_sesion_ai(set_tracks, library_tracks=None, user_gemini_key=""):
+    """Audita el flujo armónico/energético de la sesión y consulta Gemini AI."""
+    return session_advisor_svc.auditar_calidad_sesion(set_tracks, library_tracks, user_gemini_key)
+
+@bottle.route('/api/session/audit_ai', method=['POST', 'OPTIONS'])
+def api_session_audit_ai():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    data = bottle.request.json or {}
+    set_tracks = data.get("set_tracks", [])
+    library_tracks = data.get("library_tracks", [])
+    user_gemini_key = data.get("gemini_key", "")
+    return session_advisor_svc.auditar_calidad_sesion(set_tracks, library_tracks, user_gemini_key)
 
 @bottle.route('/api/setbuilder/export_m3u', method=['POST', 'OPTIONS'])
 def api_exportar_set_m3u():

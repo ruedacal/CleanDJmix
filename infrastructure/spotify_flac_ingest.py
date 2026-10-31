@@ -27,20 +27,17 @@ class SpotifyFlacIngestService:
         self.config = self._cargar_config()
         self.sp = self._inicializar_spotipy()
         self.session = requests.Session()
-        self._csrf_token = "H23AezPwrrB3Eh1rQzNwaL4o0hqBEvCpmnIosJFu"
+        self._csrf_token = ""
         self._negotiation_lock = threading.Lock()
         self._last_negotiation_time = 0.0
-        self._inicializar_sesion_superflac()
+        self._inicializar_sesion_superflac(force_refresh=True)
 
     def _cargar_config(self) -> dict:
         default_cfg = {
             "spotify_client_id": os.getenv("SPOTIPY_CLIENT_ID", ""),
             "spotify_client_secret": os.getenv("SPOTIPY_CLIENT_SECRET", ""),
-            "superflac_cookie": os.getenv(
-                "SUPERFLAC_COOKIE",
-                "XSRF-TOKEN=eyJpdiI6IkxCYmVwYW10cHczSDkzZG5RMGdTT3c9PSIsInZhbHVlIjoiSTVWSit6TWI5MlR2S1hzak1JbklnZVBZbEh2Z205aGowVUVmOUZEV09ZaEZkYmxHMmNsWkFYL2M0LzhFRzV2T05wcllreEVPWm9CS3Y4TTBCWE5LMGVGY29reUpvY3BjaUt2U2tTUHN5OFFYZGM0eXRVd2VUY1BYaElwSVd2c0QiLCJtYWMiOiJlNWI2YTcwZDc4MTFlNDJjOTkxOTM2OTRiNGE1OGIyZmU4OTRhNjQ3ODkxYmM1MmIxMGQ1OTdlOGYwNGQxM2IyIiwidGFnIjoiIn0%3D; superflac-session=eyJpdiI6Imt5M1RRUy8rWFhGd0FBUHZCcWttOXc9PSIsInZhbHVlIjoiU3FiVHJOZjNzUDFjZGdBWkFqN1d1aFdzNUhEZ1Y3YmNUZmpyemVQVEM4SkJ0S01GZWo4THJNWFRHMndRNGdjdzB2OEdSVEc4Z2NUU2RYNjNZOExDeGZzdjMwNnZqSTVsVVBuQ0xrRlBwUElNeFkreDR1bHJRWFRTOFVsNExEV3giLCJtYWMiOiI4YTFhNGM3MzQ1ZTY4ZTc2ZGJkYTExZjE3ZTI5MWE0YTMyMTdlZTA1N2ZiOWVlNTAyM2I5Mjc5YjQ3ZjVlZWVkIiwidGFnIjoiIn0%3D"
-            ),
-            "superflac_token": os.getenv("SUPERFLAC_TOKEN", "H23AezPwrrB3Eh1rQzNwaL4o0hqBEvCpmnIosJFu"),
+            "superflac_cookie": os.getenv("SUPERFLAC_COOKIE", ""),
+            "superflac_token": os.getenv("SUPERFLAC_TOKEN", ""),
             "download_dir": os.path.expanduser("~/Music/mi musica")
         }
         if os.path.exists(CONFIG_PATH):
@@ -52,7 +49,7 @@ class SpotifyFlacIngestService:
                 pass
         return default_cfg
 
-    def _inicializar_sesion_superflac(self, force_refresh=False):
+    def _inicializar_sesion_superflac(self, force_refresh=True):
         self.session.headers.update({
             "accept": "*/*",
             "accept-language": "es-ES,es;q=0.9,en-ES;q=0.8,en;q=0.7",
@@ -67,25 +64,16 @@ class SpotifyFlacIngestService:
             "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
         })
 
-        cookie_raw = self.config.get("superflac_cookie", "")
-        if cookie_raw and not force_refresh:
-            for item in cookie_raw.split(";"):
-                if "=" in item:
-                    k, v = item.strip().split("=", 1)
-                    self.session.cookies.set(k, v, domain="superflac.com")
-            self._csrf_token = self.config.get("superflac_token", self._csrf_token)
-
-        if force_refresh:
-            try:
-                print("[SUPERFLAC] Refrescando sesión y token CSRF desde superflac.com...")
-                r = self.session.get("https://superflac.com/", timeout=12)
-                if r.status_code == 200:
-                    m = re.search(r'name="_token"\s+value="([^"]+)"', r.text) or re.search(r'csrf-token"\s+content="([^"]+)"', r.text)
-                    if m:
-                        self._csrf_token = m.group(1)
-                        print(f"[SUPERFLAC] Nuevo _token sincronizado: {self._csrf_token[:12]}...")
-            except Exception as e:
-                print(f"[SUPERFLAC WARN] No se pudo refrescar sesión automáticamente: {e}")
+        try:
+            print("[SUPERFLAC] Sincronizando sesión y token CSRF con superflac.com...")
+            r = self.session.get("https://superflac.com/", timeout=12)
+            if r.status_code == 200:
+                m = re.search(r'name="_token"\s+value="([^"]+)"', r.text) or re.search(r'csrf-token"\s+content="([^"]+)"', r.text)
+                if m:
+                    self._csrf_token = m.group(1)
+                    print(f"[SUPERFLAC] Token CSRF activo sincronizado: {self._csrf_token[:12]}...")
+        except Exception as e:
+            print(f"[SUPERFLAC WARN] Fallo al sincronizar sesión fresca de superflac: {e}")
 
     def _inicializar_spotipy(self):
         cid = self.config.get("spotify_client_id", "").strip()
@@ -141,7 +129,26 @@ class SpotifyFlacIngestService:
             print(f"[SUPERFLAC WARN] Error resolviendo Apple Music URL: {e}")
         return ""
 
-    def _solicitar_descarga_segura(self, music_url: str, quality: str = "FLAC_HIRES") -> tuple:
+    def _resolver_superflac_search(self, artist: str, title: str) -> str:
+        """Busca directamente en superflac.com para obtener URLs de streaming válidas (Deezer/Qobuz)."""
+        try:
+            q = urllib.parse.quote(f"{artist} {title}")
+            url = f"https://superflac.com/search?source=all&type=all&query={q}"
+            r = self.session.get(url, timeout=16)
+            if r.status_code == 200:
+                forms = re.findall(r'<form[^>]*>(.*?)</form>', r.text, re.DOTALL)
+                for f in forms[1:]:
+                    m_url = re.search(r'name="music_url"\s+value="([^"]+)"', f)
+                    if m_url:
+                        cand = m_url.group(1).strip()
+                        if cand:
+                            print(f"[SUPERFLAC] URL resuelta por búsqueda directa: {cand}")
+                            return cand
+        except Exception as e:
+            print(f"[SUPERFLAC WARN] Error buscando pista en superflac search: {e}")
+        return ""
+
+    def _solicitar_descarga_segura(self, music_url: str, quality: str = "FLAC") -> tuple:
         """Negociación protegida por Mutex/Lock y espaciado temporal (Jitter) para
         garantizar cero colisiones HTTP 409 y cero bloqueos HTTP 429."""
         with self._negotiation_lock:
@@ -154,28 +161,35 @@ class SpotifyFlacIngestService:
             res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=quality)
             self._last_negotiation_time = time.time()
 
+            # Si falla con 422 por calidad (FLAC_HIRES no soportado en este proveedor), fallback automático a FLAC standard
+            if status_code == 422 and quality == "FLAC_HIRES":
+                print(f"[SUPERFLAC] FLAC_HIRES no soportado por este proveedor. Fallback a FLAC Lossless CD...")
+                time.sleep(1.0)
+                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality="FLAC")
+                self._last_negotiation_time = time.time()
+
             # Recuperación proactiva contra 403, 409 y 429
             if status_code in (403, 419):
                 print(f"[SUPERFLAC] Sesión expirada ({status_code}). Forzando refresco de tokens...")
                 self._inicializar_sesion_superflac(force_refresh=True)
                 time.sleep(1.0)
-                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=quality)
+                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality="FLAC" if quality == "FLAC_HIRES" else quality)
                 self._last_negotiation_time = time.time()
             elif status_code == 409:
                 print("[SUPERFLAC WARN] HTTP 409 Conflicto en cola remota. Esperando 2.5s y refrescando...")
                 self._inicializar_sesion_superflac(force_refresh=True)
                 time.sleep(2.5)
-                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=quality)
+                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality="FLAC" if quality == "FLAC_HIRES" else quality)
                 self._last_negotiation_time = time.time()
             elif status_code == 429:
                 print("[SUPERFLAC WARN] HTTP 429 Rate Limit. Aplicando backoff de 4.0s...")
                 time.sleep(4.0 + random.uniform(0.5, 1.5))
-                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality=quality)
+                res_obj, status_code, info_msg = self._solicitar_descarga_superflac(music_url, quality="FLAC" if quality == "FLAC_HIRES" else quality)
                 self._last_negotiation_time = time.time()
 
             return res_obj, status_code, info_msg
 
-    def _solicitar_descarga_superflac(self, music_url: str, quality: str = "FLAC_HIRES") -> tuple:
+    def _solicitar_descarga_superflac(self, music_url: str, quality: str = "FLAC") -> tuple:
         endpoint = "https://superflac.com/downloads?inline=1"
         headers = {
             "content-type": "application/x-www-form-urlencoded",
@@ -196,6 +210,8 @@ class SpotifyFlacIngestService:
 
         if status in (403, 409, 419, 429):
             return None, status, f"HTTP {status} devuelto por SuperFLAC"
+        if status == 422:
+            return None, 422, "Calidad no soportada por el proveedor"
         if status != 200:
             return None, status, f"Error HTTP inesperado: {status}"
 
@@ -204,13 +220,20 @@ class SpotifyFlacIngestService:
             return r, 200, "STREAM_DIRECTO"
 
         body_text = r.text
+        if "track-feedback--error" in body_text:
+            m_err = re.search(r'track-feedback--error">([^<]+)<', body_text)
+            err_msg = m_err.group(1).strip() if m_err else "Error en proveedor"
+            return None, 422, err_msg
+
         hx_redirect = r.headers.get("HX-Redirect") or r.headers.get("hx-redirect") or r.headers.get("Location")
         if hx_redirect:
             dl_url = hx_redirect if hx_redirect.startswith("http") else f"https://superflac.com{hx_redirect}"
             return dl_url, 200, "URL_EXTRAIDA"
 
         pat_urls = [
-            r'href=["\'](https?://[^"\s>]+(?:download|flac|\.flac|\.m4a|\.mp3|\.wav)[^"\s>]*)["\']',
+            r'hx-get=["\'](https?://[^"\s>]+)["\']',
+            r'hx-get=["\'](/downloads/[^"\s>]+)["\']',
+            r'href=["\'](https?://[^"\s>]+(?:file\?[^"\s>]+|download|flac|\.flac|\.m4a|\.mp3|\.wav)[^"\s>]*)["\']',
             r'href=["\'](/downloads/[^"\s>]+)["\']',
             r'url["\']?\s*:\s*["\'](https?://[^"\s>]+)["\']',
             r'(https?://[^\s<>"]+(?:\.flac|/download[^\s<>"]*))'
@@ -233,77 +256,72 @@ class SpotifyFlacIngestService:
         for intento in range(max_polls):
             try:
                 is_cdn_file = "/file?" in url_actual or "expires=" in url_actual
-                hdrs = {} if is_cdn_file else {
+                if is_cdn_file:
+                    r_dl = self.session.get(url_actual, stream=True, timeout=60, allow_redirects=True)
+                    if r_dl.status_code == 200:
+                        ctype = r_dl.headers.get("content-type", "").lower()
+                        if not any(x in ctype for x in ["html", "json"]):
+                            return r_dl, "OK"
+                    r_dl.close()
+
+                hdrs = {
                     "hx-request": "true",
                     "hx-current-url": "https://superflac.com/search?source=all&type=all&query=https%3A%2F%2Fsuperflac.com%2F",
                     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
                 }
 
-                r_dl = self.session.get(url_actual, headers=hdrs, stream=True, timeout=(8, 16), allow_redirects=True)
+                time.sleep(1.2)
+                r_dl = self.session.get(url_actual, headers=hdrs, timeout=25, allow_redirects=True)
                 status = r_dl.status_code
 
                 if status == 429:
-                    r_dl.close()
                     print(f"[SUPERFLAC WARN] Rate limit (429). Esperando 3s...")
                     time.sleep(3.0)
                     continue
 
                 if status in (403, 409):
-                    r_dl.close()
                     return None, f"HTTP {status} en pasarela"
 
                 ctype = r_dl.headers.get("content-type", "").lower()
-                cdisp = r_dl.headers.get("content-disposition", "").lower()
-
-                # Si es el CDN y realmente entrega audio o binario, éxito inmediato
-                if is_cdn_file and status == 200 and not any(x in ctype for x in ["html", "json"]):
+                if status == 200 and not any(x in ctype for x in ["html", "json"]):
                     return r_dl, "OK"
 
                 body = r_dl.text
-                r_dl.close()
 
-                # Si el CDN devolvió HTML (como los 6423 bytes de error/rate limit), no sigas reintentando la misma URL rota
-                if is_cdn_file and "html" in ctype:
-                    print(f"[SUPERFLAC WARN] El CDN devolvió HTML de error/bloqueo ({len(body)} bytes). Abortando nodo actual.")
-                    return None, f"El servidor devolvió una página de bloqueo o límite al intentar descargar el fichero final."
+                # Detección temprana de errores en feedback slot
+                if "track-feedback--error" in body or "button--error" in body:
+                    m_err = re.search(r'track-feedback--error">([^<]+)<', body)
+                    err_msg = m_err.group(1).strip() if m_err else "Error devuelto por el servidor remoto de descarga."
+                    print(f"[SUPERFLAC WARN] Servidor reportó: {err_msg}")
+                    return None, err_msg
 
-                if body.startswith("fLaC"):
-                    return self.session.get(url_actual, headers=hdrs, stream=True, timeout=30), "OK"
+                # Búsqueda del enlace final del fichero (/file?...)
+                m_file = re.search(r'href=["\'](https?://[^"\s>]+(?:file\?[^"\s>]+|\.flac|\.wav|\.mp3|\.m4a)[^"\s>]*)["\']', body)
+                if not m_file:
+                    m_file = re.search(r'href=["\'](/downloads/[^"\s>]+/file\?[^"\s>]*)["\']', body)
+                if m_file:
+                    cand = m_file.group(1).replace("&amp;", "&")
+                    file_url = cand if cand.startswith("http") else f"https://superflac.com{cand}"
+                    print(f"[SUPERFLAC] Enlace binario obtenido: {file_url[:80]}...")
+                    r_stream = self.session.get(file_url, stream=True, timeout=60, allow_redirects=True)
+                    if r_stream.status_code == 200:
+                        return r_stream, "OK"
+                    else:
+                        r_stream.close()
 
-                print(f"[SUPERFLAC DEBUG] Intento {intento+1}/{max_polls} | Content-Type: {ctype} | Tamaño: {len(body)} bytes")
-
-                patrones_enlace = [
-                    r'href=["\'](https?://[^"\s>]+(?:file\?[^"\s>]+|\.flac|\.wav|\.mp3|\.m4a|download)[^"\s>]*)["\']',
-                    r'data-url=["\'](https?://[^"\s>]+)["\']',
-                    r'window\.location\.href\s*=\s*["\']([^"\']+)["\']',
-                    r'action=["\'](/downloads/[^"\']+)["\']'
-                ]
-                
-                enlace_encontrado = None
-                for pat in patrones_enlace:
-                    m = re.search(pat, body, re.IGNORECASE)
-                    if m:
-                        cand = m.group(1).replace("&amp;", "&")
-                        cand_full = cand if cand.startswith("http") else f"https://superflac.com{cand}"
-                        if cand_full != url_actual and "search" not in cand_full:
-                            enlace_encontrado = cand_full
-                            break
-
-                if enlace_encontrado:
-                    print(f"[SUPERFLAC] Siguiente nodo detectado: {enlace_encontrado}")
-                    url_actual = enlace_encontrado
-                    time.sleep(1.0)
+                # Si aún está procesando (sigue devolviendo hx-get)
+                m_hx = re.search(r'hx-get=["\'](https?://[^"\s>]+)["\']', body) or re.search(r'hx-get=["\'](/downloads/[^"\s>]+)["\']', body)
+                if m_hx:
+                    cand = m_hx.group(1).replace("&amp;", "&")
+                    url_actual = cand if cand.startswith("http") else f"https://superflac.com{cand}"
                     continue
-
-                poll_delay = min(2.5, 1.0 + (intento * 0.3))
-                time.sleep(poll_delay)
 
             except (requests.exceptions.Timeout, requests.exceptions.ReadTimeout, requests.exceptions.ConnectTimeout) as t_err:
                 timeouts_count += 1
-                print(f"[SUPERFLAC POLL WARN] Timeout al conectar ({t_err}). Reintento {timeouts_count}/2...")
-                if timeouts_count >= 2:
+                print(f"[SUPERFLAC POLL WARN] Timeout al conectar ({t_err}). Reintento {timeouts_count}/3...")
+                if timeouts_count >= 3:
                     return None, "Tiempo de espera agotado al conectar con el servidor SuperFLAC."
-                time.sleep(1.5)
+                time.sleep(2.0)
             except Exception as e:
                 print(f"[SUPERFLAC POLL WARN] Excepción: {e}")
                 time.sleep(1.5)
@@ -320,30 +338,56 @@ class SpotifyFlacIngestService:
 
         quality_map = {
             "flac_hires": ("FLAC_HIRES", "flac"),
-            "flac": ("FLAC_HIRES", "flac"),
-            "wav": ("FLAC_HIRES", "wav"),
-            "aiff": ("FLAC_HIRES", "aiff"),
+            "flac": ("FLAC", "flac"),
+            "wav": ("FLAC", "wav"),
+            "aiff": ("FLAC", "aiff"),
             "mp3": ("MP3_320", "mp3")
         }
-        sf_quality, ext_final = quality_map.get(fmt, ("FLAC_HIRES", "flac"))
+        sf_quality, ext_final = quality_map.get(fmt, ("FLAC", "flac"))
 
         ruta_temp_flac = os.path.join(dest_folder, f"{safe_artist} - {safe_title}.flac")
         ruta_final = os.path.join(dest_folder, f"{safe_artist} - {safe_title}.{ext_final}")
 
-        music_url = self._resolver_apple_music_url(
-            safe_artist,
-            safe_title,
-            meta_track.get("apple_url", ""),
-            meta_track=meta_track
-        )
+        # 1. Determinar URL candidata a descargar:
+        # Prioridad 1: Spotify URL directa si existe en los metadatos o por ID
+        music_url = meta_track.get("spotify_url", "").strip()
+        if not music_url and meta_track.get("id"):
+            tid = str(meta_track["id"]).strip()
+            if "spotify.com" in tid:
+                music_url = tid
+            elif tid.startswith("spotify:track:"):
+                music_url = f"https://open.spotify.com/track/{tid.split(':')[-1]}"
+            elif len(tid) == 22 and tid.isalnum():
+                music_url = f"https://open.spotify.com/track/{tid}"
+
+        # Prioridad 2: Búsqueda directa en superflac.com (Deezer / Qobuz)
         if not music_url:
-            return {"status": "error", "msg": "No se pudo resolver el music_url de Apple Music para SuperFLAC", "path": ""}
+            music_url = self._resolver_superflac_search(safe_artist, safe_title)
+
+        # Prioridad 3: Apple Music fallback con TrackMatcher
+        if not music_url:
+            music_url = self._resolver_apple_music_url(
+                safe_artist,
+                safe_title,
+                meta_track.get("apple_url", ""),
+                meta_track=meta_track
+            )
+
+        if not music_url:
+            return {"status": "error", "msg": f"No se encontró enlace descargable para '{safe_artist} - {safe_title}'.", "path": ""}
 
         print(f"[SUPERFLAC] Solicitando {sf_quality} para URL: {music_url}")
 
         res_obj, status_code, info_msg = self._solicitar_descarga_segura(music_url, quality=sf_quality)
         if not res_obj:
-            return {"status": "error", "msg": info_msg, "path": ""}
+            # Si falló con esa URL y no habíamos probado la búsqueda de SuperFLAC, intentamos con la búsqueda directa
+            if "superflac.com/search" not in music_url and "deezer" not in music_url:
+                alt_url = self._resolver_superflac_search(safe_artist, safe_title)
+                if alt_url and alt_url != music_url:
+                    print(f"[SUPERFLAC] Reintentando con URL alternativa resuelta: {alt_url}")
+                    res_obj, status_code, info_msg = self._solicitar_descarga_segura(alt_url, quality="FLAC")
+            if not res_obj:
+                return {"status": "error", "msg": info_msg, "path": ""}
 
         try:
             if info_msg == "URL_EXTRAIDA" and isinstance(res_obj, str):
