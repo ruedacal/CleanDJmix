@@ -393,6 +393,7 @@ const Icons = {
   Knowledge: () => /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "15", height: "15", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2" }, /* @__PURE__ */ React.createElement("path", { d: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20" }), /* @__PURE__ */ React.createElement("path", { d: "M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" })),
   Menu: () => /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2" }, /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "12", x2: "21", y2: "12" }), /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "6", x2: "21", y2: "6" }), /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "18", x2: "21", y2: "18" })),
   Map: () => /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "15", height: "15", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React.createElement("circle", { cx: "5", cy: "6", r: "2.5", fill: "currentColor", fillOpacity: "0.3" }), /* @__PURE__ */ React.createElement("circle", { cx: "18", cy: "8", r: "2.5", fill: "currentColor", fillOpacity: "0.3" }), /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "14", r: "3", fill: "currentColor", fillOpacity: "0.5" }), /* @__PURE__ */ React.createElement("circle", { cx: "6", cy: "19", r: "2" }), /* @__PURE__ */ React.createElement("circle", { cx: "19", cy: "18", r: "2" }), /* @__PURE__ */ React.createElement("path", { d: "M7 8l3.5 4.5M16 10l-2.5 3M8 17.5l2.5-1.5M17 16.5l-3-1.5", strokeOpacity: "0.5", strokeDasharray: "2 2" })),
+  Search: () => /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React.createElement("circle", { cx: "11", cy: "11", r: "8" }), /* @__PURE__ */ React.createElement("line", { x1: "21", y1: "21", x2: "16.65", y2: "16.65" })),
   Close: () => /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2" }, /* @__PURE__ */ React.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }), /* @__PURE__ */ React.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" }))
 };
 const InfoTip = ({ text, title }) => {
@@ -4684,14 +4685,14 @@ const AuditWorkspace = ({
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F"),
     /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline text-xs" }, t("btn_clear_all") || "Vaciar")
-  )), /* @__PURE__ */ React.createElement("div", { className: "hidden xl:flex items-center bg-djzinc-950 p-0.5 rounded-lg border border-djzinc-800/90 shadow-inner shrink-0 text-xs font-mono font-bold" }, /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center bg-djzinc-950 p-1 rounded-xl border border-djzinc-800/90 shadow-inner shrink-0 text-xs font-mono font-bold gap-1 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => {
         setFiltro("todos");
       },
-      className: `px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 ${filtro === "todos" || filtro === "bad_quality" || filtro === "error" ? "bg-djzinc-850 text-djcyan-300 border border-djcyan-500/40 shadow-sm" : "text-gray-400 hover:text-white"}`,
+      className: `px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${filtro === "todos" || filtro === "bad_quality" || filtro === "error" ? "bg-djzinc-850 text-djcyan-300 border border-djcyan-500/40 shadow-sm" : "text-gray-400 hover:text-white"}`,
       title: "Etapa 1: Diagn\xF3stico espectral DSP, corte de frecuencias y certificaci\xF3n lossless"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2460 DSP"),
@@ -4703,7 +4704,7 @@ const AuditWorkspace = ({
       onClick: () => {
         setFiltro("missing");
       },
-      className: `px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 ${["missing", "missing_title", "missing_artist", "missing_cover"].includes(filtro) ? "bg-djzinc-850 text-amber-300 border border-amber-500/40 shadow-sm" : "text-gray-400 hover:text-white"}`,
+      className: `px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${["missing", "missing_title", "missing_artist", "missing_cover"].includes(filtro) ? "bg-djzinc-850 text-amber-300 border border-amber-500/40 shadow-sm" : "text-gray-400 hover:text-white"}`,
       title: "Etapa 2: Curadur\xEDa de metadatos, tags ID3, artistas y portadas 1:1"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2461 Tags"),
@@ -4719,33 +4720,33 @@ const AuditWorkspace = ({
           setCueStudioModalOpen(true);
         }
       },
-      className: "px-2.5 py-1 rounded-md text-gray-400 hover:text-white transition-colors flex items-center gap-1.5",
+      className: "px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 shrink-0",
       title: "Etapa 3: Preparaci\xF3n de Hot Cues 1-8, Beatgrid y primer Downbeat"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2462 Cues"),
     /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djzinc-900 text-gray-500 px-1.5 py-0.2 rounded border border-djzinc-800" }, "8")
-  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { className: "w-px h-5 bg-djzinc-800 my-auto mx-1 shrink-0" }), /* @__PURE__ */ React.createElement(
     "button",
     {
+      type: "button",
       onClick: () => setBatchModalOpen(true),
-      className: "bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors font-mono shrink-0",
+      className: "bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700/80 text-gray-300 hover:text-white px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono shrink-0 shadow-sm",
       title: "Configurar opciones avanzadas de auditor\xEDa por lotes y car\xE1tulas"
     },
     /* @__PURE__ */ React.createElement(Icons.Sliders, null),
-    " ",
-    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_audit_batch") || "Lote")
+    /* @__PURE__ */ React.createElement("span", null, t("btn_audit_batch") || "Lote")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
+      type: "button",
       onClick: () => handleAuditar(),
       disabled: isAuditing,
-      className: "bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0",
+      className: "bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-black px-3.5 py-1 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0",
       title: "Ejecutar an\xE1lisis DSP completo sobre todas las pistas cargadas"
     },
     /* @__PURE__ */ React.createElement(Icons.Library, null),
-    " ",
     /* @__PURE__ */ React.createElement("span", null, isAuditing ? lang === "en" ? "Auditing..." : "Auditando..." : t("btn_execute_audit") || "Auditar")
-  ), /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-export-crates", className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-export-crates", className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -13029,10 +13030,40 @@ const MapWorkspace = ({
   const [hoveredTrack, setHoveredTrack] = useState(null);
   const [mouseScreenPos, setMouseScreenPos] = useState({ x: -100, y: -100 });
   const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState(true);
+  const [zoomDisplay, setZoomDisplay] = useState(1);
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const animRef = useRef(null);
   const imageCacheRef = useRef(/* @__PURE__ */ new Map());
+  const panTimerRef = useRef(null);
+  const startPan = (dx, dy) => {
+    transformRef.current.panX += dx;
+    transformRef.current.panY += dy;
+    if (panTimerRef.current) clearInterval(panTimerRef.current);
+    panTimerRef.current = setInterval(() => {
+      transformRef.current.panX += dx;
+      transformRef.current.panY += dy;
+    }, 30);
+  };
+  const stopPan = () => {
+    if (panTimerRef.current) {
+      clearInterval(panTimerRef.current);
+      panTimerRef.current = null;
+    }
+  };
+  const handleFaderZoom = (val) => {
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed)) {
+      const clamped = Math.max(0.4, Math.min(4, parsed));
+      transformRef.current.scale = clamped;
+      setZoomDisplay(clamped);
+    }
+  };
+  useEffect(() => {
+    return () => {
+      if (panTimerRef.current) clearInterval(panTimerRef.current);
+    };
+  }, []);
   const transformRef = useRef({
     scale: 1,
     panX: 0,
@@ -13515,6 +13546,7 @@ const MapWorkspace = ({
     transformRef.current.panX = mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2;
     transformRef.current.panY = mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2;
     transformRef.current.scale = newScale;
+    setZoomDisplay(newScale);
   };
   const handleClick = () => {
     if (hoveredTrack) {
@@ -13530,6 +13562,7 @@ const MapWorkspace = ({
       dragStartX: 0,
       dragStartY: 0
     };
+    setZoomDisplay(1);
   };
   const selBpmAvg = selectedMapTracks.length > 0 ? Math.round(selectedMapTracks.reduce((acc, t) => acc + (parseFloat(t.bpm || t.b) || 126), 0) / selectedMapTracks.length) : 126;
   const selEnergyAvg = selectedMapTracks.length > 0 ? Math.round(selectedMapTracks.reduce((acc, t) => acc + parseInt(t.energy !== void 0 ? t.energy : t.e || 75, 10), 0) / selectedMapTracks.length) : 80;
@@ -13595,21 +13628,22 @@ const MapWorkspace = ({
     /* @__PURE__ */ React.createElement("span", null, "\u2B1A"),
     " ",
     /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "Caja")
-  ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-2.5 text-gray-500 pointer-events-none flex items-center" }, /* @__PURE__ */ React.createElement(Icons.Search, null)), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "text",
       value: searchQuery,
       onChange: (e) => setSearchQuery(e.target.value),
-      placeholder: "Buscar en mapa...",
-      className: "w-32 sm:w-44 bg-djzinc-900 border border-djzinc-800 rounded-lg pl-6 pr-2 py-1 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-djcyan-500"
+      placeholder: "Buscar en el mapa",
+      className: "w-36 sm:w-48 bg-djzinc-900 border border-djzinc-750 rounded-xl pl-8 pr-7 py-1 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-djcyan-500 shadow-inner"
     }
-  ), /* @__PURE__ */ React.createElement("span", { className: "absolute left-2 top-1.5 text-[10px] text-gray-500" }, "\u{1F50D}"), searchQuery && /* @__PURE__ */ React.createElement(
+  ), searchQuery && /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => setSearchQuery(""),
-      className: "absolute right-2 top-1 text-xs text-gray-400 hover:text-white"
+      className: "absolute right-2 text-xs text-gray-400 hover:text-white cursor-pointer px-1",
+      title: "Borrar b\xFAsqueda"
     },
     "\u2715"
   )), /* @__PURE__ */ React.createElement(
@@ -13621,38 +13655,7 @@ const MapWorkspace = ({
       title: showHarmonicPaths ? "Ocultar l\xEDneas de mezcla arm\xF3nica" : "Mostrar enlaces arm\xF3nicos entre pistas compatibles"
     },
     "\u26A1"
-  ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center bg-djzinc-900 rounded-lg border border-djzinc-800 overflow-hidden" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => {
-        transformRef.current.scale = Math.min(5, transformRef.current.scale * 1.25);
-      },
-      className: "px-2 py-1 hover:bg-djzinc-800 text-gray-300 text-xs font-mono cursor-pointer",
-      title: "Acercar (Zoom In)"
-    },
-    "+"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => {
-        transformRef.current.scale = Math.max(0.4, transformRef.current.scale * 0.8);
-      },
-      className: "px-2 py-1 hover:bg-djzinc-800 text-gray-300 text-xs font-mono cursor-pointer",
-      title: "Alejar (Zoom Out)"
-    },
-    "-"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: handleResetZoom,
-      className: "px-2 py-1 hover:bg-djzinc-800 text-djcyan-300 text-[10px] font-mono cursor-pointer border-l border-djzinc-800",
-      title: "Centrar y reajustar mapa"
-    },
-    "Fit"
-  )))), /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "flex-1 w-full h-full relative overflow-hidden bg-black" }, /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "flex-1 w-full h-full relative overflow-hidden bg-black" }, /* @__PURE__ */ React.createElement(
     "canvas",
     {
       ref: canvasRef,
@@ -13663,7 +13666,7 @@ const MapWorkspace = ({
       onClick: handleClick,
       className: `w-full h-full block ${toolMode === "pan" ? transformRef.current.isDragging ? "cursor-grabbing" : "cursor-grab" : "cursor-crosshair"}`
     }
-  ), /* @__PURE__ */ React.createElement("div", { className: "absolute top-4 left-4 z-30 font-mono select-none" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c16]/95 border border-djzinc-750/90 rounded-2xl p-3 shadow-2xl backdrop-blur-xl transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3 pb-2 mb-2 border-b border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm" }, "\u{1F3A1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-white tracking-wide" }, "Rueda Camelot"), selectedTrack && /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { className: "absolute top-4 left-4 z-30 font-mono select-none" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c16]/95 border border-djzinc-750/90 rounded-2xl p-3 shadow-2xl backdrop-blur-xl transition-all w-[264px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 pb-2 mb-2 border-b border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm" }, "\u{1F3A1}"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-white tracking-wide" }, "Rueda Camelot"), selectedTrack && /* @__PURE__ */ React.createElement(
     "span",
     {
       className: "px-2 py-0.5 rounded text-[10px] font-black text-black shadow-sm",
@@ -13679,7 +13682,7 @@ const MapWorkspace = ({
       title: isCamelotWheelOpen ? "Minimizar rueda" : "Expandir rueda"
     },
     isCamelotWheelOpen ? "\u2212" : "+"
-  )), isCamelotWheelOpen && /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center" }, /* @__PURE__ */ React.createElement("svg", { width: "170", height: "170", viewBox: "0 0 170 170", className: "overflow-visible" }, /* @__PURE__ */ React.createElement("circle", { cx: "85", cy: "85", r: "80", fill: "#06060c", stroke: "#1f2937", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("circle", { cx: "85", cy: "85", r: "52", fill: "#090a14", stroke: "#1f2937", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("circle", { cx: "85", cy: "85", r: "28", fill: "#040408", stroke: "#111827", strokeWidth: "1" }), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => {
+  )), isCamelotWheelOpen && /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center" }, /* @__PURE__ */ React.createElement("svg", { width: "240", height: "240", viewBox: "0 0 240 240", className: "overflow-visible select-none" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("radialGradient", { id: "camelotCenterGlow", cx: "50%", cy: "50%", r: "50%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#1a1c2e" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#07080f" }))), /* @__PURE__ */ React.createElement("circle", { cx: "120", cy: "120", r: "116", fill: "#06060c", stroke: "#1f2438", strokeWidth: "1.5" }), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => {
     const selKey = selectedTrack ? (selectedTrack.key || "8A").toUpperCase() : null;
     const keyA = `${num}A`;
     const keyB = `${num}B`;
@@ -13687,12 +13690,32 @@ const MapWorkspace = ({
     const isMatchB = selKey ? calcHarmonicMixMatch(selKey, keyB).isMatch : false;
     const isSelectedA = selKey === keyA;
     const isSelectedB = selKey === keyB;
+    const isFilteredA = selectedKeyFilter === keyA;
+    const isFilteredB = selectedKeyFilter === keyB;
     const angDeg = (num - 1) * 30 - 90;
-    const angRad = angDeg * Math.PI / 180;
-    const bx = 85 + 66 * Math.cos(angRad);
-    const by = 85 + 66 * Math.sin(angRad);
-    const ax = 85 + 40 * Math.cos(angRad);
-    const ay = 85 + 40 * Math.sin(angRad);
+    const deg1 = angDeg - 14.8;
+    const deg2 = angDeg + 14.8;
+    const a1 = deg1 * Math.PI / 180;
+    const a2 = deg2 * Math.PI / 180;
+    const aMid = angDeg * Math.PI / 180;
+    const xo1 = 120 + 114 * Math.cos(a1);
+    const yo1 = 120 + 114 * Math.sin(a1);
+    const xo2 = 120 + 114 * Math.cos(a2);
+    const yo2 = 120 + 114 * Math.sin(a2);
+    const xm2 = 120 + 74 * Math.cos(a2);
+    const ym2 = 120 + 74 * Math.sin(a2);
+    const xm1 = 120 + 74 * Math.cos(a1);
+    const ym1 = 120 + 74 * Math.sin(a1);
+    const pathB = `M ${xo1} ${yo1} A 114 114 0 0 1 ${xo2} ${yo2} L ${xm2} ${ym2} A 74 74 0 0 0 ${xm1} ${ym1} Z`;
+    const xi2 = 120 + 36 * Math.cos(a2);
+    const yi2 = 120 + 36 * Math.sin(a2);
+    const xi1 = 120 + 36 * Math.cos(a1);
+    const yi1 = 120 + 36 * Math.sin(a1);
+    const pathA = `M ${xm1} ${ym1} A 74 74 0 0 1 ${xm2} ${ym2} L ${xi2} ${yi2} A 36 36 0 0 0 ${xi1} ${yi1} Z`;
+    const bx = 120 + 94 * Math.cos(aMid);
+    const by = 120 + 94 * Math.sin(aMid) + 3.5;
+    const ax = 120 + 55 * Math.cos(aMid);
+    const ay = 120 + 55 * Math.sin(aMid) + 3.5;
     return /* @__PURE__ */ React.createElement("g", { key: num }, /* @__PURE__ */ React.createElement(
       "g",
       {
@@ -13700,25 +13723,27 @@ const MapWorkspace = ({
         className: "cursor-pointer group"
       },
       /* @__PURE__ */ React.createElement(
-        "circle",
+        "path",
         {
-          cx: bx,
-          cy: by,
-          r: isSelectedB ? "10" : "8",
-          fill: isSelectedB ? "#fbbf24" : isMatchB ? "#10b981" : selectedKeyFilter === keyB ? "#38bdf8" : "#181824",
-          stroke: isSelectedB ? "#ffffff" : isMatchB ? "#34d399" : MAP_CAMELOT_COLORS[keyB] || "#374151",
-          strokeWidth: isSelectedB ? "2.5" : isMatchB ? "2" : "1"
+          d: pathB,
+          fill: MAP_CAMELOT_COLORS[keyB] || "#06b6d4",
+          fillOpacity: isSelectedB ? 0.95 : isFilteredB ? 0.9 : isMatchB ? 0.85 : 0.6,
+          stroke: isSelectedB ? "#ffffff" : isFilteredB ? "#38bdf8" : isMatchB ? "#34d399" : "#080912",
+          strokeWidth: isSelectedB ? "2.5" : isFilteredB ? "2" : isMatchB ? "1.5" : "1",
+          className: "transition-all duration-150 group-hover:fill-opacity-95"
         }
       ),
       /* @__PURE__ */ React.createElement(
         "text",
         {
           x: bx,
-          y: by + 3,
-          fill: isSelectedB ? "#000000" : isMatchB ? "#ffffff" : "#9ca3af",
-          fontSize: "7.5",
-          fontWeight: "black",
-          textAnchor: "middle"
+          y: by,
+          fill: isSelectedB || isFilteredB ? "#000000" : "#ffffff",
+          fontSize: "9.5",
+          fontWeight: "900",
+          fontFamily: "monospace",
+          textAnchor: "middle",
+          style: { textShadow: isSelectedB || isFilteredB ? "none" : "0 1px 3px rgba(0,0,0,0.9)" }
         },
         keyB
       )
@@ -13729,40 +13754,149 @@ const MapWorkspace = ({
         className: "cursor-pointer group"
       },
       /* @__PURE__ */ React.createElement(
-        "circle",
+        "path",
         {
-          cx: ax,
-          cy: ay,
-          r: isSelectedA ? "10" : "8",
-          fill: isSelectedA ? "#fbbf24" : isMatchA ? "#06b6d4" : selectedKeyFilter === keyA ? "#38bdf8" : "#13141f",
-          stroke: isSelectedA ? "#ffffff" : isMatchA ? "#22d3ee" : MAP_CAMELOT_COLORS[keyA] || "#374151",
-          strokeWidth: isSelectedA ? "2.5" : isMatchA ? "2" : "1"
+          d: pathA,
+          fill: MAP_CAMELOT_COLORS[keyA] || "#06b6d4",
+          fillOpacity: isSelectedA ? 0.95 : isFilteredA ? 0.9 : isMatchA ? 0.85 : 0.6,
+          stroke: isSelectedA ? "#ffffff" : isFilteredA ? "#38bdf8" : isMatchA ? "#22d3ee" : "#080912",
+          strokeWidth: isSelectedA ? "2.5" : isFilteredA ? "2" : isMatchA ? "1.5" : "1",
+          className: "transition-all duration-150 group-hover:fill-opacity-95"
         }
       ),
       /* @__PURE__ */ React.createElement(
         "text",
         {
           x: ax,
-          y: ay + 3,
-          fill: isSelectedA ? "#000000" : isMatchA ? "#ffffff" : "#9ca3af",
-          fontSize: "7.5",
-          fontWeight: "black",
-          textAnchor: "middle"
+          y: ay,
+          fill: isSelectedA || isFilteredA ? "#000000" : "#ffffff",
+          fontSize: "9.5",
+          fontWeight: "900",
+          fontFamily: "monospace",
+          textAnchor: "middle",
+          style: { textShadow: isSelectedA || isFilteredA ? "none" : "0 1px 3px rgba(0,0,0,0.9)" }
         },
         keyA
       )
     ));
-  }), /* @__PURE__ */ React.createElement("text", { x: "85", y: "82", fill: "#9ca3af", fontSize: "8", fontWeight: "bold", textAnchor: "middle" }, selectedTrack ? selectedTrack.key || "8A" : selectedKeyFilter !== "ALL" ? selectedKeyFilter : "DJ"), /* @__PURE__ */ React.createElement("text", { x: "85", y: "93", fill: "#6b7280", fontSize: "7", textAnchor: "middle" }, selectedTrack ? "ACTUAL" : selectedKeyFilter !== "ALL" ? "FILTRO" : "CAMELOT")), selectedTrack ? /* @__PURE__ */ React.createElement("div", { className: "w-full mt-2 pt-2 border-t border-djzinc-800 text-[10px] space-y-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Tonalidad:"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, selectedTrack.key || "8A")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-[9px] text-emerald-400" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500" }), /* @__PURE__ */ React.createElement("span", null, "Compatibles en verde/cyan")), selectedKeyFilter !== "ALL" && /* @__PURE__ */ React.createElement(
+  }), /* @__PURE__ */ React.createElement("circle", { cx: "120", cy: "120", r: "34", fill: "url(#camelotCenterGlow)", stroke: "#272a3d", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("circle", { cx: "120", cy: "120", r: "28", fill: "none", stroke: "#161826", strokeWidth: "1", strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement("circle", { cx: "120", cy: "120", r: "4", fill: "#06b6d4" }), selectedTrack ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("text", { x: "120", y: "113", fill: "#ffffff", fontSize: "12", fontWeight: "900", fontFamily: "monospace", textAnchor: "middle" }, (selectedTrack.key || "8A").toUpperCase()), /* @__PURE__ */ React.createElement("text", { x: "120", y: "127", fill: "#06b6d4", fontSize: "7.5", fontWeight: "bold", fontFamily: "monospace", textAnchor: "middle" }, "ACTUAL")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("text", { x: "120", y: "113", fill: "#9ca3af", fontSize: "8.5", fontWeight: "bold", fontFamily: "monospace", textAnchor: "middle" }, "CAMELOT"), /* @__PURE__ */ React.createElement("text", { x: "120", y: "126", fill: "#6b7280", fontSize: "7.5", fontFamily: "monospace", textAnchor: "middle" }, selectedKeyFilter !== "ALL" ? selectedKeyFilter : "2D RADIAL"))), selectedTrack ? /* @__PURE__ */ React.createElement("div", { className: "w-full mt-2 pt-2 border-t border-djzinc-800 text-[10px] space-y-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Tonalidad Actual:"), /* @__PURE__ */ React.createElement(
+    "span",
+    {
+      className: "px-2 py-0.5 rounded font-black text-black text-[10px]",
+      style: { backgroundColor: MAP_CAMELOT_COLORS[(selectedTrack.key || "8A").toUpperCase()] || "#06b6d4" }
+    },
+    (selectedTrack.key || "8A").toUpperCase()
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-[9px] text-emerald-400" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500" }), /* @__PURE__ */ React.createElement("span", null, "Compatibles iluminadas (+1, -1, Modo)")), selectedKeyFilter !== "ALL" && /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => setSelectedKeyFilter("ALL"),
-      className: "w-full py-0.5 text-[9px] text-djcyan-400 hover:text-white bg-djzinc-850 rounded cursor-pointer mt-1"
+      className: "w-full py-1 text-[9px] text-djcyan-400 hover:text-white bg-djzinc-850 rounded-lg cursor-pointer mt-1 border border-djzinc-750 font-bold"
     },
-    "Limpiar filtro (",
+    "Limpiar filtro de tonalidad (",
     selectedKeyFilter,
     ")"
-  )) : /* @__PURE__ */ React.createElement("div", { className: "w-full mt-2 pt-2 border-t border-djzinc-800 text-[10px] text-center text-gray-500" }, "Selecciona una pista para ver su tonalidad")))), activeTracks.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm z-30" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-md w-full bg-djzinc-950 border border-djzinc-800 p-6 rounded-2xl shadow-2xl text-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-2xl bg-gradient-to-br from-djcyan-500 to-indigo-600 flex items-center justify-center text-black text-2xl mx-auto mb-4 shadow-[0_0_25px_rgba(6,182,212,0.4)]" }, "\u{1F30C}"), /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-lg text-white mb-2" }, "Explora tu Biblioteca como un Paisaje Espacial"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-mono mb-5 leading-relaxed" }, "Scatter Map posiciona cada pista seg\xFAn su energ\xEDa, danza, BPM y tonalidad. La proximidad espacial revela qu\xE9 temas mezclan naturalmente juntos."), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2.5" }, /* @__PURE__ */ React.createElement(
+  )) : /* @__PURE__ */ React.createElement("div", { className: "w-full mt-2 pt-2 border-t border-djzinc-800 text-[10px] text-center text-gray-400" }, selectedKeyFilter !== "ALL" ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, "Filtro: ", selectedKeyFilter), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setSelectedKeyFilter("ALL"),
+      className: "text-[9px] text-gray-400 hover:text-white underline cursor-pointer"
+    },
+    "Quitar"
+  )) : /* @__PURE__ */ React.createElement("span", null, "Haz clic en una tonalidad para filtrar"))))), /* @__PURE__ */ React.createElement("div", { className: "absolute top-4 right-4 z-30 font-mono select-none" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c16]/95 border border-djzinc-750/90 rounded-2xl p-3 shadow-2xl backdrop-blur-xl transition-all flex flex-col items-center gap-2.5 w-[142px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full pb-1.5 border-b border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold tracking-wider uppercase text-djcyan-400 flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, "PAN / ZOOM")), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-white font-black bg-djzinc-900 px-1.5 py-0.2 rounded border border-djzinc-800" }, zoomDisplay.toFixed(1), "x")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-1 p-1.5 bg-[#06060c] border border-djzinc-800/80 rounded-xl shadow-inner w-full" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onMouseDown: () => startPan(0, 30),
+      onMouseUp: stopPan,
+      onMouseLeave: stopPan,
+      className: "w-9 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all",
+      title: "Mover mapa arriba (mantener presionado para desplazamiento continuo)"
+    },
+    "\u25B2"
+  ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full px-0.5" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onMouseDown: () => startPan(30, 0),
+      onMouseUp: stopPan,
+      onMouseLeave: stopPan,
+      className: "w-8 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all",
+      title: "Mover mapa a la izquierda"
+    },
+    "\u25C0"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleResetZoom,
+      className: "w-8 h-7 rounded-md bg-djzinc-900 border border-djzinc-800 hover:border-gray-500 text-djcyan-400 hover:text-white flex items-center justify-center text-[10px] font-bold shadow-inner cursor-pointer",
+      title: "Centrar y reajustar mapa (Fit)"
+    },
+    "\u2299"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onMouseDown: () => startPan(-30, 0),
+      onMouseUp: stopPan,
+      onMouseLeave: stopPan,
+      className: "w-8 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all",
+      title: "Mover mapa a la derecha"
+    },
+    "\u25B6"
+  )), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onMouseDown: () => startPan(0, -30),
+      onMouseUp: stopPan,
+      onMouseLeave: stopPan,
+      className: "w-9 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all",
+      title: "Mover mapa abajo"
+    },
+    "\u25BC"
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center w-full pt-1.5 border-t border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full px-1 text-[9px] text-gray-400 font-bold mb-1" }, /* @__PURE__ */ React.createElement("span", null, "FADER ZOOM"), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleResetZoom,
+      className: "text-djcyan-400 hover:text-white cursor-pointer",
+      title: "Resetear zoom a 1.0x"
+    },
+    "1.0x"
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 justify-center py-1 w-full" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleFaderZoom(Math.max(0.4, zoomDisplay - 0.25)),
+      className: "w-6 h-6 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-300 flex items-center justify-center text-xs font-bold cursor-pointer",
+      title: "Alejar (-)"
+    },
+    "\u2212"
+  ), /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 h-6 flex items-center" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "range",
+      min: "0.4",
+      max: "4.0",
+      step: "0.05",
+      value: zoomDisplay,
+      onChange: (e) => handleFaderZoom(e.target.value),
+      className: "w-full accent-djcyan-400 cursor-pointer h-2 bg-[#06060c] border border-djzinc-800 rounded-lg shadow-inner",
+      title: `Zoom actual: ${zoomDisplay.toFixed(1)}x`
+    }
+  )), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleFaderZoom(Math.min(4, zoomDisplay + 0.25)),
+      className: "w-6 h-6 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-300 flex items-center justify-center text-xs font-bold cursor-pointer",
+      title: "Acercar (+)"
+    },
+    "+"
+  ))))), activeTracks.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm z-30" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-md w-full bg-djzinc-950 border border-djzinc-800 p-6 rounded-2xl shadow-2xl text-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-2xl bg-gradient-to-br from-djcyan-500 to-indigo-600 flex items-center justify-center text-black text-2xl mx-auto mb-4 shadow-[0_0_25px_rgba(6,182,212,0.4)]" }, "\u{1F30C}"), /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-lg text-white mb-2" }, "Explora tu Biblioteca como un Paisaje Espacial"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-mono mb-5 leading-relaxed" }, "Scatter Map posiciona cada pista seg\xFAn su energ\xEDa, danza, BPM y tonalidad. La proximidad espacial revela qu\xE9 temas mezclan naturalmente juntos."), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2.5" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",

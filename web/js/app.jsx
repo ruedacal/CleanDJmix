@@ -401,6 +401,7 @@ const Icons = {
     Knowledge: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>,
     Menu: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
     Map: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="6" r="2.5" fill="currentColor" fillOpacity="0.3"></circle><circle cx="18" cy="8" r="2.5" fill="currentColor" fillOpacity="0.3"></circle><circle cx="12" cy="14" r="3" fill="currentColor" fillOpacity="0.5"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="19" cy="18" r="2"></circle><path d="M7 8l3.5 4.5M16 10l-2.5 3M8 17.5l2.5-1.5M17 16.5l-3-1.5" strokeOpacity="0.5" strokeDasharray="2 2"></path></svg>,
+    Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
     Close: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 };
 
@@ -5828,12 +5829,12 @@ const AuditWorkspace = ({
                         )}
                     </div>
 
-                    {/* CENTRO: Flujo de Trabajo en 3 Etapas Guíadas */}
-                    <div className="hidden xl:flex items-center bg-djzinc-950 p-0.5 rounded-lg border border-djzinc-800/90 shadow-inner shrink-0 text-xs font-mono font-bold">
+                    {/* CENTRO: Flujo de Trabajo en 3 Etapas Guíadas + Acciones de Auditoría por Lote */}
+                    <div className="flex items-center bg-djzinc-950 p-1 rounded-xl border border-djzinc-800/90 shadow-inner shrink-0 text-xs font-mono font-bold gap-1 overflow-x-auto no-scrollbar">
                         <button 
                             type="button"
                             onClick={() => { setFiltro('todos'); }}
-                            className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 ${
+                            className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
                                 filtro === 'todos' || filtro === 'bad_quality' || filtro === 'error'
                                     ? 'bg-djzinc-850 text-djcyan-300 border border-djcyan-500/40 shadow-sm'
                                     : 'text-gray-400 hover:text-white'
@@ -5848,7 +5849,7 @@ const AuditWorkspace = ({
                         <button 
                             type="button"
                             onClick={() => { setFiltro('missing'); }}
-                            className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 ${
+                            className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
                                 ['missing', 'missing_title', 'missing_artist', 'missing_cover'].includes(filtro)
                                     ? 'bg-djzinc-850 text-amber-300 border border-amber-500/40 shadow-sm'
                                     : 'text-gray-400 hover:text-white'
@@ -5871,7 +5872,7 @@ const AuditWorkspace = ({
                                     setCueStudioModalOpen(true);
                                 }
                             }}
-                            className="px-2.5 py-1 rounded-md text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+                            className="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 shrink-0"
                             title="Etapa 3: Preparación de Hot Cues 1-8, Beatgrid y primer Downbeat"
                         >
                             <span>③ Cues</span>
@@ -5879,29 +5880,36 @@ const AuditWorkspace = ({
                                 8
                             </span>
                         </button>
-                    </div>
 
-                    {/* DERECHA: Acciones Maestras, Hub de Exportación & Guardar */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Configuración avanzada del batch */}
+                        {/* Divisor vertical sutil */}
+                        <div className="w-px h-5 bg-djzinc-800 my-auto mx-1 shrink-0"></div>
+
+                        {/* Configuración de Lote */}
                         <button 
+                            type="button"
                             onClick={() => setBatchModalOpen(true)} 
-                            className="bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors font-mono shrink-0" 
+                            className="bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700/80 text-gray-300 hover:text-white px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono shrink-0 shadow-sm" 
                             title="Configurar opciones avanzadas de auditoría por lotes y carátulas"
                         >
-                            <Icons.Sliders /> <span className="hidden sm:inline">{t('btn_audit_batch') || 'Lote'}</span>
+                            <Icons.Sliders />
+                            <span>{t('btn_audit_batch') || 'Lote'}</span>
                         </button>
 
                         {/* Botón Maestro: Auditar Todo */}
                         <button 
+                            type="button"
                             onClick={() => handleAuditar()} 
                             disabled={isAuditing} 
-                            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0"
+                            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-black px-3.5 py-1 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0"
                             title="Ejecutar análisis DSP completo sobre todas las pistas cargadas"
                         >
-                            <Icons.Library /> <span>{isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar')}</span>
+                            <Icons.Library />
+                            <span>{isAuditing ? (lang === 'en' ? 'Auditing...' : 'Auditando...') : (t('btn_execute_audit') || 'Auditar')}</span>
                         </button>
+                    </div>
 
+                    {/* DERECHA: Acciones Maestras, Hub de Exportación & Guardar */}
+                    <div className="flex items-center gap-1.5 shrink-0">
                         {/* HUB UNIFICADO DE EXPORTACIÓN */}
                         <div data-tour="tour-export-crates" className="relative shrink-0">
                             <button 
@@ -18951,11 +18959,46 @@ const MapWorkspace = ({
     const [hoveredTrack, setHoveredTrack] = useState(null);
     const [mouseScreenPos, setMouseScreenPos] = useState({ x: -100, y: -100 });
     const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState(true);
+    const [zoomDisplay, setZoomDisplay] = useState(1.0);
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const animRef = useRef(null);
     const imageCacheRef = useRef(new Map());
+    const panTimerRef = useRef(null);
+
+    // Navegación continua y fluida por el mapa con flechas
+    const startPan = (dx, dy) => {
+        transformRef.current.panX += dx;
+        transformRef.current.panY += dy;
+        if (panTimerRef.current) clearInterval(panTimerRef.current);
+        panTimerRef.current = setInterval(() => {
+            transformRef.current.panX += dx;
+            transformRef.current.panY += dy;
+        }, 30);
+    };
+
+    const stopPan = () => {
+        if (panTimerRef.current) {
+            clearInterval(panTimerRef.current);
+            panTimerRef.current = null;
+        }
+    };
+
+    const handleFaderZoom = (val) => {
+        const parsed = parseFloat(val);
+        if (!isNaN(parsed)) {
+            const clamped = Math.max(0.4, Math.min(4.0, parsed));
+            transformRef.current.scale = clamped;
+            setZoomDisplay(clamped);
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (panTimerRef.current) clearInterval(panTimerRef.current);
+        };
+    }, []);
 
     // Transformación espacial (Pan & Zoom)
     const transformRef = useRef({
@@ -19541,6 +19584,7 @@ const MapWorkspace = ({
         transformRef.current.panX = mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2;
         transformRef.current.panY = mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2;
         transformRef.current.scale = newScale;
+        setZoomDisplay(newScale);
     };
 
     // Clic en nodo: Solo SELECCIONAR pista e iluminar su tonalidad en la Rueda Camelot. NO reproducir hasta dar al Play.
@@ -19559,6 +19603,7 @@ const MapWorkspace = ({
             dragStartX: 0,
             dragStartY: 0
         };
+        setZoomDisplay(1.0);
     };
 
     // Métricas del grupo seleccionado mediante Lasso / Caja
@@ -19677,23 +19722,26 @@ const MapWorkspace = ({
                     </div>
                 </div>
 
-                {/* LADO DERECHO: BUSCADOR EN VIVO Y CONTROLES DE ZOOM */}
+                {/* LADO DERECHO: BUSCADOR EN VIVO Y CONTROLES */}
                 <div className="flex items-center gap-2">
-                    {/* BUSCADOR */}
-                    <div className="relative">
+                    {/* BUSCADOR: Limpio, sin artefactos, con icono SVG */}
+                    <div className="relative flex items-center">
+                        <span className="absolute left-2.5 text-gray-500 pointer-events-none flex items-center">
+                            <Icons.Search />
+                        </span>
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Buscar en mapa..."
-                            className="w-32 sm:w-44 bg-djzinc-900 border border-djzinc-800 rounded-lg pl-6 pr-2 py-1 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-djcyan-500"
+                            placeholder="Buscar en el mapa"
+                            className="w-36 sm:w-48 bg-djzinc-900 border border-djzinc-750 rounded-xl pl-8 pr-7 py-1 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-djcyan-500 shadow-inner"
                         />
-                        <span className="absolute left-2 top-1.5 text-[10px] text-gray-500">🔍</span>
                         {searchQuery && (
                             <button
                                 type="button"
                                 onClick={() => setSearchQuery('')}
-                                className="absolute right-2 top-1 text-xs text-gray-400 hover:text-white"
+                                className="absolute right-2 text-xs text-gray-400 hover:text-white cursor-pointer px-1"
+                                title="Borrar búsqueda"
                             >
                                 ✕
                             </button>
@@ -19711,34 +19759,6 @@ const MapWorkspace = ({
                     >
                         ⚡
                     </button>
-
-                    {/* BOTONES ZOOM */}
-                    <div className="flex items-center bg-djzinc-900 rounded-lg border border-djzinc-800 overflow-hidden">
-                        <button
-                            type="button"
-                            onClick={() => { transformRef.current.scale = Math.min(5.0, transformRef.current.scale * 1.25); }}
-                            className="px-2 py-1 hover:bg-djzinc-800 text-gray-300 text-xs font-mono cursor-pointer"
-                            title="Acercar (Zoom In)"
-                        >
-                            +
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => { transformRef.current.scale = Math.max(0.4, transformRef.current.scale * 0.8); }}
-                            className="px-2 py-1 hover:bg-djzinc-800 text-gray-300 text-xs font-mono cursor-pointer"
-                            title="Alejar (Zoom Out)"
-                        >
-                            -
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleResetZoom}
-                            className="px-2 py-1 hover:bg-djzinc-800 text-djcyan-300 text-[10px] font-mono cursor-pointer border-l border-djzinc-800"
-                            title="Centrar y reajustar mapa"
-                        >
-                            Fit
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -19758,10 +19778,10 @@ const MapWorkspace = ({
                     }`}
                 />
 
-                {/* RUEDA DE CAMELOT INTERACTIVA EN LA ESQUINA SUPERIOR IZQUIERDA */}
+                {/* RUEDA DE CAMELOT INTERACTIVA EN LA ESQUINA SUPERIOR IZQUIERDA (ANCHO DE LOGO & 60% ALPHA) */}
                 <div className="absolute top-4 left-4 z-30 font-mono select-none">
-                    <div className="bg-[#0b0c16]/95 border border-djzinc-750/90 rounded-2xl p-3 shadow-2xl backdrop-blur-xl transition-all">
-                        <div className="flex items-center justify-between gap-3 pb-2 mb-2 border-b border-djzinc-800/80">
+                    <div className="bg-[#0b0c16]/95 border border-djzinc-750/90 rounded-2xl p-3 shadow-2xl backdrop-blur-xl transition-all w-[264px]">
+                        <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-djzinc-800/80">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">🎡</span>
                                 <span className="text-xs font-bold text-white tracking-wide">Rueda Camelot</span>
@@ -19786,15 +19806,20 @@ const MapWorkspace = ({
 
                         {isCamelotWheelOpen && (
                             <div className="flex flex-col items-center">
-                                {/* Visualizador Circular SVG de las 24 Tonalidades Camelot */}
-                                <svg width="170" height="170" viewBox="0 0 170 170" className="overflow-visible">
-                                    {/* Círculos concéntricos de base */}
-                                    <circle cx="85" cy="85" r="80" fill="#06060c" stroke="#1f2937" strokeWidth="1" />
-                                    <circle cx="85" cy="85" r="52" fill="#090a14" stroke="#1f2937" strokeWidth="1" />
-                                    <circle cx="85" cy="85" r="28" fill="#040408" stroke="#111827" strokeWidth="1" />
+                                {/* Visualizador Circular SVG 24 Tonalidades con Sectores de Color Camelot al 60% Alpha */}
+                                <svg width="240" height="240" viewBox="0 0 240 240" className="overflow-visible select-none">
+                                    <defs>
+                                        <radialGradient id="camelotCenterGlow" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" stopColor="#1a1c2e" />
+                                            <stop offset="100%" stopColor="#07080f" />
+                                        </radialGradient>
+                                    </defs>
 
-                                    {/* Sectores de las 12 horas: Anillo exterior B (Mayor) y Anillo interior A (Menor) */}
-                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(num => {
+                                    {/* Círculo base de fondo */}
+                                    <circle cx="120" cy="120" r="116" fill="#06060c" stroke="#1f2438" strokeWidth="1.5" />
+
+                                    {/* 12 Sectores Donut: Anillo Exterior B (Mayor) e Interior A (Menor) con Alpha al 60% */}
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(num => {
                                         const selKey = selectedTrack ? (selectedTrack.key || '8A').toUpperCase() : null;
                                         const keyA = `${num}A`;
                                         const keyB = `${num}B`;
@@ -19803,62 +19828,91 @@ const MapWorkspace = ({
                                         const isMatchB = selKey ? calcHarmonicMixMatch(selKey, keyB).isMatch : false;
                                         const isSelectedA = selKey === keyA;
                                         const isSelectedB = selKey === keyB;
+                                        const isFilteredA = selectedKeyFilter === keyA;
+                                        const isFilteredB = selectedKeyFilter === keyB;
 
                                         const angDeg = (num - 1) * 30 - 90;
-                                        const angRad = (angDeg * Math.PI) / 180;
+                                        const deg1 = angDeg - 14.8;
+                                        const deg2 = angDeg + 14.8;
+                                        const a1 = (deg1 * Math.PI) / 180;
+                                        const a2 = (deg2 * Math.PI) / 180;
+                                        const aMid = (angDeg * Math.PI) / 180;
 
-                                        const bx = 85 + 66 * Math.cos(angRad);
-                                        const by = 85 + 66 * Math.sin(angRad);
-                                        const ax = 85 + 40 * Math.cos(angRad);
-                                        const ay = 85 + 40 * Math.sin(angRad);
+                                        // Sector exterior B: Radio 74 a 114
+                                        const xo1 = 120 + 114 * Math.cos(a1);
+                                        const yo1 = 120 + 114 * Math.sin(a1);
+                                        const xo2 = 120 + 114 * Math.cos(a2);
+                                        const yo2 = 120 + 114 * Math.sin(a2);
+                                        const xm2 = 120 + 74 * Math.cos(a2);
+                                        const ym2 = 120 + 74 * Math.sin(a2);
+                                        const xm1 = 120 + 74 * Math.cos(a1);
+                                        const ym1 = 120 + 74 * Math.sin(a1);
+                                        const pathB = `M ${xo1} ${yo1} A 114 114 0 0 1 ${xo2} ${yo2} L ${xm2} ${ym2} A 74 74 0 0 0 ${xm1} ${ym1} Z`;
+
+                                        // Sector interior A: Radio 36 a 74
+                                        const xi2 = 120 + 36 * Math.cos(a2);
+                                        const yi2 = 120 + 36 * Math.sin(a2);
+                                        const xi1 = 120 + 36 * Math.cos(a1);
+                                        const yi1 = 120 + 36 * Math.sin(a1);
+                                        const pathA = `M ${xm1} ${ym1} A 74 74 0 0 1 ${xm2} ${ym2} L ${xi2} ${yi2} A 36 36 0 0 0 ${xi1} ${yi1} Z`;
+
+                                        // Coordenadas de etiquetas de texto
+                                        const bx = 120 + 94 * Math.cos(aMid);
+                                        const by = 120 + 94 * Math.sin(aMid) + 3.5;
+                                        const ax = 120 + 55 * Math.cos(aMid);
+                                        const ay = 120 + 55 * Math.sin(aMid) + 3.5;
 
                                         return (
                                             <g key={num}>
-                                                {/* Nodo B (Outer - Major) */}
+                                                {/* Sector B (Outer - Major) con 60% Alpha */}
                                                 <g 
-                                                    onClick={() => setSelectedKeyFilter(prev => prev === keyB ? 'ALL' : keyB)} 
+                                                    onClick={() => setSelectedKeyFilter(prev => prev === keyB ? 'ALL' : keyB)}
                                                     className="cursor-pointer group"
                                                 >
-                                                    <circle
-                                                        cx={bx}
-                                                        cy={by}
-                                                        r={isSelectedB ? "10" : "8"}
-                                                        fill={isSelectedB ? "#fbbf24" : (isMatchB ? "#10b981" : (selectedKeyFilter === keyB ? "#38bdf8" : "#181824"))}
-                                                        stroke={isSelectedB ? "#ffffff" : (isMatchB ? "#34d399" : (MAP_CAMELOT_COLORS[keyB] || "#374151"))}
-                                                        strokeWidth={isSelectedB ? "2.5" : (isMatchB ? "2" : "1")}
+                                                    <path
+                                                        d={pathB}
+                                                        fill={MAP_CAMELOT_COLORS[keyB] || '#06b6d4'}
+                                                        fillOpacity={isSelectedB ? 0.95 : (isFilteredB ? 0.90 : (isMatchB ? 0.85 : 0.60))}
+                                                        stroke={isSelectedB ? "#ffffff" : (isFilteredB ? "#38bdf8" : (isMatchB ? "#34d399" : "#080912"))}
+                                                        strokeWidth={isSelectedB ? "2.5" : (isFilteredB ? "2" : (isMatchB ? "1.5" : "1"))}
+                                                        className="transition-all duration-150 group-hover:fill-opacity-95"
                                                     />
                                                     <text
                                                         x={bx}
-                                                        y={by + 3}
-                                                        fill={isSelectedB ? "#000000" : (isMatchB ? "#ffffff" : "#9ca3af")}
-                                                        fontSize="7.5"
-                                                        fontWeight="black"
+                                                        y={by}
+                                                        fill={isSelectedB || isFilteredB ? "#000000" : "#ffffff"}
+                                                        fontSize="9.5"
+                                                        fontWeight="900"
+                                                        fontFamily="monospace"
                                                         textAnchor="middle"
+                                                        style={{ textShadow: isSelectedB || isFilteredB ? 'none' : '0 1px 3px rgba(0,0,0,0.9)' }}
                                                     >
                                                         {keyB}
                                                     </text>
                                                 </g>
 
-                                                {/* Nodo A (Inner - Minor) */}
+                                                {/* Sector A (Inner - Minor) con 60% Alpha */}
                                                 <g 
-                                                    onClick={() => setSelectedKeyFilter(prev => prev === keyA ? 'ALL' : keyA)} 
+                                                    onClick={() => setSelectedKeyFilter(prev => prev === keyA ? 'ALL' : keyA)}
                                                     className="cursor-pointer group"
                                                 >
-                                                    <circle
-                                                        cx={ax}
-                                                        cy={ay}
-                                                        r={isSelectedA ? "10" : "8"}
-                                                        fill={isSelectedA ? "#fbbf24" : (isMatchA ? "#06b6d4" : (selectedKeyFilter === keyA ? "#38bdf8" : "#13141f"))}
-                                                        stroke={isSelectedA ? "#ffffff" : (isMatchA ? "#22d3ee" : (MAP_CAMELOT_COLORS[keyA] || "#374151"))}
-                                                        strokeWidth={isSelectedA ? "2.5" : (isMatchA ? "2" : "1")}
+                                                    <path
+                                                        d={pathA}
+                                                        fill={MAP_CAMELOT_COLORS[keyA] || '#06b6d4'}
+                                                        fillOpacity={isSelectedA ? 0.95 : (isFilteredA ? 0.90 : (isMatchA ? 0.85 : 0.60))}
+                                                        stroke={isSelectedA ? "#ffffff" : (isFilteredA ? "#38bdf8" : (isMatchA ? "#22d3ee" : "#080912"))}
+                                                        strokeWidth={isSelectedA ? "2.5" : (isFilteredA ? "2" : (isMatchA ? "1.5" : "1"))}
+                                                        className="transition-all duration-150 group-hover:fill-opacity-95"
                                                     />
                                                     <text
                                                         x={ax}
-                                                        y={ay + 3}
-                                                        fill={isSelectedA ? "#000000" : (isMatchA ? "#ffffff" : "#9ca3af")}
-                                                        fontSize="7.5"
-                                                        fontWeight="black"
+                                                        y={ay}
+                                                        fill={isSelectedA || isFilteredA ? "#000000" : "#ffffff"}
+                                                        fontSize="9.5"
+                                                        fontWeight="900"
+                                                        fontFamily="monospace"
                                                         textAnchor="middle"
+                                                        style={{ textShadow: isSelectedA || isFilteredA ? 'none' : '0 1px 3px rgba(0,0,0,0.9)' }}
                                                     >
                                                         {keyA}
                                                     </text>
@@ -19867,43 +19921,202 @@ const MapWorkspace = ({
                                         );
                                     })}
 
-                                    {/* Centro */}
-                                    <text x="85" y="82" fill="#9ca3af" fontSize="8" fontWeight="bold" textAnchor="middle">
-                                        {selectedTrack ? (selectedTrack.key || '8A') : (selectedKeyFilter !== 'ALL' ? selectedKeyFilter : 'DJ')}
-                                    </text>
-                                    <text x="85" y="93" fill="#6b7280" fontSize="7" textAnchor="middle">
-                                        {selectedTrack ? 'ACTUAL' : (selectedKeyFilter !== 'ALL' ? 'FILTRO' : 'CAMELOT')}
-                                    </text>
+                                    {/* Centro Vinyl Hub */}
+                                    <circle cx="120" cy="120" r="34" fill="url(#camelotCenterGlow)" stroke="#272a3d" strokeWidth="2" />
+                                    <circle cx="120" cy="120" r="28" fill="none" stroke="#161826" strokeWidth="1" strokeDasharray="3 3" />
+                                    <circle cx="120" cy="120" r="4" fill="#06b6d4" />
+
+                                    {/* Texto central */}
+                                    {selectedTrack ? (
+                                        <>
+                                            <text x="120" y="113" fill="#ffffff" fontSize="12" fontWeight="900" fontFamily="monospace" textAnchor="middle">
+                                                {(selectedTrack.key || '8A').toUpperCase()}
+                                            </text>
+                                            <text x="120" y="127" fill="#06b6d4" fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                                                ACTUAL
+                                            </text>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <text x="120" y="113" fill="#9ca3af" fontSize="8.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                                                CAMELOT
+                                            </text>
+                                            <text x="120" y="126" fill="#6b7280" fontSize="7.5" fontFamily="monospace" textAnchor="middle">
+                                                {selectedKeyFilter !== 'ALL' ? selectedKeyFilter : '2D RADIAL'}
+                                            </text>
+                                        </>
+                                    )}
                                 </svg>
 
-                                {/* Información Armónica de la Pista Seleccionada */}
+                                {/* Información Armónica y Filtros Activos */}
                                 {selectedTrack ? (
                                     <div className="w-full mt-2 pt-2 border-t border-djzinc-800 text-[10px] space-y-1">
                                         <div className="flex items-center justify-between text-gray-400">
-                                            <span>Tonalidad:</span>
-                                            <span className="text-white font-bold">{selectedTrack.key || '8A'}</span>
+                                            <span>Tonalidad Actual:</span>
+                                            <span 
+                                                className="px-2 py-0.5 rounded font-black text-black text-[10px]"
+                                                style={{ backgroundColor: MAP_CAMELOT_COLORS[(selectedTrack.key || '8A').toUpperCase()] || '#06b6d4' }}
+                                            >
+                                                {(selectedTrack.key || '8A').toUpperCase()}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-[9px] text-emerald-400">
                                             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                            <span>Compatibles en verde/cyan</span>
+                                            <span>Compatibles iluminadas (+1, -1, Modo)</span>
                                         </div>
                                         {selectedKeyFilter !== 'ALL' && (
                                             <button
                                                 type="button"
                                                 onClick={() => setSelectedKeyFilter('ALL')}
-                                                className="w-full py-0.5 text-[9px] text-djcyan-400 hover:text-white bg-djzinc-850 rounded cursor-pointer mt-1"
+                                                className="w-full py-1 text-[9px] text-djcyan-400 hover:text-white bg-djzinc-850 rounded-lg cursor-pointer mt-1 border border-djzinc-750 font-bold"
                                             >
-                                                Limpiar filtro ({selectedKeyFilter})
+                                                Limpiar filtro de tonalidad ({selectedKeyFilter})
                                             </button>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="w-full mt-2 pt-2 border-t border-djzinc-800 text-[10px] text-center text-gray-500">
-                                        Selecciona una pista para ver su tonalidad
+                                    <div className="w-full mt-2 pt-2 border-t border-djzinc-800 text-[10px] text-center text-gray-400">
+                                        {selectedKeyFilter !== 'ALL' ? (
+                                            <div className="flex items-center justify-between gap-1">
+                                                <span className="text-djcyan-300">Filtro: {selectedKeyFilter}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedKeyFilter('ALL')}
+                                                    className="text-[9px] text-gray-400 hover:text-white underline cursor-pointer"
+                                                >
+                                                    Quitar
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span>Haz clic en una tonalidad para filtrar</span>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         )}
+                    </div>
+                </div>
+
+                {/* CONSOLA DE NAVEGACIÓN D-PAD Y FADER DE ZOOM (EN EL LADO OPUESTO - TOP RIGHT) */}
+                <div className="absolute top-4 right-4 z-30 font-mono select-none">
+                    <div className="bg-[#0b0c16]/95 border border-djzinc-750/90 rounded-2xl p-3 shadow-2xl backdrop-blur-xl transition-all flex flex-col items-center gap-2.5 w-[142px]">
+                        {/* Cabecera del Módulo */}
+                        <div className="flex items-center justify-between w-full pb-1.5 border-b border-djzinc-800/80">
+                            <span className="text-[10px] font-bold tracking-wider uppercase text-djcyan-400 flex items-center gap-1">
+                                <span>🎛️</span>
+                                <span>PAN / ZOOM</span>
+                            </span>
+                            <span className="text-[9px] text-white font-black bg-djzinc-900 px-1.5 py-0.2 rounded border border-djzinc-800">
+                                {zoomDisplay.toFixed(1)}x
+                            </span>
+                        </div>
+
+                        {/* D-Pad de 4 Flechas estilo Hardware DJ (Beveled Zinc, Tacto Fader) */}
+                        <div className="flex flex-col items-center gap-1 p-1.5 bg-[#06060c] border border-djzinc-800/80 rounded-xl shadow-inner w-full">
+                            <button
+                                type="button"
+                                onMouseDown={() => startPan(0, 30)}
+                                onMouseUp={stopPan}
+                                onMouseLeave={stopPan}
+                                className="w-9 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all"
+                                title="Mover mapa arriba (mantener presionado para desplazamiento continuo)"
+                            >
+                                ▲
+                            </button>
+
+                            <div className="flex items-center justify-between w-full px-0.5">
+                                <button
+                                    type="button"
+                                    onMouseDown={() => startPan(30, 0)}
+                                    onMouseUp={stopPan}
+                                    onMouseLeave={stopPan}
+                                    className="w-8 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all"
+                                    title="Mover mapa a la izquierda"
+                                >
+                                    ◀
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleResetZoom}
+                                    className="w-8 h-7 rounded-md bg-djzinc-900 border border-djzinc-800 hover:border-gray-500 text-djcyan-400 hover:text-white flex items-center justify-center text-[10px] font-bold shadow-inner cursor-pointer"
+                                    title="Centrar y reajustar mapa (Fit)"
+                                >
+                                    ⊙
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onMouseDown={() => startPan(-30, 0)}
+                                    onMouseUp={stopPan}
+                                    onMouseLeave={stopPan}
+                                    className="w-8 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all"
+                                    title="Mover mapa a la derecha"
+                                >
+                                    ▶
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                onMouseDown={() => startPan(0, -30)}
+                                onMouseUp={stopPan}
+                                onMouseLeave={stopPan}
+                                className="w-9 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all"
+                                title="Mover mapa abajo"
+                            >
+                                ▼
+                            </button>
+                        </div>
+
+                        {/* Zoom estilo Fader de Pitch DJ con calibración */}
+                        <div className="flex flex-col items-center w-full pt-1.5 border-t border-djzinc-800/80">
+                            <div className="flex items-center justify-between w-full px-1 text-[9px] text-gray-400 font-bold mb-1">
+                                <span>FADER ZOOM</span>
+                                <button
+                                    type="button"
+                                    onClick={handleResetZoom}
+                                    className="text-djcyan-400 hover:text-white cursor-pointer"
+                                    title="Resetear zoom a 1.0x"
+                                >
+                                    1.0x
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 justify-center py-1 w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => handleFaderZoom(Math.max(0.4, zoomDisplay - 0.25))}
+                                    className="w-6 h-6 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-300 flex items-center justify-center text-xs font-bold cursor-pointer"
+                                    title="Alejar (-)"
+                                >
+                                    −
+                                </button>
+
+                                {/* Track del Fader con estilo Pitch DJ */}
+                                <div className="relative flex-1 h-6 flex items-center">
+                                    <input
+                                        type="range"
+                                        min="0.4"
+                                        max="4.0"
+                                        step="0.05"
+                                        value={zoomDisplay}
+                                        onChange={(e) => handleFaderZoom(e.target.value)}
+                                        className="w-full accent-djcyan-400 cursor-pointer h-2 bg-[#06060c] border border-djzinc-800 rounded-lg shadow-inner"
+                                        title={`Zoom actual: ${zoomDisplay.toFixed(1)}x`}
+                                    />
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleFaderZoom(Math.min(4.0, zoomDisplay + 0.25))}
+                                    className="w-6 h-6 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-300 flex items-center justify-center text-xs font-bold cursor-pointer"
+                                    title="Acercar (+)"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
