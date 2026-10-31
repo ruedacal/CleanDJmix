@@ -86,6 +86,8 @@ const I18N_TRANSLATIONS = {
         nav_tab_trends: "Trends",
         nav_tab_guides: "Guías",
         nav_manual: "Manual",
+        nav_bitacora: "Bitácora",
+        nav_account: "Cuenta",
         nav_shortcuts: "Atajos",
         nav_club_mode: "Club",
         nav_normal_mode: "Normal",
@@ -242,6 +244,8 @@ const I18N_TRANSLATIONS = {
         nav_tab_trends: "Trends",
         nav_tab_guides: "Guides",
         nav_manual: "Manual",
+        nav_bitacora: "Log Journal",
+        nav_account: "Account",
         nav_shortcuts: "Shortcuts",
         nav_club_mode: "Club",
         nav_normal_mode: "Normal",
@@ -4015,6 +4019,672 @@ function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
     return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
 }
 
+// ─── ESPACIO DE USUARIO, LOGIN & GESTIÓN DE SESIONES Y ESTADOS ──────────────
+const UserAccountModal = ({ 
+    isOpen, 
+    onClose, 
+    userProfile, 
+    onUpdateProfile, 
+    savedSessions = [], 
+    onSaveCurrentSession, 
+    onLoadSession, 
+    onDeleteSession,
+    currentSessionSnapshot = {}
+}) => {
+    if (!isOpen) return null;
+
+    const [activeTab, setActiveTab] = useState('sessions'); // 'sessions' | 'profile' | 'preferences'
+    const [alias, setAlias] = useState((userProfile && userProfile.alias) || 'DJ Alex BeatWave');
+    const [djSoftware, setDjSoftware] = useState((userProfile && userProfile.djSoftware) || 'Serato DJ Pro');
+    const [audioInterface, setAudioInterface] = useState((userProfile && userProfile.audioInterface) || 'Focusrite Scarlett 2i2 / Serato Club Kit');
+    const [targetLufs, setTargetLufs] = useState((userProfile && userProfile.targetLufs) || -9.0);
+    const [autoSaveEnabled, setAutoSaveEnabled] = useState(userProfile ? userProfile.autoSave !== false : true);
+    const [sessionNameInput, setSessionNameInput] = useState('');
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+
+    const handleSaveProfile = () => {
+        onUpdateProfile({
+            ...userProfile,
+            alias,
+            djSoftware,
+            audioInterface,
+            targetLufs,
+            autoSave: autoSaveEnabled
+        });
+        setSaveSuccessMsg('✓ Perfil y configuración de cabina guardados');
+        setTimeout(() => setSaveSuccessMsg(''), 3000);
+    };
+
+    const handleCreateSnapshot = (e) => {
+        if (e) e.preventDefault();
+        const name = sessionNameInput.trim() || `Sesión ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString().slice(0, 5)}`;
+        onSaveCurrentSession(name);
+        setSessionNameInput('');
+        setSaveSuccessMsg(`✓ Sesión "${name}" guardada con éxito`);
+        setTimeout(() => setSaveSuccessMsg(''), 3000);
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
+            <div 
+                className="w-full max-w-2xl bg-[#0a0a14] border border-cyan-500/40 rounded-3xl shadow-[0_0_50px_rgba(6,182,212,0.25)] overflow-hidden flex flex-col font-sans text-gray-200 max-h-[90vh]"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Cabecera de la Cuenta de Usuario */}
+                <div className="px-5 py-4 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-black font-black text-lg shadow-[0_0_15px_rgba(6,182,212,0.5)]">
+                                🎧
+                            </div>
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-black" title="En Línea • Cabina Activa"></span>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-base font-mono font-black uppercase text-white tracking-wider">
+                                    {alias}
+                                </h3>
+                                <span className="text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 px-2 py-0.5 rounded-full font-black">
+                                    {(userProfile && userProfile.plan) || 'PRO CABINA VIP'}
+                                </span>
+                            </div>
+                            <p className="text-[11px] text-gray-400 font-mono">
+                                {(userProfile && userProfile.email) || 'alex.dj@beatwave.pro'} • Sesión y Estados Sincronizados
+                            </p>
+                        </div>
+                    </div>
+
+                    <button 
+                        type="button"
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
+                        title="Cerrar (ESC)"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* Sub-navegación por Pestañas */}
+                <div className="px-5 py-2 bg-[#080811] border-b border-djzinc-800 flex items-center gap-2 font-mono text-xs shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('sessions')}
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            activeTab === 'sessions'
+                                ? 'bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                        }`}
+                    >
+                        <span>💾</span> <span>Sesiones & Continuidad</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('profile')}
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            activeTab === 'profile'
+                                ? 'bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                        }`}
+                    >
+                        <span>👤</span> <span>Perfil DJ & Suite</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('preferences')}
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            activeTab === 'preferences'
+                                ? 'bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                        }`}
+                    >
+                        <span>⚙️</span> <span>Ajustes & Guardado</span>
+                    </button>
+                </div>
+
+                {/* Mensaje de Confirmación */}
+                {saveSuccessMsg && (
+                    <div className="px-5 py-2 bg-emerald-950/80 border-b border-emerald-600/60 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0">
+                        <span>✨</span>
+                        <span>{saveSuccessMsg}</span>
+                    </div>
+                )}
+
+                {/* Contenido Scrollable */}
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 space-y-5">
+                    {/* PESTAÑA 1: SESIONES Y CONTINUIDAD */}
+                    {activeTab === 'sessions' && (
+                        <div className="space-y-4">
+                            {/* Card de Sesión Activa */}
+                            <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-950/40 to-djzinc-900 border border-cyan-500/40 space-y-2">
+                                <div className="flex items-center justify-between text-xs font-mono">
+                                    <span className="text-cyan-400 font-black uppercase tracking-wider flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                                        ESTADO ACTUAL EN CABINA
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-[10px] font-bold">
+                                        Auto-Guardado Activo
+                                    </span>
+                                </div>
+                                <div className="text-xs text-gray-300 space-y-1">
+                                    <div><strong>Carpeta:</strong> <span className="font-mono text-gray-400 text-[11px]">{currentSessionSnapshot.folder || '/Users/admin/Music/mi musica'}</span></div>
+                                    <div className="flex gap-4 text-[11px]">
+                                        <span><strong>Pistas en Lote:</strong> {currentSessionSnapshot.tracksCount || 0}</span>
+                                        <span><strong>Pestaña Activa:</strong> <span className="uppercase text-cyan-300 font-mono">{currentSessionSnapshot.activeTab || 'AUDIT'}</span></span>
+                                    </div>
+                                </div>
+
+                                {/* Formulario para Guardar Nuevo Snapshot */}
+                                <form onSubmit={handleCreateSnapshot} className="pt-2 flex gap-2">
+                                    <input 
+                                        type="text"
+                                        placeholder="Nombre de la sesión (ej: Space Ibiza Warmup)..."
+                                        value={sessionNameInput}
+                                        onChange={(e) => setSessionNameInput(e.target.value)}
+                                        className="flex-1 px-3 py-1.5 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                    />
+                                    <button 
+                                        type="submit"
+                                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 whitespace-nowrap shadow-md"
+                                    >
+                                        💾 Guardar Estado
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Lista de Sesiones Guardadas Anteriores */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center justify-between">
+                                    <span>Sesiones Guardadas ({savedSessions.length})</span>
+                                    <span className="text-[10px] text-gray-500">Reanuda cualquier sesión con 1 clic</span>
+                                </h4>
+
+                                {savedSessions.length === 0 ? (
+                                    <div className="p-4 rounded-xl bg-djzinc-900/60 border border-djzinc-800 text-center text-xs text-gray-500 font-mono">
+                                        No hay sesiones guardadas todavía. Guarda tu sesión actual arriba para continuar cuando quieras.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {savedSessions.map((sess) => (
+                                            <div key={sess.id} className="p-3 rounded-xl bg-[#0c0d18] border border-djzinc-800 hover:border-cyan-500/40 transition-all flex items-center justify-between gap-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-xs font-mono font-bold text-white truncate">
+                                                        {sess.name}
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-[10px] font-mono text-gray-400 mt-0.5">
+                                                        <span>📅 {sess.date}</span>
+                                                        <span>🎵 {sess.tracksCount || 0} pistas</span>
+                                                        <span className="text-cyan-400 uppercase">{sess.activeTab || 'audit'}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-1.5 shrink-0 font-mono">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            onLoadSession(sess);
+                                                            setSaveSuccessMsg(`✓ Sesión "${sess.name}" cargada. ¡Listo para mezclar!`);
+                                                            setTimeout(() => setSaveSuccessMsg(''), 3000);
+                                                        }}
+                                                        className="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                                                        title="Cargar y reanudar esta sesión"
+                                                    >
+                                                        <span>↺</span>
+                                                        <span>Reanudar</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onDeleteSession(sess.id)}
+                                                        className="p-1 rounded-lg bg-djzinc-900 hover:bg-rose-950 text-gray-500 hover:text-rose-400 text-xs transition-colors cursor-pointer"
+                                                        title="Eliminar sesión guardada"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* PESTAÑA 2: PERFIL DJ & SUITE */}
+                    {activeTab === 'profile' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-mono text-gray-400 uppercase font-bold block">Alias / Nombre Artístico</label>
+                                    <input 
+                                        type="text"
+                                        value={alias}
+                                        onChange={(e) => setAlias(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-mono text-gray-400 uppercase font-bold block">Software DJ Principal</label>
+                                    <select
+                                        value={djSoftware}
+                                        onChange={(e) => setDjSoftware(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                    >
+                                        <option value="Serato DJ Pro">Serato DJ Pro</option>
+                                        <option value="Rekordbox 7">Rekordbox 7 (Pioneer DJ)</option>
+                                        <option value="Traktor Pro 3">Traktor Pro 3 (Native Instruments)</option>
+                                        <option value="VirtualDJ 2024">VirtualDJ Pro 2024</option>
+                                        <option value="Engine DJ">Engine DJ (Denon DJ)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-mono text-gray-400 uppercase font-bold block">Interfaz de Audio / Tarjeta de Sonido</label>
+                                <input 
+                                    type="text"
+                                    value={audioInterface}
+                                    onChange={(e) => setAudioInterface(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+                                />
+                            </div>
+
+                            <div className="p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 space-y-2">
+                                <label className="text-[11px] font-mono text-gray-400 uppercase font-bold block flex justify-between">
+                                    <span>Target de Normalización Acústica (LUFS)</span>
+                                    <span className="text-cyan-400 font-bold">{targetLufs} LUFS</span>
+                                </label>
+                                <input 
+                                    type="range"
+                                    min="-14"
+                                    max="-6"
+                                    step="0.5"
+                                    value={targetLufs}
+                                    onChange={(e) => setTargetLufs(parseFloat(e.target.value))}
+                                    className="w-full accent-cyan-400 cursor-pointer"
+                                />
+                                <p className="text-[10px] text-gray-500 font-sans">
+                                    -9.0 LUFS es el estándar recomendado para festivales y discotecas con pegada contundente y máxima claridad.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleSaveProfile}
+                                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md"
+                            >
+                                Guardar Datos de Perfil
+                            </button>
+                        </div>
+                    )}
+
+                    {/* PESTAÑA 3: PREFERENCIAS & AJUSTES */}
+                    {activeTab === 'preferences' && (
+                        <div className="space-y-4 font-mono text-xs">
+                            <div className="p-3.5 rounded-xl bg-[#0c0d18] border border-djzinc-800 flex items-center justify-between">
+                                <div>
+                                    <div className="font-bold text-white">Auto-Guardado Continuo de Estados</div>
+                                    <div className="text-[10px] text-gray-400">Guarda carpetas, listas y filtros al vuelo en segundo plano</div>
+                                </div>
+                                <input 
+                                    type="checkbox"
+                                    checked={autoSaveEnabled}
+                                    onChange={(e) => setAutoSaveEnabled(e.target.checked)}
+                                    className="w-4 h-4 accent-cyan-400 rounded cursor-pointer"
+                                />
+                            </div>
+
+                            <div className="p-3.5 rounded-xl bg-[#0c0d18] border border-djzinc-800 space-y-2">
+                                <div className="font-bold text-white">Cerrar Sesión / Cambiar de Usuario (Mock)</div>
+                                <div className="text-[10px] text-gray-400">Permite alternar entre diferentes cuentas de DJ o modo invitado</div>
+                                <div className="flex gap-2 pt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAlias('DJ Invitado');
+                                            handleSaveProfile();
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-bold text-xs cursor-pointer"
+                                    >
+                                        Modo Invitado
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAlias('DJ Alex BeatWave');
+                                            handleSaveProfile();
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 font-bold text-xs cursor-pointer"
+                                    >
+                                        Restaurar DJ Alex
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Pie de la Modal */}
+                <div className="px-5 py-3 bg-[#080811] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
+                    <span className="text-[10px] text-gray-500">
+                        BeatWave Pro v1.0.0 • Cuenta de Usuario & Estado Persistente
+                    </span>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer"
+                    >
+                        Cerrar (ESC)
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ─── CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS CON EXPORTACIÓN EXCEL ────────
+const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
+    if (!isOpen) return null;
+
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [selectedIds, setSelectedIds] = useState(() => new Set(entries.map(e => e.id)));
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredEntries = entries.filter(e => {
+        const matchesCategory = filterCategory === 'all' || e.category === filterCategory;
+        const matchesSearch = !searchTerm || 
+            (e.trackTitle && e.trackTitle.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (e.action && e.action.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (e.detailsAfter && e.detailsAfter.toLowerCase().includes(searchTerm.toLowerCase()));
+        return matchesCategory && matchesSearch;
+    });
+
+    const isAllSelected = filteredEntries.length > 0 && selectedIds.size === filteredEntries.length;
+
+    const toggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredEntries.map(e => e.id)));
+        }
+    };
+
+    const toggleSelectRow = (id) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    // Exportación a Excel (.xlsx XML compatible nativo con Microsoft Excel y Apple Numbers)
+    const exportToExcel = () => {
+        const selectedList = filteredEntries.filter(e => selectedIds.has(e.id));
+        if (selectedList.length === 0) {
+            alert('Por favor selecciona al menos una entrada para exportar.');
+            return;
+        }
+
+        let xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Header">
+   <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+   <Interior ss:Color="#0B132B" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+  </Style>
+  <Style ss:ID="Success">
+   <Font ss:Color="#006600" ss:Bold="1"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Bitacora BeatWave Pro">
+  <Table>
+   <Column ss:Width="110"/>
+   <Column ss:Width="150"/>
+   <Column ss:Width="220"/>
+   <Column ss:Width="280"/>
+   <Column ss:Width="200"/>
+   <Column ss:Width="220"/>
+   <Column ss:Width="110"/>
+   <Row ss:StyleID="Header" ss:Height="24">
+    <Cell><Data ss:Type="String">Fecha y Hora</Data></Cell>
+    <Cell><Data ss:Type="String">Proceso / Acción</Data></Cell>
+    <Cell><Data ss:Type="String">Pista / Archivo</Data></Cell>
+    <Cell><Data ss:Type="String">Ruta en Disco</Data></Cell>
+    <Cell><Data ss:Type="String">Estado Anterior</Data></Cell>
+    <Cell><Data ss:Type="String">Estado Modificado</Data></Cell>
+    <Cell><Data ss:Type="String">Resultado</Data></Cell>
+   </Row>`;
+
+        selectedList.forEach(item => {
+            xml += `
+   <Row ss:Height="20">
+    <Cell><Data ss:Type="String">${item.timestamp || ''}</Data></Cell>
+    <Cell><Data ss:Type="String">${item.action || ''}</Data></Cell>
+    <Cell><Data ss:Type="String">${(item.trackTitle || '').replace(/[<&>]/g, '')}</Data></Cell>
+    <Cell><Data ss:Type="String">${(item.filePath || '').replace(/[<&>]/g, '')}</Data></Cell>
+    <Cell><Data ss:Type="String">${(item.detailsBefore || '').replace(/[<&>]/g, '')}</Data></Cell>
+    <Cell><Data ss:Type="String">${(item.detailsAfter || '').replace(/[<&>]/g, '')}</Data></Cell>
+    <Cell ss:StyleID="Success"><Data ss:Type="String">${item.status || 'OK'}</Data></Cell>
+   </Row>`;
+        });
+
+        xml += `
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+        const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const nowStr = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `BeatWave_Pro_Bitacora_${nowStr}.xls`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
+            <div 
+                className="w-full max-w-5xl h-[88vh] bg-[#0a0a14] border border-amber-500/40 rounded-3xl shadow-[0_0_50px_rgba(245,158,11,0.2)] overflow-hidden flex flex-col font-sans text-gray-200"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Cabecera de la Bitácora */}
+                <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0e0e18] flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(245,158,11,0.5)] shrink-0">
+                            📓
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
+                                    <span>CUADERNO DE BITÁCORA & CAMBIOS</span>
+                                    <span className="text-[9px] bg-amber-950 text-amber-300 border border-amber-600/60 px-2 py-0.5 rounded-full font-bold">
+                                        REGISTRO AUDITABLE
+                                    </span>
+                                </h3>
+                            </div>
+                            <p className="text-[11px] text-gray-400 font-sans hidden sm:block">
+                                Historial cronológico de diagnósticos DSP, inyección de cues y optimizaciones realizadas en tu biblioteca.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button 
+                        type="button"
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
+                        title="Cerrar (ESC)"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* Barra de Filtros, Búsqueda y Botón de Descarga Excel */}
+                <div className="px-4 py-2.5 bg-[#080810] border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shrink-0">
+                    {/* Filtros de Categoría */}
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                        {[
+                            { id: 'all', label: 'Todos' },
+                            { id: 'audit', label: 'Auditoría DSP' },
+                            { id: 'cues', label: 'Hot Cues' },
+                            { id: 'download', label: 'FLAC Lossless' },
+                            { id: 'crates', label: 'Crates & Tags' },
+                        ].map(cat => (
+                            <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => setFilterCategory(cat.id)}
+                                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                    filterCategory === cat.id
+                                        ? 'bg-amber-500 text-black font-black shadow-sm'
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
+                                }`}
+                            >
+                                {cat.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Acciones: Seleccionar Todo & Exportar Excel */}
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            placeholder="Buscar en bitácora..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-800 text-white placeholder-gray-500 text-[11px] outline-none focus:border-amber-400 w-36 sm:w-48"
+                        />
+
+                        <button
+                            type="button"
+                            onClick={exportToExcel}
+                            className="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-400/60 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
+                            title="Descargar hoja de cálculo Excel con las filas seleccionadas"
+                        >
+                            <span>📊</span>
+                            <span>Descargar Excel ({selectedIds.size})</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Tabla de Bitácora */}
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-3">
+                    <table className="w-full text-left font-mono text-xs border-collapse">
+                        <thead className="sticky top-0 bg-[#0d0e1c] border-b border-djzinc-800 text-[10px] uppercase text-gray-400 font-bold z-10">
+                            <tr>
+                                <th className="p-2.5 w-10 text-center">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isAllSelected}
+                                        onChange={toggleSelectAll}
+                                        className="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer"
+                                        title="Seleccionar o deseleccionar todas las filas"
+                                    />
+                                </th>
+                                <th className="p-2.5 w-28">Hora</th>
+                                <th className="p-2.5 w-36">Operación</th>
+                                <th className="p-2.5 w-56">Pista / Archivo</th>
+                                <th className="p-2.5">Detalle del Cambio (Antes ➔ Después)</th>
+                                <th className="p-2.5 w-24 text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-djzinc-850/60 text-[11px]">
+                            {filteredEntries.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="p-8 text-center text-gray-500">
+                                        No hay registros que coincidan con el filtro seleccionado.
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredEntries.map((row) => {
+                                    const isSelected = selectedIds.has(row.id);
+                                    return (
+                                        <tr 
+                                            key={row.id}
+                                            className={`transition-colors cursor-pointer ${
+                                                isSelected ? 'bg-amber-950/20 hover:bg-amber-950/30' : 'hover:bg-djzinc-900/40'
+                                            }`}
+                                            onClick={() => toggleSelectRow(row.id)}
+                                        >
+                                            <td className="p-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleSelectRow(row.id)}
+                                                    className="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer"
+                                                />
+                                            </td>
+                                            <td className="p-2.5 text-gray-400 whitespace-nowrap">{row.timestamp}</td>
+                                            <td className="p-2.5">
+                                                <span className="px-1.5 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-amber-300 font-bold text-[10px]">
+                                                    {row.action}
+                                                </span>
+                                            </td>
+                                            <td className="p-2.5 font-bold text-white max-w-[200px] truncate" title={row.filePath || row.trackTitle}>
+                                                {row.trackTitle}
+                                            </td>
+                                            <td className="p-2.5 text-gray-300 leading-snug">
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
+                                                    <span className="px-1.5 py-0.2 rounded bg-rose-950/70 border border-rose-800 text-rose-300 text-[10px]">
+                                                        {row.detailsBefore}
+                                                    </span>
+                                                    <span className="text-gray-500 hidden sm:inline">➔</span>
+                                                    <span className="px-1.5 py-0.2 rounded bg-emerald-950/80 border border-emerald-700 text-emerald-300 text-[10px] font-bold">
+                                                        {row.detailsAfter}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="p-2.5 text-center whitespace-nowrap">
+                                                <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700/60 font-bold text-[10px]">
+                                                    {row.status || 'OK'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Footer de la Bitácora */}
+                <div className="px-5 py-3 bg-[#0a0a14] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
+                    <div className="flex items-center gap-3">
+                        <span className="text-gray-400 text-[11px]">
+                            {selectedIds.size} de {filteredEntries.length} entradas seleccionadas
+                        </span>
+                        {entries.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={onClearEntries}
+                                className="text-[10px] text-gray-500 hover:text-rose-400 underline cursor-pointer"
+                            >
+                                Vaciar Bitácora
+                            </button>
+                        )}
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer"
+                    >
+                        Cerrar (ESC)
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ─── UX CABINA: Modal de Atajos de Teclado Profesionales (DJ Cheatsheet) ─────
 const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
     if (!isOpen) return null;
@@ -4384,6 +5054,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     };
 
     const [activeSectionKey, setActiveSectionKey] = useState(initialSection || 'audit');
+    const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
     const [simStep, setSimStep] = useState(0);
     const [isSimPlaying, setIsSimPlaying] = useState(true);
     const [spotlightZoom, setSpotlightZoom] = useState(true);
@@ -24054,6 +24725,166 @@ const App = () => {
         }
     };
 
+    // ESPACIO DE USUARIO, LOGIN & SESIONES GUARDADAS
+    const [userModalOpen, setUserModalOpen] = useState(false);
+    const [userProfile, setUserProfile] = useState(() => {
+        try {
+            const saved = localStorage.getItem('bw_user_profile');
+            if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return {
+            alias: 'DJ Alex BeatWave',
+            email: 'alex.dj@beatwave.pro',
+            plan: 'PRO CABINA VIP',
+            djSoftware: 'Serato DJ Pro',
+            audioInterface: 'Focusrite Scarlett 2i2 / Serato Club Kit',
+            targetLufs: -9.0,
+            autoSave: true
+        };
+    });
+
+    const handleUpdateUserProfile = (newProfile) => {
+        setUserProfile(newProfile);
+        try { localStorage.setItem('bw_user_profile', JSON.stringify(newProfile)); } catch (e) {}
+    };
+
+    const [savedSessions, setSavedSessions] = useState(() => {
+        try {
+            const saved = localStorage.getItem('bw_saved_sessions');
+            if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return [
+            {
+                id: 'sess-init-1',
+                name: '🌟 Sesión Club Ibiza - Warmup Melodic (12 pistas)',
+                date: '31/10/2026 20:30',
+                folder: '/Users/admin/Music/mi musica',
+                tracksCount: 12,
+                activeTab: 'audit'
+            }
+        ];
+    });
+
+    const handleSaveCurrentSession = (customName) => {
+        const sessionObj = {
+            id: 'sess-' + Date.now(),
+            name: customName || `Sesión ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString().slice(0, 5)}`,
+            date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString().slice(0, 5),
+            folder: currentFolder,
+            activeTab: activeTab,
+            tracksCount: auditTracks.length,
+            selectedTrackId: selectedTrack,
+            tracksData: auditTracks.map(t => ({
+                id: t.id,
+                path: t.path || t.f,
+                title: t.title || t.name,
+                artist: t.artist,
+                bpm: t.bpm,
+                key: t.key,
+                cues: t.cues,
+                quality: t.quality
+            }))
+        };
+        setSavedSessions(prev => {
+            const next = [sessionObj, ...prev.slice(0, 9)];
+            try { localStorage.setItem('bw_saved_sessions', JSON.stringify(next)); } catch (e) {}
+            return next;
+        });
+    };
+
+    const handleLoadSession = (session) => {
+        if (!session) return;
+        if (session.folder) setCurrentFolder(session.folder);
+        if (session.activeTab) setActiveTab(session.activeTab);
+        if (session.tracksData && session.tracksData.length > 0) {
+            setAuditTracks(session.tracksData);
+            if (session.selectedTrackId) setSelectedTrack(session.selectedTrackId);
+        }
+    };
+
+    const handleDeleteSession = (sessionId) => {
+        setSavedSessions(prev => {
+            const next = prev.filter(s => s.id !== sessionId);
+            try { localStorage.setItem('bw_saved_sessions', JSON.stringify(next)); } catch (e) {}
+            return next;
+        });
+    };
+
+    // CUADERNO DE BITÁCORA DE PROCESOS (HISTORIAL DE CAMBIOS Y EXPORTACIÓN EXCEL)
+    const [bitacoraModalOpen, setBitacoraModalOpen] = useState(false);
+    const [bitacoraEntries, setBitacoraEntries] = useState(() => {
+        try {
+            const saved = localStorage.getItem('bw_audit_bitacora');
+            if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return [
+            {
+                id: 'b-1',
+                timestamp: '31/10/2026 20:45',
+                category: 'audit',
+                action: 'Diagnóstico Espectral DSP & FFT',
+                trackTitle: 'Cascada - Everytime We Touch',
+                filePath: '/Users/admin/Music/mi musica/Cascada - Everytime We Touch.mp3',
+                detailsBefore: 'MP3 218 kbps • Corte en 18.5 kHz • Sin tags Serato',
+                detailsAfter: 'Certificado Media Calidad • BPM: 143.00 • Camelot: 8A • -9.0 LUFS',
+                status: '✓ Certificado'
+            },
+            {
+                id: 'b-2',
+                timestamp: '31/10/2026 20:46',
+                category: 'cues',
+                action: 'Inyección de 8 Hot Cues & Fraseo',
+                trackTitle: 'Kriss / New Limit - Tonight / Smile',
+                filePath: '/Users/admin/Music/mi musica/Tonight Smile.mp3',
+                detailsBefore: '0 Hot Cues en Serato',
+                detailsAfter: '8 Hot Cues (1: Intro, 3: Break, 5: Snare, 7: Drop) • Pioneer RGB',
+                status: '✓ Inyectado'
+            },
+            {
+                id: 'b-3',
+                timestamp: '31/10/2026 20:48',
+                category: 'download',
+                action: 'Sustitución SuperFLAC Lossless Ingest',
+                trackTitle: 'Plastikman, Richie Hawtin - Artifakts (BC)',
+                filePath: '/Users/admin/Music/mi musica/Plastikman - Artifakts.mp3',
+                detailsBefore: 'MP3 83 kbps (Pérdida Severa <16kHz Fake)',
+                detailsAfter: 'FLAC Lossless 24-bit Genuino (22.05 kHz) • Carátula 1400x1400',
+                status: '✓ Reemplazado'
+            },
+            {
+                id: 'b-4',
+                timestamp: '31/10/2026 20:51',
+                category: 'crates',
+                action: 'Exportación a Serato Crates & Rekordbox XML',
+                trackTitle: 'Lote Principal (12 pistas)',
+                filePath: '/Users/admin/Music/_Serato_/Subcrates/Melodic_Techno.crate',
+                detailsBefore: 'Sin sincronización multisoftware',
+                detailsAfter: 'Crate binario Serato .crate generado + Rekordbox XML sincronizado',
+                status: '✓ Sincronizado'
+            }
+        ];
+    });
+
+    const handleClearBitacora = () => {
+        setBitacoraEntries([]);
+        try { localStorage.removeItem('bw_audit_bitacora'); } catch (e) {}
+    };
+
+    // Auto-guardado continuo del estado de la sesión para que el DJ continúe donde lo dejó
+    useEffect(() => {
+        if (userProfile && userProfile.autoSave !== false) {
+            try {
+                const autoSession = {
+                    folder: currentFolder,
+                    activeTab: activeTab,
+                    selectedTrackId: selectedTrack,
+                    updatedAt: Date.now()
+                };
+                localStorage.setItem('bw_auto_session', JSON.stringify(autoSession));
+            } catch (e) {}
+        }
+    }, [currentFolder, activeTab, selectedTrack, userProfile]);
+
     // UX CABINA: Modo Cabina Oscura (High-Contrast Club Mode) y Modal de Atajos DJ
     const [clubMode, setClubMode] = useState(() => {
         try {
@@ -24476,8 +25307,18 @@ const App = () => {
                 }
             }
 
-            // 2. ESC: Cerrar modal de atajos o manual interactivo
+            // 2. ESC: Cerrar modal de atajos, manual, bitácora o cuenta de usuario
             if (e.key === 'Escape') {
+                if (userModalOpen) {
+                    e.preventDefault();
+                    setUserModalOpen(false);
+                    return;
+                }
+                if (bitacoraModalOpen) {
+                    e.preventDefault();
+                    setBitacoraModalOpen(false);
+                    return;
+                }
                 if (manualModalOpen) {
                     e.preventDefault();
                     setManualModalOpen(false);
@@ -25182,15 +26023,40 @@ const App = () => {
                     <kbd className="text-[9px] bg-black/40 px-1 py-0.2 rounded border border-djzinc-750">L</kbd>
                 </button>
 
-                {/* Botón Maestro del Manual Interactivo BeatWave (Color Rosa Vibrante de Cabina) */}
+                {/* Botón Maestro del Manual Interactivo BeatWave (Rosa Morado Vibrante de Cabina) */}
                 <button
                     type="button"
                     onClick={() => handleOpenManual(activeTab)}
-                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-pink-500 via-rose-500 to-pink-500 hover:from-pink-400 hover:to-rose-400 text-white font-mono font-black text-xs shadow-[0_0_15px_rgba(236,72,153,0.5)] border border-pink-400/80 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
+                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:via-fuchsia-500 hover:to-pink-500 text-white font-mono font-black text-xs shadow-[0_0_15px_rgba(168,85,247,0.45)] border border-purple-400/80 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
                     title="Manual Interactivo & Masterclass BeatWave Pro (F1)"
                 >
                     <span>📖</span>
                     <span className="tracking-wider">{t('nav_manual') || 'MANUAL'}</span>
+                </button>
+
+                {/* Cuaderno de Bitácora & Historial de Cambios Exportable a Excel */}
+                <button
+                    type="button"
+                    onClick={() => setBitacoraModalOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-amber-400 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/50 text-xs font-mono font-bold shadow-inner cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+                    title="Cuaderno de Bitácora de Procesos & Exportar Excel (.xlsx)"
+                >
+                    <span>📓</span>
+                    <span className="hidden xl:inline text-[11px]">{t('nav_bitacora') || 'Bitácora'}</span>
+                </button>
+
+                {/* Cuenta de Usuario & Sesiones Guardadas */}
+                <button
+                    type="button"
+                    onClick={() => setUserModalOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/80 to-blue-950/80 hover:from-cyan-900 hover:to-blue-900 text-cyan-300 hover:text-white border border-cyan-500/50 text-xs font-mono font-bold shadow-md cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+                    title="Cuenta de Usuario, Login & Continuidad de Sesiones"
+                >
+                    <div className="w-4 h-4 rounded-full bg-cyan-400 text-black flex items-center justify-center text-[9px] font-black">
+                        DJ
+                    </div>
+                    <span className="hidden xl:inline text-[11px] truncate max-w-[90px]">{userProfile.alias || 'DJ Alex'}</span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-950 text-cyan-400 border border-cyan-700/60 font-black hidden 2xl:inline">PRO</span>
                 </button>
 
                 {/* Botón de Atajos de Teclado DJ Cheatsheet */}
@@ -25804,6 +26670,31 @@ const App = () => {
                     setManualModalOpen(false);
                 }}
                 lang={lang}
+            />
+
+            {/* ESPACIO DE USUARIO, LOGIN & SESIONES GUARDADAS */}
+            <UserAccountModal 
+                isOpen={userModalOpen}
+                onClose={() => setUserModalOpen(false)}
+                userProfile={userProfile}
+                onUpdateProfile={handleUpdateUserProfile}
+                savedSessions={savedSessions}
+                onSaveCurrentSession={handleSaveCurrentSession}
+                onLoadSession={handleLoadSession}
+                onDeleteSession={handleDeleteSession}
+                currentSessionSnapshot={{
+                    folder: currentFolder,
+                    tracksCount: auditTracks.length,
+                    activeTab: activeTab
+                }}
+            />
+
+            {/* CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS AUDITABLE */}
+            <BitacoraModal 
+                isOpen={bitacoraModalOpen}
+                onClose={() => setBitacoraModalOpen(false)}
+                entries={bitacoraEntries}
+                onClearEntries={handleClearBitacora}
             />
         </div>
     );
