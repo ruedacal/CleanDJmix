@@ -79,6 +79,7 @@ const I18N_TRANSLATIONS = {
         nav_tab_audit: "Auditar",
         nav_tab_cues: "Cues",
         nav_tab_sets: "Sets",
+        nav_tab_map: "Map",
         nav_tab_pool: "Pool",
         nav_tab_radar: "Radar",
         nav_tab_crates: "Crates",
@@ -233,6 +234,7 @@ const I18N_TRANSLATIONS = {
         nav_tab_audit: "Audit",
         nav_tab_cues: "Cues",
         nav_tab_sets: "Sets",
+        nav_tab_map: "Map",
         nav_tab_pool: "Pool",
         nav_tab_radar: "Radar",
         nav_tab_crates: "Crates",
@@ -398,6 +400,7 @@ const Icons = {
         Flow: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>,
     Knowledge: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>,
     Menu: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
+    Map: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="6" r="2.5" fill="currentColor" fillOpacity="0.3"></circle><circle cx="18" cy="8" r="2.5" fill="currentColor" fillOpacity="0.3"></circle><circle cx="12" cy="14" r="3" fill="currentColor" fillOpacity="0.5"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="19" cy="18" r="2"></circle><path d="M7 8l3.5 4.5M16 10l-2.5 3M8 17.5l2.5-1.5M17 16.5l-3-1.5" strokeOpacity="0.5" strokeDasharray="2 2"></path></svg>,
     Close: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 };
 
@@ -18131,10 +18134,1068 @@ const SetBuilderWorkspace = ({
 };
 
 // =========================================================================
-// ESPACIO DE TRABAJO: CONOCIMIENTO (CURSOS, VÍDEOS Y MANUALES DJ)
+// ESPACIO DE TRABAJO: SCATTER MAP (PAISAJE ESPACIAL 2D DE COMPATIBILIDAD MUSICAL)
 // =========================================================================
 
-// =========================================================================
+const MAP_CAMELOT_COLORS = {
+    "1A": "#00e5ff", "1B": "#00b4d8",
+    "2A": "#00a6fb", "2B": "#0077b6",
+    "3A": "#3b82f6", "3B": "#1d4ed8",
+    "4A": "#8b5cf6", "4B": "#7c3aed",
+    "5A": "#d946ef", "5B": "#c026d3",
+    "6A": "#ef4444", "6B": "#dc2626",
+    "7A": "#f97316", "7B": "#ea580c",
+    "8A": "#f59e0b", "8B": "#d97706",
+    "9A": "#eab308", "9B": "#ca8a04",
+    "10A": "#84cc16", "10B": "#65a30d",
+    "11A": "#10b981", "11B": "#059669",
+    "12A": "#14b8a6", "12B": "#0d9488"
+};
+
+const MAP_GENRE_COLORS = {
+    "Tech House": "#10b981",
+    "Melodic Techno": "#06b6d4",
+    "Afro House": "#f59e0b",
+    "Peak Time Techno": "#a855f7",
+    "Techno": "#9333ea",
+    "Deep House": "#3b82f6",
+    "House": "#38bdf8",
+    "Indie Dance": "#ec4899",
+    "Drum & Bass": "#ef4444",
+    "Trance": "#6366f1",
+    "Hard Dance": "#f43f5e",
+    "Minimal": "#94a3b8"
+};
+
+const DEMO_MAP_TRACKS = [
+    { id: "demo_1", title: "Astral Projection (Extended Mix)", artist: "Artbat & CamelPhat", bpm: 126.0, key: "8A", energy: 88, danceability: 82, genre: "Melodic Techno", subgenre: "Peak Melodic", calidad: "FLAC 24-bit", duration: "06:45" },
+    { id: "demo_2", title: "Consciousness", artist: "Anyma & Chris Avantgarde", bpm: 126.0, key: "9A", energy: 92, danceability: 79, genre: "Melodic Techno", subgenre: "Afterlife Sound", calidad: "FLAC Lossless", duration: "05:48" },
+    { id: "demo_3", title: "Rumble (Club Mix)", artist: "Skrillex & Fred again..", bpm: 140.0, key: "11A", energy: 95, danceability: 90, genre: "Drum & Bass", subgenre: "Bassline / UKG", calidad: "320 kbps MP3", duration: "03:50" },
+    { id: "demo_4", title: "Drugs From Amsterdam", artist: "Mau P", bpm: 125.0, key: "4A", energy: 94, danceability: 96, genre: "Tech House", subgenre: "Club Banger", calidad: "FLAC Lossless", duration: "05:24" },
+    { id: "demo_5", title: "Move", artist: "Adam Port & Stryv", bpm: 121.0, key: "7A", energy: 74, danceability: 89, genre: "Afro House", subgenre: "Keinemusik Deep", calidad: "FLAC Lossless", duration: "05:12" },
+    { id: "demo_6", title: "Rhyme Dust", artist: "MK & Dom Dolla", bpm: 128.0, key: "8A", energy: 91, danceability: 92, genre: "Tech House", subgenre: "Mainstage Tech", calidad: "FLAC Lossless", duration: "05:30" },
+    { id: "demo_7", title: "Miracle", artist: "Calvin Harris & Ellie Goulding", bpm: 143.0, key: "2A", energy: 96, danceability: 84, genre: "Trance", subgenre: "Eurodance Revival", calidad: "FLAC Lossless", duration: "04:15" },
+    { id: "demo_8", title: "The Age Of Love (Charlotte de Witte Remix)", artist: "Age Of Love", bpm: 132.0, key: "4A", energy: 98, danceability: 85, genre: "Peak Time Techno", subgenre: "Acid Techno", calidad: "FLAC Lossless", duration: "08:10" },
+    { id: "demo_9", title: "World Hold On (Fisher Rework)", artist: "Bob Sinclar & Fisher", bpm: 127.0, key: "9B", energy: 90, danceability: 94, genre: "Tech House", subgenre: "Summer Groove", calidad: "FLAC Lossless", duration: "05:34" },
+    { id: "demo_10", title: "Neverender", artist: "Justice & Tame Impala", bpm: 118.0, key: "5A", energy: 70, danceability: 86, genre: "Indie Dance", subgenre: "Electro French", calidad: "FLAC Lossless", duration: "04:26" },
+    { id: "demo_11", title: "Eternity", artist: "Anyma", bpm: 125.0, key: "8A", energy: 85, danceability: 76, genre: "Melodic Techno", subgenre: "Atmospheric", calidad: "FLAC Lossless", duration: "06:12" },
+    { id: "demo_12", title: "Losing It", artist: "Fisher", bpm: 125.0, key: "8A", energy: 95, danceability: 95, genre: "Tech House", subgenre: "Club Peak", calidad: "FLAC Lossless", duration: "04:08" },
+    { id: "demo_13", title: "Baddadan", artist: "Chase & Status & Bou", bpm: 174.0, key: "1A", energy: 99, danceability: 88, genre: "Drum & Bass", subgenre: "Jump Up DnB", calidad: "320 kbps MP3", duration: "03:40" },
+    { id: "demo_14", title: "Mwaki", artist: "Zerb & Sofiya Nzau", bpm: 122.0, key: "6A", energy: 76, danceability: 91, genre: "Afro House", subgenre: "Tribal Vocal", calidad: "FLAC Lossless", duration: "04:45" },
+    { id: "demo_15", title: "Fine Day Anthem", artist: "Skrillex & Boys Noize", bpm: 130.0, key: "7A", energy: 93, danceability: 88, genre: "Tech House", subgenre: "Acid House", calidad: "FLAC Lossless", duration: "03:15" },
+    { id: "demo_16", title: "Take It Off", artist: "Fisher & Aatig", bpm: 126.0, key: "3A", energy: 92, danceability: 94, genre: "Tech House", subgenre: "Club Vocal", calidad: "FLAC Lossless", duration: "05:14" }
+];
+
+const parseMapCamelot = (k) => {
+    if (!k) return null;
+    const m = String(k).trim().toUpperCase().match(/^(1[0-2]|[1-9])([AB])$/);
+    if (!m) return null;
+    return { num: parseInt(m[1], 10), letter: m[2], full: `${m[1]}${m[2]}` };
+};
+
+const calcHarmonicMixMatch = (k1, k2, bpm1 = 126, bpm2 = 126) => {
+    const c1 = parseMapCamelot(k1);
+    const c2 = parseMapCamelot(k2);
+    if (!c1 || !c2) return { score: 50, label: "Tonalidad Desconocida", color: "#64748b", isMatch: false };
+    
+    let baseScore = 40;
+    let label = "Tonalidad Distante";
+    let color = "#ef4444";
+
+    if (c1.full === c2.full) {
+        baseScore = 100;
+        label = "Misma Clave (Match 100%)";
+        color = "#10b981";
+    } else if (c1.num === c2.num && c1.letter !== c2.letter) {
+        baseScore = 92;
+        label = "Cambio Mayor/Menor";
+        color = "#06b6d4";
+    } else {
+        const diff = Math.min(Math.abs(c1.num - c2.num), 12 - Math.abs(c1.num - c2.num));
+        if (diff === 1 && c1.letter === c2.letter) {
+            const isBoost = (c2.num === (c1.num % 12) + 1);
+            baseScore = 95;
+            label = isBoost ? "Paso Armónico +1 (Boost)" : "Paso Armónico -1 (Descenso)";
+            color = "#10b981";
+        } else if (diff === 1 && c1.letter !== c2.letter) {
+            baseScore = 84;
+            label = "Diagonal Armónica";
+            color = "#f59e0b";
+        } else if (diff === 2 && c1.letter === c2.letter) {
+            baseScore = 74;
+            label = "Modulación +2";
+            color = "#eab308";
+        }
+    }
+
+    const b1 = parseFloat(bpm1) || 126;
+    const b2 = parseFloat(bpm2) || 126;
+    const bpmDiff = Math.abs(b1 - b2) / Math.max(1, b1);
+    let bpmMod = 0;
+    if (bpmDiff <= 0.03) bpmMod = 5;
+    else if (bpmDiff <= 0.06) bpmMod = 0;
+    else bpmMod = -15;
+
+    const total = Math.max(20, Math.min(100, baseScore + bpmMod));
+    return { score: total, label, color, isMatch: total >= 78 };
+};
+
+const mapHashInt = (str) => {
+    let h = 0;
+    for (let i = 0; i < (str || '').length; i++) {
+        h = ((h << 5) - h) + str.charCodeAt(i);
+        h |= 0;
+    }
+    return Math.abs(h);
+};
+
+const MapWorkspace = ({
+    tracks: rawTracks = [],
+    onPlayTrack,
+    nowPlayingTrack,
+    isPlaying,
+    onTogglePlay,
+    onNavigateTab,
+    onAddTracksToSet,
+    onSelectDirectory,
+    lang = "es"
+}) => {
+    // Si no hay pistas cargadas en audit, ofrecer catálogo demo interactivo
+    const [useDemo, setUseDemo] = useState(false);
+    const activeTracks = (rawTracks && rawTracks.length > 0) ? rawTracks : (useDemo ? DEMO_MAP_TRACKS : []);
+
+    const [projectionMode, setProjectionMode] = useState('energy_dance'); // 'energy_dance' | 'bpm_energy' | 'camelot_wheel' | 'acoustic_clusters'
+    const [colorMode, setColorMode] = useState('genre'); // 'genre' | 'camelot' | 'energy' | 'quality'
+    const [toolMode, setToolMode] = useState('pan'); // 'pan' | 'lasso' | 'box'
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState('ALL');
+    const [showHarmonicPaths, setShowHarmonicPaths] = useState(true);
+
+    const [selectedTrack, setSelectedTrack] = useState(null);
+    const [selectedMapTracks, setSelectedMapTracks] = useState([]);
+    const [hoveredTrack, setHoveredTrack] = useState(null);
+    const [mouseScreenPos, setMouseScreenPos] = useState({ x: -100, y: -100 });
+
+    const canvasRef = useRef(null);
+    const containerRef = useRef(null);
+    const animRef = useRef(null);
+
+    // Transformación espacial (Pan & Zoom)
+    const transformRef = useRef({
+        scale: 1.0,
+        panX: 0,
+        panY: 0,
+        isDragging: false,
+        dragStartX: 0,
+        dragStartY: 0
+    });
+
+    // Puntos para herramienta de Selección (Lasso / Box)
+    const selectionRef = useRef({
+        isSelecting: false,
+        points: [],
+        boxStart: null
+    });
+
+    // Nodos calculados en memoria con interpolación suave de coordenadas
+    const nodesRef = useRef([]);
+
+    // Actualizar coordenadas de proyección
+    useEffect(() => {
+        const bpms = activeTracks.map(t => parseFloat(t.bpm || t.b) || 126).filter(b => b > 40 && b < 250);
+        const minBpm = bpms.length > 0 ? Math.min(...bpms) : 120;
+        const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 150;
+
+        const genreAngleMap = {
+            "Tech House": 0.25,
+            "Melodic Techno": 1.15,
+            "Afro House": 2.10,
+            "Peak Time Techno": 3.30,
+            "Techno": 3.65,
+            "Deep House": 4.50,
+            "House": 4.90,
+            "Indie Dance": 5.40,
+            "Drum & Bass": 0.80,
+            "Trance": 1.80
+        };
+
+        const existingMap = new Map(nodesRef.current.map(n => [n.id, n]));
+
+        const updatedNodes = activeTracks.map(t => {
+            const id = t.id || t.path || t.filename || `${t.artist}_${t.title}`;
+            const existing = existingMap.get(id);
+
+            const energy = Math.max(10, Math.min(100, parseInt(t.energy !== undefined ? t.energy : (t.e || 75), 10)));
+            const dance = Math.max(10, Math.min(100, parseInt(t.danceability !== undefined ? t.danceability : (t.dance || 80), 10)));
+            const bpm = parseFloat(t.bpm || t.b) || 126.0;
+            const keyStr = (t.key || t.k || '8A').toUpperCase();
+            const genre = t.genre || t.genero || 'Tech House';
+
+            const jX = ((mapHashInt(String(id)) % 80) - 40) * 0.0007;
+            const jY = ((mapHashInt(String(t.artist || '')) % 80) - 40) * 0.0007;
+
+            let targetX = 0.5;
+            let targetY = 0.5;
+
+            if (projectionMode === 'energy_dance') {
+                targetX = 0.10 + 0.80 * (energy / 100.0) + jX;
+                targetY = 0.90 - 0.80 * (dance / 100.0) + jY;
+            } else if (projectionMode === 'bpm_energy') {
+                const bpmNorm = (bpm - minBpm) / Math.max(1, maxBpm - minBpm);
+                targetX = 0.10 + 0.80 * Math.max(0, Math.min(1, bpmNorm)) + jX;
+                targetY = 0.90 - 0.80 * (energy / 100.0) + jY;
+            } else if (projectionMode === 'camelot_wheel') {
+                const ck = parseMapCamelot(keyStr);
+                if (ck) {
+                    const ang = ((ck.num - 1) / 12.0) * Math.PI * 2 - Math.PI / 2;
+                    const r = (ck.letter === 'A' ? 0.32 : 0.44) + ((energy - 50) * 0.0008);
+                    targetX = 0.5 + r * Math.cos(ang) + jX;
+                    targetY = 0.5 + r * Math.sin(ang) + jY;
+                } else {
+                    targetX = 0.5 + jX;
+                    targetY = 0.5 + jY;
+                }
+            } else if (projectionMode === 'acoustic_clusters') {
+                const baseAng = genreAngleMap[genre] !== undefined ? genreAngleMap[genre] : ((mapHashInt(genre) % 360) * Math.PI / 180);
+                const ck = parseMapCamelot(keyStr);
+                const keyOffset = ck ? (ck.num / 12.0) * 0.15 : 0;
+                const r = 0.22 + 0.20 * (energy / 100.0) + keyOffset;
+                targetX = 0.5 + r * Math.cos(baseAng) + jX;
+                targetY = 0.5 + r * Math.sin(baseAng) + jY;
+            }
+
+            // Clamping para no salirse de la zona de lienzo
+            targetX = Math.max(0.04, Math.min(0.96, targetX));
+            targetY = Math.max(0.04, Math.min(0.96, targetY));
+
+            return {
+                id,
+                track: t,
+                currX: existing ? existing.currX : targetX,
+                currY: existing ? existing.currY : targetY,
+                targetX,
+                targetY,
+                energy,
+                danceability: dance,
+                bpm,
+                keyStr,
+                genre
+            };
+        });
+
+        nodesRef.current = updatedNodes;
+    }, [activeTracks, projectionMode]);
+
+    // Bucle de renderizado Canvas en 60 FPS
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        let isRunning = true;
+
+        const render = () => {
+            if (!isRunning) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const w = rect.width;
+            const h = rect.height;
+
+            if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+                canvas.width = Math.floor(w * dpr);
+                canvas.height = Math.floor(h * dpr);
+            }
+
+            ctx.save();
+            ctx.scale(dpr, dpr);
+
+            // Fondo espacial oscuro con gradiente
+            const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, Math.max(w, h));
+            bgGrad.addColorStop(0, '#090a14');
+            bgGrad.addColorStop(1, '#040408');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            const { scale, panX, panY } = transformRef.current;
+
+            // Función para transformar coord normalizada [0..1] a pixel de pantalla
+            const toScreen = (nx, ny) => {
+                const cx = w / 2 + panX;
+                const cy = h / 2 + panY;
+                const sx = cx + (nx - 0.5) * w * scale;
+                const sy = cy + (ny - 0.5) * h * scale;
+                return { x: sx, y: sy };
+            };
+
+            // DIBUJAR CUADRÍCULA Y GUÍAS DE LA PROYECCIÓN
+            ctx.lineWidth = 1;
+            if (projectionMode === 'energy_dance') {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                // Líneas divisorias de cuadrantes
+                const pCenter = toScreen(0.5, 0.5);
+                ctx.beginPath();
+                ctx.moveTo(toScreen(0.1, 0.5).x, pCenter.y);
+                ctx.lineTo(toScreen(0.9, 0.5).x, pCenter.y);
+                ctx.moveTo(pCenter.x, toScreen(0.5, 0.1).y);
+                ctx.lineTo(pCenter.x, toScreen(0.5, 0.9).y);
+                ctx.stroke();
+
+                // Etiquetas sutiles de cuadrantes
+                ctx.font = '10px monospace';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+                ctx.fillText('MAINSTAGE / PEAK TIME (⚡ Alto • 🕺 Alto)', toScreen(0.60, 0.15).x, toScreen(0.60, 0.15).y);
+                ctx.fillText('WARMUP / INTRO (⚡ Bajo • 🕺 Moderado)', toScreen(0.12, 0.85).x, toScreen(0.12, 0.85).y);
+                ctx.fillText('STEADY GROOVE (⚡ Moderado • 🕺 Alto)', toScreen(0.12, 0.15).x, toScreen(0.12, 0.15).y);
+                ctx.fillText('DARK / HEAVY HITTERS (⚡ Alto • 🕺 Moderado)', toScreen(0.58, 0.85).x, toScreen(0.58, 0.85).y);
+
+                // Ejes
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.4)';
+                ctx.fillText('ENERGÍA →', toScreen(0.85, 0.94).x, toScreen(0.85, 0.94).y);
+                ctx.fillText('↑ BAILABILIDAD', toScreen(0.06, 0.08).x, toScreen(0.06, 0.08).y);
+            } else if (projectionMode === 'bpm_energy') {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                [0.2, 0.4, 0.6, 0.8].forEach(pct => {
+                    const sp = toScreen(pct, 0.5);
+                    ctx.beginPath();
+                    ctx.moveTo(sp.x, toScreen(pct, 0.1).y);
+                    ctx.lineTo(sp.x, toScreen(pct, 0.9).y);
+                    ctx.stroke();
+                });
+                ctx.font = '10px monospace';
+                ctx.fillStyle = 'rgba(245, 158, 11, 0.4)';
+                ctx.fillText('TEMPO (BPM) →', toScreen(0.82, 0.94).x, toScreen(0.82, 0.94).y);
+                ctx.fillText('↑ ENERGÍA', toScreen(0.06, 0.08).x, toScreen(0.06, 0.08).y);
+            } else if (projectionMode === 'camelot_wheel') {
+                const cCenter = toScreen(0.5, 0.5);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+                // Círculos concéntricos de anillos Minor (A) y Major (B)
+                const rInner = 0.32 * w * scale;
+                const rOuter = 0.44 * w * scale;
+                ctx.beginPath();
+                ctx.arc(cCenter.x, cCenter.y, rInner, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(cCenter.x, cCenter.y, rOuter, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 12 radios con etiquetas Camelot
+                ctx.font = 'bold 9px monospace';
+                for (let i = 1; i <= 12; i++) {
+                    const ang = ((i - 1) / 12.0) * Math.PI * 2 - Math.PI / 2;
+                    const cosA = Math.cos(ang);
+                    const sinA = Math.sin(ang);
+                    ctx.beginPath();
+                    ctx.moveTo(cCenter.x + cosA * (rInner * 0.4), cCenter.y + sinA * (rInner * 0.4));
+                    ctx.lineTo(cCenter.x + cosA * (rOuter * 1.15), cCenter.y + sinA * (rOuter * 1.15));
+                    ctx.stroke();
+
+                    const lblX = cCenter.x + cosA * (rOuter * 1.12);
+                    const lblY = cCenter.y + sinA * (rOuter * 1.12);
+                    const kColor = MAP_CAMELOT_COLORS[`${i}A`] || '#fff';
+                    ctx.fillStyle = kColor;
+                    ctx.fillText(`${i}A/B`, lblX - 10, lblY + 3);
+                }
+            }
+
+            // ACTUALIZAR INTERPOLACIÓN SUAVE DE LOS NODOS
+            const nodes = nodesRef.current;
+            for (let i = 0; i < nodes.length; i++) {
+                const n = nodes[i];
+                n.currX += (n.targetX - n.currX) * 0.16;
+                n.currY += (n.targetY - n.currY) * 0.16;
+            }
+
+            // TRAYECTORIAS ARMÓNICAS (ENLACES ENTRE COMPATIBLES)
+            const activeRefTrack = hoveredTrack || selectedTrack;
+            if (showHarmonicPaths && activeRefTrack && nodes.length > 0) {
+                const refNode = nodes.find(n => n.id === activeRefTrack.id || n.track.id === activeRefTrack.id);
+                if (refNode) {
+                    const pRef = toScreen(refNode.currX, refNode.currY);
+                    nodes.forEach(n => {
+                        if (n.id === refNode.id) return;
+                        const match = calcHarmonicMixMatch(refNode.keyStr, n.keyStr, refNode.bpm, n.bpm);
+                        if (match.isMatch) {
+                            const pTarget = toScreen(n.currX, n.currY);
+                            ctx.beginPath();
+                            ctx.moveTo(pRef.x, pRef.y);
+                            ctx.lineTo(pTarget.x, pTarget.y);
+                            ctx.strokeStyle = match.score >= 90 ? 'rgba(16, 185, 129, 0.45)' : 'rgba(6, 182, 212, 0.35)';
+                            ctx.lineWidth = match.score >= 90 ? 2 : 1;
+                            ctx.setLineDash([4, 4]);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                        }
+                    });
+                }
+            }
+
+            // DIBUJAR LOS NODOS (PISTAS)
+            const nowPlayingId = nowPlayingTrack ? (nowPlayingTrack.id || nowPlayingTrack.path || nowPlayingTrack.title) : null;
+            const searchLower = searchQuery.trim().toLowerCase();
+            const selectedIdsSet = new Set(selectedMapTracks.map(t => t.id || t.path || t.title));
+
+            nodes.forEach(node => {
+                const pt = toScreen(node.currX, node.currY);
+                // Culling fuera de vista de pantalla
+                if (pt.x < -30 || pt.x > w + 30 || pt.y < -30 || pt.y > h + 30) return;
+
+                const t = node.track;
+                const isNowPlaying = Boolean(nowPlayingTrack && (
+                    nowPlayingTrack.id === t.id ||
+                    (nowPlayingTrack.path && t.path && nowPlayingTrack.path === t.path) ||
+                    (nowPlayingTrack.title === t.title && nowPlayingTrack.artist === t.artist)
+                ));
+                const isHovered = hoveredTrack && (hoveredTrack.id === t.id || hoveredTrack.title === t.title);
+                const isSelectedNode = (selectedTrack && (selectedTrack.id === t.id || selectedTrack.title === t.title)) || selectedIdsSet.has(node.id);
+
+                // Filtro de búsqueda
+                let matchesSearch = true;
+                if (searchLower) {
+                    const textContent = `${t.title} ${t.artist} ${node.genre} ${node.keyStr}`.toLowerCase();
+                    matchesSearch = textContent.includes(searchLower);
+                }
+
+                // Filtro de clave
+                let matchesKey = true;
+                if (selectedKeyFilter !== 'ALL') {
+                    matchesKey = node.keyStr === selectedKeyFilter;
+                }
+
+                const opacity = (matchesSearch && matchesKey) ? 1.0 : 0.12;
+
+                // Color del nodo según modo
+                let nodeColor = '#06b6d4';
+                if (colorMode === 'genre') {
+                    nodeColor = MAP_GENRE_COLORS[node.genre] || '#38bdf8';
+                } else if (colorMode === 'camelot') {
+                    nodeColor = MAP_CAMELOT_COLORS[node.keyStr] || '#a855f7';
+                } else if (colorMode === 'energy') {
+                    const e = node.energy;
+                    nodeColor = e >= 90 ? '#ef4444' : (e >= 75 ? '#f59e0b' : (e >= 50 ? '#06b6d4' : '#3b82f6'));
+                } else if (colorMode === 'quality') {
+                    const isFakeOrBad = t.es_fake || (t.calidad && String(t.calidad).includes('Baja'));
+                    nodeColor = isFakeOrBad ? '#ef4444' : '#10b981';
+                }
+
+                const baseRadius = 5 + (node.energy / 100.0) * 3;
+
+                // Radar Sonar pulsante en la pista que está reproduciéndose
+                if (isNowPlaying) {
+                    const pulseTime = (Date.now() % 1400) / 1400;
+                    const pulseRadius = baseRadius + pulseTime * 28;
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, pulseRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(6, 182, 212, ${1.0 - pulseTime})`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Segundo pulso desfasado
+                    const pulseTime2 = ((Date.now() + 700) % 1400) / 1400;
+                    const pulseRadius2 = baseRadius + pulseTime2 * 28;
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, pulseRadius2, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(245, 158, 11, ${1.0 - pulseTime2})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // Halo de selección o hover
+                if (isHovered || isSelectedNode) {
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, baseRadius + 6, 0, Math.PI * 2);
+                    ctx.fillStyle = isSelectedNode ? 'rgba(251, 191, 36, 0.35)' : 'rgba(6, 182, 212, 0.4)';
+                    ctx.fill();
+                    ctx.strokeStyle = isSelectedNode ? '#fbbf24' : '#06b6d4';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // Punto central
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, isHovered ? baseRadius + 2 : baseRadius, 0, Math.PI * 2);
+                ctx.fillStyle = nodeColor;
+                ctx.globalAlpha = opacity;
+                ctx.fill();
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = isNowPlaying ? '#ffffff' : 'rgba(0, 0, 0, 0.6)';
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+
+                // Rótulo de texto si hay zoom suficiente o está en hover/playing
+                if (isHovered || isNowPlaying || scale >= 1.5) {
+                    ctx.font = 'bold 9px monospace';
+                    ctx.fillStyle = isNowPlaying ? '#38bdf8' : (isHovered ? '#ffffff' : 'rgba(255, 255, 255, 0.65)');
+                    const labelText = `${t.artist ? t.artist.slice(0, 16) : ''} - ${t.title ? t.title.slice(0, 18) : ''}`;
+                    ctx.fillText(labelText, pt.x + baseRadius + 4, pt.y + 3);
+                }
+            });
+
+            // DIBUJAR TRAZADO DE SELECCIÓN (LASSO O CAJA)
+            const sel = selectionRef.current;
+            if (sel.isSelecting) {
+                if (toolMode === 'lasso' && sel.points.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(sel.points[0].x, sel.points[0].y);
+                    for (let i = 1; i < sel.points.length; i++) {
+                        ctx.lineTo(sel.points[i].x, sel.points[i].y);
+                    }
+                    ctx.strokeStyle = '#06b6d4';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 3]);
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(6, 182, 212, 0.15)';
+                    ctx.fill();
+                    ctx.setLineDash([]);
+                } else if (toolMode === 'box' && sel.boxStart && sel.points.length > 0) {
+                    const start = sel.boxStart;
+                    const end = sel.points[sel.points.length - 1];
+                    const bx = Math.min(start.x, end.x);
+                    const by = Math.min(start.y, end.y);
+                    const bw = Math.abs(end.x - start.x);
+                    const bh = Math.abs(end.y - start.y);
+                    ctx.beginPath();
+                    ctx.rect(bx, by, bw, bh);
+                    ctx.strokeStyle = '#06b6d4';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 3]);
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(6, 182, 212, 0.15)';
+                    ctx.fill();
+                    ctx.setLineDash([]);
+                }
+            }
+
+            ctx.restore();
+            animRef.current = requestAnimationFrame(render);
+        };
+
+        animRef.current = requestAnimationFrame(render);
+        return () => {
+            isRunning = false;
+            if (animRef.current) cancelAnimationFrame(animRef.current);
+        };
+    }, [projectionMode, colorMode, toolMode, hoveredTrack, selectedTrack, nowPlayingTrack, showHarmonicPaths, searchQuery, selectedKeyFilter, selectedMapTracks]);
+
+    // Función auxiliar para punto dentro de polígono (Ray Casting)
+    const isPointInPoly = (px, py, poly) => {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            const xi = poly[i].x, yi = poly[i].y;
+            const xj = poly[j].x, yj = poly[j].y;
+            const intersect = ((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    };
+
+    // MANEJADORES DE RATÓN Y GESTOS
+    const handleMouseDown = (e) => {
+        const rect = canvasRef.current.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        if (toolMode === 'pan') {
+            transformRef.current.isDragging = true;
+            transformRef.current.dragStartX = mouseX - transformRef.current.panX;
+            transformRef.current.dragStartY = mouseY - transformRef.current.panY;
+        } else if (toolMode === 'lasso') {
+            selectionRef.current.isSelecting = true;
+            selectionRef.current.points = [{ x: mouseX, y: mouseY }];
+        } else if (toolMode === 'box') {
+            selectionRef.current.isSelecting = true;
+            selectionRef.current.boxStart = { x: mouseX, y: mouseY };
+            selectionRef.current.points = [{ x: mouseX, y: mouseY }];
+        }
+    };
+
+    const handleMouseMove = (e) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        setMouseScreenPos({ x: e.clientX, y: e.clientY });
+
+        if (toolMode === 'pan' && transformRef.current.isDragging) {
+            transformRef.current.panX = mouseX - transformRef.current.dragStartX;
+            transformRef.current.panY = mouseY - transformRef.current.dragStartY;
+            return;
+        }
+
+        if (selectionRef.current.isSelecting) {
+            selectionRef.current.points.push({ x: mouseX, y: mouseY });
+            return;
+        }
+
+        // Búsqueda de nodo bajo el puntero (Hit-Testing)
+        const w = rect.width;
+        const h = rect.height;
+        const { scale, panX, panY } = transformRef.current;
+        const toScreen = (nx, ny) => {
+            const cx = w / 2 + panX;
+            const cy = h / 2 + panY;
+            return { x: cx + (nx - 0.5) * w * scale, y: cy + (ny - 0.5) * h * scale };
+        };
+
+        let found = null;
+        let minDist = 18; // umbral de clic en px
+
+        const nodes = nodesRef.current;
+        for (let i = 0; i < nodes.length; i++) {
+            const n = nodes[i];
+            const pt = toScreen(n.currX, n.currY);
+            const dist = Math.hypot(pt.x - mouseX, pt.y - mouseY);
+            if (dist < minDist) {
+                minDist = dist;
+                found = n.track;
+            }
+        }
+        setHoveredTrack(found);
+    };
+
+    const handleMouseUp = () => {
+        if (toolMode === 'pan') {
+            transformRef.current.isDragging = false;
+        } else if (selectionRef.current.isSelecting) {
+            selectionRef.current.isSelecting = false;
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const w = rect.width;
+            const h = rect.height;
+            const { scale, panX, panY } = transformRef.current;
+            const toScreen = (nx, ny) => {
+                const cx = w / 2 + panX;
+                const cy = h / 2 + panY;
+                return { x: cx + (nx - 0.5) * w * scale, y: cy + (ny - 0.5) * h * scale };
+            };
+
+            const selPoints = selectionRef.current.points;
+            const selected = [];
+
+            if (toolMode === 'lasso' && selPoints.length >= 3) {
+                nodesRef.current.forEach(n => {
+                    const pt = toScreen(n.currX, n.currY);
+                    if (isPointInPoly(pt.x, pt.y, selPoints)) {
+                        selected.push(n.track);
+                    }
+                });
+            } else if (toolMode === 'box' && selectionRef.current.boxStart && selPoints.length > 0) {
+                const start = selectionRef.current.boxStart;
+                const end = selPoints[selPoints.length - 1];
+                const bx = Math.min(start.x, end.x);
+                const by = Math.min(start.y, end.y);
+                const bw = Math.abs(end.x - start.x);
+                const bh = Math.abs(end.y - start.y);
+
+                nodesRef.current.forEach(n => {
+                    const pt = toScreen(n.currX, n.currY);
+                    if (pt.x >= bx && pt.x <= bx + bw && pt.y >= by && pt.y <= by + bh) {
+                        selected.push(n.track);
+                    }
+                });
+            }
+
+            if (selected.length > 0) {
+                setSelectedMapTracks(selected);
+            }
+            selectionRef.current.points = [];
+            selectionRef.current.boxStart = null;
+        }
+    };
+
+    // Zoom con rueda centrado en puntero
+    const handleWheel = (e) => {
+        e.preventDefault();
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
+        const currentScale = transformRef.current.scale;
+        const newScale = Math.max(0.4, Math.min(5.0, currentScale * zoomFactor));
+
+        // Ajustar pan para que el zoom sea hacia el puntero
+        const w = rect.width;
+        const h = rect.height;
+        const cx = w / 2 + transformRef.current.panX;
+        const cy = h / 2 + transformRef.current.panY;
+
+        transformRef.current.panX = mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2;
+        transformRef.current.panY = mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2;
+        transformRef.current.scale = newScale;
+    };
+
+    // Clic en nodo para reproducir o seleccionar
+    const handleClick = () => {
+        if (hoveredTrack) {
+            setSelectedTrack(hoveredTrack);
+            if (onPlayTrack) {
+                onPlayTrack(hoveredTrack, 0, true);
+            }
+        }
+    };
+
+    const handleResetZoom = () => {
+        transformRef.current = {
+            scale: 1.0,
+            panX: 0,
+            panY: 0,
+            isDragging: false,
+            dragStartX: 0,
+            dragStartY: 0
+        };
+    };
+
+    // Métricas del grupo seleccionado mediante Lasso / Caja
+    const selBpmAvg = selectedMapTracks.length > 0
+        ? Math.round(selectedMapTracks.reduce((acc, t) => acc + (parseFloat(t.bpm || t.b) || 126), 0) / selectedMapTracks.length)
+        : 126;
+
+    const selEnergyAvg = selectedMapTracks.length > 0
+        ? Math.round(selectedMapTracks.reduce((acc, t) => acc + (parseInt(t.energy !== undefined ? t.energy : (t.e || 75), 10)), 0) / selectedMapTracks.length)
+        : 80;
+
+    return (
+        <div className="w-full h-full flex flex-col bg-[#07070c] text-white overflow-hidden relative select-none">
+            {/* BARRA SUPERIOR DE HERRAMIENTAS Y CONTROLES DEL MAPA */}
+            <div className="p-3 bg-djzinc-950/90 border-b border-djzinc-800/90 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20 backdrop-blur-md">
+                {/* LADO IZQUIERDO: TÍTULO Y SELECTOR DE PROYECCIÓN ESPACIAL */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-djcyan-400 to-indigo-600 flex items-center justify-center text-black font-black text-sm shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                            <Icons.Map />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-syne font-black text-sm tracking-wider uppercase">SCATTER MAP</span>
+                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 font-bold">
+                                    PAISAJE 2D
+                                </span>
+                            </div>
+                            <span className="text-[10px] text-gray-400 font-mono hidden sm:inline">
+                                Distancia = Compatibilidad Acústica
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* SELECTOR DE PROYECCIÓN DE COORDENADAS */}
+                    <div className="flex items-center bg-djzinc-900 p-0.5 rounded-xl border border-djzinc-800 text-xs font-mono font-bold">
+                        {[
+                            { id: 'energy_dance', label: '⚡ Energía / Dance', title: 'X: Energía (0-100%) vs Y: Bailabilidad (0-100%)' },
+                            { id: 'bpm_energy', label: '🥁 BPM / Energía', title: 'X: Tempo BPM vs Y: Nivel de Energía' },
+                            { id: 'camelot_wheel', label: '☸ Rueda Camelot', title: 'Proyección Radial Armónica 12 Slices Camelot 2D' },
+                            { id: 'acoustic_clusters', label: '🌌 Clusters AI', title: 'Agrupación Multi-dimensional por Género y Timbre' }
+                        ].map(proj => (
+                            <button
+                                key={proj.id}
+                                type="button"
+                                onClick={() => setProjectionMode(proj.id)}
+                                className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                                    projectionMode === proj.id
+                                        ? 'bg-djcyan-500 text-black font-black shadow-md shadow-djcyan-500/20'
+                                        : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                                }`}
+                                title={proj.title}
+                            >
+                                {proj.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* CENTRO: MODO DE COLOR Y HERRAMIENTA ACTIVA (PAN / LASSO / BOX) */}
+                <div className="flex items-center gap-2">
+                    {/* SELECTOR DE PALETA DE COLOR */}
+                    <div className="hidden lg:flex items-center bg-djzinc-900 px-2 py-1 rounded-xl border border-djzinc-800 gap-1.5 text-xs font-mono">
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">Color:</span>
+                        {[
+                            { id: 'genre', label: 'Género' },
+                            { id: 'camelot', label: 'Camelot' },
+                            { id: 'energy', label: 'Energía' },
+                            { id: 'quality', label: 'Calidad' }
+                        ].map(c => (
+                            <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => setColorMode(c.id)}
+                                className={`px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition-colors ${
+                                    colorMode === c.id ? 'bg-djzinc-750 text-djcyan-300' : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                {c.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* SELECTOR DE HERRAMIENTA: NAVEGAR vs LASSO SPATIAL COLLECT */}
+                    <div className="flex items-center bg-djzinc-900 p-0.5 rounded-xl border border-djzinc-800 text-xs font-mono font-bold">
+                        <button
+                            type="button"
+                            onClick={() => setToolMode('pan')}
+                            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors ${
+                                toolMode === 'pan' ? 'bg-djzinc-750 text-white font-black' : 'text-gray-400 hover:text-white'
+                            }`}
+                            title="Modo Navegar: Arrastra el fondo para moverte y usa la rueda para hacer zoom"
+                        >
+                            <span>🖐️</span> <span className="hidden sm:inline">Navegar</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setToolMode('lasso')}
+                            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors ${
+                                toolMode === 'lasso' ? 'bg-amber-500 text-black font-black shadow-md shadow-amber-500/20' : 'text-gray-400 hover:text-amber-300'
+                            }`}
+                            title="Herramienta Lasso: Dibuja a mano alzada para capturar una zona de pistas"
+                        >
+                            <span>✏️</span> <span>Lasso</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setToolMode('box')}
+                            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors ${
+                                toolMode === 'box' ? 'bg-amber-500 text-black font-black shadow-md shadow-amber-500/20' : 'text-gray-400 hover:text-amber-300'
+                            }`}
+                            title="Herramienta Caja: Haz clic y arrastra un rectángulo para seleccionar un grupo"
+                        >
+                            <span>⬚</span> <span className="hidden sm:inline">Caja</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* LADO DERECHO: BUSCADOR EN VIVO Y CONTROLES DE ZOOM */}
+                <div className="flex items-center gap-2">
+                    {/* BUSCADOR */}
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Buscar en mapa..."
+                            className="w-32 sm:w-44 bg-djzinc-900 border border-djzinc-800 rounded-lg pl-6 pr-2 py-1 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-djcyan-500"
+                        />
+                        <span className="absolute left-2 top-1.5 text-[10px] text-gray-500">🔍</span>
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-2 top-1 text-xs text-gray-400 hover:text-white"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+
+                    {/* TOGGLE TRAYECTORIAS ARMÓNICAS */}
+                    <button
+                        type="button"
+                        onClick={() => setShowHarmonicPaths(prev => !prev)}
+                        className={`p-1.5 rounded-lg border text-xs font-mono cursor-pointer transition-colors ${
+                            showHarmonicPaths ? 'bg-djcyan-950/80 text-djcyan-300 border-djcyan-600/60' : 'bg-djzinc-900 text-gray-500 border-djzinc-800'
+                        }`}
+                        title={showHarmonicPaths ? "Ocultar líneas de mezcla armónica" : "Mostrar enlaces armónicos entre pistas compatibles"}
+                    >
+                        ⚡
+                    </button>
+
+                    {/* BOTONES ZOOM */}
+                    <div className="flex items-center bg-djzinc-900 rounded-lg border border-djzinc-800 overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => { transformRef.current.scale = Math.min(5.0, transformRef.current.scale * 1.25); }}
+                            className="px-2 py-1 hover:bg-djzinc-800 text-gray-300 text-xs font-mono cursor-pointer"
+                            title="Acercar (Zoom In)"
+                        >
+                            +
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { transformRef.current.scale = Math.max(0.4, transformRef.current.scale * 0.8); }}
+                            className="px-2 py-1 hover:bg-djzinc-800 text-gray-300 text-xs font-mono cursor-pointer"
+                            title="Alejar (Zoom Out)"
+                        >
+                            -
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleResetZoom}
+                            className="px-2 py-1 hover:bg-djzinc-800 text-djcyan-300 text-[10px] font-mono cursor-pointer border-l border-djzinc-800"
+                            title="Centrar y reajustar mapa"
+                        >
+                            Fit
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* ZONA CENTRAL DEL MAPA INTERACTIVO */}
+            <div ref={containerRef} className="flex-1 w-full h-full relative overflow-hidden bg-black">
+                <canvas
+                    ref={canvasRef}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onWheel={handleWheel}
+                    onClick={handleClick}
+                    className={`w-full h-full block ${
+                        toolMode === 'pan'
+                            ? (transformRef.current.isDragging ? 'cursor-grabbing' : 'cursor-grab')
+                            : 'cursor-crosshair'
+                    }`}
+                />
+
+                {/* BANNER INFORMATIVO SI LA BIBLIOTECA ESTÁ VACÍA */}
+                {activeTracks.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm z-30">
+                        <div className="max-w-md w-full bg-djzinc-950 border border-djzinc-800 p-6 rounded-2xl shadow-2xl text-center">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-djcyan-500 to-indigo-600 flex items-center justify-center text-black text-2xl mx-auto mb-4 shadow-[0_0_25px_rgba(6,182,212,0.4)]">
+                                🌌
+                            </div>
+                            <h3 className="font-syne font-black text-lg text-white mb-2">
+                                Explora tu Biblioteca como un Paisaje Espacial
+                            </h3>
+                            <p className="text-xs text-gray-400 font-mono mb-5 leading-relaxed">
+                                Scatter Map posiciona cada pista según su energía, danza, BPM y tonalidad. La proximidad espacial revela qué temas mezclan naturalmente juntos.
+                            </p>
+                            <div className="flex flex-col gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setUseDemo(true)}
+                                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all"
+                                >
+                                    ⚡ Cargar Demo Electrónica (16 Tracks)
+                                </button>
+                                {onSelectDirectory && (
+                                    <button
+                                        type="button"
+                                        onClick={onSelectDirectory}
+                                        className="w-full py-2.5 px-4 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs cursor-pointer active:scale-95 transition-all"
+                                    >
+                                        📂 Abrir Carpeta de Música Local
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* HUD FLOTANTE TRASLÚCIDO AL PASAR EL RATÓN SOBRE UNA PISTA */}
+                {hoveredTrack && (
+                    <div
+                        className="fixed pointer-events-none z-50 bg-[#0c0d16]/95 border border-djzinc-700/80 p-3 rounded-xl shadow-2xl backdrop-blur-xl max-w-xs animate-fadeIn font-mono text-xs"
+                        style={{
+                            left: Math.min(window.innerWidth - 280, mouseScreenPos.x + 16),
+                            top: Math.min(window.innerHeight - 200, mouseScreenPos.y + 16)
+                        }}
+                    >
+                        <div className="flex items-center gap-2.5 mb-2">
+                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-djzinc-800 shrink-0 border border-djzinc-700/60 shadow">
+                                {hoveredTrack.cover ? (
+                                    <img src={hoveredTrack.cover} alt="Cover" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">🎵</div>
+                                )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="font-bold text-white text-xs truncate">
+                                    {hoveredTrack.artist || 'Desconocido'}
+                                </div>
+                                <div className="text-djcyan-300 font-medium text-[11px] truncate">
+                                    {hoveredTrack.title || 'Sin Título'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-[10px] bg-djzinc-900/80 p-2 rounded-lg border border-djzinc-800 mb-2">
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-5 h-5 rounded flex items-center justify-center font-black text-black text-[9px]" style={{ backgroundColor: MAP_CAMELOT_COLORS[hoveredTrack.key || '8A'] || '#06b6d4' }}>
+                                    {hoveredTrack.key || '8A'}
+                                </span>
+                                <span className="text-gray-300 font-bold">{hoveredTrack.bpm ? parseFloat(hoveredTrack.bpm).toFixed(1) : '126.0'} BPM</span>
+                            </div>
+                            <div className="flex items-center justify-end text-gray-400 truncate">
+                                <span>{hoveredTrack.genre || 'Tech House'}</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1 mb-2">
+                            <div className="flex items-center justify-between text-[9px]">
+                                <span className="text-gray-400">⚡ Energía</span>
+                                <span className="text-amber-400 font-bold">{hoveredTrack.energy !== undefined ? hoveredTrack.energy : 80}%</span>
+                            </div>
+                            <div className="w-full h-1 bg-djzinc-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-amber-500 to-rose-500 rounded-full" style={{ width: `${hoveredTrack.energy !== undefined ? hoveredTrack.energy : 80}%` }}></div>
+                            </div>
+                        </div>
+
+                        <div className="text-[9px] text-djcyan-400 text-center font-bold">
+                            ▶ Haz clic para reproducir en Deck
+                        </div>
+                    </div>
+                )}
+
+                {/* DRAWER FLOTANTE DE SELECCIÓN DE ZONA ("COLLECT FROM SPACE") */}
+                {selectedMapTracks.length > 0 && (
+                    <div className="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[620px] bg-[#0c0d16]/95 border border-amber-500/50 p-3.5 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.25)] backdrop-blur-xl z-40 animate-slideUp font-mono">
+                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-djzinc-800/80">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                <span className="text-xs font-bold text-white">
+                                    Zona Seleccionada: <span className="text-amber-300 font-black">{selectedMapTracks.length} pistas</span>
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedMapTracks([])}
+                                className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-djzinc-800 cursor-pointer"
+                            >
+                                ✕ Deseleccionar
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                            <div className="flex items-center gap-3 text-[11px] text-gray-400">
+                                <span>🥁 Promedio: <strong className="text-white">{selBpmAvg} BPM</strong></span>
+                                <span>⚡ Energía: <strong className="text-amber-300">{selEnergyAvg}%</strong></span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (selectedMapTracks.length > 0 && onPlayTrack) {
+                                            onPlayTrack(selectedMapTracks[0], 0, true);
+                                        }
+                                    }}
+                                    className="px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-white text-xs font-bold border border-djzinc-700 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                                    title="Reproducir primer tema de la zona capturada"
+                                >
+                                    <span>▶</span> <span>Reproducir Zona</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (onAddTracksToSet) {
+                                            onAddTracksToSet(selectedMapTracks);
+                                        }
+                                    }}
+                                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer active:scale-95 transition-all"
+                                    title="Enviar pistas capturadas en esta zona directamente al Set Builder"
+                                >
+                                    <span>⚡</span> <span>Enviar a Set Builder</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 // =========================================================================
 // ESPACIO DE TRABAJO: CONOCIMIENTO (CURSOS, VÍDEOS Y MANUALES DJ)
@@ -21743,6 +22804,23 @@ const App = () => {
                         </button>
                         <button 
                             type="button"
+                            onClick={() => setActiveTab('map')} 
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                                activeTab === 'map' 
+                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
+                            }`}
+                            title="Scatter Map: Paisaje espacial 2D de compatibilidad musical de toda tu biblioteca"
+                        >
+                            <Icons.Map /> <span>{t('nav_tab_map') || 'Map'}</span>
+                            {auditTracks && auditTracks.length > 0 && (
+                                <span className={`px-1 py-0.2 rounded text-[9px] font-mono ${activeTab === 'map' ? 'bg-black/30 text-black font-black' : 'bg-djzinc-800 text-djcyan-300'}`}>
+                                    {auditTracks.length}
+                                </span>
+                            )}
+                        </button>
+                        <button 
+                            type="button"
                             onClick={() => setActiveTab('spotify')} 
                             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
                                 activeTab === 'spotify' 
@@ -22015,6 +23093,23 @@ const App = () => {
                         lang={lang}
                     />
                 </div>
+                <div style={{ display: activeTab === 'map' ? 'flex' : 'none' }} className="w-full h-full">
+                    <MapWorkspace 
+                        tracks={auditTracks}
+                        onPlayTrack={handlePlayTrack}
+                        nowPlayingTrack={nowPlayingTrack}
+                        isPlaying={isPlaying}
+                        onTogglePlay={togglePlayPause}
+                        onNavigateTab={setActiveTab}
+                        onAddTracksToSet={(newTracks) => {
+                            if (!newTracks || newTracks.length === 0) return;
+                            setSetBuilderTracks(prev => [...prev, ...newTracks]);
+                            setActiveTab('setbuilder');
+                        }}
+                        onSelectDirectory={() => handleCargarDirectorio()}
+                        lang={lang}
+                    />
+                </div>
                 <div style={{ display: activeTab === 'knowledge' ? 'flex' : 'none' }} className="w-full h-full">
                     <KnowledgeWorkspace lang={lang} />
                 </div>
@@ -22282,6 +23377,7 @@ const App = () => {
                                 { id: 'audit', icon: <Icons.Library />, label: 'Auditar' },
                                 { id: 'hotcues', icon: <Icons.Cue />, label: 'Cues' },
                                 { id: 'setbuilder', icon: <Icons.Flow />, label: 'Set Builder' },
+                                { id: 'map', icon: <Icons.Map />, label: 'Scatter Map' },
                                 { id: 'spotify', icon: <Icons.Spotify />, label: 'Download' },
                                 { id: 'shazam', icon: <Icons.Radar />, label: 'Radar' },
                                 { id: 'taxonomy', icon: <Icons.Routing />, label: 'Taxonomia' },
