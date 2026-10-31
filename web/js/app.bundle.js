@@ -78,6 +78,7 @@ const I18N_TRANSLATIONS = {
     nav_tab_crates: "Crates",
     nav_tab_trends: "Trends",
     nav_tab_guides: "Gu\xEDas",
+    nav_manual: "Manual",
     nav_shortcuts: "Atajos",
     nav_club_mode: "Club",
     nav_normal_mode: "Normal",
@@ -233,6 +234,7 @@ const I18N_TRANSLATIONS = {
     nav_tab_crates: "Crates",
     nav_tab_trends: "Trends",
     nav_tab_guides: "Guides",
+    nav_manual: "Manual",
     nav_shortcuts: "Shortcuts",
     nav_club_mode: "Club",
     nav_normal_mode: "Normal",
@@ -3274,6 +3276,355 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
         className: "px-4 py-1.5 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-white font-mono text-xs font-bold transition-colors cursor-pointer"
       },
       "Entendido (ESC)"
+    ))
+  ));
+};
+const MANUAL_SECTIONS = {
+  copilot: {
+    id: "copilot",
+    tabId: "copilot",
+    title: "Live Copilot en Cabina",
+    badge: "COPILOT",
+    color: "#ef4444",
+    gradient: "from-red-500 to-rose-600",
+    tag: "SERATO LINK & ANTI-MUDDY DSP EN VIVO",
+    hook: "Ese momento en el que la pista est\xE1 en \xE9xtasis... y la mezcla se vuelve una bola de graves ininteligible.",
+    story: "T\xEDo, esc\xFAchame bien: a todos los DJs nos ha pasado estar en plena sesi\xF3n en un club o festival con un equipo de 20.000W, meter dos temas que sobre el papel encajaban de lujo... y de repente notar que la m\xFAsica se 'ahoga'. El p\xFAblico no sabe de frecuencias, pero siente que el bombo ya no pega y la gente empieza a pararse. \xBFQu\xE9 ha ocurrido? Dos bombos de 50 Hz sonando a la vez se cancelan por fase en los graves o saturan el procesador del local. Live Copilot es literalmente tener a tu colega t\xE9cnico de sonido de gira al lado tuya en la cabina. Se conecta a Serato en tiempo real con cero latencia, analiza lo que tienes en el Deck 1 y lo que est\xE1s cargando en el Deck 2, y antes de que abras el fader te avisa en rojo brillante: '\xA1Ojo, corta el EQ Low del tema saliente!' o '\xA1Sube 1.8 dB de trim al entrante!'. Vas a cabina con una tranquilidad y una pegada que parece que lleves 20 a\xF1os pinchando en los mejores festivales del mundo.",
+    jargon: [
+      { term: "Anti-Muddy DSP", desc: "La zona entre 30Hz y 100Hz es sagrada. Si dos bombos o subbajos suenan a la vez en esa banda, las ondas colisionan y el sonido se convierte en 'barro'. Nuestro algoritmo detecta esa colisi\xF3n ac\xFAstica y te indica exactamente qu\xE9 EQ recortar." },
+      { term: "Diferencial LUFS", desc: "Un tema masterizado en 2024 viene comprimido a -6 LUFS, mientras que un cl\xE1sico de 2005 suena a -10 LUFS. El Copilot calcula el desnivel exacto en decibelios para que ajustes la ganancia (Trim) antes de abrir el fader." },
+      { term: "Serato Link Invisible", desc: "Monitoriza los metadatos y la reproducci\xF3n de Serato directamente desde la memoria del sistema sin cables adicionales ni retraso alguno (0 latencia)." }
+    ],
+    steps: [
+      "1. Abre Live Copilot en modo embebido dentro de BeatWave o como ventana secundaria flotante para tu segundo monitor.",
+      "2. Carga dos canciones en Serato o en tu software DJ habitual; ver\xE1s c\xF3mo los v\xFAmetros y roles espectrales se sincronizan al instante.",
+      "3. F\xEDjate en el radar central: si aparece en verde '\u2728 Mezcla Limpia', abre fader sin miedo; si salta la alerta roja '\u26A0\uFE0F Choque de Subgraves', recorta el ecualizador Low del canal saliente.",
+      "4. Ajusta la ganancia siguiendo la recomendaci\xF3n de Trim para que ambos temas entren con el mismo impacto sonoro."
+    ],
+    proTip: "No te f\xEDes nunca de la ganancia autom\xE1tica de tu software DJ. El o\xEDdo humano percibe el volumen seg\xFAn la escala LUFS (rango din\xE1mico integrado). Si Copilot te marca '+1.8 dB', sube ese toque de ganancia antes de soltar el drop: el tema nuevo entrar\xE1 con la misma pegada que el que estaba sonando.",
+    simulationSteps: [
+      { label: "Deck 1 & 2 Activos", desc: "Detecci\xF3n instant\xE1nea de pistas en cabina con lectura de BPM, tonalidad y espectro", focus: "decks" },
+      { label: "An\xE1lisis Anti-Muddy", desc: "El motor DSP compara las frecuencias bajas (<100Hz) en busca de cancelaciones de fase", focus: "dsp" },
+      { label: "Alerta T\xE1ctica en Rojo", desc: "Aviso en cabina: '\u26A0\uFE0F Choque de Subgraves \u2014 Bajar EQ Low Deck 1'", focus: "alert" },
+      { label: "Mezcla Optimizada", desc: "Tras ecualizar, el radar pasa a verde '\u2728 Mezcla Limpia y Contundente'", focus: "clean" }
+    ]
+  },
+  audit: {
+    id: "audit",
+    tabId: "audit",
+    title: "Diagn\xF3stico DSP, Fakes & Calidad",
+    badge: "AUDITAR",
+    color: "#06b6d4",
+    gradient: "from-cyan-500 to-blue-600",
+    tag: "ESPECTROGRAMA FFT & RECHAZO DE TRANSCODES FALSOS",
+    hook: "\xBFSeguro que ese archivo que te descargaste como 'FLAC 24-bit Lossless' es de verdad sonido de alta fidelidad?",
+    story: "Colega, prep\xE1rate para flipar con esto: en internet hay toneladas de m\xFAsica que te venden o regalan como 'WAV Master' o 'FLAC 24-bit 1411 kbps' y resulta que son una estafa total. Alguien cogi\xF3 un audio comprimido de YouTube a 128 kbps y lo guard\xF3 con extensi\xF3n .flac para engordar el archivo. En tus auriculares del m\xF3vil parece que suena bien, pero cuando lo tiras en los altavoces de un club... \xA1sorpresa!: agudos met\xE1licos distorsionados, platos que suenan como siseos y un bajo sin definici\xF3n. Con AUDITAR, pasas tu colecci\xF3n entera en segundos. Nuestro motor ejecuta una Transformada R\xE1pida de Fourier (FFT) matem\xE1tica directa sobre las frecuencias reales: te dibuja la radiograf\xEDa del tema y te dice con precisi\xF3n milim\xE9trica si llega a 22kHz (Lossless Real) o si tiene un corte de tijera a 16kHz (MP3 falso). Con un solo clic puedes purgar y mandar a cuarentena toda la morralla de baja calidad.",
+    jargon: [
+      { term: "Espectrograma FFT", desc: "Es la radiograf\xEDa de las frecuencias de la m\xFAsica. En un tema de calidad de estudio las frecuencias llegan limpias hasta los 20.000 - 22.000 Hz. En un MP3 barato mueren en los 16.000 Hz." },
+      { term: "Brickwall Cutoff (Corte Muro)", desc: "El algoritmo de compresi\xF3n MP3 elimina de golpe todo lo que est\xE1 por encima de un umbral para ahorrar espacio. BeatWave detecta esa l\xEDnea de corte artificial al instante." },
+      { term: "Lossless Certification PASS", desc: "El sello verde que garantiza que el archivo tiene rango din\xE1mico completo y que puedes pincharlo en el escenario m\xE1s grande del mundo sin miedo a que suene a lata." }
+    ],
+    steps: [
+      "1. Pulsa '\u{1F4C2} Abrir' y selecciona tu carpeta de m\xFAsica (por ejemplo 'mi musica' o tus descargas recientes).",
+      "2. Haz clic en '\u26A1 Auditar Todo' en la barra central; el motor analizar\xE1 BPM exacto, Tonalidad Camelot, corte FFT y LUFS.",
+      "3. Revisa la columna 'Calidad': las pistas verdes son Lossless 100% aut\xE9nticas; las rojas indican 'P\xE9rdida Severa / Transcode Falso'.",
+      "4. Pulsa '\u{1F5D1}\uFE0F Purgar Fakes' para borrar las pistas que no cumplen el est\xE1ndar o ll\xE9vatelas con un clic a la pesta\xF1a POOL para descargarlas en FLAC aut\xE9ntico."
+    ],
+    proTip: "Si una canci\xF3n de tu biblioteca tiene corte por debajo de 16kHz, b\xF3rrala sin dudarlo. En un sistema de sonido profesional, pinchar un transcode falso da\xF1a la experiencia del p\xFAblico y hace que la cabina suene amateur. Usa el bot\xF3n de auditar siempre antes de cada fin de semana.",
+    simulationSteps: [
+      { label: "Ingesta de Pistas", desc: "Carga simult\xE1nea de 12 canciones locales con lectura de cabeceras ID3 y duraci\xF3n", focus: "ingest" },
+      { label: "Radiograf\xEDa FFT", desc: "El motor ac\xFAstico descompone el espectro de 20 Hz a 24.000 Hz en tiempo real", focus: "fft" },
+      { label: "Detecci\xF3n de Fake", desc: "L\xEDnea de corte detectada en 16 kHz: marcado autom\xE1tico como 'P\xE9rdida Severa'", focus: "fake" },
+      { label: "Purga y Reemplazo", desc: "Un clic para enviar fakes a cuarentena o llevarlos a la cola de reemplazo SuperFLAC", focus: "purge" }
+    ]
+  },
+  hotcues: {
+    id: "hotcues",
+    tabId: "hotcues",
+    title: "Preparaci\xF3n Quir\xFArgica de Fraseo & Cues",
+    badge: "CUES",
+    color: "#f59e0b",
+    gradient: "from-amber-400 to-orange-500",
+    tag: "8 HOT CUES AUTOM\xC1TICOS & FRASEO DE 32 TIEMPOS",
+    hook: "\xBFCu\xE1nto tiempo de tu vida has perdido poniendo Hot Cues a mano, tema por tema, comp\xE1s por comp\xE1s?",
+    story: "Pi\xE9nsalo un segundo: si tienes 300 canciones nuevas para el fin de semana, ponerle 8 cues a cada una escuchando la intro, buscando el drop y ajustando el beatgrid te lleva f\xE1cilmente 6 o 7 horas de trabajo mon\xF3tono. Con el motor de CUES de BeatWave le das a un bot\xF3n y en segundos tienes colocadas las 8 marcas est\xE1ndar de cabina en los puntos matem\xE1ticos exactos del tema: Cue 1 en el Downbeat de arranque, Cue 2 en la entrada del ritmo, Cue 3 en el Breakdown mel\xF3dico, Cue 5 en el Build-up y Cue 7 en el Drop principal. Lo mejor es que respeta el fraseo musical de 32 tiempos: cuando est\xE1s pinchando en directo, lanzas el Cue 1 del tema entrante en el Cue 5 del saliente y la mezcla cuadra perfecta como un guante sin tocar nada. Te ahorras semanas enteras de trabajo t\xE9cnico.",
+    jargon: [
+      { term: "Downbeat (Primer Golpe)", desc: "El golpe n\xFAmero 1 del primer comp\xE1s de la canci\xF3n. Es el inicio del ciclo de energ\xEDa. Si pones el cue en el tiempo 2 o 3, todo el tema ir\xE1 cojo." },
+      { term: "Fraseo Musical (32 Beats)", desc: "La m\xFAsica electr\xF3nica se compone en bloques de 32 tiempos (8 compases de 4/4). Los cambios de sonido (entra un bajo, entra un sintetizador, rompe el drop) siempre ocurren en m\xFAltiplos de 32." },
+      { term: "Codificaci\xF3n de Color Serato/CDJ", desc: "Cada tipo de cue tiene su color est\xE1ndar de la industria (Verde para intros, Naranja para breakdowns, Rojo para drops de m\xE1xima energ\xEDa)." }
+    ],
+    steps: [
+      "1. Entra en CUES o pulsa el bot\xF3n '8 Cues' en la barra de cualquier pista auditada.",
+      "2. Selecciona tu perfil de mapeo: 'Club Mainstage' (enfocado a drops explosivos) o 'Extended Journey' (enfocado a transiciones largas).",
+      "3. Haz clic en '\u26A1 Generar 8 Hot Cues Inteligentes'.",
+      "4. Observa c\xF3mo se colocan las 8 banderas sobre la forma de onda; puedes ajustar milim\xE9tricamente cualquier punto o exportarlos directamente a Serato y Rekordbox."
+    ],
+    proTip: "Usa el Cue 3 (Breakdown) como tu punto de salvaci\xF3n en directo: si est\xE1s en cabina y ves que te est\xE1s quedando sin tiempo en el tema saliente, salta directamente al Cue 3 del tema nuevo; como entra sin bombos agresivos, la transici\xF3n quedar\xE1 superlimpia y tendr\xE1s 32 tiempos de relax para preparar la siguiente mezcla.",
+    simulationSteps: [
+      { label: "Detecci\xF3n de Downbeat", desc: "El analizador localiza el comp\xE1s 1.1 exacto donde arranca la energ\xEDa r\xEDtmica", focus: "downbeat" },
+      { label: "Mapeo de 32 Tiempos", desc: "C\xE1lculo de la estructura musical en m\xFAltiplos de 8 compases (32 / 64 beats)", focus: "phrasing" },
+      { label: "Inyecci\xF3n de 8 Cues", desc: "Asignaci\xF3n de banderas con colores oficiales para Pioneer CDJ y Serato", focus: "cues" },
+      { label: "Exportaci\xF3n Directa", desc: "Guardado permanente en las etiquetas ID3 y metadatos de cabina", focus: "export" }
+    ]
+  },
+  setbuilder: {
+    id: "setbuilder",
+    tabId: "setbuilder",
+    title: "Set Builder, Graph Playlists & Asesor AI",
+    badge: "SETS",
+    color: "#a855f7",
+    gradient: "from-purple-500 to-indigo-600",
+    tag: "DJOID DAG GRAPH & ASESOR GOOGLE GEMINI 2.5 FLASH",
+    hook: "Una sesi\xF3n de DJ nunca es una l\xEDnea recta. \xBFPor qu\xE9 tus playlists siguen si\xE9ndolo?",
+    story: "Hermano, preparar un set ordenando canciones de arriba a abajo es cosa del pasado. En una cabina real la pista est\xE1 viva: a veces tienes que subir el tempo porque el p\xFAblico est\xE1 euf\xF3rico, y a veces tienes que desviar la sesi\xF3n hacia un rollo m\xE1s deep. Inspirado en las revolucionarias Graph Playlists de DJOID, nuestro Set Builder convierte tu sesi\xF3n en un mapa no lineal (grafo DAG). En cada paso, BeatWave analiza tu biblioteca y te despliega ramas alternativas compatibles arm\xF3nicamente. Y cuando tengas el borrador de tu set, pulsas 'Auditar con Gemini AI': el motor de inteligencia artificial con Google Gemini 2.5 Flash y DSP ac\xFAstico eval\xFAa la progresi\xF3n de tu sesi\xF3n, te da una nota del 0 al 100, detecta si vas a tener choques tonales y te propone 'pistas puente' de tu propio disco para salvar transiciones imposibles. Te hace sonar como si hubieras ensayado la sesi\xF3n durante meses.",
+    jargon: [
+      { term: "Grafo Dirigido Ac\xEDclico (DAG)", desc: "Una red visual de nodos donde cada canci\xF3n tiene un camino principal y ramas alternativas para bifurcar tu sesi\xF3n en vivo si la pista reacciona de forma diferente." },
+      { term: "Pistas Puente (Harmonic Bridges)", desc: "Si quieres pasar de una pista 8A a una 3A (que chocar\xEDan como dos trenes), el motor busca en tu colecci\xF3n un tema intermedio que module la tonalidad de forma elegante y natural." },
+      { term: "Curva de Progresi\xF3n de BPM", desc: "El lienzo visual que dibuja la pendiente de tempo y energ\xEDa de tu set para asegurar que la sesi\xF3n va 'in crescendo' y no pega bajones involuntarios." }
+    ],
+    steps: [
+      "1. A\xF1ade canciones al set arrastr\xE1ndolas o usa '\u{1F4C1} A\xF1adir Carpeta' para cargar un lote completo de m\xFAsica.",
+      "2. Cambia a la pesta\xF1a '\u{1F578}\uFE0F Graph Playlists (DJOID)' para ver el mapa de transiciones y alternativas de mezcla recomendadas.",
+      "3. Pulsa '\u{1F916} Asesor AI & Calidad' para que Gemini AI audite el flujo global de la sesi\xF3n.",
+      "4. Revisa las 3 propuestas autom\xE1ticas de sesi\xF3n ('Escalada Peak-Time', 'Viaje Arm\xF3nico Continuo', 'Onda Din\xE1mica') y apl\xEDcalas con un solo clic si te convencen."
+    ],
+    proTip: "Presta especial atenci\xF3n al Score Arm\xF3nico global. Un set con una puntuaci\xF3n superior al 85% crea un efecto hipn\xF3tico en el p\xFAblico: la gente no puede parar de bailar porque las melod\xEDas y notas de los temas parecen pertenecer a una misma obra sinf\xF3nica continua.",
+    simulationSteps: [
+      { label: "Construcci\xF3n de Secuencia", desc: "Curva continua de BPM y energ\xEDa renderizada en lienzo interactivo sin saltos", focus: "curve" },
+      { label: "Bifurcaciones DAG", desc: "Alternativas arm\xF3nicas desplegadas paso a paso con botones de sustituci\xF3n r\xE1pida", focus: "dag" },
+      { label: "Auditor\xEDa Gemini AI", desc: "Google Gemini eval\xFAa el flujo de la sesi\xF3n generando un score del 0 al 100%", focus: "ai" },
+      { label: "Puentes Autom\xE1ticos", desc: "Inserci\xF3n con 1 clic de canciones intermedias para resolver choques tonales", focus: "bridges" }
+    ]
+  },
+  map: {
+    id: "map",
+    tabId: "map",
+    title: "Scatter Map 2D & Rueda de Camelot",
+    badge: "MAP",
+    color: "#14b8a6",
+    gradient: "from-teal-400 to-cyan-500",
+    tag: "PAISAJE ESPACIAL 2D & HARDWARE FADER ZOOM",
+    hook: "\xBFAlguna vez has tenido miles de temas en el disco duro y la sensaci\xF3n de que siempre acabas poniendo los mismos?",
+    story: "Mirar carpetas con listas interminables de texto apaga tu creatividad. El Scatter Map 2D transforma tu biblioteca en un universo espacial interactivo donde la distancia f\xEDsica equivale a compatibilidad ac\xFAstica: los temas que est\xE1n cerca en la pantalla mezclan de forma natural y org\xE1nica. Tienes una Rueda de Camelot circular al 60% de transparencia con car\xE1tulas de alta definici\xF3n dentro de cada nodo, controles tipo mesa de mezclas con cruceta anal\xF3gica para desplazarte de forma continua, y un Fader de Zoom de tacto anal\xF3gico. Puedes agarrar la herramienta Lasso (l\xE1piz), rodear un racimo de 8 temas que te gusten c\xF3mo vibran juntos y mandarlos directamente a tu sesi\xF3n. Es la forma m\xE1s visual, divertida y r\xE1pida de redescubrir joyas ocultas en tu propia m\xFAsica.",
+    jargon: [
+      { term: "Rueda de Camelot (1A - 12A / 1B - 12B)", desc: "El mapa definitivo de mezcla arm\xF3nica. Las 'A' son escalas menores (oscuras, introspectivas), las 'B' son mayores (luminosas, euf\xF3ricas). Los n\xFAmeros adyacentes (8 a 9, 8 a 7) combinan sin disonancia arm\xF3nica." },
+      { term: "Herramienta Lasso / Spatial Collect", desc: "Te permite dibujar libremente un c\xEDrculo sobre la pantalla para capturar todas las pistas de un \xE1rea de energ\xEDa espec\xEDfica y exportarlas en bloque." },
+      { term: "Proyecci\xF3n Multi-Dimensional", desc: "Algoritmo que sit\xFAa en el eje X la energ\xEDa y en el eje Y la bailabilidad, o proyecta los temas radialmente seg\xFAn su tonalidad." }
+    ],
+    steps: [
+      "1. Entra en MAP; ver\xE1s todas tus canciones flotando como orbes en un lienzo espacial oscuro.",
+      "2. Usa el selector superior para cambiar la proyecci\xF3n: '\u26A1 Energ\xEDa / Dance', '\u{1F941} BPM / Energ\xEDa' o '\u2638 Rueda Camelot'.",
+      "3. Haz clic en cualquier tema: se iluminar\xE1 su tonalidad exacta en la Rueda de Camelot superior y ver\xE1s encenderse en verde sus vecinas compatibles.",
+      "4. Dale a '\u25B6 Escuchar Preview' para preescucharla, o usa la cruceta y el fader de zoom de la derecha para explorar el mapa con total fluidez."
+    ],
+    proTip: "Usa la herramienta Lasso en la esquina superior derecha del mapa (zona Peak Time: alta energ\xEDa y alta bailabilidad) para armar en 30 segundos la hora dorada de tu set del s\xE1bado por la noche.",
+    simulationSteps: [
+      { label: "Constelaci\xF3n Espacial", desc: "Pistas proyectadas en 2D donde la cercan\xEDa f\xEDsica representa afinidad ac\xFAstica", focus: "constellation" },
+      { label: "Rueda Camelot 60%", desc: "Sectores tonales iluminados con compatibilidad arm\xF3nica adyacente (+1, -1, Modo)", focus: "camelot" },
+      { label: "Hardware Fader & D-Pad", desc: "Desplazamiento suave continuo mediante cruceta anal\xF3gica y zoom de precisi\xF3n", focus: "fader" },
+      { label: "Selecci\xF3n Lasso", desc: "Captura de racimos de temas con herramienta de dibujo libre y env\xEDo directo a Set", focus: "lasso" }
+    ]
+  },
+  spotify: {
+    id: "spotify",
+    tabId: "spotify",
+    title: "SuperFLAC Lossless Ingest & Pool",
+    badge: "POOL",
+    color: "#10b981",
+    gradient: "from-emerald-400 to-teal-500",
+    tag: "DESCARGA CERTIFICADA 24-BIT & REPRODUCTOR A/B",
+    hook: "\xBFTienes playlists de Spotify con temazos brutales pero no puedes pincharlos con calidad profesional en cabina?",
+    story: "Todos los DJs descubrimos m\xFAsica en Spotify, en la radio o en listas de amigos, pero pinchar desde streaming en un club es jug\xE1rsela a cortes de internet, sin contar con que los ripeos de baja calidad suenan desastrosos. El m\xF3dulo POOL resuelve esto para siempre: pegas el enlace de cualquier canci\xF3n, \xE1lbum o playlist de Spotify (o buscas por texto), y nuestro motor SuperFLAC localiza el m\xE1ster original en cat\xE1logo audi\xF3filo y lo descarga en FLAC Lossless aut\xE9ntico de 24 o 16 bits. Y aqu\xED viene lo que ninguna otra app del mercado hace: inmediatamente al descargarse, el motor le pasa una auditor\xEDa FFT autom\xE1tica para certificar que el archivo tiene frecuencias intactas hasta los 22kHz, y te ofrece un Reproductor A/B de Pre-escucha Dual para que compares tu tema local viejo con la nueva descarga en alta resoluci\xF3n antes de reemplazarlo. Es calidad de audio pura sin trampas.",
+    jargon: [
+      { term: "FLAC Hi-Res 24-Bit Master", desc: "Formato de compresi\xF3n sin p\xE9rdida (Lossless) con una profundidad de 24 bits y rango din\xE1mico de 144 dB, id\xE9ntico al master original de estudio." },
+      { term: "Pre-escucha Dual A/B", desc: "Dos botones de reproducci\xF3n simult\xE1neos que te permiten alternar en tiempo real entre la versi\xF3n que ya ten\xEDas en tu disco y la nueva versi\xF3n descargada para verificar que es la versi\xF3n extendida correcta." },
+      { term: "Inyecci\xF3n de Metadatos ID3v2.4", desc: "Escribe autom\xE1ticamente la car\xE1tula oficial en 1400x1400px, el nombre correcto del artista, el \xE1lbum, a\xF1o y el g\xE9nero oficial en las etiquetas del archivo." }
+    ],
+    steps: [
+      "1. Pega un enlace de canci\xF3n, playlist o \xE1lbum de Spotify en la barra de b\xFAsqueda (o escribe artista y t\xEDtulo) y pulsa 'Buscar / Analizar'.",
+      "2. Selecciona tu formato deseado: 'FLAC Hi-Res (24b Master)' o 'FLAC Lossless'.",
+      "3. Haz clic en '\u2B07\uFE0F Descargar' y observa la barra de progreso en streaming.",
+      "4. Al completarse, la pista se audita autom\xE1ticamente por FFT y queda guardada con car\xE1tula HD en tu carpeta de m\xFAsica de cabina."
+    ],
+    proTip: "Si en la auditor\xEDa tienes canciones marcadas en rojo como 'Mala Calidad', usa el bot\xF3n 'Llevar Reemplazos HD a Pool'. Te las importar\xE1 en bloque para que las sustituyas por copias Lossless impecables sin tener que buscarlas una por una.",
+    simulationSteps: [
+      { label: "B\xFAsqueda o Link", desc: "Resoluci\xF3n de cat\xE1logo de Spotify con localizaci\xF3n de m\xE1ster de estudio en SuperFLAC", focus: "search" },
+      { label: "Streaming Lossless", desc: "Descarga segura en FLAC 24-bit / 16-bit con gesti\xF3n din\xE1mica de tokens CSRF", focus: "download" },
+      { label: "Auditor\xEDa FFT en Vuelo", desc: "Certificaci\xF3n espectral instant\xE1nea para garantizar 0% transcodificaci\xF3n falsa", focus: "cert" },
+      { label: "Comparativa Dual A/B", desc: "Pre-escucha en vivo alternando entre la copia local antigua y el nuevo m\xE1ster HD", focus: "ab" }
+    ]
+  },
+  radar: {
+    id: "radar",
+    tabId: "radar",
+    title: "Radar Ac\xFAstico & Tendencias Globales",
+    badge: "RADAR",
+    color: "#6366f1",
+    gradient: "from-indigo-500 to-purple-600",
+    tag: "TRACKLIST SCANNER & MICRO-G\xC9NEROS EMERGENTES",
+    hook: "Los DJs corrientes pinchan lo que ya es famoso. Los headliners pinchan lo que va a ser famoso dentro de tres meses.",
+    story: "El p\xFAblico de club tiene un sexto sentido: cuando un tema se ha puesto mil veces en TikTok o en la radio, pierde frescura. La magia de ser DJ reside en la curadur\xEDa, en esa sensaci\xF3n de poner un track desconocido y que toda la pista levante los brazos pregunt\xE1ndose: '\xBFQu\xE9 temazo es este?'. El Radar Ac\xFAstico de BeatWave es tu antena parab\xF3lica hacia el futuro de la electr\xF3nica. Escanea tendencias de festivales como Tomorrowland, Sonar y Creamfields, monitoriza charts de 1001Tracklists y detecta micro-g\xE9neros emergentes antes de que tengan nombre oficial. Te da recomendaciones precisas basadas en los estilos de tu biblioteca para que tu maleta de temas sea siempre \xFAnica e insustituible.",
+    jargon: [
+      { term: "\xCDndice de Velocidad de Tendencia", desc: "Mide el crecimiento porcentual de inclusiones de una canci\xF3n en sets de DJs internacionales durante los \xFAltimos 14 d\xEDas." },
+      { term: "Micro-g\xE9neros Ac\xFAsticos", desc: "Clasificaciones de nicho (como Afro-Melodic, Acid Trance Revival o Raw Peak-Time) que definen la vibra exacta de una sesi\xF3n mejor que etiquetas gen\xE9ricas como 'House' o 'Techno'." },
+      { term: "Previsi\xF3n de \xC9xito de Pista", desc: "Puntuaci\xF3n calculada seg\xFAn la energ\xEDa r\xEDtmica y la acogida en cabinas profesionales para predecir si un tema funcionar\xE1 como bombazo de pista." }
+    ],
+    steps: [
+      "1. Entra en RADAR y observa el escaneo radial de g\xE9neros activos en festivales y clubes.",
+      "2. Explora las tarjetas de tendencias por estilo (Melodic, Tech House, Afro, Peak Time).",
+      "3. Escucha la pre-escucha r\xE1pida de los temas en ascenso que encajan con los BPMs de tu biblioteca.",
+      "4. A\xF1ade los descubrimientos a tu cola de descargas de POOL o directamente a tu Set Builder con un solo clic."
+    ],
+    proTip: "Dedica 15 minutos cada jueves a mirar el Radar. Descubrir dos o tres temas exclusivos antes del fin de semana es la diferencia entre ser un DJ m\xE1s del cartel o ser el que se lleva las felicitaciones del promotor y del p\xFAblico al terminar la noche.",
+    simulationSteps: [
+      { label: "Escaneo Global", desc: "Monitorizaci\xF3n de sesiones en festivales internacionales y charts especializados", focus: "scan" },
+      { label: "Mapeo de Micro-G\xE9neros", desc: "Detecci\xF3n de corrientes emergentes antes de su difusi\xF3n comercial masiva", focus: "genres" },
+      { label: "Afinidad con tu Maleta", desc: "Filtrado autom\xE1tico de canciones que combinan con tu rango de BPM habitual", focus: "match" },
+      { label: "1-Click Curation", desc: "Env\xEDo directo de pistas a la cola de descargas o al Set Builder", focus: "curate" }
+    ]
+  },
+  crates: {
+    id: "crates",
+    tabId: "taxonomy",
+    title: "Taxonom\xEDa & Pasaporte Universal DJ",
+    badge: "CRATES",
+    color: "#f97316",
+    gradient: "from-orange-500 to-amber-600",
+    tag: "PASAPORTE UNIVERSAL 1-CLIC & CRATE BUILDER",
+    hook: "\xBFTienes que pinchar ma\xF1ana con Rekordbox y tu m\xFAsica est\xE1 organizada en Serato? Bienvenido al infierno... hasta hoy.",
+    story: "El dolor de cabeza n\xFAmero uno de cualquier DJ profesional es la incompatibilidad de formatos. Te pasas meses creando crates y carpetas en Serato DJ; de repente te contratan en un festival donde hay cabinas con reproductores Pioneer CDJ-3000 y necesitas un pendrive exportado con Rekordbox... y tienes que volver a hacer las listas a mano una por una, perdiendo horas de sue\xF1o. Con el bot\xF3n Pasaporte Universal DJ de BeatWave se acabaron las pesadillas: un solo clic y tu colecci\xF3n se exporta y sincroniza autom\xE1ticamente hacia Serato Crates (.crate), Pioneer Rekordbox (.xml), Native Instruments Traktor (.nml) y VirtualDJ (.m3u). Da igual la cabina a la que vayas, da igual el equipo que haya: tu m\xFAsica, tus g\xE9neros y tu estructura van siempre contigo.",
+    jargon: [
+      { term: "Estructura Binaria .crate de Serato", desc: "Archivos propietarios que Serato guarda en su subcarpeta oculta de usuario. BeatWave genera directamente estos archivos binarios sin necesidad de abrir la aplicaci\xF3n." },
+      { term: "Rekordbox XML Interoperability", desc: "El formato de intercambio profesional est\xE1ndar que leen las librer\xEDas de Pioneer DJ para sincronizar hot cues, tonalidades y carpetas a pendrives USB." },
+      { term: "Taxonom\xEDa de 2 Niveles (G\xE9nero / Subg\xE9nero)", desc: "Organizaci\xF3n en dos capas (ej. Tech House $\rightarrow$ Latin Groove / Acid Tech) para encontrar cualquier canci\xF3n en menos de 5 segundos en cabina." }
+    ],
+    steps: [
+      "1. Entra en CRATES / TAXONOM\xCDA para visualizar tu \xE1rbol jer\xE1rquico de estilos y energ\xEDa.",
+      "2. Clasifica o filtra tus pistas por G\xE9nero, Subg\xE9nero o Rol Ac\xFAstico (Bass Driver, Vocal Lead, Percussive Tool).",
+      "3. Despliega el men\xFA '\u{1F680} Exportar' en la esquina superior derecha.",
+      "4. Pulsa '\u{1F6C2} Pasaporte Universal DJ': BeatWave inyectar\xE1 simult\xE1neamente los crates en Serato, Rekordbox, Traktor y VDJ en cuesti\xF3n de segundos."
+    ],
+    proTip: "Organiza tus crates por momentos de la noche (01_Warmup, 02_PeakTime, 03_Afterhours) en lugar de solo por g\xE9neros musicales. Cuando la pista te pida subir la intensidad a las 3:00 AM, sabr\xE1s exactamente a qu\xE9 crate acudir sin dudar un milisegundo.",
+    simulationSteps: [
+      { label: "\xC1rbol Jer\xE1rquico", desc: "Organizaci\xF3n en dos capas: G\xE9nero musical principal y Subg\xE9nero timbral", focus: "tree" },
+      { label: "Roles Ac\xFAsticos", desc: "Clasificaci\xF3n espectral: Bass Driver, Vocal Lead, Percussive Tool, Balanced", focus: "roles" },
+      { label: "Pasaporte Universal", desc: "Traducci\xF3n simult\xE1nea hacia Serato, Rekordbox XML, Traktor NML y VirtualDJ", focus: "passport" },
+      { label: "Cabina Ready", desc: "Pendrives USB y librer\xEDas de software listos para pinchar en cualquier club", focus: "ready" }
+    ]
+  }
+};
+const InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onNavigateTab, lang = "es" }) => {
+  if (!isOpen) return null;
+  const [activeSectionKey, setActiveSectionKey] = useState(initialSection || "audit");
+  const [simStep, setSimStep] = useState(0);
+  const [isSimPlaying, setIsSimPlaying] = useState(true);
+  const [spotlightZoom, setSpotlightZoom] = useState(true);
+  const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit;
+  useEffect(() => {
+    if (!isSimPlaying) return;
+    const timer = setInterval(() => {
+      setSimStep((prev) => (prev + 1) % 4);
+    }, 3200);
+    return () => clearInterval(timer);
+  }, [isSimPlaying, activeSectionKey]);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+  const renderVisualSimulator = () => {
+    const stepInfo = activeSec.simulationSteps && activeSec.simulationSteps[simStep] || { label: "Paso Activo", desc: "Simulaci\xF3n en curso", focus: "default" };
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col h-full justify-between gap-3 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 p-2 rounded-xl bg-[#0d0e1a] border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsSimPlaying((prev) => !prev),
+        className: `w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${isSimPlaying ? "bg-pink-600 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]" : "bg-djzinc-800 text-gray-300 hover:text-white"}`,
+        title: isSimPlaying ? "Pausar simulaci\xF3n" : "Reproducir simulaci\xF3n continua"
+      },
+      isSimPlaying ? "\u23F8" : "\u25B6"
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, [0, 1, 2, 3].map((st) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: st,
+        type: "button",
+        onClick: () => {
+          setSimStep(st);
+          setIsSimPlaying(false);
+        },
+        className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${simStep === st ? "bg-pink-500 text-black shadow-sm" : "bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800"}`
+      },
+      "P",
+      st + 1
+    )))), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSpotlightZoom((prev) => !prev),
+        className: `px-2 py-1 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all ${spotlightZoom ? "bg-pink-950 text-pink-300 border border-pink-700/80 shadow-[0_0_8px_rgba(236,72,153,0.3)]" : "bg-djzinc-900 text-gray-500 border border-djzinc-800"}`,
+        title: "Alternar modo Lente & Spotlight Zoom"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u{1F50D}"),
+      /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "Zoom Lente")
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-[240px] rounded-2xl bg-gradient-to-b from-[#090a14] to-[#040407] border border-djzinc-800 relative overflow-hidden flex flex-col items-center justify-center p-3 shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[linear-gradient(to_right,#131422_1px,transparent_1px),linear-gradient(to_bottom,#131422_1px,transparent_1px)] bg-[size:24px_24px] opacity-40" }), /* @__PURE__ */ React.createElement("div", { className: `w-full h-full flex flex-col justify-center items-center relative z-10 transition-transform duration-500 ${spotlightZoom ? "scale-105" : "scale-100"}` }, activeSec.id === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-sm flex flex-col gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "p-2.5 rounded-xl bg-djzinc-900/90 border border-cyan-500/50 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-cyan-300 font-bold mb-1" }, /* @__PURE__ */ React.createElement("span", null, "DECK 1 (MASTER)"), /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-pulse" })), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate" }, "Artbat - Return"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-2 text-[9px] text-gray-400 font-mono" }, /* @__PURE__ */ React.createElement("span", null, "126.0 BPM"), /* @__PURE__ */ React.createElement("span", { className: "px-1 bg-amber-400 text-black font-black rounded" }, "8A")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-950 h-2 rounded-full mt-2 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "bg-cyan-400 h-full w-[82%] animate-pulse" }))), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 rounded-xl bg-djzinc-900/90 border border-pink-500/50 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-pink-300 font-bold mb-1" }, /* @__PURE__ */ React.createElement("span", null, "DECK 2 (CUE)"), /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-pink-400 animate-ping" })), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate" }, "Anyma - Eternity"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-2 text-[9px] text-gray-400 font-mono" }, /* @__PURE__ */ React.createElement("span", null, "126.0 BPM"), /* @__PURE__ */ React.createElement("span", { className: "px-1 bg-amber-400 text-black font-black rounded" }, "9A")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-950 h-2 rounded-full mt-2 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "bg-pink-500 h-full w-[74%] animate-pulse" })))), /* @__PURE__ */ React.createElement("div", { className: `p-3 rounded-xl border text-center font-mono text-xs font-bold transition-all duration-300 ${simStep >= 2 ? "bg-rose-950/80 border-rose-500 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.4)] animate-pulse" : "bg-emerald-950/80 border-emerald-500 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]"}` }, simStep >= 2 ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("span", null, "CHOQUE DE SUBGRAVES: CORTAR EQ LOW DECK 1")) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "\u2728"), /* @__PURE__ */ React.createElement("span", null, "MEZCLA ARM\xD3NICA PERFECTA (8A \u2794 9A)")))), activeSec.id === "audit" && /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-sm flex flex-col gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/90 border border-djzinc-750 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] mb-2 font-bold" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Espectrograma FFT Comparativo"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400" }, "20Hz - 22kHz")), /* @__PURE__ */ React.createElement("div", { className: "mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-[9px] text-emerald-400 mb-1" }, /* @__PURE__ */ React.createElement("span", null, "FLAC Lossless 24-bit Genuino"), /* @__PURE__ */ React.createElement("span", null, "Techo 22.05 kHz \u2713")), /* @__PURE__ */ React.createElement("div", { className: "h-6 w-full rounded bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-400 flex items-center justify-end pr-2 text-[8px] font-black text-black" }, "RANGO COMPLETO")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-[9px] text-rose-400 mb-1" }, /* @__PURE__ */ React.createElement("span", null, "Fake Transcode MP3 128k"), /* @__PURE__ */ React.createElement("span", { className: "animate-pulse" }, "Corte Muro en 16 kHz \u2715")), /* @__PURE__ */ React.createElement("div", { className: "h-6 w-full rounded bg-gradient-to-r from-rose-600 via-amber-600 to-transparent border-r-4 border-rose-500 flex items-center justify-start pl-2 text-[8px] font-black text-white relative" }, /* @__PURE__ */ React.createElement("span", null, "RECHAZADO"), /* @__PURE__ */ React.createElement("span", { className: "absolute right-1 text-[8px] font-mono text-rose-400 font-bold" }, "16 kHz CUTOFF")))), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded-xl bg-cyan-950/70 border border-cyan-600 text-center text-[10px] font-mono text-cyan-200 font-bold" }, "\u2713 Purgadas 4 pistas con transcode falso \u2022 100% Colecci\xF3n Certificada")), activeSec.id === "hotcues" && /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-sm flex flex-col gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/90 border border-amber-500/40 relative" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] text-amber-300 font-bold mb-2" }, /* @__PURE__ */ React.createElement("span", null, "TIMELINE WAVEFORM 128 BPM"), /* @__PURE__ */ React.createElement("span", null, "FRASEO: 32 BEATS")), /* @__PURE__ */ React.createElement("div", { className: "h-10 w-full bg-[#0a0a14] rounded-lg relative overflow-hidden flex items-center border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 opacity-60 w-full animate-pulse" }), /* @__PURE__ */ React.createElement("div", { className: "absolute left-[10%] top-1 bottom-1 w-0.5 bg-emerald-400 z-20 flex flex-col justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "px-1 py-0.2 bg-emerald-500 text-black text-[7px] font-black rounded -ml-2" }, "1 CUE")), /* @__PURE__ */ React.createElement("div", { className: "absolute left-[35%] top-1 bottom-1 w-0.5 bg-amber-400 z-20 flex flex-col justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "px-1 py-0.2 bg-amber-500 text-black text-[7px] font-black rounded -ml-2" }, "3 BRK")), /* @__PURE__ */ React.createElement("div", { className: "absolute left-[65%] top-1 bottom-1 w-0.5 bg-purple-400 z-20 flex flex-col justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "px-1 py-0.2 bg-purple-500 text-black text-[7px] font-black rounded -ml-2" }, "5 BLD")), /* @__PURE__ */ React.createElement("div", { className: "absolute left-[85%] top-1 bottom-1 w-0.5 bg-rose-500 z-20 flex flex-col justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "px-1 py-0.2 bg-rose-500 text-white text-[7px] font-black rounded -ml-2" }, "7 DROP")), /* @__PURE__ */ React.createElement("div", { className: "absolute left-[65%] h-full w-1 bg-white shadow-[0_0_10px_#ffffff] z-30 animate-ping" }))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-4 gap-1.5 text-center text-[9px] font-bold" }, /* @__PURE__ */ React.createElement("div", { className: "p-1.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-800" }, "1: Downbeat"), /* @__PURE__ */ React.createElement("div", { className: "p-1.5 rounded-lg bg-amber-950 text-amber-300 border border-amber-800" }, "3: Breakdown"), /* @__PURE__ */ React.createElement("div", { className: "p-1.5 rounded-lg bg-purple-950 text-purple-300 border border-purple-800" }, "5: Snare Roll"), /* @__PURE__ */ React.createElement("div", { className: "p-1.5 rounded-lg bg-rose-950 text-rose-300 border border-rose-800" }, "7: Main Drop"))), activeSec.id === "setbuilder" && /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-sm flex flex-col gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/90 border border-purple-800/60 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] text-purple-300 font-bold mb-2" }, /* @__PURE__ */ React.createElement("span", null, "DJOID GRAPH PLAYLIST (DAG)"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 bg-purple-950 text-purple-200 border border-purple-700 rounded-full" }, "Score AI: 96%")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 p-2 bg-[#090912] rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-full bg-cyan-500 text-black font-black text-xs flex items-center justify-center shadow-[0_0_12px_#06b6d4]" }, "8A"), /* @__PURE__ */ React.createElement("span", { className: "text-[8px] text-gray-400 mt-1" }, "Track 1")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[8px] text-emerald-400 font-bold" }, "100% Match"), /* @__PURE__ */ React.createElement("div", { className: "w-full h-0.5 bg-gradient-to-r from-cyan-400 via-emerald-400 to-purple-400" })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-full bg-purple-600 text-white font-black text-xs flex items-center justify-center shadow-[0_0_12px_#9333ea]" }, "9A"), /* @__PURE__ */ React.createElement("span", { className: "text-[8px] text-gray-400 mt-1" }, "Track 2")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[8px] text-amber-400 font-bold" }, "Rama Alt"), /* @__PURE__ */ React.createElement("div", { className: "w-full h-0.5 bg-dashed border-t border-amber-400" })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-full bg-amber-500 text-black font-black text-xs flex items-center justify-center shadow-[0_0_12px_#f59e0b]" }, "9B"), /* @__PURE__ */ React.createElement("span", { className: "text-[8px] text-gray-400 mt-1" }, "Alt Path")))), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded-xl bg-purple-950/80 border border-purple-700 text-center text-[10px] text-purple-200 font-bold" }, '\u26A1 Google Gemini 2.5 Flash: "Progresi\xF3n fluida sin disonancias detectadas"')), activeSec.id === "map" && /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-sm flex flex-col gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/90 border border-teal-700/60 shadow-lg relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] text-teal-300 font-bold mb-2" }, /* @__PURE__ */ React.createElement("span", null, "CONSTELACI\xD3N AC\xDASTICA 2D"), /* @__PURE__ */ React.createElement("span", { className: "text-teal-400 font-bold" }, "Lasso Active")), /* @__PURE__ */ React.createElement("div", { className: "h-28 w-full bg-[#05060b] rounded-lg relative overflow-hidden border border-djzinc-800 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "absolute left-[20%] top-[30%] w-6 h-6 rounded-full bg-emerald-500 text-black text-[8px] font-black flex items-center justify-center shadow-[0_0_10px_#10b981]" }, "8A"), /* @__PURE__ */ React.createElement("div", { className: "absolute left-[45%] top-[20%] w-7 h-7 rounded-full bg-cyan-500 text-black text-[9px] font-black flex items-center justify-center shadow-[0_0_12px_#06b6d4] animate-pulse" }, "9A"), /* @__PURE__ */ React.createElement("div", { className: "absolute left-[70%] top-[60%] w-6 h-6 rounded-full bg-purple-600 text-white text-[8px] font-black flex items-center justify-center shadow-[0_0_10px_#9333ea]" }, "10A"), /* @__PURE__ */ React.createElement("div", { className: "absolute left-[35%] top-[70%] w-5 h-5 rounded-full bg-amber-500 text-black text-[7px] font-black flex items-center justify-center shadow-[0_0_8px_#f59e0b]" }, "8B"), /* @__PURE__ */ React.createElement("svg", { className: "absolute inset-0 w-full h-full pointer-events-none" }, /* @__PURE__ */ React.createElement("path", { d: "M 40 40 Q 140 10 220 50 T 150 100 Z", fill: "rgba(6,182,212,0.15)", stroke: "#06b6d4", strokeWidth: "1.5", strokeDasharray: "3 3" })))), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded-xl bg-teal-950/80 border border-teal-700 text-center text-[10px] text-teal-200 font-bold" }, "\u{1F3A1} Rueda Camelot al 60% Alpha & Hardware D-Pad Fader Navigation")), activeSec.id === "spotify" && /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-sm flex flex-col gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/90 border border-emerald-700/60 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] text-emerald-300 font-bold mb-2" }, /* @__PURE__ */ React.createElement("span", null, "SUPERFLAC LOSSLESS STREAM INGEST"), /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded" }, "24-BIT")), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-[#06060c] rounded-lg border border-djzinc-800 text-[10px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-gray-300" }, /* @__PURE__ */ React.createElement("span", null, "Pista: Cassian - Save Me"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, "FLAC 24b \u2713")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-900 h-2 rounded-full mt-1.5 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "bg-emerald-400 h-full w-[100%] animate-pulse" }))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-center text-[9px] font-bold" }, /* @__PURE__ */ React.createElement("button", { type: "button", className: "p-1.5 rounded bg-djzinc-800 text-gray-400 border border-djzinc-700" }, "A: Local (MP3 128k)"), /* @__PURE__ */ React.createElement("button", { type: "button", className: "p-1.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.3)]" }, "B: SuperFLAC (24-bit) \u2713")))), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded-xl bg-emerald-950/80 border border-emerald-700 text-center text-[10px] text-emerald-200 font-bold" }, "\u2713 FFT Verificada al vuelo \u2022 Car\xE1tula oficial 1400x1400 inyectada")), activeSec.id === "radar" && /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-sm flex flex-col gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/90 border border-indigo-700/60 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] text-indigo-300 font-bold mb-2" }, /* @__PURE__ */ React.createElement("span", null, "RADAR AC\xDASTICO GLOBAL"), /* @__PURE__ */ React.createElement("span", { className: "text-indigo-400 font-bold" }, "Tomorrowland Scanner")), /* @__PURE__ */ React.createElement("div", { className: "h-28 w-full bg-[#05060d] rounded-lg relative overflow-hidden border border-djzinc-800 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-24 h-24 rounded-full border border-indigo-800/60 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-16 h-16 rounded-full border border-indigo-700/50 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-full border border-indigo-600/40" }))), /* @__PURE__ */ React.createElement("div", { className: "absolute w-12 h-12 bg-gradient-to-tr from-indigo-500/30 to-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", { className: "absolute text-[9px] font-bold text-indigo-300 px-2 py-0.5 bg-indigo-950/80 rounded border border-indigo-700" }, "+340% Afro Melodic"))), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded-xl bg-indigo-950/80 border border-indigo-700 text-center text-[10px] text-indigo-200 font-bold" }, "\u{1F4E1} Detecci\xF3n de micro-g\xE9neros 3 meses antes de llegar al mainstream")), activeSec.id === "crates" && /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-sm flex flex-col gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/90 border border-orange-700/60 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] text-orange-300 font-bold mb-2" }, /* @__PURE__ */ React.createElement("span", null, "PASAPORTE UNIVERSAL 1-CLIC"), /* @__PURE__ */ React.createElement("span", { className: "text-orange-400 font-bold" }, "MULTI-CABINA")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-[10px] font-bold text-center" }, /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded bg-orange-950/80 text-orange-200 border border-orange-700 flex items-center justify-center gap-1.5 shadow-sm" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4BD}"), " ", /* @__PURE__ */ React.createElement("span", null, "Serato Crates \u2713")), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded bg-cyan-950/80 text-cyan-200 border border-cyan-700 flex items-center justify-center gap-1.5 shadow-sm" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7}"), " ", /* @__PURE__ */ React.createElement("span", null, "Rekordbox XML \u2713")), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded bg-indigo-950/80 text-indigo-200 border border-indigo-700 flex items-center justify-center gap-1.5 shadow-sm" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39A}\uFE0F"), " ", /* @__PURE__ */ React.createElement("span", null, "Traktor NML \u2713")), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded bg-emerald-950/80 text-emerald-200 border border-emerald-700 flex items-center justify-center gap-1.5 shadow-sm" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3B5}"), " ", /* @__PURE__ */ React.createElement("span", null, "VirtualDJ M3U \u2713")))), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded-xl bg-orange-950/80 border border-orange-700 text-center text-[10px] text-orange-200 font-bold" }, "\u{1F6C2} Un solo clic: Tu m\xFAsica sincronizada en todos los softwares sin rehacer listas"))), /* @__PURE__ */ React.createElement("div", { className: "w-full mt-2 pt-2 border-t border-djzinc-800/80 flex items-center justify-between text-[10px] font-mono z-10" }, /* @__PURE__ */ React.createElement("span", { className: "text-pink-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping" }), /* @__PURE__ */ React.createElement("span", null, stepInfo.label)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 truncate max-w-[200px]" }, stepInfo.desc))));
+  };
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn", onClick: onClose }, /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      className: "w-full max-w-6xl h-[92vh] max-h-[900px] bg-[#090912] border border-pink-500/50 rounded-3xl shadow-[0_0_50px_rgba(236,72,153,0.3)] overflow-hidden flex flex-col font-sans text-gray-200",
+      onClick: (e) => e.stopPropagation()
+    },
+    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0d18] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0" }, "\u{1F4D6}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "BEATWAVE PRO \u2022 MANUAL MAESTRO DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold" }, "GU\xCDA MASTERCLASS"))), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans hidden sm:block" }, "Domina cada herramienta al 100%, entiende los secretos ac\xFAsticos y prep\xE1rate para sonar impecable en cualquier club."))), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: onClose,
+        className: "w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer",
+        title: "Cerrar manual (ESC)"
+      },
+      "\u2715"
+    )),
+    /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-[#07070d] border-b border-djzinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0" }, Object.values(MANUAL_SECTIONS).map((sec) => {
+      const isActive = activeSectionKey === sec.id;
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: sec.id,
+          type: "button",
+          onClick: () => {
+            setActiveSectionKey(sec.id);
+            setSimStep(0);
+          },
+          className: `px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${isActive ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-105" : "bg-djzinc-900/80 text-gray-400 hover:text-white hover:bg-djzinc-800 border border-djzinc-800"}`
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: sec.color } }),
+        /* @__PURE__ */ React.createElement("span", null, sec.badge)
+      );
+    })),
+    /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 sm:p-6 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "lg:col-span-7 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black text-white", style: { backgroundColor: activeSec.color } }, activeSec.badge), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400 uppercase tracking-wider font-bold" }, activeSec.tag)), /* @__PURE__ */ React.createElement("h2", { className: "text-xl font-mono font-black text-white mt-1" }, activeSec.title), /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-pink-950/30 border border-pink-900/50 text-pink-300 font-sans text-xs italic font-medium leading-relaxed mt-1" }, '"', activeSec.hook, '"')), /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-djzinc-900/70 border border-djzinc-800 text-xs font-sans text-gray-300 leading-relaxed space-y-2" }, /* @__PURE__ */ React.createElement("p", null, activeSec.story)), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4A1}"), " ", /* @__PURE__ */ React.createElement("span", null, "Conceptos Clave Explicados F\xE1cilmente")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-2" }, activeSec.jargon.map((jg, jIdx) => /* @__PURE__ */ React.createElement("div", { key: jIdx, className: "p-3 rounded-xl bg-djzinc-950 border border-djzinc-800/90 text-xs font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "font-mono font-bold text-pink-300 mb-0.5 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-pink-400" }), /* @__PURE__ */ React.createElement("span", null, jg.term)), /* @__PURE__ */ React.createElement("p", { className: "text-gray-400 leading-relaxed text-[11px]" }, jg.desc))))), /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-[#0b0c16] border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F6E0}\uFE0F"), " ", /* @__PURE__ */ React.createElement("span", null, "Flujo de Trabajo Paso a Paso")), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 text-xs font-sans text-gray-300" }, activeSec.steps.map((st, sIdx) => /* @__PURE__ */ React.createElement("div", { key: sIdx, className: "flex items-start gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-pink-400 font-bold shrink-0" }, "\u2713"), /* @__PURE__ */ React.createElement("span", { className: "leading-snug" }, st))))), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/40 to-djzinc-900 border border-amber-600/40 text-xs font-sans text-amber-200 flex items-start gap-2.5 shadow-md" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, "\u{1F451}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("strong", { className: "font-mono uppercase tracking-wider text-amber-300 block text-[11px] mb-0.5" }, "Secreto Pro de Cabina"), /* @__PURE__ */ React.createElement("p", { className: "text-gray-300 leading-relaxed" }, activeSec.proTip))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 pb-4" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          if (onNavigateTab) {
+            onNavigateTab(activeSec.tabId);
+          }
+          onClose();
+        },
+        className: "w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.4)] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u{1F680}"),
+      /* @__PURE__ */ React.createElement("span", null, "Abrir e Ir a la Secci\xF3n ", activeSec.badge, " Ahora")
+    ))), /* @__PURE__ */ React.createElement("div", { className: "lg:col-span-5 flex flex-col gap-3 min-h-[360px] bg-[#07070e] border border-djzinc-800 rounded-2xl p-4 shadow-inner relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-pink-500 animate-ping" }), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase text-white tracking-wider" }, "Simulaci\xF3n Interactiva")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 uppercase" }, "Visual Studio 60 FPS")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0" }, renderVisualSimulator()))),
+    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[11px] hidden sm:inline" }, "Presiona ", /* @__PURE__ */ React.createElement("kbd", { className: "px-1.5 py-0.5 bg-djzinc-900 border border-djzinc-750 rounded text-gray-300" }, "ESC"), " o haz clic fuera para volver a la cabina."), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onClose,
+        className: "px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer ml-auto"
+      },
+      "Entendido"
     ))
   ));
 };
@@ -15629,6 +15980,29 @@ const App = () => {
   const [tutorialInitialMode, setTutorialInitialMode] = useState("launcher");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [copilotModalOpen, setCopilotModalOpen] = useState(false);
+  const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [manualSection, setManualSection] = useState("audit");
+  const handleOpenManual = (section = null) => {
+    const secMap = {
+      "audit": "audit",
+      "copilot": "copilot",
+      "hotcues": "hotcues",
+      "cues": "hotcues",
+      "setbuilder": "setbuilder",
+      "sets": "setbuilder",
+      "map": "map",
+      "spotify": "spotify",
+      "pool": "spotify",
+      "radar": "radar",
+      "crates": "crates",
+      "taxonomy": "crates",
+      "trends": "radar",
+      "knowledge": "radar"
+    };
+    const target = section && secMap[section] ? secMap[section] : secMap[activeTab] || "audit";
+    setManualSection(target);
+    setManualModalOpen(true);
+  };
   const [clubMode, setClubMode] = useState(() => {
     try {
       return localStorage.getItem("bw_club_mode") === "true";
@@ -16011,11 +16385,25 @@ const App = () => {
         }
       }
       if (e.key === "Escape") {
+        if (manualModalOpen) {
+          e.preventDefault();
+          setManualModalOpen(false);
+          return;
+        }
         if (shortcutsModalOpen) {
           e.preventDefault();
           setShortcutsModalOpen(false);
           return;
         }
+      }
+      if (e.key === "F1") {
+        e.preventDefault();
+        if (manualModalOpen) {
+          setManualModalOpen(false);
+        } else {
+          handleOpenManual(activeTab);
+        }
+        return;
       }
       if (e.key === "?" || e.key === "h" && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
@@ -16079,7 +16467,7 @@ const App = () => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nowPlayingTrack, currentTrack, auditTracks, selectedTrack, shortcutsModalOpen, togglePlayPause, handlePlayTrack, handleCue, handleFooterSeek, toggleClubMode]);
+  }, [nowPlayingTrack, currentTrack, auditTracks, selectedTrack, shortcutsModalOpen, manualModalOpen, activeTab, togglePlayPause, handlePlayTrack, handleCue, handleFooterSeek, toggleClubMode]);
   const handleRemoveTrackGlobal = (trackId) => {
     if (!trackId && trackId !== 0) return;
     setAuditTracks((prev) => prev.filter((t2) => String(t2.id) !== String(trackId) && t2.path !== trackId));
@@ -16316,6 +16704,16 @@ const App = () => {
     /* @__PURE__ */ React.createElement("span", null, "\u{1F576}\uFE0F"),
     /* @__PURE__ */ React.createElement("span", { className: "hidden 2xl:inline text-[11px]" }, clubMode ? t("nav_club_mode") || "Club" : t("nav_normal_mode") || "Normal"),
     /* @__PURE__ */ React.createElement("kbd", { className: "text-[9px] bg-black/40 px-1 py-0.2 rounded border border-djzinc-750" }, "L")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleOpenManual(activeTab),
+      className: "px-2.5 py-1 rounded-lg bg-gradient-to-r from-pink-500 via-rose-500 to-pink-500 hover:from-pink-400 hover:to-rose-400 text-white font-mono font-black text-xs shadow-[0_0_15px_rgba(236,72,153,0.5)] border border-pink-400/80 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0",
+      title: "Manual Interactivo & Masterclass BeatWave Pro (F1)"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4D6}"),
+    /* @__PURE__ */ React.createElement("span", { className: "tracking-wider" }, t("nav_manual") || "MANUAL")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -16674,6 +17072,18 @@ const App = () => {
       type: "button",
       onClick: () => {
         setMobileDrawerOpen(false);
+        handleOpenManual(activeTab);
+      },
+      className: "flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-pink-950/70 text-xs font-mono text-pink-300 border border-pink-500/50 text-left hover:bg-pink-900/80 cursor-pointer shadow-[0_0_12px_rgba(236,72,153,0.3)] font-bold"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4D6}"),
+    /* @__PURE__ */ React.createElement("span", null, "Manual Interactivo (Masterclass)")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setMobileDrawerOpen(false);
         setTutorialOpen(true);
       },
       className: "flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-djzinc-900 text-xs font-mono text-djcyan-400 border border-djcyan-500/30 text-left hover:bg-djzinc-850 cursor-pointer"
@@ -16731,6 +17141,18 @@ const App = () => {
       onClose: () => setShortcutsModalOpen(false),
       clubMode,
       onToggleClubMode: toggleClubMode
+    }
+  ), /* @__PURE__ */ React.createElement(
+    InteractiveManualModal,
+    {
+      isOpen: manualModalOpen,
+      onClose: () => setManualModalOpen(false),
+      initialSection: manualSection,
+      onNavigateTab: (tab) => {
+        setActiveTab(tab);
+        setManualModalOpen(false);
+      },
+      lang
     }
   ));
 };

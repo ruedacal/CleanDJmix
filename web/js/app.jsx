@@ -85,6 +85,7 @@ const I18N_TRANSLATIONS = {
         nav_tab_crates: "Crates",
         nav_tab_trends: "Trends",
         nav_tab_guides: "Guías",
+        nav_manual: "Manual",
         nav_shortcuts: "Atajos",
         nav_club_mode: "Club",
         nav_normal_mode: "Normal",
@@ -240,6 +241,7 @@ const I18N_TRANSLATIONS = {
         nav_tab_crates: "Crates",
         nav_tab_trends: "Trends",
         nav_tab_guides: "Guides",
+        nav_manual: "Manual",
         nav_shortcuts: "Shortcuts",
         nav_club_mode: "Club",
         nav_normal_mode: "Normal",
@@ -4123,8 +4125,847 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
 };
 
 // =========================================================================
-// 🔮 MODAL: RADAR DE MEZCLA MÁGICA (MIX ORACLE)
+// 📖 MODAL: MANUAL INTERACTIVO & MASTERCLASS BEATWAVE PRO (8 SECCIONES)
 // =========================================================================
+
+const MANUAL_SECTIONS = {
+    copilot: {
+        id: "copilot",
+        tabId: "copilot",
+        title: "Live Copilot en Cabina",
+        badge: "COPILOT",
+        color: "#ef4444",
+        gradient: "from-red-500 to-rose-600",
+        tag: "SERATO LINK & ANTI-MUDDY DSP EN VIVO",
+        hook: "Ese momento en el que la pista está en éxtasis... y la mezcla se vuelve una bola de graves ininteligible.",
+        story: "Tío, escúchame bien: a todos los DJs nos ha pasado estar en plena sesión en un club o festival con un equipo de 20.000W, meter dos temas que sobre el papel encajaban de lujo... y de repente notar que la música se 'ahoga'. El público no sabe de frecuencias, pero siente que el bombo ya no pega y la gente empieza a pararse. ¿Qué ha ocurrido? Dos bombos de 50 Hz sonando a la vez se cancelan por fase en los graves o saturan el procesador del local. Live Copilot es literalmente tener a tu colega técnico de sonido de gira al lado tuya en la cabina. Se conecta a Serato en tiempo real con cero latencia, analiza lo que tienes en el Deck 1 y lo que estás cargando en el Deck 2, y antes de que abras el fader te avisa en rojo brillante: '¡Ojo, corta el EQ Low del tema saliente!' o '¡Sube 1.8 dB de trim al entrante!'. Vas a cabina con una tranquilidad y una pegada que parece que lleves 20 años pinchando en los mejores festivales del mundo.",
+        jargon: [
+            { term: "Anti-Muddy DSP", desc: "La zona entre 30Hz y 100Hz es sagrada. Si dos bombos o subbajos suenan a la vez en esa banda, las ondas colisionan y el sonido se convierte en 'barro'. Nuestro algoritmo detecta esa colisión acústica y te indica exactamente qué EQ recortar." },
+            { term: "Diferencial LUFS", desc: "Un tema masterizado en 2024 viene comprimido a -6 LUFS, mientras que un clásico de 2005 suena a -10 LUFS. El Copilot calcula el desnivel exacto en decibelios para que ajustes la ganancia (Trim) antes de abrir el fader." },
+            { term: "Serato Link Invisible", desc: "Monitoriza los metadatos y la reproducción de Serato directamente desde la memoria del sistema sin cables adicionales ni retraso alguno (0 latencia)." }
+        ],
+        steps: [
+            "1. Abre Live Copilot en modo embebido dentro de BeatWave o como ventana secundaria flotante para tu segundo monitor.",
+            "2. Carga dos canciones en Serato o en tu software DJ habitual; verás cómo los vúmetros y roles espectrales se sincronizan al instante.",
+            "3. Fíjate en el radar central: si aparece en verde '✨ Mezcla Limpia', abre fader sin miedo; si salta la alerta roja '⚠️ Choque de Subgraves', recorta el ecualizador Low del canal saliente.",
+            "4. Ajusta la ganancia siguiendo la recomendación de Trim para que ambos temas entren con el mismo impacto sonoro."
+        ],
+        proTip: "No te fíes nunca de la ganancia automática de tu software DJ. El oído humano percibe el volumen según la escala LUFS (rango dinámico integrado). Si Copilot te marca '+1.8 dB', sube ese toque de ganancia antes de soltar el drop: el tema nuevo entrará con la misma pegada que el que estaba sonando.",
+        simulationSteps: [
+            { label: "Deck 1 & 2 Activos", desc: "Detección instantánea de pistas en cabina con lectura de BPM, tonalidad y espectro", focus: "decks" },
+            { label: "Análisis Anti-Muddy", desc: "El motor DSP compara las frecuencias bajas (<100Hz) en busca de cancelaciones de fase", focus: "dsp" },
+            { label: "Alerta Táctica en Rojo", desc: "Aviso en cabina: '⚠️ Choque de Subgraves — Bajar EQ Low Deck 1'", focus: "alert" },
+            { label: "Mezcla Optimizada", desc: "Tras ecualizar, el radar pasa a verde '✨ Mezcla Limpia y Contundente'", focus: "clean" }
+        ]
+    },
+    audit: {
+        id: "audit",
+        tabId: "audit",
+        title: "Diagnóstico DSP, Fakes & Calidad",
+        badge: "AUDITAR",
+        color: "#06b6d4",
+        gradient: "from-cyan-500 to-blue-600",
+        tag: "ESPECTROGRAMA FFT & RECHAZO DE TRANSCODES FALSOS",
+        hook: "¿Seguro que ese archivo que te descargaste como 'FLAC 24-bit Lossless' es de verdad sonido de alta fidelidad?",
+        story: "Colega, prepárate para flipar con esto: en internet hay toneladas de música que te venden o regalan como 'WAV Master' o 'FLAC 24-bit 1411 kbps' y resulta que son una estafa total. Alguien cogió un audio comprimido de YouTube a 128 kbps y lo guardó con extensión .flac para engordar el archivo. En tus auriculares del móvil parece que suena bien, pero cuando lo tiras en los altavoces de un club... ¡sorpresa!: agudos metálicos distorsionados, platos que suenan como siseos y un bajo sin definición. Con AUDITAR, pasas tu colección entera en segundos. Nuestro motor ejecuta una Transformada Rápida de Fourier (FFT) matemática directa sobre las frecuencias reales: te dibuja la radiografía del tema y te dice con precisión milimétrica si llega a 22kHz (Lossless Real) o si tiene un corte de tijera a 16kHz (MP3 falso). Con un solo clic puedes purgar y mandar a cuarentena toda la morralla de baja calidad.",
+        jargon: [
+            { term: "Espectrograma FFT", desc: "Es la radiografía de las frecuencias de la música. En un tema de calidad de estudio las frecuencias llegan limpias hasta los 20.000 - 22.000 Hz. En un MP3 barato mueren en los 16.000 Hz." },
+            { term: "Brickwall Cutoff (Corte Muro)", desc: "El algoritmo de compresión MP3 elimina de golpe todo lo que está por encima de un umbral para ahorrar espacio. BeatWave detecta esa línea de corte artificial al instante." },
+            { term: "Lossless Certification PASS", desc: "El sello verde que garantiza que el archivo tiene rango dinámico completo y que puedes pincharlo en el escenario más grande del mundo sin miedo a que suene a lata." }
+        ],
+        steps: [
+            "1. Pulsa '📂 Abrir' y selecciona tu carpeta de música (por ejemplo 'mi musica' o tus descargas recientes).",
+            "2. Haz clic en '⚡ Auditar Todo' en la barra central; el motor analizará BPM exacto, Tonalidad Camelot, corte FFT y LUFS.",
+            "3. Revisa la columna 'Calidad': las pistas verdes son Lossless 100% auténticas; las rojas indican 'Pérdida Severa / Transcode Falso'.",
+            "4. Pulsa '🗑️ Purgar Fakes' para borrar las pistas que no cumplen el estándar o llévatelas con un clic a la pestaña POOL para descargarlas en FLAC auténtico."
+        ],
+        proTip: "Si una canción de tu biblioteca tiene corte por debajo de 16kHz, bórrala sin dudarlo. En un sistema de sonido profesional, pinchar un transcode falso daña la experiencia del público y hace que la cabina suene amateur. Usa el botón de auditar siempre antes de cada fin de semana.",
+        simulationSteps: [
+            { label: "Ingesta de Pistas", desc: "Carga simultánea de 12 canciones locales con lectura de cabeceras ID3 y duración", focus: "ingest" },
+            { label: "Radiografía FFT", desc: "El motor acústico descompone el espectro de 20 Hz a 24.000 Hz en tiempo real", focus: "fft" },
+            { label: "Detección de Fake", desc: "Línea de corte detectada en 16 kHz: marcado automático como 'Pérdida Severa'", focus: "fake" },
+            { label: "Purga y Reemplazo", desc: "Un clic para enviar fakes a cuarentena o llevarlos a la cola de reemplazo SuperFLAC", focus: "purge" }
+        ]
+    },
+    hotcues: {
+        id: "hotcues",
+        tabId: "hotcues",
+        title: "Preparación Quirúrgica de Fraseo & Cues",
+        badge: "CUES",
+        color: "#f59e0b",
+        gradient: "from-amber-400 to-orange-500",
+        tag: "8 HOT CUES AUTOMÁTICOS & FRASEO DE 32 TIEMPOS",
+        hook: "¿Cuánto tiempo de tu vida has perdido poniendo Hot Cues a mano, tema por tema, compás por compás?",
+        story: "Piénsalo un segundo: si tienes 300 canciones nuevas para el fin de semana, ponerle 8 cues a cada una escuchando la intro, buscando el drop y ajustando el beatgrid te lleva fácilmente 6 o 7 horas de trabajo monótono. Con el motor de CUES de BeatWave le das a un botón y en segundos tienes colocadas las 8 marcas estándar de cabina en los puntos matemáticos exactos del tema: Cue 1 en el Downbeat de arranque, Cue 2 en la entrada del ritmo, Cue 3 en el Breakdown melódico, Cue 5 en el Build-up y Cue 7 en el Drop principal. Lo mejor es que respeta el fraseo musical de 32 tiempos: cuando estás pinchando en directo, lanzas el Cue 1 del tema entrante en el Cue 5 del saliente y la mezcla cuadra perfecta como un guante sin tocar nada. Te ahorras semanas enteras de trabajo técnico.",
+        jargon: [
+            { term: "Downbeat (Primer Golpe)", desc: "El golpe número 1 del primer compás de la canción. Es el inicio del ciclo de energía. Si pones el cue en el tiempo 2 o 3, todo el tema irá cojo." },
+            { term: "Fraseo Musical (32 Beats)", desc: "La música electrónica se compone en bloques de 32 tiempos (8 compases de 4/4). Los cambios de sonido (entra un bajo, entra un sintetizador, rompe el drop) siempre ocurren en múltiplos de 32." },
+            { term: "Codificación de Color Serato/CDJ", desc: "Cada tipo de cue tiene su color estándar de la industria (Verde para intros, Naranja para breakdowns, Rojo para drops de máxima energía)." }
+        ],
+        steps: [
+            "1. Entra en CUES o pulsa el botón '8 Cues' en la barra de cualquier pista auditada.",
+            "2. Selecciona tu perfil de mapeo: 'Club Mainstage' (enfocado a drops explosivos) o 'Extended Journey' (enfocado a transiciones largas).",
+            "3. Haz clic en '⚡ Generar 8 Hot Cues Inteligentes'.",
+            "4. Observa cómo se colocan las 8 banderas sobre la forma de onda; puedes ajustar milimétricamente cualquier punto o exportarlos directamente a Serato y Rekordbox."
+        ],
+        proTip: "Usa el Cue 3 (Breakdown) como tu punto de salvación en directo: si estás en cabina y ves que te estás quedando sin tiempo en el tema saliente, salta directamente al Cue 3 del tema nuevo; como entra sin bombos agresivos, la transición quedará superlimpia y tendrás 32 tiempos de relax para preparar la siguiente mezcla.",
+        simulationSteps: [
+            { label: "Detección de Downbeat", desc: "El analizador localiza el compás 1.1 exacto donde arranca la energía rítmica", focus: "downbeat" },
+            { label: "Mapeo de 32 Tiempos", desc: "Cálculo de la estructura musical en múltiplos de 8 compases (32 / 64 beats)", focus: "phrasing" },
+            { label: "Inyección de 8 Cues", desc: "Asignación de banderas con colores oficiales para Pioneer CDJ y Serato", focus: "cues" },
+            { label: "Exportación Directa", desc: "Guardado permanente en las etiquetas ID3 y metadatos de cabina", focus: "export" }
+        ]
+    },
+    setbuilder: {
+        id: "setbuilder",
+        tabId: "setbuilder",
+        title: "Set Builder, Graph Playlists & Asesor AI",
+        badge: "SETS",
+        color: "#a855f7",
+        gradient: "from-purple-500 to-indigo-600",
+        tag: "DJOID DAG GRAPH & ASESOR GOOGLE GEMINI 2.5 FLASH",
+        hook: "Una sesión de DJ nunca es una línea recta. ¿Por qué tus playlists siguen siéndolo?",
+        story: "Hermano, preparar un set ordenando canciones de arriba a abajo es cosa del pasado. En una cabina real la pista está viva: a veces tienes que subir el tempo porque el público está eufórico, y a veces tienes que desviar la sesión hacia un rollo más deep. Inspirado en las revolucionarias Graph Playlists de DJOID, nuestro Set Builder convierte tu sesión en un mapa no lineal (grafo DAG). En cada paso, BeatWave analiza tu biblioteca y te despliega ramas alternativas compatibles armónicamente. Y cuando tengas el borrador de tu set, pulsas 'Auditar con Gemini AI': el motor de inteligencia artificial con Google Gemini 2.5 Flash y DSP acústico evalúa la progresión de tu sesión, te da una nota del 0 al 100, detecta si vas a tener choques tonales y te propone 'pistas puente' de tu propio disco para salvar transiciones imposibles. Te hace sonar como si hubieras ensayado la sesión durante meses.",
+        jargon: [
+            { term: "Grafo Dirigido Acíclico (DAG)", desc: "Una red visual de nodos donde cada canción tiene un camino principal y ramas alternativas para bifurcar tu sesión en vivo si la pista reacciona de forma diferente." },
+            { term: "Pistas Puente (Harmonic Bridges)", desc: "Si quieres pasar de una pista 8A a una 3A (que chocarían como dos trenes), el motor busca en tu colección un tema intermedio que module la tonalidad de forma elegante y natural." },
+            { term: "Curva de Progresión de BPM", desc: "El lienzo visual que dibuja la pendiente de tempo y energía de tu set para asegurar que la sesión va 'in crescendo' y no pega bajones involuntarios." }
+        ],
+        steps: [
+            "1. Añade canciones al set arrastrándolas o usa '📁 Añadir Carpeta' para cargar un lote completo de música.",
+            "2. Cambia a la pestaña '🕸️ Graph Playlists (DJOID)' para ver el mapa de transiciones y alternativas de mezcla recomendadas.",
+            "3. Pulsa '🤖 Asesor AI & Calidad' para que Gemini AI audite el flujo global de la sesión.",
+            "4. Revisa las 3 propuestas automáticas de sesión ('Escalada Peak-Time', 'Viaje Armónico Continuo', 'Onda Dinámica') y aplícalas con un solo clic si te convencen."
+        ],
+        proTip: "Presta especial atención al Score Armónico global. Un set con una puntuación superior al 85% crea un efecto hipnótico en el público: la gente no puede parar de bailar porque las melodías y notas de los temas parecen pertenecer a una misma obra sinfónica continua.",
+        simulationSteps: [
+            { label: "Construcción de Secuencia", desc: "Curva continua de BPM y energía renderizada en lienzo interactivo sin saltos", focus: "curve" },
+            { label: "Bifurcaciones DAG", desc: "Alternativas armónicas desplegadas paso a paso con botones de sustitución rápida", focus: "dag" },
+            { label: "Auditoría Gemini AI", desc: "Google Gemini evalúa el flujo de la sesión generando un score del 0 al 100%", focus: "ai" },
+            { label: "Puentes Automáticos", desc: "Inserción con 1 clic de canciones intermedias para resolver choques tonales", focus: "bridges" }
+        ]
+    },
+    map: {
+        id: "map",
+        tabId: "map",
+        title: "Scatter Map 2D & Rueda de Camelot",
+        badge: "MAP",
+        color: "#14b8a6",
+        gradient: "from-teal-400 to-cyan-500",
+        tag: "PAISAJE ESPACIAL 2D & HARDWARE FADER ZOOM",
+        hook: "¿Alguna vez has tenido miles de temas en el disco duro y la sensación de que siempre acabas poniendo los mismos?",
+        story: "Mirar carpetas con listas interminables de texto apaga tu creatividad. El Scatter Map 2D transforma tu biblioteca en un universo espacial interactivo donde la distancia física equivale a compatibilidad acústica: los temas que están cerca en la pantalla mezclan de forma natural y orgánica. Tienes una Rueda de Camelot circular al 60% de transparencia con carátulas de alta definición dentro de cada nodo, controles tipo mesa de mezclas con cruceta analógica para desplazarte de forma continua, y un Fader de Zoom de tacto analógico. Puedes agarrar la herramienta Lasso (lápiz), rodear un racimo de 8 temas que te gusten cómo vibran juntos y mandarlos directamente a tu sesión. Es la forma más visual, divertida y rápida de redescubrir joyas ocultas en tu propia música.",
+        jargon: [
+            { term: "Rueda de Camelot (1A - 12A / 1B - 12B)", desc: "El mapa definitivo de mezcla armónica. Las 'A' son escalas menores (oscuras, introspectivas), las 'B' son mayores (luminosas, eufóricas). Los números adyacentes (8 a 9, 8 a 7) combinan sin disonancia armónica." },
+            { term: "Herramienta Lasso / Spatial Collect", desc: "Te permite dibujar libremente un círculo sobre la pantalla para capturar todas las pistas de un área de energía específica y exportarlas en bloque." },
+            { term: "Proyección Multi-Dimensional", desc: "Algoritmo que sitúa en el eje X la energía y en el eje Y la bailabilidad, o proyecta los temas radialmente según su tonalidad." }
+        ],
+        steps: [
+            "1. Entra en MAP; verás todas tus canciones flotando como orbes en un lienzo espacial oscuro.",
+            "2. Usa el selector superior para cambiar la proyección: '⚡ Energía / Dance', '🥁 BPM / Energía' o '☸ Rueda Camelot'.",
+            "3. Haz clic en cualquier tema: se iluminará su tonalidad exacta en la Rueda de Camelot superior y verás encenderse en verde sus vecinas compatibles.",
+            "4. Dale a '▶ Escuchar Preview' para preescucharla, o usa la cruceta y el fader de zoom de la derecha para explorar el mapa con total fluidez."
+        ],
+        proTip: "Usa la herramienta Lasso en la esquina superior derecha del mapa (zona Peak Time: alta energía y alta bailabilidad) para armar en 30 segundos la hora dorada de tu set del sábado por la noche.",
+        simulationSteps: [
+            { label: "Constelación Espacial", desc: "Pistas proyectadas en 2D donde la cercanía física representa afinidad acústica", focus: "constellation" },
+            { label: "Rueda Camelot 60%", desc: "Sectores tonales iluminados con compatibilidad armónica adyacente (+1, -1, Modo)", focus: "camelot" },
+            { label: "Hardware Fader & D-Pad", desc: "Desplazamiento suave continuo mediante cruceta analógica y zoom de precisión", focus: "fader" },
+            { label: "Selección Lasso", desc: "Captura de racimos de temas con herramienta de dibujo libre y envío directo a Set", focus: "lasso" }
+        ]
+    },
+    spotify: {
+        id: "spotify",
+        tabId: "spotify",
+        title: "SuperFLAC Lossless Ingest & Pool",
+        badge: "POOL",
+        color: "#10b981",
+        gradient: "from-emerald-400 to-teal-500",
+        tag: "DESCARGA CERTIFICADA 24-BIT & REPRODUCTOR A/B",
+        hook: "¿Tienes playlists de Spotify con temazos brutales pero no puedes pincharlos con calidad profesional en cabina?",
+        story: "Todos los DJs descubrimos música en Spotify, en la radio o en listas de amigos, pero pinchar desde streaming en un club es jugársela a cortes de internet, sin contar con que los ripeos de baja calidad suenan desastrosos. El módulo POOL resuelve esto para siempre: pegas el enlace de cualquier canción, álbum o playlist de Spotify (o buscas por texto), y nuestro motor SuperFLAC localiza el máster original en catálogo audiófilo y lo descarga en FLAC Lossless auténtico de 24 o 16 bits. Y aquí viene lo que ninguna otra app del mercado hace: inmediatamente al descargarse, el motor le pasa una auditoría FFT automática para certificar que el archivo tiene frecuencias intactas hasta los 22kHz, y te ofrece un Reproductor A/B de Pre-escucha Dual para que compares tu tema local viejo con la nueva descarga en alta resolución antes de reemplazarlo. Es calidad de audio pura sin trampas.",
+        jargon: [
+            { term: "FLAC Hi-Res 24-Bit Master", desc: "Formato de compresión sin pérdida (Lossless) con una profundidad de 24 bits y rango dinámico de 144 dB, idéntico al master original de estudio." },
+            { term: "Pre-escucha Dual A/B", desc: "Dos botones de reproducción simultáneos que te permiten alternar en tiempo real entre la versión que ya tenías en tu disco y la nueva versión descargada para verificar que es la versión extendida correcta." },
+            { term: "Inyección de Metadatos ID3v2.4", desc: "Escribe automáticamente la carátula oficial en 1400x1400px, el nombre correcto del artista, el álbum, año y el género oficial en las etiquetas del archivo." }
+        ],
+        steps: [
+            "1. Pega un enlace de canción, playlist o álbum de Spotify en la barra de búsqueda (o escribe artista y título) y pulsa 'Buscar / Analizar'.",
+            "2. Selecciona tu formato deseado: 'FLAC Hi-Res (24b Master)' o 'FLAC Lossless'.",
+            "3. Haz clic en '⬇️ Descargar' y observa la barra de progreso en streaming.",
+            "4. Al completarse, la pista se audita automáticamente por FFT y queda guardada con carátula HD en tu carpeta de música de cabina."
+        ],
+        proTip: "Si en la auditoría tienes canciones marcadas en rojo como 'Mala Calidad', usa el botón 'Llevar Reemplazos HD a Pool'. Te las importará en bloque para que las sustituyas por copias Lossless impecables sin tener que buscarlas una por una.",
+        simulationSteps: [
+            { label: "Búsqueda o Link", desc: "Resolución de catálogo de Spotify con localización de máster de estudio en SuperFLAC", focus: "search" },
+            { label: "Streaming Lossless", desc: "Descarga segura en FLAC 24-bit / 16-bit con gestión dinámica de tokens CSRF", focus: "download" },
+            { label: "Auditoría FFT en Vuelo", desc: "Certificación espectral instantánea para garantizar 0% transcodificación falsa", focus: "cert" },
+            { label: "Comparativa Dual A/B", desc: "Pre-escucha en vivo alternando entre la copia local antigua y el nuevo máster HD", focus: "ab" }
+        ]
+    },
+    radar: {
+        id: "radar",
+        tabId: "radar",
+        title: "Radar Acústico & Tendencias Globales",
+        badge: "RADAR",
+        color: "#6366f1",
+        gradient: "from-indigo-500 to-purple-600",
+        tag: "TRACKLIST SCANNER & MICRO-GÉNEROS EMERGENTES",
+        hook: "Los DJs corrientes pinchan lo que ya es famoso. Los headliners pinchan lo que va a ser famoso dentro de tres meses.",
+        story: "El público de club tiene un sexto sentido: cuando un tema se ha puesto mil veces en TikTok o en la radio, pierde frescura. La magia de ser DJ reside en la curaduría, en esa sensación de poner un track desconocido y que toda la pista levante los brazos preguntándose: '¿Qué temazo es este?'. El Radar Acústico de BeatWave es tu antena parabólica hacia el futuro de la electrónica. Escanea tendencias de festivales como Tomorrowland, Sonar y Creamfields, monitoriza charts de 1001Tracklists y detecta micro-géneros emergentes antes de que tengan nombre oficial. Te da recomendaciones precisas basadas en los estilos de tu biblioteca para que tu maleta de temas sea siempre única e insustituible.",
+        jargon: [
+            { term: "Índice de Velocidad de Tendencia", desc: "Mide el crecimiento porcentual de inclusiones de una canción en sets de DJs internacionales durante los últimos 14 días." },
+            { term: "Micro-géneros Acústicos", desc: "Clasificaciones de nicho (como Afro-Melodic, Acid Trance Revival o Raw Peak-Time) que definen la vibra exacta de una sesión mejor que etiquetas genéricas como 'House' o 'Techno'." },
+            { term: "Previsión de Éxito de Pista", desc: "Puntuación calculada según la energía rítmica y la acogida en cabinas profesionales para predecir si un tema funcionará como bombazo de pista." }
+        ],
+        steps: [
+            "1. Entra en RADAR y observa el escaneo radial de géneros activos en festivales y clubes.",
+            "2. Explora las tarjetas de tendencias por estilo (Melodic, Tech House, Afro, Peak Time).",
+            "3. Escucha la pre-escucha rápida de los temas en ascenso que encajan con los BPMs de tu biblioteca.",
+            "4. Añade los descubrimientos a tu cola de descargas de POOL o directamente a tu Set Builder con un solo clic."
+        ],
+        proTip: "Dedica 15 minutos cada jueves a mirar el Radar. Descubrir dos o tres temas exclusivos antes del fin de semana es la diferencia entre ser un DJ más del cartel o ser el que se lleva las felicitaciones del promotor y del público al terminar la noche.",
+        simulationSteps: [
+            { label: "Escaneo Global", desc: "Monitorización de sesiones en festivales internacionales y charts especializados", focus: "scan" },
+            { label: "Mapeo de Micro-Géneros", desc: "Detección de corrientes emergentes antes de su difusión comercial masiva", focus: "genres" },
+            { label: "Afinidad con tu Maleta", desc: "Filtrado automático de canciones que combinan con tu rango de BPM habitual", focus: "match" },
+            { label: "1-Click Curation", desc: "Envío directo de pistas a la cola de descargas o al Set Builder", focus: "curate" }
+        ]
+    },
+    crates: {
+        id: "crates",
+        tabId: "taxonomy",
+        title: "Taxonomía & Pasaporte Universal DJ",
+        badge: "CRATES",
+        color: "#f97316",
+        gradient: "from-orange-500 to-amber-600",
+        tag: "PASAPORTE UNIVERSAL 1-CLIC & CRATE BUILDER",
+        hook: "¿Tienes que pinchar mañana con Rekordbox y tu música está organizada en Serato? Bienvenido al infierno... hasta hoy.",
+        story: "El dolor de cabeza número uno de cualquier DJ profesional es la incompatibilidad de formatos. Te pasas meses creando crates y carpetas en Serato DJ; de repente te contratan en un festival donde hay cabinas con reproductores Pioneer CDJ-3000 y necesitas un pendrive exportado con Rekordbox... y tienes que volver a hacer las listas a mano una por una, perdiendo horas de sueño. Con el botón Pasaporte Universal DJ de BeatWave se acabaron las pesadillas: un solo clic y tu colección se exporta y sincroniza automáticamente hacia Serato Crates (.crate), Pioneer Rekordbox (.xml), Native Instruments Traktor (.nml) y VirtualDJ (.m3u). Da igual la cabina a la que vayas, da igual el equipo que haya: tu música, tus géneros y tu estructura van siempre contigo.",
+        jargon: [
+            { term: "Estructura Binaria .crate de Serato", desc: "Archivos propietarios que Serato guarda en su subcarpeta oculta de usuario. BeatWave genera directamente estos archivos binarios sin necesidad de abrir la aplicación." },
+            { term: "Rekordbox XML Interoperability", desc: "El formato de intercambio profesional estándar que leen las librerías de Pioneer DJ para sincronizar hot cues, tonalidades y carpetas a pendrives USB." },
+            { term: "Taxonomía de 2 Niveles (Género / Subgénero)", desc: "Organización en dos capas (ej. Tech House $\rightarrow$ Latin Groove / Acid Tech) para encontrar cualquier canción en menos de 5 segundos en cabina." }
+        ],
+        steps: [
+            "1. Entra en CRATES / TAXONOMÍA para visualizar tu árbol jerárquico de estilos y energía.",
+            "2. Clasifica o filtra tus pistas por Género, Subgénero o Rol Acústico (Bass Driver, Vocal Lead, Percussive Tool).",
+            "3. Despliega el menú '🚀 Exportar' en la esquina superior derecha.",
+            "4. Pulsa '🛂 Pasaporte Universal DJ': BeatWave inyectará simultáneamente los crates en Serato, Rekordbox, Traktor y VDJ en cuestión de segundos."
+        ],
+        proTip: "Organiza tus crates por momentos de la noche (01_Warmup, 02_PeakTime, 03_Afterhours) en lugar de solo por géneros musicales. Cuando la pista te pida subir la intensidad a las 3:00 AM, sabrás exactamente a qué crate acudir sin dudar un milisegundo.",
+        simulationSteps: [
+            { label: "Árbol Jerárquico", desc: "Organización en dos capas: Género musical principal y Subgénero timbral", focus: "tree" },
+            { label: "Roles Acústicos", desc: "Clasificación espectral: Bass Driver, Vocal Lead, Percussive Tool, Balanced", focus: "roles" },
+            { label: "Pasaporte Universal", desc: "Traducción simultánea hacia Serato, Rekordbox XML, Traktor NML y VirtualDJ", focus: "passport" },
+            { label: "Cabina Ready", desc: "Pendrives USB y librerías de software listos para pinchar en cualquier club", focus: "ready" }
+        ]
+    }
+};
+
+const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onNavigateTab, lang = 'es' }) => {
+    if (!isOpen) return null;
+
+    const [activeSectionKey, setActiveSectionKey] = useState(initialSection || 'audit');
+    const [simStep, setSimStep] = useState(0);
+    const [isSimPlaying, setIsSimPlaying] = useState(true);
+    const [spotlightZoom, setSpotlightZoom] = useState(true);
+
+    const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit;
+
+    // Temporizador de Simulación Automática (Auto-Play)
+    useEffect(() => {
+        if (!isSimPlaying) return;
+        const timer = setInterval(() => {
+            setSimStep(prev => (prev + 1) % 4);
+        }, 3200);
+        return () => clearInterval(timer);
+    }, [isSimPlaying, activeSectionKey]);
+
+    // Tecla Escape para cerrar
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    // Render del Simulador Visual Animado según la sección activa
+    const renderVisualSimulator = () => {
+        const stepInfo = (activeSec.simulationSteps && activeSec.simulationSteps[simStep]) || { label: "Paso Activo", desc: "Simulación en curso", focus: "default" };
+
+        return (
+            <div className="flex flex-col h-full justify-between gap-3 select-none">
+                {/* Barra de Controles del Reproductor de Simulación */}
+                <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#0d0e1a] border border-djzinc-800">
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            onClick={() => setIsSimPlaying(prev => !prev)}
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
+                                isSimPlaying 
+                                    ? 'bg-pink-600 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]' 
+                                    : 'bg-djzinc-800 text-gray-300 hover:text-white'
+                            }`}
+                            title={isSimPlaying ? "Pausar simulación" : "Reproducir simulación continua"}
+                        >
+                            {isSimPlaying ? '⏸' : '▶'}
+                        </button>
+                        <div className="flex items-center gap-1">
+                            {[0, 1, 2, 3].map(st => (
+                                <button
+                                    key={st}
+                                    type="button"
+                                    onClick={() => { setSimStep(st); setIsSimPlaying(false); }}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                                        simStep === st
+                                            ? 'bg-pink-500 text-black shadow-sm'
+                                            : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
+                                    }`}
+                                >
+                                    P{st + 1}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => setSpotlightZoom(prev => !prev)}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all ${
+                            spotlightZoom
+                                ? 'bg-pink-950 text-pink-300 border border-pink-700/80 shadow-[0_0_8px_rgba(236,72,153,0.3)]'
+                                : 'bg-djzinc-900 text-gray-500 border border-djzinc-800'
+                        }`}
+                        title="Alternar modo Lente & Spotlight Zoom"
+                    >
+                        <span>🔍</span>
+                        <span className="hidden sm:inline">Zoom Lente</span>
+                    </button>
+                </div>
+
+                {/* Lienzo Visual Animado con Spotlight */}
+                <div className="flex-1 min-h-[240px] rounded-2xl bg-gradient-to-b from-[#090a14] to-[#040407] border border-djzinc-800 relative overflow-hidden flex flex-col items-center justify-center p-3 shadow-inner">
+                    {/* Rejilla de Fondo Estilo Monitor de Cabina */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#131422_1px,transparent_1px),linear-gradient(to_bottom,#131422_1px,transparent_1px)] bg-[size:24px_24px] opacity-40"></div>
+
+                    {/* Contenido Visual Específico */}
+                    <div className={`w-full h-full flex flex-col justify-center items-center relative z-10 transition-transform duration-500 ${spotlightZoom ? 'scale-105' : 'scale-100'}`}>
+                        {activeSec.id === 'copilot' && (
+                            <div className="w-full max-w-sm flex flex-col gap-3">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="p-2.5 rounded-xl bg-djzinc-900/90 border border-cyan-500/50 shadow-md">
+                                        <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 font-bold mb-1">
+                                            <span>DECK 1 (MASTER)</span>
+                                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                                        </div>
+                                        <div className="text-xs font-mono font-bold text-white truncate">Artbat - Return</div>
+                                        <div className="flex items-center justify-between mt-2 text-[9px] text-gray-400 font-mono">
+                                            <span>126.0 BPM</span>
+                                            <span className="px-1 bg-amber-400 text-black font-black rounded">8A</span>
+                                        </div>
+                                        <div className="w-full bg-djzinc-950 h-2 rounded-full mt-2 overflow-hidden flex">
+                                            <div className="bg-cyan-400 h-full w-[82%] animate-pulse"></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-2.5 rounded-xl bg-djzinc-900/90 border border-pink-500/50 shadow-md">
+                                        <div className="flex items-center justify-between text-[10px] font-mono text-pink-300 font-bold mb-1">
+                                            <span>DECK 2 (CUE)</span>
+                                            <span className="w-2 h-2 rounded-full bg-pink-400 animate-ping"></span>
+                                        </div>
+                                        <div className="text-xs font-mono font-bold text-white truncate">Anyma - Eternity</div>
+                                        <div className="flex items-center justify-between mt-2 text-[9px] text-gray-400 font-mono">
+                                            <span>126.0 BPM</span>
+                                            <span className="px-1 bg-amber-400 text-black font-black rounded">9A</span>
+                                        </div>
+                                        <div className="w-full bg-djzinc-950 h-2 rounded-full mt-2 overflow-hidden flex">
+                                            <div className="bg-pink-500 h-full w-[74%] animate-pulse"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Banner Táctico Dinámico */}
+                                <div className={`p-3 rounded-xl border text-center font-mono text-xs font-bold transition-all duration-300 ${
+                                    simStep >= 2 
+                                        ? 'bg-rose-950/80 border-rose-500 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.4)] animate-pulse'
+                                        : 'bg-emerald-950/80 border-emerald-500 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                                }`}>
+                                    {simStep >= 2 ? (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <span>⚠️</span>
+                                            <span>CHOQUE DE SUBGRAVES: CORTAR EQ LOW DECK 1</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <span>✨</span>
+                                            <span>MEZCLA ARMÓNICA PERFECTA (8A ➔ 9A)</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSec.id === 'audit' && (
+                            <div className="w-full max-w-sm flex flex-col gap-3">
+                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-djzinc-750 font-mono">
+                                    <div className="flex items-center justify-between text-[11px] mb-2 font-bold">
+                                        <span className="text-gray-300">Espectrograma FFT Comparativo</span>
+                                        <span className="text-cyan-400">20Hz - 22kHz</span>
+                                    </div>
+                                    
+                                    {/* Onda Real Lossless */}
+                                    <div className="mb-2">
+                                        <div className="flex justify-between text-[9px] text-emerald-400 mb-1">
+                                            <span>FLAC Lossless 24-bit Genuino</span>
+                                            <span>Techo 22.05 kHz ✓</span>
+                                        </div>
+                                        <div className="h-6 w-full rounded bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-400 flex items-center justify-end pr-2 text-[8px] font-black text-black">
+                                            RANGO COMPLETO
+                                        </div>
+                                    </div>
+
+                                    {/* Onda Fake MP3 */}
+                                    <div>
+                                        <div className="flex justify-between text-[9px] text-rose-400 mb-1">
+                                            <span>Fake Transcode MP3 128k</span>
+                                            <span className="animate-pulse">Corte Muro en 16 kHz ✕</span>
+                                        </div>
+                                        <div className="h-6 w-full rounded bg-gradient-to-r from-rose-600 via-amber-600 to-transparent border-r-4 border-rose-500 flex items-center justify-start pl-2 text-[8px] font-black text-white relative">
+                                            <span>RECHAZADO</span>
+                                            <span className="absolute right-1 text-[8px] font-mono text-rose-400 font-bold">16 kHz CUTOFF</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-2 rounded-xl bg-cyan-950/70 border border-cyan-600 text-center text-[10px] font-mono text-cyan-200 font-bold">
+                                    ✓ Purgadas 4 pistas con transcode falso • 100% Colección Certificada
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSec.id === 'hotcues' && (
+                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
+                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-amber-500/40 relative">
+                                    <div className="flex items-center justify-between text-[10px] text-amber-300 font-bold mb-2">
+                                        <span>TIMELINE WAVEFORM 128 BPM</span>
+                                        <span>FRASEO: 32 BEATS</span>
+                                    </div>
+
+                                    {/* Waveform simulada con Cues */}
+                                    <div className="h-10 w-full bg-[#0a0a14] rounded-lg relative overflow-hidden flex items-center border border-djzinc-800">
+                                        <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 opacity-60 w-full animate-pulse"></div>
+                                        
+                                        {/* Banderas de Cues */}
+                                        <div className="absolute left-[10%] top-1 bottom-1 w-0.5 bg-emerald-400 z-20 flex flex-col justify-between">
+                                            <span className="px-1 py-0.2 bg-emerald-500 text-black text-[7px] font-black rounded -ml-2">1 CUE</span>
+                                        </div>
+                                        <div className="absolute left-[35%] top-1 bottom-1 w-0.5 bg-amber-400 z-20 flex flex-col justify-between">
+                                            <span className="px-1 py-0.2 bg-amber-500 text-black text-[7px] font-black rounded -ml-2">3 BRK</span>
+                                        </div>
+                                        <div className="absolute left-[65%] top-1 bottom-1 w-0.5 bg-purple-400 z-20 flex flex-col justify-between">
+                                            <span className="px-1 py-0.2 bg-purple-500 text-black text-[7px] font-black rounded -ml-2">5 BLD</span>
+                                        </div>
+                                        <div className="absolute left-[85%] top-1 bottom-1 w-0.5 bg-rose-500 z-20 flex flex-col justify-between">
+                                            <span className="px-1 py-0.2 bg-rose-500 text-white text-[7px] font-black rounded -ml-2">7 DROP</span>
+                                        </div>
+
+                                        {/* Playhead */}
+                                        <div className="absolute left-[65%] h-full w-1 bg-white shadow-[0_0_10px_#ffffff] z-30 animate-ping"></div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-4 gap-1.5 text-center text-[9px] font-bold">
+                                    <div className="p-1.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-800">1: Downbeat</div>
+                                    <div className="p-1.5 rounded-lg bg-amber-950 text-amber-300 border border-amber-800">3: Breakdown</div>
+                                    <div className="p-1.5 rounded-lg bg-purple-950 text-purple-300 border border-purple-800">5: Snare Roll</div>
+                                    <div className="p-1.5 rounded-lg bg-rose-950 text-rose-300 border border-rose-800">7: Main Drop</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSec.id === 'setbuilder' && (
+                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
+                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-purple-800/60 shadow-lg">
+                                    <div className="flex items-center justify-between text-[10px] text-purple-300 font-bold mb-2">
+                                        <span>DJOID GRAPH PLAYLIST (DAG)</span>
+                                        <span className="px-2 py-0.5 bg-purple-950 text-purple-200 border border-purple-700 rounded-full">Score AI: 96%</span>
+                                    </div>
+
+                                    {/* Grafo de Nodos Simulado */}
+                                    <div className="flex items-center justify-between gap-2 p-2 bg-[#090912] rounded-lg border border-djzinc-800">
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-8 h-8 rounded-full bg-cyan-500 text-black font-black text-xs flex items-center justify-center shadow-[0_0_12px_#06b6d4]">
+                                                8A
+                                            </div>
+                                            <span className="text-[8px] text-gray-400 mt-1">Track 1</span>
+                                        </div>
+
+                                        <div className="flex-1 flex flex-col items-center">
+                                            <span className="text-[8px] text-emerald-400 font-bold">100% Match</span>
+                                            <div className="w-full h-0.5 bg-gradient-to-r from-cyan-400 via-emerald-400 to-purple-400"></div>
+                                        </div>
+
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-8 h-8 rounded-full bg-purple-600 text-white font-black text-xs flex items-center justify-center shadow-[0_0_12px_#9333ea]">
+                                                9A
+                                            </div>
+                                            <span className="text-[8px] text-gray-400 mt-1">Track 2</span>
+                                        </div>
+
+                                        <div className="flex-1 flex flex-col items-center">
+                                            <span className="text-[8px] text-amber-400 font-bold">Rama Alt</span>
+                                            <div className="w-full h-0.5 bg-dashed border-t border-amber-400"></div>
+                                        </div>
+
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-8 h-8 rounded-full bg-amber-500 text-black font-black text-xs flex items-center justify-center shadow-[0_0_12px_#f59e0b]">
+                                                9B
+                                            </div>
+                                            <span className="text-[8px] text-gray-400 mt-1">Alt Path</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-2 rounded-xl bg-purple-950/80 border border-purple-700 text-center text-[10px] text-purple-200 font-bold">
+                                    ⚡ Google Gemini 2.5 Flash: "Progresión fluida sin disonancias detectadas"
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSec.id === 'map' && (
+                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
+                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-teal-700/60 shadow-lg relative overflow-hidden">
+                                    <div className="flex items-center justify-between text-[10px] text-teal-300 font-bold mb-2">
+                                        <span>CONSTELACIÓN ACÚSTICA 2D</span>
+                                        <span className="text-teal-400 font-bold">Lasso Active</span>
+                                    </div>
+
+                                    {/* Mini mapa de nodos con carátulas */}
+                                    <div className="h-28 w-full bg-[#05060b] rounded-lg relative overflow-hidden border border-djzinc-800 flex items-center justify-center">
+                                        <div className="absolute left-[20%] top-[30%] w-6 h-6 rounded-full bg-emerald-500 text-black text-[8px] font-black flex items-center justify-center shadow-[0_0_10px_#10b981]">
+                                            8A
+                                        </div>
+                                        <div className="absolute left-[45%] top-[20%] w-7 h-7 rounded-full bg-cyan-500 text-black text-[9px] font-black flex items-center justify-center shadow-[0_0_12px_#06b6d4] animate-pulse">
+                                            9A
+                                        </div>
+                                        <div className="absolute left-[70%] top-[60%] w-6 h-6 rounded-full bg-purple-600 text-white text-[8px] font-black flex items-center justify-center shadow-[0_0_10px_#9333ea]">
+                                            10A
+                                        </div>
+                                        <div className="absolute left-[35%] top-[70%] w-5 h-5 rounded-full bg-amber-500 text-black text-[7px] font-black flex items-center justify-center shadow-[0_0_8px_#f59e0b]">
+                                            8B
+                                        </div>
+
+                                        {/* Trazo del Lazo de Selección */}
+                                        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                                            <path d="M 40 40 Q 140 10 220 50 T 150 100 Z" fill="rgba(6,182,212,0.15)" stroke="#06b6d4" strokeWidth="1.5" strokeDasharray="3 3" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <div className="p-2 rounded-xl bg-teal-950/80 border border-teal-700 text-center text-[10px] text-teal-200 font-bold">
+                                    🎡 Rueda Camelot al 60% Alpha & Hardware D-Pad Fader Navigation
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSec.id === 'spotify' && (
+                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
+                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-emerald-700/60 shadow-lg">
+                                    <div className="flex items-center justify-between text-[10px] text-emerald-300 font-bold mb-2">
+                                        <span>SUPERFLAC LOSSLESS STREAM INGEST</span>
+                                        <span className="px-1.5 py-0.2 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded">24-BIT</span>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="p-2 bg-[#06060c] rounded-lg border border-djzinc-800 text-[10px]">
+                                            <div className="flex justify-between text-gray-300">
+                                                <span>Pista: Cassian - Save Me</span>
+                                                <span className="text-emerald-400 font-bold">FLAC 24b ✓</span>
+                                            </div>
+                                            <div className="w-full bg-djzinc-900 h-2 rounded-full mt-1.5 overflow-hidden">
+                                                <div className="bg-emerald-400 h-full w-[100%] animate-pulse"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Selector A/B */}
+                                        <div className="grid grid-cols-2 gap-2 text-center text-[9px] font-bold">
+                                            <button type="button" className="p-1.5 rounded bg-djzinc-800 text-gray-400 border border-djzinc-700">
+                                                A: Local (MP3 128k)
+                                            </button>
+                                            <button type="button" className="p-1.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                                                B: SuperFLAC (24-bit) ✓
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-2 rounded-xl bg-emerald-950/80 border border-emerald-700 text-center text-[10px] text-emerald-200 font-bold">
+                                    ✓ FFT Verificada al vuelo • Carátula oficial 1400x1400 inyectada
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSec.id === 'radar' && (
+                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
+                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-indigo-700/60 shadow-lg">
+                                    <div className="flex items-center justify-between text-[10px] text-indigo-300 font-bold mb-2">
+                                        <span>RADAR ACÚSTICO GLOBAL</span>
+                                        <span className="text-indigo-400 font-bold">Tomorrowland Scanner</span>
+                                    </div>
+
+                                    {/* Simulación de Radar Giratorio */}
+                                    <div className="h-28 w-full bg-[#05060d] rounded-lg relative overflow-hidden border border-djzinc-800 flex items-center justify-center">
+                                        <div className="w-24 h-24 rounded-full border border-indigo-800/60 flex items-center justify-center">
+                                            <div className="w-16 h-16 rounded-full border border-indigo-700/50 flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-full border border-indigo-600/40"></div>
+                                            </div>
+                                        </div>
+                                        {/* Rayo giratorio */}
+                                        <div className="absolute w-12 h-12 bg-gradient-to-tr from-indigo-500/30 to-transparent rounded-full animate-spin"></div>
+                                        <span className="absolute text-[9px] font-bold text-indigo-300 px-2 py-0.5 bg-indigo-950/80 rounded border border-indigo-700">
+                                            +340% Afro Melodic
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="p-2 rounded-xl bg-indigo-950/80 border border-indigo-700 text-center text-[10px] text-indigo-200 font-bold">
+                                    📡 Detección de micro-géneros 3 meses antes de llegar al mainstream
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSec.id === 'crates' && (
+                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
+                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-orange-700/60 shadow-lg">
+                                    <div className="flex items-center justify-between text-[10px] text-orange-300 font-bold mb-2">
+                                        <span>PASAPORTE UNIVERSAL 1-CLIC</span>
+                                        <span className="text-orange-400 font-bold">MULTI-CABINA</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-center">
+                                        <div className="p-2 rounded bg-orange-950/80 text-orange-200 border border-orange-700 flex items-center justify-center gap-1.5 shadow-sm">
+                                            <span>💽</span> <span>Serato Crates ✓</span>
+                                        </div>
+                                        <div className="p-2 rounded bg-cyan-950/80 text-cyan-200 border border-cyan-700 flex items-center justify-center gap-1.5 shadow-sm">
+                                            <span>🎧</span> <span>Rekordbox XML ✓</span>
+                                        </div>
+                                        <div className="p-2 rounded bg-indigo-950/80 text-indigo-200 border border-indigo-700 flex items-center justify-center gap-1.5 shadow-sm">
+                                            <span>🎚️</span> <span>Traktor NML ✓</span>
+                                        </div>
+                                        <div className="p-2 rounded bg-emerald-950/80 text-emerald-200 border border-emerald-700 flex items-center justify-center gap-1.5 shadow-sm">
+                                            <span>🎵</span> <span>VirtualDJ M3U ✓</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-2 rounded-xl bg-orange-950/80 border border-orange-700 text-center text-[10px] text-orange-200 font-bold">
+                                    🛂 Un solo clic: Tu música sincronizada en todos los softwares sin rehacer listas
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Badge de Paso Explicado en Foco */}
+                    <div className="w-full mt-2 pt-2 border-t border-djzinc-800/80 flex items-center justify-between text-[10px] font-mono z-10">
+                        <span className="text-pink-400 font-bold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping"></span>
+                            <span>{stepInfo.label}</span>
+                        </span>
+                        <span className="text-gray-400 truncate max-w-[200px]">{stepInfo.desc}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
+            <div 
+                className="w-full max-w-6xl h-[92vh] max-h-[900px] bg-[#090912] border border-pink-500/50 rounded-3xl shadow-[0_0_50px_rgba(236,72,153,0.3)] overflow-hidden flex flex-col font-sans text-gray-200"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* CABECERA MAESTRA DEL MANUAL (ESTILO PINK NEON CABINA) */}
+                <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0d18] flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0">
+                            📖
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
+                                    <span>BEATWAVE PRO • MANUAL MAESTRO DE CABINA</span>
+                                    <span className="text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold">
+                                        GUÍA MASTERCLASS
+                                    </span>
+                                </h3>
+                            </div>
+                            <p className="text-[11px] text-gray-400 font-sans hidden sm:block">
+                                Domina cada herramienta al 100%, entiende los secretos acústicos y prepárate para sonar impecable en cualquier club.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button 
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
+                        title="Cerrar manual (ESC)"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* SELECTOR HORIZONTAL DE LAS 8 SECCIONES MAESTRAS */}
+                <div className="px-4 py-2 bg-[#07070d] border-b border-djzinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+                    {Object.values(MANUAL_SECTIONS).map(sec => {
+                        const isActive = activeSectionKey === sec.id;
+                        return (
+                            <button
+                                key={sec.id}
+                                type="button"
+                                onClick={() => {
+                                    setActiveSectionKey(sec.id);
+                                    setSimStep(0);
+                                }}
+                                className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+                                    isActive
+                                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-105'
+                                        : 'bg-djzinc-900/80 text-gray-400 hover:text-white hover:bg-djzinc-800 border border-djzinc-800'
+                                }`}
+                            >
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sec.color }}></span>
+                                <span>{sec.badge}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* CUERPO PRINCIPAL DIVIDIDO EN 2 COLUMNAS (HISTORIA Y EXPLICACIÓN HUMANA + SIMULADOR ANIMADO) */}
+                <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 sm:p-6 overflow-hidden">
+                    {/* COLUMNA IZQUIERDA: CONTENIDO HUMANO, NARRATIVA Y PASO A PASO */}
+                    <div className="lg:col-span-7 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+                        {/* Cabecera de la Sección */}
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black text-white" style={{ backgroundColor: activeSec.color }}>
+                                    {activeSec.badge}
+                                </span>
+                                <span className="text-xs font-mono text-gray-400 uppercase tracking-wider font-bold">
+                                    {activeSec.tag}
+                                </span>
+                            </div>
+                            <h2 className="text-xl font-mono font-black text-white mt-1">
+                                {activeSec.title}
+                            </h2>
+                            <div className="p-3 rounded-xl bg-pink-950/30 border border-pink-900/50 text-pink-300 font-sans text-xs italic font-medium leading-relaxed mt-1">
+                                "{activeSec.hook}"
+                            </div>
+                        </div>
+
+                        {/* Historia y Explicación Cercana */}
+                        <div className="p-4 rounded-2xl bg-djzinc-900/70 border border-djzinc-800 text-xs font-sans text-gray-300 leading-relaxed space-y-2">
+                            <p>{activeSec.story}</p>
+                        </div>
+
+                        {/* Tecnicismos Explicados para Todo el Mundo */}
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <span>💡</span> <span>Conceptos Clave Explicados Fácilmente</span>
+                            </h4>
+                            <div className="grid grid-cols-1 gap-2">
+                                {activeSec.jargon.map((jg, jIdx) => (
+                                    <div key={jIdx} className="p-3 rounded-xl bg-djzinc-950 border border-djzinc-800/90 text-xs font-sans">
+                                        <div className="font-mono font-bold text-pink-300 mb-0.5 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-pink-400"></span>
+                                            <span>{jg.term}</span>
+                                        </div>
+                                        <p className="text-gray-400 leading-relaxed text-[11px]">{jg.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Paso a Paso */}
+                        <div className="p-4 rounded-2xl bg-[#0b0c16] border border-djzinc-800 space-y-2">
+                            <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                <span>🛠️</span> <span>Flujo de Trabajo Paso a Paso</span>
+                            </h4>
+                            <div className="space-y-1.5 text-xs font-sans text-gray-300">
+                                {activeSec.steps.map((st, sIdx) => (
+                                    <div key={sIdx} className="flex items-start gap-2">
+                                        <span className="text-pink-400 font-bold shrink-0">✓</span>
+                                        <span className="leading-snug">{st}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Pro DJ Tip */}
+                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/40 to-djzinc-900 border border-amber-600/40 text-xs font-sans text-amber-200 flex items-start gap-2.5 shadow-md">
+                            <span className="text-base shrink-0">👑</span>
+                            <div>
+                                <strong className="font-mono uppercase tracking-wider text-amber-300 block text-[11px] mb-0.5">Secreto Pro de Cabina</strong>
+                                <p className="text-gray-300 leading-relaxed">{activeSec.proTip}</p>
+                            </div>
+                        </div>
+
+                        {/* Botón de Llamada a la Acción (Ir a la sección activa) */}
+                        <div className="pt-2 pb-4">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (onNavigateTab) {
+                                        onNavigateTab(activeSec.tabId);
+                                    }
+                                    onClose();
+                                }}
+                                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.4)] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <span>🚀</span>
+                                <span>Abrir e Ir a la Sección {activeSec.badge} Ahora</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* COLUMNA DERECHA: SIMULADOR ANIMADO INTERACTIVO CON SPOTLIGHT Y FOCO */}
+                    <div className="lg:col-span-5 flex flex-col gap-3 min-h-[360px] bg-[#07070e] border border-djzinc-800 rounded-2xl p-4 shadow-inner relative overflow-hidden">
+                        <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
+                                <h4 className="text-xs font-mono font-bold uppercase text-white tracking-wider">
+                                    Simulación Interactiva
+                                </h4>
+                            </div>
+                            <span className="text-[10px] font-mono text-gray-500 uppercase">
+                                Visual Studio 60 FPS
+                            </span>
+                        </div>
+
+                        {/* Visualizador Animado */}
+                        <div className="flex-1 min-h-0">
+                            {renderVisualSimulator()}
+                        </div>
+                    </div>
+                </div>
+
+                {/* FOOTER DEL MODAL */}
+                <div className="px-5 py-3 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
+                    <span className="text-gray-500 text-[11px] hidden sm:inline">
+                        Presiona <kbd className="px-1.5 py-0.5 bg-djzinc-900 border border-djzinc-750 rounded text-gray-300">ESC</kbd> o haz clic fuera para volver a la cabina.
+                    </span>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer ml-auto"
+                    >
+                        Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayTrack, onSelectTrack }) => {
     if (!isOpen || !currentTrack) return null;
 
@@ -22997,6 +23838,22 @@ const App = () => {
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
     const [copilotModalOpen, setCopilotModalOpen] = useState(false);
 
+    // MANUAL MAESTRO INTERACTIVO INDIVIDUALIZADO (Modal & Masterclass)
+    const [manualModalOpen, setManualModalOpen] = useState(false);
+    const [manualSection, setManualSection] = useState('audit');
+
+    const handleOpenManual = (section = null) => {
+        const secMap = {
+            'audit': 'audit', 'copilot': 'copilot', 'hotcues': 'hotcues', 'cues': 'hotcues',
+            'setbuilder': 'setbuilder', 'sets': 'setbuilder', 'map': 'map',
+            'spotify': 'spotify', 'pool': 'spotify', 'radar': 'radar',
+            'crates': 'crates', 'taxonomy': 'crates', 'trends': 'radar', 'knowledge': 'radar'
+        };
+        const target = (section && secMap[section]) ? secMap[section] : (secMap[activeTab] || 'audit');
+        setManualSection(target);
+        setManualModalOpen(true);
+    };
+
     // UX CABINA: Modo Cabina Oscura (High-Contrast Club Mode) y Modal de Atajos DJ
     const [clubMode, setClubMode] = useState(() => {
         try {
@@ -23419,13 +24276,29 @@ const App = () => {
                 }
             }
 
-            // 2. ESC: Cerrar modal de atajos
+            // 2. ESC: Cerrar modal de atajos o manual interactivo
             if (e.key === 'Escape') {
+                if (manualModalOpen) {
+                    e.preventDefault();
+                    setManualModalOpen(false);
+                    return;
+                }
                 if (shortcutsModalOpen) {
                     e.preventDefault();
                     setShortcutsModalOpen(false);
                     return;
                 }
+            }
+
+            // F1: Abrir / cerrar Manual Maestro Interactivo
+            if (e.key === 'F1') {
+                e.preventDefault();
+                if (manualModalOpen) {
+                    setManualModalOpen(false);
+                } else {
+                    handleOpenManual(activeTab);
+                }
+                return;
             }
 
             // 3. ? o H: Abrir / cerrar Cheatsheet de atajos
@@ -23504,7 +24377,7 @@ const App = () => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [nowPlayingTrack, currentTrack, auditTracks, selectedTrack, shortcutsModalOpen, togglePlayPause, handlePlayTrack, handleCue, handleFooterSeek, toggleClubMode]);
+    }, [nowPlayingTrack, currentTrack, auditTracks, selectedTrack, shortcutsModalOpen, manualModalOpen, activeTab, togglePlayPause, handlePlayTrack, handleCue, handleFooterSeek, toggleClubMode]);
 
     // Gestión Global de Eliminación de Pistas del Análisis
     const handleRemoveTrackGlobal = (trackId) => {
@@ -24109,6 +24982,17 @@ const App = () => {
                     <kbd className="text-[9px] bg-black/40 px-1 py-0.2 rounded border border-djzinc-750">L</kbd>
                 </button>
 
+                {/* Botón Maestro del Manual Interactivo BeatWave (Color Rosa Vibrante de Cabina) */}
+                <button
+                    type="button"
+                    onClick={() => handleOpenManual(activeTab)}
+                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-pink-500 via-rose-500 to-pink-500 hover:from-pink-400 hover:to-rose-400 text-white font-mono font-black text-xs shadow-[0_0_15px_rgba(236,72,153,0.5)] border border-pink-400/80 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
+                    title="Manual Interactivo & Masterclass BeatWave Pro (F1)"
+                >
+                    <span>📖</span>
+                    <span className="tracking-wider">{t('nav_manual') || 'MANUAL'}</span>
+                </button>
+
                 {/* Botón de Atajos de Teclado DJ Cheatsheet */}
                 <button
                     type="button"
@@ -24627,6 +25511,17 @@ const App = () => {
                                     type="button"
                                     onClick={() => {
                                         setMobileDrawerOpen(false);
+                                        handleOpenManual(activeTab);
+                                    }}
+                                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-pink-950/70 text-xs font-mono text-pink-300 border border-pink-500/50 text-left hover:bg-pink-900/80 cursor-pointer shadow-[0_0_12px_rgba(236,72,153,0.3)] font-bold"
+                                >
+                                    <span>📖</span>
+                                    <span>Manual Interactivo (Masterclass)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setMobileDrawerOpen(false);
                                         setTutorialOpen(true);
                                     }}
                                     className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-djzinc-900 text-xs font-mono text-djcyan-400 border border-djcyan-500/30 text-left hover:bg-djzinc-850 cursor-pointer"
@@ -24697,6 +25592,18 @@ const App = () => {
                 onClose={() => setShortcutsModalOpen(false)}
                 clubMode={clubMode}
                 onToggleClubMode={toggleClubMode}
+            />
+
+            {/* MANUAL INTERACTIVO MAESTRO DE CABINA BEATWAVE PRO (8 SECCIONES & SIMULADOR) */}
+            <InteractiveManualModal
+                isOpen={manualModalOpen}
+                onClose={() => setManualModalOpen(false)}
+                initialSection={manualSection}
+                onNavigateTab={(tab) => {
+                    setActiveTab(tab);
+                    setManualModalOpen(false);
+                }}
+                lang={lang}
             />
         </div>
     );
