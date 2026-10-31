@@ -4366,12 +4366,35 @@ const MANUAL_SECTIONS = {
 const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onNavigateTab, lang = 'es' }) => {
     if (!isOpen) return null;
 
+    // Modo de Visualización del Manual:
+    // 'drawer': Columna lateral derecha ocupando el 40% del ancho, no bloqueante (interactúa con la app en vivo)
+    // 'modal': Ventana centrada amplia tipo Masterclass en dos columnas
+    // 'minimized': Píldora flotante en la esquina inferior derecha
+    const [viewMode, setViewMode] = useState(() => {
+        try {
+            return localStorage.getItem('bw_manual_viewmode') || 'drawer';
+        } catch (e) {
+            return 'drawer';
+        }
+    });
+
+    const setModeAndPersist = (mode) => {
+        setViewMode(mode);
+        try { localStorage.setItem('bw_manual_viewmode', mode); } catch (e) {}
+    };
+
     const [activeSectionKey, setActiveSectionKey] = useState(initialSection || 'audit');
     const [simStep, setSimStep] = useState(0);
     const [isSimPlaying, setIsSimPlaying] = useState(true);
     const [spotlightZoom, setSpotlightZoom] = useState(true);
+    const [drawerTab, setDrawerTab] = useState('all'); // 'all' | 'sim' | 'story'
 
-    const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit;
+    useEffect(() => {
+        if (initialSection && MANUAL_SECTIONS[initialSection]) {
+            setActiveSectionKey(initialSection);
+            setSimStep(0);
+        }
+    }, [initialSection]);
 
     // Temporizador de Simulación Automática (Auto-Play)
     useEffect(() => {
@@ -4780,13 +4803,306 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         );
     };
 
+    // Renderizador de la Tarjeta del Simulador Visual Animado
+    const renderSimulatorCard = (isDrawer = false) => (
+        <div className={`flex flex-col gap-2.5 bg-[#07070e] border border-djzinc-800 rounded-2xl p-3 sm:p-4 shadow-inner relative overflow-hidden ${isDrawer ? 'h-[300px] shrink-0' : 'flex-1 min-h-[360px]'}`}>
+            <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 shrink-0">
+                <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
+                    <h4 className="text-xs font-mono font-bold uppercase text-white tracking-wider flex items-center gap-1.5">
+                        <span>Simulación Interactiva</span>
+                        <span className="text-[9px] bg-pink-950 text-pink-300 px-1.5 py-0.2 rounded border border-pink-700/50">60 FPS</span>
+                    </h4>
+                </div>
+                <span className="text-[10px] font-mono text-gray-500 uppercase">
+                    Paso {simStep + 1}/4
+                </span>
+            </div>
+
+            {/* Visualizador Animado */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+                {renderVisualSimulator()}
+            </div>
+        </div>
+    );
+
+    // Renderizador del Relato Humano, Glosario Táctico y Flujo Paso a Paso
+    const renderSectionStoryAndDetails = () => (
+        <div className="flex flex-col gap-4">
+            {/* Cabecera de la Sección */}
+            <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black text-white" style={{ backgroundColor: activeSec.color }}>
+                        {activeSec.badge}
+                    </span>
+                    <span className="text-xs font-mono text-gray-400 uppercase tracking-wider font-bold">
+                        {activeSec.tag}
+                    </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-mono font-black text-white mt-1">
+                    {activeSec.title}
+                </h2>
+                <div className="p-3 rounded-xl bg-pink-950/30 border border-pink-900/50 text-pink-300 font-sans text-xs italic font-medium leading-relaxed mt-1">
+                    "{activeSec.hook}"
+                </div>
+            </div>
+
+            {/* Historia y Explicación Cercana */}
+            <div className="p-4 rounded-2xl bg-djzinc-900/70 border border-djzinc-800 text-xs font-sans text-gray-300 leading-relaxed space-y-2">
+                <p>{activeSec.story}</p>
+            </div>
+
+            {/* Tecnicismos Explicados para Todo el Mundo */}
+            <div className="space-y-2">
+                <h4 className="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>💡</span> <span>Conceptos Clave Explicados Fácilmente</span>
+                </h4>
+                <div className="grid grid-cols-1 gap-2">
+                    {activeSec.jargon.map((jg, jIdx) => (
+                        <div key={jIdx} className="p-3 rounded-xl bg-djzinc-950 border border-djzinc-800/90 text-xs font-sans">
+                            <div className="font-mono font-bold text-pink-300 mb-0.5 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-pink-400"></span>
+                                <span>{jg.term}</span>
+                            </div>
+                            <p className="text-gray-400 leading-relaxed text-[11px]">{jg.desc}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Paso a Paso */}
+            <div className="p-4 rounded-2xl bg-[#0b0c16] border border-djzinc-800 space-y-2">
+                <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <span>🛠️</span> <span>Flujo de Trabajo Paso a Paso</span>
+                </h4>
+                <div className="space-y-1.5 text-xs font-sans text-gray-300">
+                    {activeSec.steps.map((st, sIdx) => (
+                        <div key={sIdx} className="flex items-start gap-2">
+                            <span className="text-pink-400 font-bold shrink-0">✓</span>
+                            <span className="leading-snug">{st}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Pro DJ Tip */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/40 to-djzinc-900 border border-amber-600/40 text-xs font-sans text-amber-200 flex items-start gap-2.5 shadow-md">
+                <span className="text-base shrink-0">👑</span>
+                <div>
+                    <strong className="font-mono uppercase tracking-wider text-amber-300 block text-[11px] mb-0.5">Secreto Pro de Cabina</strong>
+                    <p className="text-gray-300 leading-relaxed">{activeSec.proTip}</p>
+                </div>
+            </div>
+
+            {/* Botón de Llamada a la Acción (Ir a la sección activa) */}
+            <div className="pt-2 pb-4">
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (onNavigateTab) {
+                            onNavigateTab(activeSec.tabId);
+                        }
+                        onClose();
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.4)] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                    <span>🚀</span>
+                    <span>Abrir e Ir a la Sección {activeSec.badge} Ahora</span>
+                </button>
+            </div>
+        </div>
+    );
+
+    // Botones de Gestión de Ventana (Minimizar, Alternar Columna 40% / Modal, Cerrar)
+    const renderHeaderControls = () => (
+        <div className="flex items-center gap-1.5 shrink-0">
+            {/* Botón Minimizar */}
+            <button 
+                type="button"
+                onClick={() => setModeAndPersist('minimized')}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 hover:text-white flex items-center justify-center font-mono text-xs border border-djzinc-750 transition-colors cursor-pointer"
+                title="Minimizar a píldora flotante para interactuar libremente con la app"
+            >
+                🗕
+            </button>
+
+            {/* Alternar Columna 40% vs Modal Completa */}
+            <button 
+                type="button"
+                onClick={() => setModeAndPersist(viewMode === 'drawer' ? 'modal' : 'drawer')}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 hover:text-white flex items-center justify-center font-mono text-xs border border-djzinc-750 transition-colors cursor-pointer"
+                title={viewMode === 'drawer' ? "Expandir a Modal Centrada Pantalla Completa" : "Plegar a Columna Lateral 40% (Interactiva con Cabina)"}
+            >
+                {viewMode === 'drawer' ? "⧉" : "▯"}
+            </button>
+
+            {/* Cerrar */}
+            <button 
+                type="button"
+                onClick={onClose}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-djzinc-850 hover:bg-pink-900/60 text-gray-400 hover:text-pink-300 flex items-center justify-center font-mono text-sm border border-djzinc-750 transition-colors cursor-pointer"
+                title="Cerrar manual (ESC)"
+            >
+                ✕
+            </button>
+        </div>
+    );
+
+    // Selector Horizontal de las 8 Secciones Maestras
+    const renderSectionsBar = () => (
+        <div className="px-3 sm:px-4 py-2 bg-[#07070d] border-b border-djzinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+            {Object.values(MANUAL_SECTIONS).map(sec => {
+                const isActive = activeSectionKey === sec.id;
+                return (
+                    <button
+                        key={sec.id}
+                        type="button"
+                        onClick={() => {
+                            setActiveSectionKey(sec.id);
+                            setSimStep(0);
+                        }}
+                        className={`px-2.5 sm:px-3 py-1.5 rounded-xl font-mono text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+                            isActive
+                                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-105'
+                                : 'bg-djzinc-900/80 text-gray-400 hover:text-white hover:bg-djzinc-800 border border-djzinc-800'
+                        }`}
+                    >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sec.color }}></span>
+                        <span>{sec.badge}</span>
+                    </button>
+                );
+            })}
+        </div>
+    );
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MODO 1: PÍLDORA FLOTANTE MINIMIZADA (Permite interactuar 100% con la App)
+    // ─────────────────────────────────────────────────────────────────────────
+    if (viewMode === 'minimized') {
+        return (
+            <div 
+                className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-[#090912]/95 border border-pink-500/80 shadow-[0_0_25px_rgba(236,72,153,0.5)] backdrop-blur-md cursor-pointer hover:scale-105 transition-all text-white font-mono text-xs select-none animate-fadeIn"
+                onClick={() => setModeAndPersist('drawer')}
+                title="Haga clic para desplegar el manual interactivo en la columna derecha"
+            >
+                <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
+                <span className="font-black text-pink-300 flex items-center gap-1">
+                    <span>📖 MANUAL</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-pink-950/80 border border-pink-700/60 font-bold uppercase" style={{ color: activeSec.color }}>
+                    {activeSec.badge}
+                </span>
+                <span className="text-gray-400 text-[10px] hidden sm:inline">P{simStep + 1} ↗</span>
+                <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onClose(); }}
+                    className="w-5 h-5 rounded-full bg-djzinc-850 hover:bg-djzinc-700 text-gray-400 hover:text-white flex items-center justify-center text-[10px] ml-1 cursor-pointer"
+                    title="Cerrar manual"
+                >
+                    ✕
+                </button>
+            </div>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MODO 2: COLUMNA LATERAL DERECHA (40% de ancho, no bloqueante, interactiva)
+    // ─────────────────────────────────────────────────────────────────────────
+    if (viewMode === 'drawer') {
+        return (
+            <aside 
+                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[480px] md:w-[45%] lg:w-[40%] xl:w-[40%] 2xl:w-[38%] min-w-[360px] max-w-[700px] h-full bg-[#080811]/98 border-l border-pink-500/60 shadow-[-20px_0_50px_rgba(0,0,0,0.85)] backdrop-blur-xl flex flex-col font-sans text-gray-200 animate-fadeIn select-none"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Cabecera del Drawer */}
+                <div className="px-4 py-3 border-b border-djzinc-800 bg-[#0d0d18] flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-base shadow-[0_0_12px_rgba(236,72,153,0.5)] shrink-0">
+                            📖
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-1.5">
+                                <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
+                                    MANUAL CABINA
+                                </h3>
+                                <span className="text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-1.5 py-0.2 rounded-full font-bold">
+                                    40% PRO
+                                </span>
+                            </div>
+                            <p className="text-[10px] text-gray-400 font-mono truncate max-w-[200px] sm:max-w-[260px]">
+                                {activeSec.tag}
+                            </p>
+                        </div>
+                    </div>
+
+                    {renderHeaderControls()}
+                </div>
+
+                {/* Selector Horizontal de Secciones */}
+                {renderSectionsBar()}
+
+                {/* Subtabs del Drawer: [ 🌟 Todo ] [ 🎬 Simulador ] [ 📖 Guía ] */}
+                <div className="px-4 py-1.5 bg-[#0a0a14] border-b border-djzinc-800/60 flex items-center justify-between text-[11px] font-mono shrink-0">
+                    <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Filtro de Contenido:</span>
+                    <div className="flex items-center gap-1 bg-djzinc-900 p-0.5 rounded-lg border border-djzinc-800">
+                        {[
+                            { id: 'all', label: '🌟 Todo' },
+                            { id: 'sim', label: '🎬 Simulador' },
+                            { id: 'story', label: '📖 Guía' }
+                        ].map(tb => (
+                            <button
+                                key={tb.id}
+                                type="button"
+                                onClick={() => setDrawerTab(tb.id)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                                    drawerTab === tb.id 
+                                        ? 'bg-pink-500 text-black font-black shadow-sm' 
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                {tb.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Cuerpo Scrollable del Drawer */}
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-4">
+                    {(drawerTab === 'all' || drawerTab === 'sim') && (
+                        renderSimulatorCard(true)
+                    )}
+                    {(drawerTab === 'all' || drawerTab === 'story') && (
+                        renderSectionStoryAndDetails()
+                    )}
+                </div>
+
+                {/* Pie del Drawer */}
+                <div className="px-4 py-2.5 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
+                    <span className="text-gray-400 text-[10px] flex items-center gap-1">
+                        <span>💡 Interactúa libremente con la cabina a la izquierda</span>
+                    </span>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-3 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold text-xs transition-colors cursor-pointer"
+                    >
+                        Cerrar (ESC)
+                    </button>
+                </div>
+            </aside>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MODO 3: MODAL CENTRADA AMPLIA (Masterclass de pantalla completa)
+    // ─────────────────────────────────────────────────────────────────────────
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
             <div 
                 className="w-full max-w-6xl h-[92vh] max-h-[900px] bg-[#090912] border border-pink-500/50 rounded-3xl shadow-[0_0_50px_rgba(236,72,153,0.3)] overflow-hidden flex flex-col font-sans text-gray-200"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* CABECERA MAESTRA DEL MANUAL (ESTILO PINK NEON CABINA) */}
+                {/* Cabecera Maestra */}
                 <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0d18] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0">
@@ -4807,149 +5123,26 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         </div>
                     </div>
 
-                    <button 
-                        onClick={onClose}
-                        className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
-                        title="Cerrar manual (ESC)"
-                    >
-                        ✕
-                    </button>
+                    {renderHeaderControls()}
                 </div>
 
-                {/* SELECTOR HORIZONTAL DE LAS 8 SECCIONES MAESTRAS */}
-                <div className="px-4 py-2 bg-[#07070d] border-b border-djzinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-                    {Object.values(MANUAL_SECTIONS).map(sec => {
-                        const isActive = activeSectionKey === sec.id;
-                        return (
-                            <button
-                                key={sec.id}
-                                type="button"
-                                onClick={() => {
-                                    setActiveSectionKey(sec.id);
-                                    setSimStep(0);
-                                }}
-                                className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-                                    isActive
-                                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-105'
-                                        : 'bg-djzinc-900/80 text-gray-400 hover:text-white hover:bg-djzinc-800 border border-djzinc-800'
-                                }`}
-                            >
-                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sec.color }}></span>
-                                <span>{sec.badge}</span>
-                            </button>
-                        );
-                    })}
-                </div>
+                {/* Selector Horizontal de las 8 Secciones */}
+                {renderSectionsBar()}
 
-                {/* CUERPO PRINCIPAL DIVIDIDO EN 2 COLUMNAS (HISTORIA Y EXPLICACIÓN HUMANA + SIMULADOR ANIMADO) */}
+                {/* Cuerpo Principal en 2 Columnas con Scroll Completo */}
                 <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 sm:p-6 overflow-hidden">
-                    {/* COLUMNA IZQUIERDA: CONTENIDO HUMANO, NARRATIVA Y PASO A PASO */}
+                    {/* Columna Izquierda: Narrativa y Paso a Paso con Scroll */}
                     <div className="lg:col-span-7 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
-                        {/* Cabecera de la Sección */}
-                        <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black text-white" style={{ backgroundColor: activeSec.color }}>
-                                    {activeSec.badge}
-                                </span>
-                                <span className="text-xs font-mono text-gray-400 uppercase tracking-wider font-bold">
-                                    {activeSec.tag}
-                                </span>
-                            </div>
-                            <h2 className="text-xl font-mono font-black text-white mt-1">
-                                {activeSec.title}
-                            </h2>
-                            <div className="p-3 rounded-xl bg-pink-950/30 border border-pink-900/50 text-pink-300 font-sans text-xs italic font-medium leading-relaxed mt-1">
-                                "{activeSec.hook}"
-                            </div>
-                        </div>
-
-                        {/* Historia y Explicación Cercana */}
-                        <div className="p-4 rounded-2xl bg-djzinc-900/70 border border-djzinc-800 text-xs font-sans text-gray-300 leading-relaxed space-y-2">
-                            <p>{activeSec.story}</p>
-                        </div>
-
-                        {/* Tecnicismos Explicados para Todo el Mundo */}
-                        <div className="space-y-2">
-                            <h4 className="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                                <span>💡</span> <span>Conceptos Clave Explicados Fácilmente</span>
-                            </h4>
-                            <div className="grid grid-cols-1 gap-2">
-                                {activeSec.jargon.map((jg, jIdx) => (
-                                    <div key={jIdx} className="p-3 rounded-xl bg-djzinc-950 border border-djzinc-800/90 text-xs font-sans">
-                                        <div className="font-mono font-bold text-pink-300 mb-0.5 flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-pink-400"></span>
-                                            <span>{jg.term}</span>
-                                        </div>
-                                        <p className="text-gray-400 leading-relaxed text-[11px]">{jg.desc}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Paso a Paso */}
-                        <div className="p-4 rounded-2xl bg-[#0b0c16] border border-djzinc-800 space-y-2">
-                            <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                                <span>🛠️</span> <span>Flujo de Trabajo Paso a Paso</span>
-                            </h4>
-                            <div className="space-y-1.5 text-xs font-sans text-gray-300">
-                                {activeSec.steps.map((st, sIdx) => (
-                                    <div key={sIdx} className="flex items-start gap-2">
-                                        <span className="text-pink-400 font-bold shrink-0">✓</span>
-                                        <span className="leading-snug">{st}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Pro DJ Tip */}
-                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/40 to-djzinc-900 border border-amber-600/40 text-xs font-sans text-amber-200 flex items-start gap-2.5 shadow-md">
-                            <span className="text-base shrink-0">👑</span>
-                            <div>
-                                <strong className="font-mono uppercase tracking-wider text-amber-300 block text-[11px] mb-0.5">Secreto Pro de Cabina</strong>
-                                <p className="text-gray-300 leading-relaxed">{activeSec.proTip}</p>
-                            </div>
-                        </div>
-
-                        {/* Botón de Llamada a la Acción (Ir a la sección activa) */}
-                        <div className="pt-2 pb-4">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (onNavigateTab) {
-                                        onNavigateTab(activeSec.tabId);
-                                    }
-                                    onClose();
-                                }}
-                                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.4)] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
-                            >
-                                <span>🚀</span>
-                                <span>Abrir e Ir a la Sección {activeSec.badge} Ahora</span>
-                            </button>
-                        </div>
+                        {renderSectionStoryAndDetails()}
                     </div>
 
-                    {/* COLUMNA DERECHA: SIMULADOR ANIMADO INTERACTIVO CON SPOTLIGHT Y FOCO */}
-                    <div className="lg:col-span-5 flex flex-col gap-3 min-h-[360px] bg-[#07070e] border border-djzinc-800 rounded-2xl p-4 shadow-inner relative overflow-hidden">
-                        <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2">
-                            <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
-                                <h4 className="text-xs font-mono font-bold uppercase text-white tracking-wider">
-                                    Simulación Interactiva
-                                </h4>
-                            </div>
-                            <span className="text-[10px] font-mono text-gray-500 uppercase">
-                                Visual Studio 60 FPS
-                            </span>
-                        </div>
-
-                        {/* Visualizador Animado */}
-                        <div className="flex-1 min-h-0">
-                            {renderVisualSimulator()}
-                        </div>
+                    {/* Columna Derecha: Simulador Animado */}
+                    <div className="lg:col-span-5 flex flex-col min-h-[360px]">
+                        {renderSimulatorCard(false)}
                     </div>
                 </div>
 
-                {/* FOOTER DEL MODAL */}
+                {/* Footer de la Modal */}
                 <div className="px-5 py-3 bg-[#0a0a12] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
                     <span className="text-gray-500 text-[11px] hidden sm:inline">
                         Presiona <kbd className="px-1.5 py-0.5 bg-djzinc-900 border border-djzinc-750 rounded text-gray-300">ESC</kbd> o haz clic fuera para volver a la cabina.
@@ -23557,8 +23750,11 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
     const activePlatObj = (copilotInfo.platforms || []).find(p => p.id === copilotInfo.active_platform) || { name: 'Suite DJ', id: 'serato' };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-            <div className="relative w-full max-w-2xl bg-[#090913] border border-red-500/40 rounded-3xl p-6 sm:p-7 shadow-[0_0_50px_rgba(239,68,68,0.25)] flex flex-col gap-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
+            <div 
+                className="relative w-full max-w-2xl bg-[#090913] border border-red-500/40 rounded-3xl p-6 sm:p-7 shadow-[0_0_50px_rgba(239,68,68,0.25)] flex flex-col gap-5 max-h-[88vh] overflow-y-auto custom-scrollbar"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Cabecera */}
                 <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
                     <div className="flex items-center gap-3">
@@ -23850,8 +24046,12 @@ const App = () => {
             'crates': 'crates', 'taxonomy': 'crates', 'trends': 'radar', 'knowledge': 'radar'
         };
         const target = (section && secMap[section]) ? secMap[section] : (secMap[activeTab] || 'audit');
-        setManualSection(target);
-        setManualModalOpen(true);
+        if (manualModalOpen && manualSection === target) {
+            setManualModalOpen(false);
+        } else {
+            setManualSection(target);
+            setManualModalOpen(true);
+        }
     };
 
     // UX CABINA: Modo Cabina Oscura (High-Contrast Club Mode) y Modal de Atajos DJ
