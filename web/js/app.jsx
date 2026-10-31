@@ -191,6 +191,8 @@ const I18N_TRANSLATIONS = {
         th_waveform: "Waveform",
         th_title: "Archivo / Título",
         th_artist: "Artista",
+        th_genre: "Género",
+        th_subgenre: "Subgénero",
         th_format: "Formato",
         th_khz: "kHz",
         th_kbps: "kbps",
@@ -343,6 +345,8 @@ const I18N_TRANSLATIONS = {
         th_waveform: "Waveform",
         th_title: "File / Title",
         th_artist: "Artist",
+        th_genre: "Genre",
+        th_subgenre: "Subgenre",
         th_format: "Format",
         th_khz: "kHz",
         th_kbps: "kbps",
@@ -5578,6 +5582,8 @@ const AuditWorkspace = ({
     const [filterHeaderStatus, setFilterHeaderStatus] = useState('ALL');
     const [filterHeaderEnergy, setFilterHeaderEnergy] = useState('ALL');
     const [filterHeaderDance, setFilterHeaderDance] = useState('ALL');
+    const [filterHeaderGenre, setFilterHeaderGenre] = useState('');
+    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState('');
 
     const handleSortAudit = (field) => {
         setAuditSortDir(prev => auditSortField === field && prev === 'asc' ? 'desc' : 'asc');
@@ -5672,6 +5678,16 @@ const AuditWorkspace = ({
                 if (filterHeaderDance === 'MED' && (dVal < 65 || dVal >= 80)) return false;
                 if (filterHeaderDance === 'LOW' && dVal >= 65) return false;
             }
+            if (filterHeaderGenre) {
+                const gTerm = filterHeaderGenre.toLowerCase();
+                const trkGenre = (t?.genre || 'House').toLowerCase();
+                if (!trkGenre.includes(gTerm)) return false;
+            }
+            if (filterHeaderSubgenre) {
+                const sgTerm = filterHeaderSubgenre.toLowerCase();
+                const trkSubgenre = (t?.subgenre || (TAXONOMY_TREE[t?.genre || 'Tech House'] ? TAXONOMY_TREE[t?.genre || 'Tech House'][0] : 'Tech House')).toLowerCase();
+                if (!trkSubgenre.includes(sgTerm)) return false;
+            }
             if (filterHeaderAcousticRole !== 'ALL') {
                 if (t?.acoustic_role !== filterHeaderAcousticRole) return false;
             }
@@ -5688,6 +5704,12 @@ const AuditWorkspace = ({
             } else if (auditSortField === 'artist') {
                 valA = a.a || a.artist || '';
                 valB = b.a || b.artist || '';
+            } else if (auditSortField === 'genre') {
+                valA = a.genre || 'House';
+                valB = b.genre || 'House';
+            } else if (auditSortField === 'subgenre') {
+                valA = a.subgenre || (TAXONOMY_TREE[a.genre || 'Tech House'] ? TAXONOMY_TREE[a.genre || 'Tech House'][0] : 'Tech House');
+                valB = b.subgenre || (TAXONOMY_TREE[b.genre || 'Tech House'] ? TAXONOMY_TREE[b.genre || 'Tech House'][0] : 'Tech House');
             } else if (auditSortField === 'bpm') {
                 valA = parseFloat(a.b || a.bpm) || 0;
                 valB = parseFloat(b.b || b.bpm) || 0;
@@ -6434,6 +6456,8 @@ const AuditWorkspace = ({
                                 <th className="py-2.5 px-2 w-28 text-center text-djcyan-400">{t('th_waveform') || 'Waveform'}</th>
                                 <th onClick={() => handleSortAudit('title')} className="py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'Archivo / Título'} {renderSortArrowAudit('title')}</th>
                                 <th onClick={() => handleSortAudit('artist')} className="py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'Artista'} {renderSortArrowAudit('artist')}</th>
+                                <th onClick={() => handleSortAudit('genre')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_genre') || 'Género'} {renderSortArrowAudit('genre')}</th>
+                                <th onClick={() => handleSortAudit('subgenre')} className="py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors">{t('th_subgenre') || 'Subgénero'} {renderSortArrowAudit('subgenre')}</th>
                                 <th onClick={() => handleSortAudit('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'Formato'} {renderSortArrowAudit('format')}</th>
                                 <th onClick={() => handleSortAudit('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'kHz'} {renderSortArrowAudit('sample_rate_khz')}</th>
                                 <th onClick={() => handleSortAudit('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'kbps'} {renderSortArrowAudit('bitrate_kbps')}</th>
@@ -6448,17 +6472,19 @@ const AuditWorkspace = ({
                                 <th onClick={() => handleSortAudit('e')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">⚡ {t('th_energy') || 'Energía'} {renderSortArrowAudit('e')}</th>
                                 <th onClick={() => handleSortAudit('dance')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">🕺 {t('th_dance') || 'Dance'} {renderSortArrowAudit('dance')}</th>
                                 <th onClick={() => handleSortAudit('fase_badge')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_phase') || 'Fase DJ'} {renderSortArrowAudit('fase_badge')}</th>
-                                <th onClick={() => handleSortAudit('acoustic_role')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-Muddy">{t('th_acoustic_role') || 'Rol Acústico & Anti-Muddy'} {renderSortArrowAudit('acoustic_role')}</th>
+                                <th onClick={() => handleSortAudit('acoustic_role')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-MudDY">{t('th_acoustic_role') || 'Rol Acústico & Anti-Muddy'} {renderSortArrowAudit('acoustic_role')}</th>
                                 <th onClick={() => handleSortAudit('comment')} className="py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors">{t('th_comment_pro') || 'Comentario Pro DJ'} {renderSortArrowAudit('comment')}</th>
                                 <th onClick={() => handleSortAudit('status')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_status') || 'Estado'} {renderSortArrowAudit('status')}</th>
                                 <th className="py-2.5 px-2 text-center w-14 text-red-400/80 font-mono" title="Quitar pista del análisis global">{t('th_remove') || 'Quitar'}</th>
                             </tr>
                             <tr className="bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans">
                                 <th className="p-1 text-center font-mono text-[9px] text-gray-500">
-                                    {(filterHeaderSearch || filterHeaderFormat !== 'ALL' || filterHeaderQuality !== 'ALL' || filterHeaderStatus !== 'ALL' || filterHeaderEnergy !== 'ALL' || filterHeaderDance !== 'ALL') ? (
+                                    {(filterHeaderSearch || filterHeaderGenre || filterHeaderSubgenre || filterHeaderFormat !== 'ALL' || filterHeaderQuality !== 'ALL' || filterHeaderStatus !== 'ALL' || filterHeaderEnergy !== 'ALL' || filterHeaderDance !== 'ALL') ? (
                                         <button 
                                             onClick={() => {
                                                 setFilterHeaderSearch('');
+                                                setFilterHeaderGenre('');
+                                                setFilterHeaderSubgenre('');
                                                 setFilterHeaderFormat('ALL');
                                                 setFilterHeaderQuality('ALL');
                                                 setFilterHeaderStatus('ALL');
@@ -6481,6 +6507,24 @@ const AuditWorkspace = ({
                                     />
                                 </th>
                                 <th className="p-1"></th>
+                                <th className="p-1 text-center">
+                                    <input 
+                                        type="text" 
+                                        value={filterHeaderGenre} 
+                                        onChange={(e) => setFilterHeaderGenre(e.target.value)} 
+                                        placeholder={lang === 'en' ? "Genre..." : "Género..."} 
+                                        className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    />
+                                </th>
+                                <th className="p-1 text-center">
+                                    <input 
+                                        type="text" 
+                                        value={filterHeaderSubgenre} 
+                                        onChange={(e) => setFilterHeaderSubgenre(e.target.value)} 
+                                        placeholder={lang === 'en' ? "Subgenre..." : "Subgénero..."} 
+                                        className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                    />
+                                </th>
                                 <th className="p-1 text-center">
                                     <select 
                                         value={filterHeaderFormat} 
@@ -6574,7 +6618,7 @@ const AuditWorkspace = ({
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracksFiltrados.length === 0 && !isAuditing && (
                                 <tr>
-                                    <td colSpan="21" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4">
+                                    <td colSpan="23" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4">
                                         No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".
                                     </td>
                                 </tr>
@@ -6632,6 +6676,20 @@ const AuditWorkspace = ({
                                             </div>
                                         </td>
                                         <td className="py-2 px-2 text-gray-300 truncate max-w-[120px]" title={row.a || row.artist}>{row.a || row.artist}</td>
+
+                                        {/* GÉNERO */}
+                                        <td className="py-2 px-2 text-center">
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[95px] inline-block shadow-sm" title={row.genre || 'House'}>
+                                                {row.genre || 'House'}
+                                            </span>
+                                        </td>
+
+                                        {/* SUBGÉNERO */}
+                                        <td className="py-2 px-2 text-center">
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block" title={row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}>
+                                                {row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}
+                                            </span>
+                                        </td>
 
                                         {/* FORMATO */}
                                         <td className="py-2 px-2 text-center">
@@ -9131,6 +9189,8 @@ const HotCuesWorkspace = ({
                                     <th className="py-1 px-2 w-10">#</th>
                                     <th className="py-1 px-2 w-12">Cover</th>
                                     <th className="py-1 px-2">Título / Artista</th>
+                                    <th className="py-1 px-2 w-24 text-center">{t('th_genre') || 'Género'}</th>
+                                    <th className="py-1 px-2 w-28 text-center">{t('th_subgenre') || 'Subgénero'}</th>
                                     <th className="py-1 px-2 w-20">BPM</th>
                                     <th className="py-1 px-2 w-16">Tono</th>
                                     <th className="py-1 px-2 w-20">Duración</th>
@@ -9167,6 +9227,16 @@ const HotCuesWorkspace = ({
                                                 <div className="truncate max-w-xs text-[11px] text-gray-400">
                                                     {trk.artist || trk.a || 'Artista Desconocido'}
                                                 </div>
+                                            </td>
+                                            <td className="py-1.5 px-2 text-center">
+                                                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[85px] inline-block">
+                                                    {trk.genre || 'House'}
+                                                </span>
+                                            </td>
+                                            <td className="py-1.5 px-2 text-center">
+                                                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-mono text-gray-300 bg-djzinc-850 border border-djzinc-750 truncate max-w-[95px] inline-block">
+                                                    {trk.subgenre || (TAXONOMY_TREE[trk.genre || 'Tech House'] ? TAXONOMY_TREE[trk.genre || 'Tech House'][0] : 'Tech House')}
+                                                </span>
                                             </td>
                                             <td className="py-1.5 px-2 font-mono text-gray-300">{trk.bpm || trk.b || '--'}</td>
                                             <td className="py-1.5 px-2 font-mono text-djcyan-400">{trk.key || trk.k || '--'}</td>
@@ -10621,6 +10691,12 @@ const SpotifyWorkspace = ({
             } else if (spSortField === 'origin') {
                 valA = a.origin || 'spotify';
                 valB = b.origin || 'spotify';
+            } else if (spSortField === 'genre') {
+                valA = a.genre || 'House';
+                valB = b.genre || 'House';
+            } else if (spSortField === 'subgenre') {
+                valA = a.subgenre || (TAXONOMY_TREE[a.genre || 'Tech House'] ? TAXONOMY_TREE[a.genre || 'Tech House'][0] : 'Tech House');
+                valB = b.subgenre || (TAXONOMY_TREE[b.genre || 'Tech House'] ? TAXONOMY_TREE[b.genre || 'Tech House'][0] : 'Tech House');
             }
 
             if (typeof valA === 'number' && typeof valB === 'number') {
@@ -11165,6 +11241,8 @@ const SpotifyWorkspace = ({
                                     <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
                                     <th onClick={() => handleSortSp('title')} className="py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'} {renderSortArrowSp('title')}</th>
                                     <th onClick={() => handleSortSp('artist')} className="py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'ARTISTA'} {renderSortArrowSp('artist')}</th>
+                                    <th onClick={() => handleSortSp('genre')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_genre') || 'GÉNERO'} {renderSortArrowSp('genre')}</th>
+                                    <th onClick={() => handleSortSp('subgenre')} className="py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors">{t('th_subgenre') || 'SUBGÉNERO'} {renderSortArrowSp('subgenre')}</th>
                                     <th onClick={() => handleSortSp('origin')} className="py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors">ORIGEN {renderSortArrowSp('origin')}</th>
                                     <th onClick={() => handleSortSp('pre_quality_tier')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" title="Pre-Auditoría de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena">💎 PRE-AUDITORÍA (VALOR) {renderSortArrowSp('pre_quality_tier')}</th>
                                     <th onClick={() => handleSortSp('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'FORMATO'} {renderSortArrowSp('format')}</th>
@@ -11207,6 +11285,8 @@ const SpotifyWorkspace = ({
                                             className="w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
                                         />
                                     </th>
+                                    <th className="p-1"></th>
+                                    <th className="p-1"></th>
                                     <th className="p-1"></th>
                                     <th className="p-1 text-center">
                                         <select 
@@ -11306,7 +11386,7 @@ const SpotifyWorkspace = ({
                             <tbody className="divide-y divide-djzinc-850/60 font-sans">
                                 {tracksFiltradosSp.length === 0 && (
                                     <tr>
-                                        <td colSpan="17" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal">
+                                        <td colSpan="19" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal">
                                             No hay pistas que coincidan con los filtros aplicados.
                                         </td>
                                     </tr>
@@ -11398,6 +11478,20 @@ const SpotifyWorkspace = ({
                                             </div>
                                         </td>
                                         <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-xs">{row.artist}</td>
+
+                                        {/* GÉNERO */}
+                                        <td className="py-2 px-2 text-center">
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[95px] inline-block shadow-sm" title={row.genre || 'House'}>
+                                                {row.genre || 'House'}
+                                            </span>
+                                        </td>
+
+                                        {/* SUBGÉNERO */}
+                                        <td className="py-2 px-2 text-center">
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block" title={row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}>
+                                                {row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}
+                                            </span>
+                                        </td>
 
                                         {/* ORIGEN */}
                                         <td className="py-2 px-2.5 text-center">
@@ -15443,6 +15537,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                     <th className="py-2 px-3 min-w-[220px]">PISTA / ÁLBUM</th>
                                     <th className="py-2 px-3 min-w-[150px]">ARTISTA</th>
                                     <th className="py-2 px-2 text-center w-24">GÉNERO</th>
+                                    <th className="py-2 px-2 text-center w-28">SUBGÉNERO</th>
                                     <th className="py-2 px-2 text-center w-16">AÑO</th>
                                     <th className="py-2 px-3 min-w-[220px] text-left text-djcyan-400">COMENTARIO / NOTA DJ</th>
                                     <th className="py-2 px-3 text-center w-28">HORA APUNTE</th>
@@ -15493,6 +15588,11 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                             </td>
                                             <td className="py-2 px-3 text-gray-300 font-medium truncate max-w-xs">{row.artist}</td>
                                             <td className="py-2 px-2 text-center font-mono text-[10px] text-emerald-400">{row.genre || 'Electronic'}</td>
+                                            <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
+                                                <span className="px-1.5 py-0.5 rounded bg-djzinc-850 border border-djzinc-750">
+                                                    {row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Club')}
+                                                </span>
+                                            </td>
                                             <td className="py-2 px-2 text-center font-mono text-gray-400">{row.year || '--'}</td>
                                             <td className="py-2 px-3 text-left">
                                                 <div className="flex items-center gap-1.5 max-w-[260px]">
@@ -17561,7 +17661,7 @@ const SetBuilderWorkspace = ({
 
                                             {/* Info de la pista */}
                                             <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <h4 className="text-xs font-mono font-bold text-white truncate">
                                                         {track.title || track.t || track.filename || 'Pista sin título'}
                                                     </h4>
@@ -17570,6 +17670,12 @@ const SetBuilderWorkspace = ({
                                                             {track.format}
                                                         </span>
                                                     )}
+                                                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-950/80 text-purple-300 border border-purple-800/60">
+                                                        {track.genre || 'House'}
+                                                    </span>
+                                                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-djzinc-850 text-gray-300 border border-djzinc-750">
+                                                        {track.subgenre || (TAXONOMY_TREE[track.genre || 'Tech House'] ? TAXONOMY_TREE[track.genre || 'Tech House'][0] : 'Tech House')}
+                                                    </span>
                                                 </div>
                                                 <p className="text-[11px] text-gray-400 truncate font-sans">
                                                     {track.artist || track.a || 'Artista desconocido'}
