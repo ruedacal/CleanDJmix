@@ -19,8 +19,8 @@ CROWD_WEBM = "/tmp/crowd_cheer.webm"
 TML_GIRLS_MP4 = "/tmp/tml_girls.mp4"
 TML_LASERS_MKV = "/tmp/tml_lasers.mkv"
 
-IMG_BOOTH = "/Users/admin/.gemini/antigravity/brain/829cd3f3-a37e-4d65-ae8a-5783bbb904cb/dj_booth_silhouette_v2_1793500443767.jpg"
-IMG_DROP = "/Users/admin/.gemini/antigravity/brain/829cd3f3-a37e-4d65-ae8a-5783bbb904cb/dj_festival_headliner_silhouette_1793500228279.jpg"
+IMG_BOOTH = "/Users/admin/.gemini/antigravity/brain/829cd3f3-a37e-4d65-ae8a-5783bbb904cb/dj_over_shoulder_controls_cyan_1793502443331.jpg"
+IMG_DROP = "/Users/admin/.gemini/antigravity/brain/829cd3f3-a37e-4d65-ae8a-5783bbb904cb/dj_festival_crowd_backview_1793502354271.jpg"
 
 OUTPUT_DIR = "web/assets"
 OUTPUT_VIDEO = os.path.join(OUTPUT_DIR, "intro_cinematic.mp4")

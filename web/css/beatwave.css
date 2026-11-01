@@ -490,27 +490,38 @@ body.club-mode,
 }
 
 /* ==============================================================================
-   ANIMACIONES INTRO CINEMÁTICA Y BASS DROP 140 BPM
+   ANIMACIONES INTRO CINEMÁTICA Y BASS DROP 140 BPM (DISTORSIÓN RÍTMICA TIPO LOGO)
    ============================================================================== */
 @keyframes bassKickShake {
     0% {
-        transform: scale(1.0) translate(0, 0);
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
         filter: drop-shadow(0 0 0 transparent) contrast(100%);
     }
-    15% {
-        transform: scale(1.025) translate(-2px, 3px);
-        filter: contrast(120%) saturate(125%) drop-shadow(0 0 25px rgba(6, 182, 212, 0.4));
+    14% {
+        /* Golpe de bombo / kick hit: ligero skew, scale y aberración cromática rosa/cian como el logo */
+        transform: translate3d(-3.5px, 2px, 0) scaleX(1.025) scaleY(1.035) skewX(-2deg);
+        filter: contrast(118%) saturate(125%) 
+                drop-shadow(-3px 0 0 rgba(236, 72, 153, 0.45)) 
+                drop-shadow(3px 0 0 rgba(6, 182, 212, 0.55));
     }
-    35% {
-        transform: scale(1.012) translate(2px, -1px);
-        filter: contrast(110%) saturate(115%);
+    28% {
+        /* Rebote sutil contra-fase */
+        transform: translate3d(2px, -1.5px, 0) scaleX(0.99) scaleY(0.985) skewX(1.2deg);
+        filter: contrast(110%) saturate(115%) 
+                drop-shadow(-1.5px 0 0 rgba(236, 72, 153, 0.25)) 
+                drop-shadow(1.5px 0 0 rgba(6, 182, 212, 0.35));
     }
-    60% {
-        transform: scale(1.004) translate(-1px, 0);
-        filter: contrast(104%);
+    45% {
+        /* Desvanecimiento armónico del sub-grave */
+        transform: translate3d(-1px, 0.5px, 0) scale(1.006) skewX(-0.5deg);
+        filter: contrast(105%) saturate(108%) drop-shadow(0 0 12px rgba(6, 182, 212, 0.25));
+    }
+    70% {
+        transform: translate3d(0.5px, 0, 0) scale(1.002) skewX(0deg);
+        filter: contrast(102%) saturate(103%);
     }
     100% {
-        transform: scale(1.0) translate(0, 0);
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
         filter: contrast(100%) saturate(100%);
     }
 }
