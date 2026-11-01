@@ -636,7 +636,7 @@ class MediaService:
             orig_artist = str(t.get("artist") or t.get("a") or "").strip()
             orig_title = str(t.get("title") or t.get("t") or "").strip()
             orig_file = str(t.get("filename") or t.get("f") or "")
-            orig_dur = str(t.get("duration") or "05:00")
+            orig_dur = str(t.get("duration") or t.get("d") or "05:00")
             orig_bpm = str(t.get("bpm") or t.get("b") or bpms_tech[idx % len(bpms_tech)])
             orig_key = str(t.get("key") or t.get("k") or keys_camelot[idx % len(keys_camelot)])
             reemplazo_de = f"{orig_artist} - {orig_title}" if orig_artist and orig_title else (orig_title or orig_file)

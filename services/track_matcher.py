@@ -101,7 +101,7 @@ class TrackMatcher:
         """
         orig_title = str(pista_origen.get("title") or pista_origen.get("t") or "")
         orig_artist = str(pista_origen.get("artist") or pista_origen.get("a") or "")
-        orig_dur_sec = cls.parsear_duracion_a_segundos(pista_origen.get("duration") or pista_origen.get("dur_ms") or 0)
+        orig_dur_sec = cls.parsear_duracion_a_segundos(pista_origen.get("duration") or pista_origen.get("d") or pista_origen.get("dur_ms") or 0)
         orig_bpm = float(pista_origen.get("bpm") or pista_origen.get("b") or 0.0) if str(pista_origen.get("bpm") or pista_origen.get("b") or "--") != "--" else 0.0
 
         cand_title = str(candidato.get("title") or candidato.get("trackName") or candidato.get("name") or "")

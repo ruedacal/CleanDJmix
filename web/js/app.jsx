@@ -6885,10 +6885,10 @@ const AuditWorkspace = ({
                     original_title: r.original_title || targetTracks[i]?.title || targetTracks[i]?.t || 'Sin Título',
                     original_calidad: r.original_calidad || targetTracks[i]?.calidad || null,
                     downloaded: false,
-                    selected: isVerified, // Solo pre-marcar las que tienen match verificado 100%
+                    selected: true, // Pre-marcar siempre para que el DJ pueda descargar inmediatamente el lote
                     format: 'FLAC',
                     calidad: 'Oficial Spotify HD',
-                    status: isVerified ? 'Listo para Descarga (Match Verificado)' : 'Revisión Requerida (Match Dudoso)',
+                    status: isVerified ? 'Listo para Descarga (Match Verificado)' : 'Listo para Descarga (Match Pendiente)',
                     match_score: r.match_score !== undefined ? r.match_score : 100,
                     match_confianza: r.match_confianza || (isVerified ? 'ALTA' : 'MEDIA'),
                     match_badge_color: r.match_badge_color || (isVerified ? 'emerald' : 'amber'),
@@ -6938,9 +6938,9 @@ const AuditWorkspace = ({
                     original_file: trk.filename || trk.f || null,
                     original_path: trk.path || trk.filepath || trk.f || null,
                     downloaded: false,
-                    selected: false,
+                    selected: true,
                     format: 'FLAC',
-                    status: 'Revisión Requerida'
+                    status: 'Listo para Descarga'
                 }));
                 if (typeof onSendToSpotify === 'function') {
                     onSendToSpotify(fallbackTracks, 'audit_upgrade');
@@ -12390,6 +12390,19 @@ const SpotifyWorkspace = ({
     const [spotifyUrl, setSpotifyUrl] = useState('');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [destDir, setDestDir] = useState('/Users/admin/Music/mi musica');
+
+    useEffect(() => {
+        // Sincronizar directorio de descargas con el backend y sanitizar
+        fetch('/api/directorio_descarga')
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.path && typeof data.path === 'string' && data.path.startsWith('/') && !data.path.includes('"') && !data.path.includes(':')) {
+                    setDestDir(data.path);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     const [selectedFormat, setSelectedFormat] = useState('flac');
     const [downloadingMsg, setDownloadingMsg] = useState('');
     const [downloadProgress, setDownloadProgress] = useState(0);
@@ -13184,15 +13197,8 @@ const SpotifyWorkspace = ({
         let pistasADescargar = [...listaPistas];
         const dudosas = pistasADescargar.filter(t => t.match_score !== undefined && t.match_score < 75 && !t.confirmado_manualmente);
         if (dudosas.length > 0) {
-            const confirmMsg = `⚠️ ALERTA DE SEGURIDAD DJ:\n\nSe detectaron ${dudosas.length} pista(s) con coincidencia dudosa (<75%) que podrían ser temas erróneos, Radio Edits o Remixes no deseados.\n\n¿Deseas omitir las dudosas y descargar ÚNICAMENTE las pistas 100% verificadas?\n\n- [Aceptar]: Descargar solo las verificadas (Recomendado para evitar temas incorrectos)\n- [Cancelar]: Revisar y seleccionar versiones manualmente`;
-            if (window.confirm(confirmMsg)) {
-                pistasADescargar = pistasADescargar.filter(t => t.match_score === undefined || t.match_score >= 75 || t.confirmado_manualmente);
-                if (pistasADescargar.length === 0) {
-                    alert("No hay pistas con coincidencia alta para descargar. Por favor haz clic en 'Revisar' en la pista para seleccionar la versión correcta con el buscador.");
-                    return;
-                }
-            } else {
-                handleAbrirVerificacionCandidatos(dudosas[0]);
+            const confirmMsg = `⚠️ AVISO DE FIDELIDAD DJ:\n\nSe detectaron ${dudosas.length} pista(s) con posible variación de versión, Remix o duración (<75%).\n\n¿Deseas descargar de todas formas todo el lote seleccionado (${pistasADescargar.length} pistas)?\n\n• [Aceptar]: Descargar todas las pistas seleccionadas ahora.\n• [Cancelar]: Detener para revisar o cambiar versiones individualmente.`;
+            if (!window.confirm(confirmMsg)) {
                 return;
             }
         }
@@ -13307,7 +13313,17 @@ const SpotifyWorkspace = ({
                                 onClick={() => {
                                     const seleccionadas = tracks.filter(t => t.selected);
                                     if (seleccionadas.length === 0) {
-                                        alert("Por favor marca al menos una casilla de la tabla para descargar.");
+                                        if (tracks.length > 0) {
+                                            const confirmarTodos = window.confirm(`No hay pistas marcadas con casilla. ¿Deseas descargar todas las ${tracks.length} pistas del catálogo?`);
+                                            if (confirmarTodos) {
+                                                setTracks(prev => prev.map(t => ({ ...t, selected: true })));
+                                                lanzarDescargaReal(tracks);
+                                                return;
+                                            }
+                                        } else {
+                                            alert("Por favor marca al menos una casilla de la tabla para descargar.");
+                                            return;
+                                        }
                                         return;
                                     }
                                     lanzarDescargaReal(seleccionadas);
@@ -13441,7 +13457,9 @@ const SpotifyWorkspace = ({
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
                             <div className="flex items-center gap-1.5 text-xs font-mono text-gray-400 bg-[#060609] border border-djzinc-800 px-2.5 py-1 rounded-lg">
                                 <span className="text-gray-500">Destino:</span>
-                                <span className="text-gray-200 truncate max-w-[120px] font-semibold" title={destDir}>{destDir.split('/').pop() || destDir}</span>
+                                <span className="text-gray-200 truncate max-w-[120px] font-semibold" title={(!destDir || !destDir.startsWith('/') || destDir.includes('"')) ? '/Users/admin/Music/mi musica' : destDir}>
+                                    {(!destDir || !destDir.startsWith('/') || destDir.includes('"') || destDir.includes(':')) ? 'mi musica' : (destDir.split('/').filter(Boolean).pop() || 'mi musica')}
+                                </span>
                                 <button onClick={handleCambiarCarpeta} className="text-djcyan-400 hover:text-djcyan-300 px-1.5 py-0.5 hover:bg-djzinc-800 rounded text-[10px] font-mono cursor-pointer transition-colors">Cambiar</button>
                             </div>
 
@@ -26505,6 +26523,7 @@ const App = () => {
                 let targetSrc = "";
                 const isDirectAudioUrl = (url) => {
                     if (!url || typeof url !== "string") return false;
+                    if (url.startsWith("/previews/") || url.startsWith("/stream_audio")) return true;
                     if (!url.startsWith("http://") && !url.startsWith("https://")) return false;
                     // Bloquear URLs de páginas web HTML que congelan el decodificador de audio
                     if (url.includes("open.spotify.com") || url.includes("music.apple.com") || url.includes("youtube.com/watch") || url.includes("youtu.be/")) {
@@ -26519,6 +26538,8 @@ const App = () => {
                     targetSrc = track.previewUrl;
                 } else if (isDirectAudioUrl(track.path)) {
                     targetSrc = track.path;
+                } else if (track.preview_url && track.preview_url.startsWith("/previews/")) {
+                    targetSrc = track.preview_url;
                 } else if (track.path && !track.path.startsWith("http")) {
                     targetSrc = `/stream_audio?path=${encodeURIComponent(track.path)}`;
                 } else if (track.f && !track.f.startsWith("http")) {
@@ -26551,25 +26572,30 @@ const App = () => {
 
                     if (isSameSrc) {
                         applyPosition();
-                        audio.play().then(() => setIsPlaying(true)).catch((err) => {
-                            console.warn("Audio HTML5 play error:", err);
-                        });
+                        const p = audio.play();
+                        if (p && typeof p.then === 'function') {
+                            p.then(() => setIsPlaying(true)).catch((err) => {
+                                if (err && err.name !== 'AbortError') console.warn("Audio HTML5 play error:", err);
+                            });
+                        }
                     } else {
                         audio.pause();
                         audio.preload = "auto";
                         audio.src = targetSrc;
-                        audio.load();
                         const onReady = () => {
                             applyPosition();
                             audio.removeEventListener('canplay', onReady);
                         };
-                        audio.addEventListener('canplay', onReady);
-                        audio.play().then(() => {
-                            setIsPlaying(true);
-                            applyPosition();
-                        }).catch((err) => {
-                            console.warn("Audio HTML5 play error:", err);
-                        });
+                        audio.addEventListener('canplay', onReady, { once: true });
+                        const p = audio.play();
+                        if (p && typeof p.then === 'function') {
+                            p.then(() => {
+                                setIsPlaying(true);
+                                applyPosition();
+                            }).catch((err) => {
+                                if (err && err.name !== 'AbortError') console.warn("Audio HTML5 play error:", err);
+                            });
+                        }
                     }
                 } else if (track.path || track.f) {
                     if (window.eel && window.eel.reproducir_pista_mac) {
@@ -26609,13 +26635,16 @@ const App = () => {
                 window.eel.detener_audio_mac()();
             }
         } else {
-            if (audio && audio.src && audio.src !== window.location.href && !audio.ended) {
-                audio.play().then(() => setIsPlaying(true)).catch((err) => {
-                    console.warn("Play error:", err);
-                    if (nowPlayingTrack) {
-                        handlePlayTrack(nowPlayingTrack, playProgressRef.current, true);
-                    }
-                });
+            if (audio && audio.src && audio.src !== window.location.href && !audio.src.endsWith("/") && !audio.ended && nowPlayingTrack) {
+                const p = audio.play();
+                if (p && typeof p.then === 'function') {
+                    p.then(() => setIsPlaying(true)).catch((err) => {
+                        if (err && err.name !== 'AbortError') console.warn("Play error:", err);
+                        if (nowPlayingTrack) {
+                            handlePlayTrack(nowPlayingTrack, playProgressRef.current, true);
+                        }
+                    });
+                }
             } else if (nowPlayingTrack) {
                 handlePlayTrack(nowPlayingTrack, playProgressRef.current, true);
             }

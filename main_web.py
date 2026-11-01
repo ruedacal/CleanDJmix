@@ -201,6 +201,23 @@ def stream_audio():
         return ""
     file_path = bottle.request.query.get('path', '')
     if file_path:
+        # ── Snippets de preescucha local descargados en web/previews ──
+        if file_path.startswith('/previews/') or file_path.startswith('previews/') or 'prev_' in file_path:
+            clean_name = os.path.basename(file_path)
+            previews_dir = os.path.join(BASE_DIR, "web", "previews")
+            preview_file = os.path.join(previews_dir, clean_name)
+            if os.path.exists(preview_file) and os.path.isfile(preview_file):
+                ext = os.path.splitext(clean_name)[1].lower()
+                mime_map = {
+                    '.flac': 'audio/flac',
+                    '.mp3': 'audio/mpeg',
+                    '.wav': 'audio/wav',
+                    '.m4a': 'audio/mp4',
+                    '.aac': 'audio/aac',
+                    '.webm': 'audio/webm'
+                }
+                return bottle.static_file(clean_name, root=previews_dir, mimetype=mime_map.get(ext, 'audio/mpeg'))
+
         real_path = audio_playback_svc._resolver_ruta(file_path)
         if real_path and os.path.exists(real_path) and os.path.isfile(real_path):
             # ── Seguridad: verificar que el archivo pertenece a un directorio autorizado ──
@@ -230,6 +247,13 @@ def stream_audio():
             return bottle.static_file(file_name, root=dir_name, mimetype=mime)
     bottle.response.status = 404
     return "Audio file not found"
+
+@bottle.route('/previews/<filename:path>')
+def serve_previews(filename):
+    _cors_localhost_only()
+    clean_name = os.path.basename(filename)
+    previews_dir = os.path.join(BASE_DIR, "web", "previews")
+    return bottle.static_file(clean_name, root=previews_dir)
 
 def _emitir_log_ui(mensaje: str):
     print(f"[CleanDJmix PRO] {mensaje}")
