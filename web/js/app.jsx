@@ -12734,12 +12734,21 @@ const SpotifyWorkspace = ({
     const [spFilterPreQuality, setSpFilterPreQuality] = useState('ALL');
     const [spFilterStatus, setSpFilterStatus] = useState('ALL');
     const [spFilterOrigin, setSpFilterOrigin] = useState('ALL');
+    const [spFilterMatch, setSpFilterMatch] = useState('ALL');
     const [spFilterEnergy, setSpFilterEnergy] = useState('ALL');
     const [spFilterDance, setSpFilterDance] = useState('ALL');
 
     const handleSortSp = (field) => {
-        setSpSortDir(prev => spSortField === field && prev === 'asc' ? 'desc' : 'asc');
-        setSpSortField(field);
+        if (spSortField === field) {
+            setSpSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSpSortField(field);
+            if (['match_score', 'match', 'bitrate_kbps', 'sample_rate_khz', 'energy', 'danceability'].includes(field)) {
+                setSpSortDir('desc');
+            } else {
+                setSpSortDir('asc');
+            }
+        }
     };
 
     const renderSortArrowSp = (field) => {
@@ -12791,13 +12800,22 @@ const SpotifyWorkspace = ({
                 if (spFilterDance === 'MED' && (dVal < 65 || dVal >= 80)) return false;
                 if (spFilterDance === 'LOW' && dVal >= 65) return false;
             }
+            if (spFilterMatch !== 'ALL') {
+                const mScore = t.match_score !== undefined ? Number(t.match_score) : (t.origin === 'audit_upgrade' ? 0 : 100);
+                if (spFilterMatch === 'VERIFIED' && mScore < 80) return false;
+                if (spFilterMatch === 'DOUBTFUL' && mScore >= 80) return false;
+                if (spFilterMatch === 'CRITICAL' && mScore >= 50) return false;
+            }
             return true;
         });
 
         result.sort((a, b) => {
             let valA = a[spSortField];
             let valB = b[spSortField];
-            if (spSortField === 'duration') {
+            if (spSortField === 'match_score' || spSortField === 'match') {
+                valA = a.match_score !== undefined ? Number(a.match_score) : (a.origin === 'audit_upgrade' ? 0 : 100);
+                valB = b.match_score !== undefined ? Number(b.match_score) : (b.origin === 'audit_upgrade' ? 0 : 100);
+            } else if (spSortField === 'duration') {
                 const parseSec = (d) => {
                     if (!d || !d.includes(':')) return 0;
                     const p = d.split(':');
@@ -12828,7 +12846,7 @@ const SpotifyWorkspace = ({
         });
 
         return result;
-    }, [tracks, spFilterSearch, spFilterOrigin, spFilterFormat, spFilterQuality, spFilterPreQuality, spFilterStatus, spFilterEnergy, spFilterDance, spSortField, spSortDir, selectedFormat]);
+    }, [tracks, spFilterSearch, spFilterOrigin, spFilterMatch, spFilterFormat, spFilterQuality, spFilterPreQuality, spFilterStatus, spFilterEnergy, spFilterDance, spSortField, spSortDir, selectedFormat]);
 
     const currentTrack = tracks.find(t => t.id === selectedId) || tracks[0] || {};
     const selectedCount = tracks.filter(t => t.selected).length;
@@ -13296,6 +13314,23 @@ const SpotifyWorkspace = ({
                                 </span>
                             </button>
 
+                            {/* Botón de Ordenación Rápida por Match */}
+                            {tracks.some(t => t.match_score !== undefined || t.origin === 'audit_upgrade') && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleSortSp('match_score')}
+                                    className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 shrink-0 border ${
+                                        spSortField === 'match_score'
+                                            ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-500 font-black shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                                            : 'bg-djzinc-850 hover:bg-djzinc-800 text-gray-400 hover:text-white border-djzinc-750'
+                                    }`}
+                                    title="Ordenar tabla por fidelidad de coincidencia (Match %)"
+                                >
+                                    <span>🎯</span>
+                                    <span>Match {spSortField === 'match_score' ? (spSortDir === 'desc' ? '▼ (100%→0%)' : '▲ (0%→100%)') : '↕'}</span>
+                                </button>
+                            )}
+
                             {/* Checkbox para purgar pistas originales de baja calidad tras descargar la versión HD */}
                             <label 
                                 className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all border shrink-0 select-none ${
@@ -13533,6 +13568,7 @@ const SpotifyWorkspace = ({
                                     <th className="py-2.5 px-3 w-8 text-center"><input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} className="accent-djcyan-500 cursor-pointer" /></th>
                                     <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
                                     <th onClick={() => handleSortSp('title')} className="py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'} {renderSortArrowSp('title')}</th>
+                                    <th onClick={() => handleSortSp('match_score')} className="py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors" title="Ordenar por porcentaje de coincidencia acústica (Match %)">🎯 MATCH {renderSortArrowSp('match_score')}</th>
                                     <th onClick={() => handleSortSp('artist')} className="py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'ARTISTA'} {renderSortArrowSp('artist')}</th>
                                     <th onClick={() => handleSortSp('genre')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_genre') || 'GÉNERO'} {renderSortArrowSp('genre')}</th>
                                     <th onClick={() => handleSortSp('subgenre')} className="py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors">{t('th_subgenre') || 'SUBGÉNERO'} {renderSortArrowSp('subgenre')}</th>
@@ -13552,10 +13588,11 @@ const SpotifyWorkspace = ({
                                 </tr>
                                 <tr className="bg-[#07070a] border-b border-djzinc-800 text-[10px] lowercase font-sans">
                                     <th className="p-1 text-center font-mono text-[9px] text-gray-500">
-                                        {(spFilterSearch || spFilterOrigin !== 'ALL' || spFilterFormat !== 'ALL' || spFilterQuality !== 'ALL' || spFilterStatus !== 'ALL' || spFilterEnergy !== 'ALL' || spFilterDance !== 'ALL') ? (
+                                        {(spFilterSearch || spFilterMatch !== 'ALL' || spFilterOrigin !== 'ALL' || spFilterFormat !== 'ALL' || spFilterQuality !== 'ALL' || spFilterStatus !== 'ALL' || spFilterEnergy !== 'ALL' || spFilterDance !== 'ALL') ? (
                                             <button 
                                                 onClick={() => {
                                                     setSpFilterSearch('');
+                                                    setSpFilterMatch('ALL');
                                                     setSpFilterOrigin('ALL');
                                                     setSpFilterFormat('ALL');
                                                     setSpFilterQuality('ALL');
@@ -13577,6 +13614,19 @@ const SpotifyWorkspace = ({
                                             placeholder="Filtrar por título o álbum..." 
                                             className="w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
                                         />
+                                    </th>
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={spFilterMatch} 
+                                            onChange={(e) => setSpFilterMatch(e.target.value)}
+                                            className="bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                            title="Filtrar por coincidencia Match"
+                                        >
+                                            <option value="ALL">Todos Match</option>
+                                            <option value="VERIFIED">🎯 ≥80%</option>
+                                            <option value="DOUBTFUL">⚠️ &lt;80%</option>
+                                            <option value="CRITICAL">🚨 &lt;50%</option>
+                                        </select>
                                     </th>
                                     <th className="p-1"></th>
                                     <th className="p-1"></th>
@@ -13679,7 +13729,7 @@ const SpotifyWorkspace = ({
                             <tbody className="divide-y divide-djzinc-850/60 font-sans">
                                 {tracksFiltradosSp.length === 0 && (
                                     <tr>
-                                        <td colSpan="19" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal">
+                                        <td colSpan="20" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal">
                                             No hay pistas que coincidan con los filtros aplicados.
                                         </td>
                                     </tr>
@@ -13800,6 +13850,36 @@ const SpotifyWorkspace = ({
                                                 </div>
                                             </div>
                                         </td>
+
+                                        {/* MATCH % */}
+                                        <td className="py-2 px-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                                            {row.match_score !== undefined ? (
+                                                row.match_score >= 80 ? (
+                                                    <span 
+                                                        className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/80 shadow-[0_0_8px_rgba(16,185,129,0.3)] inline-flex items-center gap-1 cursor-pointer hover:border-emerald-400 transition-colors"
+                                                        onClick={() => handleAbrirVerificacionCandidatos(row)}
+                                                        title={`Coincidencia alta (${row.match_score}%). Clic para abrir verificador de fidelidad.`}
+                                                    >
+                                                        <span>🎯</span>
+                                                        <span>{row.match_score}%</span>
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAbrirVerificacionCandidatos(row)}
+                                                        className="px-2 py-0.5 rounded text-[10px] font-mono font-black bg-amber-950 text-amber-300 border border-amber-600 hover:bg-amber-900 inline-flex items-center gap-1 cursor-pointer shadow animate-pulse"
+                                                        title={row.match_recomendacion || "Coincidencia dudosa (<80%). Clic para cambiar versión o buscar manualmente."}
+                                                    >
+                                                        <span>⚠️</span>
+                                                        <span>{row.match_score}%</span>
+                                                        <span className="text-[8px] underline">Cambiar</span>
+                                                    </button>
+                                                )
+                                            ) : (
+                                                <span className="text-[10px] text-gray-500 font-mono">100%</span>
+                                            )}
+                                        </td>
+
                                         <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-xs">{row.artist}</td>
 
                                         {/* GÉNERO */}
