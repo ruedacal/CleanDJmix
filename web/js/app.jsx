@@ -6463,6 +6463,13 @@ const AuditWorkspace = ({
     const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState(false);
     // Modal de confirmación de eliminación segura de pistas (lista y disco físico)
     const [deleteModalState, setDeleteModalState] = useState({ open: false, tracks: [], mode: 'trash' });
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState(() => {
+        try {
+            return localStorage.getItem('dj_metatagger_delete_originals') === 'true';
+        } catch (e) {
+            return false;
+        }
+    });
 
     const [internalTracks, setInternalTracks] = useState([]);
     const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
@@ -8427,6 +8434,29 @@ const AuditWorkspace = ({
                                     <span>⬇️</span>
                                     <span>{t('btn_upgrade_quality') || 'Mejorar Calidad'} ({badQualityTracks.length})</span>
                                 </button>
+                            )}
+
+                            {badQualityTracks.length > 0 && (
+                                <label 
+                                    className={`px-2 py-1 rounded-lg text-[10.5px] font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all border shrink-0 select-none ${
+                                        deleteOriginalsOnUpgrade 
+                                            ? 'bg-rose-950/80 border-rose-500 text-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.3)]' 
+                                            : 'bg-djzinc-900 border-djzinc-750 text-gray-400 hover:text-gray-200'
+                                    }`}
+                                    title="Al descargar reemplazos para mejorar calidad, eliminar automáticamente el archivo original de baja calidad del disco duro"
+                                >
+                                    <input 
+                                        type="checkbox" 
+                                        checked={deleteOriginalsOnUpgrade} 
+                                        onChange={(e) => {
+                                            const val = e.target.checked;
+                                            setDeleteOriginalsOnUpgrade(val);
+                                            try { localStorage.setItem('dj_metatagger_delete_originals', val ? 'true' : 'false'); } catch (_) {}
+                                        }} 
+                                        className="w-3 h-3 accent-rose-500 cursor-pointer rounded"
+                                    />
+                                    <span>🗑️ Borrar malas al descargar</span>
+                                </label>
                             )}
 
                             {selectedAuditIds.size > 0 && (
@@ -12316,6 +12346,20 @@ const SpotifyWorkspace = ({
     const [downloadSession, setDownloadSession] = useState({ downloaded: [], failed: [] });
     const [isExportingXls, setIsExportingXls] = useState(false);
     const [xlsToast, setXlsToast] = useState('');
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState(() => {
+        try {
+            return localStorage.getItem('dj_metatagger_delete_originals') === 'true';
+        } catch (e) {
+            return false;
+        }
+    });
+
+    const handleToggleDeleteOriginals = (checked) => {
+        setDeleteOriginalsOnUpgrade(checked);
+        try {
+            localStorage.setItem('dj_metatagger_delete_originals', checked ? 'true' : 'false');
+        } catch (e) {}
+    };
 
     // Modal de Verificación de Fidelidad y Selección de Versiones / Búsqueda Manual
     const [candidateModal, setCandidateModal] = useState({
@@ -12519,12 +12563,19 @@ const SpotifyWorkspace = ({
                 }, 7000);
             };
 
+            const notifyOriginalPurged = (info) => {
+                if (info && info.filename) {
+                    setDownloadingMsg(`🗑️ [PURGADO] Original de baja calidad eliminado del disco: ${info.filename}`);
+                }
+            };
+
             window.actualizar_estado_descarga = updateDownload;
             window.actualizar_progreso_descarga = updateDownload;
             window.actualizar_estado_fft = updateFft;
             window.notificar_resultado_auditoria = notifyFftResult;
             window.notificar_fallo_descarga = notifyDownloadFailure;
             window.notificar_fin_lote = finishBatch;
+            window.notificar_archivo_original_eliminado = notifyOriginalPurged;
 
             window.eel.expose(window.actualizar_estado_descarga, "actualizar_estado_descarga");
             window.eel.expose(window.actualizar_progreso_descarga, "actualizar_progreso_descarga");
@@ -12532,6 +12583,7 @@ const SpotifyWorkspace = ({
             window.eel.expose(window.notificar_resultado_auditoria, "notificar_resultado_auditoria");
             window.eel.expose(window.notificar_fallo_descarga, "notificar_fallo_descarga");
             window.eel.expose(window.notificar_fin_lote, "notificar_fin_lote");
+            window.eel.expose(window.notificar_archivo_original_eliminado, "notificar_archivo_original_eliminado");
         }
     }, []);
 
@@ -13073,11 +13125,12 @@ const SpotifyWorkspace = ({
 
         setIsDownloading(true);
         setDownloadProgress(10);
-        setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${pistasADescargar.length} pista(s) en formato .${selectedFormat.toUpperCase()}...`);
+        const purgeTag = deleteOriginalsOnUpgrade ? " (🗑️ Con purga de baja calidad)" : "";
+        setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${pistasADescargar.length} pista(s) en formato .${selectedFormat.toUpperCase()}${purgeTag}...`);
         let descargadoVíaEel = false;
         if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
             try {
-                await window.eel.descargar_pistas_spotify_seleccionadas(pistasADescargar, selectedFormat, destDir)();
+                await window.eel.descargar_pistas_spotify_seleccionadas(pistasADescargar, selectedFormat, destDir, deleteOriginalsOnUpgrade)();
                 descargadoVíaEel = true;
             } catch (e) {
                 console.warn("[SPOTIFY] Error en llamada Eel de descarga, recurriendo a HTTP:", e);
@@ -13091,7 +13144,8 @@ const SpotifyWorkspace = ({
                     body: JSON.stringify({
                         tracks: pistasADescargar,
                         formato: selectedFormat,
-                        custom_dir: destDir
+                        custom_dir: destDir,
+                        eliminar_originales: deleteOriginalsOnUpgrade
                     })
                 });
                 const res = await resp.json();
@@ -13241,6 +13295,30 @@ const SpotifyWorkspace = ({
                                     }
                                 </span>
                             </button>
+
+                            {/* Checkbox para purgar pistas originales de baja calidad tras descargar la versión HD */}
+                            <label 
+                                className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all border shrink-0 select-none ${
+                                    deleteOriginalsOnUpgrade 
+                                        ? 'bg-rose-950/80 border-rose-500 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.35)]' 
+                                        : 'bg-[#12121a] hover:bg-djzinc-850 border-djzinc-750 text-gray-400 hover:text-gray-200'
+                                }`}
+                                title="Al descargar pistas de reemplazo para mejorar la calidad, elimina automáticamente el archivo original de baja calidad de tu disco duro para no dejar duplicados malos."
+                            >
+                                <input 
+                                    type="checkbox" 
+                                    checked={deleteOriginalsOnUpgrade} 
+                                    onChange={(e) => handleToggleDeleteOriginals(e.target.checked)} 
+                                    className="w-3.5 h-3.5 accent-rose-500 cursor-pointer rounded"
+                                />
+                                <span className="flex items-center gap-1">
+                                    <span>🗑️</span>
+                                    <span>Borrar malas del disco</span>
+                                </span>
+                                {deleteOriginalsOnUpgrade && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+                                )}
+                            </label>
                         </div>
                     </div>
 
@@ -13397,15 +13475,34 @@ const SpotifyWorkspace = ({
 
                 {/* Banner de Pistas Importadas para Reemplazo HD */}
                 {tracks.some(t => t.origin === 'audit_upgrade') && (
-                    <div className="px-4 py-2 bg-gradient-to-r from-amber-950/70 via-emerald-950/40 to-djzinc-950 border-b border-amber-600/40 flex items-center justify-between text-xs">
+                    <div className="px-4 py-2 bg-gradient-to-r from-amber-950/70 via-emerald-950/40 to-djzinc-950 border-b border-amber-600/40 flex flex-wrap items-center justify-between gap-2 text-xs">
                         <div className="flex items-center gap-2">
                             <span className="text-amber-400 font-bold text-sm">🔄</span>
                             <span className="text-gray-200">
                                 <strong className="text-amber-300 font-semibold">{tracks.filter(t => t.origin === 'audit_upgrade').length} reemplazo(s) HD</strong> importado(s) desde Auditoría para sustituir pistas de baja calidad.
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-gray-400 font-mono">Formato seleccionado: <strong className="text-djcyan-400 font-bold">{selectedFormat.toUpperCase()}</strong></span>
+                        <div className="flex items-center gap-3">
+                            <label 
+                                className={`flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer select-none transition-all border ${
+                                    deleteOriginalsOnUpgrade 
+                                        ? 'bg-rose-950/90 border-rose-500 text-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.4)]' 
+                                        : 'bg-black/60 border-amber-600/50 text-amber-200 hover:border-amber-400'
+                                }`}
+                                title="Eliminar automáticamente del disco duro los archivos originales de baja calidad al terminar con éxito la descarga en alta calidad"
+                            >
+                                <input 
+                                    type="checkbox" 
+                                    checked={deleteOriginalsOnUpgrade} 
+                                    onChange={(e) => handleToggleDeleteOriginals(e.target.checked)} 
+                                    className="w-3.5 h-3.5 accent-rose-500 cursor-pointer rounded"
+                                />
+                                <span className="flex items-center gap-1.5">
+                                    <span>🗑️</span>
+                                    <span>Borrar pistas malas del disco al descargar</span>
+                                </span>
+                            </label>
+                            <span className="text-[11px] text-gray-400 font-mono">Formato: <strong className="text-djcyan-400 font-bold">{selectedFormat.toUpperCase()}</strong></span>
                         </div>
                     </div>
                 )}
@@ -26229,6 +26326,17 @@ const App = () => {
                 setLogs(prev => [...prev, { type: 'info', text: `[${new Date().toLocaleTimeString()}] ${msg}` }]);
             };
             window.eel.expose(window.log_to_console, "log_to_console");
+
+            window.notificar_archivo_original_eliminado_global = (info) => {
+                if (info && info.original_path) {
+                    const normPath = info.original_path.toLowerCase();
+                    setAuditTracks(prev => prev.filter(t => {
+                        const tPath = (t.path || t.filepath || t.f || '').toLowerCase();
+                        return tPath !== normPath;
+                    }));
+                }
+            };
+            window.eel.expose(window.notificar_archivo_original_eliminado_global, "notificar_archivo_original_eliminado_global");
         }
 
         return () => {

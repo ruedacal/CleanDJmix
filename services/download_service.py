@@ -36,7 +36,7 @@ class DownloadService:
     def obtener_directorio_actual(self):
         return self.directorio_descargas
 
-    def ejecutar_lote_descarga(self, tracks_to_download, formato, custom_dir, audio_service_ref, eel_ref):
+    def ejecutar_lote_descarga(self, tracks_to_download, formato, custom_dir, audio_service_ref, eel_ref, eliminar_originales=False):
         target_dir = custom_dir if (custom_dir and os.path.isdir(custom_dir)) else self.directorio_descargas
         os.makedirs(target_dir, exist_ok=True)
         self._cancelar = False
@@ -124,6 +124,66 @@ class DownloadService:
                             eel_ref.log_to_console(f"✅ Descarga finalizada: {os.path.basename(ruta_final)}")()
                         except Exception:
                             pass
+
+                        # ── PURGA AUTOMÁTICA DEL ARCHIVO ORIGINAL DE BAJA CALIDAD SI SE SELECCIONÓ EL CHECK ──
+                        if eliminar_originales:
+                            orig_path = t.get('original_path') or (t.get('path') if t.get('origin') == 'audit_upgrade' else None)
+                            if orig_path and os.path.exists(orig_path) and os.path.isfile(orig_path):
+                                real_orig = os.path.realpath(orig_path)
+                                real_dest = os.path.realpath(ruta_final)
+                                if real_orig != real_dest:
+                                    borrado_ok = False
+                                    err_borrado = ""
+                                    # Intentar eliminación segura con audio_service_ref si está disponible
+                                    if audio_service_ref and hasattr(audio_service_ref, 'eliminar_pistas_disco'):
+                                        try:
+                                            res_del = audio_service_ref.eliminar_pistas_disco([real_orig], permanente=True)
+                                            if res_del.get("eliminados", 0) > 0:
+                                                borrado_ok = True
+                                            else:
+                                                err_borrado = "; ".join(res_del.get("errores", []))
+                                        except Exception as e_del:
+                                            err_borrado = str(e_del)
+                                    
+                                    # Fallback directo a os.remove
+                                    if not borrado_ok:
+                                        try:
+                                            os.remove(real_orig)
+                                            borrado_ok = True
+                                        except Exception as e_os:
+                                            err_borrado = str(e_os)
+
+                                    if borrado_ok:
+                                        nombre_orig = os.path.basename(real_orig)
+                                        print(f"[PURGA AUTO] ✅ Pista original de baja calidad eliminada: {real_orig}")
+                                        try:
+                                            eel_ref.log_to_console(f"🗑️ [PURGA] Archivo original de baja calidad eliminado del disco: {nombre_orig}")()
+                                        except Exception:
+                                            pass
+                                        try:
+                                            if hasattr(eel_ref, "notificar_archivo_original_eliminado"):
+                                                eel_ref.notificar_archivo_original_eliminado({
+                                                    "id": spotify_id,
+                                                    "original_path": real_orig,
+                                                    "filename": nombre_orig
+                                                })()
+                                        except Exception:
+                                            pass
+                                        try:
+                                            if hasattr(eel_ref, "notificar_archivo_original_eliminado_global"):
+                                                eel_ref.notificar_archivo_original_eliminado_global({
+                                                    "id": spotify_id,
+                                                    "original_path": real_orig,
+                                                    "filename": nombre_orig
+                                                })()
+                                        except Exception:
+                                            pass
+                                    else:
+                                        print(f"[PURGA AUTO] ⚠️ No se pudo eliminar el archivo original {real_orig}: {err_borrado}")
+                                        try:
+                                            eel_ref.log_to_console(f"⚠️ [AVISO] No se pudo eliminar el original {os.path.basename(real_orig)}: {err_borrado}")()
+                                        except Exception:
+                                            pass
                     else:
                         fallidas += 1
                         try:

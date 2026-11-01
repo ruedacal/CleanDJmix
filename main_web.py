@@ -373,8 +373,8 @@ def analizar_url_spotify(spotify_url):
     return media_svc.analizar_catalogo_spotify(spotify_url)
 
 @eel.expose
-def descargar_track_spotify_flac(meta, dest=None):
-    return download_svc.ejecutar_lote_descarga([meta], "flac", dest or "", audit_svc, eel)
+def descargar_track_spotify_flac(meta, dest=None, eliminar_originales=False):
+    return download_svc.ejecutar_lote_descarga([meta], "flac", dest or "", audit_svc, eel, eliminar_originales=eliminar_originales)
 
 @eel.expose
 def enriquecer_pista_local(ruta):
@@ -631,7 +631,8 @@ def api_descargar_spotify():
         tracks = data.get('tracks', [])
         formato = data.get('formato', 'flac')
         custom_dir = data.get('custom_dir', '')
-        res = download_svc.ejecutar_lote_descarga(tracks, formato, custom_dir, audit_svc, eel)
+        eliminar_originales = bool(data.get('eliminar_originales', False) or data.get('delete_originals', False))
+        res = download_svc.ejecutar_lote_descarga(tracks, formato, custom_dir, audit_svc, eel, eliminar_originales=eliminar_originales)
         return res or {"status": "ok", "msg": f"Descarga iniciada para {len(tracks)} pistas"}
     except Exception as e:
         return {"status": "error", "msg": str(e)}
@@ -680,8 +681,8 @@ def api_resolver_stream_preescucha():
     return media_svc.resolver_stream_preescucha(titulo, artista)
 
 @eel.expose
-def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir=""):
-    return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audit_svc, eel)
+def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir="", eliminar_originales=False):
+    return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audit_svc, eel, eliminar_originales=eliminar_originales)
 
 @eel.expose
 def buscar_temas_taxonomia(query="", ambito="all", ruta_local="/Users/admin/Music/mi musica", limite=25):
