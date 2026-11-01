@@ -5405,32 +5405,37 @@ const MANUAL_SECTIONS = {
 const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onNavigateTab, lang = 'es' }) => {
     if (!isOpen) return null;
 
-    // Estado de Plegado / Desplegado: Permite colapsar el manual al borde derecho para interactuar con la app
+    // Estado de Plegado / Desplegado: Colapsa a pestaña vertical lateral para interactuar libremente con la app detrás
     const [isFolded, setIsFolded] = useState(false);
     const [activeSectionKey, setActiveSectionKey] = useState(initialSection || 'audit');
     const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
     const [simStep, setSimStep] = useState(0);
     const [isSimPlaying, setIsSimPlaying] = useState(true);
-    const [spotlightZoom, setSpotlightZoom] = useState(true);
+    const [simSpeed, setSimSpeed] = useState(1); // 1x o 2x
+    const [zoomFocus, setZoomFocus] = useState(null); // null | 'deck' | 'ai' | 'eq' | 'spectrum' | 'pads' | 'graph' | 'radar' | 'usb'
     const [activeManualTab, setActiveManualTab] = useState('all'); // 'all' | 'sim' | 'controls' | 'guide'
+
+    const canvasRef = useRef(null);
 
     useEffect(() => {
         if (initialSection && MANUAL_SECTIONS[initialSection]) {
             setActiveSectionKey(initialSection);
             setSimStep(0);
+            setZoomFocus(null);
         }
     }, [initialSection]);
 
-    // Auto-Play del Simulador Visual Animado (3.2s por paso)
+    // Auto-Play del Simulador (3.0s por paso a 1x, 1.5s a 2x)
     useEffect(() => {
         if (!isSimPlaying) return;
+        const interval = simSpeed === 2 ? 1500 : 3000;
         const timer = setInterval(() => {
             setSimStep(prev => (prev + 1) % 4);
-        }, 3200);
+        }, interval);
         return () => clearInterval(timer);
-    }, [isSimPlaying, activeSectionKey]);
+    }, [isSimPlaying, activeSectionKey, simSpeed]);
 
-    // Tecla Escape para cerrar o desdoblar
+    // Tecla Escape para cerrar
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') onClose();
@@ -5439,37 +5444,310 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
-    // Render del Simulador Visual Animado de Alta Fidelidad (Estilo djoid.io)
+    // ─────────────────────────────────────────────────────────────────────────
+    // MOTOR VISUAL 60 FPS (CANVAS INTERACTIVO CON SIMULACIÓN DINÁMICA DE CABINA)
+    // ─────────────────────────────────────────────────────────────────────────
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let animId;
+        let frame = 0;
+
+        const render = () => {
+            frame++;
+            const t = frame * 0.04 * simSpeed;
+            const w = canvas.width = canvas.parentElement ? canvas.parentElement.clientWidth : 500;
+            const h = canvas.height = canvas.parentElement ? canvas.parentElement.clientHeight : 280;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Rejilla de Fondo Estilo Monitor Pioneer / CDJ Display
+            ctx.fillStyle = '#060712';
+            ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = '#12142a';
+            ctx.lineWidth = 1;
+            const gridStep = 24;
+            for (let x = 0; x < w; x += gridStep) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+            for (let y = 0; y < h; y += gridStep) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            // SIMULACIÓN ESPECÍFICA POR SECCIÓN
+            if (activeSectionKey === 'copilot') {
+                // Deck 1 (Master) Waveform cyan
+                const mid1 = h * 0.28;
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                for (let x = 0; x < w; x += 3) {
+                    const wave = Math.sin((x + t * 45) * 0.05) * 18 + Math.cos((x - t * 25) * 0.12) * 8;
+                    const y = mid1 + wave * (zoomFocus === 'deck' ? 1.4 : 1.0);
+                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Deck 2 (Cue) Waveform magenta
+                const mid2 = h * 0.58;
+                ctx.strokeStyle = '#ec4899';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                for (let x = 0; x < w; x += 3) {
+                    const wave = Math.sin((x + t * 45) * 0.05) * 16 + Math.sin((x + t * 15) * 0.08) * 10;
+                    const y = mid2 + wave * (zoomFocus === 'deck' ? 1.4 : 1.0);
+                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Playhead central
+                const playX = w * 0.45;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(playX, 20);
+                ctx.lineTo(playX, h * 0.72);
+                ctx.stroke();
+
+                // Jogwheel giratorio interactivo a la derecha
+                const jx = w - 46;
+                const jy = h * 0.42;
+                const jr = 32;
+                ctx.beginPath();
+                ctx.arc(jx, jy, jr, 0, Math.PI * 2);
+                ctx.fillStyle = '#0f1124';
+                ctx.fill();
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Marcador de giro
+                const angle = t * 1.5;
+                ctx.beginPath();
+                ctx.moveTo(jx, jy);
+                ctx.lineTo(jx + Math.cos(angle) * (jr - 4), jy + Math.sin(angle) * (jr - 4));
+                ctx.strokeStyle = '#ec4899';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+            } else if (activeSectionKey === 'audit') {
+                // Barras FFT de Espectro en 32 bandas dinámicas
+                const numBars = 32;
+                const barW = (w - 40) / numBars;
+                for (let i = 0; i < numBars; i++) {
+                    const freqFrac = i / numBars;
+                    // Simular corte abrupto en MP3 fake (>16kHz) en paso 2 y 3
+                    const isFakeCut = simStep >= 2 && freqFrac > 0.72;
+                    let barH = isFakeCut ? 4 : (Math.sin(t * 3 + i * 0.45) * 0.5 + 0.5) * (h * 0.55) + 8;
+                    const bx = 20 + i * barW;
+                    const by = h - 35 - barH;
+
+                    const grad = ctx.createLinearGradient(0, by, 0, h - 35);
+                    if (isFakeCut) {
+                        grad.addColorStop(0, '#f43f5e');
+                        grad.addColorStop(1, '#881337');
+                    } else {
+                        grad.addColorStop(0, '#06b6d4');
+                        grad.addColorStop(0.5, '#10b981');
+                        grad.addColorStop(1, '#090a18');
+                    }
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(bx, by, barW - 2, barH);
+                }
+
+                // Línea de corte de 16kHz y 22kHz
+                ctx.strokeStyle = '#f43f5e';
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                const cutX = 20 + numBars * 0.72 * barW;
+                ctx.moveTo(cutX, 30);
+                ctx.lineTo(cutX, h - 35);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+            } else if (activeSectionKey === 'hotcues') {
+                // Waveform con marcadores Hot Cue y Playhead rebotando
+                const mid = h * 0.38;
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for (let x = 0; x < w; x += 3) {
+                    const wave = Math.sin((x + t * 40) * 0.04) * 22 * Math.cos(x * 0.015);
+                    const y = mid + wave;
+                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // 8 Marcadores de Hot Cue flotantes
+                const cues = [
+                    { x: w * 0.12, col: '#10b981', label: '1 CUE' },
+                    { x: w * 0.32, col: '#06b6d4', label: '2 VOX' },
+                    { x: w * 0.55, col: '#a855f7', label: '3 BRK' },
+                    { x: w * 0.82, col: '#f43f5e', label: '4 DROP' }
+                ];
+                cues.forEach((c, idx) => {
+                    ctx.strokeStyle = c.col;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(c.x, mid - 32);
+                    ctx.lineTo(c.x, mid + 32);
+                    ctx.stroke();
+
+                    // Anillo de impacto animado
+                    const ring = (t * 2 + idx) % 2;
+                    ctx.beginPath();
+                    ctx.arc(c.x, mid, 8 + ring * 12, 0, Math.PI * 2);
+                    ctx.strokeStyle = c.col + '55';
+                    ctx.stroke();
+                });
+
+            } else if (activeSectionKey === 'setbuilder') {
+                // Curva de Energía Bézier estilo DJOID Graph Playlist
+                const p0 = { x: 30, y: h * 0.75 };
+                const p1 = { x: w * 0.28, y: h * 0.65 };
+                const p2 = { x: w * 0.55, y: h * 0.42 };
+                const p3 = { x: w * 0.88, y: h * 0.22 };
+
+                ctx.strokeStyle = '#a855f7';
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.moveTo(p0.x, p0.y);
+                ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+                ctx.stroke();
+
+                // Nodos de Tracks
+                [p0, p1, p2, p3].forEach((p, idx) => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 10 + Math.sin(t * 3 + idx) * 2, 0, Math.PI * 2);
+                    ctx.fillStyle = idx === 0 ? '#06b6d4' : idx === 1 ? '#3b82f6' : idx === 2 ? '#a855f7' : '#ec4899';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+
+            } else if (activeSectionKey === 'map') {
+                // Rueda de Camelot concentric circular sectors al 60% alpha
+                const cx = w * 0.5;
+                const cy = h * 0.48;
+                const rOuter = Math.min(w, h) * 0.38;
+                const rInner = rOuter * 0.55;
+
+                // 12 Sectores Camelot
+                const colors = ['#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#10b981'];
+                for (let i = 0; i < 12; i++) {
+                    const startA = (i * Math.PI) / 6;
+                    const endA = ((i + 1) * Math.PI) / 6;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, rOuter, startA, endA);
+                    ctx.arc(cx, cy, rInner, endA, startA, true);
+                    ctx.closePath();
+                    ctx.fillStyle = colors[i] + '99'; // 60% alpha
+                    ctx.fill();
+                    ctx.strokeStyle = '#05060f';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // Puntos de Tracks en el mapa de dispersión
+                for (let k = 0; k < 18; k++) {
+                    const dotA = k * 0.45 + t * 0.2;
+                    const dotR = rInner + (k % 5) * 8;
+                    const dx = cx + Math.cos(dotA) * dotR;
+                    const dy = cy + Math.sin(dotA) * dotR;
+                    ctx.beginPath();
+                    ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = '#06b6d4';
+                    ctx.shadowBlur = 8;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+            } else if (activeSectionKey === 'radar') {
+                // Radar Militar Giratorio a 360 grados
+                const rx = w * 0.5;
+                const ry = h * 0.48;
+                const rr = Math.min(w, h) * 0.4;
+
+                ctx.strokeStyle = '#4338ca';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(rx, ry, rr, 0, Math.PI * 2);
+                ctx.arc(rx, ry, rr * 0.66, 0, Math.PI * 2);
+                ctx.arc(rx, ry, rr * 0.33, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Haz de barrido giratorio
+                const sweepAngle = t * 2.2;
+                const sweepGrad = ctx.createRadialGradient(rx, ry, 0, rx, ry, rr);
+                sweepGrad.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+                sweepGrad.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+                ctx.beginPath();
+                ctx.moveTo(rx, ry);
+                ctx.arc(rx, ry, rr, sweepAngle, sweepAngle + 0.6);
+                ctx.closePath();
+                ctx.fillStyle = sweepGrad;
+                ctx.fill();
+
+            } else {
+                // Default: Animación de Barras de Actividad & Ingesta
+                const bars = 24;
+                const bw = (w - 40) / bars;
+                for (let b = 0; b < bars; b++) {
+                    const bh = (Math.sin(t * 3.5 + b * 0.35) * 0.5 + 0.5) * (h * 0.6) + 10;
+                    ctx.fillStyle = b % 2 === 0 ? '#ec4899' : '#06b6d4';
+                    ctx.fillRect(20 + b * bw, h - 30 - bh, bw - 3, bh);
+                }
+            }
+
+            animId = requestAnimationFrame(render);
+        };
+
+        render();
+        return () => cancelAnimationFrame(animId);
+    }, [activeSectionKey, simStep, simSpeed, zoomFocus]);
+
+    // Render del Simulador Visual Animado de Alta Fidelidad
     const renderVisualSimulator = () => {
         const stepInfo = (activeSec.simulationSteps && activeSec.simulationSteps[simStep]) || { label: "Paso Activo", desc: "Simulación en curso", focus: "default" };
 
         return (
             <div className="flex flex-col h-full justify-between gap-3 select-none">
                 {/* Barra de Controles de Reproducción y Pasos */}
-                <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#0b0c16] border border-djzinc-800">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-[#0e1022] border border-djzinc-750">
                     <div className="flex items-center gap-1.5">
                         <button
                             type="button"
                             onClick={() => setIsSimPlaying(prev => !prev)}
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
+                            className={`px-3 py-1 rounded-lg text-xs font-mono font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                                 isSimPlaying 
-                                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-[0_0_12px_rgba(236,72,153,0.5)]' 
-                                    : 'bg-djzinc-800 text-gray-300 hover:text-white'
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-[0_0_12px_rgba(236,72,153,0.6)]' 
+                                    : 'bg-djzinc-800 text-gray-200 hover:text-white'
                             }`}
                             title={isSimPlaying ? "Pausar simulación" : "Reproducir simulación continua"}
                         >
-                            {isSimPlaying ? '⏸' : '▶'}
+                            <span>{isSimPlaying ? '⏸' : '▶'}</span>
+                            <span>{isSimPlaying ? 'Pausa' : 'Play'}</span>
                         </button>
+
                         <div className="flex items-center gap-1">
                             {[0, 1, 2, 3].map(st => (
                                 <button
                                     key={st}
                                     type="button"
                                     onClick={() => { setSimStep(st); setIsSimPlaying(false); }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-black transition-all cursor-pointer ${
                                         simStep === st
-                                            ? 'bg-pink-500 text-black shadow-sm'
-                                            : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
+                                            ? 'bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white shadow-md scale-105 border border-pink-400'
+                                            : 'bg-djzinc-900 text-gray-300 hover:text-white border border-djzinc-800'
                                     }`}
                                 >
                                     P{st + 1}
@@ -5478,336 +5756,83 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={() => setSpotlightZoom(prev => !prev)}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all ${
-                            spotlightZoom
-                                ? 'bg-pink-950 text-pink-300 border border-pink-700/80 shadow-[0_0_8px_rgba(236,72,153,0.3)]'
-                                : 'bg-djzinc-900 text-gray-500 border border-djzinc-800'
-                        }`}
-                        title="Alternar modo Lente & Spotlight Zoom"
-                    >
-                        <span>🔍</span>
-                        <span className="hidden sm:inline">Zoom Lente</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            onClick={() => setSimSpeed(prev => (prev === 1 ? 2 : 1))}
+                            className="px-2 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 hover:text-white border border-djzinc-700 text-[10.5px] font-mono font-bold cursor-pointer"
+                        >
+                            Velocidad: {simSpeed}x
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setZoomFocus(prev => (prev ? null : 'active'))}
+                            className={`px-2.5 py-1 rounded-lg text-[10.5px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all ${
+                                zoomFocus
+                                    ? 'bg-pink-950 text-pink-200 border border-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]'
+                                    : 'bg-djzinc-850 text-gray-300 border border-djzinc-700'
+                            }`}
+                        >
+                            <span>🔍</span>
+                            <span>{zoomFocus ? 'Zoom 1.6x Activo' : 'Zoom Enfoque'}</span>
+                        </button>
+                    </div>
                 </div>
 
-                {/* Lienzo Visual Animado con Renderizado Dinámico */}
-                <div className="flex-1 min-h-[260px] rounded-2xl bg-gradient-to-b from-[#080914] to-[#040408] border border-djzinc-800 relative overflow-hidden flex flex-col items-center justify-center p-3 shadow-inner">
-                    {/* Rejilla de Fondo Estilo Monitor DJ */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#121324_1px,transparent_1px),linear-gradient(to_bottom,#121324_1px,transparent_1px)] bg-[size:24px_24px] opacity-40"></div>
-
-                    {/* Contenido Visual Específico */}
-                    <div className={`w-full h-full flex flex-col justify-center items-center relative z-10 transition-transform duration-500 ${spotlightZoom ? 'scale-105' : 'scale-100'}`}>
-                        {activeSec.id === 'copilot' && (
-                            <div className="w-full max-w-sm flex flex-col gap-3">
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="p-2.5 rounded-xl bg-djzinc-900/90 border border-cyan-500/50 shadow-md">
-                                        <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 font-bold mb-1">
-                                            <span>DECK 1 (MASTER)</span>
-                                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                                        </div>
-                                        <div className="text-xs font-mono font-bold text-white truncate">Artbat - Return</div>
-                                        <div className="flex items-center justify-between mt-2 text-[9px] text-gray-400 font-mono">
-                                            <span>126.0 BPM</span>
-                                            <span className="px-1 bg-amber-400 text-black font-black rounded">8A</span>
-                                        </div>
-                                        <div className="w-full bg-djzinc-950 h-2 rounded-full mt-2 overflow-hidden flex">
-                                            <div className="bg-cyan-400 h-full w-[82%] animate-pulse"></div>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-2.5 rounded-xl bg-djzinc-900/90 border border-pink-500/50 shadow-md">
-                                        <div className="flex items-center justify-between text-[10px] font-mono text-pink-300 font-bold mb-1">
-                                            <span>DECK 2 (CUE)</span>
-                                            <span className="w-2 h-2 rounded-full bg-pink-400 animate-ping"></span>
-                                        </div>
-                                        <div className="text-xs font-mono font-bold text-white truncate">Anyma - Eternity</div>
-                                        <div className="flex items-center justify-between mt-2 text-[9px] text-gray-400 font-mono">
-                                            <span>126.0 BPM</span>
-                                            <span className="px-1 bg-amber-400 text-black font-black rounded">9A</span>
-                                        </div>
-                                        <div className="w-full bg-djzinc-950 h-2 rounded-full mt-2 overflow-hidden flex">
-                                            <div className="bg-pink-500 h-full w-[74%] animate-pulse"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className={`p-3 rounded-xl border text-center font-mono text-xs font-bold transition-all duration-300 ${
-                                    simStep >= 2 
-                                        ? 'bg-rose-950/80 border-rose-500 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.4)] animate-pulse'
-                                        : 'bg-emerald-950/80 border-emerald-500 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                                }`}>
-                                    {simStep >= 2 ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <span>⚠️</span>
-                                            <span>CHOQUE DE SUBGRAVES: CORTAR EQ LOW DECK 1</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <span>✨</span>
-                                            <span>MEZCLA ARMÓNICA PERFECTA (8A ➔ 9A)</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSec.id === 'audit' && (
-                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
-                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-djzinc-750">
-                                    <div className="flex items-center justify-between text-[11px] mb-2 font-bold">
-                                        <span className="text-gray-300">Espectrograma FFT Comparativo</span>
-                                        <span className="text-cyan-400">20Hz - 22kHz</span>
-                                    </div>
-                                    
-                                    <div className="mb-2">
-                                        <div className="flex justify-between text-[9px] text-emerald-400 mb-1">
-                                            <span>FLAC Lossless 24-bit Genuino</span>
-                                            <span>Techo 22.05 kHz ✓</span>
-                                        </div>
-                                        <div className="h-6 w-full rounded bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-400 flex items-center justify-end pr-2 text-[8px] font-black text-black">
-                                            RANGO COMPLETO LOSSLESS
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between text-[9px] text-rose-400 mb-1">
-                                            <span>Fake Transcode MP3 128k</span>
-                                            <span className="animate-pulse">Corte Muro en 16 kHz ✕</span>
-                                        </div>
-                                        <div className="h-6 w-full rounded bg-gradient-to-r from-rose-600 via-amber-600 to-transparent border-r-4 border-rose-500 flex items-center justify-start pl-2 text-[8px] font-black text-white relative">
-                                            <span>RECHAZADO</span>
-                                            <span className="absolute right-1 text-[8px] font-mono text-rose-400 font-bold">16 kHz CUTOFF</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-2 rounded-xl bg-cyan-950/70 border border-cyan-600 text-center text-[10px] text-cyan-200 font-bold">
-                                    ✓ Purgadas 4 pistas con transcode falso • 100% Colección Certificada
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSec.id === 'hotcues' && (
-                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
-                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-amber-500/40 relative">
-                                    <div className="flex items-center justify-between text-[10px] text-amber-300 font-bold mb-2">
-                                        <span>TIMELINE WAVEFORM 128 BPM</span>
-                                        <span>FRASEO: 32 BEATS</span>
-                                    </div>
-
-                                    <div className="h-10 w-full bg-[#0a0a14] rounded-lg relative overflow-hidden flex items-center border border-djzinc-800">
-                                        <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 opacity-60 w-full animate-pulse"></div>
-                                        
-                                        <div className="absolute left-[10%] top-1 bottom-1 w-0.5 bg-emerald-400 z-20 flex flex-col justify-between">
-                                            <span className="px-1 py-0.2 bg-emerald-500 text-black text-[7px] font-black rounded -ml-2">1 CUE</span>
-                                        </div>
-                                        <div className="absolute left-[35%] top-1 bottom-1 w-0.5 bg-amber-400 z-20 flex flex-col justify-between">
-                                            <span className="px-1 py-0.2 bg-amber-500 text-black text-[7px] font-black rounded -ml-2">3 BRK</span>
-                                        </div>
-                                        <div className="absolute left-[65%] top-1 bottom-1 w-0.5 bg-purple-400 z-20 flex flex-col justify-between">
-                                            <span className="px-1 py-0.2 bg-purple-500 text-black text-[7px] font-black rounded -ml-2">5 BLD</span>
-                                        </div>
-                                        <div className="absolute left-[85%] top-1 bottom-1 w-0.5 bg-rose-500 z-20 flex flex-col justify-between">
-                                            <span className="px-1 py-0.2 bg-rose-500 text-white text-[7px] font-black rounded -ml-2">7 DROP</span>
-                                        </div>
-
-                                        <div className="absolute left-[65%] h-full w-1 bg-white shadow-[0_0_10px_#ffffff] z-30 animate-ping"></div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-4 gap-1.5 text-center text-[9px] font-bold">
-                                    <div className="p-1.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-800">1: Downbeat</div>
-                                    <div className="p-1.5 rounded-lg bg-amber-950 text-amber-300 border border-amber-800">3: Breakdown</div>
-                                    <div className="p-1.5 rounded-lg bg-purple-950 text-purple-300 border border-purple-800">5: Snare Roll</div>
-                                    <div className="p-1.5 rounded-lg bg-rose-950 text-rose-300 border border-rose-800">7: Main Drop</div>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSec.id === 'setbuilder' && (
-                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
-                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-purple-800/60 shadow-lg">
-                                    <div className="flex items-center justify-between text-[10px] text-purple-300 font-bold mb-2">
-                                        <span>DJOID GRAPH PLAYLIST (DAG)</span>
-                                        <span className="px-2 py-0.5 bg-purple-950 text-purple-200 border border-purple-700 rounded-full">Score AI: 96%</span>
-                                    </div>
-
-                                    {/* Grafo de Nodos con Curvas Bezier Animadas */}
-                                    <div className="p-2.5 bg-[#080812] rounded-lg border border-djzinc-800 relative">
-                                        <svg viewBox="0 0 300 90" className="w-full h-24 overflow-visible">
-                                            {/* Curva Principal */}
-                                            <path d="M 40 45 Q 110 20 150 45 T 260 45" fill="none" stroke="#a855f7" strokeWidth="2.5" />
-                                            {/* Curva Alternativa / Rama Bifurcada */}
-                                            <path d="M 150 45 Q 190 75 230 75" fill="none" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3 3" />
-
-                                            {/* Nodo 1 */}
-                                            <circle cx="40" cy="45" r="14" fill="#06b6d4" className="shadow-lg" />
-                                            <text x="40" y="49" fill="#000" fontSize="9" fontWeight="900" textAnchor="middle">8A</text>
-
-                                            {/* Nodo 2 */}
-                                            <circle cx="150" cy="45" r="16" fill="#a855f7" stroke="#ffffff" strokeWidth="2" className="animate-pulse" />
-                                            <text x="150" y="49" fill="#fff" fontSize="9" fontWeight="900" textAnchor="middle">9A</text>
-
-                                            {/* Nodo 3 (Principal) */}
-                                            <circle cx="260" cy="45" r="14" fill="#ec4899" />
-                                            <text x="260" y="49" fill="#fff" fontSize="9" fontWeight="900" textAnchor="middle">10A</text>
-
-                                            {/* Nodo Alternativo */}
-                                            <circle cx="230" cy="75" r="11" fill="#f59e0b" />
-                                            <text x="230" y="79" fill="#000" fontSize="8" fontWeight="900" textAnchor="middle">9B</text>
-
-                                            <text x="95" y="30" fill="#34d399" fontSize="7.5" fontWeight="bold">100% Match</text>
-                                            <text x="195" y="83" fill="#f59e0b" fontSize="7.5" fontWeight="bold">Rama Alt</text>
-                                        </svg>
-                                    </div>
-                                </div>
-
-                                <div className="p-2 rounded-xl bg-purple-950/80 border border-purple-700 text-center text-[10px] text-purple-200 font-bold">
-                                    ⚡ Google Gemini 2.5 Flash: "Progresión fluida sin disonancias detectadas"
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSec.id === 'map' && (
-                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
-                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-teal-700/60 shadow-lg relative overflow-hidden">
-                                    <div className="flex items-center justify-between text-[10px] text-teal-300 font-bold mb-2">
-                                        <span>CONSTELACIÓN ACÚSTICA 2D & LASSO</span>
-                                        <span className="text-teal-400 font-bold">Spatial Collect</span>
-                                    </div>
-
-                                    {/* Mini mapa de nodos con lasso animado */}
-                                    <div className="h-28 w-full bg-[#05060b] rounded-lg relative overflow-hidden border border-djzinc-800 flex items-center justify-center">
-                                        <div className="absolute left-[20%] top-[30%] w-6 h-6 rounded-full bg-emerald-500 text-black text-[8px] font-black flex items-center justify-center shadow-[0_0_10px_#10b981]">
-                                            8A
-                                        </div>
-                                        <div className="absolute left-[45%] top-[20%] w-7 h-7 rounded-full bg-cyan-500 text-black text-[9px] font-black flex items-center justify-center shadow-[0_0_12px_#06b6d4] animate-pulse">
-                                            9A
-                                        </div>
-                                        <div className="absolute left-[70%] top-[60%] w-6 h-6 rounded-full bg-purple-600 text-white text-[8px] font-black flex items-center justify-center shadow-[0_0_10px_#9333ea]">
-                                            10A
-                                        </div>
-                                        <div className="absolute left-[35%] top-[70%] w-5 h-5 rounded-full bg-amber-500 text-black text-[7px] font-black flex items-center justify-center shadow-[0_0_8px_#f59e0b]">
-                                            8B
-                                        </div>
-
-                                        {/* Trazo del Lazo de Selección Dinámico */}
-                                        <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                                            <path d="M 40 40 Q 140 10 220 50 T 150 100 Z" fill="rgba(6,182,212,0.18)" stroke="#06b6d4" strokeWidth="1.5" strokeDasharray="4 4" className="animate-pulse" />
-                                        </svg>
-                                    </div>
-                                </div>
-
-                                <div className="p-2 rounded-xl bg-teal-950/80 border border-teal-700 text-center text-[10px] text-teal-200 font-bold">
-                                    🎡 Rueda Camelot al 60% Alpha & Hardware D-Pad Fader Navigation
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSec.id === 'spotify' && (
-                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
-                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-emerald-700/60 shadow-lg">
-                                    <div className="flex items-center justify-between text-[10px] text-emerald-300 font-bold mb-2">
-                                        <span>SUPERFLAC LOSSLESS STREAM INGEST</span>
-                                        <span className="px-1.5 py-0.2 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded">24-BIT</span>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div className="p-2 bg-[#06060c] rounded-lg border border-djzinc-800 text-[10px]">
-                                            <div className="flex justify-between text-gray-300">
-                                                <span>Pista: Cassian - Save Me</span>
-                                                <span className="text-emerald-400 font-bold">FLAC 24b ✓</span>
-                                            </div>
-                                            <div className="w-full bg-djzinc-900 h-2 rounded-full mt-1.5 overflow-hidden">
-                                                <div className="bg-emerald-400 h-full w-[100%] animate-pulse"></div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-2 text-center text-[9px] font-bold">
-                                            <button type="button" className="p-1.5 rounded bg-djzinc-800 text-gray-400 border border-djzinc-700">
-                                                A: Local (MP3 128k)
-                                            </button>
-                                            <button type="button" className="p-1.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
-                                                B: SuperFLAC (24-bit) ✓
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-2 rounded-xl bg-emerald-950/80 border border-emerald-700 text-center text-[10px] text-emerald-200 font-bold">
-                                    ✓ FFT Verificada al vuelo • Carátula oficial 1400x1400 inyectada
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSec.id === 'radar' && (
-                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
-                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-indigo-700/60 shadow-lg">
-                                    <div className="flex items-center justify-between text-[10px] text-indigo-300 font-bold mb-2">
-                                        <span>RADAR ACÚSTICO GLOBAL</span>
-                                        <span className="text-indigo-400 font-bold">Tomorrowland Scanner</span>
-                                    </div>
-
-                                    <div className="h-28 w-full bg-[#05060d] rounded-lg relative overflow-hidden border border-djzinc-800 flex items-center justify-center">
-                                        <div className="w-24 h-24 rounded-full border border-indigo-800/60 flex items-center justify-center">
-                                            <div className="w-16 h-16 rounded-full border border-indigo-700/50 flex items-center justify-center">
-                                                <div className="w-8 h-8 rounded-full border border-indigo-600/40"></div>
-                                            </div>
-                                        </div>
-                                        <div className="absolute w-12 h-12 bg-gradient-to-tr from-indigo-500/30 to-transparent rounded-full animate-spin"></div>
-                                        <span className="absolute text-[9px] font-bold text-indigo-300 px-2 py-0.5 bg-indigo-950/80 rounded border border-indigo-700">
-                                            +340% Afro Melodic
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="p-2 rounded-xl bg-indigo-950/80 border border-indigo-700 text-center text-[10px] text-indigo-200 font-bold">
-                                    📡 Detección de micro-géneros 3 meses antes de llegar al mainstream
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSec.id === 'crates' && (
-                            <div className="w-full max-w-sm flex flex-col gap-3 font-mono">
-                                <div className="p-3 rounded-xl bg-djzinc-900/90 border border-orange-700/60 shadow-lg">
-                                    <div className="flex items-center justify-between text-[10px] text-orange-300 font-bold mb-2">
-                                        <span>PASAPORTE UNIVERSAL 1-CLIC</span>
-                                        <span className="text-orange-400 font-bold">MULTI-CABINA</span>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-center">
-                                        <div className="p-2 rounded bg-orange-950/80 text-orange-200 border border-orange-700 flex items-center justify-center gap-1.5 shadow-sm">
-                                            <span>💽</span> <span>Serato Crates ✓</span>
-                                        </div>
-                                        <div className="p-2 rounded bg-cyan-950/80 text-cyan-200 border border-cyan-700 flex items-center justify-center gap-1.5 shadow-sm">
-                                            <span>🎧</span> <span>Rekordbox XML ✓</span>
-                                        </div>
-                                        <div className="p-2 rounded bg-indigo-950/80 text-indigo-200 border border-indigo-700 flex items-center justify-center gap-1.5 shadow-sm">
-                                            <span>🎚️</span> <span>Traktor NML ✓</span>
-                                        </div>
-                                        <div className="p-2 rounded bg-emerald-950/80 text-emerald-200 border border-emerald-700 flex items-center justify-center gap-1.5 shadow-sm">
-                                            <span>🎵</span> <span>VirtualDJ M3U ✓</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-2 rounded-xl bg-orange-950/80 border border-orange-700 text-center text-[10px] text-orange-200 font-bold">
-                                    🛂 Un solo clic: Tu música sincronizada en todos los softwares sin rehacer listas
-                                </div>
-                            </div>
-                        )}
+                {/* Lienzo Visual Animado con Renderizado Canvas Dinámico a 60 FPS */}
+                <div className="flex-1 min-h-[250px] rounded-2xl bg-[#060712] border-2 border-djzinc-750 relative overflow-hidden flex flex-col justify-between p-3 shadow-inner">
+                    {/* Canvas a 60 FPS */}
+                    <div className="absolute inset-0 w-full h-full pointer-events-none">
+                        <canvas ref={canvasRef} className="w-full h-full" />
                     </div>
 
-                    {/* Badge de Paso Explicado */}
-                    <div className="w-full mt-2 pt-2 border-t border-djzinc-800/80 flex items-center justify-between text-[10px] font-mono z-10">
-                        <span className="text-pink-400 font-bold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping"></span>
+                    {/* HUD Superpuesto con Información de Estado del Paso */}
+                    <div className="relative z-10 flex items-center justify-between w-full">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/80 border border-pink-500/70 text-white font-mono text-[10.5px] font-black shadow-md">
+                            <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
                             <span>{stepInfo.label}</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-black/80 border border-cyan-500/60 text-cyan-300 font-mono text-[10px] font-bold">
+                            60 FPS LIVE SIMULATOR
                         </span>
-                        <span className="text-gray-400 truncate max-w-[200px]">{stepInfo.desc}</span>
+                    </div>
+
+                    {/* Botones de Spotlight Zoom Rápido */}
+                    <div className="relative z-10 flex flex-wrap items-center gap-1.5 mt-auto pt-2">
+                        {activeSectionKey === 'copilot' && (
+                            <>
+                                <button type="button" onClick={() => setZoomFocus('deck')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'deck' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}>🔍 Zoom Decks</button>
+                                <button type="button" onClick={() => setZoomFocus('ai')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'ai' ? 'bg-pink-500 text-black' : 'bg-black/70 text-pink-300 border border-pink-800'}`}>🔍 Zoom Copilot AI</button>
+                            </>
+                        )}
+                        {activeSectionKey === 'audit' && (
+                            <>
+                                <button type="button" onClick={() => setZoomFocus('spectrum')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'spectrum' ? 'bg-emerald-500 text-black' : 'bg-black/70 text-emerald-300 border border-emerald-800'}`}>🔍 Zoom Espectro FFT</button>
+                                <button type="button" onClick={() => setZoomFocus('transients')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'transients' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}>🔍 Zoom Transitorios</button>
+                            </>
+                        )}
+                        {activeSectionKey === 'hotcues' && (
+                            <>
+                                <button type="button" onClick={() => setZoomFocus('pads')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'pads' ? 'bg-amber-500 text-black' : 'bg-black/70 text-amber-300 border border-amber-800'}`}>🔍 Zoom Pads 1-8</button>
+                                <button type="button" onClick={() => setZoomFocus('grid')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'grid' ? 'bg-purple-500 text-black' : 'bg-black/70 text-purple-300 border border-purple-800'}`}>🔍 Zoom Beatgrid</button>
+                            </>
+                        )}
+                        {activeSectionKey === 'setbuilder' && (
+                            <>
+                                <button type="button" onClick={() => setZoomFocus('graph')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'graph' ? 'bg-fuchsia-500 text-black' : 'bg-black/70 text-fuchsia-300 border border-fuchsia-800'}`}>🔍 Zoom Curva Energía</button>
+                                <button type="button" onClick={() => setZoomFocus('camelot')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'camelot' ? 'bg-blue-500 text-black' : 'bg-black/70 text-blue-300 border border-blue-800'}`}>🔍 Zoom Camelot Shift</button>
+                            </>
+                        )}
+                        {activeSectionKey === 'map' && (
+                            <>
+                                <button type="button" onClick={() => setZoomFocus('wheel')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'wheel' ? 'bg-teal-500 text-black' : 'bg-black/70 text-teal-300 border border-teal-800'}`}>🔍 Zoom Rueda 60%</button>
+                                <button type="button" onClick={() => setZoomFocus('cluster')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'cluster' ? 'bg-indigo-500 text-black' : 'bg-black/70 text-indigo-300 border border-indigo-800'}`}>🔍 Zoom Cluster Tracks</button>
+                            </>
+                        )}
+                        <span className="text-[10px] text-gray-300 font-mono ml-auto truncate max-w-[220px]">
+                            {stepInfo.desc}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -5815,17 +5840,17 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     };
 
     // Render de la Tarjeta del Simulador
-    const renderSimulatorCard = (isDrawer = false) => (
-        <div className={`flex flex-col gap-2.5 bg-[#07070e] border border-djzinc-800 rounded-2xl p-3 sm:p-4 shadow-inner relative overflow-hidden ${isDrawer ? 'h-[330px] shrink-0' : 'flex-1 min-h-[380px]'}`}>
+    const renderSimulatorCard = () => (
+        <div className="flex flex-col gap-2.5 bg-[#0a0c18] border border-djzinc-750 rounded-2xl p-3.5 sm:p-4 shadow-inner relative overflow-hidden h-[360px] shrink-0">
             <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 shrink-0">
                 <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
-                    <h4 className="text-xs font-mono font-bold uppercase text-white tracking-wider flex items-center gap-1.5">
-                        <span>Simulación Interactiva</span>
-                        <span className="text-[9px] bg-pink-950 text-pink-300 px-1.5 py-0.2 rounded border border-pink-700/50">60 FPS</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
+                    <h4 className="text-xs font-mono font-black uppercase text-white tracking-wider flex items-center gap-1.5">
+                        <span>Simulación Interactiva en Vivo</span>
+                        <span className="text-[9px] bg-gradient-to-r from-pink-600 to-rose-600 text-white px-2 py-0.5 rounded font-black shadow-sm">60 FPS</span>
                     </h4>
                 </div>
-                <span className="text-[10px] font-mono text-gray-500 uppercase">
+                <span className="text-[10.5px] font-mono text-gray-300 font-bold uppercase">
                     Paso {simStep + 1}/4
                 </span>
             </div>
@@ -5844,29 +5869,30 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     <span>🎛️</span>
                     <span>Guía Completa de Botones & Funcionalidades</span>
                 </h4>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pink-950 text-pink-300 border border-pink-700/60 font-bold">
+                <span className="text-[10.5px] font-mono px-2.5 py-0.5 rounded bg-pink-950 text-pink-200 border border-pink-500/80 font-black">
                     {(activeSec.controls || []).length} Controles
                 </span>
             </div>
-            <p className="text-xs font-sans text-gray-400">
-                A continuación tienes el detalle de cada botón, selector y atajo disponible en el módulo <strong className="text-white">{activeSec.badge}</strong>:
+
+            <p className="text-xs font-sans text-gray-300 leading-relaxed">
+                A continuación tienes el detalle meticuloso de cada botón, selector y atajo disponible en <strong className="text-white">{activeSec.badge}</strong>:
             </p>
 
             <div className="grid grid-cols-1 gap-2.5">
                 {(activeSec.controls || []).map((ctrl, cIdx) => (
-                    <div key={cIdx} className="p-3.5 rounded-2xl bg-[#0b0c16] border border-djzinc-800 hover:border-pink-500/50 transition-all shadow-sm">
+                    <div key={cIdx} className="p-3.5 rounded-2xl bg-[#0d0f1e] border border-djzinc-750 hover:border-pink-500/70 transition-all shadow-md">
                         <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <span className="font-mono text-xs font-bold text-pink-300 bg-pink-950/60 px-2 py-0.5 rounded border border-pink-800/40">
+                            <span className="font-mono text-xs font-black text-pink-200 bg-pink-950/80 px-2.5 py-0.5 rounded border border-pink-600/60 shadow-sm">
                                 {ctrl.btn}
                             </span>
-                            <span className="text-[10px] font-mono text-gray-500 uppercase">
+                            <span className="text-[10px] font-mono text-gray-400 font-bold uppercase">
                                 Control #{cIdx + 1}
                             </span>
                         </div>
-                        <p className="text-xs font-sans text-gray-300 leading-relaxed mb-2">
+                        <p className="text-xs font-sans text-gray-200 leading-relaxed mb-2 font-medium">
                             {ctrl.desc}
                         </p>
-                        <div className="p-2 rounded-xl bg-djzinc-950 border border-djzinc-800/80 text-[11px] font-sans text-amber-300/90 flex items-start gap-1.5">
+                        <div className="p-2 rounded-xl bg-[#060710] border border-djzinc-800 text-[11px] font-sans text-amber-200 flex items-start gap-1.5">
                             <span className="shrink-0 text-amber-400">🎯</span>
                             <div>
                                 <strong className="font-mono text-[10px] uppercase text-amber-400 mr-1">En Cabina:</strong>
@@ -5884,51 +5910,51 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black text-white" style={{ backgroundColor: activeSec.color }}>
+                    <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-black text-white shadow-sm" style={{ backgroundColor: activeSec.color }}>
                         {activeSec.badge}
                     </span>
-                    <span className="text-xs font-mono text-gray-400 uppercase tracking-wider font-bold">
+                    <span className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold">
                         {activeSec.tag}
                     </span>
                 </div>
-                <h2 className="text-lg sm:text-xl font-mono font-black text-white mt-1">
+                <h2 className="text-xl sm:text-2xl font-mono font-black text-white mt-1">
                     {activeSec.title}
                 </h2>
-                <div className="p-3 rounded-xl bg-pink-950/30 border border-pink-900/50 text-pink-300 font-sans text-xs italic font-medium leading-relaxed mt-1">
+                <div className="p-3 rounded-xl bg-pink-950/40 border border-pink-700/60 text-pink-200 font-sans text-xs italic font-semibold leading-relaxed mt-1">
                     "{activeSec.hook}"
                 </div>
             </div>
 
             {/* Historia Cercana */}
-            <div className="p-4 rounded-2xl bg-djzinc-900/70 border border-djzinc-800 text-xs font-sans text-gray-300 leading-relaxed space-y-2">
+            <div className="p-4 rounded-2xl bg-[#0d0f20] border border-djzinc-750 text-xs font-sans text-gray-200 leading-relaxed space-y-2">
                 <p>{activeSec.story}</p>
             </div>
 
             {/* Tecnicismos Explicados */}
             <div className="space-y-2">
-                <h4 className="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                <h4 className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                     <span>💡</span> <span>Conceptos Clave Explicados Fácilmente</span>
                 </h4>
                 <div className="grid grid-cols-1 gap-2">
-                    {activeSec.jargon.map((jg, jIdx) => (
-                        <div key={jIdx} className="p-3 rounded-xl bg-djzinc-950 border border-djzinc-800/90 text-xs font-sans">
+                    {(activeSec.jargon || []).map((jg, jIdx) => (
+                        <div key={jIdx} className="p-3 rounded-xl bg-[#070814] border border-djzinc-750 text-xs font-sans">
                             <div className="font-mono font-bold text-pink-300 mb-0.5 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-pink-400"></span>
                                 <span>{jg.term}</span>
                             </div>
-                            <p className="text-gray-400 leading-relaxed text-[11px]">{jg.desc}</p>
+                            <p className="text-gray-300 leading-relaxed text-[11.5px]">{jg.desc}</p>
                         </div>
                     ))}
                 </div>
             </div>
 
             {/* Paso a Paso */}
-            <div className="p-4 rounded-2xl bg-[#0b0c16] border border-djzinc-800 space-y-2">
-                <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <div className="p-4 rounded-2xl bg-[#0c0e1c] border border-djzinc-750 space-y-2">
+                <h4 className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                     <span>🛠️</span> <span>Flujo de Trabajo Paso a Paso</span>
                 </h4>
-                <div className="space-y-1.5 text-xs font-sans text-gray-300">
-                    {activeSec.steps.map((st, sIdx) => (
+                <div className="space-y-1.5 text-xs font-sans text-gray-200">
+                    {(activeSec.steps || []).map((st, sIdx) => (
                         <div key={sIdx} className="flex items-start gap-2">
                             <span className="text-pink-400 font-bold shrink-0">✓</span>
                             <span className="leading-snug">{st}</span>
@@ -5938,11 +5964,11 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             </div>
 
             {/* Pro DJ Tip */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/40 to-djzinc-900 border border-amber-600/40 text-xs font-sans text-amber-200 flex items-start gap-2.5 shadow-md">
-                <span className="text-base shrink-0">👑</span>
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/60 to-[#0e1022] border border-amber-600/60 text-xs font-sans text-amber-200 flex items-start gap-2.5 shadow-md">
+                <span className="text-lg shrink-0">👑</span>
                 <div>
                     <strong className="font-mono uppercase tracking-wider text-amber-300 block text-[11px] mb-0.5">Secreto Pro de Cabina</strong>
-                    <p className="text-gray-300 leading-relaxed">{activeSec.proTip}</p>
+                    <p className="text-gray-200 leading-relaxed">{activeSec.proTip}</p>
                 </div>
             </div>
 
@@ -5956,7 +5982,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         }
                         onClose();
                     }}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 via-fuchsia-600 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.4)] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 via-fuchsia-600 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.5)] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                     <span>🚀</span>
                     <span>Abrir e Ir a la Sección {activeSec.badge} Ahora</span>
@@ -5965,45 +5991,9 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         </div>
     );
 
-    // Controles de Cabecera (Plegar, Alternar 60% / Modal, Cerrar)
-    const renderHeaderControls = () => (
-        <div className="flex items-center gap-1.5 shrink-0">
-            {/* Botón Plegar / Desplegar */}
-            <button 
-                type="button"
-                onClick={() => setIsFolded(true)}
-                className="px-2.5 py-1 rounded-xl bg-djzinc-850 hover:bg-pink-950/80 text-gray-300 hover:text-pink-300 flex items-center gap-1 font-mono text-xs border border-djzinc-750 hover:border-pink-500/60 transition-colors cursor-pointer"
-                title="Plegar manual a pestaña lateral para interactuar libremente con la cabina"
-            >
-                <span>⇥</span>
-                <span className="hidden sm:inline">Plegar</span>
-            </button>
-
-            {/* Alternar Drawer 60% vs Modal Centrada */}
-            <button 
-                type="button"
-                onClick={() => setModeAndPersist(viewMode === 'drawer' ? 'modal' : 'drawer')}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 hover:text-white flex items-center justify-center font-mono text-xs border border-djzinc-750 transition-colors cursor-pointer"
-                title={viewMode === 'drawer' ? "Expandir a Modal Centrada Pantalla Completa" : "Plegar a Columna Lateral 60% (Interactiva con Cabina)"}
-            >
-                {viewMode === 'drawer' ? "⧉" : "▯"}
-            </button>
-
-            {/* Cerrar */}
-            <button 
-                type="button"
-                onClick={onClose}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-djzinc-850 hover:bg-pink-900/60 text-gray-400 hover:text-pink-300 flex items-center justify-center font-mono text-sm border border-djzinc-750 transition-colors cursor-pointer"
-                title="Cerrar manual (ESC)"
-            >
-                ✕
-            </button>
-        </div>
-    );
-
-    // Barra de las 8 Secciones Maestras
+    // Barra de las 8 Secciones Maestras con ALTO CONTRASTE (Sin texto negro)
     const renderSectionsBar = () => (
-        <div className="px-3 sm:px-4 py-2 bg-[#06060c] border-b border-djzinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+        <div className="px-3 sm:px-4 py-2 bg-[#080916] border-b border-djzinc-750 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
             {Object.values(MANUAL_SECTIONS).map(sec => {
                 const isActive = activeSectionKey === sec.id;
                 return (
@@ -6013,12 +6003,14 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         onClick={() => {
                             setActiveSectionKey(sec.id);
                             setSimStep(0);
+                            setZoomFocus(null);
                         }}
-                        className={`px-2.5 sm:px-3 py-1.5 rounded-xl font-mono text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+                        className={`px-3 py-1.5 rounded-xl font-mono text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
                             isActive
-                                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-105'
-                                : 'bg-djzinc-900/80 text-gray-400 hover:text-white hover:bg-djzinc-800 border border-djzinc-800'
+                                ? 'bg-gradient-to-r from-pink-500 via-fuchsia-600 to-rose-600 text-white shadow-[0_0_15px_rgba(236,72,153,0.6)] border border-pink-400 scale-105'
+                                : 'bg-[#121426] text-gray-200 hover:text-white hover:bg-[#1b1e38] border border-djzinc-750'
                         }`}
+                        style={{ color: '#ffffff' }}
                     >
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sec.color }}></span>
                         <span>{sec.badge}</span>
@@ -6035,14 +6027,14 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         return (
             <div 
                 onClick={() => setIsFolded(false)}
-                className="fixed top-1/2 -translate-y-1/2 right-0 z-50 bg-[#090915] border-l-2 border-y border-pink-500 shadow-[0_0_25px_rgba(236,72,153,0.5)] px-3 py-4 rounded-l-2xl cursor-pointer hover:bg-pink-950 hover:translate-x-[-4px] transition-all flex flex-col items-center gap-2 text-white font-mono text-xs select-none animate-fadeIn"
+                className="fixed top-1/2 -translate-y-1/2 right-0 z-50 bg-[#090a18] border-l-2 border-y border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.6)] px-3.5 py-4 rounded-l-2xl cursor-pointer hover:bg-pink-950 hover:translate-x-[-4px] transition-all flex flex-col items-center gap-2 text-white font-mono text-xs select-none animate-fadeIn"
                 title="Haga clic para desplegar el Manual Interactivo al 60% de pantalla"
             >
                 <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
-                <span className="font-black text-pink-300 [writing-mode:vertical-rl] tracking-wider uppercase text-[11px] rotate-180 flex items-center gap-1.5">
+                <span className="font-black text-pink-200 [writing-mode:vertical-rl] tracking-wider uppercase text-xs rotate-180 flex items-center gap-1.5">
                     📖 MANUAL 60% • {activeSec.badge}
                 </span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-pink-950 text-pink-300 border border-pink-700/60 font-bold uppercase">
+                <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-pink-950 text-pink-200 border border-pink-600 font-bold uppercase mt-1">
                     ◀ Desplegar
                 </span>
             </div>
@@ -6050,23 +6042,24 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // MANUAL EXCLUSIVO: COLUMNA LATERAL DERECHA AL 60% DE ANCHO (Interactiva & Plegable)
+    // MANUAL EXCLUSIVO: COLUMNA LATERAL DERECHA AL 60% DE ANCHO (EL 40% QUEDA TOTALMENTE VISIBLE)
     // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div className="fixed inset-0 z-50 overflow-hidden select-none">
-            {/* Backdrop sutil clicable para cerrar o plegar */}
+        <div className="fixed inset-0 z-50 overflow-hidden select-none pointer-events-none">
+            {/* Backdrop sutil clicable para cerrar sin tapar la cabina detrás */}
             <div 
-                className="fixed inset-0 bg-black/65 transition-opacity animate-fadeIn"
+                className="fixed inset-0 bg-black/10 backdrop-blur-[0.5px] pointer-events-auto transition-opacity"
                 onClick={onClose}
+                title="Haz clic fuera para cerrar el manual y volver a la cabina"
             />
 
-            {/* Columna Lateral Derecha al 60% de ancho con fondo sólido plano */}
+            {/* Columna Lateral Derecha al 60% exacto de pantalla vertical */}
             <aside 
-                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[85vw] md:w-[70vw] lg:w-[60vw] max-w-[60vw] h-full bg-[#0a0a14] border-l border-pink-500/70 shadow-[-25px_0_60px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-200 animate-slideInRight select-none"
+                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[85vw] md:w-[70vw] lg:w-[60vw] min-w-[60vw] max-w-[60vw] h-full bg-[#080914] border-l-2 border-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.85)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Drawer */}
-                <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
+                <div className="px-5 py-3.5 border-b border-djzinc-750 bg-[#0d0f20] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0">
                             📖
@@ -6076,11 +6069,11 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                 <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
                                     MANUAL MAESTRO DE CABINA
                                 </h3>
-                                <span className="text-[9px] bg-pink-950 text-pink-300 border border-pink-500/60 px-2 py-0.5 rounded-full font-bold">
-                                    60% ANCHO • PLEGABLE
+                                <span className="text-[9.5px] bg-pink-950 text-pink-200 border border-pink-500 px-2 py-0.5 rounded-full font-black">
+                                    60% ANCHO • CABINA ACTIVA
                                 </span>
                             </div>
-                            <p className="text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]">
+                            <p className="text-[10.5px] text-gray-300 font-mono truncate max-w-[280px] sm:max-w-[400px]">
                                 {activeSec.tag}
                             </p>
                         </div>
@@ -6091,7 +6084,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         <button 
                             type="button"
                             onClick={() => setIsFolded(true)}
-                            className="px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-pink-950/80 text-gray-300 hover:text-pink-300 flex items-center gap-1 font-mono text-xs border border-djzinc-750 hover:border-pink-500/60 transition-colors cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-[#14162a] hover:bg-pink-950 text-gray-200 hover:text-pink-200 flex items-center gap-1 font-mono text-xs border border-djzinc-700 hover:border-pink-500 transition-colors cursor-pointer"
                             title="Plegar manual a pestaña lateral para interactuar libremente con la cabina"
                         >
                             <span>⇥</span>
@@ -6102,7 +6095,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         <button 
                             type="button"
                             onClick={onClose}
-                            className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-pink-900/60 text-gray-400 hover:text-pink-300 flex items-center justify-center font-mono text-sm border border-djzinc-750 transition-colors cursor-pointer"
+                            className="w-8 h-8 rounded-xl bg-[#14162a] hover:bg-rose-950 text-gray-300 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
                             title="Cerrar manual (ESC)"
                         >
                             ✕
@@ -6113,10 +6106,10 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 {/* Barra de Secciones */}
                 {renderSectionsBar()}
 
-                {/* Subtabs del Drawer */}
-                <div className="px-5 py-2 bg-[#0d0e1a] border-b border-djzinc-800/80 flex items-center justify-between text-xs font-mono shrink-0">
-                    <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider hidden sm:inline">Vistas de Contenido:</span>
-                    <div className="flex items-center gap-1 bg-[#141525] p-0.5 rounded-xl border border-djzinc-800">
+                {/* Subtabs del Drawer con Alto Contraste (Sin texto negro) */}
+                <div className="px-5 py-2 bg-[#0c0e1e] border-b border-djzinc-750 flex items-center justify-between text-xs font-mono shrink-0">
+                    <span className="text-gray-300 font-bold uppercase text-[10px] tracking-wider hidden sm:inline">Vistas de Contenido:</span>
+                    <div className="flex items-center gap-1 bg-[#14162c] p-1 rounded-xl border border-djzinc-750">
                         {[
                             { id: 'all', label: '🌟 Todo' },
                             { id: 'sim', label: '🎬 Simulador' },
@@ -6127,11 +6120,12 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                 key={tb.id}
                                 type="button"
                                 onClick={() => setActiveManualTab(tb.id)}
-                                className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                className={`px-3 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
                                     activeManualTab === tb.id 
-                                        ? 'bg-pink-500 text-black font-black shadow-sm' 
-                                        : 'text-gray-400 hover:text-white'
+                                        ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-[0_0_12px_rgba(236,72,153,0.5)] border border-pink-400' 
+                                        : 'text-gray-300 hover:text-white hover:bg-[#1f2242]'
                                 }`}
+                                style={{ color: '#ffffff' }}
                             >
                                 {tb.label}
                             </button>
@@ -6142,7 +6136,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 {/* Cuerpo Scrollable del Drawer */}
                 <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-6">
                     {(activeManualTab === 'all' || activeManualTab === 'sim') && (
-                        renderSimulatorCard(true)
+                        renderSimulatorCard()
                     )}
 
                     {(activeManualTab === 'all' || activeManualTab === 'controls') && (
@@ -6155,15 +6149,15 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 </div>
 
                 {/* Pie del Drawer */}
-                <div className="px-5 py-3 bg-[#0c0d18] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
-                    <span className="text-gray-400 text-[10.5px] flex items-center gap-1.5">
+                <div className="px-5 py-3 bg-[#0a0c18] border-t border-djzinc-750 flex items-center justify-between shrink-0 font-mono text-xs">
+                    <span className="text-gray-300 text-[10.5px] flex items-center gap-1.5">
                         <span>💡</span>
-                        <span>Pulsa <strong>Plegar</strong> para interactuar con la cabina a la izquierda sin cerrar</span>
+                        <span>Pulsa <strong>Plegar</strong> para usar la cabina visible al 40% detrás sin cerrar</span>
                     </span>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-3.5 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold text-xs transition-colors cursor-pointer"
+                        className="px-4 py-1.5 rounded-xl bg-[#16182e] hover:bg-[#202446] text-white font-black text-xs border border-djzinc-700 transition-colors cursor-pointer"
                     >
                         Cerrar (ESC)
                     </button>
@@ -6172,6 +6166,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         </div>
     );
 };
+
 
 const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayTrack, onSelectTrack }) => {
     if (!isOpen || !currentTrack) return null;
@@ -25477,273 +25472,333 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
 // ==============================================================================
 // PRESENTACIÓN ESPECTACULAR A PANTALLA COMPLETA CON VÍDEO DE FONDO Y LÁSERES
 // ==============================================================================
-const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenManual }) => {
+const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenManual, onOpenLogin, onOpenRegister, onOpenTour }) => {
     if (!isOpen) return null;
 
-    const [isMuted, setIsMuted] = useState(true);
-    const canvasRef = useRef(null);
-    const videoRef = useRef(null);
+    const [phase, setPhase] = useState('video'); // 'video' | 'portal'
+    const [videoOpacity, setVideoOpacity] = useState(0);
+    const [isMuted, setIsMuted] = useState(false);
+    const [audioBlocked, setAudioBlocked] = useState(false);
+    const [progress, setProgress] = useState(0);
 
-    // Audio synthesizer Web Audio API para efectos de sonido de cabina
-    const playIntroSound = (type = 'enter') => {
-        try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (!AudioCtx) return;
-            const ctx = new AudioCtx();
-            const now = ctx.currentTime;
-            if (type === 'enter') {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                const filter = ctx.createBiquadFilter();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(65, now);
-                osc.frequency.exponentialRampToValueAtTime(880, now + 0.6);
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(300, now);
-                filter.frequency.exponentialRampToValueAtTime(14000, now + 0.6);
-                gain.gain.setValueAtTime(0.25, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.75);
-            }
-        } catch (_) {}
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+
+    // Fade-in del video: Comienza con alpha cero y en 1 segundo se pone en alpha 70% (0.7)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setVideoOpacity(0.7);
+        }, 50);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Manejo de reproducción y audio de cabina
+    useEffect(() => {
+        const vid = videoRef.current;
+        if (!vid) return;
+
+        vid.currentTime = 0;
+        const playPromise = vid.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                setAudioBlocked(false);
+            }).catch(() => {
+                // Si la política del navegador bloquea el audio autoplay, reproducir con sonido muted temporal
+                vid.muted = true;
+                setIsMuted(true);
+                setAudioBlocked(true);
+                vid.play().catch(() => {});
+            });
+        }
+    }, []);
+
+    // Desmutear audio al primer clic en cualquier lugar si el navegador lo bloqueó
+    const handleUnmuteAudio = () => {
+        const vid = videoRef.current;
+        if (vid) {
+            vid.muted = false;
+            setIsMuted(false);
+            setAudioBlocked(false);
+            vid.play().catch(() => {});
+        }
     };
 
-    // Canvas de Respaldo: Visualizador de Ondas & Partículas Cyberpunk a 128 BPM
+    // Actualización de progreso y paso a fase 3D al terminar
+    const handleTimeUpdate = () => {
+        const vid = videoRef.current;
+        if (!vid || !vid.duration) return;
+        setProgress((vid.currentTime / vid.duration) * 100);
+    };
+
+    const handleVideoEnded = () => {
+        setPhase('portal');
+    };
+
+    const handleSkipToPortal = () => {
+        setPhase('portal');
+    };
+
+    // Acciones de Entrada Espectacular
+    const handleActionEnter = (action) => {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(110, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.35);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.45);
+            }
+        } catch (_) {}
+
+        onClose();
+
+        if (action === 'login' && onOpenLogin) onOpenLogin();
+        else if (action === 'register' && onOpenRegister) onOpenRegister();
+        else if (action === 'tour' && onOpenTour) onOpenTour();
+    };
+
+    // Render de partículas 3D en fase de portal
     useEffect(() => {
+        if (phase !== 'portal') return;
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         let animId;
         let t = 0;
 
-        const renderVisuals = () => {
-            t += 0.035;
+        const render3DLasers = () => {
+            t += 0.03;
             const w = canvas.width = window.innerWidth;
             const h = canvas.height = window.innerHeight;
 
             ctx.clearRect(0, 0, w, h);
 
-            // Rayos Láser de Festival desde la parte superior
-            const laserCount = 8;
+            // Rayos Láser de Cabina 3D en perspectiva
+            const laserCount = 10;
             for (let i = 0; i < laserCount; i++) {
-                const angle = Math.sin(t * 0.75 + i * 0.8) * 0.42;
+                const angle = Math.sin(t * 0.9 + i * 0.7) * 0.55;
                 const startX = (w / (laserCount + 1)) * (i + 1);
                 ctx.beginPath();
                 ctx.moveTo(startX, 0);
                 ctx.lineTo(startX + Math.tan(angle) * h, h);
-                const laserGrad = ctx.createLinearGradient(startX, 0, startX + Math.tan(angle) * h, h);
-                laserGrad.addColorStop(0, i % 2 === 0 ? 'rgba(6, 182, 212, 0.6)' : 'rgba(236, 72, 153, 0.55)');
-                laserGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.strokeStyle = laserGrad;
-                ctx.lineWidth = 2.5 + Math.sin(t * 2 + i) * 1.5;
+                const grad = ctx.createLinearGradient(startX, 0, startX + Math.tan(angle) * h, h);
+                grad.addColorStop(0, i % 2 === 0 ? 'rgba(6, 182, 212, 0.75)' : 'rgba(236, 72, 153, 0.75)');
+                grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 3 + Math.sin(t * 2 + i) * 1.5;
                 ctx.stroke();
             }
 
-            // Barras de Espectro EQ Pulsante en el Fondo Inferior
-            const bars = 48;
-            const barWidth = w / bars;
-            for (let b = 0; b < bars; b++) {
-                const barH = (Math.sin(t * 3 + b * 0.4) * 0.5 + 0.5) * (h * 0.28) + (Math.cos(t * 1.8 + b * 0.2) * 0.3 + 0.3) * 60;
-                const bx = b * barWidth;
-                const by = h - barH;
-                const bGrad = ctx.createLinearGradient(0, by, 0, h);
-                bGrad.addColorStop(0, '#06b6d4');
-                bGrad.addColorStop(0.5, '#a855f7');
-                bGrad.addColorStop(1, '#090a14');
-                ctx.fillStyle = bGrad;
-                ctx.fillRect(bx + 1, by, barWidth - 2, barH);
-            }
-
-            animId = requestAnimationFrame(renderVisuals);
+            animId = requestAnimationFrame(render3DLasers);
         };
 
-        renderVisuals();
+        render3DLasers();
         return () => cancelAnimationFrame(animId);
-    }, []);
-
-    const handleConfirmEnter = () => {
-        playIntroSound('enter');
-        onClose();
-    };
-
-    useEffect(() => {
-        const onKey = (e) => {
-            if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
-                handleConfirmEnter();
-            }
-        };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, []);
+    }, [phase]);
 
     return (
-        <div className="fixed inset-0 z-[120] bg-black overflow-hidden flex flex-col justify-between font-sans text-white select-none animate-fadeIn">
-            {/* VÍDEO DE FONDO EN LOOP CINEMÁTICO (FESTIVAL / CABINA DJ / LÁSERES) */}
-            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                <video
-                    ref={videoRef}
-                    autoPlay
-                    loop
-                    muted={isMuted}
-                    playsInline
-                    poster="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1600&auto=format&fit=crop&q=80"
-                    className="w-full h-full object-cover opacity-50 filter contrast-125 brightness-90 scale-105 animate-pulse"
-                >
-                    <source src="https://assets.mixkit.co/videos/preview/mixkit-dj-mixing-music-at-a-club-stage-34538-large.mp4" type="video/mp4" />
-                    <source src="https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-dj-playing-music-at-a-party-41618-large.mp4" type="video/mp4" />
-                </video>
-                {/* Visualizador de Ondas & Láseres en Canvas de Apoyo */}
-                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-60 mix-blend-screen" />
-                {/* Degradados Cinemáticos para Legibilidad de Marca */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#05060b] via-[#05060b]/40 to-[#05060b]/80" />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.15),transparent_70%)]" />
-            </div>
-
-            {/* BARRA SUPERIOR: LOGO Y BOTÓN SALTAR */}
-            <div className="relative z-10 p-5 sm:p-7 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.6)]">
-                        🎧
+        <div 
+            className="fixed inset-0 z-[120] bg-[#070709] overflow-hidden flex flex-col justify-between font-sans text-white select-none animate-fadeIn"
+            onClick={audioBlocked ? handleUnmuteAudio : undefined}
+        >
+            {/* FASE 1: VÍDEO A PANTALLA COMPLETA AL 70% ALPHA CON HARD TECHNO */}
+            {phase === 'video' && (
+                <>
+                    <div className="absolute inset-0 z-0 overflow-hidden bg-[#070709]">
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted={isMuted}
+                            onTimeUpdate={handleTimeUpdate}
+                            onEnded={handleVideoEnded}
+                            src="/assets/intro_cinematic.mp4"
+                            className="w-full h-full object-cover transition-opacity duration-1000 ease-out"
+                            style={{ opacity: videoOpacity }}
+                        />
+                        {/* Viñeta sutil de enfoque a cabina */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-[#070709]/80 pointer-events-none" />
                     </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="font-syne font-black text-lg tracking-wider text-white">BEATWAVE PRO</span>
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black uppercase bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow">
-                                V2.4 STUDIO
-                            </span>
+
+                    {/* Cabecera del Video */}
+                    <div className="relative z-20 p-5 sm:p-7 flex items-center justify-between pointer-events-auto">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500 via-purple-600 to-cyan-500 flex items-center justify-center text-white text-xl shadow-[0_0_20px_rgba(236,72,153,0.7)]">
+                                🎧
+                            </div>
+                            <div>
+                                <h2 className="font-syne font-black text-lg tracking-wider text-white">BEATWAVE PRO</h2>
+                                <span className="text-[10px] font-mono text-pink-300 font-bold uppercase">140 BPM HARD TECHNO CABIN DROP</span>
+                            </div>
                         </div>
-                        <span className="text-[10px] font-mono text-gray-400">Intelligent DJ Suite & Sound Architecture</span>
-                    </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => setIsMuted(prev => !prev)}
-                        className="px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 text-gray-300 hover:text-white border border-gray-700 text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1.5"
-                    >
-                        <span>{isMuted ? '🔇' : '🔊'}</span>
-                        <span className="hidden sm:inline">{isMuted ? 'Sonido Silenciado' : 'Sonido Cabina'}</span>
-                    </button>
+                        <div className="flex items-center gap-3">
+                            {audioBlocked && (
+                                <button
+                                    type="button"
+                                    onClick={handleUnmuteAudio}
+                                    className="px-3.5 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-mono text-xs font-black shadow-[0_0_15px_rgba(236,72,153,0.8)] animate-pulse cursor-pointer flex items-center gap-1.5"
+                                >
+                                    <span>🔊</span>
+                                    <span>Activar Audio de Cabina</span>
+                                </button>
+                            )}
 
-                    <button
-                        type="button"
-                        onClick={handleConfirmEnter}
-                        className="px-3.5 py-1.5 rounded-xl bg-pink-950/70 hover:bg-pink-900 border border-pink-700 text-pink-200 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
-                        title="Saltar intro y entrar directamente a la cabina (ESC)"
-                    >
-                        <span>Saltar Intro</span>
-                        <span>✕</span>
-                    </button>
-                </div>
-            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const vid = videoRef.current;
+                                    if (vid) {
+                                        vid.muted = !isMuted;
+                                        setIsMuted(!isMuted);
+                                    }
+                                }}
+                                className="w-9 h-9 rounded-xl bg-black/60 hover:bg-black/90 border border-gray-700 text-gray-200 hover:text-white flex items-center justify-center text-sm font-mono cursor-pointer"
+                                title={isMuted ? "Activar Sonido" : "Silenciar"}
+                            >
+                                {isMuted ? '🔇' : '🔊'}
+                            </button>
 
-            {/* SECCIÓN HERO CENTRAL: TÍTULO GIGANTE 3D & BENEFICIOS DE ÉLITE */}
-            <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 max-w-4xl mx-auto my-auto py-6">
-                {/* Badge Neón Holográfico */}
-                <div className="mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-400/80 text-cyan-300 text-xs font-mono font-black uppercase tracking-widest shadow-[0_0_20px_rgba(6,182,212,0.4)] animate-pulse">
-                    <span>⚡</span> <span>MOTOR DSP • SUPERFLAC • MEZCLA ARMÓNICA 2D</span>
-                </div>
-
-                {/* Título Monumental de Marca */}
-                <h1 className="font-syne font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-none uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-cyan-400 drop-shadow-[0_0_40px_rgba(6,182,212,0.7)]">
-                    BEATWAVE PRO
-                </h1>
-
-                <p className="mt-3 text-sm sm:text-base md:text-lg text-gray-300 font-sans font-medium max-w-2xl leading-relaxed">
-                    La plataforma definitiva para DJs y Productores. Diagnóstico acústico FFT en tiempo real, armonía Camelot 2D y conexión invisible con tu cabina.
-                </p>
-
-                {/* Grid de 4 Cápsulas de Funcionalidad Pro */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mt-8 w-full max-w-3xl">
-                    <div className="p-3 rounded-2xl bg-black/60 border border-cyan-500/40 text-left shadow-lg backdrop-blur-md hover:border-cyan-400 transition-colors">
-                        <span className="text-xl block mb-1">💎</span>
-                        <h4 className="text-xs font-mono font-black uppercase text-cyan-300">SuperFLAC 24b</h4>
-                        <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Auditoría FFT y rechazo de fakes a 22kHz</p>
+                            <button
+                                type="button"
+                                onClick={handleSkipToPortal}
+                                className="px-4 py-2 rounded-xl bg-pink-950/80 hover:bg-pink-900 border border-pink-600 text-pink-100 hover:text-white font-mono text-xs font-black shadow-md cursor-pointer transition-all flex items-center gap-1.5"
+                            >
+                                <span>Saltar al Portal</span>
+                                <span>▶▶</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-black/60 border border-purple-500/40 text-left shadow-lg backdrop-blur-md hover:border-purple-400 transition-colors">
-                        <span className="text-xl block mb-1">☸</span>
-                        <h4 className="text-xs font-mono font-black uppercase text-purple-300">Camelot 2D</h4>
-                        <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Scatter Map & Graph Playlists tipo DJOID</p>
+                    {/* Barra de Progreso Inferior */}
+                    <div className="relative z-20 px-6 py-4 flex flex-col gap-2 pointer-events-auto">
+                        <div className="flex items-center justify-between text-[11px] font-mono text-gray-300">
+                            <span className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
+                                <span className="font-bold text-white">HERTZ - TIMBALLE VIBES • 140 BPM PEAK TIME</span>
+                            </span>
+                            <span className="text-pink-300 font-bold">{Math.round(progress)}%</span>
+                        </div>
+                        <div className="w-full bg-black/80 h-1.5 rounded-full overflow-hidden border border-djzinc-800">
+                            <div 
+                                className="bg-gradient-to-r from-cyan-400 via-pink-500 to-rose-500 h-full transition-all duration-150"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* FASE 2: ENTRADA ESPECTACULAR EN 3D DE NUESTRO LOGO CON BOTONES */}
+            {phase === 'portal' && (
+                <div className="relative z-30 flex-1 flex flex-col justify-between p-6 sm:p-10 bg-[#070709] animate-fadeIn">
+                    <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-50" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.18),transparent_65%)] pointer-events-none" />
+
+                    {/* Cabecera Superior */}
+                    <div className="relative z-10 flex items-center justify-between">
+                        <span className="px-3 py-1 rounded-full bg-pink-950/80 border border-pink-500 text-pink-300 text-xs font-mono font-black uppercase tracking-widest shadow-[0_0_15px_rgba(236,72,153,0.4)]">
+                            ⚡ CABINA PROFESIONAL BEATWAVE PRO
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => handleActionEnter('cabin')}
+                            className="text-gray-400 hover:text-white font-mono text-xs cursor-pointer"
+                        >
+                            Saltar a Cabina ✕
+                        </button>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-black/60 border border-rose-500/40 text-left shadow-lg backdrop-blur-md hover:border-rose-400 transition-colors">
-                        <span className="text-xl block mb-1">🎧</span>
-                        <h4 className="text-xs font-mono font-black uppercase text-rose-300">Live Copilot</h4>
-                        <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Anti-Muddy DSP con Serato Link a 0ms</p>
+                    {/* CENTRO: ENTRADA 3D MONUMENTAL DEL LOGO */}
+                    <div 
+                        className="relative z-10 flex flex-col items-center justify-center my-auto text-center"
+                        style={{ perspective: '1000px' }}
+                    >
+                        {/* Logo 3D con Animación Holográfica */}
+                        <div 
+                            className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-gradient-to-br from-cyan-400 via-purple-600 to-pink-500 p-1 shadow-[0_0_60px_rgba(236,72,153,0.8)] animate-pulse"
+                            style={{ 
+                                transform: 'rotateX(14deg) rotateY(-8deg) scale(1.05)',
+                                transformStyle: 'preserve-3d'
+                            }}
+                        >
+                            <div className="w-full h-full rounded-[22px] bg-[#07070f] flex flex-col items-center justify-center text-4xl sm:text-5xl border border-pink-400/50">
+                                <span>🎧</span>
+                                <span className="text-[10px] font-mono font-black tracking-widest text-cyan-300 uppercase mt-1">3D AUDIO</span>
+                            </div>
+                        </div>
+
+                        {/* Título de Marca 3D */}
+                        <h1 className="font-syne font-black text-5xl sm:text-7xl md:text-8xl tracking-tight uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-pink-200 to-cyan-300 drop-shadow-[0_0_45px_rgba(236,72,153,0.7)] mt-6">
+                            BEATWAVE PRO
+                        </h1>
+
+                        <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-300 font-sans font-medium max-w-xl leading-relaxed">
+                            Motor DSP acústico, mezclas armónicas 2D Camelot y pasaporte universal a cabina.
+                        </p>
+
+                        {/* BOTONES PRINCIPALES SOLICITADOS: "Log-In" / "Registrar" / "Tour" */}
+                        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 w-full max-w-2xl">
+                            {/* Botón 1: Log-In */}
+                            <button
+                                type="button"
+                                onClick={() => handleActionEnter('login')}
+                                className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-mono font-black text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+                            >
+                                <span>🔐</span>
+                                <span>Log-In</span>
+                            </button>
+
+                            {/* Botón 2: Registrar */}
+                            <button
+                                type="button"
+                                onClick={() => handleActionEnter('register')}
+                                className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(236,72,153,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+                            >
+                                <span>⚡</span>
+                                <span>Registrar</span>
+                            </button>
+
+                            {/* Botón 3: Tour */}
+                            <button
+                                type="button"
+                                onClick={() => handleActionEnter('tour')}
+                                className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-black font-mono font-black text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+                            >
+                                <span>🚀</span>
+                                <span>Tour</span>
+                            </button>
+                        </div>
+
+                        {/* Acceso Directo Inmediato */}
+                        <button
+                            type="button"
+                            onClick={() => handleActionEnter('cabin')}
+                            className="mt-6 text-xs font-mono font-bold text-gray-400 hover:text-white underline tracking-wider cursor-pointer transition-colors"
+                        >
+                            O entrar directamente a la cabina con su diseño completo ➔
+                        </button>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-black/60 border border-amber-500/40 text-left shadow-lg backdrop-blur-md hover:border-amber-400 transition-colors">
-                        <span className="text-xl block mb-1">🛂</span>
-                        <h4 className="text-xs font-mono font-black uppercase text-amber-300">Pasaporte DJ</h4>
-                        <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Sync universal a Rekordbox, Serato y Traktor</p>
+                    {/* Barra Inferior */}
+                    <div className="relative z-10 flex items-center justify-between text-xs font-mono text-gray-400 border-t border-djzinc-800/80 pt-4">
+                        <span>Pioneer CDJ-3000 • Serato • Rekordbox • Traktor Compatible</span>
+                        <span>V2.4 STUDIO PRO</span>
                     </div>
                 </div>
-
-                {/* BOTÓN ESTRELLA DE ENTRADA A CABINA */}
-                <div className="mt-8 flex flex-col items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={handleConfirmEnter}
-                        className="px-8 sm:px-12 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-syne font-black text-base sm:text-lg uppercase tracking-wider shadow-[0_0_40px_rgba(6,182,212,0.6)] hover:shadow-[0_0_60px_rgba(6,182,212,0.9)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-3"
-                    >
-                        <span>🎧</span>
-                        <span>ENTRAR A CABINA</span>
-                        <span className="text-xl">➔</span>
-                    </button>
-                    <span className="text-[10px] font-mono text-gray-400">Pulsa Enter o haz clic para acceder al sistema</span>
-                </div>
-            </div>
-
-            {/* BARRA INFERIOR: ACCESOS DIRECTOS DE LANZAMIENTO RÁPIDO */}
-            <div className="relative z-10 p-4 sm:p-6 border-t border-djzinc-800/80 bg-black/60 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-                <span className="text-gray-400 hidden sm:inline">Acciones Rápidas de Inicio:</span>
-                <div className="flex flex-wrap items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            handleConfirmEnter();
-                            if (onOpenFolder) onOpenFolder();
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl bg-djzinc-900 hover:bg-cyan-950 text-cyan-300 hover:text-cyan-200 border border-djzinc-750 hover:border-cyan-500/60 font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                        <span>📂</span>
-                        <span>Cargar Carpeta de Música</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => {
-                            handleConfirmEnter();
-                            if (onOpenDemo) onOpenDemo();
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl bg-djzinc-900 hover:bg-purple-950 text-purple-300 hover:text-purple-200 border border-djzinc-750 hover:border-purple-500/60 font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                        <span>☸</span>
-                        <span>Explorar Scatter Map 2D</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => {
-                            handleConfirmEnter();
-                            if (onOpenManual) onOpenManual();
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl bg-djzinc-900 hover:bg-pink-950 text-pink-300 hover:text-pink-200 border border-djzinc-750 hover:border-pink-500/60 font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                        <span>📖</span>
-                        <span>Abrir Manual Maestro</span>
-                    </button>
-                </div>
-            </div>
+            )}
         </div>
     );
 };
+
 
 // Componente Wrapper Orquestador del Tutorial (Deshabilitado a petición del usuario)
 const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = 'launcher' }) => {
@@ -27842,6 +27897,21 @@ const App = () => {
                     setCinematicIntroOpen(false);
                     try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
                     handleOpenManual('audit');
+                }}
+                onOpenLogin={() => {
+                    setCinematicIntroOpen(false);
+                    try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
+                    setUserModalOpen(true);
+                }}
+                onOpenRegister={() => {
+                    setCinematicIntroOpen(false);
+                    try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
+                    setUserModalOpen(true);
+                }}
+                onOpenTour={() => {
+                    setCinematicIntroOpen(false);
+                    try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
+                    handleOpenManual('copilot');
                 }}
             />
         </div>
