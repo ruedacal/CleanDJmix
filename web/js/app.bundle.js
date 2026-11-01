@@ -17104,13 +17104,12 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
     )))
   ));
 };
-const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenManual, onOpenLogin, onOpenRegister, onOpenTour }) => {
+const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour }) => {
   if (!isOpen) return null;
   const [phase, setPhase] = useState("video");
   const [videoOpacity, setVideoOpacity] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [audioBlocked, setAudioBlocked] = useState(false);
-  const [progress, setProgress] = useState(0);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -17136,7 +17135,28 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenMa
       });
     }
   }, []);
-  const handleUnmuteAudio = () => {
+  const handleTimeUpdate = () => {
+    const vid = videoRef.current;
+    if (!vid || !vid.duration) return;
+    const timeLeft = vid.duration - vid.currentTime;
+    if (timeLeft <= 1 && videoOpacity > 0.05) {
+      setVideoOpacity(0);
+    }
+  };
+  const handleVideoEnded = () => {
+    setVideoOpacity(0);
+    setTimeout(() => {
+      setPhase("portal");
+    }, 300);
+  };
+  const handleSkip = () => {
+    setVideoOpacity(0);
+    setTimeout(() => {
+      setPhase("portal");
+    }, 150);
+  };
+  const handleUnmuteAudio = (e) => {
+    if (e) e.stopPropagation();
     const vid = videoRef.current;
     if (vid) {
       vid.muted = false;
@@ -17146,18 +17166,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenMa
       });
     }
   };
-  const handleTimeUpdate = () => {
-    const vid = videoRef.current;
-    if (!vid || !vid.duration) return;
-    setProgress(vid.currentTime / vid.duration * 100);
-  };
-  const handleVideoEnded = () => {
-    setPhase("portal");
-  };
-  const handleSkipToPortal = () => {
-    setPhase("portal");
-  };
-  const handleActionEnter = (action) => {
+  const handleAction = (action) => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
@@ -17165,21 +17174,29 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenMa
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(110, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.35);
+        osc.frequency.setValueAtTime(130, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.28);
         gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(1e-3, ctx.currentTime + 0.4);
+        gain.gain.exponentialRampToValueAtTime(1e-3, ctx.currentTime + 0.32);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.45);
+        osc.stop(ctx.currentTime + 0.35);
       }
     } catch (_) {
     }
-    onClose();
-    if (action === "login" && onOpenLogin) onOpenLogin();
-    else if (action === "register" && onOpenRegister) onOpenRegister();
-    else if (action === "tour" && onOpenTour) onOpenTour();
+    if (action === "login") {
+      onClose();
+      if (onOpenLogin) onOpenLogin();
+    } else if (action === "register") {
+      onClose();
+      if (onOpenRegister) onOpenRegister();
+    } else if (action === "tour") {
+      onClose();
+      if (onOpenTour) onOpenTour();
+    } else {
+      onClose();
+    }
   };
   useEffect(() => {
     if (phase !== "portal") return;
@@ -17188,37 +17205,37 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenMa
     const ctx = canvas.getContext("2d");
     let animId;
     let t = 0;
-    const render3DLasers = () => {
-      t += 0.03;
+    const render3D = () => {
+      t += 0.035;
       const w = canvas.width = window.innerWidth;
       const h = canvas.height = window.innerHeight;
       ctx.clearRect(0, 0, w, h);
-      const laserCount = 10;
-      for (let i = 0; i < laserCount; i++) {
-        const angle = Math.sin(t * 0.9 + i * 0.7) * 0.55;
-        const startX = w / (laserCount + 1) * (i + 1);
+      const count = 10;
+      for (let i = 0; i < count; i++) {
+        const angle = Math.sin(t * 0.8 + i * 0.7) * 0.45;
+        const startX = w / (count + 1) * (i + 1);
         ctx.beginPath();
         ctx.moveTo(startX, 0);
         ctx.lineTo(startX + Math.tan(angle) * h, h);
-        const grad = ctx.createLinearGradient(startX, 0, startX + Math.tan(angle) * h, h);
-        grad.addColorStop(0, i % 2 === 0 ? "rgba(6, 182, 212, 0.75)" : "rgba(236, 72, 153, 0.75)");
-        grad.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 3 + Math.sin(t * 2 + i) * 1.5;
+        const g = ctx.createLinearGradient(startX, 0, startX + Math.tan(angle) * h, h);
+        g.addColorStop(0, i % 2 === 0 ? "rgba(6, 182, 212, 0.65)" : "rgba(217, 70, 239, 0.60)");
+        g.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 2.5 + Math.sin(t * 2 + i) * 1.5;
         ctx.stroke();
       }
-      animId = requestAnimationFrame(render3DLasers);
+      animId = requestAnimationFrame(render3D);
     };
-    render3DLasers();
+    render3D();
     return () => cancelAnimationFrame(animId);
   }, [phase]);
   return /* @__PURE__ */ React.createElement(
     "div",
     {
-      className: "fixed inset-0 z-[120] bg-[#070709] overflow-hidden flex flex-col justify-between font-sans text-white select-none animate-fadeIn",
+      className: "fixed inset-0 z-[99999] bg-[#000000] overflow-hidden flex flex-col justify-between font-sans text-white select-none",
       onClick: audioBlocked ? handleUnmuteAudio : void 0
     },
-    phase === "video" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 z-0 overflow-hidden bg-[#070709]" }, /* @__PURE__ */ React.createElement(
+    phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement(
       "video",
       {
         ref: videoRef,
@@ -17228,114 +17245,98 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenFolder, onOpenDemo, onOpenMa
         onTimeUpdate: handleTimeUpdate,
         onEnded: handleVideoEnded,
         src: "/assets/intro_cinematic.mp4",
-        className: "w-full h-full object-cover transition-opacity duration-1000 ease-out",
+        className: "w-full h-full object-cover transition-opacity duration-1000 ease-in-out pointer-events-none",
         style: { opacity: videoOpacity }
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-[#070709]/80 pointer-events-none" })), /* @__PURE__ */ React.createElement("div", { className: "relative z-20 p-5 sm:p-7 flex items-center justify-between pointer-events-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500 via-purple-600 to-cyan-500 flex items-center justify-center text-white text-xl shadow-[0_0_20px_rgba(236,72,153,0.7)]" }, "\u{1F3A7}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-lg tracking-wider text-white" }, "BEATWAVE PRO"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-pink-300 font-bold uppercase" }, "140 BPM HARD TECHNO CABIN DROP"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, audioBlocked && /* @__PURE__ */ React.createElement(
+    ), audioBlocked && /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 right-6 z-50 animate-pulse" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: handleUnmuteAudio,
-        className: "px-3.5 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-mono text-xs font-black shadow-[0_0_15px_rgba(236,72,153,0.8)] animate-pulse cursor-pointer flex items-center gap-1.5"
+        className: "px-4 py-2 rounded-full bg-cyan-950/90 border border-cyan-400 text-cyan-300 hover:bg-cyan-900 text-xs font-mono font-bold tracking-wider shadow-[0_0_20px_rgba(6,182,212,0.6)] cursor-pointer flex items-center gap-2 backdrop-blur-md"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F50A}"),
-      /* @__PURE__ */ React.createElement("span", null, "Activar Audio de Cabina")
-    ), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("span", null, "Activar Audio (Hertz - Timballe 140 BPM)")
+    )), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
-        onClick: () => {
-          const vid = videoRef.current;
-          if (vid) {
-            vid.muted = !isMuted;
-            setIsMuted(!isMuted);
-          }
+        onClick: (e) => {
+          e.stopPropagation();
+          handleSkip();
         },
-        className: "w-9 h-9 rounded-xl bg-black/60 hover:bg-black/90 border border-gray-700 text-gray-200 hover:text-white flex items-center justify-center text-sm font-mono cursor-pointer",
-        title: isMuted ? "Activar Sonido" : "Silenciar"
+        className: "px-4 py-2 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 hover:border-cyan-400 text-gray-300 hover:text-white text-xs font-mono font-bold tracking-wider transition-all cursor-pointer shadow-lg backdrop-blur-md"
       },
-      isMuted ? "\u{1F507}" : "\u{1F50A}"
-    ), /* @__PURE__ */ React.createElement(
+      "Saltar \u2794"
+    ))),
+    phase === "portal" && /* @__PURE__ */ React.createElement("div", { className: "relative z-50 flex-1 flex flex-col justify-between p-6 sm:p-10 bg-[#000000] animate-fadeIn" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none opacity-45" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.18),transparent_70%)] pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "px-3.5 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-400 text-cyan-300 text-xs font-mono font-black uppercase tracking-widest shadow-[0_0_20px_rgba(6,182,212,0.5)]" }, "\u26A1 BEATWAVE PRO \u2022 CABINA V2.4 STUDIO"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
-        onClick: handleSkipToPortal,
-        className: "px-4 py-2 rounded-xl bg-pink-950/80 hover:bg-pink-900 border border-pink-600 text-pink-100 hover:text-white font-mono text-xs font-black shadow-md cursor-pointer transition-all flex items-center gap-1.5"
+        onClick: () => handleAction("cabin"),
+        className: "text-gray-400 hover:text-white font-mono text-xs cursor-pointer transition-colors"
       },
-      /* @__PURE__ */ React.createElement("span", null, "Saltar al Portal"),
-      /* @__PURE__ */ React.createElement("span", null, "\u25B6\u25B6")
-    ))), /* @__PURE__ */ React.createElement("div", { className: "relative z-20 px-6 py-4 flex flex-col gap-2 pointer-events-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] font-mono text-gray-300" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-pink-500 animate-ping" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-white" }, "HERTZ - TIMBALLE VIBES \u2022 140 BPM PEAK TIME")), /* @__PURE__ */ React.createElement("span", { className: "text-pink-300 font-bold" }, Math.round(progress), "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-black/80 h-1.5 rounded-full overflow-hidden border border-djzinc-800" }, /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        className: "bg-gradient-to-r from-cyan-400 via-pink-500 to-rose-500 h-full transition-all duration-150",
-        style: { width: `${progress}%` }
-      }
-    )))),
-    phase === "portal" && /* @__PURE__ */ React.createElement("div", { className: "relative z-30 flex-1 flex flex-col justify-between p-6 sm:p-10 bg-[#070709] animate-fadeIn" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none opacity-50" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.18),transparent_65%)] pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "px-3 py-1 rounded-full bg-pink-950/80 border border-pink-500 text-pink-300 text-xs font-mono font-black uppercase tracking-widest shadow-[0_0_15px_rgba(236,72,153,0.4)]" }, "\u26A1 CABINA PROFESIONAL BEATWAVE PRO"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleActionEnter("cabin"),
-        className: "text-gray-400 hover:text-white font-mono text-xs cursor-pointer"
-      },
-      "Saltar a Cabina \u2715"
+      "Entrar a Cabina \u2715"
     )), /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "relative z-10 flex flex-col items-center justify-center my-auto text-center",
-        style: { perspective: "1000px" }
+        style: { perspective: "1200px" }
       },
       /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-gradient-to-br from-cyan-400 via-purple-600 to-pink-500 p-1 shadow-[0_0_60px_rgba(236,72,153,0.8)] animate-pulse",
+          className: "w-32 h-32 sm:w-40 sm:h-40 relative flex items-center justify-center",
           style: {
-            transform: "rotateX(14deg) rotateY(-8deg) scale(1.05)",
-            transformStyle: "preserve-3d"
+            transform: "rotateX(14deg) rotateY(-8deg) scale(1.15)",
+            transformStyle: "preserve-3d",
+            filter: "drop-shadow(0 0 45px rgba(6,182,212,0.8))"
           }
         },
-        /* @__PURE__ */ React.createElement("div", { className: "w-full h-full rounded-[22px] bg-[#07070f] flex flex-col items-center justify-center text-4xl sm:text-5xl border border-pink-400/50" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7}"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-black tracking-widest text-cyan-300 uppercase mt-1" }, "3D AUDIO"))
+        /* @__PURE__ */ React.createElement("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 64 64", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("linearGradient", { id: "portalSubMagnetGrad", x1: "0%", y1: "0%", x2: "100%", y2: "100%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#252836" }), /* @__PURE__ */ React.createElement("stop", { offset: "45%", stopColor: "#151722" }), /* @__PURE__ */ React.createElement("stop", { offset: "85%", stopColor: "#0d0e15" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#050609" })), /* @__PURE__ */ React.createElement("linearGradient", { id: "portalSubChromeGrad", x1: "20%", y1: "0%", x2: "80%", y2: "100%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#f8fafc" }), /* @__PURE__ */ React.createElement("stop", { offset: "35%", stopColor: "#94a3b8" }), /* @__PURE__ */ React.createElement("stop", { offset: "70%", stopColor: "#334155" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#0f172a" })), /* @__PURE__ */ React.createElement("linearGradient", { id: "portalSubBasketGrad", x1: "0%", y1: "0%", x2: "100%", y2: "100%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#2a2c3a" }), /* @__PURE__ */ React.createElement("stop", { offset: "50%", stopColor: "#181a24" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#0c0d13" })), /* @__PURE__ */ React.createElement("radialGradient", { id: "portalSubSurroundGrad", cx: "42%", cy: "38%", r: "62%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#353748" }), /* @__PURE__ */ React.createElement("stop", { offset: "35%", stopColor: "#222432" }), /* @__PURE__ */ React.createElement("stop", { offset: "75%", stopColor: "#111219" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#07070b" })), /* @__PURE__ */ React.createElement("radialGradient", { id: "portalSubConeGrad", cx: "48%", cy: "45%", r: "55%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#05060a" }), /* @__PURE__ */ React.createElement("stop", { offset: "35%", stopColor: "#0e1017" }), /* @__PURE__ */ React.createElement("stop", { offset: "75%", stopColor: "#181a25" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#0a0b10" })), /* @__PURE__ */ React.createElement("radialGradient", { id: "portalSubCapGrad", cx: "44%", cy: "40%", r: "58%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#222533" }), /* @__PURE__ */ React.createElement("stop", { offset: "30%", stopColor: "#12131b" }), /* @__PURE__ */ React.createElement("stop", { offset: "75%", stopColor: "#06070a" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#020204" }))), /* @__PURE__ */ React.createElement("g", { id: "portal-sub-motor" }, /* @__PURE__ */ React.createElement("ellipse", { cx: "14", cy: "38", rx: "10", ry: "14", fill: "#000000", opacity: "0.6", transform: "rotate(-14 14 38)" }), /* @__PURE__ */ React.createElement("path", { d: "M 8 23 C 13 21, 20 23, 22 28 L 22 41 C 20 46, 13 47, 8 43 Z", fill: "url(#portalSubMagnetGrad)", stroke: "#1a1c26", strokeWidth: "0.8" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "9", cy: "33", rx: "4.5", ry: "10", fill: "url(#portalSubChromeGrad)", stroke: "#1e293b", strokeWidth: "0.6", transform: "rotate(-14 9 33)" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "8.8", cy: "33", rx: "1.6", ry: "3.8", fill: "#050608", stroke: "#334155", strokeWidth: "0.5", transform: "rotate(-14 8.8 33)" }), /* @__PURE__ */ React.createElement("rect", { x: "14", y: "44", width: "3", height: "4.5", rx: "1", fill: "url(#portalSubChromeGrad)", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("rect", { x: "18", y: "45.5", width: "3", height: "4.5", rx: "1", fill: "url(#portalSubChromeGrad)", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "15.5", cy: "48", r: "0.8", fill: "#06b6d4" }), /* @__PURE__ */ React.createElement("circle", { cx: "19.5", cy: "49.5", r: "0.8", fill: "#06b6d4" }), /* @__PURE__ */ React.createElement("path", { d: "M 18 24 L 28 14 L 32 17 L 21 27 Z", fill: "url(#portalSubBasketGrad)", stroke: "#222432", strokeWidth: "0.6" }), /* @__PURE__ */ React.createElement("path", { d: "M 16 41 L 27 49 L 31 46 L 19 38 Z", fill: "url(#portalSubBasketGrad)", stroke: "#222432", strokeWidth: "0.6" }), /* @__PURE__ */ React.createElement("path", { d: "M 17 32 L 25 32 L 26 35 L 18 35 Z", fill: "#13141c" })), /* @__PURE__ */ React.createElement("g", { id: "portal-sub-blastwaves" }, /* @__PURE__ */ React.createElement("path", { d: "M 44 14 C 54 20, 54 38, 44 44", stroke: "#06b6d4", strokeWidth: "2.4", strokeLinecap: "round", fill: "none", opacity: "1" }), /* @__PURE__ */ React.createElement("path", { d: "M 49 10 C 61 18, 61 40, 49 48", stroke: "#22d3ee", strokeWidth: "1.8", strokeLinecap: "round", fill: "none", opacity: "0.85" }), /* @__PURE__ */ React.createElement("path", { d: "M 54 6 C 68 16, 68 42, 54 52", stroke: "#67e8f9", strokeWidth: "1.2", strokeLinecap: "round", fill: "none", opacity: "0.65" })), /* @__PURE__ */ React.createElement("g", { id: "portal-sub-rim" }, /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "18", ry: "23", fill: "url(#portalSubBasketGrad)", stroke: "#2f3244", strokeWidth: "1.2", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "16", ry: "20.8", fill: "none", stroke: "#161720", strokeWidth: "1", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("circle", { cx: "37", cy: "7", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "51.5", cy: "18", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "53", cy: "35", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "39", cy: "51", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "23", cy: "44", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "20.5", cy: "20", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" })), /* @__PURE__ */ React.createElement("g", null, /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "14.8", ry: "19.2", fill: "url(#portalSubSurroundGrad)", stroke: "#0e0f15", strokeWidth: "1.4", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("path", { d: "M 28 13 C 39 8, 48 18, 50 31", stroke: "#474b60", strokeWidth: "0.8", strokeLinecap: "round", fill: "none", opacity: "0.5" })), /* @__PURE__ */ React.createElement("g", null, /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "12.2", ry: "16", fill: "url(#portalSubConeGrad)", stroke: "#1a1c26", strokeWidth: "0.8", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("line", { x1: "36", y1: "14", x2: "36", y2: "21", stroke: "#222533", strokeWidth: "0.7", strokeLinecap: "round", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("line", { x1: "36", y1: "37", x2: "36", y2: "44", stroke: "#222533", strokeWidth: "0.7", strokeLinecap: "round", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("line", { x1: "25", y1: "29", x2: "30", y2: "29", stroke: "#222533", strokeWidth: "0.7", strokeLinecap: "round", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("line", { x1: "42", y1: "29", x2: "47", y2: "29", stroke: "#222533", strokeWidth: "0.7", strokeLinecap: "round", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "7.4", ry: "9.8", stroke: "#06b6d4", strokeWidth: "1.2", fill: "none", opacity: "0.95", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "5.8", ry: "7.6", fill: "url(#portalSubCapGrad)", stroke: "#161822", strokeWidth: "0.8", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("path", { d: "M 33 25 Q 36 23 39 26", stroke: "#ffffff", strokeWidth: "0.6", strokeLinecap: "round", opacity: "0.45", fill: "none" }), /* @__PURE__ */ React.createElement("circle", { cx: "36", cy: "29", r: "1.4", fill: "#06b6d4", className: "animate-pulse" })))
       ),
-      /* @__PURE__ */ React.createElement("h1", { className: "font-syne font-black text-5xl sm:text-7xl md:text-8xl tracking-tight uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-pink-200 to-cyan-300 drop-shadow-[0_0_45px_rgba(236,72,153,0.7)] mt-6" }, "BEATWAVE PRO"),
-      /* @__PURE__ */ React.createElement("p", { className: "mt-2 text-sm sm:text-base md:text-lg text-gray-300 font-sans font-medium max-w-xl leading-relaxed" }, "Motor DSP ac\xFAstico, mezclas arm\xF3nicas 2D Camelot y pasaporte universal a cabina."),
-      /* @__PURE__ */ React.createElement("div", { className: "mt-8 flex flex-wrap items-center justify-center gap-4 w-full max-w-2xl" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-3 mt-6" }, /* @__PURE__ */ React.createElement("span", { className: "text-4xl sm:text-6xl md:text-7xl font-black uppercase text-white tracking-wider drop-shadow-[0_0_40px_rgba(6,182,212,0.5)]", style: { fontFamily: "'Syne', sans-serif" } }, "BEAT", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-sm font-mono px-3 py-1 rounded-lg font-black tracking-widest border border-cyan-400/80 bg-cyan-950/90 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.7)]" }, "PRO")),
+      /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-sm font-mono tracking-widest uppercase text-gray-400 mt-2 font-bold flex items-center justify-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-pulse" }), "PRECISION AUDIO INTELLIGENCE \u2022 HARMONIC DSP CABIN ENGINE"),
+      /* @__PURE__ */ React.createElement("p", { className: "mt-3 text-sm sm:text-base text-gray-300 font-sans max-w-lg leading-relaxed" }, "Diagn\xF3stico ac\xFAstico FFT, motor de mezclas arm\xF3nicas 2D Camelot y pasaporte universal a cabina."),
+      /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-9 w-full max-w-2xl" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
-          onClick: () => handleActionEnter("login"),
-          className: "px-8 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-mono font-black text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+          onClick: () => handleAction("login"),
+          className: "group px-8 sm:px-10 py-4 rounded-2xl bg-gradient-to-b from-[#181c30] to-[#0b0d18] hover:from-[#222944] hover:to-[#121626] text-white border-2 border-cyan-500/70 hover:border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:shadow-[0_0_45px_rgba(6,182,212,0.8)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex flex-col items-center justify-center min-w-[170px]"
         },
-        /* @__PURE__ */ React.createElement("span", null, "\u{1F510}"),
-        /* @__PURE__ */ React.createElement("span", null, "Log-In")
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg text-cyan-300" }, "\u{1F510}"), /* @__PURE__ */ React.createElement("span", { className: "font-mono font-black text-sm uppercase tracking-wider" }, "Log-In")),
+        /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-cyan-300/80 uppercase mt-0.5 tracking-wider" }, "Acceso DJ & Sesi\xF3n")
       ), /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
-          onClick: () => handleActionEnter("register"),
-          className: "px-8 py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(236,72,153,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+          onClick: () => handleAction("register"),
+          className: "group px-8 sm:px-10 py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border-2 border-fuchsia-400/90 shadow-[0_0_30px_rgba(217,70,239,0.5)] hover:shadow-[0_0_55px_rgba(217,70,239,0.9)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex flex-col items-center justify-center min-w-[170px]"
         },
-        /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
-        /* @__PURE__ */ React.createElement("span", null, "Registrar")
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg" }, "\u26A1"), /* @__PURE__ */ React.createElement("span", { className: "font-mono font-black text-sm uppercase tracking-wider" }, "Registrar")),
+        /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-pink-200/90 uppercase mt-0.5 tracking-wider" }, "Nueva Licencia Club")
       ), /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
-          onClick: () => handleActionEnter("tour"),
-          className: "px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-black font-mono font-black text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+          onClick: () => handleAction("tour"),
+          className: "group px-8 sm:px-10 py-4 rounded-2xl bg-gradient-to-b from-[#14232c] to-[#0a1218] hover:from-[#1b313d] hover:to-[#0e1a22] text-teal-200 border-2 border-teal-500/70 hover:border-teal-400 shadow-[0_0_25px_rgba(20,184,166,0.3)] hover:shadow-[0_0_45px_rgba(20,184,166,0.7)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex flex-col items-center justify-center min-w-[170px]"
         },
-        /* @__PURE__ */ React.createElement("span", null, "\u{1F680}"),
-        /* @__PURE__ */ React.createElement("span", null, "Tour")
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg text-teal-300" }, "\u{1F680}"), /* @__PURE__ */ React.createElement("span", { className: "font-mono font-black text-sm uppercase tracking-wider text-white" }, "Tour")),
+        /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-teal-300/80 uppercase mt-0.5 tracking-wider" }, "Masterclass & Gu\xEDas")
       )),
       /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
-          onClick: () => handleActionEnter("cabin"),
-          className: "mt-6 text-xs font-mono font-bold text-gray-400 hover:text-white underline tracking-wider cursor-pointer transition-colors"
+          onClick: () => handleAction("cabin"),
+          className: "group mt-8 text-xs font-mono font-bold text-gray-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
         },
-        "O entrar directamente a la cabina con su dise\xF1o completo \u2794"
+        /* @__PURE__ */ React.createElement("span", null, "O entrar directamente a la cabina con su dise\xF1o completo"),
+        /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 group-hover:translate-x-1 transition-transform" }, "\u2794")
       )
-    ), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between text-xs font-mono text-gray-400 border-t border-djzinc-800/80 pt-4" }, /* @__PURE__ */ React.createElement("span", null, "Pioneer CDJ-3000 \u2022 Serato \u2022 Rekordbox \u2022 Traktor Compatible"), /* @__PURE__ */ React.createElement("span", null, "V2.4 STUDIO PRO")))
+    ), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between text-xs font-mono text-gray-500 border-t border-zinc-900 pt-4" }, /* @__PURE__ */ React.createElement("span", null, "Pioneer CDJ-3000 \u2022 Serato \u2022 Rekordbox \u2022 Traktor Compatible"), /* @__PURE__ */ React.createElement("span", null, "V2.4 STUDIO PRO")))
   );
 };
 const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = "launcher" }) => {
@@ -18142,6 +18143,45 @@ const App = () => {
       console.error("Error al cargar directorio:", e);
     }
   };
+  if (cinematicIntroOpen) {
+    return /* @__PURE__ */ React.createElement(
+      AppCinematicIntro,
+      {
+        isOpen: true,
+        onClose: () => {
+          setCinematicIntroOpen(false);
+          try {
+            sessionStorage.setItem("bw_intro_viewed", "true");
+          } catch (e) {
+          }
+        },
+        onOpenLogin: () => {
+          setCinematicIntroOpen(false);
+          try {
+            sessionStorage.setItem("bw_intro_viewed", "true");
+          } catch (e) {
+          }
+          setUserModalOpen(true);
+        },
+        onOpenRegister: () => {
+          setCinematicIntroOpen(false);
+          try {
+            sessionStorage.setItem("bw_intro_viewed", "true");
+          } catch (e) {
+          }
+          setUserModalOpen(true);
+        },
+        onOpenTour: () => {
+          setCinematicIntroOpen(false);
+          try {
+            sessionStorage.setItem("bw_intro_viewed", "true");
+          } catch (e) {
+          }
+          handleOpenManual("audit");
+        }
+      }
+    );
+  }
   return /* @__PURE__ */ React.createElement("div", { className: `flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none ${clubMode ? "club-mode" : ""}` }, /* @__PURE__ */ React.createElement("header", { className: "h-16 w-full max-w-full border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md overflow-x-hidden" }, /* @__PURE__ */ React.createElement("svg", { width: "0", height: "0", className: "absolute pointer-events-none" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "waveDistortion", x: "-60%", y: "-120%", width: "220%", height: "340%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0 0.38", numOctaves: "3", result: "warp" }, /* @__PURE__ */ React.createElement(
     "animate",
     {
