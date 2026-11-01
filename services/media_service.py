@@ -20,6 +20,7 @@ except ImportError:
 class MediaService:
     def __init__(self):
         self._cancelar_busqueda = False
+        self._spotify_rate_limited_until = 0
         self._sp = self._inicializar_spotipy()
         self._cache_preescucha = {}
 
@@ -179,7 +180,7 @@ class MediaService:
                 sec = cfg.get("spotify_client_secret", "").strip()
                 if cid and sec:
                     auth_mgr = SpotifyClientCredentials(client_id=cid, client_secret=sec)
-                    return spotipy.Spotify(auth_manager=auth_mgr, requests_timeout=10)
+                    return spotipy.Spotify(auth_manager=auth_mgr, requests_timeout=3, retries=0)
         except Exception as e:
             print(f"[MEDIA SERVICE] Error inicializando Spotipy: {e}")
         return None
@@ -649,8 +650,8 @@ class MediaService:
 
             candidatos_raw = []
 
-            # 1. Búsqueda Multi-Candidato en Spotify (limit=8)
-            if self._sp:
+            # 1. Búsqueda Multi-Candidato en Spotify (limit=8, si no hay rate-limit 429 activo)
+            if self._sp and time.time() > self._spotify_rate_limited_until:
                 try:
                     r = self._sp.search(q=q_clean, type='track', limit=8)
                     items = r.get('tracks', {}).get('items', [])
@@ -672,9 +673,40 @@ class MediaService:
                             "origen": "Spotify"
                         })
                 except Exception as e:
-                    print(f"[REEMPLAZO SPOTIFY WARN] Fallo búsqueda Spotipy '{q_clean}': {e}")
+                    err_str = str(e)
+                    if "429" in err_str:
+                        self._spotify_rate_limited_until = time.time() + 90
+                        print(f"[REEMPLAZO SPOTIFY 429] Rate limit detectado. Conmutando a Deezer/iTunes durante 90s.")
+                    else:
+                        print(f"[REEMPLAZO SPOTIFY WARN] '{q_clean}': {e}")
 
-            # 2. Respaldo / Complemento en iTunes (limit=8)
+            # 2. Búsqueda en Deezer (alta fidelidad, previews oficiales MP3 directos y sin bloqueos de rate-limit)
+            try:
+                dz_url = f"https://api.deezer.com/search?q={urllib.parse.quote(q_clean)}"
+                req_dz = urllib.request.Request(dz_url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"})
+                with urllib.request.urlopen(req_dz, timeout=3.0) as resp_dz:
+                    dz_data = json.loads(resp_dz.read().decode('utf-8', errors='ignore'))
+                    for it in dz_data.get("data", [])[:8]:
+                        dur_sec = it.get("duration", 240)
+                        cover_dz = it.get("album", {}).get("cover_xl") or it.get("album", {}).get("cover_big") or it.get("album", {}).get("cover_medium", "")
+                        candidatos_raw.append({
+                            "id": str(it.get("id")),
+                            "title": it.get("title", orig_title),
+                            "artist": it.get("artist", {}).get("name", orig_artist),
+                            "album": it.get("album", {}).get("title", "Single / EP"),
+                            "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
+                            "dur_sec": dur_sec,
+                            "cover": cover_dz,
+                            "preview_url": it.get("preview", ""),
+                            "spotify_url": "",
+                            "apple_url": "",
+                            "isrc": it.get("isrc", ""),
+                            "origen": "Deezer"
+                        })
+            except Exception as e_dz:
+                pass
+
+            # 3. Respaldo / Complemento en iTunes (limit=8)
             try:
                 res_it = self.buscar_metadata_itunes(q_clean, limit=8)
                 for it in res_it:
@@ -697,8 +729,43 @@ class MediaService:
             except Exception as e:
                 print(f"[REEMPLAZO ITUNES WARN] Fallo búsqueda iTunes '{q_clean}': {e}")
 
+            # Si ningún motor devolvió candidatos directos, generar entrada de contingencia para que el usuario no pierda el track
             if not candidatos_raw:
-                return None
+                ed_calc = self.calcular_energia_y_danceability(t, idx)
+                return {
+                    "id": str(t.get("id") or f"sp_hd_{idx}_{int(time.time())}"),
+                    "title": orig_title or os.path.splitext(orig_file)[0],
+                    "artist": orig_artist or "Desconocido",
+                    "album": "Búsqueda Manual Requerida",
+                    "duration": orig_dur,
+                    "bpm": orig_bpm,
+                    "key": orig_key,
+                    "cover": "",
+                    "preview_url": "",
+                    "selected": False,
+                    "origin": "audit_upgrade",
+                    "reemplazo_de": reemplazo_de,
+                    "original_file": orig_file,
+                    "original_path": t.get("path") or t.get("filepath") or t.get("f") or "",
+                    "original_duration": orig_dur,
+                    "original_artist": orig_artist,
+                    "original_title": orig_title,
+                    "original_calidad": t.get("calidad") or (("FLAC FAKE") if t.get("es_fake") else "Baja Calidad"),
+                    "format": "FLAC",
+                    "energy": int(t.get("energy") or t.get("e") or ed_calc["energy"]),
+                    "danceability": int(t.get("danceability") or t.get("dance") or ed_calc["danceability"]),
+                    "status": "Revisión Requerida (Sin Coincidencia Automática)",
+                    "match_score": 0,
+                    "match_confianza": "BAJA",
+                    "match_badge_color": "red",
+                    "es_misma_pista": False,
+                    "match_recomendacion": "No se encontró coincidencia directa. Clic para buscar versión manualmente con el buscador.",
+                    "candidatos_alternativos": [],
+                    "todos_candidatos": [],
+                    "spotify_url": "",
+                    "apple_url": "",
+                    "isrc": ""
+                }
 
             # 3. Evaluación de Fidelidad con TrackMatcher para cada candidato
             candidatos_evaluados = []

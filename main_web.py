@@ -178,7 +178,19 @@ def get_cover():
     if data and mime:
         bottle.response.content_type = mime
         return data
-    return bottle.redirect("https://placehold.co/100x100/18181b/22d3ee?text=CleanDJ")
+
+    # Fallback local SVG offline seguro (cero llamadas de red externas a placehold.co)
+    svg_fallback = (
+        b'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">'
+        b'<rect width="100" height="100" fill="#14141c"/>'
+        b'<circle cx="50" cy="50" r="36" fill="#09090e" stroke="#22d3ee" stroke-width="2"/>'
+        b'<circle cx="50" cy="50" r="14" fill="#181822" stroke="#22d3ee" stroke-width="1.5"/>'
+        b'<circle cx="50" cy="50" r="4" fill="#22d3ee"/>'
+        b'<text x="50" y="90" font-family="monospace" font-size="9" font-weight="bold" fill="#22d3ee" text-anchor="middle">BEATWAVE</text>'
+        b'</svg>'
+    )
+    bottle.response.content_type = "image/svg+xml"
+    return svg_fallback
 
 @bottle.route('/stream_audio')
 @bottle.route('/stream_audio', method='OPTIONS')
@@ -575,14 +587,24 @@ def api_buscar_reemplazos_spotify():
     bottle.response.set_header("Access-Control-Allow-Headers", "*")
     if bottle.request.method == 'OPTIONS':
         return ""
-    data = bottle.request.json or {}
-    tracks = data.get('tracks', [])
-    return media_svc.buscar_reemplazos_spotify_batch(tracks)
+    try:
+        data = bottle.request.json or {}
+        tracks = data.get('tracks', [])
+        return media_svc.buscar_reemplazos_spotify_batch(tracks)
+    except Exception as e:
+        print(f"[API BUSCAR REEMPLAZOS ERROR] {e}")
+        return {"status": "error", "msg": str(e), "tracks": []}
 
 @eel.expose
 def buscar_reemplazos_spotify_batch(tracks):
-    """Busca en paralelo versiones oficiales HD en Spotify para una lista de pistas de baja calidad o FLAC fake."""
-    return media_svc.buscar_reemplazos_spotify_batch(tracks)
+    """Busca en paralelo versiones oficiales HD en Spotify/Deezer/iTunes para una lista de pistas de baja calidad o FLAC fake."""
+    try:
+        if not tracks or not isinstance(tracks, list):
+            return {"status": "error", "msg": "Lista de pistas vacía", "tracks": []}
+        return media_svc.buscar_reemplazos_spotify_batch(tracks)
+    except Exception as e:
+        print(f"[EEL BUSCAR REEMPLAZOS ERROR] {e}")
+        return {"status": "error", "msg": str(e), "tracks": []}
 
 @eel.expose
 def buscar_candidatos_manuales_spotify(query, pista_origen=None):

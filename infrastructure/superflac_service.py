@@ -32,7 +32,7 @@ class SuperFlacService:
 
         es_artista = "/artist/" in url_limpia
         nombre_entidad = data.get("title", "").strip()
-        cover_url = data.get("thumbnail_url", "https://placehold.co/300x300/18181b/22d3ee?text=ARTIST")
+        cover_url = data.get("thumbnail_url", "")
 
         # --- CASO ARTISTA: Obtener listado de canciones desde MusicBrainz ---
         if es_artista:

@@ -9,7 +9,7 @@ class AudioScannerService:
             "id": idx, "f": nombre_archivo, "titulo": nombre_archivo,
             "a": "Desconocido", "d": "00:00", "b": "0.0", "k": "--",
             "s": "error", "path": ruta_absoluta,
-            "cover_url": "https://placehold.co/100x100/18181b/22d3ee?text=AUDIO",
+            "cover_url": "",
             "audio_preview": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
         }
         try:
