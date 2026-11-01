@@ -12797,7 +12797,13 @@ const SpotifyWorkspace = ({
         if (e && e.stopPropagation) e.stopPropagation();
         setSelectedId(track.id);
 
-        if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(track.id) || nowPlayingTrack.title === track.title)) {
+        // Si ya está sonando esta misma pista exacta, alternar pausa o buscar seek
+        const isCurrentSameTrack = nowPlayingTrack && (
+            String(nowPlayingTrack.id) === String(track.id) || 
+            (!nowPlayingTrack.is_local_preview && nowPlayingTrack.title === track.title && nowPlayingTrack.artist === track.artist)
+        );
+
+        if (isCurrentSameTrack) {
             if (seekPct !== null && onPlayTrack) {
                 const durSec = parseDurationToSeconds(track.duration || 210);
                 onPlayTrack(nowPlayingTrack, seekPct, true, seekPct * durSec);
@@ -12837,9 +12843,14 @@ const SpotifyWorkspace = ({
             if (streamUrl) {
                 track.preview_url = streamUrl;
                 if (coverHd) track.cover = coverHd;
+                setDownloadingMsg(`[PRE-ESCUCHA] Reproduciendo: ${track.artist} - ${track.title}`);
+                setTimeout(() => setDownloadingMsg(''), 3500);
+            } else {
+                setDownloadingMsg(`[AVISO] No se encontró stream de preescucha oficial para: ${track.artist} - ${track.title}`);
+                setTimeout(() => setDownloadingMsg(''), 4000);
             }
         }
-        if (onPlayTrack) {
+        if (streamUrl && onPlayTrack) {
             const durSec = parseDurationToSeconds(track.duration || 210);
             const startSec = (seekPct !== null && seekPct > 0) ? seekPct * durSec : 0;
             onPlayTrack({ 
@@ -12853,8 +12864,8 @@ const SpotifyWorkspace = ({
                 k: track.key, 
                 duration: track.duration, 
                 cover: coverHd || track.cover, 
-                preview_url: streamUrl || "",
-                path: streamUrl || "" 
+                preview_url: streamUrl,
+                path: streamUrl 
             }, seekPct || 0, true, startSec);
         }
     };
@@ -12935,18 +12946,21 @@ const SpotifyWorkspace = ({
             } catch (err) {
                 console.warn("Fallo resolviendo stream para candidato:", err);
             }
-            setCandidateModal(prev => ({ ...prev, searchMsg: '' }));
             if (streamUrl) {
                 cand.preview_url = streamUrl;
                 if (coverHd) cand.cover = coverHd;
+                setCandidateModal(prev => ({ ...prev, searchMsg: `✓ Reproduciendo versión: ${cand.artist} - ${cand.title}` }));
+                setTimeout(() => setCandidateModal(prev => ({ ...prev, searchMsg: '' })), 4000);
+            } else {
+                setCandidateModal(prev => ({ ...prev, searchMsg: `⚠️ No se encontró audio de preescucha para "${cand.title}".` }));
             }
         }
 
-        if (onPlayTrack) {
+        if (streamUrl && onPlayTrack) {
             onPlayTrack({
                 id: cand.id || `cand_${Date.now()}`,
-                path: streamUrl || '',
-                preview_url: streamUrl || '',
+                path: streamUrl,
+                preview_url: streamUrl,
                 title: `[DESCARGA] ${cand.title}`,
                 artist: cand.artist,
                 album: cand.album || 'Oficial HD',
@@ -14247,24 +14261,16 @@ const SpotifyWorkspace = ({
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-lg text-gray-500">🎵</div>
                                                     )}
-                                                    {cand.preview_url && (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (onPlayTrack) {
-                                                                    onPlayTrack({
-                                                                        ...cand,
-                                                                        preview_audio: cand.preview_url,
-                                                                        path: cand.preview_url
-                                                                    });
-                                                                }
-                                                            }}
-                                                            title="Reproducir preview de 30s"
-                                                            className="absolute inset-0 bg-black/50 hover:bg-black/30 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity cursor-pointer text-xs"
-                                                        >
-                                                            ▶
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handlePlayCandidateTrack(cand, e);
+                                                        }}
+                                                        title="Reproducir preview oficial (Deck B)"
+                                                        className="absolute inset-0 bg-black/50 hover:bg-black/30 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity cursor-pointer text-xs"
+                                                    >
+                                                        {isTrackCandPlaying(cand) ? '❚❚' : '▶'}
+                                                    </button>
                                                 </div>
 
                                                 {/* Track info */}
@@ -26192,52 +26198,7 @@ const App = () => {
 
     const playSynthPreview = (track) => {
         stopSynthPreview();
-        try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (!AudioCtx) return;
-            const ctx = new AudioCtx();
-            synthAudioCtxRef.current = ctx;
-
-            const bpm = parseFloat(track.bpm || track.b || 126) || 126;
-            const intervalMs = (60 / bpm) * 1000;
-
-            const triggerBeat = () => {
-                if (ctx.state === 'suspended') ctx.resume();
-                // 1. Kick transient
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(140, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(45, ctx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.65, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.2);
-
-                // 2. Hi-hat click on upbeat
-                setTimeout(() => {
-                    if (!synthAudioCtxRef.current) return;
-                    const c = synthAudioCtxRef.current;
-                    const hatOsc = c.createOscillator();
-                    const hatGain = c.createGain();
-                    hatOsc.type = 'triangle';
-                    hatOsc.frequency.setValueAtTime(7500, c.currentTime);
-                    hatGain.gain.setValueAtTime(0.1, c.currentTime);
-                    hatGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.04);
-                    hatOsc.connect(hatGain);
-                    hatGain.connect(c.destination);
-                    hatOsc.start(c.currentTime);
-                    hatOsc.stop(c.currentTime + 0.05);
-                }, intervalMs / 2);
-            };
-
-            triggerBeat();
-            synthIntervalRef.current = setInterval(triggerBeat, intervalMs);
-        } catch (e) {
-            console.warn("Synth preview error:", e);
-        }
+        setIsPlaying(false);
     };
 
     useEffect(() => {
@@ -26372,9 +26333,10 @@ const App = () => {
                         setIsPlaying(true);
                     }
                 } else {
-                    // Fallback para pistas sin archivo local ni URL externa: reproducir pulso sintetizado Web Audio
-                    playSynthPreview(track);
-                    setIsPlaying(true);
+                    // Si no hay stream_url ni archivo local válido, detener audio limpiamente
+                    audio.pause();
+                    audio.src = "";
+                    setIsPlaying(false);
                 }
             }
         }

@@ -9221,7 +9221,8 @@ const SpotifyWorkspace = ({
   const handlePlayPreview = async (track, e, seekPct = null) => {
     if (e && e.stopPropagation) e.stopPropagation();
     setSelectedId(track.id);
-    if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(track.id) || nowPlayingTrack.title === track.title)) {
+    const isCurrentSameTrack = nowPlayingTrack && (String(nowPlayingTrack.id) === String(track.id) || !nowPlayingTrack.is_local_preview && nowPlayingTrack.title === track.title && nowPlayingTrack.artist === track.artist);
+    if (isCurrentSameTrack) {
       if (seekPct !== null && onPlayTrack) {
         const durSec = parseDurationToSeconds(track.duration || 210);
         onPlayTrack(nowPlayingTrack, seekPct, true, seekPct * durSec);
@@ -9262,9 +9263,14 @@ const SpotifyWorkspace = ({
       if (streamUrl) {
         track.preview_url = streamUrl;
         if (coverHd) track.cover = coverHd;
+        setDownloadingMsg(`[PRE-ESCUCHA] Reproduciendo: ${track.artist} - ${track.title}`);
+        setTimeout(() => setDownloadingMsg(""), 3500);
+      } else {
+        setDownloadingMsg(`[AVISO] No se encontr\xF3 stream de preescucha oficial para: ${track.artist} - ${track.title}`);
+        setTimeout(() => setDownloadingMsg(""), 4e3);
       }
     }
-    if (onPlayTrack) {
+    if (streamUrl && onPlayTrack) {
       const durSec = parseDurationToSeconds(track.duration || 210);
       const startSec = seekPct !== null && seekPct > 0 ? seekPct * durSec : 0;
       onPlayTrack({
@@ -9278,8 +9284,8 @@ const SpotifyWorkspace = ({
         k: track.key,
         duration: track.duration,
         cover: coverHd || track.cover,
-        preview_url: streamUrl || "",
-        path: streamUrl || ""
+        preview_url: streamUrl,
+        path: streamUrl
       }, seekPct || 0, true, startSec);
     }
   };
@@ -9355,17 +9361,20 @@ const SpotifyWorkspace = ({
       } catch (err) {
         console.warn("Fallo resolviendo stream para candidato:", err);
       }
-      setCandidateModal((prev) => ({ ...prev, searchMsg: "" }));
       if (streamUrl) {
         cand.preview_url = streamUrl;
         if (coverHd) cand.cover = coverHd;
+        setCandidateModal((prev) => ({ ...prev, searchMsg: `\u2713 Reproduciendo versi\xF3n: ${cand.artist} - ${cand.title}` }));
+        setTimeout(() => setCandidateModal((prev) => ({ ...prev, searchMsg: "" })), 4e3);
+      } else {
+        setCandidateModal((prev) => ({ ...prev, searchMsg: `\u26A0\uFE0F No se encontr\xF3 audio de preescucha para "${cand.title}".` }));
       }
     }
-    if (onPlayTrack) {
+    if (streamUrl && onPlayTrack) {
       onPlayTrack({
         id: cand.id || `cand_${Date.now()}`,
-        path: streamUrl || "",
-        preview_url: streamUrl || "",
+        path: streamUrl,
+        preview_url: streamUrl,
         title: `[DESCARGA] ${cand.title}`,
         artist: cand.artist,
         album: cand.album || "Oficial HD",
@@ -9996,23 +10005,17 @@ Se detectaron ${dudosas.length} pista(s) con coincidencia dudosa (<75%) que podr
         key: idx,
         className: `p-3.5 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 ${isCurrentlySelected ? "bg-djcyan-950/30 border-djcyan-500/60 shadow-lg shadow-djcyan-950/40" : score >= 80 ? "bg-djzinc-950/60 border-emerald-900/40 hover:border-emerald-700/60" : score >= 50 ? "bg-djzinc-950/60 border-amber-900/40 hover:border-amber-700/60" : "bg-djzinc-950/40 border-rose-950/60 hover:border-rose-800/60"}`
       },
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-12 h-12 rounded-lg overflow-hidden bg-djzinc-800 shrink-0 border border-djzinc-700/50 shadow" }, cand.cover ? /* @__PURE__ */ React.createElement("img", { src: cand.cover, alt: "Cover", className: "w-full h-full object-cover" }) : /* @__PURE__ */ React.createElement("div", { className: "w-full h-full flex items-center justify-center text-lg text-gray-500" }, "\u{1F3B5}"), cand.preview_url && /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-12 h-12 rounded-lg overflow-hidden bg-djzinc-800 shrink-0 border border-djzinc-700/50 shadow" }, cand.cover ? /* @__PURE__ */ React.createElement("img", { src: cand.cover, alt: "Cover", className: "w-full h-full object-cover" }) : /* @__PURE__ */ React.createElement("div", { className: "w-full h-full flex items-center justify-center text-lg text-gray-500" }, "\u{1F3B5}"), /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: (e) => {
             e.stopPropagation();
-            if (onPlayTrack) {
-              onPlayTrack({
-                ...cand,
-                preview_audio: cand.preview_url,
-                path: cand.preview_url
-              });
-            }
+            handlePlayCandidateTrack(cand, e);
           },
-          title: "Reproducir preview de 30s",
+          title: "Reproducir preview oficial (Deck B)",
           className: "absolute inset-0 bg-black/50 hover:bg-black/30 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity cursor-pointer text-xs"
         },
-        "\u25B6"
+        isTrackCandPlaying(cand) ? "\u275A\u275A" : "\u25B6"
       )), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-white truncate max-w-[260px]" }, cand.artist), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-xs" }, "\u2014"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-medium text-djcyan-300 truncate max-w-[300px]" }, cand.title), isCurrentlySelected && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9px] font-bold bg-djcyan-500 text-black" }, "SELECCIONADA ACTUALMENTE")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 mt-1 text-[11px] text-gray-400 font-mono flex-wrap" }, cand.album && /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[200px]", title: cand.album }, "\u{1F4BF} ", cand.album), cand.duration > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "\u23F1\uFE0F ", Math.floor(cand.duration / 60), ":", Math.floor(cand.duration % 60).toString().padStart(2, "0")), targetDur > 0 && candDur > 0 && /* @__PURE__ */ React.createElement("span", { className: `text-[10px] px-1.5 py-0.5 rounded ${durDiff <= 5 ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40" : durDiff <= 25 ? "bg-amber-950/60 text-amber-400 border border-amber-800/40" : "bg-rose-950/60 text-rose-400 border border-rose-800/40"}` }, durDiff <= 5 ? "\u2713 Misma duraci\xF3n" : `\u0394 ${durDiff > 0 ? candDur > targetDur ? "+" : "-" : ""}${Math.round(durDiff)}s`), cand.bpm && /* @__PURE__ */ React.createElement("span", null, "\u{1F941} ", cand.bpm, " BPM"), cand.isrc && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "ISRC: ", cand.isrc)), hasAlert && /* @__PURE__ */ React.createElement("div", { className: "mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded border border-rose-800/30" }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("span", null, cand.alerta_version)), cand.match_recomendacion && !hasAlert && /* @__PURE__ */ React.createElement("div", { className: "mt-1 text-[10px] text-gray-400 italic" }, cand.match_recomendacion))),
       /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 shrink-0 self-end md:self-center" }, /* @__PURE__ */ React.createElement("div", { className: `px-2.5 py-1 rounded-lg border text-center ${score >= 80 ? "bg-emerald-950/50 border-emerald-700/60 text-emerald-300" : score >= 50 ? "bg-amber-950/50 border-amber-700/60 text-amber-300" : "bg-rose-950/50 border-rose-700/60 text-rose-300"}` }, /* @__PURE__ */ React.createElement("div", { className: "text-xs font-black font-mono" }, score, "%"), /* @__PURE__ */ React.createElement("div", { className: "text-[8px] font-bold tracking-wider uppercase" }, conf)), /* @__PURE__ */ React.createElement(
         "button",
@@ -17740,46 +17743,7 @@ const App = () => {
   };
   const playSynthPreview = (track) => {
     stopSynthPreview();
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      synthAudioCtxRef.current = ctx;
-      const bpm = parseFloat(track.bpm || track.b || 126) || 126;
-      const intervalMs = 60 / bpm * 1e3;
-      const triggerBeat = () => {
-        if (ctx.state === "suspended") ctx.resume();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(140, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(45, ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.65, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(1e-3, ctx.currentTime + 0.18);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.2);
-        setTimeout(() => {
-          if (!synthAudioCtxRef.current) return;
-          const c = synthAudioCtxRef.current;
-          const hatOsc = c.createOscillator();
-          const hatGain = c.createGain();
-          hatOsc.type = "triangle";
-          hatOsc.frequency.setValueAtTime(7500, c.currentTime);
-          hatGain.gain.setValueAtTime(0.1, c.currentTime);
-          hatGain.gain.exponentialRampToValueAtTime(1e-3, c.currentTime + 0.04);
-          hatOsc.connect(hatGain);
-          hatGain.connect(c.destination);
-          hatOsc.start(c.currentTime);
-          hatOsc.stop(c.currentTime + 0.05);
-        }, intervalMs / 2);
-      };
-      triggerBeat();
-      synthIntervalRef.current = setInterval(triggerBeat, intervalMs);
-    } catch (e) {
-      console.warn("Synth preview error:", e);
-    }
+    setIsPlaying(false);
   };
   useEffect(() => {
     const audio = new Audio();
@@ -17904,8 +17868,9 @@ const App = () => {
             setIsPlaying(true);
           }
         } else {
-          playSynthPreview(track);
-          setIsPlaying(true);
+          audio.pause();
+          audio.src = "";
+          setIsPlaying(false);
         }
       }
     }

@@ -11,6 +11,7 @@ __pycache__/
 .cache/
 .pytest_cache/
 cache_preview/
+web/previews/
 
 # Environments and Secrets
 .env

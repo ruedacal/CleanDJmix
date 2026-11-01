@@ -461,12 +461,13 @@ class MediaService:
             hit = self._cache_preescucha[cache_key]
             if isinstance(hit, dict):
                 return hit
-            return {"status": "ok", "stream_url": hit}
+            if isinstance(hit, str) and hit.strip():
+                return {"status": "ok", "stream_url": hit}
 
         def _clean_str(s):
             if not s:
                 return ""
-            s = re.sub(r'\(.*?\)|\[.*?\]|\{.*?\}', '', s)
+            s = re.sub(r'\(.*?\)|\[.*?\]|\{.*?\}', '', str(s))
             s = re.sub(r'(?i)\b(original mix|extended mix|club mix|radio edit|dub mix|mix|remix|edit|vip)\b', '', s)
             s = re.sub(r'(?i)\b(feat\.?|ft\.?)\s+.*', '', s)
             return re.sub(r'\s+', ' ', s).strip()
@@ -475,62 +476,141 @@ class MediaService:
         clean_tit = _clean_str(titulo)
         pri_art = re.split(r'[,/&]', clean_art)[0].strip() if clean_art else ""
 
-        # Secuencia priorizada de consultas rápidas a iTunes
-        queries = []
-        if clean_art and clean_tit:
-            queries.append(f"{clean_art} {clean_tit}")
-        if pri_art and pri_art != clean_art and clean_tit:
-            queries.append(f"{pri_art} {clean_tit}")
-        if artista and titulo:
-            queries.append(f"{artista} {titulo}")
-        if clean_tit:
-            queries.append(clean_tit)
+        def _is_reasonable_match(cand_t, cand_a):
+            c_t = _clean_str(cand_t).lower()
+            c_a = _clean_str(cand_a).lower()
+            t_target = clean_tit.lower()
+            a_target = (clean_art or pri_art).lower()
+            if not t_target and not a_target:
+                return True
+            t_tokens = [w for w in re.split(r'[\s\-_\.]+', t_target) if len(w) >= 3]
+            a_tokens = [w for w in re.split(r'[\s\-_\.]+', a_target) if len(w) >= 3]
+            t_match = (t_target in c_t or c_t in t_target) or (any(tok in c_t for tok in t_tokens) if t_tokens else True)
+            a_match = (a_target in c_a or c_a in a_target) or (any(tok in c_a for tok in a_tokens) if a_tokens else True)
+            if a_target and t_target:
+                return t_match and a_match
+            return t_match or a_match
 
-        for q in queries:
+        # 1. Búsqueda priorizada en Deezer (MP3 oficial CDN de 30s sin throttle, ultrarrápido)
+        dz_queries = []
+        if clean_art and clean_tit:
+            dz_queries.append(f"{clean_art} {clean_tit}")
+        if pri_art and pri_art != clean_art and clean_tit:
+            dz_queries.append(f"{pri_art} {clean_tit}")
+        if clean_tit:
+            dz_queries.append(clean_tit)
+
+        for dq in dz_queries:
+            if not dq.strip():
+                continue
+            try:
+                dz_url = f"https://api.deezer.com/search?q={urllib.parse.quote(dq.strip())}"
+                req = urllib.request.Request(dz_url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"})
+                with urllib.request.urlopen(req, timeout=2.5) as resp:
+                    dz_data = json.loads(resp.read().decode('utf-8', errors='ignore'))
+                    for it in dz_data.get("data", [])[:6]:
+                        p_dz = it.get("preview")
+                        if p_dz:
+                            it_tit = it.get("title", "")
+                            it_art = it.get("artist", {}).get("name", "")
+                            if _is_reasonable_match(it_tit, it_art):
+                                cover_hd = it.get("album", {}).get("cover_big") or it.get("album", {}).get("cover_medium") or ""
+                                result_obj = {
+                                    "status": "ok",
+                                    "stream_url": p_dz,
+                                    "cover": cover_hd,
+                                    "track_name": it_tit,
+                                    "artist_name": it_art,
+                                    "provider": "deezer"
+                                }
+                                if hasattr(self, "_cache_preescucha"):
+                                    self._cache_preescucha[cache_key] = result_obj
+                                    if clean_art and clean_tit:
+                                        self._cache_preescucha[f"{clean_art.lower()}|{clean_tit.lower()}"] = result_obj
+                                return result_obj
+            except Exception:
+                pass
+
+        # 2. Búsqueda en iTunes (AAC oficial CDN de 30s con validación estricta de coincidencia)
+        it_queries = []
+        if clean_art and clean_tit:
+            it_queries.append(f"{clean_art} {clean_tit}")
+        if pri_art and pri_art != clean_art and clean_tit:
+            it_queries.append(f"{pri_art} {clean_tit}")
+        if artista and titulo:
+            it_queries.append(f"{artista} {titulo}")
+        if clean_tit:
+            it_queries.append(clean_tit)
+
+        for q in it_queries:
             if not q.strip():
                 continue
-            res = self.buscar_metadata_itunes(q.strip(), limit=3)
+            res = self.buscar_metadata_itunes(q.strip(), limit=5)
             if res:
                 for r in res:
                     p_url = r.get("previewUrl")
                     if p_url:
-                        cover_hd = (r.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
-                        result_obj = {
-                            "status": "ok", 
-                            "stream_url": p_url,
-                            "cover": cover_hd,
-                            "track_name": r.get("trackName"),
-                            "artist_name": r.get("artistName")
-                        }
-                        if hasattr(self, "_cache_preescucha"):
-                            self._cache_preescucha[cache_key] = result_obj
-                            if clean_art and clean_tit:
-                                self._cache_preescucha[f"{clean_art.lower()}|{clean_tit.lower()}"] = result_obj
-                        return result_obj
+                        r_tit = r.get("trackName", "")
+                        r_art = r.get("artistName", "")
+                        if _is_reasonable_match(r_tit, r_art):
+                            cover_hd = (r.get("artworkUrl100") or "").replace("100x100bb", "600x600bb")
+                            result_obj = {
+                                "status": "ok", 
+                                "stream_url": p_url,
+                                "cover": cover_hd,
+                                "track_name": r_tit,
+                                "artist_name": r_art,
+                                "provider": "itunes"
+                            }
+                            if hasattr(self, "_cache_preescucha"):
+                                self._cache_preescucha[cache_key] = result_obj
+                                if clean_art and clean_tit:
+                                    self._cache_preescucha[f"{clean_art.lower()}|{clean_tit.lower()}"] = result_obj
+                            return result_obj
 
-        # Fallback acelerado a yt-dlp con timeout estricto de 3.5s
+        # 3. Fallback acelerado: Snippet local de 30s descargado en web/previews/ servido estático
+        # Evita las restricciones y cortes de reproducción de googlevideo directo en el navegador
         try:
-            q_search = f"{clean_art or artista} - {clean_tit or titulo} audio"
+            import hashlib
+            query_str = f"{clean_art or artista} - {clean_tit or titulo}".strip()
+            hash_q = hashlib.md5(query_str.encode('utf-8', errors='ignore')).hexdigest()[:12]
+            previews_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "previews")
+            os.makedirs(previews_dir, exist_ok=True)
+            
+            # Comprobar si ya existe en caché local de disco
+            for ext in [".m4a", ".mp3", ".webm"]:
+                existing_file = os.path.join(previews_dir, f"prev_{hash_q}{ext}")
+                if os.path.exists(existing_file) and os.path.getsize(existing_file) > 10000:
+                    result_obj = {
+                        "status": "ok",
+                        "stream_url": f"/previews/prev_{hash_q}{ext}",
+                        "provider": "local_cache"
+                    }
+                    if hasattr(self, "_cache_preescucha"):
+                        self._cache_preescucha[cache_key] = result_obj
+                    return result_obj
+
+            out_pattern = os.path.join(previews_dir, f"prev_{hash_q}.%(ext)s")
             cmd = [
-                "yt-dlp", 
-                "-g", 
-                "-f", "bestaudio/best", 
-                "--no-playlist", 
-                "--no-warnings", 
-                "--quiet", 
-                "--skip-download",
-                "--extractor-args", "youtube:player_client=default,mweb", 
-                f"ytsearch1:{q_search}"
+                "yt-dlp", "--no-warnings", "--quiet",
+                "-f", "ba[ext=m4a]/ba/b",
+                "--download-sections", "*00:20-00:50",
+                "-o", out_pattern,
+                f"ytsearch1:{query_str}"
             ]
-            out = subprocess.check_output(cmd, text=True, timeout=3.5)
-            url = out.strip().splitlines()[0] if out.strip() else ""
-            if url:
-                result_obj = {"status": "ok", "stream_url": url}
-                if hasattr(self, "_cache_preescucha"):
-                    self._cache_preescucha[cache_key] = result_obj
-                return result_obj
+            subprocess.run(cmd, timeout=5.0)
+            for f in os.listdir(previews_dir):
+                if f.startswith(f"prev_{hash_q}") and os.path.getsize(os.path.join(previews_dir, f)) > 10000:
+                    result_obj = {
+                        "status": "ok",
+                        "stream_url": f"/previews/{f}",
+                        "provider": "youtube_local_snippet"
+                    }
+                    if hasattr(self, "_cache_preescucha"):
+                        self._cache_preescucha[cache_key] = result_obj
+                    return result_obj
         except Exception as e:
-            print(f"[PREESCUCHA] Fallback yt-dlp omitido o excedió timeout: {e}")
+            print(f"[PREESCUCHA] Fallback local snippet omitido: {e}")
 
         return {"status": "error", "stream_url": ""}
 
@@ -644,11 +724,11 @@ class MediaService:
             mejor = candidatos_evaluados[0]
 
             # Optimización de latencia: Si el mejor resultado no trae preview_url directa (común en Spotify),
-            # heredar el audio stream verificado de cualquiera de los candidatos evaluados (ej. iTunes 30s AAC)
+            # heredar el audio stream verificado únicamente si el candidato corresponde a la misma pista (match >= 75)
             preview_res = mejor.get("preview_url") or ""
             if not preview_res:
                 for c in candidatos_evaluados:
-                    if c.get("preview_url"):
+                    if c.get("preview_url") and c.get("match_score", 0) >= 75 and c.get("es_misma_pista", True):
                         preview_res = c["preview_url"]
                         mejor["preview_url"] = preview_res
                         break
@@ -757,6 +837,32 @@ class MediaService:
             except Exception as e:
                 print(f"[BUSQUEDA MANUAL SPOTIFY WARN] {e}")
 
+        # Búsqueda complementaria en Deezer (para obtener previews oficiales MP3 directos)
+        try:
+            dz_url = f"https://api.deezer.com/search?q={urllib.parse.quote(q_clean)}"
+            req = urllib.request.Request(dz_url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"})
+            with urllib.request.urlopen(req, timeout=3.0) as resp:
+                dz_data = json.loads(resp.read().decode('utf-8', errors='ignore'))
+                for it in dz_data.get("data", [])[:8]:
+                    dur = it.get("duration", 0)
+                    dur_str = f"{dur // 60}:{dur % 60:02d}"
+                    candidatos_raw.append({
+                        "id": str(it["id"]),
+                        "title": it.get("title", ""),
+                        "artist": it.get("artist", {}).get("name", ""),
+                        "album": it.get("album", {}).get("title", ""),
+                        "duration": dur_str,
+                        "dur_sec": dur,
+                        "cover": it.get("album", {}).get("cover_big") or it.get("album", {}).get("cover_medium") or "",
+                        "preview_url": it.get("preview") or "",
+                        "spotify_url": "",
+                        "apple_url": it.get("link", ""),
+                        "isrc": "",
+                        "origen": "Deezer HD"
+                    })
+        except Exception as e:
+            print(f"[BUSQUEDA MANUAL DEEZER WARN] {e}")
+
         # Búsqueda complementaria en iTunes
         try:
             itunes_res = self.buscar_metadata_itunes(q_clean, limit=12)
@@ -795,6 +901,20 @@ class MediaService:
                 "alerta_duracion": m.get("alerta_duracion"),
                 "diff_duracion_sec": m.get("diff_duracion_sec", 0)
             })
+
+        # Optimización: para pistas de Spotify sin preview_url, heredar la preview verificada de Deezer o Apple Music
+        cands_con_preview = [c for c in candidatos_finales if c.get("preview_url")]
+        for c in candidatos_finales:
+            if not c.get("preview_url"):
+                for cp in cands_con_preview:
+                    # Comprobar si comparten título y artista esencial
+                    c_tit = str(c.get("title", "")).lower()
+                    cp_tit = str(cp.get("title", "")).lower()
+                    c_art = str(c.get("artist", "")).lower()
+                    cp_art = str(cp.get("artist", "")).lower()
+                    if (c_tit in cp_tit or cp_tit in c_tit) and (c_art in cp_art or cp_art in c_art):
+                        c["preview_url"] = cp["preview_url"]
+                        break
 
         candidatos_finales.sort(key=lambda x: x["match_score"], reverse=True)
         return {
