@@ -17109,12 +17109,12 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
   const [phase, setPhase] = useState("video");
   const [videoOpacity, setVideoOpacity] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
-  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [isBassShaking, setIsBassShaking] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   useEffect(() => {
     const timer = setTimeout(() => {
-      setVideoOpacity(0.7);
+      setVideoOpacity(0.25);
     }, 50);
     return () => clearTimeout(timer);
   }, []);
@@ -17125,21 +17125,33 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     const playPromise = vid.play();
     if (playPromise !== void 0) {
       playPromise.then(() => {
-        setAudioBlocked(false);
+        setIsMuted(false);
       }).catch(() => {
         vid.muted = true;
         setIsMuted(true);
-        setAudioBlocked(true);
         vid.play().catch(() => {
         });
+        const unmuteSilently = () => {
+          if (vid) {
+            vid.muted = false;
+            setIsMuted(false);
+          }
+          window.removeEventListener("pointerdown", unmuteSilently);
+          window.removeEventListener("keydown", unmuteSilently);
+        };
+        window.addEventListener("pointerdown", unmuteSilently, { once: true });
+        window.addEventListener("keydown", unmuteSilently, { once: true });
       });
     }
   }, []);
   const handleTimeUpdate = () => {
     const vid = videoRef.current;
     if (!vid || !vid.duration) return;
+    if (vid.currentTime >= 11.534 && !isBassShaking) {
+      setIsBassShaking(true);
+    }
     const timeLeft = vid.duration - vid.currentTime;
-    if (timeLeft <= 1 && videoOpacity > 0.05) {
+    if (timeLeft <= 2 && videoOpacity > 0.02) {
       setVideoOpacity(0);
     }
   };
@@ -17153,18 +17165,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     setVideoOpacity(0);
     setTimeout(() => {
       setPhase("portal");
-    }, 150);
-  };
-  const handleUnmuteAudio = (e) => {
-    if (e) e.stopPropagation();
-    const vid = videoRef.current;
-    if (vid) {
-      vid.muted = false;
-      setIsMuted(false);
-      setAudioBlocked(false);
-      vid.play().catch(() => {
-      });
-    }
+    }, 200);
   };
   const handleAction = (action) => {
     try {
@@ -17233,7 +17234,13 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     "div",
     {
       className: "fixed inset-0 z-[99999] bg-[#000000] overflow-hidden flex flex-col justify-between font-sans text-white select-none",
-      onClick: audioBlocked ? handleUnmuteAudio : void 0
+      onClick: () => {
+        const vid = videoRef.current;
+        if (vid && vid.muted) {
+          vid.muted = false;
+          setIsMuted(false);
+        }
+      }
     },
     phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement(
       "video",
@@ -17245,19 +17252,13 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         onTimeUpdate: handleTimeUpdate,
         onEnded: handleVideoEnded,
         src: "/assets/intro_cinematic.mp4",
-        className: "w-full h-full object-cover transition-opacity duration-1000 ease-in-out pointer-events-none",
-        style: { opacity: videoOpacity }
+        className: `w-full h-full object-cover pointer-events-none ${isBassShaking ? "anim-bass-shake" : ""}`,
+        style: {
+          opacity: videoOpacity,
+          transition: "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)"
+        }
       }
-    ), audioBlocked && /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 right-6 z-50 animate-pulse" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleUnmuteAudio,
-        className: "px-4 py-2 rounded-full bg-cyan-950/90 border border-cyan-400 text-cyan-300 hover:bg-cyan-900 text-xs font-mono font-bold tracking-wider shadow-[0_0_20px_rgba(6,182,212,0.6)] cursor-pointer flex items-center gap-2 backdrop-blur-md"
-      },
-      /* @__PURE__ */ React.createElement("span", null, "\u{1F50A}"),
-      /* @__PURE__ */ React.createElement("span", null, "Activar Audio (Hertz - Timballe 140 BPM)")
-    )), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -17265,18 +17266,19 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
           e.stopPropagation();
           handleSkip();
         },
-        className: "px-4 py-2 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 hover:border-cyan-400 text-gray-300 hover:text-white text-xs font-mono font-bold tracking-wider transition-all cursor-pointer shadow-lg backdrop-blur-md"
+        className: "px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 hover:border-cyan-400 text-gray-400 hover:text-white text-xs font-mono font-bold tracking-wider transition-all cursor-pointer shadow-lg backdrop-blur-md"
       },
       "Saltar \u2794"
     ))),
-    phase === "portal" && /* @__PURE__ */ React.createElement("div", { className: "relative z-50 flex-1 flex flex-col justify-between p-6 sm:p-10 bg-[#000000] animate-fadeIn" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none opacity-45" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.18),transparent_70%)] pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "px-3.5 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-400 text-cyan-300 text-xs font-mono font-black uppercase tracking-widest shadow-[0_0_20px_rgba(6,182,212,0.5)]" }, "\u26A1 BEATWAVE PRO \u2022 CABINA V2.4 STUDIO"), /* @__PURE__ */ React.createElement(
+    phase === "portal" && /* @__PURE__ */ React.createElement("div", { className: "relative z-50 flex-1 flex flex-col justify-between p-6 sm:p-10 bg-[#000000] animate-fadeIn" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none opacity-45" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.18),transparent_70%)] pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-end" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => handleAction("cabin"),
-        className: "text-gray-400 hover:text-white font-mono text-xs cursor-pointer transition-colors"
+        className: "text-gray-500 hover:text-white font-mono text-base cursor-pointer transition-colors p-2",
+        title: "Entrar a la cabina"
       },
-      "Entrar a Cabina \u2715"
+      "\u2715"
     )), /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -17286,18 +17288,15 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
       /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "w-32 h-32 sm:w-40 sm:h-40 relative flex items-center justify-center",
+          className: "w-32 h-32 sm:w-40 sm:h-40 relative flex items-center justify-center anim-smooth-logo-entrance",
           style: {
-            transform: "rotateX(14deg) rotateY(-8deg) scale(1.15)",
-            transformStyle: "preserve-3d",
             filter: "drop-shadow(0 0 45px rgba(6,182,212,0.8))"
           }
         },
         /* @__PURE__ */ React.createElement("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 64 64", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("linearGradient", { id: "portalSubMagnetGrad", x1: "0%", y1: "0%", x2: "100%", y2: "100%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#252836" }), /* @__PURE__ */ React.createElement("stop", { offset: "45%", stopColor: "#151722" }), /* @__PURE__ */ React.createElement("stop", { offset: "85%", stopColor: "#0d0e15" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#050609" })), /* @__PURE__ */ React.createElement("linearGradient", { id: "portalSubChromeGrad", x1: "20%", y1: "0%", x2: "80%", y2: "100%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#f8fafc" }), /* @__PURE__ */ React.createElement("stop", { offset: "35%", stopColor: "#94a3b8" }), /* @__PURE__ */ React.createElement("stop", { offset: "70%", stopColor: "#334155" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#0f172a" })), /* @__PURE__ */ React.createElement("linearGradient", { id: "portalSubBasketGrad", x1: "0%", y1: "0%", x2: "100%", y2: "100%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#2a2c3a" }), /* @__PURE__ */ React.createElement("stop", { offset: "50%", stopColor: "#181a24" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#0c0d13" })), /* @__PURE__ */ React.createElement("radialGradient", { id: "portalSubSurroundGrad", cx: "42%", cy: "38%", r: "62%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#353748" }), /* @__PURE__ */ React.createElement("stop", { offset: "35%", stopColor: "#222432" }), /* @__PURE__ */ React.createElement("stop", { offset: "75%", stopColor: "#111219" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#07070b" })), /* @__PURE__ */ React.createElement("radialGradient", { id: "portalSubConeGrad", cx: "48%", cy: "45%", r: "55%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#05060a" }), /* @__PURE__ */ React.createElement("stop", { offset: "35%", stopColor: "#0e1017" }), /* @__PURE__ */ React.createElement("stop", { offset: "75%", stopColor: "#181a25" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#0a0b10" })), /* @__PURE__ */ React.createElement("radialGradient", { id: "portalSubCapGrad", cx: "44%", cy: "40%", r: "58%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#222533" }), /* @__PURE__ */ React.createElement("stop", { offset: "30%", stopColor: "#12131b" }), /* @__PURE__ */ React.createElement("stop", { offset: "75%", stopColor: "#06070a" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#020204" }))), /* @__PURE__ */ React.createElement("g", { id: "portal-sub-motor" }, /* @__PURE__ */ React.createElement("ellipse", { cx: "14", cy: "38", rx: "10", ry: "14", fill: "#000000", opacity: "0.6", transform: "rotate(-14 14 38)" }), /* @__PURE__ */ React.createElement("path", { d: "M 8 23 C 13 21, 20 23, 22 28 L 22 41 C 20 46, 13 47, 8 43 Z", fill: "url(#portalSubMagnetGrad)", stroke: "#1a1c26", strokeWidth: "0.8" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "9", cy: "33", rx: "4.5", ry: "10", fill: "url(#portalSubChromeGrad)", stroke: "#1e293b", strokeWidth: "0.6", transform: "rotate(-14 9 33)" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "8.8", cy: "33", rx: "1.6", ry: "3.8", fill: "#050608", stroke: "#334155", strokeWidth: "0.5", transform: "rotate(-14 8.8 33)" }), /* @__PURE__ */ React.createElement("rect", { x: "14", y: "44", width: "3", height: "4.5", rx: "1", fill: "url(#portalSubChromeGrad)", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("rect", { x: "18", y: "45.5", width: "3", height: "4.5", rx: "1", fill: "url(#portalSubChromeGrad)", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "15.5", cy: "48", r: "0.8", fill: "#06b6d4" }), /* @__PURE__ */ React.createElement("circle", { cx: "19.5", cy: "49.5", r: "0.8", fill: "#06b6d4" }), /* @__PURE__ */ React.createElement("path", { d: "M 18 24 L 28 14 L 32 17 L 21 27 Z", fill: "url(#portalSubBasketGrad)", stroke: "#222432", strokeWidth: "0.6" }), /* @__PURE__ */ React.createElement("path", { d: "M 16 41 L 27 49 L 31 46 L 19 38 Z", fill: "url(#portalSubBasketGrad)", stroke: "#222432", strokeWidth: "0.6" }), /* @__PURE__ */ React.createElement("path", { d: "M 17 32 L 25 32 L 26 35 L 18 35 Z", fill: "#13141c" })), /* @__PURE__ */ React.createElement("g", { id: "portal-sub-blastwaves" }, /* @__PURE__ */ React.createElement("path", { d: "M 44 14 C 54 20, 54 38, 44 44", stroke: "#06b6d4", strokeWidth: "2.4", strokeLinecap: "round", fill: "none", opacity: "1" }), /* @__PURE__ */ React.createElement("path", { d: "M 49 10 C 61 18, 61 40, 49 48", stroke: "#22d3ee", strokeWidth: "1.8", strokeLinecap: "round", fill: "none", opacity: "0.85" }), /* @__PURE__ */ React.createElement("path", { d: "M 54 6 C 68 16, 68 42, 54 52", stroke: "#67e8f9", strokeWidth: "1.2", strokeLinecap: "round", fill: "none", opacity: "0.65" })), /* @__PURE__ */ React.createElement("g", { id: "portal-sub-rim" }, /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "18", ry: "23", fill: "url(#portalSubBasketGrad)", stroke: "#2f3244", strokeWidth: "1.2", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "16", ry: "20.8", fill: "none", stroke: "#161720", strokeWidth: "1", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("circle", { cx: "37", cy: "7", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "51.5", cy: "18", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "53", cy: "35", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "39", cy: "51", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "23", cy: "44", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" }), /* @__PURE__ */ React.createElement("circle", { cx: "20.5", cy: "20", r: "1.1", fill: "#64748b", stroke: "#0f172a", strokeWidth: "0.4" })), /* @__PURE__ */ React.createElement("g", null, /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "14.8", ry: "19.2", fill: "url(#portalSubSurroundGrad)", stroke: "#0e0f15", strokeWidth: "1.4", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("path", { d: "M 28 13 C 39 8, 48 18, 50 31", stroke: "#474b60", strokeWidth: "0.8", strokeLinecap: "round", fill: "none", opacity: "0.5" })), /* @__PURE__ */ React.createElement("g", null, /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "12.2", ry: "16", fill: "url(#portalSubConeGrad)", stroke: "#1a1c26", strokeWidth: "0.8", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("line", { x1: "36", y1: "14", x2: "36", y2: "21", stroke: "#222533", strokeWidth: "0.7", strokeLinecap: "round", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("line", { x1: "36", y1: "37", x2: "36", y2: "44", stroke: "#222533", strokeWidth: "0.7", strokeLinecap: "round", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("line", { x1: "25", y1: "29", x2: "30", y2: "29", stroke: "#222533", strokeWidth: "0.7", strokeLinecap: "round", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("line", { x1: "42", y1: "29", x2: "47", y2: "29", stroke: "#222533", strokeWidth: "0.7", strokeLinecap: "round", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "7.4", ry: "9.8", stroke: "#06b6d4", strokeWidth: "1.2", fill: "none", opacity: "0.95", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("ellipse", { cx: "36", cy: "29", rx: "5.8", ry: "7.6", fill: "url(#portalSubCapGrad)", stroke: "#161822", strokeWidth: "0.8", transform: "rotate(-14 36 29)" }), /* @__PURE__ */ React.createElement("path", { d: "M 33 25 Q 36 23 39 26", stroke: "#ffffff", strokeWidth: "0.6", strokeLinecap: "round", opacity: "0.45", fill: "none" }), /* @__PURE__ */ React.createElement("circle", { cx: "36", cy: "29", r: "1.4", fill: "#06b6d4", className: "animate-pulse" })))
       ),
       /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-3 mt-6" }, /* @__PURE__ */ React.createElement("span", { className: "text-4xl sm:text-6xl md:text-7xl font-black uppercase text-white tracking-wider drop-shadow-[0_0_40px_rgba(6,182,212,0.5)]", style: { fontFamily: "'Syne', sans-serif" } }, "BEAT", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-sm font-mono px-3 py-1 rounded-lg font-black tracking-widest border border-cyan-400/80 bg-cyan-950/90 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.7)]" }, "PRO")),
-      /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-sm font-mono tracking-widest uppercase text-gray-400 mt-2 font-bold flex items-center justify-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-pulse" }), "PRECISION AUDIO INTELLIGENCE \u2022 HARMONIC DSP CABIN ENGINE"),
-      /* @__PURE__ */ React.createElement("p", { className: "mt-3 text-sm sm:text-base text-gray-300 font-sans max-w-lg leading-relaxed" }, "Diagn\xF3stico ac\xFAstico FFT, motor de mezclas arm\xF3nicas 2D Camelot y pasaporte universal a cabina."),
+      /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-sm font-mono tracking-widest uppercase text-gray-400 mt-2 font-bold flex items-center justify-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-pulse" }), "PRECISION AUDIO INTELLIGENCE"),
       /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-9 w-full max-w-2xl" }, /* @__PURE__ */ React.createElement(
         "button",
         {
@@ -17325,18 +17324,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         },
         /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg text-teal-300" }, "\u{1F680}"), /* @__PURE__ */ React.createElement("span", { className: "font-mono font-black text-sm uppercase tracking-wider text-white" }, "Tour")),
         /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-teal-300/80 uppercase mt-0.5 tracking-wider" }, "Masterclass & Gu\xEDas")
-      )),
-      /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => handleAction("cabin"),
-          className: "group mt-8 text-xs font-mono font-bold text-gray-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
-        },
-        /* @__PURE__ */ React.createElement("span", null, "O entrar directamente a la cabina con su dise\xF1o completo"),
-        /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 group-hover:translate-x-1 transition-transform" }, "\u2794")
-      )
-    ), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between text-xs font-mono text-gray-500 border-t border-zinc-900 pt-4" }, /* @__PURE__ */ React.createElement("span", null, "Pioneer CDJ-3000 \u2022 Serato \u2022 Rekordbox \u2022 Traktor Compatible"), /* @__PURE__ */ React.createElement("span", null, "V2.4 STUDIO PRO")))
+      ))
+    ), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between text-xs font-mono text-gray-600 border-t border-zinc-900 pt-4" }, /* @__PURE__ */ React.createElement("span", null, "Pioneer CDJ-3000 \u2022 Serato \u2022 Rekordbox \u2022 Traktor Compatible"), /* @__PURE__ */ React.createElement("span", null, "V2.4 STUDIO PRO")))
   );
 };
 const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = "launcher" }) => {

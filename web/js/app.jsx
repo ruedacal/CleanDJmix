@@ -25476,22 +25476,22 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     if (!isOpen) return null;
 
     const [phase, setPhase] = useState('video'); // 'video' | 'portal'
-    const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 0.70; Salida: 0.70 -> 0
+    const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 0.25 (75% transparente sobre negro)
     const [isMuted, setIsMuted] = useState(false);
-    const [audioBlocked, setAudioBlocked] = useState(false);
+    const [isBassShaking, setIsBassShaking] = useState(false);
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
-    // ENTRADA DEL VIDEO: Comienza en alpha cero y en 1 segundo se pone en alpha 70% (0.7)
+    // ENTRADA DEL VÍDEO: Fade-in suave de 2 segundos desde negro absoluto hasta 25% de opacidad (75% transparente)
     useEffect(() => {
         const timer = setTimeout(() => {
-            setVideoOpacity(0.70);
+            setVideoOpacity(0.25);
         }, 50);
         return () => clearTimeout(timer);
     }, []);
 
-    // Reproducción automática de vídeo y audio de cabina
+    // Reproducción automática limpia: si el navegador requiere interacción previa, desmutear silenciosamente al primer clic/tecla
     useEffect(() => {
         const vid = videoRef.current;
         if (!vid) return;
@@ -25500,24 +25500,39 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         const playPromise = vid.play();
         if (playPromise !== undefined) {
             playPromise.then(() => {
-                setAudioBlocked(false);
+                setIsMuted(false);
             }).catch(() => {
-                // Autoplay con audio bloqueado por navegador: reproducir muteado hasta primer clic
                 vid.muted = true;
                 setIsMuted(true);
-                setAudioBlocked(true);
                 vid.play().catch(() => {});
+
+                const unmuteSilently = () => {
+                    if (vid) {
+                        vid.muted = false;
+                        setIsMuted(false);
+                    }
+                    window.removeEventListener('pointerdown', unmuteSilently);
+                    window.removeEventListener('keydown', unmuteSilently);
+                };
+                window.addEventListener('pointerdown', unmuteSilently, { once: true });
+                window.addEventListener('keydown', unmuteSilently, { once: true });
             });
         }
     }, []);
 
-    // SALIDA DEL VIDEO: En el último segundo se desvanece de alpha 70% a alpha cero (negro absoluto)
+    // SEGUIMIENTO DE TIEMPO: Vibración de bajos en el drop y Fade-Out de salida de 2 segundos
     const handleTimeUpdate = () => {
         const vid = videoRef.current;
         if (!vid || !vid.duration) return;
 
+        // Vibración de cámara y distorsión de graves desde el drop (11.534s)
+        if (vid.currentTime >= 11.534 && !isBassShaking) {
+            setIsBassShaking(true);
+        }
+
+        // SALIDA DEL VÍDEO: Fade-out suave de 2.0 segundos a negro absoluto
         const timeLeft = vid.duration - vid.currentTime;
-        if (timeLeft <= 1.0 && videoOpacity > 0.05) {
+        if (timeLeft <= 2.0 && videoOpacity > 0.02) {
             setVideoOpacity(0.0);
         }
     };
@@ -25533,18 +25548,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         setVideoOpacity(0.0);
         setTimeout(() => {
             setPhase('portal');
-        }, 150);
-    };
-
-    const handleUnmuteAudio = (e) => {
-        if (e) e.stopPropagation();
-        const vid = videoRef.current;
-        if (vid) {
-            vid.muted = false;
-            setIsMuted(false);
-            setAudioBlocked(false);
-            vid.play().catch(() => {});
-        }
+        }, 200);
     };
 
     // Acciones al pulsar los botones del portal
@@ -25581,7 +25585,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         }
     };
 
-    // Atmósfera 3D Cyberpunk y Rayos Láser en Fase Portal
+    // Atmósfera 3D y Rayos Láser en Fase Portal
     useEffect(() => {
         if (phase !== 'portal') return;
         const canvas = canvasRef.current;
@@ -25622,9 +25626,15 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     return (
         <div 
             className="fixed inset-0 z-[99999] bg-[#000000] overflow-hidden flex flex-col justify-between font-sans text-white select-none"
-            onClick={audioBlocked ? handleUnmuteAudio : undefined}
+            onClick={() => {
+                const vid = videoRef.current;
+                if (vid && vid.muted) {
+                    vid.muted = false;
+                    setIsMuted(false);
+                }
+            }}
         >
-            {/* FASE 1: SOLO Y EXCLUSIVAMENTE EL VÍDEO A PANTALLA COMPLETA AL 70% ALPHA */}
+            {/* FASE 1: SOLO Y EXCLUSIVAMENTE EL VÍDEO A PANTALLA COMPLETA OSCURECIDO AL 75% DE TRANSPARENCIA */}
             {phase === 'video' && (
                 <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
                     <video
@@ -25635,30 +25645,19 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         onTimeUpdate={handleTimeUpdate}
                         onEnded={handleVideoEnded}
                         src="/assets/intro_cinematic.mp4"
-                        className="w-full h-full object-cover transition-opacity duration-1000 ease-in-out pointer-events-none"
-                        style={{ opacity: videoOpacity }}
+                        className={`w-full h-full object-cover pointer-events-none ${isBassShaking ? 'anim-bass-shake' : ''}`}
+                        style={{ 
+                            opacity: videoOpacity, 
+                            transition: 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' 
+                        }}
                     />
 
-                    {/* Aviso sutil de audio en esquina superior derecha si el navegador requirió silenciarlo */}
-                    {audioBlocked && (
-                        <div className="absolute top-6 right-6 z-50 animate-pulse">
-                            <button
-                                type="button"
-                                onClick={handleUnmuteAudio}
-                                className="px-4 py-2 rounded-full bg-cyan-950/90 border border-cyan-400 text-cyan-300 hover:bg-cyan-900 text-xs font-mono font-bold tracking-wider shadow-[0_0_20px_rgba(6,182,212,0.6)] cursor-pointer flex items-center gap-2 backdrop-blur-md"
-                            >
-                                <span>🔊</span>
-                                <span>Activar Audio (Hertz - Timballe 140 BPM)</span>
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Botón ultra-minimalista y sutil en esquina inferior derecha para saltar */}
+                    {/* Botón sutil en esquina inferior derecha para saltar si el usuario lo desea */}
                     <div className="absolute bottom-6 right-6 z-50">
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); handleSkip(); }}
-                            className="px-4 py-2 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 hover:border-cyan-400 text-gray-300 hover:text-white text-xs font-mono font-bold tracking-wider transition-all cursor-pointer shadow-lg backdrop-blur-md"
+                            className="px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 hover:border-cyan-400 text-gray-400 hover:text-white text-xs font-mono font-bold tracking-wider transition-all cursor-pointer shadow-lg backdrop-blur-md"
                         >
                             Saltar ➔
                         </button>
@@ -25666,37 +25665,33 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 </div>
             )}
 
-            {/* FASE 2: ENTRADA ESPECTACULAR EN 3D DE NUESTRO LOGO REAL Y BOTONES DE LUJO */}
+            {/* FASE 2: ENTRADA ESPECTACULAR SUAVE EN 3D DE NUESTRO LOGO REAL Y BOTONES DE LUJO */}
             {phase === 'portal' && (
                 <div className="relative z-50 flex-1 flex flex-col justify-between p-6 sm:p-10 bg-[#000000] animate-fadeIn">
                     <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-45" />
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.18),transparent_70%)] pointer-events-none" />
 
-                    {/* Cabecera Superior Minimalista */}
-                    <div className="relative z-10 flex items-center justify-between">
-                        <span className="px-3.5 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-400 text-cyan-300 text-xs font-mono font-black uppercase tracking-widest shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-                            ⚡ BEATWAVE PRO • CABINA V2.4 STUDIO
-                        </span>
+                    {/* Botón de cierre minimalista superior derecho */}
+                    <div className="relative z-10 flex items-center justify-end">
                         <button
                             type="button"
                             onClick={() => handleAction('cabin')}
-                            className="text-gray-400 hover:text-white font-mono text-xs cursor-pointer transition-colors"
+                            className="text-gray-500 hover:text-white font-mono text-base cursor-pointer transition-colors p-2"
+                            title="Entrar a la cabina"
                         >
-                            Entrar a Cabina ✕
+                            ✕
                         </button>
                     </div>
 
-                    {/* CENTRO: NUESTRO LOGO OFICIAL BEATWAVE PRO EN 3D */}
+                    {/* CENTRO: ENTRADA CINEMÁTICA Y SUAVE DEL LOGOTIPO BEATWAVE PRO EN 3D */}
                     <div 
                         className="relative z-10 flex flex-col items-center justify-center my-auto text-center"
                         style={{ perspective: '1200px' }}
                     >
-                        {/* WOOFER SUBWOOFER ÓPTICO 3D BEATWAVE PRO */}
+                        {/* WOOFER SUBWOOFER ÓPTICO 3D CON ENTRADA SUAVE */}
                         <div 
-                            className="w-32 h-32 sm:w-40 sm:h-40 relative flex items-center justify-center"
+                            className="w-32 h-32 sm:w-40 sm:h-40 relative flex items-center justify-center anim-smooth-logo-entrance"
                             style={{ 
-                                transform: 'rotateX(14deg) rotateY(-8deg) scale(1.15)',
-                                transformStyle: 'preserve-3d',
                                 filter: 'drop-shadow(0 0 45px rgba(6,182,212,0.8))'
                             }}
                         >
@@ -25806,14 +25801,10 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
                         <span className="text-xs sm:text-sm font-mono tracking-widest uppercase text-gray-400 mt-2 font-bold flex items-center justify-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                            PRECISION AUDIO INTELLIGENCE • HARMONIC DSP CABIN ENGINE
+                            PRECISION AUDIO INTELLIGENCE
                         </span>
 
-                        <p className="mt-3 text-sm sm:text-base text-gray-300 font-sans max-w-lg leading-relaxed">
-                            Diagnóstico acústico FFT, motor de mezclas armónicas 2D Camelot y pasaporte universal a cabina.
-                        </p>
-
-                        {/* BOTONES PRINCIPALES SOLICITADOS: "Log-In" / "Registrar" / "Tour" (DISEÑO HARDWARE LUXURY) */}
+                        {/* BOTONES PRINCIPALES: "Log-In" / "Registrar" / "Tour" (DISEÑO HARDWARE LUXURY) */}
                         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-9 w-full max-w-2xl">
                             {/* Botón 1: Log-In */}
                             <button
@@ -25854,20 +25845,10 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                 <span className="text-[10px] font-mono text-teal-300/80 uppercase mt-0.5 tracking-wider">Masterclass & Guías</span>
                             </button>
                         </div>
-
-                        {/* Acceso Directo Inmediato */}
-                        <button
-                            type="button"
-                            onClick={() => handleAction('cabin')}
-                            className="group mt-8 text-xs font-mono font-bold text-gray-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
-                        >
-                            <span>O entrar directamente a la cabina con su diseño completo</span>
-                            <span className="text-cyan-400 group-hover:translate-x-1 transition-transform">➔</span>
-                        </button>
                     </div>
 
                     {/* Barra Inferior */}
-                    <div className="relative z-10 flex items-center justify-between text-xs font-mono text-gray-500 border-t border-zinc-900 pt-4">
+                    <div className="relative z-10 flex items-center justify-between text-xs font-mono text-gray-600 border-t border-zinc-900 pt-4">
                         <span>Pioneer CDJ-3000 • Serato • Rekordbox • Traktor Compatible</span>
                         <span>V2.4 STUDIO PRO</span>
                     </div>
