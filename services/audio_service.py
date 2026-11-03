@@ -25,32 +25,58 @@ class AudioPlaybackService:
             if os.path.exists(ruta):
                 return ruta
 
-        # 2. Ruta absoluta directa
-        if os.path.isabs(identificador) and os.path.exists(identificador):
-            self._cache_rutas[identificador] = identificador
-            return identificador
+        # Generar variantes normalizadas (NFC y NFD) para compatibilidad con macOS HFS+/APFS
+        import unicodedata
+        variantes = [identificador]
+        try:
+            nfc = unicodedata.normalize('NFC', identificador)
+            nfd = unicodedata.normalize('NFD', identificador)
+            if nfc not in variantes:
+                variantes.append(nfc)
+            if nfd not in variantes:
+                variantes.append(nfd)
+        except Exception:
+            pass
 
-        # 3. Concatenación con directorio base
-        candidato = os.path.join(self.directorio_base, identificador)
-        if os.path.exists(candidato):
-            self._cache_rutas[identificador] = candidato
-            return candidato
+        # 2. Rutas directas y relativas con cada variante
+        for vid in variantes:
+            if vid in self._cache_rutas:
+                r = self._cache_rutas[vid]
+                if os.path.exists(r):
+                    return r
+            if os.path.isabs(vid) and os.path.exists(vid):
+                self._cache_rutas[identificador] = vid
+                return vid
+            candidato = os.path.join(self.directorio_base, vid)
+            if os.path.exists(candidato):
+                self._cache_rutas[identificador] = candidato
+                return candidato
 
-        # 4. Búsqueda por nombre base en caché
-        base_name = os.path.basename(identificador)
-        if base_name in self._cache_rutas:
-            ruta = self._cache_rutas[base_name]
-            if os.path.exists(ruta):
-                self._cache_rutas[identificador] = ruta
-                return ruta
+        # 3. Búsqueda por nombre base en caché
+        base_names = [os.path.basename(v) for v in variantes]
+        for bn in base_names:
+            if bn in self._cache_rutas:
+                ruta = self._cache_rutas[bn]
+                if os.path.exists(ruta):
+                    self._cache_rutas[identificador] = ruta
+                    return ruta
 
-        # 5. Escaneo en disco amortizado (se almacena de inmediato en caché)
+        # 4. Escaneo en disco amortizado con normalización NFC/NFD
+        target_norm_set = set()
+        for bn in base_names:
+            target_norm_set.add(unicodedata.normalize('NFC', bn))
+            target_norm_set.add(unicodedata.normalize('NFD', bn))
+
         for root, _, files in os.walk(self.directorio_base):
-            if base_name in files:
-                encontrada = os.path.join(root, base_name)
-                self._cache_rutas[identificador] = encontrada
-                self._cache_rutas[base_name] = encontrada
-                return encontrada
+            for f in files:
+                f_nfc = unicodedata.normalize('NFC', f)
+                f_nfd = unicodedata.normalize('NFD', f)
+                if f in base_names or f_nfc in target_norm_set or f_nfd in target_norm_set:
+                    encontrada = os.path.join(root, f)
+                    self._cache_rutas[identificador] = encontrada
+                    for bn in base_names:
+                        self._cache_rutas[bn] = encontrada
+                    return encontrada
         return ""
 
     def reproducir_mac(self, nombre_o_ruta: str):

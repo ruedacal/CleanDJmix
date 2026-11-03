@@ -17967,7 +17967,9 @@ const App = () => {
       setPlayProgress(0);
     };
     audio.onerror = (err) => {
-      console.warn("Global audio element error:", err);
+      if (audio.src && audio.src !== window.location.href && !audio.src.endsWith("/")) {
+        console.warn("Global audio element error:", err);
+      }
       setIsPlaying(false);
     };
     audio.ontimeupdate = () => {
@@ -18090,7 +18092,7 @@ const App = () => {
                 setIsPlaying(true);
                 applyPosition();
               }).catch((err) => {
-                if (err && err.name !== "AbortError") console.warn("Audio HTML5 play error:", err);
+                if (err && err.name !== "AbortError" && err.name !== "NotSupportedError") console.warn("Audio HTML5 play error:", err);
               });
             }
           }
@@ -18134,7 +18136,7 @@ const App = () => {
         const p = audio.play();
         if (p && typeof p.then === "function") {
           p.then(() => setIsPlaying(true)).catch((err) => {
-            if (err && err.name !== "AbortError") console.warn("Play error:", err);
+            if (err && err.name !== "AbortError" && err.name !== "NotSupportedError") console.warn("Play error:", err);
             if (nowPlayingTrack) {
               handlePlayTrack(nowPlayingTrack, playProgressRef.current, true);
             }

@@ -151,6 +151,22 @@ taxonomy_svc = TaxonomyService()
 shazam_svc = ShazamRecognitionService()
 session_advisor_svc = SessionGraphAdvisorService()
 
+def _decodificar_parametro_ruta(raw_val: str) -> str:
+    """
+    Decodifica parámetros de ruta enviados por HTTP query string.
+    Resuelve la incompatibilidad de Bottle (PEP 3333) donde bytes UTF-8 en QUERY_STRING
+    son interpretados como latin-1 (creando caracteres corruptos 'mojibake' como Ã± o Ãº).
+    """
+    if not raw_val:
+        return ""
+    import urllib.parse
+    unquoted = urllib.parse.unquote(raw_val)
+    try:
+        val = unquoted.encode('latin1').decode('utf-8')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        val = unquoted
+    return val
+
 @bottle.route('/cover')
 @bottle.route('/cover', method='OPTIONS')
 def get_cover():
@@ -158,7 +174,8 @@ def get_cover():
     if bottle.request.method == 'OPTIONS':
         bottle.response.status = 204
         return ""
-    file_path = bottle.request.query.get('path', '')
+    raw_path = bottle.request.query.get('path', '')
+    file_path = _decodificar_parametro_ruta(raw_path)
     real_path = audio_playback_svc._resolver_ruta(file_path) if file_path else ''
     target = real_path if real_path else file_path
 
@@ -199,7 +216,8 @@ def stream_audio():
     if bottle.request.method == 'OPTIONS':
         bottle.response.status = 204
         return ""
-    file_path = bottle.request.query.get('path', '')
+    raw_path = bottle.request.query.get('path', '')
+    file_path = _decodificar_parametro_ruta(raw_path)
     if file_path:
         # ── Snippets de preescucha local descargados en web/previews ──
         if file_path.startswith('/previews/') or file_path.startswith('previews/') or 'prev_' in file_path:
