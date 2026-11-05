@@ -65,8 +65,8 @@ const I18N_TRANSLATIONS = {
     nav_trends: "Tendencias",
     nav_knowledge: "Conocimiento",
     nav_setbuilder: "Set-Builder & Flow",
-    nav_spotify: "Spotify Ingest",
-    nav_shazam: "Radar Shazam",
+    nav_spotify: "Record Pool",
+    nav_shazam: "Radar Ac\xFAstico",
     nav_taxonomy: "Taxonom\xEDa",
     nav_logs: "Consola (Logs)",
     nav_tab_audit: "Auditar",
@@ -126,10 +126,10 @@ const I18N_TRANSLATIONS = {
     jump_cue: "Saltar",
     tactical_comment_title: "Comentario T\xE1ctico DJ",
     regenerate_mood_btn: "Regenerar Mood & Comentario IA",
-    shazam_radar_title: "Radar Ac\xFAstico ShazamIO",
+    shazam_radar_title: "Radar Ac\xFAstico BeatWave",
     shazam_mic_btn: "Escuchar por Micr\xF3fono",
     shazam_drop_text: "Arrastra o selecciona un archivo de audio",
-    shazam_send_spotify: "Descargar en Spotify Ingest",
+    shazam_send_spotify: "Descargar en Record Pool",
     shazam_send_audit: "A\xF1adir a Auditor\xEDa DJ",
     apply_track_changes: "Aplicar Cambios a este Track",
     lang_switch: "Idioma",
@@ -165,8 +165,8 @@ const I18N_TRANSLATIONS = {
     filter_duplicates_label: "Duplicados",
     btn_upgrade_quality: "Mejorar Calidad",
     btn_send_to_downloads: "Llevar a Descargas",
-    tooltip_upgrade_quality: "Buscar masters oficiales en Spotify para pistas con corte o baja calidad",
-    tooltip_send_downloads: "Buscar y descargar copias en m\xE1xima calidad (FLAC/Lossless) en Spotify Ingest",
+    tooltip_upgrade_quality: "Buscar masters oficiales en Cat\xE1logo Global para pistas con corte o baja calidad",
+    tooltip_send_downloads: "Buscar y descargar copias en m\xE1xima calidad (FLAC/Lossless) en el Record Pool",
     batch_selected_count: "pistas seleccionadas",
     batch_covers: "Car\xE1tulas",
     batch_clean: "Limpiar",
@@ -223,8 +223,8 @@ const I18N_TRANSLATIONS = {
     nav_trends: "Trends",
     nav_knowledge: "Knowledge",
     nav_setbuilder: "Set-Builder & Flow",
-    nav_spotify: "Spotify Ingest",
-    nav_shazam: "Radar Shazam",
+    nav_spotify: "Record Pool",
+    nav_shazam: "Radar Ac\xFAstico",
     nav_taxonomy: "Taxonomy",
     nav_logs: "Console (Logs)",
     nav_tab_audit: "Audit",
@@ -284,10 +284,10 @@ const I18N_TRANSLATIONS = {
     jump_cue: "Jump",
     tactical_comment_title: "Tactical DJ Comment",
     regenerate_mood_btn: "Regenerate Mood & AI Comment",
-    shazam_radar_title: "ShazamIO Acoustic Radar",
+    shazam_radar_title: "BeatWave Acoustic Radar",
     shazam_mic_btn: "Listen with Microphone",
     shazam_drop_text: "Drag & drop or browse an audio file",
-    shazam_send_spotify: "Download in Spotify Ingest",
+    shazam_send_spotify: "Download in Record Pool",
     shazam_send_audit: "Add to DJ Audit",
     apply_track_changes: "Apply Changes to this Track",
     lang_switch: "Language",
@@ -323,7 +323,7 @@ const I18N_TRANSLATIONS = {
     filter_duplicates_label: "Duplicates",
     btn_upgrade_quality: "Upgrade Quality",
     btn_send_to_downloads: "Send to Downloads",
-    tooltip_upgrade_quality: "Search official Spotify masters for low quality or clipped tracks",
+    tooltip_upgrade_quality: "Search official masters in Global Catalog for low quality or clipped tracks",
     tooltip_send_downloads: "Search and download maximum quality (FLAC/Lossless) copies in Downloads",
     batch_selected_count: "selected tracks",
     batch_covers: "Covers",
@@ -4253,22 +4253,22 @@ const MANUAL_SECTIONS = {
     color: "#10b981",
     gradient: "from-emerald-400 to-teal-500",
     tag: "DESCARGA CERTIFICADA 24-BIT & REPRODUCTOR A/B",
-    hook: "\xBFTienes playlists de Spotify con temazos brutales pero no puedes pincharlos con calidad profesional en cabina?",
-    story: "Todos los DJs descubrimos m\xFAsica en Spotify, en la radio o en listas de amigos, pero pinchar desde streaming en un club es jug\xE1rsela a cortes de internet, sin contar con que los ripeos de baja calidad suenan desastrosos. El m\xF3dulo POOL resuelve esto para siempre: pegas el enlace de cualquier canci\xF3n, \xE1lbum o playlist de Spotify (o buscas por texto), y nuestro motor SuperFLAC localiza el m\xE1ster original en cat\xE1logo audi\xF3filo y lo descarga en FLAC Lossless aut\xE9ntico de 24 o 16 bits. Y aqu\xED viene lo que ninguna otra app del mercado hace: inmediatamente al descargarse, el motor le pasa una auditor\xEDa FFT autom\xE1tica para certificar que el archivo tiene frecuencias intactas hasta los 22kHz, y te ofrece un Reproductor A/B de Pre-escucha Dual para que compares tu tema local viejo con la nueva descarga en alta resoluci\xF3n antes de reemplazarlo. Es calidad de audio pura sin trampas.",
+    hook: "\xBFTienes listas de reproducci\xF3n con temazos brutales pero no puedes pincharlos con calidad profesional en cabina?",
+    story: "Todos los DJs descubrimos m\xFAsica en plataformas de streaming, en la radio o en listas de amigos, pero pinchar desde streaming en un club es jug\xE1rsela a cortes de internet, sin contar con que los ripeos de baja calidad suenan desastrosos. El m\xF3dulo POOL resuelve esto para siempre: pegas el enlace de cualquier canci\xF3n, \xE1lbum o lista (o buscas por texto), y nuestro motor SuperFLAC localiza el m\xE1ster original en cat\xE1logo audi\xF3filo y lo descarga en FLAC Lossless aut\xE9ntico de 24 o 16 bits. Inmediatamente al descargarse, el motor le pasa una auditor\xEDa FFT autom\xE1tica para certificar que el archivo tiene frecuencias intactas hasta los 22kHz, y te ofrece un Reproductor A/B de Pre-escucha Dual para que compares tu tema local viejo con la nueva descarga en alta resoluci\xF3n antes de reemplazarlo.",
     jargon: [
       { term: "FLAC Hi-Res 24-Bit Master", desc: "Formato de compresi\xF3n sin p\xE9rdida (Lossless) con una profundidad de 24 bits y rango din\xE1mico de 144 dB, id\xE9ntico al master original de estudio." },
       { term: "Pre-escucha Dual A/B", desc: "Dos botones de reproducci\xF3n simult\xE1neos que te permiten alternar en tiempo real entre la versi\xF3n que ya ten\xEDas en tu disco y la nueva versi\xF3n descargada para verificar que es la versi\xF3n extendida correcta." },
       { term: "Inyecci\xF3n de Metadatos ID3v2.4", desc: "Escribe autom\xE1ticamente la car\xE1tula oficial en 1400x1400px, el nombre correcto del artista, el \xE1lbum, a\xF1o y el g\xE9nero oficial en las etiquetas del archivo." }
     ],
     steps: [
-      "1. Pega un enlace de canci\xF3n, playlist o \xE1lbum de Spotify en la barra de b\xFAsqueda (o escribe artista y t\xEDtulo) y pulsa 'Buscar / Analizar'.",
+      "1. Pega un enlace de canci\xF3n, lista o \xE1lbum en la barra de b\xFAsqueda (o escribe artista y t\xEDtulo) y pulsa 'Buscar / Analizar'.",
       "2. Selecciona tu formato deseado: 'FLAC Hi-Res (24b Master)' o 'FLAC Lossless'.",
       "3. Haz clic en '\u2B07\uFE0F Descargar' y observa la barra de progreso en streaming.",
       "4. Al completarse, la pista se audita autom\xE1ticamente por FFT y queda guardada con car\xE1tula HD en tu carpeta de m\xFAsica de cabina."
     ],
     proTip: "Si en la auditor\xEDa tienes canciones marcadas en rojo como 'Mala Calidad', usa el bot\xF3n 'Llevar Reemplazos HD a Pool'. Te las importar\xE1 en bloque para que las sustituyas por copias Lossless impecables sin tener que buscarlas una por una.",
     controls: [
-      { btn: "[ \u{1F50D} Buscar / Analizar ]", desc: "Resuelve metadatos de enlaces de Spotify (canci\xF3n, \xE1lbum, playlist) o b\xFAsquedas de texto directo.", when: "Para encontrar cualquier tema que quieras incorporar a tu maleta." },
+      { btn: "[ \u{1F50D} Buscar / Analizar ]", desc: "Resuelve metadatos de enlaces de audio (canci\xF3n, \xE1lbum, lista) o b\xFAsquedas de texto directo.", when: "Para encontrar cualquier tema que quieras incorporar a tu maleta." },
       { btn: "[ \u2B07\uFE0F Descargar (Lote) ]", desc: "Inicia la descarga paralela multihilo del m\xE1ster original de estudio en alta resoluci\xF3n.", when: "Para descargar temas individuales o listas completas de 50 temas a la vez." },
       { btn: "[ \u{1F39B}\uFE0F Formato: FLAC 24b / 16b / MP3 ]", desc: "Selector de c\xF3dec y tasa de bits para la descarga (FLAC Hi-Res, WAV, AIFF, MP3 320k).", when: "Elige FLAC Hi-Res para directos y MP3 320k para ahorrar espacio." },
       { btn: "[ \u{1F3A7} Pre-escucha Dual A/B ]", desc: "Alterna en tiempo real entre la versi\xF3n que ya ten\xEDas en local y la nueva descarga.", when: "Para certificar que la descarga es la versi\xF3n Club Extended correcta." },
@@ -4276,7 +4276,7 @@ const MANUAL_SECTIONS = {
       { btn: "[ \u{1F4C1} Cambiar Carpeta Destino ]", desc: "Configura el directorio local donde se guardan tus canciones descargadas.", when: "Para dirigir la m\xFAsica a tu disco duro externo o carpeta de Serato/Rekordbox." }
     ],
     simulationSteps: [
-      { label: "B\xFAsqueda o Link", desc: "Resoluci\xF3n de cat\xE1logo de Spotify con localizaci\xF3n de m\xE1ster de estudio en SuperFLAC", focus: "search" },
+      { label: "B\xFAsqueda o Link", desc: "Resoluci\xF3n de cat\xE1logo con localizaci\xF3n de m\xE1ster de estudio en SuperFLAC", focus: "search" },
       { label: "Streaming Lossless", desc: "Descarga segura en FLAC 24-bit / 16-bit con gesti\xF3n din\xE1mica de tokens CSRF", focus: "download" },
       { label: "Auditor\xEDa FFT en Vuelo", desc: "Certificaci\xF3n espectral instant\xE1nea para garantizar 0% transcodificaci\xF3n falsa", focus: "cert" },
       { label: "Comparativa Dual A/B", desc: "Pre-escucha en vivo alternando entre la copia local antigua y el nuevo m\xE1ster HD", focus: "ab" }
@@ -4305,7 +4305,7 @@ const MANUAL_SECTIONS = {
     ],
     proTip: "Dedica 15 minutos cada jueves a mirar el Radar. Descubrir dos o tres temas exclusivos antes del fin de semana es la diferencia entre ser un DJ m\xE1s del cartel o ser el que se lleva las felicitaciones del promotor y del p\xFAblico al terminar la noche.",
     controls: [
-      { btn: "[ \u{1F399}\uFE0F Escuchar con Micr\xF3fono ]", desc: "Reconocimiento ac\xFAstico estilo Shazam en tiempo real de lo que suena en la sala o altavoces.", when: "Cuando est\xE1s en un club o viendo un streaming y quieres identificar el track al vuelo." },
+      { btn: "[ \u{1F399}\uFE0F Escuchar con Micr\xF3fono ]", desc: "Reconocimiento ac\xFAstico en tiempo real por huella sonora de lo que suena en la sala o altavoces.", when: "Cuando est\xE1s en un club o viendo un streaming y quieres identificar el track al vuelo." },
       { btn: "[ \u{1F4E1} Esc\xE1ner 1001Tracklists ]", desc: "Monitoriza sesiones de DJs headliners en festivales mundiales (Tomorrowland, Ultra, Awakenings).", when: "Para ver qu\xE9 IDs y temas in\xE9ditos est\xE1n pinchando los mejores del mundo." },
       { btn: "[ \u{1F4C8} Velocidad de Tendencia ]", desc: "M\xE9trica que indica si un tema est\xE1 creciendo exponencialmente en las pistas de baile.", when: "Para comprar y pinchar canciones antes de que se vuelvan virales comerciales." },
       { btn: "[ \u{1F9E9} Filtro por Micro-G\xE9neros ]", desc: "Segmenta las tendencias por corrientes emergentes (Afro-Melodic, Hard Groove, Indie Dance).", when: "Para encontrar m\xFAsica que encaje al 100% con tu estilo de cabina." },
@@ -5668,12 +5668,12 @@ const AuditWorkspace = ({
       }
     }
     if (!targetTracks || targetTracks.length === 0) {
-      alert("No hay pistas seleccionadas ni pistas de baja calidad detectadas para buscar en Spotify.");
+      alert("No hay pistas seleccionadas ni pistas de baja calidad detectadas para buscar en el Cat\xE1logo.");
       return;
     }
     setIsSearchingSpotifyHD(true);
     setBatchProgress(20);
-    setBatchStatusMsg(`Buscando reemplazos oficiales en Spotify HD para ${targetTracks.length} pista(s)...`);
+    setBatchStatusMsg(`Buscando reemplazos oficiales en Cat\xE1logo HD para ${targetTracks.length} pista(s)...`);
     try {
       let rawRes = null;
       if (window.eel && window.eel.buscar_reemplazos_spotify_batch) {
@@ -5726,7 +5726,7 @@ const AuditWorkspace = ({
           id: `sp_hd_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
           title: r.title,
           artist: r.artist,
-          album: r.album || "Oficial Spotify HD",
+          album: r.album || "Cat\xE1logo Master HD",
           bpm: parseFloat(r.bpm) || 128,
           key: (r.key || "8A").toUpperCase(),
           cover: r.cover || null,
@@ -5743,7 +5743,7 @@ const AuditWorkspace = ({
           selected: true,
           // Pre-marcar siempre para que el DJ pueda descargar inmediatamente el lote
           format: "FLAC",
-          calidad: "Oficial Spotify HD",
+          calidad: "Cat\xE1logo Master HD",
           status: isVerified ? "Listo para Descarga (Match Verificado)" : "Listo para Descarga (Match Pendiente)",
           match_score: r.match_score !== void 0 ? r.match_score : 100,
           match_confianza: r.match_confianza || (isVerified ? "ALTA" : "MEDIA"),
@@ -5772,7 +5772,7 @@ const AuditWorkspace = ({
       }
       setBatchProgress(100);
     } catch (err) {
-      console.error("Error buscando reemplazos en Spotify:", err);
+      console.error("Error buscando reemplazos en Cat\xE1logo:", err);
       setBatchStatusMsg("Aviso en b\xFAsqueda online. Conmutando a transferencia directa...");
       if (targetTracks && targetTracks.length > 0) {
         const fallbackTracks = targetTracks.map((trk, i) => ({
@@ -8146,7 +8146,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           handleBuscarReemplazosSpotify([row]);
         },
         className: "px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black bg-gradient-to-r from-cyan-950 to-purple-950 hover:from-cyan-900 hover:to-purple-900 text-cyan-300 border border-cyan-500/70 cursor-pointer shadow-sm flex items-center justify-center gap-1 transition-all active:scale-95",
-        title: "FLAC no cumple est\xE1ndares lossless o es de calidad media/fake. Buscar master oficial en Spotify (SuperFLAC)"
+        title: "FLAC no cumple est\xE1ndares lossless o es de calidad media/fake. Buscar master oficial en Cat\xE1logo Global (SuperFLAC)"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F48E}"),
       /* @__PURE__ */ React.createElement("span", null, "SuperFLAC")
@@ -8158,10 +8158,10 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           handleBuscarReemplazosSpotify([row]);
         },
         className: "px-1.5 py-0.5 rounded text-[8px] font-mono font-black bg-amber-950/90 hover:bg-amber-900 text-amber-300 border border-amber-600/70 cursor-pointer shadow flex items-center justify-center gap-1 transition-all active:scale-95",
-        title: "Buscar versi\xF3n oficial en Spotify Ingest para sustituir este track"
+        title: "Buscar versi\xF3n oficial en el Record Pool para sustituir este track"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F504}"),
-      /* @__PURE__ */ React.createElement("span", null, "Spotify HD")
+      /* @__PURE__ */ React.createElement("span", null, "Cat\xE1logo HD")
     ) : null)), visibleColumns.perdida_pct && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center" }, isFake ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800", title: `Corte espectral a ${row.cutoff_khz || "--"}kHz` }, "\u26A0\uFE0F Transcode (", row.perdida_pct || 0, "%)") : row.perdida === "Sin P\xE9rdida" ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60" }, "Sin P\xE9rdida") : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-300" }, row.perdida || "Sin auditar")), visibleColumns.cutoff_khz && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${isFake ? "bg-red-950 text-red-400 border-red-800" : "bg-djgreen-950/80 text-djgreen-400 border-djgreen-800"}` }, row.cutoff_khz ? `${row.cutoff_khz}kHz` : "PASS")), visibleColumns.lufs && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `text-[10px] font-bold ${row.lufs > -7 ? "text-amber-400" : row.lufs && row.lufs <= -14 ? "text-cyan-400" : "text-emerald-400"}` }, row.lufs !== void 0 ? `${row.lufs} LUFS` : "-9.0 LUFS"), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] ${row.clipping ? "text-red-400 font-black animate-pulse" : "text-gray-500"}`, title: row.clipping ? "Clipping detectado: pico real supera 0.0 dBFS" : "Pico inter-sample en rango" }, row.clipping ? "\u26A0\uFE0F CLIP" : `${row.true_peak !== void 0 ? row.true_peak > 0 ? `+${row.true_peak}` : row.true_peak : "-0.1"}dB`))), visibleColumns.duration && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center text-gray-400 font-mono" }, row.duration), visibleColumns.bpm && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-850 text-gray-200 px-1.5 py-0.5 rounded font-mono border border-djzinc-750" }, row.b)), visibleColumns.key && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded font-mono font-bold bg-djcyan-950 text-djcyan-400 border border-djcyan-800/50", title: getHarmonicKeyDisplay(row.k) }, getHarmonicKeyDisplay(row.k))), visibleColumns.cues && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -8357,7 +8357,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           className: "px-2.5 py-1 rounded bg-gradient-to-r from-emerald-500 to-djcyan-500 hover:from-emerald-400 hover:to-djcyan-400 text-black text-[10px] font-mono font-black flex items-center gap-1 shadow cursor-pointer active:scale-95"
         },
         /* @__PURE__ */ React.createElement("span", null, "\u{1F50D}"),
-        /* @__PURE__ */ React.createElement("span", null, "SuperFLAC Spotify HD")
+        /* @__PURE__ */ React.createElement("span", null, "SuperFLAC Lossless HD")
       ))
     );
   }))))), sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && /* @__PURE__ */ React.createElement("aside", { key: currentTrack ? currentTrack.id : "none", className: "w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Gear, null), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs uppercase tracking-wider text-gray-200" }, "Inspector DJ Granular")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded" }, "Track #", currentTrack.id || "--"), /* @__PURE__ */ React.createElement(
@@ -8409,7 +8409,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0 transition-colors"
     },
     nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) && isPlaying ? "\u275A\u275A PAUSE" : "\u25B6 PLAY"
-  )), isFlacUpgradeCandidate(currentTrack) ? /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-gradient-to-br from-cyan-950/60 via-purple-950/40 to-djzinc-900 border border-cyan-500/70 rounded-xl flex flex-col gap-2 shadow-lg shadow-cyan-950/30" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-black text-cyan-300 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F48E}"), " SuperFLAC: No Cumple Hi-Res"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-700/60 font-bold" }, currentTrack.es_fake ? "FAKE / TRANSCODE" : currentTrack.calidad || "CALIDAD MEDIA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "Este archivo FLAC presenta corte de frecuencia (", currentTrack.cutoff_khz || "--", " kHz) o bitrate insuficiente para considerarse True Lossless. Puedes buscar y descargar el master original en Spotify Ingest."), /* @__PURE__ */ React.createElement(
+  )), isFlacUpgradeCandidate(currentTrack) ? /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-gradient-to-br from-cyan-950/60 via-purple-950/40 to-djzinc-900 border border-cyan-500/70 rounded-xl flex flex-col gap-2 shadow-lg shadow-cyan-950/30" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-black text-cyan-300 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F48E}"), " SuperFLAC: No Cumple Hi-Res"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-700/60 font-bold" }, currentTrack.es_fake ? "FAKE / TRANSCODE" : currentTrack.calidad || "CALIDAD MEDIA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "Este archivo FLAC presenta corte de frecuencia (", currentTrack.cutoff_khz || "--", " kHz) o bitrate insuficiente para considerarse True Lossless. Puedes buscar y descargar el master original en el Record Pool."), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -8418,7 +8418,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       className: "w-full py-1.5 px-3 rounded bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 text-black font-black text-xs cursor-pointer shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
     },
     /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "\u23F3" : "\u{1F48E}"),
-    /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Spotify..." : "Buscar SuperFLAC Lossless en Spotify")
+    /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Cat\xE1logo..." : "Buscar SuperFLAC Lossless en Cat\xE1logo")
   )) : isBadQualityTrack(currentTrack) ? /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-amber-950/40 border border-amber-600/70 rounded-lg flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-bold text-amber-300 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), " Calidad Sub-\xF3ptima Detectada"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-red-400 bg-red-950 px-1.5 py-0.5 rounded border border-red-800 font-bold" }, currentTrack.es_fake ? "FLAC FAKE" : currentTrack.calidad || "Baja Calidad")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "Esta pista presenta compresi\xF3n lossy o corte espectral (", currentTrack.cutoff_khz || "--", " kHz). Puedes reemplazarla autom\xE1ticamente por su versi\xF3n oficial en FLAC."), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -8428,7 +8428,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       className: "w-full py-1.5 px-3 rounded bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-black font-black text-xs cursor-pointer shadow transition-all active:scale-95 flex items-center justify-center gap-1.5"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F504}"),
-    /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Spotify..." : "Buscar Reemplazo HD en Spotify")
+    /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Cat\xE1logo..." : "Buscar Reemplazo HD en Cat\xE1logo")
   )) : null, /* @__PURE__ */ React.createElement(
     RekordboxWaveform,
     {
@@ -10461,6 +10461,82 @@ const HotCuesWorkspace = ({
     "\u2713 Cargar Esta Carpeta"
   ))))));
 };
+const DEFAULT_POOL_COLUMNS = {
+  select: true,
+  play: true,
+  title: true,
+  match_score: true,
+  artist: true,
+  genre: true,
+  subgenre: true,
+  origin: true,
+  pre_quality_tier: true,
+  format: true,
+  sample_rate_khz: true,
+  bitrate_kbps: true,
+  calidad: true,
+  cutoff_khz: true,
+  duration: true,
+  bpm: true,
+  key: true,
+  energy: true,
+  danceability: true,
+  status: true
+};
+const POOL_COLUMN_CATEGORIES = [
+  {
+    id: "identity",
+    name: "Identificaci\xF3n & Cat\xE1logo",
+    icon: "\u{1F3B5}",
+    color: "text-djcyan-400",
+    columns: [
+      { key: "select", label: "Selector (#)", desc: "Casilla para selecci\xF3n de descargas por lote" },
+      { key: "play", label: "Play / Previa", desc: "Bot\xF3n de reproducci\xF3n instant\xE1nea" },
+      { key: "title", label: "T\xEDtulo / \xC1lbum", desc: "Nombre del track, portada y \xE1lbum" },
+      { key: "artist", label: "Artista", desc: "Int\xE9rprete o productor principal" },
+      { key: "origin", label: "Origen", desc: "Fuente de procedencia (B\xFAsqueda, Reemplazo HD, etc.)" }
+    ]
+  },
+  {
+    id: "fidelity",
+    name: "Fidelidad & Pre-Auditor\xEDa",
+    icon: "\u{1F48E}",
+    color: "text-amber-400",
+    columns: [
+      { key: "match_score", label: "Match Ac\xFAstico (%)", desc: "Fidelidad de coincidencia respecto a la b\xFAsqueda" },
+      { key: "pre_quality_tier", label: "Pre-Auditor\xEDa (Valor)", desc: "Dictamen de m\xE1ster 24-bit / 16-bit Lossless" },
+      { key: "status", label: "Estado / Acci\xF3n", desc: "Estado de descarga y veredicto" }
+    ]
+  },
+  {
+    id: "quality",
+    name: "Pureza Sonora & Espectro",
+    icon: "\u{1F52C}",
+    color: "text-emerald-400",
+    columns: [
+      { key: "format", label: "Formato Audio", desc: "Extensi\xF3n y c\xF3dec (FLAC, WAV, AIFF, MP3)" },
+      { key: "sample_rate_khz", label: "Frecuencia (kHz)", desc: "Tasa de muestreo (44.1, 48, 96 kHz)" },
+      { key: "bitrate_kbps", label: "Bitrate (kbps)", desc: "Tasa de bits real calculada" },
+      { key: "calidad", label: "Calidad Master", desc: "Certificaci\xF3n ac\xFAstica y pureza" },
+      { key: "cutoff_khz", label: "P\xE9rdida / Corte FFT", desc: "Frecuencia de corte para cazar fakes" }
+    ]
+  },
+  {
+    id: "dj",
+    name: "Taxonom\xEDa & Cabina DJ",
+    icon: "\u{1F39B}\uFE0F",
+    color: "text-purple-400",
+    columns: [
+      { key: "genre", label: "G\xE9nero Musical", desc: "Clasificaci\xF3n electr\xF3nica primaria" },
+      { key: "subgenre", label: "Subg\xE9nero", desc: "Taxonom\xEDa electr\xF3nica de precisi\xF3n" },
+      { key: "duration", label: "Duraci\xF3n (Time)", desc: "Tiempo total de reproducci\xF3n MM:SS" },
+      { key: "bpm", label: "Tempo (BPM)", desc: "Velocidad en pulsos por minuto" },
+      { key: "key", label: "Tonalidad (Key)", desc: "Rueda arm\xF3nica Camelot" },
+      { key: "energy", label: "Energ\xEDa (\u26A1 %)", desc: "Intensidad ac\xFAstica percibida" },
+      { key: "danceability", label: "Bailabilidad (\u{1F57A} %)", desc: "Regularidad r\xEDtmica para pista" }
+    ]
+  }
+];
 const SpotifyWorkspace = ({
   tracks: externalTracks,
   setTracks: externalSetTracks,
@@ -10537,7 +10613,7 @@ const SpotifyWorkspace = ({
   const handleBuscarCandidatosManuales = async (customQuery = null) => {
     const query = customQuery !== null ? customQuery : candidateModal.searchQuery;
     if (!query || !query.trim()) return;
-    setCandidateModal((prev) => ({ ...prev, isSearching: true, searchMsg: "Buscando versiones en Spotify & Apple Music..." }));
+    setCandidateModal((prev) => ({ ...prev, isSearching: true, searchMsg: "Buscando versiones en Cat\xE1logo Oficial..." }));
     try {
       const pistaOrigen = candidateModal.targetTrack ? {
         artist: candidateModal.targetTrack.original_artist || candidateModal.targetTrack.artist,
@@ -10833,7 +10909,7 @@ const SpotifyWorkspace = ({
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = res.filename || `Reporte_Descargas_Spotify_${Date.now()}.xlsx`;
+          a.download = res.filename || `Reporte_Descargas_Pool_${Date.now()}.xlsx`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -10917,17 +10993,129 @@ const SpotifyWorkspace = ({
     } catch (_) {
     }
   };
+  const [poolVisibleColumns, setPoolVisibleColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem("bw_pool_visible_columns");
+      if (saved) return { ...DEFAULT_POOL_COLUMNS, ...JSON.parse(saved) };
+    } catch (_) {
+    }
+    return DEFAULT_POOL_COLUMNS;
+  });
+  const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState(false);
+  const [poolColumnSearchText, setPoolColumnSearchText] = useState("");
+  useEffect(() => {
+    if (!poolColumnSelectorOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setPoolColumnSelectorOpen(false);
+        setPoolColumnSearchText("");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [poolColumnSelectorOpen]);
+  const setPoolColumnPreset = (preset) => {
+    let next = { ...DEFAULT_POOL_COLUMNS };
+    if (preset === "all") {
+      Object.keys(next).forEach((k) => {
+        next[k] = true;
+      });
+    } else if (preset === "none") {
+      Object.keys(next).forEach((k) => {
+        next[k] = false;
+      });
+      next.select = true;
+      next.title = true;
+    } else if (preset === "dj") {
+      Object.keys(next).forEach((k) => {
+        next[k] = false;
+      });
+      ["select", "play", "title", "artist", "genre", "subgenre", "bpm", "key", "energy", "danceability", "status"].forEach((k) => {
+        next[k] = true;
+      });
+    } else if (preset === "quality") {
+      Object.keys(next).forEach((k) => {
+        next[k] = false;
+      });
+      ["select", "play", "title", "artist", "match_score", "pre_quality_tier", "format", "sample_rate_khz", "bitrate_kbps", "calidad", "cutoff_khz", "status"].forEach((k) => {
+        next[k] = true;
+      });
+    } else if (preset === "essential") {
+      Object.keys(next).forEach((k) => {
+        next[k] = false;
+      });
+      ["select", "play", "title", "artist", "origin", "match_score", "format", "status"].forEach((k) => {
+        next[k] = true;
+      });
+    } else if (preset === "reset") {
+      next = { ...DEFAULT_POOL_COLUMNS };
+    }
+    setPoolVisibleColumns(next);
+    try {
+      localStorage.setItem("bw_pool_visible_columns", JSON.stringify(next));
+    } catch (_) {
+    }
+  };
+  const togglePoolColumnVisibility = (colKey) => {
+    setPoolVisibleColumns((prev) => {
+      const next = { ...prev, [colKey]: !prev[colKey] };
+      try {
+        localStorage.setItem("bw_pool_visible_columns", JSON.stringify(next));
+      } catch (_) {
+      }
+      return next;
+    });
+  };
   const [spSortField, setSpSortField] = useState("title");
   const [spSortDir, setSpSortDir] = useState("asc");
   const [spFilterSearch, setSpFilterSearch] = useState("");
-  const [spFilterFormat, setSpFilterFormat] = useState("ALL");
-  const [spFilterQuality, setSpFilterQuality] = useState("ALL");
-  const [spFilterPreQuality, setSpFilterPreQuality] = useState("ALL");
-  const [spFilterStatus, setSpFilterStatus] = useState("ALL");
+  const [spFilterArtist, setSpFilterArtist] = useState("");
+  const [spFilterGenre, setSpFilterGenre] = useState("ALL");
+  const [spFilterSubgenre, setSpFilterSubgenre] = useState("");
   const [spFilterOrigin, setSpFilterOrigin] = useState("ALL");
   const [spFilterMatch, setSpFilterMatch] = useState("ALL");
+  const [spFilterPreQuality, setSpFilterPreQuality] = useState("ALL");
+  const [spFilterFormat, setSpFilterFormat] = useState("ALL");
+  const [spFilterKhz, setSpFilterKhz] = useState("ALL");
+  const [spFilterKbps, setSpFilterKbps] = useState("ALL");
+  const [spFilterQuality, setSpFilterQuality] = useState("ALL");
+  const [spFilterCutoff, setSpFilterCutoff] = useState("ALL");
+  const [spFilterDuration, setSpFilterDuration] = useState("");
+  const [spFilterBpm, setSpFilterBpm] = useState("");
+  const [spFilterKey, setSpFilterKey] = useState("ALL");
   const [spFilterEnergy, setSpFilterEnergy] = useState("ALL");
   const [spFilterDance, setSpFilterDance] = useState("ALL");
+  const [spFilterStatus, setSpFilterStatus] = useState("ALL");
+  const poolUniqueGenres = useMemo(() => {
+    const set = /* @__PURE__ */ new Set();
+    (tracks || []).forEach((t2) => {
+      if (t2.genre && typeof t2.genre === "string") set.add(t2.genre.trim());
+    });
+    return Array.from(set).sort();
+  }, [tracks]);
+  const handleClearAllPoolFilters = () => {
+    setSpFilterSearch("");
+    setSpFilterArtist("");
+    setSpFilterGenre("ALL");
+    setSpFilterSubgenre("");
+    setSpFilterOrigin("ALL");
+    setSpFilterMatch("ALL");
+    setSpFilterPreQuality("ALL");
+    setSpFilterFormat("ALL");
+    setSpFilterKhz("ALL");
+    setSpFilterKbps("ALL");
+    setSpFilterQuality("ALL");
+    setSpFilterCutoff("ALL");
+    setSpFilterDuration("");
+    setSpFilterBpm("");
+    setSpFilterKey("ALL");
+    setSpFilterEnergy("ALL");
+    setSpFilterDance("ALL");
+    setSpFilterStatus("ALL");
+  };
+  const hasActivePoolFilters = Boolean(
+    spFilterSearch || spFilterArtist || spFilterGenre !== "ALL" || spFilterSubgenre || spFilterOrigin !== "ALL" || spFilterMatch !== "ALL" || spFilterPreQuality !== "ALL" || spFilterFormat !== "ALL" || spFilterKhz !== "ALL" || spFilterKbps !== "ALL" || spFilterQuality !== "ALL" || spFilterCutoff !== "ALL" || spFilterDuration || spFilterBpm || spFilterKey !== "ALL" || spFilterEnergy !== "ALL" || spFilterDance !== "ALL" || spFilterStatus !== "ALL"
+  );
   const handleSortSp = (field) => {
     if (spSortField === field) {
       setSpSortDir((prev) => prev === "asc" ? "desc" : "asc");
@@ -10948,8 +11136,20 @@ const SpotifyWorkspace = ({
     let result = tracks.filter((t2) => {
       if (spFilterSearch) {
         const term = spFilterSearch.toLowerCase();
-        const m = (t2.title || "").toLowerCase().includes(term) || (t2.artist || "").toLowerCase().includes(term) || (t2.album || "").toLowerCase().includes(term);
+        const m = (t2.title || "").toLowerCase().includes(term) || (t2.album || "").toLowerCase().includes(term);
         if (!m) return false;
+      }
+      if (spFilterArtist) {
+        const term = spFilterArtist.toLowerCase();
+        if (!(t2.artist || "").toLowerCase().includes(term)) return false;
+      }
+      if (spFilterGenre !== "ALL") {
+        if ((t2.genre || "House").toLowerCase() !== spFilterGenre.toLowerCase()) return false;
+      }
+      if (spFilterSubgenre) {
+        const term = spFilterSubgenre.toLowerCase();
+        const sub = (t2.subgenre || (TAXONOMY_TREE[t2.genre || "Tech House"] ? TAXONOMY_TREE[t2.genre || "Tech House"][0] : "Tech House")).toLowerCase();
+        if (!sub.includes(term)) return false;
       }
       if (spFilterOrigin !== "ALL") {
         const o = t2.origin || "spotify";
@@ -10959,8 +11159,33 @@ const SpotifyWorkspace = ({
         const fmt = (t2.format || selectedFormat || "").toUpperCase();
         if (fmt !== spFilterFormat) return false;
       }
+      if (spFilterKhz !== "ALL") {
+        const khz = String(t2.sample_rate_khz || t2.khz || "");
+        if (!khz.includes(spFilterKhz)) return false;
+      }
+      if (spFilterKbps !== "ALL") {
+        const kbps = Number(t2.bitrate_kbps || t2.kbps || 0);
+        if (spFilterKbps === "LOSSLESS" && kbps > 0 && kbps < 800) return false;
+        if (spFilterKbps === "320" && kbps > 0 && kbps !== 320) return false;
+      }
       if (spFilterQuality !== "ALL") {
         if (!String(t2.calidad || "").toLowerCase().includes(spFilterQuality.toLowerCase())) return false;
+      }
+      if (spFilterCutoff !== "ALL") {
+        const c = Number(t2.cutoff_khz || t2.corte || 0);
+        if (spFilterCutoff === "HIGH" && c > 0 && c < 20) return false;
+        if (spFilterCutoff === "MED" && (c < 18 || c >= 20)) return false;
+        if (spFilterCutoff === "LOW" && c > 0 && c >= 18) return false;
+      }
+      if (spFilterDuration) {
+        if (!String(t2.duration || "").includes(spFilterDuration)) return false;
+      }
+      if (spFilterBpm) {
+        if (!String(t2.bpm || "").includes(spFilterBpm)) return false;
+      }
+      if (spFilterKey !== "ALL") {
+        const k = String(t2.key || t2.k || "").trim().toUpperCase();
+        if (!k.includes(spFilterKey.trim().toUpperCase())) return false;
       }
       if (spFilterPreQuality !== "ALL") {
         if (spFilterPreQuality === "RECOMMENDED" && t2.pre_worth_it === false) return false;
@@ -11027,7 +11252,7 @@ const SpotifyWorkspace = ({
       return spSortDir === "asc" ? String(valA || "").localeCompare(String(valB || "")) : String(valB || "").localeCompare(String(valA || ""));
     });
     return result;
-  }, [tracks, spFilterSearch, spFilterOrigin, spFilterMatch, spFilterFormat, spFilterQuality, spFilterPreQuality, spFilterStatus, spFilterEnergy, spFilterDance, spSortField, spSortDir, selectedFormat]);
+  }, [tracks, spFilterSearch, spFilterArtist, spFilterGenre, spFilterSubgenre, spFilterOrigin, spFilterMatch, spFilterPreQuality, spFilterFormat, spFilterKhz, spFilterKbps, spFilterQuality, spFilterCutoff, spFilterDuration, spFilterBpm, spFilterKey, spFilterEnergy, spFilterDance, spFilterStatus, spSortField, spSortDir, selectedFormat]);
   const currentTrack = tracks.find((t2) => t2.id === selectedId) || tracks[0] || {};
   const selectedCount = tracks.filter((t2) => t2.selected).length;
   const allSelected = tracksFiltradosSp.length > 0 && tracksFiltradosSp.every((t2) => t2.selected);
@@ -11211,7 +11436,7 @@ const SpotifyWorkspace = ({
   const handleAnalizar = async (queryOverride = null) => {
     const queryToSearch = (typeof queryOverride === "string" ? queryOverride : spotifyUrl).trim();
     if (!queryToSearch) {
-      setDownloadingMsg("[AVISO] Introduce un artista, tema o URL de Spotify, o pulsa en una de las sugerencias r\xE1pidas.");
+      setDownloadingMsg("[AVISO] Introduce un artista, tema o URL, o pulsa en una de las sugerencias r\xE1pidas.");
       return;
     }
     if (typeof queryOverride === "string") {
@@ -11428,7 +11653,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           handleAnalizar();
         }
       },
-      placeholder: "Pega enlace de Spotify o busca por artista, \xE1lbum, canci\xF3n, g\xE9nero...",
+      placeholder: "Pega enlace de audio o busca por artista, \xE1lbum, canci\xF3n, g\xE9nero...",
       className: "bg-transparent px-3 py-1.5 text-xs text-white placeholder-gray-500 outline-none flex-1 min-w-[160px] font-mono"
     }
   ), spotifyUrl && /* @__PURE__ */ React.createElement(
@@ -11596,6 +11821,17 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     /* @__PURE__ */ React.createElement("span", null, f.label),
     /* @__PURE__ */ React.createElement("span", { className: `text-[8px] px-1 rounded font-normal ${selectedFormat === f.id ? "bg-black/25 text-black font-bold" : "bg-djzinc-800 text-djcyan-400"}` }, f.badge)
   ))), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setPoolColumnSelectorOpen(true),
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 ${poolColumnSelectorOpen ? "bg-djcyan-950 text-djcyan-300 border-djcyan-600/70 shadow-inner" : "bg-djzinc-900 text-gray-300 border-djzinc-750 hover:text-white hover:border-djzinc-650"}`,
+      title: "Personalizar columnas visibles de la tabla de Pool / Cat\xE1logo"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2699\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, "Columnas"),
+    /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-djcyan-400 font-mono font-bold" }, "(", Object.values(poolVisibleColumns).filter(Boolean).length, "/20)")
+  ), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setSpInspectorOpen((prev) => !prev),
@@ -11766,24 +12002,15 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         "\u2B07 MP3 320"
       )))
     );
-  }))))) : tracks.length === 0 && !isAnalyzing ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center p-6 bg-[#08080b] select-none overflow-y-auto" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-xl w-full mx-auto flex flex-col items-center justify-center gap-3.5 p-6 sm:p-8 rounded-2xl bg-[#0c0c12] border border-djzinc-800 shadow-2xl text-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-full bg-emerald-950/70 border border-emerald-500/60 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]" }, /* @__PURE__ */ React.createElement(Icons.Spotify, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white uppercase tracking-wider font-mono" }, "Spotify Ingest \u2022 Modo Standby"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-lg mx-auto text-center leading-relaxed whitespace-normal break-words px-2" }, "Escribe una b\xFAsqueda (artista, tema o g\xE9nero) o pega un enlace de Spotify en la barra superior. Tambi\xE9n puedes importar pistas de baja calidad desde ", /* @__PURE__ */ React.createElement("strong", { className: "text-amber-400 font-semibold" }, "Auditor\xEDa & DSP"), ' usando el bot\xF3n "\u{1F4E5} Reemplazos HD".'), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 pt-2 text-[11px] font-mono text-gray-500 whitespace-normal" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 shrink-0" }), /* @__PURE__ */ React.createElement("span", null, "Descargas Lossless FLAC / WAV \u2022 Certificaci\xF3n Espectral FFT")))) : /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-auto bg-[#08080b]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-8 text-center" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: allSelected, onChange: handleToggleSelectAll, className: "accent-djcyan-500 cursor-pointer" })), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-10 text-center" }, "PLAY"), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("title"), className: "py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors" }, t("th_title") || "T\xCDTULO", " / ", t("th_album") || "\xC1LBUM", " ", renderSortArrowSp("title")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("match_score"), className: "py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors", title: "Ordenar por porcentaje de coincidencia ac\xFAstica (Match %)" }, "\u{1F3AF} MATCH ", renderSortArrowSp("match_score")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("artist"), className: "py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors" }, t("th_artist") || "ARTISTA", " ", renderSortArrowSp("artist")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("genre"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_genre") || "G\xC9NERO", " ", renderSortArrowSp("genre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("subgenre"), className: "py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors" }, t("th_subgenre") || "SUBG\xC9NERO", " ", renderSortArrowSp("subgenre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("origin"), className: "py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors" }, "ORIGEN ", renderSortArrowSp("origin")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("pre_quality_tier"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors", title: "Pre-Auditor\xEDa de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena" }, "\u{1F48E} PRE-AUDITOR\xCDA (VALOR) ", renderSortArrowSp("pre_quality_tier")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("format"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_format") || "FORMATO", " ", renderSortArrowSp("format")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("sample_rate_khz"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_khz") || "KHZ", " ", renderSortArrowSp("sample_rate_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("bitrate_kbps"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, t("th_kbps") || "KBPS", " ", renderSortArrowSp("bitrate_kbps")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("calidad"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_quality") || "CALIDAD", " ", renderSortArrowSp("calidad")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("cutoff_khz"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" }, t("th_loss") || "P\xC9RDIDA / CORTE", " ", renderSortArrowSp("cutoff_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("duration"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_duration") || "DURACI\xD3N", " ", renderSortArrowSp("duration")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("bpm"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "BPM ", renderSortArrowSp("bpm")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("key"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "KEY ", renderSortArrowSp("key")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("energy"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, "\u26A1 ENERG\xCDA ", renderSortArrowSp("energy")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("danceability"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, "\u{1F57A} DANCE ", renderSortArrowSp("danceability")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("status"), className: "py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors" }, t("th_status") || "ESTADO", " / ", t("download_btn") || "ACCI\xD3N", " ", renderSortArrowSp("status"))), /* @__PURE__ */ React.createElement("tr", { className: "bg-[#07070a] border-b border-djzinc-800 text-[10px] lowercase font-sans" }, /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, spFilterSearch || spFilterMatch !== "ALL" || spFilterOrigin !== "ALL" || spFilterFormat !== "ALL" || spFilterQuality !== "ALL" || spFilterStatus !== "ALL" || spFilterEnergy !== "ALL" || spFilterDance !== "ALL" ? /* @__PURE__ */ React.createElement(
+  }))))) : tracks.length === 0 && !isAnalyzing ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center p-6 bg-[#08080b] select-none overflow-y-auto" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-xl w-full mx-auto flex flex-col items-center justify-center gap-3.5 p-6 sm:p-8 rounded-2xl bg-[#0c0c12] border border-djzinc-800 shadow-2xl text-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-full bg-emerald-950/70 border border-emerald-500/60 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]" }, /* @__PURE__ */ React.createElement(Icons.Spotify, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white uppercase tracking-wider font-mono" }, "Record Pool \u2022 Modo Standby"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-lg mx-auto text-center leading-relaxed whitespace-normal break-words px-2" }, "Escribe una b\xFAsqueda (artista, tema o g\xE9nero) o pega un enlace de audio en la barra superior. Tambi\xE9n puedes importar pistas de baja calidad desde ", /* @__PURE__ */ React.createElement("strong", { className: "text-amber-400 font-semibold" }, "Auditor\xEDa & DSP"), ' usando el bot\xF3n "\u{1F4E5} Reemplazos HD".'), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 pt-2 text-[11px] font-mono text-gray-500 whitespace-normal" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 shrink-0" }), /* @__PURE__ */ React.createElement("span", null, "Descargas Lossless FLAC / WAV \u2022 Certificaci\xF3n Espectral FFT")))) : /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-auto bg-[#08080b]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, poolVisibleColumns.select !== false && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-8 text-center" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: allSelected, onChange: handleToggleSelectAll, className: "accent-djcyan-500 cursor-pointer" })), poolVisibleColumns.play !== false && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-10 text-center" }, "PLAY"), poolVisibleColumns.title !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("title"), className: "py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors" }, t("th_title") || "T\xCDTULO", " / ", t("th_album") || "\xC1LBUM", " ", renderSortArrowSp("title")), poolVisibleColumns.match_score !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("match_score"), className: "py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors", title: "Ordenar por porcentaje de coincidencia ac\xFAstica (Match %)" }, "\u{1F3AF} MATCH ", renderSortArrowSp("match_score")), poolVisibleColumns.artist !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("artist"), className: "py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors" }, t("th_artist") || "ARTISTA", " ", renderSortArrowSp("artist")), poolVisibleColumns.genre !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("genre"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_genre") || "G\xC9NERO", " ", renderSortArrowSp("genre")), poolVisibleColumns.subgenre !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("subgenre"), className: "py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors" }, t("th_subgenre") || "SUBG\xC9NERO", " ", renderSortArrowSp("subgenre")), poolVisibleColumns.origin !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("origin"), className: "py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors" }, "ORIGEN ", renderSortArrowSp("origin")), poolVisibleColumns.pre_quality_tier !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("pre_quality_tier"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors", title: "Pre-Auditor\xEDa de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena" }, "\u{1F48E} PRE-AUDITOR\xCDA (VALOR) ", renderSortArrowSp("pre_quality_tier")), poolVisibleColumns.format !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("format"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_format") || "FORMATO", " ", renderSortArrowSp("format")), poolVisibleColumns.sample_rate_khz !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("sample_rate_khz"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_khz") || "KHZ", " ", renderSortArrowSp("sample_rate_khz")), poolVisibleColumns.bitrate_kbps !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("bitrate_kbps"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, t("th_kbps") || "KBPS", " ", renderSortArrowSp("bitrate_kbps")), poolVisibleColumns.calidad !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("calidad"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_quality") || "CALIDAD", " ", renderSortArrowSp("calidad")), poolVisibleColumns.cutoff_khz !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("cutoff_khz"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" }, t("th_loss") || "P\xC9RDIDA / CORTE", " ", renderSortArrowSp("cutoff_khz")), poolVisibleColumns.duration !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("duration"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_duration") || "DURACI\xD3N", " ", renderSortArrowSp("duration")), poolVisibleColumns.bpm !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("bpm"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "BPM ", renderSortArrowSp("bpm")), poolVisibleColumns.key !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("key"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "KEY ", renderSortArrowSp("key")), poolVisibleColumns.energy !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("energy"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, "\u26A1 ENERG\xCDA ", renderSortArrowSp("energy")), poolVisibleColumns.danceability !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("danceability"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, "\u{1F57A} DANCE ", renderSortArrowSp("danceability")), poolVisibleColumns.status !== false && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("status"), className: "py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors" }, t("th_status") || "ESTADO", " / ", t("download_btn") || "ACCI\xD3N", " ", renderSortArrowSp("status"))), /* @__PURE__ */ React.createElement("tr", { className: "bg-[#07070a] border-b border-djzinc-800 text-[10px] lowercase font-sans" }, poolVisibleColumns.select !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, hasActivePoolFilters ? /* @__PURE__ */ React.createElement(
     "button",
     {
-      onClick: () => {
-        setSpFilterSearch("");
-        setSpFilterMatch("ALL");
-        setSpFilterOrigin("ALL");
-        setSpFilterFormat("ALL");
-        setSpFilterQuality("ALL");
-        setSpFilterStatus("ALL");
-        setSpFilterEnergy("ALL");
-        setSpFilterDance("ALL");
-      },
-      title: "Limpiar filtros",
-      className: "text-amber-400 hover:text-white cursor-pointer"
+      onClick: handleClearAllPoolFilters,
+      title: "Limpiar todos los filtros de Pool",
+      className: "text-amber-400 hover:text-white cursor-pointer font-bold px-1 py-0.5 rounded bg-amber-950/40 border border-amber-700/60"
     },
-    "\u2715"
-  ) : "filtro"), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
+    "\u2715 Reset"
+  ) : "filtro"), poolVisibleColumns.play !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-600" }, "\u25B6"), poolVisibleColumns.title !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "text",
@@ -11792,99 +12019,187 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       placeholder: "Filtrar por t\xEDtulo o \xE1lbum...",
       className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
     }
-  )), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+  )), poolVisibleColumns.match_score !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
     "select",
     {
       value: spFilterMatch,
       onChange: (e) => setSpFilterMatch(e.target.value),
-      className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono",
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono",
       title: "Filtrar por coincidencia Match"
     },
     /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos Match"),
     /* @__PURE__ */ React.createElement("option", { value: "VERIFIED" }, "\u{1F3AF} \u226580%"),
     /* @__PURE__ */ React.createElement("option", { value: "DOUBTFUL" }, "\u26A0\uFE0F <80%"),
     /* @__PURE__ */ React.createElement("option", { value: "CRITICAL" }, "\u{1F6A8} <50%")
-  )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+  )), poolVisibleColumns.artist !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: spFilterArtist,
+      onChange: (e) => setSpFilterArtist(e.target.value),
+      placeholder: "Artista...",
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
+    }
+  )), poolVisibleColumns.genre !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: spFilterGenre,
+      onChange: (e) => setSpFilterGenre(e.target.value),
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos G\xE9neros"),
+    poolUniqueGenres.map((g) => /* @__PURE__ */ React.createElement("option", { key: g, value: g }, g))
+  )), poolVisibleColumns.subgenre !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: spFilterSubgenre,
+      onChange: (e) => setSpFilterSubgenre(e.target.value),
+      placeholder: "Subg\xE9nero...",
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+    }
+  )), poolVisibleColumns.origin !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
     "select",
     {
       value: spFilterOrigin,
       onChange: (e) => setSpFilterOrigin(e.target.value),
-      className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
     },
-    /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos"),
+    /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos Origen"),
+    /* @__PURE__ */ React.createElement("option", { value: "spotify" }, "\u{1F50D} B\xFAsqueda"),
     /* @__PURE__ */ React.createElement("option", { value: "audit_upgrade" }, "\u{1F504} Reemplazo HD"),
     /* @__PURE__ */ React.createElement("option", { value: "taxonomy" }, "\u{1F3F7}\uFE0F Taxonom\xEDa"),
-    /* @__PURE__ */ React.createElement("option", { value: "spotify" }, "\u{1F3A7} Spotify"),
-    /* @__PURE__ */ React.createElement("option", { value: "shazam" }, "\u26A1 Shazam")
-  )), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("option", { value: "shazam" }, "\u26A1 Radar")
+  )), poolVisibleColumns.pre_quality_tier !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
     "select",
     {
       value: spFilterPreQuality,
       onChange: (e) => setSpFilterPreQuality(e.target.value),
-      className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono",
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono",
       title: "Filtrar por pre-calificaci\xF3n de valor ac\xFAstico"
     },
     /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas"),
     /* @__PURE__ */ React.createElement("option", { value: "RECOMMENDED" }, "\u2B50 Recomendadas"),
-    /* @__PURE__ */ React.createElement("option", { value: "HI_RES" }, "\u{1F48E} Solo 24b Hi-Res"),
+    /* @__PURE__ */ React.createElement("option", { value: "HI_RES" }, "\u{1F48E} 24b Hi-Res"),
     /* @__PURE__ */ React.createElement("option", { value: "LOSSLESS" }, "\u{1F4BD} Lossless (16/24b)")
-  )), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+  )), poolVisibleColumns.format !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
     "select",
     {
       value: spFilterFormat,
       onChange: (e) => setSpFilterFormat(e.target.value),
-      className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
     },
     /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos"),
     /* @__PURE__ */ React.createElement("option", { value: "FLAC" }, "FLAC"),
-    /* @__PURE__ */ React.createElement("option", { value: "MP3" }, "MP3"),
-    /* @__PURE__ */ React.createElement("option", { value: "WAV" }, "WAV")
-  )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("option", { value: "WAV" }, "WAV"),
+    /* @__PURE__ */ React.createElement("option", { value: "AIFF" }, "AIFF"),
+    /* @__PURE__ */ React.createElement("option", { value: "MP3" }, "MP3")
+  )), poolVisibleColumns.sample_rate_khz !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: spFilterKhz,
+      onChange: (e) => setSpFilterKhz(e.target.value),
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "kHz..."),
+    /* @__PURE__ */ React.createElement("option", { value: "44" }, "44.1 kHz"),
+    /* @__PURE__ */ React.createElement("option", { value: "48" }, "48 kHz"),
+    /* @__PURE__ */ React.createElement("option", { value: "88" }, "88.2 kHz"),
+    /* @__PURE__ */ React.createElement("option", { value: "96" }, "96 kHz")
+  )), poolVisibleColumns.bitrate_kbps !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: spFilterKbps,
+      onChange: (e) => setSpFilterKbps(e.target.value),
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "kbps..."),
+    /* @__PURE__ */ React.createElement("option", { value: "LOSSLESS" }, "Lossless"),
+    /* @__PURE__ */ React.createElement("option", { value: "320" }, "320k")
+  )), poolVisibleColumns.calidad !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
     "select",
     {
       value: spFilterQuality,
       onChange: (e) => setSpFilterQuality(e.target.value),
-      className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
     },
     /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas"),
     /* @__PURE__ */ React.createElement("option", { value: "Alta" }, "Alta"),
     /* @__PURE__ */ React.createElement("option", { value: "Media" }, "Media"),
     /* @__PURE__ */ React.createElement("option", { value: "Baja" }, "Baja")
-  )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+  )), poolVisibleColumns.cutoff_khz !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: spFilterCutoff,
+      onChange: (e) => setSpFilterCutoff(e.target.value),
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Corte..."),
+    /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">20 kHz"),
+    /* @__PURE__ */ React.createElement("option", { value: "MED" }, "18-20 kHz"),
+    /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<18 kHz")
+  )), poolVisibleColumns.duration !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: spFilterDuration,
+      onChange: (e) => setSpFilterDuration(e.target.value),
+      placeholder: "Tiempo...",
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+    }
+  )), poolVisibleColumns.bpm !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: spFilterBpm,
+      onChange: (e) => setSpFilterBpm(e.target.value),
+      placeholder: "BPM...",
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+    }
+  )), poolVisibleColumns.key !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: spFilterKey,
+      onChange: (e) => setSpFilterKey(e.target.value),
+      placeholder: "Key (8A)...",
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+    }
+  )), poolVisibleColumns.energy !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
     "select",
     {
       value: spFilterEnergy,
       onChange: (e) => setSpFilterEnergy(e.target.value),
-      className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
     },
     /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas"),
-    /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta"),
-    /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media"),
-    /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja")
-  )), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80%"),
+    /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80%"),
+    /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65%")
+  )), poolVisibleColumns.danceability !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
     "select",
     {
       value: spFilterDance,
       onChange: (e) => setSpFilterDance(e.target.value),
-      className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
     },
     /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas"),
-    /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta"),
-    /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media"),
-    /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja")
-  )), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80%"),
+    /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80%"),
+    /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65%")
+  )), poolVisibleColumns.status !== false && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
     "select",
     {
       value: spFilterStatus,
       onChange: (e) => setSpFilterStatus(e.target.value),
-      className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+      className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
     },
     /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos"),
     /* @__PURE__ */ React.createElement("option", { value: "DOWNLOADED" }, "Descargado"),
     /* @__PURE__ */ React.createElement("option", { value: "PENDING" }, "Pendiente"),
     /* @__PURE__ */ React.createElement("option", { value: "LOSSLESS" }, "Lossless"),
     /* @__PURE__ */ React.createElement("option", { value: "FAKE" }, "FLAC Fake")
-  )))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltradosSp.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: "20", className: "py-12 text-center text-gray-500 font-mono text-xs whitespace-normal" }, "No hay pistas que coincidan con los filtros aplicados.")), tracksFiltradosSp.map((row) => {
+  )))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltradosSp.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: Object.values(poolVisibleColumns).filter(Boolean).length || 20, className: "py-12 text-center text-gray-500 font-mono text-xs whitespace-normal" }, "No hay pistas que coincidan con los filtros aplicados en el Record Pool.")), tracksFiltradosSp.map((row) => {
     const isSelectedRow = row.id === selectedId;
     const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
     const isFake = Boolean(row.es_fake || String(row.status || "").includes("Fake"));
@@ -11901,9 +12216,9 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         },
         className: `cursor-pointer select-none transition-colors ${isSelectedRow ? isAuditUpgrade ? "bg-amber-950/50 border-l-2 border-amber-400" : isTaxonomy ? "bg-emerald-950/50 border-l-2 border-emerald-400" : "bg-djcyan-950/35 border-l-2 border-djcyan-400" : isAuditUpgrade ? "bg-amber-950/20 border-l-2 border-amber-500/60 hover:bg-amber-950/40" : isTaxonomy ? "bg-emerald-950/20 border-l-2 border-emerald-500/60 hover:bg-emerald-950/40" : "hover:bg-[#101015]"}`
       },
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: row.selected, onChange: () => handleToggleRow(row.id), className: "accent-djcyan-500 cursor-pointer" })),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => handlePlayPreview(row, e) }, /* @__PURE__ */ React.createElement("button", { className: `w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isRowPlaying ? "bg-djcyan-500 text-black font-bold shadow-[0_0_8px_rgba(6,182,212,0.6)]" : "bg-[#181820] text-gray-400 hover:text-white hover:bg-djzinc-800"}` }, isRowPlaying ? "\u275A\u275A" : "\u25B6")),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("img", { src: getValidCover(row.cover), alt: "Cover", onError: (e) => {
+      poolVisibleColumns.select !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: row.selected, onChange: () => handleToggleRow(row.id), className: "accent-djcyan-500 cursor-pointer" })),
+      poolVisibleColumns.play !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => handlePlayPreview(row, e) }, /* @__PURE__ */ React.createElement("button", { className: `w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isRowPlaying ? "bg-djcyan-500 text-black font-bold shadow-[0_0_8px_rgba(6,182,212,0.6)]" : "bg-[#181820] text-gray-400 hover:text-white hover:bg-djzinc-800"}` }, isRowPlaying ? "\u275A\u275A" : "\u25B6")),
+      poolVisibleColumns.title !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("img", { src: getValidCover(row.cover), alt: "Cover", onError: (e) => {
         e.target.onerror = null;
         e.target.src = DEFAULT_VINYL_SVG;
       }, className: "w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 min-w-0" }, isAuditUpgrade && /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0", title: "Pista de reemplazo HD para audio de baja calidad" }), isTaxonomy && /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0", title: "Pista importada desde Taxonom\xEDa" }), /* @__PURE__ */ React.createElement("span", { className: `text-xs truncate max-w-sm ${isAuditUpgrade ? "font-bold text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.35)]" : isTaxonomy ? "font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]" : "font-semibold text-djcyan-400"}`, title: row.title }, row.title), isAuditUpgrade && /* @__PURE__ */ React.createElement("span", { className: "text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-900/90 text-amber-200 border border-amber-600/80 shrink-0" }, "REEMPLAZO HD"), isTaxonomy && /* @__PURE__ */ React.createElement("span", { className: "text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-600/70 shrink-0" }, "TAXONOM\xCDA")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate max-w-sm", title: row.album }, row.album), row.reemplazo_de && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap mt-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-amber-400/90 font-mono truncate max-w-[200px] flex items-center gap-1", title: row.reemplazo_de }, /* @__PURE__ */ React.createElement("span", null, "Sustituye a:"), " ", /* @__PURE__ */ React.createElement("span", { className: "underline decoration-amber-500/50" }, row.reemplazo_de)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
@@ -11925,7 +12240,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           title: "Escuchar audio oficial a descargar"
         },
         /* @__PURE__ */ React.createElement("span", null, nowPlayingTrack && (String(nowPlayingTrack.id) === String(row.id) || nowPlayingTrack.title === row.title) && isPlaying ? "\u23F8\uFE0F" : "\u2601\uFE0F"),
-        /* @__PURE__ */ React.createElement("span", null, "Spotify")
+        /* @__PURE__ */ React.createElement("span", null, "Cat\xE1logo")
       ))), row.match_score !== void 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-0.5" }, row.match_score >= 80 ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-600/70 inline-flex items-center gap-1 shadow-sm" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3AF}"), " ", /* @__PURE__ */ React.createElement("span", null, row.match_score, "% Match Verificado")) : /* @__PURE__ */ React.createElement(
         "button",
         {
@@ -11949,13 +12264,13 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
             handleAbrirVerificacionCandidatos(row);
           },
           className: "text-[9px] font-mono text-gray-400 hover:text-white underline cursor-pointer",
-          title: "Ver otras versiones encontradas en Spotify / Apple Music"
+          title: "Ver otras versiones encontradas en el Cat\xE1logo Oficial"
         },
         "(",
         row.candidatos_alternativos.length,
         " opciones)"
       ))))),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-center", onClick: (e) => e.stopPropagation() }, row.match_score !== void 0 ? row.match_score >= 80 ? /* @__PURE__ */ React.createElement(
+      poolVisibleColumns.match_score !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-center", onClick: (e) => e.stopPropagation() }, row.match_score !== void 0 ? row.match_score >= 80 ? /* @__PURE__ */ React.createElement(
         "span",
         {
           className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/80 shadow-[0_0_8px_rgba(16,185,129,0.3)] inline-flex items-center gap-1 cursor-pointer hover:border-emerald-400 transition-colors",
@@ -11976,34 +12291,34 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         /* @__PURE__ */ React.createElement("span", null, row.match_score, "%"),
         /* @__PURE__ */ React.createElement("span", { className: "text-[8px] underline" }, "Cambiar")
       ) : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono" }, "100%")),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-gray-300 text-xs truncate max-w-xs" }, row.artist),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[95px] inline-block shadow-sm", title: row.genre || "House" }, row.genre || "House")),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block", title: row.subgenre || (TAXONOMY_TREE[row.genre || "Tech House"] ? TAXONOMY_TREE[row.genre || "Tech House"][0] : "Tech House") }, row.subgenre || (TAXONOMY_TREE[row.genre || "Tech House"] ? TAXONOMY_TREE[row.genre || "Tech House"][0] : "Tech House"))),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-center" }, row.origin === "audit_upgrade" ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-600/80 shadow-[0_0_8px_rgba(245,158,11,0.35)] inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F504}"), /* @__PURE__ */ React.createElement("span", null, "Reemplazo HD")) : row.origin === "taxonomy" ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/80 shadow-[0_0_8px_rgba(16,185,129,0.35)] inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3F7}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, "Taxonom\xEDa")) : row.origin === "shazam" ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-blue-950 text-blue-300 border border-blue-600 inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u26A1"), /* @__PURE__ */ React.createElement("span", null, "Shazam")) : /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-djzinc-850 text-djcyan-300 border border-djzinc-750 inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7}"), /* @__PURE__ */ React.createElement("span", null, "Spotify"))),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-1 max-w-[170px] mx-auto", title: row.pre_detail || "Diagn\xF3stico preventivo de calidad ac\xFAstica" }, /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold border inline-flex items-center gap-1 shadow-sm ${row.pre_quality_tier === "HI_RES_24B" || !row.pre_quality_tier && String(row.title || "").toLowerCase().includes("extended") ? "bg-djcyan-950 text-djcyan-300 border-djcyan-500/70 shadow-[0_0_8px_rgba(6,182,212,0.35)]" : row.pre_quality_tier === "LOW_RES" || row.pre_worth_it === false ? "bg-red-950/70 text-red-300 border-red-800" : "bg-emerald-950/70 text-emerald-300 border-emerald-600/70"}` }, /* @__PURE__ */ React.createElement("span", null, row.pre_badge || (String(row.title || "").toLowerCase().includes("extended") ? "\u{1F48E} Hi-Res 24b" : "\u{1F4BD} Lossless 16b"))), /* @__PURE__ */ React.createElement("span", { className: `text-[9.5px] font-mono font-bold flex items-center gap-1 ${row.pre_worth_it === false ? "text-amber-400" : "text-emerald-400"}` }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full inline-block", style: { backgroundColor: row.pre_worth_it === false ? "#f59e0b" : "#10b981" } }), /* @__PURE__ */ React.createElement("span", null, row.pre_verdict_short || (row.pre_worth_it === false ? "No vale la pena" : "\xA1Vale la pena!"))))),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-djcyan-400 border border-djzinc-750" }, row.format || (selectedFormat || "flac").toUpperCase())),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-300" }, row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : row.downloaded ? "44.1 kHz" : "--"),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-300" }, row.bitrate_kbps ? `${row.bitrate_kbps} kbps` : row.downloaded ? selectedFormat === "mp3" ? "320 kbps" : "1062 kbps" : "--"),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, row.downloaded ? /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${isFake ? "bg-red-950 text-red-400 border-red-800" : String(row.calidad || "").includes("Alta") || String(row.calidad || "").includes("Hi-Res") ? "bg-emerald-950/80 text-emerald-400 border-emerald-800" : String(row.calidad || "").includes("Media") ? "bg-amber-950/80 text-amber-400 border-amber-800" : "bg-red-950/80 text-red-400 border-red-800"}` }, row.calidad || (isFake ? "Baja" : "Alta")) : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "Pendiente")),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center" }, row.downloaded ? isFake ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800", title: `Corte espectral a ${row.cutoff_khz || "--"}kHz` }, "\u26A0\uFE0F Transcode (", row.perdida_pct || 0, "%)") : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60", title: `Corte a ${row.cutoff_khz || 22.05}kHz` }, row.perdida === "Sin P\xE9rdida" ? "Sin P\xE9rdida" : row.perdida || "Sin P\xE9rdida") : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "--")),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-gray-400 text-xs" }, row.duration),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "bg-[#14141c] text-gray-200 px-1.5 py-0.5 rounded text-[11px] font-mono border border-djzinc-800" }, row.bpm)),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-mono font-bold text-xs" }, row.key)),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\u26A1"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${(row.energy || row.e || 75) >= 82 ? "text-red-400" : (row.energy || row.e || 75) >= 68 ? "text-amber-400" : "text-djcyan-400"}` }, row.energy || row.e || 75, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+      poolVisibleColumns.artist !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-gray-300 text-xs truncate max-w-xs" }, row.artist),
+      poolVisibleColumns.genre !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[95px] inline-block shadow-sm", title: row.genre || "House" }, row.genre || "House")),
+      poolVisibleColumns.subgenre !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block", title: row.subgenre || (TAXONOMY_TREE[row.genre || "Tech House"] ? TAXONOMY_TREE[row.genre || "Tech House"][0] : "Tech House") }, row.subgenre || (TAXONOMY_TREE[row.genre || "Tech House"] ? TAXONOMY_TREE[row.genre || "Tech House"][0] : "Tech House"))),
+      poolVisibleColumns.origin !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-center" }, row.origin === "audit_upgrade" ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-600/80 shadow-[0_0_8px_rgba(245,158,11,0.35)] inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F504}"), /* @__PURE__ */ React.createElement("span", null, "Reemplazo HD")) : row.origin === "taxonomy" ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/80 shadow-[0_0_8px_rgba(16,185,129,0.35)] inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3F7}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, "Taxonom\xEDa")) : row.origin === "shazam" ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-blue-950 text-blue-300 border border-blue-600 inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u26A1"), /* @__PURE__ */ React.createElement("span", null, "Radar")) : /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-djzinc-850 text-djcyan-300 border border-djzinc-750 inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F50D}"), /* @__PURE__ */ React.createElement("span", null, "B\xFAsqueda"))),
+      poolVisibleColumns.pre_quality_tier !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-1 max-w-[170px] mx-auto", title: row.pre_detail || "Diagn\xF3stico preventivo de calidad ac\xFAstica" }, /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold border inline-flex items-center gap-1 shadow-sm ${row.pre_quality_tier === "HI_RES_24B" || !row.pre_quality_tier && String(row.title || "").toLowerCase().includes("extended") ? "bg-djcyan-950 text-djcyan-300 border-djcyan-500/70 shadow-[0_0_8px_rgba(6,182,212,0.35)]" : row.pre_quality_tier === "LOW_RES" || row.pre_worth_it === false ? "bg-red-950/70 text-red-300 border-red-800" : "bg-emerald-950/70 text-emerald-300 border-emerald-600/70"}` }, /* @__PURE__ */ React.createElement("span", null, row.pre_badge || (String(row.title || "").toLowerCase().includes("extended") ? "\u{1F48E} Hi-Res 24b" : "\u{1F4BD} Lossless 16b"))), /* @__PURE__ */ React.createElement("span", { className: `text-[9.5px] font-mono font-bold flex items-center gap-1 ${row.pre_worth_it === false ? "text-amber-400" : "text-emerald-400"}` }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full inline-block", style: { backgroundColor: row.pre_worth_it === false ? "#f59e0b" : "#10b981" } }), /* @__PURE__ */ React.createElement("span", null, row.pre_verdict_short || (row.pre_worth_it === false ? "No vale la pena" : "\xA1Vale la pena!"))))),
+      poolVisibleColumns.format !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-djcyan-400 border border-djzinc-750" }, row.format || (selectedFormat || "flac").toUpperCase())),
+      poolVisibleColumns.sample_rate_khz !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-300" }, row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : row.downloaded ? "44.1 kHz" : "--"),
+      poolVisibleColumns.bitrate_kbps !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-300" }, row.bitrate_kbps ? `${row.bitrate_kbps} kbps` : row.downloaded ? selectedFormat === "mp3" ? "320 kbps" : "1062 kbps" : "--"),
+      poolVisibleColumns.calidad !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, row.downloaded ? /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${isFake ? "bg-red-950 text-red-400 border-red-800" : String(row.calidad || "").includes("Alta") || String(row.calidad || "").includes("Hi-Res") ? "bg-emerald-950/80 text-emerald-400 border-emerald-800" : String(row.calidad || "").includes("Media") ? "bg-amber-950/80 text-amber-400 border-amber-800" : "bg-red-950/80 text-red-400 border-red-800"}` }, row.calidad || (isFake ? "Baja" : "Alta")) : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "Pendiente")),
+      poolVisibleColumns.cutoff_khz !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center" }, row.downloaded ? isFake ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800", title: `Corte espectral a ${row.cutoff_khz || "--"}kHz` }, "\u26A0\uFE0F Transcode (", row.perdida_pct || 0, "%)") : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60", title: `Corte a ${row.cutoff_khz || 22.05}kHz` }, row.perdida === "Sin P\xE9rdida" ? "Sin P\xE9rdida" : row.perdida || "Sin P\xE9rdida") : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "--")),
+      poolVisibleColumns.duration !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-gray-400 text-xs" }, row.duration),
+      poolVisibleColumns.bpm !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "bg-[#14141c] text-gray-200 px-1.5 py-0.5 rounded text-[11px] font-mono border border-djzinc-800" }, row.bpm)),
+      poolVisibleColumns.key !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-mono font-bold text-xs" }, row.key)),
+      poolVisibleColumns.energy !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\u26A1"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${(row.energy || row.e || 75) >= 82 ? "text-red-400" : (row.energy || row.e || 75) >= 68 ? "text-amber-400" : "text-djcyan-400"}` }, row.energy || row.e || 75, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
         "div",
         {
           className: `h-full rounded-full ${(row.energy || row.e || 75) >= 82 ? "bg-gradient-to-r from-amber-500 to-red-500" : (row.energy || row.e || 75) >= 68 ? "bg-gradient-to-r from-yellow-400 to-amber-500" : "bg-gradient-to-r from-cyan-400 to-blue-500"}`,
           style: { width: `${Math.min(100, Math.max(10, row.energy || row.e || 75))}%` }
         }
       )))),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\u{1F57A}"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-purple-300" }, row.danceability || row.dance || 82, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+      poolVisibleColumns.danceability !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\u{1F57A}"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-purple-300" }, row.danceability || row.dance || 82, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
         "div",
         {
           className: "h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500",
           style: { width: `${Math.min(100, Math.max(10, row.danceability || row.dance || 82))}%` }
         }
       )))),
-      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, row.downloaded ? isFake ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse", title: "\xA1Alerta! Falso FLAC con corte lossy previo" }, "FLAC FAKE") : /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 shadow", title: `Corte detectado: ${row.cutoff_khz || 22.05}kHz` }, row.status || "FLAC VERDADERO") : row.download_error ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-rose-950 text-rose-300 border border-rose-800", title: row.download_error }, "\u26A0\uFE0F Error"), /* @__PURE__ */ React.createElement(
+      poolVisibleColumns.status !== false && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, row.downloaded ? isFake ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse", title: "\xA1Alerta! Falso FLAC con corte lossy previo" }, "FLAC FAKE") : /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 shadow", title: `Corte detectado: ${row.cutoff_khz || 22.05}kHz` }, row.status || "FLAC VERDADERO") : row.download_error ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-rose-950 text-rose-300 border border-rose-800", title: row.download_error }, "\u26A0\uFE0F Error"), /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: () => lanzarDescargaReal([row]),
@@ -12033,12 +12348,12 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           type: "button",
           onClick: () => handleAbrirVerificacionCandidatos(row),
           className: "px-2 py-1 rounded text-[10px] font-mono font-bold text-gray-400 hover:text-djcyan-300 bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-750 cursor-pointer transition-colors",
-          title: "Verificar candidatos de streaming o buscar versi\xF3n alternativa manualmente"
+          title: "Verificar candidatos o buscar versi\xF3n alternativa manualmente"
         },
         "\u{1F50D} Versiones"
       ))))
     );
-  }))))), spInspectorOpen && currentTrack && /* @__PURE__ */ React.createElement("aside", { key: currentTrack ? currentTrack.id : "sp_none", className: "w-96 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-20 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Spotify, null), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs uppercase tracking-wider text-djcyan-400" }, "Spotify Ingest Inspector")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded" }, "ID #", currentTrack.id || "--"), /* @__PURE__ */ React.createElement(
+  }))))), spInspectorOpen && currentTrack && /* @__PURE__ */ React.createElement("aside", { key: currentTrack ? currentTrack.id : "sp_none", className: "w-96 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-20 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Spotify, null), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs uppercase tracking-wider text-djcyan-400" }, "Record Pool Inspector")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded" }, "ID #", currentTrack.id || "--"), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setSpInspectorOpen(false),
@@ -12092,7 +12407,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F171}\uFE0F"),
     " ",
-    /* @__PURE__ */ React.createElement("span", null, "Versi\xF3n Descarga (Spotify/Apple)"),
+    /* @__PURE__ */ React.createElement("span", null, "Versi\xF3n Descarga (Cat\xE1logo Oficial)"),
     ((_b = candidateModal.candidates) == null ? void 0 : _b.some((c) => isTrackCandPlaying(c))) && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-black animate-ping" })
   )), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 hidden md:block" }, "\u{1F4A1} Compara A vs B para comprobar que intro, remix y mezcla sean exactamente iguales")), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-3 top-2.5 text-gray-500 text-xs" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement(
     "input",
@@ -12167,7 +12482,184 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       className: "px-4 py-1.5 rounded-lg text-xs bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 hover:text-white transition-colors cursor-pointer"
     },
     "Cerrar"
-  )))));
+  )))), poolColumnSelectorOpen && ReactDOM.createPortal(
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn",
+        onClick: () => {
+          setPoolColumnSelectorOpen(false);
+          setPoolColumnSearchText("");
+        }
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden text-gray-200",
+          onClick: (e) => e.stopPropagation()
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" }, "\u2699\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider" }, "Columnas de Record Pool & Cat\xE1logo"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black" }, Object.values(poolVisibleColumns).filter(Boolean).length, " de 20 activas")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans mt-0.5" }, "Personaliza las columnas visibles en la tabla del Record Pool seg\xFAn tu flujo de b\xFAsqueda, pre-auditor\xEDa o descarga DJ."))), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setPoolColumnSelectorOpen(false);
+              setPoolColumnSearchText("");
+            },
+            className: "w-9 h-9 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-750 flex items-center justify-center cursor-pointer transition-colors text-sm font-bold shadow-sm",
+            title: "Cerrar modal (Esc)"
+          },
+          "\u2715"
+        )),
+        /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800/80 bg-[#080910] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 max-w-md" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-3 top-2.5 text-xs text-gray-400" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: poolColumnSearchText,
+            onChange: (e) => setPoolColumnSearchText(e.target.value),
+            placeholder: "Buscar columna en Pool (ej. match, bpm, origen, formato)...",
+            className: "w-full pl-8 pr-8 py-2 bg-djzinc-900 border border-djzinc-750 rounded-xl text-xs font-mono text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500/70 focus:ring-1 focus:ring-djcyan-500/40 transition-all"
+          }
+        ), poolColumnSearchText && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setPoolColumnSearchText(""),
+            className: "absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-white cursor-pointer"
+          },
+          "\u2715"
+        )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 uppercase font-bold shrink-0" }, "Presets:"), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setPoolColumnPreset("all"),
+            className: "px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u{1F441}\uFE0F Ver Todas (20)"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setPoolColumnPreset("dj"),
+            className: "px-2.5 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u26A1 Cabina DJ"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setPoolColumnPreset("quality"),
+            className: "px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u{1F52C} Pureza Sonora"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setPoolColumnPreset("essential"),
+            className: "px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u{1F3F7}\uFE0F Esencial"
+        ))),
+        /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar" }, POOL_COLUMN_CATEGORIES.map((cat) => {
+          const q = (poolColumnSearchText || "").trim().toLowerCase();
+          const matchingCols = cat.columns.filter((col) => {
+            if (!q) return true;
+            return col.label.toLowerCase().includes(q) || col.key.toLowerCase().includes(q) || col.desc.toLowerCase().includes(q);
+          });
+          if (q && matchingCols.length === 0) return null;
+          const activeInCat = matchingCols.filter((c) => poolVisibleColumns[c.key]).length;
+          return /* @__PURE__ */ React.createElement("div", { key: cat.id, className: "p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-base" }, cat.icon), /* @__PURE__ */ React.createElement("span", { className: `font-mono text-xs font-black uppercase tracking-wider ${cat.color}` }, cat.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 font-bold" }, "(", activeInCat, "/", matchingCols.length, ")")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => {
+                const next = { ...poolVisibleColumns };
+                matchingCols.forEach((c) => {
+                  next[c.key] = true;
+                });
+                setPoolVisibleColumns(next);
+                try {
+                  localStorage.setItem("bw_pool_visible_columns", JSON.stringify(next));
+                } catch (_) {
+                }
+              },
+              className: "text-djcyan-400 hover:text-djcyan-300 cursor-pointer hover:underline"
+            },
+            "Todas"
+          ), /* @__PURE__ */ React.createElement("span", { className: "text-gray-600" }, "/"), /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => {
+                const next = { ...poolVisibleColumns };
+                matchingCols.forEach((c) => {
+                  next[c.key] = false;
+                });
+                setPoolVisibleColumns(next);
+                try {
+                  localStorage.setItem("bw_pool_visible_columns", JSON.stringify(next));
+                } catch (_) {
+                }
+              },
+              className: "text-gray-500 hover:text-gray-300 cursor-pointer hover:underline"
+            },
+            "Ninguna"
+          ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" }, matchingCols.map((col) => {
+            const isChecked = Boolean(poolVisibleColumns[col.key]);
+            return /* @__PURE__ */ React.createElement(
+              "label",
+              {
+                key: col.key,
+                className: `flex items-start justify-between p-2 rounded-lg border transition-all cursor-pointer select-none ${isChecked ? "bg-djzinc-850/80 border-djzinc-700/80 text-white" : "bg-djzinc-950/40 border-djzinc-850/60 text-gray-500 hover:border-djzinc-800"}`
+              },
+              /* @__PURE__ */ React.createElement("div", { className: "flex flex-col pr-2" }, /* @__PURE__ */ React.createElement("span", { className: `text-xs font-mono font-bold ${isChecked ? "text-white" : "text-gray-400"}` }, col.label), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-gray-400 font-sans leading-tight mt-0.5" }, col.desc)),
+              /* @__PURE__ */ React.createElement(
+                "input",
+                {
+                  type: "checkbox",
+                  checked: isChecked,
+                  onChange: () => togglePoolColumnVisibility(col.key),
+                  className: "accent-djcyan-400 w-4 h-4 rounded cursor-pointer mt-0.5 shrink-0"
+                }
+              )
+            );
+          })));
+        })),
+        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex items-center justify-between flex-wrap gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setPoolColumnPreset("reset"),
+            className: "px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u21BA Restablecer por Defecto"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setPoolColumnPreset("none"),
+            className: "px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-400 hover:text-white border border-djzinc-750 text-xs font-mono cursor-pointer transition-all active:scale-95"
+          },
+          "Deseleccionar Todas"
+        )), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setPoolColumnSelectorOpen(false);
+              setPoolColumnSearchText("");
+            },
+            className: "px-5 py-2 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95"
+          },
+          "\u2713 Aplicar y Guardar (",
+          Object.values(poolVisibleColumns).filter(Boolean).length,
+          " Activas)"
+        ))
+      )
+    ),
+    document.body
+  ));
 };
 const TaxonomyWorkspace = ({
   tracks = [],
@@ -12557,7 +13049,7 @@ const TaxonomyWorkspace = ({
     const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
     if (addFn) {
       addFn([trk], "taxonomy");
-      setFeedbackMsg(`\u2713 "${trk.displayTitle || trk.title}" a\xF1adido a Descargas (Spotify Ingest). Redirigiendo a descargas...`);
+      setFeedbackMsg(`\u2713 "${trk.displayTitle || trk.title}" a\xF1adido a Descargas (Record Pool). Redirigiendo a descargas...`);
     } else if (onSendToSpotify) {
       onSendToSpotify(trk.displayTitle || trk.title);
     } else if (onNavigateTab) {
@@ -12570,7 +13062,7 @@ const TaxonomyWorkspace = ({
     const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
     if (addFn) {
       addFn(seleccionadas, "taxonomy");
-      setFeedbackMsg(`\u2713 ${seleccionadas.length} pista(s) seleccionadas a\xF1adidas a Descargas (Spotify Ingest). Redirigiendo a descargas...`);
+      setFeedbackMsg(`\u2713 ${seleccionadas.length} pista(s) seleccionadas a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
     } else if (onNavigateTab) {
       onNavigateTab("spotify");
     }
@@ -12580,7 +13072,7 @@ const TaxonomyWorkspace = ({
     const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
     if (addFn) {
       addFn(searchResults, "taxonomy");
-      setFeedbackMsg(`\u2713 ${searchResults.length} pista(s) a\xF1adidas a Descargas (Spotify Ingest). Redirigiendo a descargas...`);
+      setFeedbackMsg(`\u2713 ${searchResults.length} pista(s) a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
     } else if (onNavigateTab) {
       onNavigateTab("spotify");
     }
@@ -13172,7 +13664,7 @@ const TaxonomyWorkspace = ({
       disabled: selectedTaxIds.size === 0,
       onClick: handleAnadirSeleccionadasADescargas,
       className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${selectedTaxIds.size > 0 ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.4)] active:scale-95" : "bg-djzinc-850 text-gray-500 border border-djzinc-750 cursor-not-allowed opacity-40"}`,
-      title: "A\xF1adir pistas seleccionadas a la cola de descargas en Spotify Ingest"
+      title: "A\xF1adir pistas seleccionadas a la cola de descargas del Record Pool"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4E5}"),
     /* @__PURE__ */ React.createElement("span", null, "A\xF1adir Seleccionadas (", selectedTaxIds.size, ")")
@@ -13183,7 +13675,7 @@ const TaxonomyWorkspace = ({
       disabled: searchResults.length === 0,
       onClick: handleAnadirTodasADescargas,
       className: "px-3 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white border border-emerald-500 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
-      title: "A\xF1adir todas las pistas de esta b\xFAsqueda a la cola de descargas en Spotify Ingest"
+      title: "A\xF1adir todas las pistas de esta b\xFAsqueda a la cola de descargas del Record Pool"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4E5}"),
     /* @__PURE__ */ React.createElement("span", null, "A\xF1adir Todas (", searchResults.length, ")")
@@ -13205,7 +13697,7 @@ const TaxonomyWorkspace = ({
     },
     /* @__PURE__ */ React.createElement("span", null, "\u229E"),
     " Mosaico"
-  )))), searchResults.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-8 border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-900/30 text-center space-y-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-3xl" }, "\u{1F50E}"), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "No se encontraron temas coincidentes"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-md mx-auto" }, 'No hay pistas que cumplan los criterios de "', aiQuery, '". Puedes pulsar ', /* @__PURE__ */ React.createElement("strong", null, "Buscar Temas"), " para rastrear en el Record Pool Online o descargarlas en SuperFLAC / Spotify Ingest."), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-2 pt-2" }, /* @__PURE__ */ React.createElement(
+  )))), searchResults.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-8 border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-900/30 text-center space-y-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-3xl" }, "\u{1F50E}"), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "No se encontraron temas coincidentes"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-md mx-auto" }, 'No hay pistas que cumplan los criterios de "', aiQuery, '". Puedes pulsar ', /* @__PURE__ */ React.createElement("strong", null, "Buscar Temas"), " para rastrear en el Record Pool Online o descargarlas en SuperFLAC / Record Pool."), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-2 pt-2" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -13231,7 +13723,7 @@ const TaxonomyWorkspace = ({
       onClick: () => onSendToSpotify(aiQuery),
       className: "px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-bold shadow-md cursor-pointer"
     },
-    "\u{1F310} Ingestar desde SuperFLAC / Spotify \u2192"
+    "\u{1F310} Ingestar desde SuperFLAC / Record Pool \u2192"
   ))) : displayMode === "table" ? (
     /* VISTA DE TABLA CON ORDENACIÓN Y FILTROS EN CABECERA */
     /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto rounded-xl border border-djzinc-800 bg-[#07070a] shadow-lg" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-8 text-center" }, /* @__PURE__ */ React.createElement(
@@ -13398,7 +13890,7 @@ const TaxonomyWorkspace = ({
           {
             onClick: () => handleAnadirADescargas(trk),
             className: "px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-[10px] cursor-pointer shadow flex items-center gap-1 transition-all active:scale-95",
-            title: "A\xF1adir pista a la cola de descargas en Spotify Ingest"
+            title: "A\xF1adir pista a la cola de descargas del Record Pool"
           },
           /* @__PURE__ */ React.createElement("span", null, "\u{1F4E5}"),
           /* @__PURE__ */ React.createElement("span", null, "A\xF1adir a Descargas")
@@ -13410,9 +13902,9 @@ const TaxonomyWorkspace = ({
               else if (onNavigateTab) onNavigateTab("spotify");
             },
             className: "px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer",
-            title: "Buscar en Spotify Ingest"
+            title: "Buscar en el Record Pool"
           },
-          "\u{1F50D} Spotify"
+          "\u{1F50D} Pool"
         ) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: () => handleAsignarACrateIndividual(trk), className: "px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer", title: "Rutar a Crate" }, "\u{1F4C1} Crate"), isLocal && /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -13514,7 +14006,7 @@ const TaxonomyWorkspace = ({
             type: "button",
             onClick: () => handleAnadirADescargas(trk),
             className: "py-1 px-2.5 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-transform active:scale-95 shadow",
-            title: "A\xF1adir a la cola de descargas en Spotify Ingest"
+            title: "A\xF1adir a la cola de descargas del Record Pool"
           },
           /* @__PURE__ */ React.createElement("span", null, "\u{1F4E5}"),
           /* @__PURE__ */ React.createElement("span", null, "A\xF1adir a Descargas")
@@ -13536,7 +14028,7 @@ const TaxonomyWorkspace = ({
               else if (onNavigateTab) onNavigateTab("spotify");
             },
             className: "py-1 px-2 rounded bg-purple-950/80 hover:bg-purple-900 border border-purple-500/70 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors shadow",
-            title: "Descargar versi\xF3n HQ/FLAC en SuperFLAC / Spotify Ingest"
+            title: "Descargar versi\xF3n HQ/FLAC en SuperFLAC / Record Pool"
           },
           /* @__PURE__ */ React.createElement("span", null, "\u{1F4E5}"),
           /* @__PURE__ */ React.createElement("span", null, "SuperFLAC")
@@ -13568,7 +14060,7 @@ const TaxonomyWorkspace = ({
         )))
       );
     }))
-  ), /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-gradient-to-r from-djzinc-900 via-djzinc-900 to-djcyan-950/40 border border-djzinc-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-2xl" }, "\u{1F310}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white uppercase tracking-wider font-mono" }, "\xBFBuscas canciones que no est\xE1n en tu biblioteca local?"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, "Explora y descarga temas por taxonom\xEDa en SuperFLAC / Spotify Ingest con car\xE1tula en alta definici\xF3n y tags autom\xE1ticos."))), /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-gradient-to-r from-djzinc-900 via-djzinc-900 to-djcyan-950/40 border border-djzinc-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-2xl" }, "\u{1F310}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white uppercase tracking-wider font-mono" }, "\xBFBuscas canciones que no est\xE1n en tu biblioteca local?"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, "Explora y descarga temas por taxonom\xEDa en SuperFLAC / Record Pool con car\xE1tula en alta definici\xF3n y tags autom\xE1ticos."))), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -13578,7 +14070,7 @@ const TaxonomyWorkspace = ({
       },
       className: "px-3.5 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded-lg shadow-md cursor-pointer transition-all active:scale-95 shrink-0"
     },
-    "Ingestar en Spotify / SuperFLAC \u2192"
+    "Ingestar en Record Pool / SuperFLAC \u2192"
   )))), activeSubView === "routing" && /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-5 border-b border-djzinc-800 bg-djzinc-950 shrink-0 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Ruteo F\xEDsico de Biblioteca a Crates Serato / Rekordbox"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 px-2 py-0.5 rounded font-mono font-bold" }, "2-TIER CRATES")), /* @__PURE__ */ React.createElement("p", { className: "text-gray-400 text-xs" }, "Clasificaci\xF3n jer\xE1rquica en dos niveles (G\xE9nero Ra\xEDz \u27A1 Subg\xE9nero Estilo) con ruteo f\xEDsico a carpetas y crates de Serato DJ Pro y Rekordbox.")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -13872,7 +14364,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `BeatWave_Shazam_Apuntes_${Date.now()}.xls`;
+    link.download = `BeatWave_Radar_Apuntes_${Date.now()}.xls`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -13894,7 +14386,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
       }
     }
     let txt = "====================================================\n";
-    txt += "BEATWAVE PRO \u2022 LIBRETA DIGITAL DE APUNTES SHAZAM\n";
+    txt += "BEATWAVE PRO \u2022 LIBRETA DIGITAL DE APUNTES RADAR\n";
     txt += `Fecha: ${(/* @__PURE__ */ new Date()).toLocaleString()}
 `;
     txt += `Total pistas: ${notebookTracks.length}
@@ -13913,7 +14405,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `BeatWave_Shazam_Tracklist_${Date.now()}.txt`;
+    link.download = `BeatWave_Radar_Tracklist_${Date.now()}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -14018,7 +14510,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
   };
   const executeRecognition = async (base64Data, filename) => {
     setIsAnalyzing(true);
-    const engineLabel = selectedEngine === "hybrid" ? "Modo H\xEDbrido" : selectedEngine === "audd" ? "AudD API" : "ShazamIO Smart";
+    const engineLabel = selectedEngine === "hybrid" ? "Modo H\xEDbrido" : selectedEngine === "audd" ? "Identificaci\xF3n Pro" : "Escaneo Espectral Smart";
     setStatusMsg(`Consultando huella ac\xFAstica en [${engineLabel}]...`);
     try {
       let res = null;
@@ -14334,13 +14826,13 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     alert(`Copiado al portapapeles:
 ${text}`);
   };
-  return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col h-full w-full bg-[#040407] overflow-y-auto p-4 sm:p-6 text-gray-200 space-y-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-djzinc-800 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 via-djcyan-500 to-indigo-500 p-0.5 shadow-lg shadow-djcyan-500/20 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-full h-full bg-[#08080d] rounded-[10px] flex items-center justify-center text-djcyan-400" }, /* @__PURE__ */ React.createElement(Icons.Radar, null))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h2", { className: "text-lg font-black text-white tracking-wide" }, "RADAR AC\xDASTICO BEATWAVE"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 text-[9px] font-mono font-bold bg-gradient-to-r from-blue-950 to-indigo-950 text-djcyan-400 border border-djcyan-800/80 rounded shadow" }, selectedEngine === "hybrid" ? "\u26A1 Modo H\xEDbrido Pro (Shazam + AudD)" : selectedEngine === "audd" ? "\u{1F7E3} AudD Music API" : "\u{1F535} ShazamIO Smart Drop")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio."))), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-djcyan-400 animate-pulse" : "bg-djgreen-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#08080f] border border-djzinc-800 rounded-2xl p-3.5 shadow-xl space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-bold text-gray-400 uppercase tracking-wider" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1 bg-djzinc-900 p-1 rounded-xl border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col h-full w-full bg-[#040407] overflow-y-auto p-4 sm:p-6 text-gray-200 space-y-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-djzinc-800 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 via-djcyan-500 to-indigo-500 p-0.5 shadow-lg shadow-djcyan-500/20 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-full h-full bg-[#08080d] rounded-[10px] flex items-center justify-center text-djcyan-400" }, /* @__PURE__ */ React.createElement(Icons.Radar, null))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h2", { className: "text-lg font-black text-white tracking-wide" }, "RADAR AC\xDASTICO BEATWAVE"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 text-[9px] font-mono font-bold bg-gradient-to-r from-blue-950 to-indigo-950 text-djcyan-400 border border-djcyan-800/80 rounded shadow" }, selectedEngine === "hybrid" ? "\u26A1 Modo H\xEDbrido Pro (Red Ac\xFAstica)" : selectedEngine === "audd" ? "\u{1F7E3} Identificaci\xF3n Ac\xFAstica Pro" : "\u{1F535} Escaneo Espectral Smart Drop")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio."))), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-djcyan-400 animate-pulse" : "bg-djgreen-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#08080f] border border-djzinc-800 rounded-2xl p-3.5 shadow-xl space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-bold text-gray-400 uppercase tracking-wider" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1 bg-djzinc-900 p-1 rounded-xl border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => setSelectedEngine("hybrid"),
       className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${selectedEngine === "hybrid" ? "bg-gradient-to-r from-emerald-500 to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20" : "text-gray-400 hover:text-white"}`,
-      title: "Combina ShazamIO con escaneo de drop y respaldo autom\xE1tico en AudD API para m\xE1xima precisi\xF3n"
+      title: "Combina escaneo espectral de drop con respaldo ac\xFAstico autom\xE1tico para m\xE1xima precisi\xF3n"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
     /* @__PURE__ */ React.createElement("span", null, "H\xEDbrido Pro (Recomendado)")
@@ -14350,20 +14842,20 @@ ${text}`);
       type: "button",
       onClick: () => setSelectedEngine("shazamio"),
       className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${selectedEngine === "shazamio" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : "text-gray-400 hover:text-white"}`,
-      title: "ShazamIO nativo con escaneo multi-segmento de drops y breakdowns para pistas de DJ"
+      title: "Escaneo multi-segmento de drops y breakdowns para pistas de DJ"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F535}"),
-    /* @__PURE__ */ React.createElement("span", null, "ShazamIO Smart Drop")
+    /* @__PURE__ */ React.createElement("span", null, "Escaneo Espectral Smart Drop")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => setSelectedEngine("audd"),
       className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${selectedEngine === "audd" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-gray-400 hover:text-white"}`,
-      title: "AudD Music Recognition API (ISRC, Spotify, Apple Music)"
+      title: "Red de Identificaci\xF3n Ac\xFAstica Pro (ISRC y Cat\xE1logo Global)"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F7E3}"),
-    /* @__PURE__ */ React.createElement("span", null, "AudD Music API")
+    /* @__PURE__ */ React.createElement("span", null, "Identificaci\xF3n Ac\xFAstica Pro")
   ))), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -14375,7 +14867,7 @@ ${text}`);
     /* @__PURE__ */ React.createElement("span", null, "\u2699\uFE0F"),
     /* @__PURE__ */ React.createElement("span", null, showConfig ? "Ocultar Opciones" : "Opciones API"),
     auddToken && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" })
-  )), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[#05050a] p-3 rounded-xl border border-djzinc-800 text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 font-bold block" }, "Token de AudD Music API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400" }, 'Por defecto BeatWave usa el token p\xFAblico comunitario ("test"). Si posees tu propio token de audd.io, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
+  )), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[#05050a] p-3 rounded-xl border border-djzinc-800 text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 font-bold block" }, "Token de Red Ac\xFAstica API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400" }, 'Por defecto BeatWave usa el token p\xFAblico comunitario ("test"). Si posees tu propio token de API ac\xFAstica, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "text",
@@ -14384,7 +14876,7 @@ ${text}`);
       placeholder: "test (predeterminado)",
       className: "w-full sm:w-64 px-2.5 py-1.5 bg-djzinc-900 border border-djzinc-750 rounded-lg text-xs text-white font-mono focus:border-purple-500 outline-none"
     }
-  )))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#09090f] p-5 rounded-2xl border border-djzinc-800 flex flex-col items-center text-center justify-between relative overflow-hidden shadow-lg group hover:border-djcyan-500/40 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold uppercase text-djcyan-400 tracking-wider" }, "MODO A \u2022 CAPTURA AMBIENTAL"), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "Escucha en Directo por Micr\xF3fono"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-xs mx-auto" }, "Captura m\xFAsica ambiental en cabina y consulta los servidores ac\xFAsticos de Shazam y AudD.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 my-2 bg-djzinc-950 p-1 rounded-xl border border-djzinc-800 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 pl-1 text-[9px] uppercase tracking-wider" }, "Entrada:"), /* @__PURE__ */ React.createElement(
+  )))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#09090f] p-5 rounded-2xl border border-djzinc-800 flex flex-col items-center text-center justify-between relative overflow-hidden shadow-lg group hover:border-djcyan-500/40 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold uppercase text-djcyan-400 tracking-wider" }, "MODO A \u2022 CAPTURA AMBIENTAL"), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "Escucha en Directo por Micr\xF3fono"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-xs mx-auto" }, "Captura m\xFAsica ambiental en cabina y consulta la red de identificaci\xF3n ac\xFAstica global.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 my-2 bg-djzinc-950 p-1 rounded-xl border border-djzinc-800 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 pl-1 text-[9px] uppercase tracking-wider" }, "Entrada:"), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -14519,7 +15011,7 @@ ${text}`);
     "img",
     {
       src: getValidCover(identifiedTrack.cover),
-      alt: "Shazam Artwork",
+      alt: "Track Artwork",
       className: "w-44 h-44 rounded-2xl object-cover border-2 border-djzinc-700 shadow-2xl"
     }
   ), identifiedTrack.preview_url && /* @__PURE__ */ React.createElement(
@@ -14587,7 +15079,7 @@ ${text}`);
       title: "Enviar a la cola de descarga en FLAC"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4E5}"),
-    /* @__PURE__ */ React.createElement("span", null, "Spotify Ingest")
+    /* @__PURE__ */ React.createElement("span", null, "Record Pool")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -14679,9 +15171,9 @@ ${text}`);
         type: "button",
         onClick: () => handleSendToSpotifyInternal(row),
         className: "px-2 py-0.5 bg-djzinc-850 hover:bg-djgreen-950 text-djgreen-400 border border-djzinc-700 hover:border-djgreen-700/60 rounded text-[10px] font-mono cursor-pointer transition-colors",
-        title: "Enviar a Spotify Ingest"
+        title: "Enviar a Record Pool"
       },
-      "\u{1F4E5} Spotify"
+      "\u{1F4E5} Pool"
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -19905,7 +20397,7 @@ const App = () => {
         id: trackData.id || `tax_${Date.now()}_${idx}_${Math.floor(Math.random() * 1e3)}`,
         title: trackData.displayTitle || trackData.title || trackData.t || "Pista Taxonom\xEDa",
         artist: trackData.displayArtist || trackData.artist || trackData.a || "Artista",
-        album: trackData.displayAlbum || trackData.album || (origin === "audit_upgrade" || trackData.origin === "audit_upgrade" ? "Oficial Spotify HD" : "Taxonom\xEDa AI"),
+        album: trackData.displayAlbum || trackData.album || (origin === "audit_upgrade" || trackData.origin === "audit_upgrade" ? "Cat\xE1logo Master HD" : "Taxonom\xEDa AI"),
         bpm: bNum,
         key: (trackData.displayKey || trackData.key || trackData.k || "8A").toUpperCase(),
         cover: trackData.displayCover || trackData.cover || null,
@@ -19923,7 +20415,7 @@ const App = () => {
         danceability: trackData.danceability || trackData.dance || dynDance,
         fase_badge: trackData.fase_badge || null,
         comment: trackData.comment || null,
-        calidad: trackData.calidad || (origin === "audit_upgrade" || trackData.origin === "audit_upgrade" ? "Oficial Spotify HD" : "Pendiente"),
+        calidad: trackData.calidad || (origin === "audit_upgrade" || trackData.origin === "audit_upgrade" ? "Cat\xE1logo Master HD" : "Pendiente"),
         status: trackData.status || "Pendiente Descarga",
         spotify_id: trackData.spotify_id || null,
         spotify_url: trackData.spotify_url || null,
@@ -20520,7 +21012,7 @@ const App = () => {
       type: "button",
       onClick: () => setActiveTab("shazam"),
       className: `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${activeTab === "shazam" ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]" : "text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold"}`,
-      title: "Radar Shazam por Micro y Audio"
+      title: "Radar Ac\xFAstico por Micr\xF3fono y Audio"
     },
     /* @__PURE__ */ React.createElement(Icons.Radar, null),
     " ",
@@ -20908,7 +21400,7 @@ const App = () => {
     { id: "hotcues", icon: /* @__PURE__ */ React.createElement(Icons.Cue, null), label: "Cues" },
     { id: "setbuilder", icon: /* @__PURE__ */ React.createElement(Icons.Flow, null), label: "Set Builder" },
     { id: "map", icon: /* @__PURE__ */ React.createElement(Icons.Map, null), label: "Scatter Map" },
-    { id: "spotify", icon: /* @__PURE__ */ React.createElement(Icons.Spotify, null), label: "Download" },
+    { id: "spotify", icon: /* @__PURE__ */ React.createElement(Icons.Spotify, null), label: "Pool" },
     { id: "shazam", icon: /* @__PURE__ */ React.createElement(Icons.Radar, null), label: "Radar" },
     { id: "taxonomy", icon: /* @__PURE__ */ React.createElement(Icons.Routing, null), label: "Taxonomia" }
   ].map((item) => {
