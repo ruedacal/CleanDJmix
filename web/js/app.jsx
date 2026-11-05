@@ -26339,8 +26339,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         const vid = videoRef.current;
         if (!vid || !vid.duration) return;
 
-        // Vibración de cámara y distorsión de graves desde el drop (11.534s)
-        if (vid.currentTime >= 11.534 && !isBassShaking) {
+        // Vibración de cámara y distorsión de graves desde el drop sincronizado con el play (9.259s)
+        if (vid.currentTime >= 9.259 && !isBassShaking) {
             setIsBassShaking(true);
         }
 

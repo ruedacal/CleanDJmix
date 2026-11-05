@@ -17790,7 +17790,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
   const handleTimeUpdate = () => {
     const vid = videoRef.current;
     if (!vid || !vid.duration) return;
-    if (vid.currentTime >= 11.534 && !isBassShaking) {
+    if (vid.currentTime >= 9.259 && !isBassShaking) {
       setIsBassShaking(true);
     }
     const timeLeft = vid.duration - vid.currentTime;
