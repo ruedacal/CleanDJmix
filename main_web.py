@@ -703,6 +703,21 @@ def api_descargar_spotify():
     except Exception as e:
         return {"status": "error", "msg": str(e)}
 
+@bottle.route('/api/auditar_descargas_fft', method=['POST', 'OPTIONS'])
+def api_auditar_descargas_fft():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    try:
+        data = bottle.request.json or {}
+        tracks = data.get('tracks', [])
+        res = download_svc.ejecutar_auditoria_descargas_fft(tracks, audit_svc, eel)
+        return res or {"status": "ok", "msg": f"Auditoría iniciada para {len(tracks)} pistas"}
+    except Exception as e:
+        return {"status": "error", "msg": str(e)}
+
 @bottle.route('/api/listar_subcarpetas', method=['GET', 'POST', 'OPTIONS'])
 def api_listar_subcarpetas():
     bottle.response.set_header("Access-Control-Allow-Origin", "*")
@@ -749,6 +764,10 @@ def api_resolver_stream_preescucha():
 @eel.expose
 def descargar_pistas_spotify_seleccionadas(tracks_to_download, formato="flac", custom_dir="", eliminar_originales=False):
     return download_svc.ejecutar_lote_descarga(tracks_to_download, formato, custom_dir, audit_svc, eel, eliminar_originales=eliminar_originales)
+
+@eel.expose
+def auditar_descargas_fft(tracks_to_audit):
+    return download_svc.ejecutar_auditoria_descargas_fft(tracks_to_audit, audit_svc, eel)
 
 @eel.expose
 def buscar_temas_taxonomia(query="", ambito="all", ruta_local="/Users/admin/Music/mi musica", limite=25):

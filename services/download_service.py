@@ -116,12 +116,38 @@ class DownloadService:
                     pct = int((procesadas / total) * 100)
                     if exito:
                         completadas += 1
+                        fmt_final = os.path.splitext(ruta_final)[1].replace(".", "").upper()
                         try:
                             eel_ref.actualizar_estado_descarga(
                                 100 if procesadas == total else pct, 
                                 f"[DESCARGADO 100%] ({procesadas}/{total}) ✓ {artista} - {nombre}"
                             )()
                             eel_ref.log_to_console(f"✅ Descarga finalizada: {os.path.basename(ruta_final)}")()
+                            if hasattr(eel_ref, "notificar_resultado_auditoria"):
+                                eel_ref.notificar_resultado_auditoria({
+                                    "id": spotify_id,
+                                    "title": nombre,
+                                    "name": nombre,
+                                    "artist": artista,
+                                    "album": t.get("album", ""),
+                                    "format": fmt_final,
+                                    "status": "Descargado",
+                                    "estado": "Descargado",
+                                    "calidad": "Pendiente de Auditoría",
+                                    "corte": "--",
+                                    "cutoff_khz": None,
+                                    "sample_rate_khz": None,
+                                    "bitrate_kbps": None,
+                                    "perdida": "--",
+                                    "es_fake": False,
+                                    "badge_color": "gray",
+                                    "audit_status": "pendiente",
+                                    "consejo": "Pendiente de análisis FFT",
+                                    "spotify_url": spotify_url,
+                                    "path": ruta_final,
+                                    "downloaded": True,
+                                    "selected": True
+                                })()
                         except Exception:
                             pass
 
@@ -203,65 +229,6 @@ class DownloadService:
                         except Exception:
                             pass
 
-                # Fase 2: Auditoría FFT del archivo descargado
-                if exito and audio_service_ref and not self._cancelar:
-                    try:
-                        fft_pct = int((procesadas / total) * 100)
-                        try:
-                            if hasattr(eel_ref, "actualizar_estado_fft"):
-                                eel_ref.actualizar_estado_fft(
-                                    fft_pct,
-                                    f"[AUDITORÍA FFT] ({procesadas}/{total}) Certificando corte espectral: {artista} - {nombre}..."
-                                )()
-                        except Exception:
-                            pass
-
-                        fft_res = audio_service_ref.analizar_espectro_fft(ruta_final, spotify_id=spotify_id)
-                        diag = fft_res.get("diagnostico") or {}
-                        status_cert = diag.get("status") or fft_res.get("estado") or fft_res.get("status") or "Lossless OK"
-                        calidad_cert = diag.get("calidad") or "Alta"
-                        perdida_cert = diag.get("perdida") or (f"{fft_res.get('perdida')}%" if fft_res.get('perdida') else "Sin Pérdida")
-                        perdida_pct = diag.get("perdida_pct", fft_res.get("perdida", 0))
-                        compresion_cert = diag.get("compresion") or "Lossless"
-                        corte_cert = fft_res.get("corte") or f"{fft_res.get('cutoff_khz', 22.0)} kHz"
-                        khz_cert = diag.get("sample_rate_khz") or round(fft_res.get("samplerate", 44100) / 1000.0, 1)
-                        kbps_cert = diag.get("bitrate_kbps") or 0
-                        fmt_cert = diag.get("format") or os.path.splitext(ruta_final)[1].replace(".", "").upper()
-                        es_fake = bool(diag.get("es_fake", False) or ("Fake" in str(status_cert)))
-                        badge_color = diag.get("badge_color", "red" if es_fake else "green")
-
-                        if es_fake:
-                            audit_cert_msg = f"⚠️ [{status_cert}] {fmt_cert} {khz_cert}kHz ({kbps_cert}kbps) • Corte: {corte_cert} • Calidad: {calidad_cert} • {perdida_cert} ({perdida_pct}%)"
-                        else:
-                            audit_cert_msg = f"✅ [{status_cert}] {fmt_cert} {khz_cert}kHz ({kbps_cert}kbps) • Corte: {corte_cert} • Calidad: {calidad_cert} • {perdida_cert}"
-
-                        if hasattr(eel_ref, "actualizar_estado_fft"):
-                            eel_ref.actualizar_estado_fft(fft_pct, audit_cert_msg)()
-
-                        if hasattr(eel_ref, "notificar_resultado_auditoria"):
-                            eel_ref.notificar_resultado_auditoria({
-                                "id": spotify_id,
-                                "status": status_cert,
-                                "estado": status_cert,
-                                "calidad": calidad_cert,
-                                "perdida": perdida_cert,
-                                "perdida_pct": perdida_pct,
-                                "compresion": compresion_cert,
-                                "cutoff_khz": fft_res.get("cutoff_khz", 22.0),
-                                "corte": corte_cert,
-                                "format": fmt_cert,
-                                "sample_rate_khz": khz_cert,
-                                "bitrate_kbps": kbps_cert,
-                                "bit_depth": diag.get("bit_depth", 16),
-                                "es_fake": es_fake,
-                                "badge_color": badge_color,
-                                "audit_msg": audit_cert_msg,
-                                "spectrum": fft_res.get("spectrum", []),
-                                "path": ruta_final
-                            })()
-                    except Exception as e_fft:
-                        print(f"[AUDITORIA FFT ERROR] {e_fft}")
-
             # Pool controlado de 2 workers concurrentes con Lock de negociación anti-409/429
             num_workers = min(2, max(1, total))
             with ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -279,8 +246,6 @@ class DownloadService:
                 resumen_msg = f"[CANCELADO] Lote cancelado. Descargadas: {completadas}, Pendientes: {total - procesadas}."
                 try:
                     eel_ref.actualizar_estado_descarga(0, resumen_msg)()
-                    if hasattr(eel_ref, "actualizar_estado_fft"):
-                        eel_ref.actualizar_estado_fft(0, resumen_msg)()
                     stats = {"total": total, "completadas": completadas, "fallidas": fallidas, "cancelado": True}
                     try:
                         eel_ref.notificar_fin_lote(resumen_msg, stats)()
@@ -289,11 +254,9 @@ class DownloadService:
                 except Exception:
                     pass
             else:
-                resumen_msg = f"✅ [COMPLETADO 100%] Lote finalizado: {completadas} pistas descargadas y certificadas por FFT."
+                resumen_msg = f"✅ [COMPLETADO 100%] Lote finalizado: {completadas} pistas descargadas con éxito."
                 try:
                     eel_ref.actualizar_estado_descarga(100, resumen_msg)()
-                    if hasattr(eel_ref, "actualizar_estado_fft"):
-                        eel_ref.actualizar_estado_fft(100, f"✅ [AUDITORÍA FINALIZADA] {completadas} pistas certificadas por FFT.")()
                     stats = {"total": total, "completadas": completadas, "fallidas": fallidas}
                     try:
                         eel_ref.notificar_fin_lote(resumen_msg, stats)()
@@ -301,6 +264,140 @@ class DownloadService:
                         eel_ref.notificar_fin_lote(resumen_msg)()
                 except Exception:
                     pass
+
+        threading.Thread(target=worker, daemon=True).start()
+        return {"status": "iniciado"}
+
+    def ejecutar_auditoria_descargas_fft(self, tracks_to_audit, audio_service_ref, eel_ref):
+        """
+        Ejecuta la auditoría acústica FFT y diagnóstico de fidelidad sobre pistas ya descargadas.
+        Evalúa corte espectral, detecta falsos upsamples y formula el consejo de formato óptimo para el DJ.
+        """
+        self._cancelar = False
+
+        def worker():
+            total = len(tracks_to_audit)
+            if total == 0:
+                return
+
+            resultados = []
+            for idx, trk in enumerate(tracks_to_audit):
+                if self._cancelar:
+                    break
+
+                ruta = trk.get("path") or trk.get("local_path") or ""
+                nombre = trk.get("title") or trk.get("name") or "Pista"
+                artista = trk.get("artist") or "Artista"
+                spotify_id = trk.get("id", "")
+                fmt = trk.get("format") or (os.path.splitext(ruta)[1].replace(".", "").upper() if ruta else "FLAC")
+
+                pct = int(((idx + 1) / total) * 100)
+                try:
+                    if hasattr(eel_ref, "actualizar_estado_fft"):
+                        eel_ref.actualizar_estado_fft(
+                            pct,
+                            f"[AUDITORÍA FFT] ({idx + 1}/{total}) Analizando espectro: {artista} - {nombre}..."
+                        )()
+                except Exception:
+                    pass
+
+                if not ruta or not os.path.exists(ruta):
+                    res_item = {
+                        **trk,
+                        "audit_status": "error",
+                        "status": "Archivo no encontrado",
+                        "calidad": "Error",
+                        "corte": "--",
+                        "consejo": "No se localizó el archivo en disco."
+                    }
+                    resultados.append(res_item)
+                    continue
+
+                try:
+                    fft_res = audio_service_ref.analizar_espectro_fft(ruta, spotify_id=spotify_id) if audio_service_ref else {}
+                    diag = fft_res.get("diagnostico") or {}
+                    status_cert = diag.get("status") or fft_res.get("estado") or fft_res.get("status") or "Lossless OK"
+                    calidad_cert = diag.get("calidad") or "Alta"
+                    perdida_cert = diag.get("perdida") or (f"{fft_res.get('perdida')}%" if fft_res.get('perdida') else "Sin Pérdida")
+                    perdida_pct = diag.get("perdida_pct", fft_res.get("perdida", 0))
+                    compresion_cert = diag.get("compresion") or "Lossless"
+                    cutoff = fft_res.get("cutoff_khz", 22.0)
+                    corte_cert = fft_res.get("corte") or f"{cutoff} kHz"
+                    khz_cert = diag.get("sample_rate_khz") or round(fft_res.get("samplerate", 44100) / 1000.0, 1)
+                    kbps_cert = diag.get("bitrate_kbps") or 0
+                    fmt_cert = diag.get("format") or fmt
+                    es_fake = bool(diag.get("es_fake", False) or ("Fake" in str(status_cert)) or (cutoff and cutoff < 18.0 and fmt_cert in ["FLAC", "WAV", "AIFF"]))
+                    badge_color = "red" if es_fake else ("amber" if "Media" in calidad_cert else "green")
+
+                    # Generar dictamen y consejo experto DJ
+                    if es_fake:
+                        consejo = f"⚠️ Fake Upsample detectado (Corte {corte_cert}). Se recomienda descargar en MP3 320 kbps para eliminar peso artificial en CDJs."
+                        sugerencia_formato = "mp3"
+                    elif fmt_cert.upper() == "MP3" and cutoff and cutoff >= 19.5:
+                        consejo = f"✓ MP3 320 kbps CBR Verificado (Corte {corte_cert}). Espectro óptimo para club."
+                        sugerencia_formato = None
+                    elif fmt_cert.upper() == "MP3" and cutoff and cutoff < 16.0:
+                        consejo = f"⚠️ MP3 con compresión agresiva (Corte {corte_cert}). Se recomienda reintentar en FLAC Hi-Res."
+                        sugerencia_formato = "flac"
+                    else:
+                        consejo = f"✓ Calidad Máxima Certificada (Corte {corte_cert}). Archivo {fmt_cert} genuino sin pérdida."
+                        sugerencia_formato = None
+
+                    audit_data = {
+                        **trk,
+                        "id": spotify_id,
+                        "title": nombre,
+                        "artist": artista,
+                        "path": ruta,
+                        "status": "FLAC FAKE" if es_fake else status_cert,
+                        "estado": "FLAC FAKE" if es_fake else status_cert,
+                        "calidad": calidad_cert,
+                        "perdida": perdida_cert,
+                        "perdida_pct": perdida_pct,
+                        "compresion": compresion_cert,
+                        "cutoff_khz": cutoff,
+                        "corte": corte_cert,
+                        "format": fmt_cert,
+                        "sample_rate_khz": khz_cert,
+                        "bitrate_kbps": kbps_cert,
+                        "es_fake": es_fake,
+                        "badge_color": badge_color,
+                        "audit_status": "completada",
+                        "consejo": consejo,
+                        "sugerencia_formato": sugerencia_formato
+                    }
+                    resultados.append(audit_data)
+
+                    # Notificar a la UI en vivo por cada pista auditada
+                    if hasattr(eel_ref, "notificar_resultado_auditoria_post_descarga"):
+                        eel_ref.notificar_resultado_auditoria_post_descarga(audit_data)()
+
+                except Exception as e_fft:
+                    print(f"[AUDITORIA POST-DESCARGA ERROR] {e_fft}")
+                    err_item = {
+                        **trk,
+                        "audit_status": "error",
+                        "consejo": f"Error en análisis: {e_fft}"
+                    }
+                    resultados.append(err_item)
+
+            if self._cancelar:
+                msg_fin = "[CANCELADO] Auditoría FFT detenida por el usuario."
+                pct_fin = 0
+            else:
+                msg_fin = f"✅ [AUDITORÍA FINALIZADA] {len(resultados)} pista(s) certificadas por FFT."
+                pct_fin = 100
+
+            try:
+                if hasattr(eel_ref, "actualizar_estado_fft"):
+                    eel_ref.actualizar_estado_fft(pct_fin, msg_fin)()
+                if hasattr(eel_ref, "notificar_fin_auditoria_post_descarga"):
+                    eel_ref.notificar_fin_auditoria_post_descarga(resultados)()
+            except Exception:
+                pass
+
+        threading.Thread(target=worker, daemon=True).start()
+        return {"status": "iniciado"}
 
         threading.Thread(target=worker, daemon=True).start()
         return {"status": "iniciado"}

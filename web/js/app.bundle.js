@@ -8928,6 +8928,8 @@ const SpotifyWorkspace = ({
   const [selectedId, setSelectedId] = useState(null);
   const [spInspectorOpen, setSpInspectorOpen] = useState(false);
   const [downloadSession, setDownloadSession] = useState({ downloaded: [], failed: [] });
+  const [spSubView, setSpSubView] = useState("catalog");
+  const [selectedDownloadedIds, setSelectedDownloadedIds] = useState(/* @__PURE__ */ new Set());
   const [isExportingXls, setIsExportingXls] = useState(false);
   const [xlsToast, setXlsToast] = useState("");
   const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState(() => {
@@ -9064,32 +9066,85 @@ const SpotifyWorkspace = ({
         if (res && res.id) {
           setTracks((prev) => {
             const trk = prev.find((t2) => String(t2.id) === String(res.id));
-            if (trk) {
-              const completedItem = {
-                id: res.id,
-                title: trk.title || res.name || "Desconocido",
-                artist: trk.artist || res.artist || "Desconocido",
-                album: trk.album || "",
-                format: res.format || (selectedFormat ? selectedFormat.toUpperCase() : "FLAC"),
-                cutoff_khz: res.cutoff_khz,
-                calidad: res.calidad || "Alta",
-                status: res.status || res.estado || "Lossless OK",
-                sample_rate_khz: res.sample_rate_khz || 44.1,
-                bitrate_kbps: res.bitrate_kbps || 0,
-                perdida: res.perdida || "Sin P\xE9rdida",
-                path: res.path || trk.path || ""
-              };
-              setDownloadSession((sPrev) => ({
-                ...sPrev,
-                downloaded: [...sPrev.downloaded.filter((x) => String(x.id) !== String(res.id)), completedItem]
-              }));
-            }
+            const completedItem = {
+              id: res.id,
+              title: trk ? trk.title || res.name || res.title || "Desconocido" : res.name || res.title || "Desconocido",
+              artist: trk ? trk.artist || res.artist || "Desconocido" : res.artist || "Desconocido",
+              album: trk ? trk.album || res.album || "" : res.album || "",
+              format: res.format || (selectedFormat ? selectedFormat.toUpperCase() : "FLAC"),
+              cutoff_khz: res.cutoff_khz !== void 0 ? res.cutoff_khz : null,
+              corte: res.corte || "--",
+              calidad: res.calidad || "Pendiente de Auditor\xEDa",
+              status: res.status || res.estado || "Descargado",
+              sample_rate_khz: res.sample_rate_khz || null,
+              bitrate_kbps: res.bitrate_kbps || null,
+              perdida: res.perdida || "--",
+              path: res.path || (trk == null ? void 0 : trk.path) || "",
+              audit_status: res.audit_status || "pendiente",
+              consejo: res.consejo || "Pendiente de an\xE1lisis FFT",
+              sugerencia_formato: res.sugerencia_formato || null,
+              es_fake: res.es_fake || false,
+              badge_color: res.badge_color || "gray",
+              spotify_url: (trk == null ? void 0 : trk.spotify_url) || res.spotify_url || "",
+              cover: (trk == null ? void 0 : trk.cover) || (trk == null ? void 0 : trk.cover_url) || res.cover || "",
+              selected: true
+            };
+            setDownloadSession((sPrev) => ({
+              ...sPrev,
+              downloaded: [...sPrev.downloaded.filter((x) => String(x.id) !== String(res.id) && String(x.path) !== String(completedItem.path)), completedItem]
+            }));
+            setSelectedDownloadedIds((prevIds) => new Set(prevIds).add(String(res.id || completedItem.path)));
             return prev.filter((t2) => String(t2.id) !== String(res.id));
           });
           if (res.audit_msg) {
             setFftMsg(res.audit_msg);
           }
         }
+      };
+      const notifyPostDownloadAudit = (auditData) => {
+        if (!auditData) return;
+        setDownloadSession((prev) => ({
+          ...prev,
+          downloaded: prev.downloaded.map((item) => {
+            if (String(item.id) === String(auditData.id) || item.path && auditData.path && item.path === auditData.path) {
+              return {
+                ...item,
+                ...auditData,
+                audit_status: "completada"
+              };
+            }
+            return item;
+          })
+        }));
+        try {
+          const nowStr = (/* @__PURE__ */ new Date()).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+          const bEntry = {
+            id: `b-fft-${Date.now()}-${Math.floor(Math.random() * 1e3)}`,
+            timestamp: nowStr,
+            category: "download",
+            action: "Auditor\xEDa FFT Post-Descarga & Diagn\xF3stico Espectral",
+            trackTitle: `${auditData.artist || "Artista"} - ${auditData.title || "Pista"}`,
+            filePath: auditData.path || "",
+            detailsBefore: `Formato descargado: ${auditData.format || "FLAC"} \u2022 Sin certificar`,
+            detailsAfter: `Corte: ${auditData.corte || "--"} \u2022 Calidad: ${auditData.calidad || "--"} \u2022 ${auditData.consejo || "\xD3ptimo"}`,
+            status: auditData.es_fake ? "\u26A0\uFE0F Fake Detectado" : "\u2713 Certificado"
+          };
+          const raw = localStorage.getItem("bw_audit_bitacora");
+          let cur = raw ? JSON.parse(raw) : [];
+          const nextB = [bEntry, ...cur].slice(0, 500);
+          localStorage.setItem("bw_audit_bitacora", JSON.stringify(nextB));
+          window.dispatchEvent(new CustomEvent("bw_bitacora_updated", { detail: nextB }));
+        } catch (e) {
+        }
+      };
+      const finishPostDownloadAudit = (results) => {
+        setIsAuditingFft(false);
+        setFftProgress(100);
+        setFftMsg("\u2705 Auditor\xEDa FFT finalizada.");
+        setTimeout(() => {
+          setFftProgress(0);
+          setFftMsg("");
+        }, 2e3);
       };
       const notifyDownloadFailure = (errData) => {
         if (errData && errData.id) {
@@ -9125,7 +9180,6 @@ const SpotifyWorkspace = ({
         setIsDownloading(false);
         setIsAuditingFft(false);
         setDownloadProgress(100);
-        setFftProgress(100);
         setDownloadingMsg(msg || "Lote completado con \xE9xito.");
         setTimeout(() => {
           setDownloadProgress(0);
@@ -9133,6 +9187,7 @@ const SpotifyWorkspace = ({
           setIsAuditingFft(false);
           setDownloadingMsg("");
         }, 1500);
+        setSpSubView("downloaded");
       };
       const notifyOriginalPurged = (info) => {
         if (info && info.filename) {
@@ -9143,6 +9198,8 @@ const SpotifyWorkspace = ({
       window.actualizar_progreso_descarga = updateDownload;
       window.actualizar_estado_fft = updateFft;
       window.notificar_resultado_auditoria = notifyFftResult;
+      window.notificar_resultado_auditoria_post_descarga = notifyPostDownloadAudit;
+      window.notificar_fin_auditoria_post_descarga = finishPostDownloadAudit;
       window.notificar_fallo_descarga = notifyDownloadFailure;
       window.notificar_fin_lote = finishBatch;
       window.notificar_archivo_original_eliminado = notifyOriginalPurged;
@@ -9150,6 +9207,8 @@ const SpotifyWorkspace = ({
       window.eel.expose(window.actualizar_progreso_descarga, "actualizar_progreso_descarga");
       window.eel.expose(window.actualizar_estado_fft, "actualizar_estado_fft");
       window.eel.expose(window.notificar_resultado_auditoria, "notificar_resultado_auditoria");
+      window.eel.expose(window.notificar_resultado_auditoria_post_descarga, "notificar_resultado_auditoria_post_descarga");
+      window.eel.expose(window.notificar_fin_auditoria_post_descarga, "notificar_fin_auditoria_post_descarga");
       window.eel.expose(window.notificar_fallo_descarga, "notificar_fallo_descarga");
       window.eel.expose(window.notificar_fin_lote, "notificar_fin_lote");
       window.eel.expose(window.notificar_archivo_original_eliminado, "notificar_archivo_original_eliminado");
@@ -9653,8 +9712,9 @@ const SpotifyWorkspace = ({
       }, 1200);
     }
   };
-  const lanzarDescargaReal = async (listaPistas) => {
+  const lanzarDescargaReal = async (listaPistas, formatoOverride = null) => {
     if (!listaPistas || listaPistas.length === 0) return;
+    const fmt = (formatoOverride || selectedFormat || "flac").toLowerCase();
     let pistasADescargar = [...listaPistas];
     const dudosas = pistasADescargar.filter((t2) => t2.match_score !== void 0 && t2.match_score < 75 && !t2.confirmado_manualmente);
     if (dudosas.length > 0) {
@@ -9673,11 +9733,11 @@ Se detectaron ${dudosas.length} pista(s) con posible variaci\xF3n de versi\xF3n,
     setIsDownloading(true);
     setDownloadProgress(10);
     const purgeTag = deleteOriginalsOnUpgrade ? " (\u{1F5D1}\uFE0F Con purga de baja calidad)" : "";
-    setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${pistasADescargar.length} pista(s) en formato .${selectedFormat.toUpperCase()}${purgeTag}...`);
+    setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${pistasADescargar.length} pista(s) en formato .${fmt.toUpperCase()}${purgeTag}...`);
     let descargadoV\u00EDaEel = false;
     if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
       try {
-        await window.eel.descargar_pistas_spotify_seleccionadas(pistasADescargar, selectedFormat, destDir, deleteOriginalsOnUpgrade)();
+        await window.eel.descargar_pistas_spotify_seleccionadas(pistasADescargar, fmt, destDir, deleteOriginalsOnUpgrade)();
         descargadoV\u00EDaEel = true;
       } catch (e) {
         console.warn("[SPOTIFY] Error en llamada Eel de descarga, recurriendo a HTTP:", e);
@@ -9690,7 +9750,7 @@ Se detectaron ${dudosas.length} pista(s) con posible variaci\xF3n de versi\xF3n,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             tracks: pistasADescargar,
-            formato: selectedFormat,
+            formato: fmt,
             custom_dir: destDir,
             eliminar_originales: deleteOriginalsOnUpgrade
           })
@@ -9711,6 +9771,80 @@ Se detectaron ${dudosas.length} pista(s) con posible variaci\xF3n de versi\xF3n,
         setDownloadingMsg(`[ERROR] Conexi\xF3n fallida: ${httpErr.message || httpErr}`);
       }
     }
+  };
+  const handleAuditarDescargas = async (pistasAAuditar = null) => {
+    const targetList = pistasAAuditar && pistasAAuditar.length > 0 ? pistasAAuditar : downloadSession.downloaded;
+    if (!targetList || targetList.length === 0) {
+      alert("No hay pistas descargadas disponibles para auditar.");
+      return;
+    }
+    setIsAuditingFft(true);
+    setFftProgress(5);
+    setFftMsg(`[AUDITOR\xCDA FFT] Iniciando certificaci\xF3n espectral de ${targetList.length} pista(s)...`);
+    let auditadoV\u00EDaEel = false;
+    if (window.eel && window.eel.auditar_descargas_fft) {
+      try {
+        await window.eel.auditar_descargas_fft(targetList)();
+        auditadoV\u00EDaEel = true;
+      } catch (e) {
+        console.warn("[SPOTIFY] Error en llamada Eel de auditor\xEDa, recurriendo a HTTP:", e);
+      }
+    }
+    if (!auditadoV\u00EDaEel) {
+      try {
+        const resp = await fetch("/api/auditar_descargas_fft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tracks: targetList })
+        });
+        const res = await resp.json();
+        if (res && res.status === "iniciado") {
+          setFftProgress(15);
+        }
+      } catch (err) {
+        console.error("Error al iniciar auditor\xEDa FFT:", err);
+        setIsAuditingFft(false);
+        setFftProgress(0);
+        setFftMsg("Error de conexi\xF3n al iniciar auditor\xEDa FFT.");
+      }
+    }
+  };
+  const handleRedescargarFormato = (pistas, formato = "mp3") => {
+    if (!pistas || pistas.length === 0) return;
+    const confirmMsg = `\xBFDeseas descargar ${pistas.length} pista(s) en formato .${formato.toUpperCase()} (Calidad Garantizada 320 kbps CBR)?
+
+${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior eliminando el duplicado de baja calidad." : "\u2022 Se conservar\xE1 el archivo anterior en la carpeta."}`;
+    if (!window.confirm(confirmMsg)) return;
+    const normalizadas = pistas.map((p) => ({
+      id: p.id || `sp_${Date.now()}_${Math.floor(Math.random() * 1e3)}`,
+      title: p.title || p.name || "Track",
+      name: p.title || p.name || "Track",
+      artist: p.artist || "Artista",
+      album: p.album || "",
+      cover: p.cover || p.cover_url || "",
+      cover_url: p.cover || p.cover_url || "",
+      original_path: p.path,
+      origin: "audit_upgrade",
+      spotify_url: p.spotify_url || (p.id && String(p.id).length === 22 ? `https://open.spotify.com/track/${p.id}` : "")
+    }));
+    setSpSubView("catalog");
+    lanzarDescargaReal(normalizadas, formato);
+  };
+  const handleToggleSelectAllDownloaded = () => {
+    if (selectedDownloadedIds.size === downloadSession.downloaded.length && downloadSession.downloaded.length > 0) {
+      setSelectedDownloadedIds(/* @__PURE__ */ new Set());
+    } else {
+      setSelectedDownloadedIds(new Set(downloadSession.downloaded.map((t2) => String(t2.id || t2.path))));
+    }
+  };
+  const handleToggleSelectDownloaded = (id) => {
+    setSelectedDownloadedIds((prev) => {
+      const next = new Set(prev);
+      const strId = String(id);
+      if (next.has(strId)) next.delete(strId);
+      else next.add(strId);
+      return next;
+    });
   };
   const handleCambiarCarpeta = () => {
     handleAbrirNavegadorCarpetas(destDir);
@@ -9756,6 +9890,26 @@ Se detectaron ${dudosas.length} pista(s) con posible variaci\xF3n de versi\xF3n,
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2715"),
     /* @__PURE__ */ React.createElement("span", null, lang === "en" ? "Cancel" : "Cancelar")
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-[#060609] border border-djzinc-750 p-1 rounded-lg shrink-0" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setSpSubView("catalog"),
+      className: `px-3 py-1 rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${spSubView === "catalog" ? "bg-djcyan-500 text-black shadow-sm font-black" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F50D}"),
+    /* @__PURE__ */ React.createElement("span", null, "Cat\xE1logo"),
+    /* @__PURE__ */ React.createElement("span", { className: `text-[10px] px-1.5 py-0.2 rounded font-bold ${spSubView === "catalog" ? "bg-black/20 text-black" : "bg-djzinc-800 text-djcyan-400"}` }, tracks.length)
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setSpSubView("downloaded"),
+      className: `px-3 py-1 rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${spSubView === "downloaded" ? "bg-emerald-500 text-black shadow-sm font-black" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4E5}"),
+    /* @__PURE__ */ React.createElement("span", null, "Descargadas & FFT"),
+    /* @__PURE__ */ React.createElement("span", { className: `text-[10px] px-1.5 py-0.2 rounded font-bold ${spSubView === "downloaded" ? "bg-black/20 text-black" : "bg-djzinc-800 text-emerald-400"}` }, downloadSession.downloaded.length)
   )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -9919,7 +10073,132 @@ Se detectaron ${dudosas.length} pista(s) con posible variaci\xF3n de versi\xF3n,
       }
     ),
     /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, "Borrar pistas malas del disco al descargar"))
-  ), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400 font-mono" }, "Formato: ", /* @__PURE__ */ React.createElement("strong", { className: "text-djcyan-400 font-bold" }, selectedFormat.toUpperCase())))), tracks.length === 0 && !isAnalyzing ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center p-6 bg-[#08080b] select-none overflow-y-auto" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-xl w-full mx-auto flex flex-col items-center justify-center gap-3.5 p-6 sm:p-8 rounded-2xl bg-[#0c0c12] border border-djzinc-800 shadow-2xl text-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-full bg-emerald-950/70 border border-emerald-500/60 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]" }, /* @__PURE__ */ React.createElement(Icons.Spotify, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white uppercase tracking-wider font-mono" }, "Spotify Ingest \u2022 Modo Standby"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-lg mx-auto text-center leading-relaxed whitespace-normal break-words px-2" }, "Escribe una b\xFAsqueda (artista, tema o g\xE9nero) o pega un enlace de Spotify en la barra superior. Tambi\xE9n puedes importar pistas de baja calidad desde ", /* @__PURE__ */ React.createElement("strong", { className: "text-amber-400 font-semibold" }, "Auditor\xEDa & DSP"), ' usando el bot\xF3n "\u{1F4E5} Reemplazos HD".'), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 pt-2 text-[11px] font-mono text-gray-500 whitespace-normal" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 shrink-0" }), /* @__PURE__ */ React.createElement("span", null, "Descargas Lossless FLAC / WAV \u2022 Certificaci\xF3n Espectral FFT")))) : /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-auto bg-[#08080b]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-8 text-center" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: allSelected, onChange: handleToggleSelectAll, className: "accent-djcyan-500 cursor-pointer" })), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-10 text-center" }, "PLAY"), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("title"), className: "py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors" }, t("th_title") || "T\xCDTULO", " / ", t("th_album") || "\xC1LBUM", " ", renderSortArrowSp("title")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("match_score"), className: "py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors", title: "Ordenar por porcentaje de coincidencia ac\xFAstica (Match %)" }, "\u{1F3AF} MATCH ", renderSortArrowSp("match_score")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("artist"), className: "py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors" }, t("th_artist") || "ARTISTA", " ", renderSortArrowSp("artist")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("genre"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_genre") || "G\xC9NERO", " ", renderSortArrowSp("genre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("subgenre"), className: "py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors" }, t("th_subgenre") || "SUBG\xC9NERO", " ", renderSortArrowSp("subgenre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("origin"), className: "py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors" }, "ORIGEN ", renderSortArrowSp("origin")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("pre_quality_tier"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors", title: "Pre-Auditor\xEDa de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena" }, "\u{1F48E} PRE-AUDITOR\xCDA (VALOR) ", renderSortArrowSp("pre_quality_tier")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("format"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_format") || "FORMATO", " ", renderSortArrowSp("format")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("sample_rate_khz"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_khz") || "KHZ", " ", renderSortArrowSp("sample_rate_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("bitrate_kbps"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, t("th_kbps") || "KBPS", " ", renderSortArrowSp("bitrate_kbps")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("calidad"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_quality") || "CALIDAD", " ", renderSortArrowSp("calidad")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("cutoff_khz"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" }, t("th_loss") || "P\xC9RDIDA / CORTE", " ", renderSortArrowSp("cutoff_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("duration"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_duration") || "DURACI\xD3N", " ", renderSortArrowSp("duration")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("bpm"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "BPM ", renderSortArrowSp("bpm")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("key"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "KEY ", renderSortArrowSp("key")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("energy"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, "\u26A1 ENERG\xCDA ", renderSortArrowSp("energy")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("danceability"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, "\u{1F57A} DANCE ", renderSortArrowSp("danceability")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("status"), className: "py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors" }, t("th_status") || "ESTADO", " / ", t("download_btn") || "ACCI\xD3N", " ", renderSortArrowSp("status"))), /* @__PURE__ */ React.createElement("tr", { className: "bg-[#07070a] border-b border-djzinc-800 text-[10px] lowercase font-sans" }, /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, spFilterSearch || spFilterMatch !== "ALL" || spFilterOrigin !== "ALL" || spFilterFormat !== "ALL" || spFilterQuality !== "ALL" || spFilterStatus !== "ALL" || spFilterEnergy !== "ALL" || spFilterDance !== "ALL" ? /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400 font-mono" }, "Formato: ", /* @__PURE__ */ React.createElement("strong", { className: "text-djcyan-400 font-bold" }, selectedFormat.toUpperCase())))), spSubView === "downloaded" ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-h-0 bg-[#08080b] overflow-hidden select-none" }, /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-[#0c0c12] border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2.5 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        const seleccion = downloadSession.downloaded.filter((t2) => selectedDownloadedIds.has(String(t2.id || t2.path)));
+        handleAuditarDescargas(seleccion.length > 0 ? seleccion : downloadSession.downloaded);
+      },
+      disabled: isAuditingFft || downloadSession.downloaded.length === 0,
+      className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${isAuditingFft ? "bg-emerald-800 text-emerald-200 animate-pulse" : "bg-emerald-500 hover:bg-emerald-400 text-black font-black shadow-emerald-500/20"} disabled:opacity-50`,
+      title: "Ejecutar an\xE1lisis espectral FFT sobre las pistas seleccionadas o todas para certificar corte kHz y descartar falsos upsamples"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F52C}"),
+    /* @__PURE__ */ React.createElement("span", null, selectedDownloadedIds.size > 0 && selectedDownloadedIds.size < downloadSession.downloaded.length ? `Auditar Selecci\xF3n (${selectedDownloadedIds.size})` : `Auditar Todo (${downloadSession.downloaded.length})`)
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        const seleccion = downloadSession.downloaded.filter((t2) => selectedDownloadedIds.has(String(t2.id || t2.path)));
+        handleRedescargarFormato(seleccion.length > 0 ? seleccion : downloadSession.downloaded, "mp3");
+      },
+      disabled: isDownloading || downloadSession.downloaded.length === 0,
+      className: "px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50",
+      title: "Descargar versi\xF3n garantizada en MP3 320 kbps CBR para evitar peso artificial en CDJs"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
+    /* @__PURE__ */ React.createElement("span", null, selectedDownloadedIds.size > 0 && selectedDownloadedIds.size < downloadSession.downloaded.length ? `Descargar Selecci\xF3n en MP3 320 (${selectedDownloadedIds.size})` : `Descargar Todo en MP3 320`)
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleDescargarReporteXLS,
+      disabled: isExportingXls || downloadSession.downloaded.length === 0 && downloadSession.failed.length === 0,
+      className: "px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#14141d] hover:bg-emerald-950 text-emerald-300 border border-emerald-600/60 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50",
+      title: "Exportar informe Excel completo con cortes FFT y consejos de optimizaci\xF3n"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA}"),
+    /* @__PURE__ */ React.createElement("span", null, "Exportar Excel (", downloadSession.downloaded.length, "\u2713)")
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("strong", { className: "text-emerald-400" }, downloadSession.downloaded.filter((t2) => t2.audit_status === "completada").length), " de ", downloadSession.downloaded.length, " auditadas"), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        if (window.confirm("\xBFDeseas vaciar la lista de pistas descargadas de esta sesi\xF3n?")) {
+          setDownloadSession((prev) => ({ ...prev, downloaded: [] }));
+          setSelectedDownloadedIds(/* @__PURE__ */ new Set());
+        }
+      },
+      className: "px-2 py-1 rounded text-[10px] font-mono text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 border border-djzinc-800 transition-colors cursor-pointer",
+      title: "Vaciar listado de descargadas"
+    },
+    "\u{1F5D1}\uFE0F Limpiar"
+  ))), downloadSession.downloaded.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center p-6 bg-[#08080b] select-none text-center" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-md w-full p-6 rounded-2xl bg-[#0c0c12] border border-djzinc-800 flex flex-col items-center gap-3 shadow-xl" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-full bg-emerald-950 border border-emerald-500/50 flex items-center justify-center text-emerald-400 text-xl" }, "\u{1F4E5}"), /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-bold text-white uppercase font-mono" }, "Sin Descargas En Esta Sesi\xF3n"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, "Las pistas descargadas aparecer\xE1n en este listado para que puedas ejecutar el an\xE1lisis espectral FFT post-descarga y certificar su fidelidad ac\xFAstica."), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setSpSubView("catalog"),
+      className: "px-4 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg transition-colors cursor-pointer mt-1"
+    },
+    "\u2190 Ir a Cat\xE1logo / B\xFAsqueda"
+  ))) : /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-auto bg-[#08080b]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-8 text-center" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "checkbox",
+      checked: selectedDownloadedIds.size === downloadSession.downloaded.length && downloadSession.downloaded.length > 0,
+      onChange: handleToggleSelectAllDownloaded,
+      className: "accent-djcyan-500 cursor-pointer"
+    }
+  )), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-10 text-center" }, "PLAY"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 min-w-[220px]" }, "T\xCDTULO / \xC1LBUM"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 min-w-[140px]" }, "ARTISTA"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-24" }, "FORMATO"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center min-w-[200px]" }, "AUDITOR\xCDA FFT (ESPECTRO)"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 min-w-[260px]" }, "CONSEJO / OPTIMIZACI\xD3N DJ"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center min-w-[140px]" }, "ACCI\xD3N / RE-DESCARGA"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-mono text-[11px]" }, downloadSession.downloaded.map((row, idx) => {
+    const isRowSelected = selectedDownloadedIds.has(String(row.id || row.path));
+    const isAudited = row.audit_status === "completada";
+    return /* @__PURE__ */ React.createElement(
+      "tr",
+      {
+        key: row.id || `dl_${idx}`,
+        onClick: () => handleToggleSelectDownloaded(row.id || row.path),
+        className: `transition-colors cursor-pointer ${isRowSelected ? "bg-djcyan-950/20 hover:bg-djcyan-950/30" : "hover:bg-djzinc-900/60"}`
+      },
+      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "checkbox",
+          checked: isRowSelected,
+          onChange: () => handleToggleSelectDownloaded(row.id || row.path),
+          className: "accent-djcyan-500 cursor-pointer"
+        }
+      )),
+      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => onPlayTrack && onPlayTrack(row),
+          className: "w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djcyan-500 hover:text-black text-gray-300 flex items-center justify-center transition-all cursor-pointer text-xs",
+          title: "Reproducir archivo descargado"
+        },
+        "\u25B6"
+      )),
+      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col max-w-[240px]" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold text-gray-200 truncate" }, row.title || "Desconocido"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 truncate" }, row.album || "CleanDJmix Ingest"))),
+      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-gray-300 truncate max-w-[140px]" }, row.artist || "Desconocido"),
+      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-bold bg-djzinc-800 text-djcyan-300 border border-djzinc-700" }, row.format || "FLAC")),
+      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center" }, isAudited ? row.es_fake ? /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-600 shadow-[0_0_8px_rgba(244,63,94,0.3)]" }, "\u26A0\uFE0F Fake Upsample (", row.corte, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] text-gray-400" }, row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : "", " \u2022 ", row.perdida || "P\xE9rdida")) : /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-600" }, "\u2713 Lossless Real (", row.corte, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] text-emerald-400/80" }, row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : "", " \u2022 Sin P\xE9rdida")) : isAuditingFft ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-700 animate-pulse" }, "\u{1F52C} Analizando FFT...") : /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] text-gray-400 bg-djzinc-850 border border-djzinc-750" }, "\u23F3 Pendiente de Auditor\xEDa")),
+      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 whitespace-normal" }, row.consejo ? row.es_fake ? /* @__PURE__ */ React.createElement("div", { className: "p-1.5 rounded bg-amber-950/60 border border-amber-600/70 text-amber-200 text-[10.5px] font-sans leading-tight" }, row.consejo) : isAudited ? /* @__PURE__ */ React.createElement("div", { className: "p-1.5 rounded bg-emerald-950/40 border border-emerald-600/50 text-emerald-300 text-[10.5px] font-sans leading-tight" }, row.consejo) : /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[10.5px] font-sans italic" }, row.consejo) : /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[10.5px] font-sans italic" }, "Pendiente de an\xE1lisis FFT")),
+      /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleAuditarDescargas([row]),
+          disabled: isAuditingFft,
+          className: "px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700 transition-colors cursor-pointer disabled:opacity-50",
+          title: "Ejecutar auditor\xEDa ac\xFAstica FFT en esta pista"
+        },
+        isAudited ? "Re-auditar" : "\u{1F52C} Auditar"
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleRedescargarFormato([row], "mp3"),
+          disabled: isDownloading,
+          className: "px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black transition-colors cursor-pointer shadow-sm disabled:opacity-50",
+          title: "Descargar versi\xF3n garantizada en MP3 320 kbps CBR"
+        },
+        "\u2B07 MP3 320"
+      )))
+    );
+  }))))) : tracks.length === 0 && !isAnalyzing ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center p-6 bg-[#08080b] select-none overflow-y-auto" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-xl w-full mx-auto flex flex-col items-center justify-center gap-3.5 p-6 sm:p-8 rounded-2xl bg-[#0c0c12] border border-djzinc-800 shadow-2xl text-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-full bg-emerald-950/70 border border-emerald-500/60 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]" }, /* @__PURE__ */ React.createElement(Icons.Spotify, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white uppercase tracking-wider font-mono" }, "Spotify Ingest \u2022 Modo Standby"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-lg mx-auto text-center leading-relaxed whitespace-normal break-words px-2" }, "Escribe una b\xFAsqueda (artista, tema o g\xE9nero) o pega un enlace de Spotify en la barra superior. Tambi\xE9n puedes importar pistas de baja calidad desde ", /* @__PURE__ */ React.createElement("strong", { className: "text-amber-400 font-semibold" }, "Auditor\xEDa & DSP"), ' usando el bot\xF3n "\u{1F4E5} Reemplazos HD".'), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 pt-2 text-[11px] font-mono text-gray-500 whitespace-normal" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 shrink-0" }), /* @__PURE__ */ React.createElement("span", null, "Descargas Lossless FLAC / WAV \u2022 Certificaci\xF3n Espectral FFT")))) : /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-auto bg-[#08080b]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-8 text-center" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: allSelected, onChange: handleToggleSelectAll, className: "accent-djcyan-500 cursor-pointer" })), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-10 text-center" }, "PLAY"), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("title"), className: "py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors" }, t("th_title") || "T\xCDTULO", " / ", t("th_album") || "\xC1LBUM", " ", renderSortArrowSp("title")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("match_score"), className: "py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors", title: "Ordenar por porcentaje de coincidencia ac\xFAstica (Match %)" }, "\u{1F3AF} MATCH ", renderSortArrowSp("match_score")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("artist"), className: "py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors" }, t("th_artist") || "ARTISTA", " ", renderSortArrowSp("artist")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("genre"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_genre") || "G\xC9NERO", " ", renderSortArrowSp("genre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("subgenre"), className: "py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors" }, t("th_subgenre") || "SUBG\xC9NERO", " ", renderSortArrowSp("subgenre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("origin"), className: "py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors" }, "ORIGEN ", renderSortArrowSp("origin")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("pre_quality_tier"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors", title: "Pre-Auditor\xEDa de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena" }, "\u{1F48E} PRE-AUDITOR\xCDA (VALOR) ", renderSortArrowSp("pre_quality_tier")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("format"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_format") || "FORMATO", " ", renderSortArrowSp("format")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("sample_rate_khz"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_khz") || "KHZ", " ", renderSortArrowSp("sample_rate_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("bitrate_kbps"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, t("th_kbps") || "KBPS", " ", renderSortArrowSp("bitrate_kbps")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("calidad"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_quality") || "CALIDAD", " ", renderSortArrowSp("calidad")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("cutoff_khz"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" }, t("th_loss") || "P\xC9RDIDA / CORTE", " ", renderSortArrowSp("cutoff_khz")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("duration"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_duration") || "DURACI\xD3N", " ", renderSortArrowSp("duration")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("bpm"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "BPM ", renderSortArrowSp("bpm")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("key"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "KEY ", renderSortArrowSp("key")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("energy"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, "\u26A1 ENERG\xCDA ", renderSortArrowSp("energy")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("danceability"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, "\u{1F57A} DANCE ", renderSortArrowSp("danceability")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortSp("status"), className: "py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors" }, t("th_status") || "ESTADO", " / ", t("download_btn") || "ACCI\xD3N", " ", renderSortArrowSp("status"))), /* @__PURE__ */ React.createElement("tr", { className: "bg-[#07070a] border-b border-djzinc-800 text-[10px] lowercase font-sans" }, /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, spFilterSearch || spFilterMatch !== "ALL" || spFilterOrigin !== "ALL" || spFilterFormat !== "ALL" || spFilterQuality !== "ALL" || spFilterStatus !== "ALL" || spFilterEnergy !== "ALL" || spFilterDance !== "ALL" ? /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => {
@@ -17854,6 +18133,15 @@ const App = () => {
     } catch (e) {
     }
   };
+  useEffect(() => {
+    const handleBitacoraSync = (e) => {
+      if (e && e.detail && Array.isArray(e.detail)) {
+        setBitacoraEntries(e.detail);
+      }
+    };
+    window.addEventListener("bw_bitacora_updated", handleBitacoraSync);
+    return () => window.removeEventListener("bw_bitacora_updated", handleBitacoraSync);
+  }, []);
   useEffect(() => {
     if (userProfile && userProfile.autoSave !== false) {
       try {

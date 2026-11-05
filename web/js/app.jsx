@@ -12469,6 +12469,8 @@ const SpotifyWorkspace = ({
     const [selectedId, setSelectedId] = useState(null);
     const [spInspectorOpen, setSpInspectorOpen] = useState(false);
     const [downloadSession, setDownloadSession] = useState({ downloaded: [], failed: [] });
+    const [spSubView, setSpSubView] = useState('catalog'); // 'catalog' | 'downloaded'
+    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState(new Set());
     const [isExportingXls, setIsExportingXls] = useState(false);
     const [xlsToast, setXlsToast] = useState('');
     const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState(() => {
@@ -12623,33 +12625,88 @@ const SpotifyWorkspace = ({
                 if (res && res.id) {
                     setTracks(prev => {
                         const trk = prev.find(t => String(t.id) === String(res.id));
-                        if (trk) {
-                            const completedItem = {
-                                id: res.id,
-                                title: trk.title || res.name || 'Desconocido',
-                                artist: trk.artist || res.artist || 'Desconocido',
-                                album: trk.album || '',
-                                format: res.format || (selectedFormat ? selectedFormat.toUpperCase() : 'FLAC'),
-                                cutoff_khz: res.cutoff_khz,
-                                calidad: res.calidad || 'Alta',
-                                status: res.status || res.estado || 'Lossless OK',
-                                sample_rate_khz: res.sample_rate_khz || 44.1,
-                                bitrate_kbps: res.bitrate_kbps || 0,
-                                perdida: res.perdida || 'Sin Pérdida',
-                                path: res.path || trk.path || ''
-                            };
-                            setDownloadSession(sPrev => ({
-                                ...sPrev,
-                                downloaded: [...sPrev.downloaded.filter(x => String(x.id) !== String(res.id)), completedItem]
-                            }));
-                        }
-                        // Eliminar la pista descargada de la lista activa para dejar solo pendientes / fallidas
+                        const completedItem = {
+                            id: res.id,
+                            title: trk ? (trk.title || res.name || res.title || 'Desconocido') : (res.name || res.title || 'Desconocido'),
+                            artist: trk ? (trk.artist || res.artist || 'Desconocido') : (res.artist || 'Desconocido'),
+                            album: trk ? (trk.album || res.album || '') : (res.album || ''),
+                            format: res.format || (selectedFormat ? selectedFormat.toUpperCase() : 'FLAC'),
+                            cutoff_khz: res.cutoff_khz !== undefined ? res.cutoff_khz : null,
+                            corte: res.corte || '--',
+                            calidad: res.calidad || 'Pendiente de Auditoría',
+                            status: res.status || res.estado || 'Descargado',
+                            sample_rate_khz: res.sample_rate_khz || null,
+                            bitrate_kbps: res.bitrate_kbps || null,
+                            perdida: res.perdida || '--',
+                            path: res.path || trk?.path || '',
+                            audit_status: res.audit_status || 'pendiente',
+                            consejo: res.consejo || 'Pendiente de análisis FFT',
+                            sugerencia_formato: res.sugerencia_formato || null,
+                            es_fake: res.es_fake || false,
+                            badge_color: res.badge_color || 'gray',
+                            spotify_url: trk?.spotify_url || res.spotify_url || '',
+                            cover: trk?.cover || trk?.cover_url || res.cover || '',
+                            selected: true
+                        };
+                        setDownloadSession(sPrev => ({
+                            ...sPrev,
+                            downloaded: [...sPrev.downloaded.filter(x => String(x.id) !== String(res.id) && String(x.path) !== String(completedItem.path)), completedItem]
+                        }));
+                        setSelectedDownloadedIds(prevIds => new Set(prevIds).add(String(res.id || completedItem.path)));
                         return prev.filter(t => String(t.id) !== String(res.id));
                     });
                     if (res.audit_msg) {
                         setFftMsg(res.audit_msg);
                     }
                 }
+            };
+
+            const notifyPostDownloadAudit = (auditData) => {
+                if (!auditData) return;
+                setDownloadSession(prev => ({
+                    ...prev,
+                    downloaded: prev.downloaded.map(item => {
+                        if (String(item.id) === String(auditData.id) || (item.path && auditData.path && item.path === auditData.path)) {
+                            return {
+                                ...item,
+                                ...auditData,
+                                audit_status: 'completada'
+                            };
+                        }
+                        return item;
+                    })
+                }));
+
+                // Auto-registrar en Cuaderno de Bitácora
+                try {
+                    const nowStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const bEntry = {
+                        id: `b-fft-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                        timestamp: nowStr,
+                        category: 'download',
+                        action: 'Auditoría FFT Post-Descarga & Diagnóstico Espectral',
+                        trackTitle: `${auditData.artist || 'Artista'} - ${auditData.title || 'Pista'}`,
+                        filePath: auditData.path || '',
+                        detailsBefore: `Formato descargado: ${auditData.format || 'FLAC'} • Sin certificar`,
+                        detailsAfter: `Corte: ${auditData.corte || '--'} • Calidad: ${auditData.calidad || '--'} • ${auditData.consejo || 'Óptimo'}`,
+                        status: auditData.es_fake ? '⚠️ Fake Detectado' : '✓ Certificado'
+                    };
+                    const raw = localStorage.getItem('bw_audit_bitacora');
+                    let cur = raw ? JSON.parse(raw) : [];
+                    const nextB = [bEntry, ...cur].slice(0, 500);
+                    localStorage.setItem('bw_audit_bitacora', JSON.stringify(nextB));
+                    window.dispatchEvent(new CustomEvent('bw_bitacora_updated', { detail: nextB }));
+                } catch (e) {}
+            };
+
+            const finishPostDownloadAudit = (results) => {
+                setIsAuditingFft(false);
+                setFftProgress(100);
+                setFftMsg('✅ Auditoría FFT finalizada.');
+                setTimeout(() => {
+                    setFftProgress(0);
+                    setFftMsg('');
+                }, 2000);
             };
 
             const notifyDownloadFailure = (errData) => {
@@ -12687,7 +12744,6 @@ const SpotifyWorkspace = ({
                 setIsDownloading(false);
                 setIsAuditingFft(false);
                 setDownloadProgress(100);
-                setFftProgress(100);
                 setDownloadingMsg(msg || 'Lote completado con éxito.');
                 setTimeout(() => {
                     setDownloadProgress(0);
@@ -12695,6 +12751,7 @@ const SpotifyWorkspace = ({
                     setIsAuditingFft(false);
                     setDownloadingMsg('');
                 }, 1500);
+                setSpSubView('downloaded');
             };
 
             const notifyOriginalPurged = (info) => {
@@ -12707,6 +12764,8 @@ const SpotifyWorkspace = ({
             window.actualizar_progreso_descarga = updateDownload;
             window.actualizar_estado_fft = updateFft;
             window.notificar_resultado_auditoria = notifyFftResult;
+            window.notificar_resultado_auditoria_post_descarga = notifyPostDownloadAudit;
+            window.notificar_fin_auditoria_post_descarga = finishPostDownloadAudit;
             window.notificar_fallo_descarga = notifyDownloadFailure;
             window.notificar_fin_lote = finishBatch;
             window.notificar_archivo_original_eliminado = notifyOriginalPurged;
@@ -12715,6 +12774,8 @@ const SpotifyWorkspace = ({
             window.eel.expose(window.actualizar_progreso_descarga, "actualizar_progreso_descarga");
             window.eel.expose(window.actualizar_estado_fft, "actualizar_estado_fft");
             window.eel.expose(window.notificar_resultado_auditoria, "notificar_resultado_auditoria");
+            window.eel.expose(window.notificar_resultado_auditoria_post_descarga, "notificar_resultado_auditoria_post_descarga");
+            window.eel.expose(window.notificar_fin_auditoria_post_descarga, "notificar_fin_auditoria_post_descarga");
             window.eel.expose(window.notificar_fallo_descarga, "notificar_fallo_descarga");
             window.eel.expose(window.notificar_fin_lote, "notificar_fin_lote");
             window.eel.expose(window.notificar_archivo_original_eliminado, "notificar_archivo_original_eliminado");
@@ -13255,8 +13316,9 @@ const SpotifyWorkspace = ({
         }
     };
 
-    const lanzarDescargaReal = async (listaPistas) => {
+    const lanzarDescargaReal = async (listaPistas, formatoOverride = null) => {
         if (!listaPistas || listaPistas.length === 0) return;
+        const fmt = (formatoOverride || selectedFormat || 'flac').toLowerCase();
 
         // Comprobación de fidelidad DJ previa a la descarga
         let pistasADescargar = [...listaPistas];
@@ -13271,11 +13333,11 @@ const SpotifyWorkspace = ({
         setIsDownloading(true);
         setDownloadProgress(10);
         const purgeTag = deleteOriginalsOnUpgrade ? " (🗑️ Con purga de baja calidad)" : "";
-        setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${pistasADescargar.length} pista(s) en formato .${selectedFormat.toUpperCase()}${purgeTag}...`);
+        setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${pistasADescargar.length} pista(s) en formato .${fmt.toUpperCase()}${purgeTag}...`);
         let descargadoVíaEel = false;
         if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
             try {
-                await window.eel.descargar_pistas_spotify_seleccionadas(pistasADescargar, selectedFormat, destDir, deleteOriginalsOnUpgrade)();
+                await window.eel.descargar_pistas_spotify_seleccionadas(pistasADescargar, fmt, destDir, deleteOriginalsOnUpgrade)();
                 descargadoVíaEel = true;
             } catch (e) {
                 console.warn("[SPOTIFY] Error en llamada Eel de descarga, recurriendo a HTTP:", e);
@@ -13288,7 +13350,7 @@ const SpotifyWorkspace = ({
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         tracks: pistasADescargar,
-                        formato: selectedFormat,
+                        formato: fmt,
                         custom_dir: destDir,
                         eliminar_originales: deleteOriginalsOnUpgrade
                     })
@@ -13309,6 +13371,84 @@ const SpotifyWorkspace = ({
                 setDownloadingMsg(`[ERROR] Conexión fallida: ${httpErr.message || httpErr}`);
             }
         }
+    };
+
+    const handleAuditarDescargas = async (pistasAAuditar = null) => {
+        const targetList = pistasAAuditar && pistasAAuditar.length > 0 ? pistasAAuditar : downloadSession.downloaded;
+        if (!targetList || targetList.length === 0) {
+            alert("No hay pistas descargadas disponibles para auditar.");
+            return;
+        }
+        setIsAuditingFft(true);
+        setFftProgress(5);
+        setFftMsg(`[AUDITORÍA FFT] Iniciando certificación espectral de ${targetList.length} pista(s)...`);
+
+        let auditadoVíaEel = false;
+        if (window.eel && window.eel.auditar_descargas_fft) {
+            try {
+                await window.eel.auditar_descargas_fft(targetList)();
+                auditadoVíaEel = true;
+            } catch (e) {
+                console.warn("[SPOTIFY] Error en llamada Eel de auditoría, recurriendo a HTTP:", e);
+            }
+        }
+        if (!auditadoVíaEel) {
+            try {
+                const resp = await fetch('/api/auditar_descargas_fft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tracks: targetList })
+                });
+                const res = await resp.json();
+                if (res && res.status === 'iniciado') {
+                    setFftProgress(15);
+                }
+            } catch (err) {
+                console.error("Error al iniciar auditoría FFT:", err);
+                setIsAuditingFft(false);
+                setFftProgress(0);
+                setFftMsg("Error de conexión al iniciar auditoría FFT.");
+            }
+        }
+    };
+
+    const handleRedescargarFormato = (pistas, formato = 'mp3') => {
+        if (!pistas || pistas.length === 0) return;
+        const confirmMsg = `¿Deseas descargar ${pistas.length} pista(s) en formato .${formato.toUpperCase()} (Calidad Garantizada 320 kbps CBR)?\n\n${deleteOriginalsOnUpgrade ? '✓ Se sustituirá el archivo anterior eliminando el duplicado de baja calidad.' : '• Se conservará el archivo anterior en la carpeta.'}`;
+        if (!window.confirm(confirmMsg)) return;
+
+        const normalizadas = pistas.map(p => ({
+            id: p.id || `sp_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            title: p.title || p.name || 'Track',
+            name: p.title || p.name || 'Track',
+            artist: p.artist || 'Artista',
+            album: p.album || '',
+            cover: p.cover || p.cover_url || '',
+            cover_url: p.cover || p.cover_url || '',
+            original_path: p.path,
+            origin: 'audit_upgrade',
+            spotify_url: p.spotify_url || (p.id && String(p.id).length === 22 ? `https://open.spotify.com/track/${p.id}` : '')
+        }));
+        setSpSubView('catalog');
+        lanzarDescargaReal(normalizadas, formato);
+    };
+
+    const handleToggleSelectAllDownloaded = () => {
+        if (selectedDownloadedIds.size === downloadSession.downloaded.length && downloadSession.downloaded.length > 0) {
+            setSelectedDownloadedIds(new Set());
+        } else {
+            setSelectedDownloadedIds(new Set(downloadSession.downloaded.map(t => String(t.id || t.path))));
+        }
+    };
+
+    const handleToggleSelectDownloaded = (id) => {
+        setSelectedDownloadedIds(prev => {
+            const next = new Set(prev);
+            const strId = String(id);
+            if (next.has(strId)) next.delete(strId);
+            else next.add(strId);
+            return next;
+        });
     };
 
     const handleCambiarCarpeta = () => {
@@ -13370,6 +13510,40 @@ const SpotifyWorkspace = ({
                                     <span>{lang === 'en' ? 'Cancel' : 'Cancelar'}</span>
                                 </button>
                             )}
+                        </div>
+
+                        {/* Selector de Sub-Vistas: Catálogo / Búsqueda vs Descargadas & Auditoría FFT */}
+                        <div className="flex items-center gap-1.5 bg-[#060609] border border-djzinc-750 p-1 rounded-lg shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setSpSubView('catalog')}
+                                className={`px-3 py-1 rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                    spSubView === 'catalog'
+                                        ? 'bg-djcyan-500 text-black shadow-sm font-black'
+                                        : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
+                                }`}
+                            >
+                                <span>🔍</span>
+                                <span>Catálogo</span>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${spSubView === 'catalog' ? 'bg-black/20 text-black' : 'bg-djzinc-800 text-djcyan-400'}`}>
+                                    {tracks.length}
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSpSubView('downloaded')}
+                                className={`px-3 py-1 rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                    spSubView === 'downloaded'
+                                        ? 'bg-emerald-500 text-black shadow-sm font-black'
+                                        : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
+                                }`}
+                            >
+                                <span>📥</span>
+                                <span>Descargadas & FFT</span>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${spSubView === 'downloaded' ? 'bg-black/20 text-black' : 'bg-djzinc-800 text-emerald-400'}`}>
+                                    {downloadSession.downloaded.length}
+                                </span>
+                            </button>
                         </div>
 
                         {/* Botones de Acción Primarios */}
@@ -13681,7 +13855,252 @@ const SpotifyWorkspace = ({
                     </div>
                 )}
 
-                {tracks.length === 0 && !isAnalyzing ? (
+                {spSubView === 'downloaded' ? (
+                    <div className="flex-1 flex flex-col min-h-0 bg-[#08080b] overflow-hidden select-none">
+                        {/* Barra Superior de Herramientas de Auditoría y Consejos */}
+                        <div className="px-4 py-2.5 bg-[#0c0c12] border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const seleccion = downloadSession.downloaded.filter(t => selectedDownloadedIds.has(String(t.id || t.path)));
+                                        handleAuditarDescargas(seleccion.length > 0 ? seleccion : downloadSession.downloaded);
+                                    }}
+                                    disabled={isAuditingFft || downloadSession.downloaded.length === 0}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+                                        isAuditingFft 
+                                            ? 'bg-emerald-800 text-emerald-200 animate-pulse' 
+                                            : 'bg-emerald-500 hover:bg-emerald-400 text-black font-black shadow-emerald-500/20'
+                                    } disabled:opacity-50`}
+                                    title="Ejecutar análisis espectral FFT sobre las pistas seleccionadas o todas para certificar corte kHz y descartar falsos upsamples"
+                                >
+                                    <span>🔬</span>
+                                    <span>
+                                        {selectedDownloadedIds.size > 0 && selectedDownloadedIds.size < downloadSession.downloaded.length 
+                                            ? `Auditar Selección (${selectedDownloadedIds.size})` 
+                                            : `Auditar Todo (${downloadSession.downloaded.length})`}
+                                    </span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const seleccion = downloadSession.downloaded.filter(t => selectedDownloadedIds.has(String(t.id || t.path)));
+                                        handleRedescargarFormato(seleccion.length > 0 ? seleccion : downloadSession.downloaded, 'mp3');
+                                    }}
+                                    disabled={isDownloading || downloadSession.downloaded.length === 0}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                                    title="Descargar versión garantizada en MP3 320 kbps CBR para evitar peso artificial en CDJs"
+                                >
+                                    <span>⚡</span>
+                                    <span>
+                                        {selectedDownloadedIds.size > 0 && selectedDownloadedIds.size < downloadSession.downloaded.length 
+                                            ? `Descargar Selección en MP3 320 (${selectedDownloadedIds.size})` 
+                                            : `Descargar Todo en MP3 320`}
+                                    </span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleDescargarReporteXLS}
+                                    disabled={isExportingXls || (downloadSession.downloaded.length === 0 && downloadSession.failed.length === 0)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#14141d] hover:bg-emerald-950 text-emerald-300 border border-emerald-600/60 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                                    title="Exportar informe Excel completo con cortes FFT y consejos de optimización"
+                                >
+                                    <span>📊</span>
+                                    <span>Exportar Excel ({downloadSession.downloaded.length}✓)</span>
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-mono text-gray-400">
+                                    <strong className="text-emerald-400">{downloadSession.downloaded.filter(t => t.audit_status === 'completada').length}</strong> de {downloadSession.downloaded.length} auditadas
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (window.confirm("¿Deseas vaciar la lista de pistas descargadas de esta sesión?")) {
+                                            setDownloadSession(prev => ({ ...prev, downloaded: [] }));
+                                            setSelectedDownloadedIds(new Set());
+                                        }
+                                    }}
+                                    className="px-2 py-1 rounded text-[10px] font-mono text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 border border-djzinc-800 transition-colors cursor-pointer"
+                                    title="Vaciar listado de descargadas"
+                                >
+                                    🗑️ Limpiar
+                                </button>
+                            </div>
+                        </div>
+
+                        {downloadSession.downloaded.length === 0 ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#08080b] select-none text-center">
+                                <div className="max-w-md w-full p-6 rounded-2xl bg-[#0c0c12] border border-djzinc-800 flex flex-col items-center gap-3 shadow-xl">
+                                    <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-500/50 flex items-center justify-center text-emerald-400 text-xl">
+                                        📥
+                                    </div>
+                                    <h4 className="text-sm font-bold text-white uppercase font-mono">Sin Descargas En Esta Sesión</h4>
+                                    <p className="text-xs text-gray-400 leading-relaxed">
+                                        Las pistas descargadas aparecerán en este listado para que puedas ejecutar el análisis espectral FFT post-descarga y certificar su fidelidad acústica.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSpSubView('catalog')}
+                                        className="px-4 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg transition-colors cursor-pointer mt-1"
+                                    >
+                                        ← Ir a Catálogo / Búsqueda
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex-1 overflow-auto bg-[#08080b]">
+                                <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
+                                    <thead className="sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400">
+                                        <tr>
+                                            <th className="py-2.5 px-3 w-8 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedDownloadedIds.size === downloadSession.downloaded.length && downloadSession.downloaded.length > 0}
+                                                    onChange={handleToggleSelectAllDownloaded}
+                                                    className="accent-djcyan-500 cursor-pointer"
+                                                />
+                                            </th>
+                                            <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
+                                            <th className="py-2.5 px-3 min-w-[220px]">TÍTULO / ÁLBUM</th>
+                                            <th className="py-2.5 px-3 min-w-[140px]">ARTISTA</th>
+                                            <th className="py-2.5 px-2 text-center w-24">FORMATO</th>
+                                            <th className="py-2.5 px-3 text-center min-w-[200px]">AUDITORÍA FFT (ESPECTRO)</th>
+                                            <th className="py-2.5 px-3 min-w-[260px]">CONSEJO / OPTIMIZACIÓN DJ</th>
+                                            <th className="py-2.5 px-3 text-center min-w-[140px]">ACCIÓN / RE-DESCARGA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-djzinc-850/60 font-mono text-[11px]">
+                                        {downloadSession.downloaded.map((row, idx) => {
+                                            const isRowSelected = selectedDownloadedIds.has(String(row.id || row.path));
+                                            const isAudited = row.audit_status === 'completada';
+                                            return (
+                                                <tr
+                                                    key={row.id || `dl_${idx}`}
+                                                    onClick={() => handleToggleSelectDownloaded(row.id || row.path)}
+                                                    className={`transition-colors cursor-pointer ${
+                                                        isRowSelected ? 'bg-djcyan-950/20 hover:bg-djcyan-950/30' : 'hover:bg-djzinc-900/60'
+                                                    }`}
+                                                >
+                                                    <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isRowSelected}
+                                                            onChange={() => handleToggleSelectDownloaded(row.id || row.path)}
+                                                            className="accent-djcyan-500 cursor-pointer"
+                                                        />
+                                                    </td>
+                                                    <td className="py-2 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => onPlayTrack && onPlayTrack(row)}
+                                                            className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djcyan-500 hover:text-black text-gray-300 flex items-center justify-center transition-all cursor-pointer text-xs"
+                                                            title="Reproducir archivo descargado"
+                                                        >
+                                                            ▶
+                                                        </button>
+                                                    </td>
+                                                    <td className="py-2 px-3">
+                                                        <div className="flex flex-col max-w-[240px]">
+                                                            <span className="font-bold text-gray-200 truncate">{row.title || 'Desconocido'}</span>
+                                                            <span className="text-[10px] text-gray-500 truncate">{row.album || 'CleanDJmix Ingest'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-2 px-3 text-gray-300 truncate max-w-[140px]">
+                                                        {row.artist || 'Desconocido'}
+                                                    </td>
+                                                    <td className="py-2 px-2 text-center">
+                                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-djzinc-800 text-djcyan-300 border border-djzinc-700">
+                                                            {row.format || 'FLAC'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2 px-3 text-center">
+                                                        {isAudited ? (
+                                                            row.es_fake ? (
+                                                                <div className="flex flex-col items-center gap-0.5">
+                                                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-600 shadow-[0_0_8px_rgba(244,63,94,0.3)]">
+                                                                        ⚠️ Fake Upsample ({row.corte})
+                                                                    </span>
+                                                                    <span className="text-[9.5px] text-gray-400">
+                                                                        {row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : ''} • {row.perdida || 'Pérdida'}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col items-center gap-0.5">
+                                                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-600">
+                                                                        ✓ Lossless Real ({row.corte})
+                                                                    </span>
+                                                                    <span className="text-[9.5px] text-emerald-400/80">
+                                                                        {row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : ''} • Sin Pérdida
+                                                                    </span>
+                                                                </div>
+                                                            )
+                                                        ) : isAuditingFft ? (
+                                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-700 animate-pulse">
+                                                                🔬 Analizando FFT...
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 rounded text-[10px] text-gray-400 bg-djzinc-850 border border-djzinc-750">
+                                                                ⏳ Pendiente de Auditoría
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-2 px-3 whitespace-normal">
+                                                        {row.consejo ? (
+                                                            row.es_fake ? (
+                                                                <div className="p-1.5 rounded bg-amber-950/60 border border-amber-600/70 text-amber-200 text-[10.5px] font-sans leading-tight">
+                                                                    {row.consejo}
+                                                                </div>
+                                                            ) : isAudited ? (
+                                                                <div className="p-1.5 rounded bg-emerald-950/40 border border-emerald-600/50 text-emerald-300 text-[10.5px] font-sans leading-tight">
+                                                                    {row.consejo}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-400 text-[10.5px] font-sans italic">
+                                                                    {row.consejo}
+                                                                </span>
+                                                            )
+                                                        ) : (
+                                                            <span className="text-gray-500 text-[10.5px] font-sans italic">
+                                                                Pendiente de análisis FFT
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleAuditarDescargas([row])}
+                                                                disabled={isAuditingFft}
+                                                                className="px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
+                                                                title="Ejecutar auditoría acústica FFT en esta pista"
+                                                            >
+                                                                {isAudited ? 'Re-auditar' : '🔬 Auditar'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRedescargarFormato([row], 'mp3')}
+                                                                disabled={isDownloading}
+                                                                className="px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                                                                title="Descargar versión garantizada en MP3 320 kbps CBR"
+                                                            >
+                                                                ⬇ MP3 320
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                tracks.length === 0 && !isAnalyzing ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#08080b] select-none overflow-y-auto">
                         <div className="max-w-xl w-full mx-auto flex flex-col items-center justify-center gap-3.5 p-6 sm:p-8 rounded-2xl bg-[#0c0c12] border border-djzinc-800 shadow-2xl text-center">
                             <div className="w-14 h-14 rounded-full bg-emerald-950/70 border border-emerald-500/60 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
@@ -14233,6 +14652,7 @@ const SpotifyWorkspace = ({
                         </tbody>
                     </table>
                 </div>
+                )
                 )}
             </div>
 
@@ -26327,6 +26747,16 @@ const App = () => {
         setBitacoraEntries([]);
         try { localStorage.removeItem('bw_audit_bitacora'); } catch (e) {}
     };
+
+    useEffect(() => {
+        const handleBitacoraSync = (e) => {
+            if (e && e.detail && Array.isArray(e.detail)) {
+                setBitacoraEntries(e.detail);
+            }
+        };
+        window.addEventListener('bw_bitacora_updated', handleBitacoraSync);
+        return () => window.removeEventListener('bw_bitacora_updated', handleBitacoraSync);
+    }, []);
 
     // Auto-guardado continuo del estado de la sesión para que el DJ continúe donde lo dejó
     useEffect(() => {

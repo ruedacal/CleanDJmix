@@ -414,7 +414,7 @@ class ExportService:
                 headers_ok = [
                     "#", "Título", "Artista", "Álbum", "Formato", 
                     "Corte kHz", "Calidad FFT", "Estado", "Sample Rate (kHz)", 
-                    "Bitrate (kbps)", "Pérdida", "Ruta Archivo en Disco"
+                    "Bitrate (kbps)", "Pérdida", "Consejo DJ / Optimización", "Ruta Archivo en Disco"
                 ]
 
                 ws_ok.append(headers_ok)
@@ -426,18 +426,22 @@ class ExportService:
                     cell.alignment = Alignment(horizontal="center", vertical="center")
 
                 for idx, t in enumerate(downloaded, start=1):
+                    corte_val = t.get("cutoff_khz")
+                    if corte_val is None or corte_val == "":
+                        corte_val = t.get("corte", "--")
                     row_data = [
                         idx,
                         t.get("title") or t.get("name") or "Desconocido",
                         t.get("artist") or "Desconocido",
                         t.get("album") or "",
                         t.get("format") or "FLAC",
-                        t.get("cutoff_khz", 22.0),
-                        t.get("calidad") or "Alta",
-                        t.get("status") or t.get("estado") or "OK",
-                        t.get("sample_rate_khz", 44.1),
-                        t.get("bitrate_kbps", 0),
-                        t.get("perdida") or "Sin Pérdida",
+                        corte_val,
+                        t.get("calidad") or "Pendiente",
+                        t.get("status") or t.get("estado") or "Descargado",
+                        t.get("sample_rate_khz") if t.get("sample_rate_khz") is not None else "--",
+                        t.get("bitrate_kbps") if t.get("bitrate_kbps") is not None else "--",
+                        t.get("perdida") or "--",
+                        t.get("consejo") or t.get("advice") or ("Óptimo" if not t.get("es_fake") and t.get("audit_status") == "completada" else "Pendiente de análisis"),
                         t.get("path") or t.get("local_path") or ""
                     ]
                     ws_ok.append(row_data)
@@ -445,7 +449,7 @@ class ExportService:
                     ws_ok.row_dimensions[row_idx].height = 20
                     for c_num in range(1, len(headers_ok) + 1):
                         c = ws_ok.cell(row=row_idx, column=c_num)
-                        c.font = font_regular if c_num != 12 else font_mono
+                        c.font = font_regular if c_num != 13 else font_mono
                         c.border = border_box
                         if idx % 2 == 0:
                             c.fill = fill_zebra
