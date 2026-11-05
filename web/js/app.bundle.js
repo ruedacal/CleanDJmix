@@ -17669,6 +17669,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
   const [videoOpacity, setVideoOpacity] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isBassShaking, setIsBassShaking] = useState(false);
+  const [trippyMode, setTrippyMode] = useState("psychedelic");
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -17801,7 +17802,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         }
       }
     },
-    phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement(
+    phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: `relative w-full h-full overflow-hidden flex items-center justify-center ${trippyMode === "psychedelic" ? "trippy-fx-active" : trippyMode === "acid" ? "trippy-fx-acid" : ""} ${isBassShaking ? "anim-bass-shake" : ""}` }, /* @__PURE__ */ React.createElement(
       "video",
       {
         ref: videoRef,
@@ -17811,13 +17812,48 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         onTimeUpdate: handleTimeUpdate,
         onEnded: handleVideoEnded,
         src: "/assets/intro_cinematic.mp4",
-        className: `w-full h-full object-cover pointer-events-none ${isBassShaking ? "anim-bass-shake" : ""}`,
+        className: "w-full h-full object-cover pointer-events-none",
         style: {
           opacity: videoOpacity,
           transition: "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)"
         }
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
+    ), trippyMode !== "off" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "absolute inset-0 mix-blend-screen pointer-events-none",
+        style: {
+          background: "radial-gradient(ellipse at center, rgba(244, 63, 94, 0.22) 0%, transparent 70%)",
+          animation: "trippyRgbSplitRed 0.75s infinite ease-in-out"
+        }
+      }
+    ), /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "absolute inset-0 mix-blend-screen pointer-events-none",
+        style: {
+          background: "radial-gradient(ellipse at center, rgba(6, 182, 212, 0.22) 0%, transparent 70%)",
+          animation: "trippyRgbSplitCyan 0.75s infinite ease-in-out"
+        }
+      }
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-prism-glow mix-blend-color-dodge" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-scanlines opacity-35 mix-blend-overlay" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.7)_100%)] pointer-events-none" }))), /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/75 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 px-2 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F300}"), /* @__PURE__ */ React.createElement("span", null, "EFECTO TRIPPY:")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, [
+      { id: "psychedelic", label: "Psicod\xE9lico", icon: "\u{1F308}" },
+      { id: "acid", label: "Acid Glitch", icon: "\u26A1" },
+      { id: "off", label: "Original", icon: "\u{1F39E}\uFE0F" }
+    ].map((opt) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: opt.id,
+        type: "button",
+        onClick: (e) => {
+          e.stopPropagation();
+          setTrippyMode(opt.id);
+        },
+        className: `px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1 ${trippyMode === opt.id ? "bg-gradient-to-r from-pink-500 to-cyan-500 text-black font-black shadow-[0_0_12px_rgba(236,72,153,0.5)] scale-105" : "text-gray-400 hover:text-white hover:bg-white/10"}`
+      },
+      /* @__PURE__ */ React.createElement("span", null, opt.icon),
+      /* @__PURE__ */ React.createElement("span", null, opt.label)
+    )))), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -18219,6 +18255,9 @@ const App = () => {
     }
   }, [tutorialOpen, copilotModalOpen]);
   useEffect(() => {
+    window.abrirIntroCinematica = () => {
+      setCinematicIntroOpen(true);
+    };
     window.abrirTutorial = (mode = "launcher") => {
       setTutorialInitialMode(mode);
       setTutorialOpen(true);

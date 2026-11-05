@@ -26221,6 +26221,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 1.0 (100% visible, alpha 100%)
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
+    const [trippyMode, setTrippyMode] = useState('psychedelic'); // 'psychedelic' | 'acid' | 'off' (Efecto Trippy Envato)
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -26376,23 +26377,92 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: SOLO Y EXCLUSIVAMENTE EL VÍDEO A PANTALLA COMPLETA AL 100% DE OPACIDAD */}
+            {/* FASE 1: VÍDEO CON EFECTO TRIPPY (ESTILO ENVATO: PSICODÉLICO, RGB SPLIT & GLITCH) */}
             {phase === 'video' && (
                 <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted={isMuted}
-                        onTimeUpdate={handleTimeUpdate}
-                        onEnded={handleVideoEnded}
-                        src="/assets/intro_cinematic.mp4"
-                        className={`w-full h-full object-cover pointer-events-none ${isBassShaking ? 'anim-bass-shake' : ''}`}
-                        style={{ 
-                            opacity: videoOpacity, 
-                            transition: 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' 
-                        }}
-                    />
+                    {/* Contenedor reactivo con distorsión óptica, hue-rotate y pulsación */}
+                    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center ${
+                        trippyMode === 'psychedelic' ? 'trippy-fx-active' :
+                        trippyMode === 'acid' ? 'trippy-fx-acid' : ''
+                    } ${isBassShaking ? 'anim-bass-shake' : ''}`}>
+                        
+                        {/* Vídeo Nativo al 100% de Opacidad */}
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted={isMuted}
+                            onTimeUpdate={handleTimeUpdate}
+                            onEnded={handleVideoEnded}
+                            src="/assets/intro_cinematic.mp4"
+                            className="w-full h-full object-cover pointer-events-none"
+                            style={{ 
+                                opacity: videoOpacity, 
+                                transition: 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' 
+                            }}
+                        />
+
+                        {/* Capas de Efectos Visuales Trippy Envato cuando está activado */}
+                        {trippyMode !== 'off' && (
+                            <>
+                                {/* Capa de Aberración Cromática Roja / Magenta */}
+                                <div 
+                                    className="absolute inset-0 mix-blend-screen pointer-events-none"
+                                    style={{
+                                        background: 'radial-gradient(ellipse at center, rgba(244, 63, 94, 0.22) 0%, transparent 70%)',
+                                        animation: 'trippyRgbSplitRed 0.75s infinite ease-in-out'
+                                    }}
+                                />
+
+                                {/* Capa de Aberración Cromática Cian Eléctrico */}
+                                <div 
+                                    className="absolute inset-0 mix-blend-screen pointer-events-none"
+                                    style={{
+                                        background: 'radial-gradient(ellipse at center, rgba(6, 182, 212, 0.22) 0%, transparent 70%)',
+                                        animation: 'trippyRgbSplitCyan 0.75s infinite ease-in-out'
+                                    }}
+                                />
+
+                                {/* Aura prismática central pulsante */}
+                                <div className="absolute inset-0 trippy-prism-glow mix-blend-color-dodge" />
+
+                                {/* Textura de scanlines CRT / VHS analógico */}
+                                <div className="absolute inset-0 trippy-scanlines opacity-35 mix-blend-overlay" />
+
+                                {/* Viñeteado cinematográfico perimetral */}
+                                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.7)_100%)] pointer-events-none" />
+                            </>
+                        )}
+                    </div>
+
+                    {/* Selector Flotante de Efecto Trippy (Envato Style) */}
+                    <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/75 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl">
+                        <span className="text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 px-2 flex items-center gap-1.5">
+                            <span>🌀</span>
+                            <span>EFECTO TRIPPY:</span>
+                        </span>
+                        <div className="flex items-center gap-1">
+                            {[
+                                { id: 'psychedelic', label: 'Psicodélico', icon: '🌈' },
+                                { id: 'acid', label: 'Acid Glitch', icon: '⚡' },
+                                { id: 'off', label: 'Original', icon: '🎞️' }
+                            ].map(opt => (
+                                <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setTrippyMode(opt.id); }}
+                                    className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                                        trippyMode === opt.id
+                                            ? 'bg-gradient-to-r from-pink-500 to-cyan-500 text-black font-black shadow-[0_0_12px_rgba(236,72,153,0.5)] scale-105'
+                                            : 'text-gray-400 hover:text-white hover:bg-white/10'
+                                    }`}
+                                >
+                                    <span>{opt.icon}</span>
+                                    <span>{opt.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
                     {/* Botón sutil en esquina inferior derecha para saltar si el usuario lo desea */}
                     <div className="absolute bottom-6 right-6 z-50">
@@ -26848,6 +26918,9 @@ const App = () => {
     }, [tutorialOpen, copilotModalOpen]);
 
     useEffect(() => {
+        window.abrirIntroCinematica = () => {
+            setCinematicIntroOpen(true);
+        };
         window.abrirTutorial = (mode = 'launcher') => {
             setTutorialInitialMode(mode);
             setTutorialOpen(true);
