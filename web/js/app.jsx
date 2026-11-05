@@ -26218,17 +26218,17 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     if (!isOpen) return null;
 
     const [phase, setPhase] = useState('video'); // 'video' | 'portal'
-    const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 0.25 (75% transparente sobre negro)
+    const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 1.0 (100% visible, alpha 100%)
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
-    // ENTRADA DEL VÍDEO: Fade-in suave de 2 segundos desde negro absoluto hasta 25% de opacidad (75% transparente)
+    // ENTRADA DEL VÍDEO: Fade-in suave de 2 segundos desde negro absoluto hasta 100% de opacidad (alpha 100%)
     useEffect(() => {
         const timer = setTimeout(() => {
-            setVideoOpacity(0.25);
+            setVideoOpacity(1.0);
         }, 50);
         return () => clearTimeout(timer);
     }, []);
@@ -26376,7 +26376,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: SOLO Y EXCLUSIVAMENTE EL VÍDEO A PANTALLA COMPLETA OSCURECIDO AL 75% DE TRANSPARENCIA */}
+            {/* FASE 1: SOLO Y EXCLUSIVAMENTE EL VÍDEO A PANTALLA COMPLETA AL 100% DE OPACIDAD */}
             {phase === 'video' && (
                 <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
                     <video

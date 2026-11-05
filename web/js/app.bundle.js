@@ -17673,7 +17673,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
   const canvasRef = useRef(null);
   useEffect(() => {
     const timer = setTimeout(() => {
-      setVideoOpacity(0.25);
+      setVideoOpacity(1);
     }, 50);
     return () => clearTimeout(timer);
   }, []);
