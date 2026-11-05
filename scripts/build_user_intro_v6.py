@@ -110,12 +110,12 @@ with wave.open(wav_out, "wb") as w:
 print("✓ Audio master ready!")
 
 # 3. Process Video with Effects:
-# - Darkening
+# - Darkening (Enhanced dark grading for the girls segment from 15.18s to end)
 # - 2s fade in
 # - 2s fade out
 # - 140BPM camera shake from drop (9.259s)
 print("Rendering video with cinematic effects & 140BPM bass shake...")
-darken_filter = "eq=brightness=-0.08:contrast=1.20:saturation=1.12"
+darken_filter = "eq=brightness='if(lt(t,15.18),-0.08,if(lt(t,15.8),-0.08-(t-15.18)*0.22,-0.22))':contrast='if(gte(t,15.18),1.30,1.20)':saturation='if(gte(t,15.18),1.04,1.12)'"
 fade_in_filter = "fade=t=in:st=0:d=2.0"
 fade_out_filter = f"fade=t=out:st={total_dur - 2.0:.3f}:d=2.0"
 bass_shake_filter = "crop=w=1264:h=710:x='if(gte(t,9.259),8+6*sin(14.66*t)*exp(-4.5*mod(t-9.259,0.42857)),8)':y='if(gte(t,9.259),5+8*abs(sin(14.66*t))*exp(-5*mod(t-9.259,0.42857)),5)',scale=1280:720,setsar=1"

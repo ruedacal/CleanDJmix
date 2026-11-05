@@ -26291,6 +26291,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
     const [phase, setPhase] = useState('video'); // 'video' | 'portal'
     const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 1.0 (100% visible, alpha 100%)
+    const [selectedAlpha, setSelectedAlpha] = useState(0.85); // 0.75 | 0.80 | 0.85 | 0.90 | 1.0 (Selector de Alpha interactivo)
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
 
@@ -26483,8 +26484,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                             src="/assets/intro_cinematic.mp4"
                             className="w-full h-full object-cover pointer-events-none"
                             style={{ 
-                                opacity: videoOpacity, 
-                                transition: 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' 
+                                opacity: videoOpacity * selectedAlpha, 
+                                transition: videoOpacity === 0 ? 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 300ms ease' 
                             }}
                         />
 
@@ -26517,6 +26518,36 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
                         {/* Viñeteado perimetral profundo */}
                         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)] pointer-events-none" />
+                    </div>
+
+                    {/* Selector Flotante de Alpha para Pruebas: 75%, 80%, 85%, 90% y 100% */}
+                    <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/85 backdrop-blur-md border border-cyan-500/40 p-1.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.35)]">
+                        <span className="text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300 px-2 flex items-center gap-1.5">
+                            <span>🎚️</span>
+                            <span>ALPHA:</span>
+                        </span>
+                        <div className="flex items-center gap-1">
+                            {[
+                                { val: 0.75, label: '75%' },
+                                { val: 0.80, label: '80%' },
+                                { val: 0.85, label: '85%' },
+                                { val: 0.90, label: '90%' },
+                                { val: 1.00, label: '100%' }
+                            ].map(opt => (
+                                <button
+                                    key={opt.label}
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setSelectedAlpha(opt.val); }}
+                                    className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                                        selectedAlpha === opt.val
+                                            ? 'bg-gradient-to-r from-cyan-400 to-teal-400 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.8)] scale-105'
+                                            : 'text-gray-400 hover:text-white hover:bg-white/10'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Botón sutil en esquina inferior derecha para saltar si el usuario lo desea */}

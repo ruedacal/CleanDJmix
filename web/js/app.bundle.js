@@ -17751,6 +17751,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
   if (!isOpen) return null;
   const [phase, setPhase] = useState("video");
   const [videoOpacity, setVideoOpacity] = useState(0);
+  const [selectedAlpha, setSelectedAlpha] = useState(0.85);
   const [isMuted, setIsMuted] = useState(false);
   const [isBassShaking, setIsBassShaking] = useState(false);
   const videoRef = useRef(null);
@@ -17905,8 +17906,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         src: "/assets/intro_cinematic.mp4",
         className: "w-full h-full object-cover pointer-events-none",
         style: {
-          opacity: videoOpacity,
-          transition: "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)"
+          opacity: videoOpacity * selectedAlpha,
+          transition: videoOpacity === 0 ? "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)" : "opacity 300ms ease"
         }
       }
     ), /* @__PURE__ */ React.createElement(
@@ -17927,7 +17928,25 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
           animation: "trippyRgbSplitCyan 0.75s infinite ease-in-out"
         }
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-prism-glow mix-blend-color-dodge pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-scanlines opacity-30 mix-blend-overlay pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-black/40 pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)] pointer-events-none" })), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-prism-glow mix-blend-color-dodge pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-scanlines opacity-30 mix-blend-overlay pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-black/40 pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)] pointer-events-none" })), /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/85 backdrop-blur-md border border-cyan-500/40 p-1.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.35)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300 px-2 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39A}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, "ALPHA:")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, [
+      { val: 0.75, label: "75%" },
+      { val: 0.8, label: "80%" },
+      { val: 0.85, label: "85%" },
+      { val: 0.9, label: "90%" },
+      { val: 1, label: "100%" }
+    ].map((opt) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: opt.label,
+        type: "button",
+        onClick: (e) => {
+          e.stopPropagation();
+          setSelectedAlpha(opt.val);
+        },
+        className: `px-2.5 py-1 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer ${selectedAlpha === opt.val ? "bg-gradient-to-r from-cyan-400 to-teal-400 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.8)] scale-105" : "text-gray-400 hover:text-white hover:bg-white/10"}`
+      },
+      opt.label
+    )))), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
