@@ -17669,7 +17669,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
   const [videoOpacity, setVideoOpacity] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isBassShaking, setIsBassShaking] = useState(false);
-  const [trippyMode, setTrippyMode] = useState("liquid");
+  const [trippyMode, setTrippyMode] = useState("comic");
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -17802,7 +17802,49 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         }
       }
     },
-    phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("svg", { className: "absolute w-0 h-0 pointer-events-none", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "trippy-liquid-filter", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0.015 0.02", numOctaves: "3", result: "warpNoise" }, /* @__PURE__ */ React.createElement(
+    phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("svg", { className: "absolute w-0 h-0 pointer-events-none", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "trippy-comic-filter", colorInterpolationFilters: "sRGB", x: "-10%", y: "-10%", width: "120%", height: "120%" }, /* @__PURE__ */ React.createElement(
+      "feConvolveMatrix",
+      {
+        order: "3",
+        kernelMatrix: "0 1 0 1 -4 1 0 1 0",
+        preserveAlpha: "true",
+        in: "SourceGraphic",
+        result: "rawEdges"
+      }
+    ), /* @__PURE__ */ React.createElement(
+      "feColorMatrix",
+      {
+        in: "rawEdges",
+        type: "matrix",
+        values: "-12 0 0 0 1\n                                            0 -12 0 0 1\n                                            0 0 -12 0 1\n                                            0 0 0 1 0",
+        result: "blackInk"
+      }
+    ), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "SourceGraphic", result: "posterized" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" })), /* @__PURE__ */ React.createElement("feBlend", { in: "posterized", in2: "blackInk", mode: "multiply", result: "comicBase" }), /* @__PURE__ */ React.createElement("feColorMatrix", { in: "comicBase", type: "saturate", values: "1.45", result: "comicSaturated" }), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "comicSaturated" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "linear", slope: "1.2", intercept: "-0.08" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "linear", slope: "1.2", intercept: "-0.08" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "linear", slope: "1.2", intercept: "-0.08" }))), /* @__PURE__ */ React.createElement("filter", { id: "trippy-comic-warp-filter", colorInterpolationFilters: "sRGB", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0.015 0.02", numOctaves: "3", result: "warpNoise" }, /* @__PURE__ */ React.createElement(
+      "animate",
+      {
+        attributeName: "baseFrequency",
+        dur: "12s",
+        values: "0.012 0.018; 0.022 0.032; 0.015 0.024; 0.012 0.018",
+        repeatCount: "indefinite"
+      }
+    )), /* @__PURE__ */ React.createElement("feDisplacementMap", { in: "SourceGraphic", in2: "warpNoise", scale: "38", xChannelSelector: "R", yChannelSelector: "G", result: "warpedSource" }), /* @__PURE__ */ React.createElement(
+      "feConvolveMatrix",
+      {
+        order: "3",
+        kernelMatrix: "0 1 0 1 -4 1 0 1 0",
+        preserveAlpha: "true",
+        in: "warpedSource",
+        result: "rawEdges"
+      }
+    ), /* @__PURE__ */ React.createElement(
+      "feColorMatrix",
+      {
+        in: "rawEdges",
+        type: "matrix",
+        values: "-12 0 0 0 1\n                                            0 -12 0 0 1\n                                            0 0 -12 0 1\n                                            0 0 0 1 0",
+        result: "blackInk"
+      }
+    ), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "warpedSource", result: "posterized" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" })), /* @__PURE__ */ React.createElement("feBlend", { in: "posterized", in2: "blackInk", mode: "multiply", result: "comicBase" }), /* @__PURE__ */ React.createElement("feColorMatrix", { in: "comicBase", type: "saturate", values: "1.45", result: "comicSaturated" }), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "comicSaturated" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "linear", slope: "1.2", intercept: "-0.08" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "linear", slope: "1.2", intercept: "-0.08" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "linear", slope: "1.2", intercept: "-0.08" }))), /* @__PURE__ */ React.createElement("filter", { id: "trippy-liquid-filter", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0.015 0.02", numOctaves: "3", result: "warpNoise" }, /* @__PURE__ */ React.createElement(
       "animate",
       {
         attributeName: "baseFrequency",
@@ -17826,7 +17868,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         values: "0.006 0.02; 0.018 0.055; 0.006 0.02",
         repeatCount: "indefinite"
       }
-    )), /* @__PURE__ */ React.createElement("feDisplacementMap", { in: "SourceGraphic", in2: "vortexNoise", scale: "50", xChannelSelector: "G", yChannelSelector: "R" })))), /* @__PURE__ */ React.createElement("div", { className: `relative w-full h-full overflow-hidden flex items-center justify-center ${trippyMode === "liquid" ? "trippy-distort-liquid" : trippyMode === "acid" ? "trippy-distort-acid" : trippyMode === "vortex" ? "trippy-distort-vortex" : ""} ${isBassShaking ? "anim-bass-shake" : ""}` }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("feDisplacementMap", { in: "SourceGraphic", in2: "vortexNoise", scale: "50", xChannelSelector: "G", yChannelSelector: "R" })))), /* @__PURE__ */ React.createElement("div", { className: `relative w-full h-full overflow-hidden flex items-center justify-center ${trippyMode === "comic" ? "trippy-distort-comic" : trippyMode === "comic_warp" ? "trippy-distort-comic-warp" : trippyMode === "liquid" ? "trippy-distort-liquid" : trippyMode === "acid" ? "trippy-distort-acid" : trippyMode === "vortex" ? "trippy-distort-vortex" : ""} ${isBassShaking ? "anim-bass-shake" : ""}` }, /* @__PURE__ */ React.createElement(
       "video",
       {
         ref: videoRef,
@@ -17842,7 +17884,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
           transition: "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)"
         }
       }
-    ), trippyMode !== "off" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+    ), trippyMode !== "off" && trippyMode !== "comic" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "absolute inset-0 mix-blend-screen pointer-events-none",
@@ -17860,7 +17902,9 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
           animation: "trippyRgbSplitCyan 0.75s infinite ease-in-out"
         }
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-prism-glow mix-blend-color-dodge" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-scanlines opacity-35 mix-blend-overlay" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.7)_100%)] pointer-events-none" }))), /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 px-2 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F300}"), /* @__PURE__ */ React.createElement("span", null, "DISTORSI\xD3N TRIPPY:")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, [
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-prism-glow mix-blend-color-dodge" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-scanlines opacity-35 mix-blend-overlay" })), trippyMode !== "off" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.7)_100%)] pointer-events-none" })), /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/85 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-pink-400 to-cyan-400 px-2 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u2728"), /* @__PURE__ */ React.createElement("span", null, "EFECTO VISUAL:")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 flex-wrap" }, [
+      { id: "comic", label: "Dibujo C\xF3mic", icon: "\u{1F3A8}" },
+      { id: "comic_warp", label: "C\xF3mic + Warp", icon: "\u{1F4A5}" },
       { id: "liquid", label: "L\xEDquido / Warp", icon: "\u{1F30A}" },
       { id: "acid", label: "Acid Melt", icon: "\u26A1" },
       { id: "vortex", label: "Vortex", icon: "\u{1F300}" },
@@ -17874,7 +17918,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
           e.stopPropagation();
           setTrippyMode(opt.id);
         },
-        className: `px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1 ${trippyMode === opt.id ? "bg-gradient-to-r from-pink-500 to-cyan-500 text-black font-black shadow-[0_0_12px_rgba(236,72,153,0.5)] scale-105" : "text-gray-400 hover:text-white hover:bg-white/10"}`
+        className: `px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1 ${trippyMode === opt.id ? "bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-400 text-black font-black shadow-[0_0_12px_rgba(251,191,36,0.6)] scale-105" : "text-gray-400 hover:text-white hover:bg-white/10"}`
       },
       /* @__PURE__ */ React.createElement("span", null, opt.icon),
       /* @__PURE__ */ React.createElement("span", null, opt.label)

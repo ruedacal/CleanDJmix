@@ -670,7 +670,19 @@ body.club-mode,
     pointer-events: none;
 }
 
-/* Modos de distorsión líquida con SVG Displacement Maps (After Effects Turbulent Displace) */
+/* Modos de distorsión líquida y dibujo comic con SVG Displacement & Convolve Filters */
+.trippy-distort-comic {
+    filter: url(#trippy-comic-filter);
+    transform: scale(1.02);
+    will-change: transform, filter;
+}
+
+.trippy-distort-comic-warp {
+    filter: url(#trippy-comic-warp-filter);
+    animation: trippyHueCycle 10s infinite linear, trippyWaveMotion 5s infinite ease-in-out;
+    will-change: transform, filter;
+}
+
 .trippy-distort-liquid {
     filter: url(#trippy-liquid-filter);
     animation: trippyHueCycle 8s infinite linear, trippyWaveMotion 5s infinite ease-in-out;

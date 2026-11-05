@@ -26221,7 +26221,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 1.0 (100% visible, alpha 100%)
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
-    const [trippyMode, setTrippyMode] = useState('liquid'); // 'liquid' | 'acid' | 'vortex' | 'off' (Efecto Trippy Envato con Distorsión Líquida)
+    const [trippyMode, setTrippyMode] = useState('comic'); // 'comic' | 'comic_warp' | 'liquid' | 'acid' | 'vortex' | 'off' (Efecto Dibujo Comic Cel-Shading & Trippy)
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -26377,14 +26377,92 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: VÍDEO CON DISTORSIÓN TRIPPY (ESTILO ENVATO: LIQUID WARP, ACID MELT, TURBULENT DISPLACEMENT) */}
+            {/* FASE 1: VÍDEO CON EFECTO DIBUJO CÓMIC & DISTORSIÓN TRIPPY (POP ART, CEL-SHADING, INK OUTLINES & WARP) */}
             {phase === 'video' && (
                 <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
                     
-                    {/* Definición de Filtros SVG de Distorsión Líquida y Deformación Ondulante (Turbulent Displacement) */}
+                    {/* Definición de Filtros SVG de Dibujo Cómic / Cel-Shading y Distorsión Líquida */}
                     <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
                         <defs>
-                            {/* Filtro 1: Distorsión Líquida Fluida Ondulante (Warp Continuo) */}
+                            {/* Filtro 1: Efecto Dibujo Cómic / Cel-Shading (Trazos de tinta negra + Posterización de color estilo rotoscopia / pop art) */}
+                            <filter id="trippy-comic-filter" colorInterpolationFilters="sRGB" x="-10%" y="-10%" width="120%" height="120%">
+                                {/* Detección convolucional de contornos / bordes */}
+                                <feConvolveMatrix 
+                                    order="3" 
+                                    kernelMatrix="0 1 0 1 -4 1 0 1 0" 
+                                    preserveAlpha="true" 
+                                    in="SourceGraphic" 
+                                    result="rawEdges" 
+                                />
+                                {/* Umbralización inversa para convertir bordes en trazos entintados negros */}
+                                <feColorMatrix 
+                                    in="rawEdges" 
+                                    type="matrix" 
+                                    values="-12 0 0 0 1
+                                            0 -12 0 0 1
+                                            0 0 -12 0 1
+                                            0 0 0 1 0" 
+                                    result="blackInk" 
+                                />
+                                {/* Posterización de color a bandas planas discretas de dibujo (Cel-Shading) */}
+                                <feComponentTransfer in="SourceGraphic" result="posterized">
+                                    <feFuncR type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
+                                    <feFuncG type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
+                                    <feFuncB type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
+                                </feComponentTransfer>
+                                {/* Multiplicación de las líneas de tinta negra sobre el color posterizado */}
+                                <feBlend in="posterized" in2="blackInk" mode="multiply" result="comicBase" />
+                                {/* Contraste y saturación intensa de ilustración gráfica */}
+                                <feColorMatrix in="comicBase" type="saturate" values="1.45" result="comicSaturated" />
+                                <feComponentTransfer in="comicSaturated">
+                                    <feFuncR type="linear" slope="1.2" intercept="-0.08" />
+                                    <feFuncG type="linear" slope="1.2" intercept="-0.08" />
+                                    <feFuncB type="linear" slope="1.2" intercept="-0.08" />
+                                </feComponentTransfer>
+                            </filter>
+
+                            {/* Filtro 2: Dibujo Cómic + Distorsión Líquida Warp (Fusión de Toon Shading y Desplazamiento Fluido) */}
+                            <filter id="trippy-comic-warp-filter" colorInterpolationFilters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
+                                <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="3" result="warpNoise">
+                                    <animate 
+                                        attributeName="baseFrequency" 
+                                        dur="12s" 
+                                        values="0.012 0.018; 0.022 0.032; 0.015 0.024; 0.012 0.018" 
+                                        repeatCount="indefinite" 
+                                    />
+                                </feTurbulence>
+                                <feDisplacementMap in="SourceGraphic" in2="warpNoise" scale="38" xChannelSelector="R" yChannelSelector="G" result="warpedSource" />
+                                <feConvolveMatrix 
+                                    order="3" 
+                                    kernelMatrix="0 1 0 1 -4 1 0 1 0" 
+                                    preserveAlpha="true" 
+                                    in="warpedSource" 
+                                    result="rawEdges" 
+                                />
+                                <feColorMatrix 
+                                    in="rawEdges" 
+                                    type="matrix" 
+                                    values="-12 0 0 0 1
+                                            0 -12 0 0 1
+                                            0 0 -12 0 1
+                                            0 0 0 1 0" 
+                                    result="blackInk" 
+                                />
+                                <feComponentTransfer in="warpedSource" result="posterized">
+                                    <feFuncR type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
+                                    <feFuncG type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
+                                    <feFuncB type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
+                                </feComponentTransfer>
+                                <feBlend in="posterized" in2="blackInk" mode="multiply" result="comicBase" />
+                                <feColorMatrix in="comicBase" type="saturate" values="1.45" result="comicSaturated" />
+                                <feComponentTransfer in="comicSaturated">
+                                    <feFuncR type="linear" slope="1.2" intercept="-0.08" />
+                                    <feFuncG type="linear" slope="1.2" intercept="-0.08" />
+                                    <feFuncB type="linear" slope="1.2" intercept="-0.08" />
+                                </feComponentTransfer>
+                            </filter>
+
+                            {/* Filtro 3: Distorsión Líquida Fluida Ondulante (Warp Continuo) */}
                             <filter id="trippy-liquid-filter" x="-20%" y="-20%" width="140%" height="140%">
                                 <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="3" result="warpNoise">
                                     <animate 
@@ -26397,7 +26475,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                 <feDisplacementMap in="SourceGraphic" in2="warpNoise" scale="42" xChannelSelector="R" yChannelSelector="G" />
                             </filter>
 
-                            {/* Filtro 2: Acid Melt (Derretimiento caótico agresivo de alta frecuencia) */}
+                            {/* Filtro 4: Acid Melt (Derretimiento caótico agresivo de alta frecuencia) */}
                             <filter id="trippy-acid-filter" x="-20%" y="-20%" width="140%" height="140%">
                                 <feTurbulence type="turbulence" baseFrequency="0.032 0.045" numOctaves="4" result="acidNoise">
                                     <animate 
@@ -26410,7 +26488,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                 <feDisplacementMap in="SourceGraphic" in2="acidNoise" scale="65" xChannelSelector="R" yChannelSelector="B" />
                             </filter>
 
-                            {/* Filtro 3: Vortex Wave (Ondulación profunda centrada) */}
+                            {/* Filtro 5: Vortex Wave (Ondulación profunda centrada) */}
                             <filter id="trippy-vortex-filter" x="-20%" y="-20%" width="140%" height="140%">
                                 <feTurbulence type="fractalNoise" baseFrequency="0.008 0.028" numOctaves="2" result="vortexNoise">
                                     <animate 
@@ -26425,8 +26503,10 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         </defs>
                     </svg>
 
-                    {/* Contenedor reactivo con distorsión óptica, desplazamiento líquido y pulsación */}
+                    {/* Contenedor reactivo con distorsión óptica, dibujo cómic y pulsación */}
                     <div className={`relative w-full h-full overflow-hidden flex items-center justify-center ${
+                        trippyMode === 'comic' ? 'trippy-distort-comic' :
+                        trippyMode === 'comic_warp' ? 'trippy-distort-comic-warp' :
                         trippyMode === 'liquid' ? 'trippy-distort-liquid' :
                         trippyMode === 'acid' ? 'trippy-distort-acid' :
                         trippyMode === 'vortex' ? 'trippy-distort-vortex' : ''
@@ -26448,8 +26528,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                             }}
                         />
 
-                        {/* Capas de Efectos Visuales Trippy Envato cuando está activado */}
-                        {trippyMode !== 'off' && (
+                        {/* Capas de Efectos Visuales Trippy cuando está activo un modo psicodélico */}
+                        {trippyMode !== 'off' && trippyMode !== 'comic' && (
                             <>
                                 {/* Capa de Aberración Cromática Roja / Magenta */}
                                 <div 
@@ -26474,21 +26554,25 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
                                 {/* Textura de scanlines CRT / VHS analógico */}
                                 <div className="absolute inset-0 trippy-scanlines opacity-35 mix-blend-overlay" />
-
-                                {/* Viñeteado cinematográfico perimetral */}
-                                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.7)_100%)] pointer-events-none" />
                             </>
+                        )}
+
+                        {/* Viñeteado cinematográfico perimetral */}
+                        {trippyMode !== 'off' && (
+                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.7)_100%)] pointer-events-none" />
                         )}
                     </div>
 
-                    {/* Selector Flotante de Distorsión Trippy (Envato Style) */}
-                    <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl">
-                        <span className="text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 px-2 flex items-center gap-1.5">
-                            <span>🌀</span>
-                            <span>DISTORSIÓN TRIPPY:</span>
+                    {/* Selector Flotante de Efectos Visuales (Dibujo Cómic & Trippy) */}
+                    <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/85 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl">
+                        <span className="text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-pink-400 to-cyan-400 px-2 flex items-center gap-1.5">
+                            <span>✨</span>
+                            <span>EFECTO VISUAL:</span>
                         </span>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                             {[
+                                { id: 'comic', label: 'Dibujo Cómic', icon: '🎨' },
+                                { id: 'comic_warp', label: 'Cómic + Warp', icon: '💥' },
                                 { id: 'liquid', label: 'Líquido / Warp', icon: '🌊' },
                                 { id: 'acid', label: 'Acid Melt', icon: '⚡' },
                                 { id: 'vortex', label: 'Vortex', icon: '🌀' },
@@ -26500,7 +26584,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                     onClick={(e) => { e.stopPropagation(); setTrippyMode(opt.id); }}
                                     className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1 ${
                                         trippyMode === opt.id
-                                            ? 'bg-gradient-to-r from-pink-500 to-cyan-500 text-black font-black shadow-[0_0_12px_rgba(236,72,153,0.5)] scale-105'
+                                            ? 'bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-400 text-black font-black shadow-[0_0_12px_rgba(251,191,36,0.6)] scale-105'
                                             : 'text-gray-400 hover:text-white hover:bg-white/10'
                                     }`}
                                 >
