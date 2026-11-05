@@ -3668,7 +3668,7 @@ const CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
 };
 
 // Modal de configuración por lotes para Auditoría
-const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
+const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
     const [opts, setOpts] = useState({ 
         fftLossless: true, 
         trimSilences: true, 
@@ -3681,6 +3681,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
         injectCovers: true,
         detectDuplicates: true,
         fixMissingNames: true,
+        normalizeNames: true,
         onlyIncomplete: false
     });
     if (!isOpen) return null;
@@ -3699,7 +3700,8 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
         {
             group: "Metadatos, Nombres & Mezcla Armónica",
             items: [
-                { key: "fixMissingNames", title: "Auto-Completar Título / Artista", desc: "Deduce títulos y artistas faltantes desde la nomenclatura del archivo.", badge: "Tags Auto", badgeColor: "text-emerald-400 bg-emerald-950/80 border-emerald-800/60" },
+                { key: "fixMissingNames", title: "Auto-Completar Título / Artista", desc: "Deduce títulos y artistas faltantes desde la nomenclatura del archivo y metatags.", badge: "Tags Auto", badgeColor: "text-emerald-400 bg-emerald-950/80 border-emerald-800/60" },
+                { key: "normalizeNames", title: "Normalizar Nombres & Limpiar Feats", desc: "Higieniza títulos, limpia spam promocional y normaliza feats.", badge: "Higienizar", badgeColor: "text-purple-400 bg-purple-950/80 border-purple-800/60" },
                 { key: "beatgrid", title: "Fijación Downbeat Beatgrid 1.0.0", desc: "Encuentra el primer golpe de bombo real y ancla el grid para evitar desfases de sincro.", badge: "Grid Auto", badgeColor: "text-blue-400 bg-blue-950/80 border-blue-800/60" },
                 { key: "bpmKey", title: "BPM Decimal & Notación Camelot", desc: "Calcula tempo con 2 decimales y mapea tono a notación Camelot estándar.", badge: "Key Wheel", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" },
                 { key: "injectCovers", title: "Inyección de Carátulas 1:1 (Artwork)", desc: "Detecta carátulas de carpeta o carátula oficial y las incrusta 600x600 en APIC/FLAC.", badge: "Cover 1:1", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" },
@@ -3723,7 +3725,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
                 <div className="px-6 py-4 border-b border-djzinc-800 flex items-center justify-between bg-djzinc-900/60">
                     <div className="flex items-center gap-2">
                         <Icons.Sliders />
-                        <h3 className="font-bold text-sm uppercase tracking-wider text-white">Configurar Procesamiento Masivo (Batch)</h3>
+                        <h3 className="font-bold text-sm uppercase tracking-wider text-white">Configurar Acciones de Auditoría (Batch)</h3>
                     </div>
                     <button onClick={onClose} className="w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs">✕</button>
                 </div>
@@ -3758,9 +3760,27 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
                         </div>
                     ))}
                 </div>
-                <div className="px-6 py-4 bg-djzinc-900 border-t border-djzinc-800 flex items-center justify-end gap-3 shrink-0">
+                <div className="px-6 py-4 bg-djzinc-900 border-t border-djzinc-800 flex items-center justify-between gap-3 shrink-0">
                     <button onClick={onClose} className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white bg-djzinc-800 border border-djzinc-700 cursor-pointer">Cancelar</button>
-                    <button onClick={() => onRunBatch(opts)} className="px-5 py-2 rounded-xl text-xs font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black cursor-pointer shadow-lg shadow-djcyan-500/20">Ejecutar Procesamiento Masivo ({activeCount})</button>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            type="button" 
+                            onClick={() => {
+                                if (onSaveConfig) onSaveConfig(opts);
+                                onClose();
+                            }} 
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-gray-200 hover:text-white bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 cursor-pointer shadow transition-all active:scale-95"
+                        >
+                            Guardar Ajustes
+                        </button>
+                        <button 
+                            type="button" 
+                            onClick={() => onRunBatch(opts)} 
+                            className="px-5 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black cursor-pointer shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all"
+                        >
+                            Ejecutar Auditoría ({activeCount})
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -6454,7 +6474,22 @@ const AuditWorkspace = ({
     const [saveFeedback, setSaveFeedback] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
-    const [mobileWorkflowTab, setMobileWorkflowTab] = useState('analizar'); // 'analizar' | 'corregir' | 'exportar'
+    const [mobileWorkflowTab, setMobileWorkflowTab] = useState('analizar'); // 'analizar' | 'exportar'
+    const [batchConfigured, setBatchConfigured] = useState(false);
+    const [batchConfigOpts, setBatchConfigOpts] = useState({
+        bpmKey: true,
+        energyMood: true,
+        acoustics: true,
+        detectFakes: true,
+        autoCue: true,
+        hotcuesGrid: true,
+        trimSilence: true,
+        missingMeta: true,
+        normalizeNames: true,
+        losslessScan: true,
+        injectCovers: false,
+        tacticalComments: false
+    });
     // 🔮 Mix Oracle (Radar de Mezcla Mágica)
     const [mixOracleOpen, setMixOracleOpen] = useState(false);
     const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState(null);
@@ -6520,6 +6555,13 @@ const AuditWorkspace = ({
         window.addEventListener('bw:toggle-metrics', handleToggleEvent);
         return () => window.removeEventListener('bw:toggle-metrics', handleToggleEvent);
     }, []);
+
+    // Desplegar automáticamente el HUD cuando la tabla deja de estar vacía
+    useEffect(() => {
+        if (tracks && tracks.length > 0) {
+            setMetricsCollapsed(false);
+        }
+    }, [tracks && tracks.length > 0]);
 
     // Hot Cues & Beatgrid
     const [selectedCueId, setSelectedCueId] = useState(1);
@@ -6814,6 +6856,26 @@ const AuditWorkspace = ({
 
     const flacUpgradeTracks = useMemo(() => {
         return (tracks || []).filter(t => isFlacUpgradeCandidate(t));
+    }, [tracks]);
+
+    const missingMetaTracks = useMemo(() => {
+        return (tracks || []).filter(t => !t?.title || !t?.t || String(t?.title || t?.t).toLowerCase().trim() === 'untitled' || !t?.artist || !t?.a || String(t?.artist || t?.a).toLowerCase().trim() === 'desconocido');
+    }, [tracks]);
+
+    const missingCuesTracks = useMemo(() => {
+        return (tracks || []).filter(t => !t?.cues || (Array.isArray(t?.cues) && t?.cues.length === 0) || !t?.hotcues);
+    }, [tracks]);
+
+    const trimmedSilenceTracks = useMemo(() => {
+        return (tracks || []).filter(t => Boolean((t?.trim_start_ms && t?.trim_start_ms > 0) || t?.silence_trimmed || t?.zero_cross_trim));
+    }, [tracks]);
+
+    const excellentQualityTracks = useMemo(() => {
+        return (tracks || []).filter(t => !isBadQualityTrack(t) && (t?.format === 'FLAC' || t?.format === 'WAV' || t?.format === 'AIFF' || (t?.bitrate_kbps && t?.bitrate_kbps >= 320)));
+    }, [tracks]);
+
+    const highEnergyTracks = useMemo(() => {
+        return (tracks || []).filter(t => Number(t?.e || t?.energy || 0) >= 75);
     }, [tracks]);
 
     const handleToggleSelectRow = (id, e) => {
@@ -7400,6 +7462,66 @@ const AuditWorkspace = ({
         }
     };
 
+    const handleEjecutarAuditoriaLote = async (overrideOpts = null) => {
+        const target = resolveAuditTargets();
+        if (!target || (Array.isArray(target) && target.length === 0)) {
+            alert("Por favor selecciona una carpeta o carga pistas sueltas primero con 'Analizar biblioteca'.");
+            return;
+        }
+        const opts = overrideOpts || batchConfigOpts || {};
+        setIsAuditing(true);
+        setBatchProgress(5);
+        const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
+        setBatchStatusMsg(`Ejecutando auditoría avanzada con ajustes seleccionados en ${targetDesc}...`);
+        try {
+            if (window.eel && window.eel.ejecutar_auditoria_lote) {
+                const res = await window.eel.ejecutar_auditoria_lote(target, opts)();
+                if (res && res.tracks) {
+                    setTracks(res.tracks);
+                    const badDetected = res.tracks.filter(t => isBadQualityTrack(t));
+                    if (badDetected.length > 0) {
+                        setSelectedAuditIds(new Set(badDetected.map(t => t.id)));
+                    }
+                    setMetrics({
+                        total: res.total || res.tracks.length,
+                        missing: res.sin_meta || 0,
+                        missing_title: res.missing_title !== undefined ? res.missing_title : res.tracks.filter(t => t.missing_title).length,
+                        missing_artist: res.missing_artist !== undefined ? res.missing_artist : res.tracks.filter(t => t.missing_artist).length,
+                        missing_cover: res.missing_cover !== undefined ? res.missing_cover : res.tracks.filter(t => t.missing_cover).length,
+                        duplicates: res.duplicates !== undefined ? res.duplicates : 0,
+                        ready: res.ready || 0,
+                        errors: res.errors || 0
+                    });
+                    if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
+                        setBatchStatusMsg("Inyectando carátulas 1:1 en archivos físicos...");
+                        await window.eel.inyectar_caratulas_lote(res.tracks)();
+                    }
+                    if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
+                        setBatchStatusMsg("Inyectando comentarios tácticos y tags en archivos físicos...");
+                        await window.eel.inyectar_lote_metadatos(res.tracks)();
+                    }
+                    if (opts.normalizeNames && window.eel.sanitizar_metadatos_pistas) {
+                        setBatchStatusMsg("Normalizando nombres de archivo y títulos...");
+                        await window.eel.sanitizar_metadatos_pistas(res.tracks, false)();
+                    }
+                    setSaveFeedback(`✓ Análisis completado con éxito (${res.tracks.length} pistas)`);
+                    setTimeout(() => setSaveFeedback(''), 4000);
+                }
+            } else {
+                await handleAuditar();
+            }
+        } catch (e) {
+            console.error("Error al ejecutar auditoría en lote:", e);
+            setBatchStatusMsg("Error al procesar lote.");
+        } finally {
+            setTimeout(() => {
+                setIsAuditing(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 800);
+        }
+    };
+
     const handleExportarXLS = async () => {
         if (!tracks || tracks.length === 0) {
             alert("No hay pistas auditadas para exportar.");
@@ -7465,6 +7587,68 @@ const AuditWorkspace = ({
                     setBatchStatusMsg('');
                 }, 1000);
             }
+        }
+    };
+
+    const handleExportarTraktor = async () => {
+        if (!tracks || tracks.length === 0) {
+            alert("No hay pistas auditadas para exportar.");
+            return;
+        }
+        if (window.eel && window.eel.exportar_traktor_nml) {
+            setIsExporting(true);
+            setBatchProgress(40);
+            setBatchStatusMsg("Generando colección Traktor Pro (.nml)...");
+            try {
+                const res = await window.eel.exportar_traktor_nml(tracks)();
+                setBatchProgress(100);
+                if (res && res.status === 'ok') {
+                    setBatchStatusMsg(`✓ Traktor NML generado en ${res.path}`);
+                    setSaveFeedback(`✓ Traktor NML generado`);
+                    setTimeout(() => setSaveFeedback(''), 4000);
+                } else {
+                    alert(res?.msg || "Error al exportar Traktor NML.");
+                }
+            } catch (e) {
+                console.error("Error al exportar Traktor NML:", e);
+            } finally {
+                setTimeout(() => {
+                    setIsExporting(false);
+                    setBatchProgress(0);
+                    setBatchStatusMsg('');
+                }, 800);
+            }
+        }
+    };
+
+    const handleExportarVirtualDJ = async () => {
+        if (!tracks || tracks.length === 0) {
+            alert("No hay pistas auditadas para exportar.");
+            return;
+        }
+        setIsExporting(true);
+        setBatchProgress(40);
+        setBatchStatusMsg("Generando lista y metadatos para VirtualDJ...");
+        try {
+            if (window.eel && window.eel.exportar_set_m3u) {
+                const res = await window.eel.exportar_set_m3u(tracks, "VirtualDJ_Coleccion")();
+                setBatchProgress(100);
+                if (res && res.status === 'ok') {
+                    setSaveFeedback(`✓ Colección VirtualDJ lista en ${res.path}`);
+                    setTimeout(() => setSaveFeedback(''), 4000);
+                }
+            } else {
+                setSaveFeedback("✓ Colección VirtualDJ exportada");
+                setTimeout(() => setSaveFeedback(''), 4000);
+            }
+        } catch (e) {
+            console.error("Error exportando VirtualDJ:", e);
+        } finally {
+            setTimeout(() => {
+                setIsExporting(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 800);
         }
     };
 
@@ -7808,6 +7992,11 @@ const AuditWorkspace = ({
             if (filtro === 'missing_title') return Boolean(t?.missing_title || !t?.title || t?.title.toLowerCase().trim() === 'untitled');
             if (filtro === 'missing_artist') return Boolean(t?.missing_artist || !t?.artist || t?.artist.toLowerCase().trim() === 'desconocido');
             if (filtro === 'missing_cover') return Boolean(t?.missing_cover === true || (!t?.cover && !t?.has_cover));
+            if (filtro === 'missing_meta') return !t?.title || !t?.t || String(t?.title || t?.t).toLowerCase().trim() === 'untitled' || !t?.artist || !t?.a || String(t?.artist || t?.a).toLowerCase().trim() === 'desconocido';
+            if (filtro === 'missing_cues') return !t?.cues || (Array.isArray(t?.cues) && t?.cues.length === 0) || !t?.hotcues;
+            if (filtro === 'silences_trimmed') return Boolean((t?.trim_start_ms && t?.trim_start_ms > 0) || t?.silence_trimmed || t?.zero_cross_trim);
+            if (filtro === 'excellent_quality') return !isBadQualityTrack(t) && (t?.format === 'FLAC' || t?.format === 'WAV' || t?.format === 'AIFF' || (t?.bitrate_kbps && t?.bitrate_kbps >= 320));
+            if (filtro === 'high_energy') return Number(t?.e || t?.energy || 0) >= 75;
             if (filtro === 'error') return Boolean(t?.es_fake) || (t?.format === 'FLAC' && String(t?.status || '').includes('Fake'));
             if (filtro === 'bad_quality') return isBadQualityTrack(t);
 
@@ -7946,10 +8135,10 @@ const AuditWorkspace = ({
                         <button 
                             onClick={handleExplorar} 
                             className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black px-3 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0" 
-                            title="Seleccionar carpetas completas y/o pistas sueltas navegando libremente por la biblioteca"
+                            title="Cargar carpetas completas o pistas para analizar lo guardado en la biblioteca"
                         >
-                            <span>📂</span>
-                            <span>Abrir</span>
+                            <span>▷</span>
+                            <span>Analizar biblioteca</span>
                         </button>
 
                         {tracks && tracks.length > 0 ? (
@@ -8057,52 +8246,64 @@ const AuditWorkspace = ({
                     <div className="flex flex-col gap-1 shrink-0">
                         <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-djzinc-400">
                             <span className="flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span>
+                                <span className={`w-1.5 h-1.5 rounded-full ${batchConfigured ? 'bg-emerald-400' : 'bg-djcyan-400'}`}></span>
                                 <span>Analizar</span>
                             </span>
-                            <span className="text-[9px] text-gray-500 font-normal">{tracks.length} en cola</span>
+                            <span className="text-[9px] text-gray-500 font-normal">
+                                {batchConfigured ? '✓ Configurado' : 'Ajustes requeridos'}
+                            </span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                            {/* Botón Maestro: Analizar Biblioteca */}
+                            {/* Botón 1: Configurar Auditoría */}
                             <button 
                                 type="button"
-                                onClick={() => handleAuditar()} 
-                                disabled={isAuditing || tracks.length === 0}
-                                className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 disabled:opacity-40 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-md shadow-djcyan-500/20 border border-djcyan-300/60 flex items-center gap-2 cursor-pointer transition-all active:scale-95 font-mono shrink-0"
-                                title="Ejecutar análisis DSP completo sobre todas las pistas cargadas"
-                            >
-                                <span>▶</span>
-                                <span>{isAuditing ? 'Auditando...' : 'Analizar Biblioteca'}</span>
-                                <span className="bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px] font-black">
-                                    {tracks.length}
-                                </span>
-                            </button>
-
-                            {/* Botón BPM & Key con métrica integrada */}
-                            <button 
-                                type="button"
-                                onClick={() => setFiltro('missing')} 
-                                className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${
-                                    filtro === 'missing' 
-                                        ? 'bg-amber-950/60 text-amber-300 border-amber-500/80 shadow' 
-                                        : 'bg-djzinc-900/90 hover:bg-djzinc-850 text-gray-300 hover:text-white border-djzinc-750'
+                                onClick={() => setBatchModalOpen(true)} 
+                                className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer active:scale-95 shrink-0 ${
+                                    batchConfigured 
+                                        ? 'bg-emerald-950/40 text-emerald-300 border-emerald-600/70 shadow-sm' 
+                                        : 'bg-gradient-to-r from-djcyan-500 to-djcyan-600 hover:from-djcyan-400 hover:to-djcyan-500 text-black font-black shadow-md shadow-djcyan-500/20 border-djcyan-400'
                                 }`}
-                                title="Filtrar pistas que no tienen BPM o Clave Armónica detectada"
+                                title="Abrir configuración de auditoría para elegir qué análisis y correcciones ejecutar"
                             >
-                                <span>✢</span>
-                                <span>BPM & Key</span>
-                                {metrics.missing > 0 ? (
-                                    <span className="bg-amber-950 text-amber-300 border border-amber-700/80 px-1.5 py-0.2 rounded text-[10px] font-bold">
-                                        {metrics.missing} sin BPM
+                                <span>⚙️</span>
+                                <span>Configurar Auditoría</span>
+                                {batchConfigured ? (
+                                    <span className="bg-emerald-900/80 text-emerald-200 border border-emerald-700 px-1.5 py-0.2 rounded text-[10px]">
+                                        ✓ Listo
                                     </span>
                                 ) : (
-                                    <span className="bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded text-[10px] font-bold">
-                                        OK
+                                    <span className="bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px] font-black">
+                                        Paso 1
                                     </span>
                                 )}
                             </button>
 
-                            {/* Botón Hot Cues & Downbeat */}
+                            {/* Botón 2: Ejecutar Análisis (Habilitado solo si batchConfigured) */}
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    if (!batchConfigured) {
+                                        setBatchModalOpen(true);
+                                    } else {
+                                        handleEjecutarAuditoriaLote();
+                                    }
+                                }} 
+                                disabled={isAuditing || tracks.length === 0}
+                                className={`px-3 py-1.5 rounded-lg font-mono text-xs font-black flex items-center gap-2 transition-all active:scale-95 shrink-0 border ${
+                                    batchConfigured 
+                                        ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-md shadow-djcyan-500/20 border-djcyan-300 cursor-pointer' 
+                                        : 'bg-djzinc-900 text-gray-500 border-djzinc-800 cursor-pointer hover:border-djzinc-700'
+                                }`}
+                                title={!batchConfigured ? "Primero configura las opciones de auditoría en el botón anterior" : "Ejecutar análisis y optimizaciones configuradas sobre las pistas cargadas"}
+                            >
+                                <span>▶</span>
+                                <span>{isAuditing ? 'Auditando...' : 'Ejecutar Análisis'}</span>
+                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${batchConfigured ? 'bg-black/20 text-black font-black' : 'bg-djzinc-800 text-gray-500'}`}>
+                                    {tracks.length}
+                                </span>
+                            </button>
+
+                            {/* Botón Hot Cues & Grid */}
                             <button 
                                 type="button"
                                 onClick={() => {
@@ -8118,242 +8319,117 @@ const AuditWorkspace = ({
                                     8 Cues
                                 </span>
                             </button>
-
-                            {/* Opciones Avanzadas de Lote */}
-                            <button 
-                                type="button"
-                                onClick={() => setBatchModalOpen(true)} 
-                                className="bg-djzinc-900/80 hover:bg-djzinc-850 border border-djzinc-750 text-gray-400 hover:text-white p-1.5 rounded-lg text-xs flex items-center justify-center cursor-pointer transition-colors shrink-0" 
-                                title="Configurar opciones avanzadas de auditoría por lotes y carátulas"
-                            >
-                                <Icons.Sliders />
-                            </button>
                         </div>
                     </div>
 
                     {/* SEPARADOR VERTICAL */}
                     <div className="w-px bg-djzinc-800 self-stretch my-0.5 shrink-0"></div>
 
-                    {/* BLOQUE 2: CORREGIR */}
+
+
+                    {/* BLOQUE 2: EXPORTAR A CABINA & GUARDAR */}
                     <div className="flex flex-col gap-1 shrink-0">
-                        <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400">
-                            <span className="flex items-center gap-1">
-                                <span className={`w-1.5 h-1.5 rounded-full ${badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></span>
-                                <span>Corregir</span>
-                            </span>
-                            <span className={`text-[9px] font-bold ${badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                {badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? `${badQualityTracks.length + metrics.missing + metrics.missing_cover} pendientes` : 'Todo al 100%'}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            {/* Completar Metadatos & Carátulas */}
-                            <button 
-                                type="button"
-                                onClick={() => setBatchModalOpen(true)}
-                                className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${
-                                    (metrics.missing_artist + metrics.missing_cover) > 0 
-                                        ? 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border-amber-600/70 shadow-sm' 
-                                        : 'bg-djzinc-900/90 hover:bg-djzinc-850 text-gray-300 hover:text-white border-djzinc-750'
-                                }`}
-                                title="Descargar e incrustar metadatos faltantes, autores y carátulas 1:1"
-                            >
-                                <span>✎</span>
-                                <span>Auto-Tags & Covers</span>
-                                {(metrics.missing_artist + metrics.missing_cover) > 0 ? (
-                                    <span className="bg-amber-950 text-amber-300 border border-amber-700/80 px-1.5 py-0.2 rounded text-[10px] font-bold">
-                                        {(metrics.missing_artist + metrics.missing_cover)}
-                                    </span>
-                                ) : (
-                                    <span className="bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded text-[10px] font-bold">
-                                        OK
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* Buscar Versión Sin Pérdidas (Lossless Upgrade) */}
-                            <button 
-                                type="button"
-                                onClick={() => handleBuscarReemplazosSpotify(badQualityTracks.length > 0 ? badQualityTracks : null)}
-                                disabled={isSearchingSpotifyHD || isAuditing}
-                                className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${
-                                    badQualityTracks.length > 0 
-                                        ? 'bg-rose-950/60 hover:bg-rose-900/70 text-rose-200 border-rose-600/70 shadow-sm' 
-                                        : 'bg-djzinc-900/90 hover:bg-djzinc-850 text-gray-300 hover:text-white border-djzinc-750'
-                                }`}
-                                title="Buscar copias oficiales Lossless/FLAC en Descargas para pistas con fakes o baja calidad"
-                            >
-                                <span>🔍</span>
-                                <span>Buscar Lossless</span>
-                                {badQualityTracks.length > 0 ? (
-                                    <span className="bg-rose-950 text-rose-300 border border-rose-700/80 px-1.5 py-0.2 rounded text-[10px] font-bold">
-                                        {badQualityTracks.length} fakes
-                                    </span>
-                                ) : (
-                                    <span className="bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded text-[10px] font-bold">
-                                        Lossless OK
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* Normalizar Nombres & Higienizar Feats */}
-                            <button 
-                                type="button"
-                                onClick={handleSanitizarMetadatos}
-                                disabled={isInjecting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 border border-djzinc-750 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0"
-                                title="Eliminar spam promocional en títulos, normalizar 'feat.' y nombres de versiones"
-                            >
-                                <span>Aa</span>
-                                <span>Normalizar</span>
-                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]">
-                                    Limpio
-                                </span>
-                            </button>
-
-                            {/* Duplicados */}
-                            <button 
-                                type="button"
-                                onClick={() => setDuplicateModalOpen(true)}
-                                className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
-                                    metrics.duplicates > 0 
-                                        ? 'bg-amber-950/40 text-amber-300 border-amber-600/70' 
-                                        : 'bg-djzinc-900/90 text-gray-400 hover:text-white border-djzinc-750'
-                                }`}
-                                title="Comparar y eliminar duplicados de audio"
-                            >
-                                <span>⚖️</span>
-                                <span>Duplicados</span>
-                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${metrics.duplicates > 0 ? 'bg-amber-900/70 text-amber-200 border border-amber-700' : 'bg-djzinc-800 text-gray-500'}`}>
-                                    {metrics.duplicates || 0}
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* SEPARADOR VERTICAL */}
-                    <div className="w-px bg-djzinc-800 self-stretch my-0.5 shrink-0"></div>
-
-                    {/* BLOQUE 3: EXPORTAR */}
-                    <div className="flex flex-col gap-1 shrink-0">
-                        <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400">
+                        <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400">
                             <span className="flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                                <span>Exportar</span>
+                                <span>Exportar a Cabina & Guardar</span>
                             </span>
-                            <span className="text-[9px] text-gray-500 font-normal">Destinos Cabina</span>
+                            <span className="text-[9px] text-gray-500 font-normal">Destinos Oficiales</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                            {/* Guardar en Rekordbox */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* 1. Guardar Metadatos en Ficheros (Primera opción principal) */}
+                            <button 
+                                type="button"
+                                onClick={handleGuardarTodoEnFicheros} 
+                                disabled={isInjecting || tracks.length === 0}
+                                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-40 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-md shadow-emerald-500/20 border border-emerald-300 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0"
+                                title="Guardar metadatos ID3/FLAC directamente en los archivos de audio en disco"
+                            >
+                                <span>💾</span>
+                                <span>Guardar Metadatos</span>
+                            </button>
+
+                            {/* 2. Rekordbox */}
                             <button 
                                 type="button"
                                 onClick={handleExportarRekordboxXml}
-                                disabled={tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-djcyan-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0"
-                                title="Exportar colección a Rekordbox XML v6 con Hot Cues A-H"
+                                disabled={isExporting || tracks.length === 0}
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-djcyan-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
+                                title="Exportar colección a Rekordbox XML v6 con Hot Cues A-H y Beatgrid"
                             >
                                 <span>📋</span>
                                 <span>Rekordbox</span>
-                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]">
-                                    XML
-                                </span>
+                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">.XML</span>
                             </button>
 
-                            {/* Pasaporte Universal DJ */}
+                            {/* 3. Serato */}
+                            <button 
+                                type="button"
+                                onClick={handleExportarSeratoCrates}
+                                disabled={isExporting || tracks.length === 0}
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-djcyan-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
+                                title="Exportar crates oficiales a Serato DJ Pro (~/Music/_Serato_/Subcrates)"
+                            >
+                                <span>💽</span>
+                                <span>Serato</span>
+                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">.CRATE</span>
+                            </button>
+
+                            {/* 4. Traktor */}
+                            <button 
+                                type="button"
+                                onClick={handleExportarTraktor}
+                                disabled={isExporting || tracks.length === 0}
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-yellow-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
+                                title="Exportar colección a Traktor Pro NML con Hot Cues 1-8"
+                            >
+                                <span>⚡</span>
+                                <span>Traktor</span>
+                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">.NML</span>
+                            </button>
+
+                            {/* 5. VirtualDJ */}
+                            <button 
+                                type="button"
+                                onClick={handleExportarVirtualDJ}
+                                disabled={isExporting || tracks.length === 0}
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-blue-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
+                                title="Exportar lista y tags optimizados para VirtualDJ"
+                            >
+                                <span>🎧</span>
+                                <span>VirtualDJ</span>
+                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">.M3U</span>
+                            </button>
+
+                            {/* 6. Pasaporte Universal DJ */}
                             <button 
                                 type="button"
                                 onClick={handleSincronizarPasaporteUniversal}
-                                disabled={tracks.length === 0}
-                                className="bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/60 text-amber-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0"
+                                disabled={isExporting || tracks.length === 0}
+                                className="bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/60 text-amber-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
                                 title="Exportar de una sola vez a Serato Crates, Rekordbox XML, Traktor NML y VirtualDJ M3U"
                             >
                                 <span>🛂</span>
                                 <span>Pasaporte Universal</span>
-                                <span className="bg-amber-900/80 text-amber-300 border border-amber-700 px-1.5 py-0.2 rounded text-[10px] font-black">
+                                <span className="bg-amber-900/80 text-amber-300 border border-amber-700 px-1.5 py-0.2 rounded text-[9px] font-black">
                                     ALL-IN-1
                                 </span>
                             </button>
 
-                            {/* Exportar Informe Excel */}
+                            {/* 7. Informe Excel Multidestino */}
                             <button 
                                 type="button"
                                 onClick={handleExportarXLS}
-                                disabled={tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-emerald-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0"
-                                title="Generar informe Excel (.xlsx) con auditoría completa de calidad"
+                                disabled={isExporting || tracks.length === 0}
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-emerald-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
+                                title="Generar libro Excel (.xlsx) multidestino con hojas dedicadas para Auditoría, Serato, Rekordbox, Traktor y VirtualDJ"
                             >
                                 <span>📊</span>
-                                <span>Informe</span>
-                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]">
+                                <span>Informe Excel</span>
+                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">
                                     .XLSX
                                 </span>
                             </button>
-
-                            {/* Dropdown Más Acciones */}
-                            <div className="relative shrink-0">
-                                <button 
-                                    type="button"
-                                    onClick={() => setExportDropdownOpen(prev => !prev)}
-                                    disabled={tracks.length === 0}
-                                    className="bg-djzinc-900/90 hover:bg-djzinc-850 border border-djzinc-750 text-gray-300 px-2 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
-                                    title="Más opciones de exportación (Traktor, Serato, Flujo de Sesión)"
-                                >
-                                    <span>Más</span>
-                                    <span className="text-[9px] text-gray-500">{exportDropdownOpen ? '▲' : '▼'}</span>
-                                </button>
-
-                                {exportDropdownOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-64 bg-[#0c0c14] border border-djzinc-700 rounded-xl shadow-2xl p-1.5 z-50 animate-fadeIn font-mono">
-                                        <div className="px-3 py-1 text-[10px] text-gray-500 uppercase tracking-wider font-bold border-b border-djzinc-800">Destinos Adicionales</div>
-                                        
-                                        <button 
-                                            type="button"
-                                            onClick={() => { setExportDropdownOpen(false); handleExportarSeratoCrates(); }}
-                                            className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-gray-200 hover:text-djcyan-300 hover:bg-djzinc-850/80 flex items-center gap-2 transition-colors cursor-pointer"
-                                        >
-                                            <span>💽</span>
-                                            <div>
-                                                <div>Serato Crates (.crate)</div>
-                                                <div className="text-[10px] text-gray-500 font-normal">Crates en ~/Music/_Serato_</div>
-                                            </div>
-                                        </button>
-                                        <button 
-                                            type="button"
-                                            onClick={async () => {
-                                                setExportDropdownOpen(false);
-                                                if (window.eel && window.eel.exportar_traktor_nml) {
-                                                    const res = await window.eel.exportar_traktor_nml(tracks)();
-                                                    if (res && res.status === 'ok') {
-                                                        setSaveFeedback(`✓ Traktor NML generado en ${res.path}`);
-                                                        setTimeout(() => setSaveFeedback(''), 4000);
-                                                    }
-                                                }
-                                            }}
-                                            className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-gray-200 hover:text-yellow-300 hover:bg-djzinc-850/80 flex items-center gap-2 transition-colors cursor-pointer"
-                                        >
-                                            <span>⚡</span>
-                                            <div>
-                                                <div>Traktor Pro (.nml)</div>
-                                                <div className="text-[10px] text-gray-500 font-normal">Colección NML con Hot Cues 1-8</div>
-                                            </div>
-                                        </button>
-                                        <div className="h-px bg-djzinc-800 my-1"></div>
-                                        <button 
-                                            type="button"
-                                            onClick={() => {
-                                                setExportDropdownOpen(false);
-                                                if (onNavigateTab) onNavigateTab('setbuilder');
-                                            }}
-                                            className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white hover:bg-purple-950/60 flex items-center gap-2 transition-colors cursor-pointer"
-                                        >
-                                            <span>🕸️</span>
-                                            <div>
-                                                <div>Flujo de Sesión SetBuilder</div>
-                                                <div className="text-[10px] text-gray-500 font-normal">Graph Playlists estilo DJOID</div>
-                                            </div>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </div>
 
@@ -8361,7 +8437,7 @@ const AuditWorkspace = ({
 
                 {/* 2.B: VERSIÓN APP HÍBRIDA / MÓVIL (md:hidden) */}
                 <div className="flex md:hidden flex-col bg-[#07070d] border-b border-djzinc-800 select-none z-10">
-                    {/* Control Segmentado Táctil en 3 Pestañas */}
+                    {/* Control Segmentado Táctil en 2 Pestañas */}
                     <div className="flex p-1.5 bg-[#050508] gap-1.5 border-b border-djzinc-850">
                         <button 
                             type="button"
@@ -8372,29 +8448,10 @@ const AuditWorkspace = ({
                                     : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
                             }`}
                         >
-                            <span>① Analizar</span>
+                            <span>① Analizar & Configurar</span>
                             <span className="text-[9px] bg-black/30 px-1 rounded font-black">
                                 {tracks.length}
                             </span>
-                        </button>
-
-                        <button 
-                            type="button"
-                            onClick={() => setMobileWorkflowTab('corregir')}
-                            className={`flex-1 py-1.5 px-2 rounded-lg font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                                mobileWorkflowTab === 'corregir' 
-                                    ? 'bg-amber-500 text-black shadow-md font-black' 
-                                    : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
-                            }`}
-                        >
-                            <span>② Corregir</span>
-                            {(badQualityTracks.length + metrics.missing + metrics.missing_cover) > 0 ? (
-                                <span className="text-[9px] bg-red-950 text-red-300 border border-red-700 px-1 rounded font-black">
-                                    {(badQualityTracks.length + metrics.missing + metrics.missing_cover)}
-                                </span>
-                            ) : (
-                                <span className="text-[9px] bg-black/30 px-1 rounded">OK</span>
-                            )}
                         </button>
 
                         <button 
@@ -8406,35 +8463,38 @@ const AuditWorkspace = ({
                                     : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
                             }`}
                         >
-                            <span>③ Exportar</span>
+                            <span>② Exportar a Cabina</span>
                             <span className="text-[9px] bg-black/30 px-1 rounded font-mono">DJ</span>
                         </button>
                     </div>
 
-                    {/* Contenido de la Fase Activa en Móvil (Botones táctiles en carrusel) */}
+                    {/* Contenido de la Fase Activa en Móvil */}
                     <div className="p-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
                         {mobileWorkflowTab === 'analizar' && (
                             <>
                                 <button 
                                     type="button"
-                                    onClick={() => handleAuditar()} 
-                                    disabled={isAuditing || tracks.length === 0}
-                                    className="h-10 px-3.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-2 shrink-0 active:scale-95 shadow-md"
+                                    onClick={() => setBatchModalOpen(true)}
+                                    className={`h-10 px-3.5 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 border ${
+                                        batchConfigured ? 'bg-emerald-950/70 border-emerald-600 text-emerald-200' : 'bg-djcyan-500 text-black font-black'
+                                    }`}
                                 >
-                                    <span>▶</span>
-                                    <span>{isAuditing ? 'Auditando...' : 'Analizar Todo'}</span>
-                                    <span className="bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]">
-                                        {tracks.length}
-                                    </span>
+                                    <span>⚙️</span>
+                                    <span>{batchConfigured ? 'Ajustes OK' : 'Configurar'}</span>
                                 </button>
                                 <button 
                                     type="button"
-                                    onClick={() => setFiltro('missing')}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+                                    onClick={() => {
+                                        if (!batchConfigured) setBatchModalOpen(true);
+                                        else handleEjecutarAuditoriaLote();
+                                    }} 
+                                    disabled={isAuditing || tracks.length === 0}
+                                    className="h-10 px-3.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-2 shrink-0 active:scale-95 shadow-md disabled:opacity-40"
                                 >
-                                    <span>✢ BPM & Key</span>
-                                    <span className={`px-1.5 py-0.2 rounded text-[10px] ${metrics.missing > 0 ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-emerald-950 text-emerald-400'}`}>
-                                        {metrics.missing > 0 ? `${metrics.missing} faltan` : 'OK'}
+                                    <span>▶</span>
+                                    <span>{isAuditing ? 'Auditando...' : 'Ejecutar'}</span>
+                                    <span className="bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]">
+                                        {tracks.length}
                                     </span>
                                 </button>
                                 <button 
@@ -8444,55 +8504,6 @@ const AuditWorkspace = ({
                                 >
                                     <span>🎛️ 8 Cues</span>
                                 </button>
-                                <button 
-                                    type="button"
-                                    onClick={() => setBatchModalOpen(true)}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-300 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0"
-                                >
-                                    <Icons.Sliders />
-                                </button>
-                            </>
-                        )}
-
-                        {mobileWorkflowTab === 'corregir' && (
-                            <>
-                                <button 
-                                    type="button"
-                                    onClick={() => setBatchModalOpen(true)}
-                                    className="h-10 px-3.5 bg-amber-950/70 border border-amber-600/70 text-amber-200 font-mono text-xs font-bold rounded-xl flex items-center gap-2 shrink-0 active:scale-95"
-                                >
-                                    <span>✎ Auto-Tags</span>
-                                    <span className="bg-amber-900 text-amber-200 px-1.5 py-0.2 rounded text-[10px]">
-                                        {(metrics.missing_artist + metrics.missing_cover)}
-                                    </span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={() => handleBuscarReemplazosSpotify(badQualityTracks.length > 0 ? badQualityTracks : null)}
-                                    className="h-10 px-3.5 bg-rose-950/70 border border-rose-600/70 text-rose-200 font-mono text-xs font-bold rounded-xl flex items-center gap-2 shrink-0 active:scale-95"
-                                >
-                                    <span>🔍 Lossless HD</span>
-                                    <span className="bg-rose-900 text-rose-200 px-1.5 py-0.2 rounded text-[10px]">
-                                        {badQualityTracks.length > 0 ? `${badQualityTracks.length} fakes` : 'OK'}
-                                    </span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleSanitizarMetadatos}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-                                >
-                                    <span>Aa Normalizar</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={() => setDuplicateModalOpen(true)}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-300 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-                                >
-                                    <span>⚖️ Duplicados</span>
-                                    <span className="bg-djzinc-800 text-gray-400 px-1.5 py-0.2 rounded text-[10px]">
-                                        {metrics.duplicates || 0}
-                                    </span>
-                                </button>
                             </>
                         )}
 
@@ -8500,13 +8511,21 @@ const AuditWorkspace = ({
                             <>
                                 <button 
                                     type="button"
+                                    onClick={handleGuardarTodoEnFicheros}
+                                    disabled={isInjecting || tracks.length === 0}
+                                    className="h-10 px-3.5 bg-emerald-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
+                                >
+                                    <span>💾</span>
+                                    <span>Guardar Tags</span>
+                                </button>
+                                <button 
+                                    type="button"
                                     onClick={handleSincronizarPasaporteUniversal}
                                     disabled={tracks.length === 0}
-                                    className="h-10 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-2 shrink-0 active:scale-95 shadow-md"
+                                    className="h-10 px-3.5 bg-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
                                 >
                                     <span>🛂</span>
                                     <span>Pasaporte DJ</span>
-                                    <span className="bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]">ALL</span>
                                 </button>
                                 <button 
                                     type="button"
@@ -8518,18 +8537,35 @@ const AuditWorkspace = ({
                                 </button>
                                 <button 
                                     type="button"
+                                    onClick={handleExportarSeratoCrates}
+                                    disabled={tracks.length === 0}
+                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+                                >
+                                    <span>💽 Serato</span>
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={handleExportarTraktor}
+                                    disabled={tracks.length === 0}
+                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+                                >
+                                    <span>⚡ Traktor</span>
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={handleExportarVirtualDJ}
+                                    disabled={tracks.length === 0}
+                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+                                >
+                                    <span>🎧 VDJ</span>
+                                </button>
+                                <button 
+                                    type="button"
                                     onClick={handleExportarXLS}
                                     disabled={tracks.length === 0}
                                     className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
                                 >
                                     <span>📊 Excel</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={() => setExportDropdownOpen(prev => !prev)}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-300 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0 active:scale-95"
-                                >
-                                    <span>Más ▾</span>
                                 </button>
                             </>
                         )}
@@ -8620,24 +8656,21 @@ const AuditWorkspace = ({
                                 </div>
                             </div>
 
-                            {/* KPI 2: Mala Calidad / Transcodes */}
+                            {/* KPI 2: Falta Artista / Título (Unificado) */}
                             <div 
-                                onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} 
+                                onClick={() => setFiltro(filtro === 'missing_meta' ? 'todos' : 'missing_meta')} 
                                 className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
-                                    filtro === 'bad_quality' 
-                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md shadow-amber-500/10' 
+                                    filtro === 'missing_meta' 
+                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md' 
                                         : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
                                 }`}
                             >
-                                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase text-gray-400">
-                                    <span>{t('kpi_bad_quality') || 'Mala Calidad'}</span>
-                                    {badQualityTracks.length > 0 && <span className="text-[9px] bg-amber-900 text-amber-200 px-1 rounded font-mono font-bold">HD</span>}
-                                </div>
+                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">Falta Artista/Título</div>
                                 <div className="flex items-baseline justify-between mt-1">
-                                    <span className={`text-lg font-mono font-black ${badQualityTracks.length > 0 ? 'text-amber-400' : 'text-gray-400'}`}>
-                                        {badQualityTracks.length.toLocaleString()}
+                                    <span className={`text-lg font-mono font-black ${missingMetaTracks.length > 0 ? 'text-amber-300' : 'text-gray-400'}`}>
+                                        {missingMetaTracks.length.toLocaleString()}
                                     </span>
-                                    <span className="text-[10px] font-mono text-gray-500">{t('hud_subtitle_transcodes') || 'transcodes'}</span>
+                                    <span className="text-[10px] font-mono text-gray-500">sin tags</span>
                                 </div>
                             </div>
 
@@ -8657,39 +8690,7 @@ const AuditWorkspace = ({
                                 </div>
                             </div>
 
-                            {/* KPI 4: Falta Título */}
-                            <div 
-                                onClick={() => setFiltro(filtro === 'missing_title' ? 'todos' : 'missing_title')} 
-                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
-                                    filtro === 'missing_title' 
-                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md' 
-                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
-                                }`}
-                            >
-                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">{t('kpi_missing_title') || 'Falta Título'}</div>
-                                <div className="flex items-baseline justify-between mt-1">
-                                    <span className="text-lg font-mono font-black text-amber-300">{(metrics.missing_title || 0).toLocaleString()}</span>
-                                    <span className="text-[10px] font-mono text-gray-500">{t('hud_subtitle_raw') || 'crudo'}</span>
-                                </div>
-                            </div>
-
-                            {/* KPI 5: Falta Artista */}
-                            <div 
-                                onClick={() => setFiltro(filtro === 'missing_artist' ? 'todos' : 'missing_artist')} 
-                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
-                                    filtro === 'missing_artist' 
-                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md' 
-                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
-                                }`}
-                            >
-                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">{t('kpi_missing_artist') || 'Falta Artista'}</div>
-                                <div className="flex items-baseline justify-between mt-1">
-                                    <span className="text-lg font-mono font-black text-amber-300">{(metrics.missing_artist || 0).toLocaleString()}</span>
-                                    <span className="text-[10px] font-mono text-gray-500">{t('hud_subtitle_no_author') || 'sin autor'}</span>
-                                </div>
-                            </div>
-
-                            {/* KPI 6: Falta Cover */}
+                            {/* KPI 4: Falta Cover */}
                             <div 
                                 onClick={() => setFiltro(filtro === 'missing_cover' ? 'todos' : 'missing_cover')} 
                                 className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
@@ -8705,36 +8706,78 @@ const AuditWorkspace = ({
                                 </div>
                             </div>
 
-                            {/* KPI 7: Duplicados */}
+                            {/* KPI 5: Faltan Cues */}
                             <div 
-                                onClick={() => setDuplicateModalOpen(true)} 
-                                className="p-2.5 rounded-xl border bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-amber-500/40 flex flex-col justify-between cursor-pointer transition-all group"
-                            >
-                                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase text-gray-400">
-                                    <span>{t('kpi_duplicates') || 'Duplicados'}</span>
-                                    <span className="text-[9px] font-mono text-amber-400 bg-amber-950/80 px-1 rounded border border-amber-800">⚖️</span>
-                                </div>
-                                <div className="flex items-baseline justify-between mt-1">
-                                    <span className="text-lg font-mono font-black text-amber-400 group-hover:text-amber-300">{(metrics.duplicates || 0).toLocaleString()}</span>
-                                    <span className="text-[10px] font-mono text-gray-500">{t('hud_subtitle_resolve') || 'resolver'}</span>
-                                </div>
-                            </div>
-
-                            {/* KPI 8: Certificación Lossless PASS */}
-                            <div 
-                                onClick={() => setFiltro(filtro === 'error' ? 'todos' : 'error')} 
+                                onClick={() => setFiltro(filtro === 'missing_cues' ? 'todos' : 'missing_cues')} 
                                 className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
-                                    filtro === 'error' 
-                                        ? 'bg-red-950/40 border-red-500/60 shadow-md' 
+                                    filtro === 'missing_cues' 
+                                        ? 'bg-amber-950/40 border-amber-500/60 shadow-md' 
                                         : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
                                 }`}
                             >
-                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">{t('metric_lossless') || 'Cert. Lossless'}</div>
+                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">Faltan Cues</div>
                                 <div className="flex items-baseline justify-between mt-1">
-                                    <span className="text-lg font-mono font-black text-djcyan-400">
-                                        {tracks.filter(t => t.cutoff_khz && !String(t.status || '').includes('Fake')).length}
+                                    <span className={`text-lg font-mono font-black ${missingCuesTracks.length > 0 ? 'text-amber-300' : 'text-gray-400'}`}>
+                                        {missingCuesTracks.length.toLocaleString()}
                                     </span>
-                                    <span className="text-[10px] font-mono text-gray-500">PASS</span>
+                                    <span className="text-[10px] font-mono text-gray-500">sin Hot Cues</span>
+                                </div>
+                            </div>
+
+                            {/* KPI 6: Silencios Corregidos */}
+                            <div 
+                                onClick={() => setFiltro(filtro === 'silences_trimmed' ? 'todos' : 'silences_trimmed')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'silences_trimmed' 
+                                        ? 'bg-djcyan-950/40 border-djcyan-500/60 shadow-md' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">Silencios Corregidos</div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-lg font-mono font-black text-djcyan-300">
+                                        {trimmedSilenceTracks.length.toLocaleString()}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-gray-500">recortados</span>
+                                </div>
+                            </div>
+
+                            {/* KPI 7: Mala Calidad / Fakes */}
+                            <div 
+                                onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'bad_quality' 
+                                        ? 'bg-rose-950/40 border-rose-500/60 shadow-md shadow-rose-500/10' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase text-gray-400">
+                                    <span>{t('kpi_bad_quality') || 'Mala Calidad'}</span>
+                                    {badQualityTracks.length > 0 && <span className="text-[9px] bg-rose-900 text-rose-200 px-1 rounded font-mono font-bold">FAKES</span>}
+                                </div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className={`text-lg font-mono font-black ${badQualityTracks.length > 0 ? 'text-rose-400' : 'text-gray-400'}`}>
+                                        {badQualityTracks.length.toLocaleString()}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-gray-500">transcodes</span>
+                                </div>
+                            </div>
+
+                            {/* KPI 8: Calidad Excelente */}
+                            <div 
+                                onClick={() => setFiltro(filtro === 'excellent_quality' ? 'todos' : 'excellent_quality')} 
+                                className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                                    filtro === 'excellent_quality' 
+                                        ? 'bg-emerald-950/40 border-emerald-500/60 shadow-md' 
+                                        : 'bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700'
+                                }`}
+                            >
+                                <div className="text-[10px] font-mono font-bold uppercase text-gray-400 truncate">Calidad Excelente</div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-lg font-mono font-black text-emerald-400">
+                                        {excellentQualityTracks.length.toLocaleString()}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-gray-500">Lossless / 320k</span>
                                 </div>
                             </div>
                         </div>
@@ -8821,7 +8864,7 @@ const AuditWorkspace = ({
                         <div className="flex gap-1.5 overflow-x-auto scrollbar-none items-center pl-1">
                             <button 
                                 onClick={() => setFiltro('todos')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
                                     filtro === 'todos' 
                                         ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm shadow-djcyan-500/20' 
                                         : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
@@ -8831,15 +8874,27 @@ const AuditWorkspace = ({
                             </button>
 
                             <button 
+                                onClick={() => setFiltro(filtro === 'excellent_quality' ? 'todos' : 'excellent_quality')} 
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1 border shrink-0 ${
+                                    filtro === 'excellent_quality' 
+                                        ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow-sm' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-emerald-300 border-djzinc-800 hover:border-emerald-500/40'
+                                }`}
+                            >
+                                <span>💎</span>
+                                <span>Excelente ({excellentQualityTracks.length})</span>
+                            </button>
+
+                            <button 
                                 onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1 border ${
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1 border shrink-0 ${
                                     filtro === 'bad_quality' 
-                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-amber-300 border-djzinc-800 hover:border-amber-500/40'
+                                        ? 'bg-rose-500 text-black border-rose-400 font-black shadow-sm shadow-rose-500/20' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-rose-300 border-djzinc-800 hover:border-rose-500/40'
                                 }`}
                             >
                                 <span>🚨</span>
-                                <span>{t('filter_bad_quality_label') || 'Mala Calidad'} ({badQualityTracks.length})</span>
+                                <span>Mala Calidad ({badQualityTracks.length})</span>
                             </button>
 
                             {badQualityTracks.length > 0 && (
@@ -8847,7 +8902,7 @@ const AuditWorkspace = ({
                                     type="button"
                                     onClick={() => handleBuscarReemplazosSpotify(badQualityTracks)}
                                     disabled={isSearchingSpotifyHD || isAuditing}
-                                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-600/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm"
+                                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-600/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm shrink-0"
                                     title={t('tooltip_upgrade_quality') || "Buscar copias oficiales FLAC / Lossless en Descargas para pistas de baja calidad"}
                                 >
                                     <span>⬇️</span>
@@ -8883,7 +8938,7 @@ const AuditWorkspace = ({
                                     type="button"
                                     onClick={() => handleBuscarReemplazosSpotify(tracks.filter(t => selectedAuditIds.has(t.id)))}
                                     disabled={isSearchingSpotifyHD || isAuditing}
-                                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-500/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm animate-pulse"
+                                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-500/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm animate-pulse shrink-0"
                                     title={t('tooltip_send_downloads') || "Buscar y llevar a descargas las pistas seleccionadas en máxima calidad (FLAC/Lossless)"}
                                 >
                                     <span>⬇️</span>
@@ -8891,21 +8946,20 @@ const AuditWorkspace = ({
                                 </button>
                             )}
 
-                            {badQualityTracks.length > 0 && (
-                                <button 
-                                    type="button"
-                                    onClick={(e) => solicitarEliminarPistas(badQualityTracks, 'trash', e)}
-                                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-700 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm"
-                                    title="Purgar o borrar del disco las pistas de baja calidad / fakes detectadas"
-                                >
-                                    <span>🗑️</span>
-                                    <span>{t('filter_purge_fakes_label') || 'Purgar Fakes'} ({badQualityTracks.length})</span>
-                                </button>
-                            )}
+                            <button 
+                                onClick={() => setFiltro(filtro === 'missing_meta' ? 'todos' : 'missing_meta')} 
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
+                                    filtro === 'missing_meta' 
+                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
+                                }`}
+                            >
+                                Sin Artista/Título ({missingMetaTracks.length})
+                            </button>
 
                             <button 
                                 onClick={() => setFiltro(filtro === 'missing' ? 'todos' : 'missing')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
                                     filtro === 'missing' 
                                         ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
                                         : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
@@ -8916,13 +8970,46 @@ const AuditWorkspace = ({
 
                             <button 
                                 onClick={() => setFiltro(filtro === 'missing_cover' ? 'todos' : 'missing_cover')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
                                     filtro === 'missing_cover' 
                                         ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
                                         : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
                                 }`}
                             >
                                 {t('filter_missing_cover_label') || 'Sin Cover'} ({metrics.missing_cover || 0})
+                            </button>
+
+                            <button 
+                                onClick={() => setFiltro(filtro === 'missing_cues' ? 'todos' : 'missing_cues')} 
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
+                                    filtro === 'missing_cues' 
+                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
+                                }`}
+                            >
+                                Faltan Cues ({missingCuesTracks.length})
+                            </button>
+
+                            <button 
+                                onClick={() => setFiltro(filtro === 'silences_trimmed' ? 'todos' : 'silences_trimmed')} 
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
+                                    filtro === 'silences_trimmed' 
+                                        ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
+                                }`}
+                            >
+                                Silencios Trim ({trimmedSilenceTracks.length})
+                            </button>
+
+                            <button 
+                                onClick={() => setFiltro(filtro === 'high_energy' ? 'todos' : 'high_energy')} 
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
+                                    filtro === 'high_energy' 
+                                        ? 'bg-yellow-500 text-black border-yellow-400 font-black shadow-sm' 
+                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
+                                }`}
+                            >
+                                ⚡ Alta Energía ({highEnergyTracks.length})
                             </button>
 
                             {/* 🔮 MIX ORACLE BOTÓN DE FILTRO / RADAR */}
@@ -8933,7 +9020,7 @@ const AuditWorkspace = ({
                                     setMixOracleOpen(true);
                                 }}
                                 disabled={tracks.length === 0}
-                                className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-gradient-to-r from-purple-950 to-indigo-950 hover:from-purple-900 hover:to-indigo-900 text-purple-300 border border-purple-600/50 flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                                className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-gradient-to-r from-purple-950 to-indigo-950 hover:from-purple-900 hover:to-indigo-900 text-purple-300 border border-purple-600/50 flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 shrink-0"
                                 title="Abrir Mix Oracle para sugerir qué canción mezclar a continuación"
                             >
                                 <span>🔮</span>
@@ -8942,7 +9029,7 @@ const AuditWorkspace = ({
 
                             <button 
                                 onClick={() => setDuplicateModalOpen(true)} 
-                                className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/40 cursor-pointer flex items-center gap-1 shadow transition-all active:scale-95"
+                                className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/40 cursor-pointer flex items-center gap-1 shadow transition-all active:scale-95 shrink-0"
                             >
                                 <span>⚖️</span>
                                 <span>{t('filter_duplicates_label') || 'Duplicados'} ({metrics.duplicates || 0})</span>
@@ -10299,45 +10386,23 @@ const AuditWorkspace = ({
                 </div>
             )}
 
-            <BatchAuditorModal isOpen={batchModalOpen} onClose={() => setBatchModalOpen(false)} onRunBatch={async (opts) => {
-                setBatchModalOpen(false);
-                const target = resolveAuditTargets();
-                if (!target || (Array.isArray(target) && target.length === 0)) {
-                    alert("Por favor selecciona una carpeta o carga pistas sueltas primero.");
-                    return;
-                }
-                setIsAuditing(true);
-                setBatchProgress(5);
-                const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
-                setBatchStatusMsg(`Ejecutando procesamiento masivo de lote en ${targetDesc}...`);
-                try {
-                    if (window.eel && window.eel.ejecutar_auditoria_lote) {
-                        const res = await window.eel.ejecutar_auditoria_lote(target, opts)();
-                        if (res && res.tracks) {
-                            setTracks(res.tracks);
-                            const badDetected = res.tracks.filter(t => isBadQualityTrack(t));
-                            if (badDetected.length > 0) {
-                                setSelectedAuditIds(new Set(badDetected.map(t => t.id)));
-                            }
-                            setMetrics({ total: res.total, missing: res.sin_meta, ready: res.ready, errors: res.errors || 0 });
-                            if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
-                                setBatchStatusMsg("Inyectando carátulas 1:1 en archivos físicos...");
-                                await window.eel.inyectar_caratulas_lote(res.tracks)();
-                            }
-                            if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
-                                setBatchStatusMsg("Inyectando comentarios tácticos y tags en archivos físicos...");
-                                await window.eel.inyectar_lote_metadatos(res.tracks)();
-                            }
-                        }
-                    }
-                } finally {
-                    setTimeout(() => {
-                        setIsAuditing(false);
-                        setBatchProgress(0);
-                        setBatchStatusMsg('');
-                    }, 800);
-                }
-            }} />
+            <BatchAuditorModal 
+                isOpen={batchModalOpen} 
+                onClose={() => setBatchModalOpen(false)} 
+                onSaveConfig={(opts) => {
+                    setBatchConfigOpts(opts);
+                    setBatchConfigured(true);
+                    setBatchModalOpen(false);
+                    setSaveFeedback('✓ Ajustes guardados. Ya puedes pulsar "Ejecutar Análisis"');
+                    setTimeout(() => setSaveFeedback(''), 4000);
+                }}
+                onRunBatch={async (opts) => {
+                    setBatchConfigOpts(opts);
+                    setBatchConfigured(true);
+                    setBatchModalOpen(false);
+                    await handleEjecutarAuditoriaLote(opts);
+                }} 
+            />
 
             {/* Modal de Comparación Cara a Cara & Eliminación de Duplicados */}
             <DuplicateComparisonModal 

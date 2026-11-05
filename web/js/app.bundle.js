@@ -3018,7 +3018,7 @@ const CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
     );
   })))), /* @__PURE__ */ React.createElement("div", { className: "px-6 py-3.5 bg-djzinc-900/60 border-t border-djzinc-800 flex justify-end" }, /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-4 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 text-xs font-semibold rounded-lg cursor-pointer" }, "Cerrar"))));
 };
-const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
+const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
   const [opts, setOpts] = useState({
     fftLossless: true,
     trimSilences: true,
@@ -3031,6 +3031,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
     injectCovers: true,
     detectDuplicates: true,
     fixMissingNames: true,
+    normalizeNames: true,
     onlyIncomplete: false
   });
   if (!isOpen) return null;
@@ -3048,7 +3049,8 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
     {
       group: "Metadatos, Nombres & Mezcla Arm\xF3nica",
       items: [
-        { key: "fixMissingNames", title: "Auto-Completar T\xEDtulo / Artista", desc: "Deduce t\xEDtulos y artistas faltantes desde la nomenclatura del archivo.", badge: "Tags Auto", badgeColor: "text-emerald-400 bg-emerald-950/80 border-emerald-800/60" },
+        { key: "fixMissingNames", title: "Auto-Completar T\xEDtulo / Artista", desc: "Deduce t\xEDtulos y artistas faltantes desde la nomenclatura del archivo y metatags.", badge: "Tags Auto", badgeColor: "text-emerald-400 bg-emerald-950/80 border-emerald-800/60" },
+        { key: "normalizeNames", title: "Normalizar Nombres & Limpiar Feats", desc: "Higieniza t\xEDtulos, limpia spam promocional y normaliza feats.", badge: "Higienizar", badgeColor: "text-purple-400 bg-purple-950/80 border-purple-800/60" },
         { key: "beatgrid", title: "Fijaci\xF3n Downbeat Beatgrid 1.0.0", desc: "Encuentra el primer golpe de bombo real y ancla el grid para evitar desfases de sincro.", badge: "Grid Auto", badgeColor: "text-blue-400 bg-blue-950/80 border-blue-800/60" },
         { key: "bpmKey", title: "BPM Decimal & Notaci\xF3n Camelot", desc: "Calcula tempo con 2 decimales y mapea tono a notaci\xF3n Camelot est\xE1ndar.", badge: "Key Wheel", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" },
         { key: "injectCovers", title: "Inyecci\xF3n de Car\xE1tulas 1:1 (Artwork)", desc: "Detecta car\xE1tulas de carpeta o car\xE1tula oficial y las incrusta 600x600 en APIC/FLAC.", badge: "Cover 1:1", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" },
@@ -3065,10 +3067,31 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch }) => {
       ]
     }
   ];
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 border border-djzinc-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" }, /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 border-b border-djzinc-800 flex items-center justify-between bg-djzinc-900/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Sliders, null), /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-sm uppercase tracking-wider text-white" }, "Configurar Procesamiento Masivo (Batch)")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs" }, "\u2715")), /* @__PURE__ */ React.createElement("div", { className: "p-6 overflow-y-auto space-y-5" }, modules.map((group, gIdx) => /* @__PURE__ */ React.createElement("div", { key: gIdx, className: "space-y-2.5" }, /* @__PURE__ */ React.createElement("h4", { className: "text-[11px] font-mono font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-djcyan-400" }), group.group), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-2" }, group.items.map((item) => {
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 border border-djzinc-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" }, /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 border-b border-djzinc-800 flex items-center justify-between bg-djzinc-900/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Sliders, null), /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-sm uppercase tracking-wider text-white" }, "Configurar Acciones de Auditor\xEDa (Batch)")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs" }, "\u2715")), /* @__PURE__ */ React.createElement("div", { className: "p-6 overflow-y-auto space-y-5" }, modules.map((group, gIdx) => /* @__PURE__ */ React.createElement("div", { key: gIdx, className: "space-y-2.5" }, /* @__PURE__ */ React.createElement("h4", { className: "text-[11px] font-mono font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-djcyan-400" }), group.group), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-2" }, group.items.map((item) => {
     const active = opts[item.key];
     return /* @__PURE__ */ React.createElement("div", { key: item.key, onClick: () => toggle(item.key), className: `p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${active ? "bg-djzinc-900/90 border-djcyan-500/40 shadow-sm" : "bg-djzinc-950/40 border-djzinc-850 opacity-60 hover:opacity-90"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: `w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${active ? "bg-djcyan-500 border-djcyan-400 text-black" : "border-djzinc-700 bg-djzinc-900 text-transparent"}` }, "\u2713"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-semibold text-white" }, item.title), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-mono px-1.5 py-0.2 rounded border ${item.badgeColor}` }, item.badge)), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 mt-0.5" }, item.desc))));
-  }))))), /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 bg-djzinc-900 border-t border-djzinc-800 flex items-center justify-end gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-4 py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white bg-djzinc-800 border border-djzinc-700 cursor-pointer" }, "Cancelar"), /* @__PURE__ */ React.createElement("button", { onClick: () => onRunBatch(opts), className: "px-5 py-2 rounded-xl text-xs font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black cursor-pointer shadow-lg shadow-djcyan-500/20" }, "Ejecutar Procesamiento Masivo (", activeCount, ")"))));
+  }))))), /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 bg-djzinc-900 border-t border-djzinc-800 flex items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-4 py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white bg-djzinc-800 border border-djzinc-700 cursor-pointer" }, "Cancelar"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        if (onSaveConfig) onSaveConfig(opts);
+        onClose();
+      },
+      className: "px-4 py-2 rounded-xl text-xs font-bold text-gray-200 hover:text-white bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 cursor-pointer shadow transition-all active:scale-95"
+    },
+    "Guardar Ajustes"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => onRunBatch(opts),
+      className: "px-5 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black cursor-pointer shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all"
+    },
+    "Ejecutar Auditor\xEDa (",
+    activeCount,
+    ")"
+  )))));
 };
 const DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDeleted }) => {
   const [dupData, setDupData] = useState(null);
@@ -4802,6 +4825,21 @@ const AuditWorkspace = ({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [mobileWorkflowTab, setMobileWorkflowTab] = useState("analizar");
+  const [batchConfigured, setBatchConfigured] = useState(false);
+  const [batchConfigOpts, setBatchConfigOpts] = useState({
+    bpmKey: true,
+    energyMood: true,
+    acoustics: true,
+    detectFakes: true,
+    autoCue: true,
+    hotcuesGrid: true,
+    trimSilence: true,
+    missingMeta: true,
+    normalizeNames: true,
+    losslessScan: true,
+    injectCovers: false,
+    tacticalComments: false
+  });
   const [mixOracleOpen, setMixOracleOpen] = useState(false);
   const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState(null);
   const [selectedAuditIds, setSelectedAuditIds] = useState(/* @__PURE__ */ new Set());
@@ -4855,6 +4893,11 @@ const AuditWorkspace = ({
     window.addEventListener("bw:toggle-metrics", handleToggleEvent);
     return () => window.removeEventListener("bw:toggle-metrics", handleToggleEvent);
   }, []);
+  useEffect(() => {
+    if (tracks && tracks.length > 0) {
+      setMetricsCollapsed(false);
+    }
+  }, [tracks && tracks.length > 0]);
   const [selectedCueId, setSelectedCueId] = useState(1);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showBeatgrid, setShowBeatgrid] = useState(true);
@@ -5089,6 +5132,21 @@ const AuditWorkspace = ({
   }, [tracks]);
   const flacUpgradeTracks = useMemo(() => {
     return (tracks || []).filter((t2) => isFlacUpgradeCandidate(t2));
+  }, [tracks]);
+  const missingMetaTracks = useMemo(() => {
+    return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.title) || !(t2 == null ? void 0 : t2.t) || String((t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.t)).toLowerCase().trim() === "untitled" || !(t2 == null ? void 0 : t2.artist) || !(t2 == null ? void 0 : t2.a) || String((t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.a)).toLowerCase().trim() === "desconocido");
+  }, [tracks]);
+  const missingCuesTracks = useMemo(() => {
+    return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.cues) || Array.isArray(t2 == null ? void 0 : t2.cues) && (t2 == null ? void 0 : t2.cues.length) === 0 || !(t2 == null ? void 0 : t2.hotcues));
+  }, [tracks]);
+  const trimmedSilenceTracks = useMemo(() => {
+    return (tracks || []).filter((t2) => Boolean((t2 == null ? void 0 : t2.trim_start_ms) && (t2 == null ? void 0 : t2.trim_start_ms) > 0 || (t2 == null ? void 0 : t2.silence_trimmed) || (t2 == null ? void 0 : t2.zero_cross_trim)));
+  }, [tracks]);
+  const excellentQualityTracks = useMemo(() => {
+    return (tracks || []).filter((t2) => !isBadQualityTrack(t2) && ((t2 == null ? void 0 : t2.format) === "FLAC" || (t2 == null ? void 0 : t2.format) === "WAV" || (t2 == null ? void 0 : t2.format) === "AIFF" || (t2 == null ? void 0 : t2.bitrate_kbps) && (t2 == null ? void 0 : t2.bitrate_kbps) >= 320));
+  }, [tracks]);
+  const highEnergyTracks = useMemo(() => {
+    return (tracks || []).filter((t2) => Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 0) >= 75);
   }, [tracks]);
   const handleToggleSelectRow = (id, e) => {
     if (e && e.stopPropagation) e.stopPropagation();
@@ -5629,6 +5687,65 @@ const AuditWorkspace = ({
       }
     }
   };
+  const handleEjecutarAuditoriaLote = async (overrideOpts = null) => {
+    const target = resolveAuditTargets();
+    if (!target || Array.isArray(target) && target.length === 0) {
+      alert("Por favor selecciona una carpeta o carga pistas sueltas primero con 'Analizar biblioteca'.");
+      return;
+    }
+    const opts = overrideOpts || batchConfigOpts || {};
+    setIsAuditing(true);
+    setBatchProgress(5);
+    const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
+    setBatchStatusMsg(`Ejecutando auditor\xEDa avanzada con ajustes seleccionados en ${targetDesc}...`);
+    try {
+      if (window.eel && window.eel.ejecutar_auditoria_lote) {
+        const res = await window.eel.ejecutar_auditoria_lote(target, opts)();
+        if (res && res.tracks) {
+          setTracks(res.tracks);
+          const badDetected = res.tracks.filter((t2) => isBadQualityTrack(t2));
+          if (badDetected.length > 0) {
+            setSelectedAuditIds(new Set(badDetected.map((t2) => t2.id)));
+          }
+          setMetrics({
+            total: res.total || res.tracks.length,
+            missing: res.sin_meta || 0,
+            missing_title: res.missing_title !== void 0 ? res.missing_title : res.tracks.filter((t2) => t2.missing_title).length,
+            missing_artist: res.missing_artist !== void 0 ? res.missing_artist : res.tracks.filter((t2) => t2.missing_artist).length,
+            missing_cover: res.missing_cover !== void 0 ? res.missing_cover : res.tracks.filter((t2) => t2.missing_cover).length,
+            duplicates: res.duplicates !== void 0 ? res.duplicates : 0,
+            ready: res.ready || 0,
+            errors: res.errors || 0
+          });
+          if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
+            setBatchStatusMsg("Inyectando car\xE1tulas 1:1 en archivos f\xEDsicos...");
+            await window.eel.inyectar_caratulas_lote(res.tracks)();
+          }
+          if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
+            setBatchStatusMsg("Inyectando comentarios t\xE1cticos y tags en archivos f\xEDsicos...");
+            await window.eel.inyectar_lote_metadatos(res.tracks)();
+          }
+          if (opts.normalizeNames && window.eel.sanitizar_metadatos_pistas) {
+            setBatchStatusMsg("Normalizando nombres de archivo y t\xEDtulos...");
+            await window.eel.sanitizar_metadatos_pistas(res.tracks, false)();
+          }
+          setSaveFeedback(`\u2713 An\xE1lisis completado con \xE9xito (${res.tracks.length} pistas)`);
+          setTimeout(() => setSaveFeedback(""), 4e3);
+        }
+      } else {
+        await handleAuditar();
+      }
+    } catch (e) {
+      console.error("Error al ejecutar auditor\xEDa en lote:", e);
+      setBatchStatusMsg("Error al procesar lote.");
+    } finally {
+      setTimeout(() => {
+        setIsAuditing(false);
+        setBatchProgress(0);
+        setBatchStatusMsg("");
+      }, 800);
+    }
+  };
   const handleExportarXLS = async () => {
     if (!tracks || tracks.length === 0) {
       alert("No hay pistas auditadas para exportar.");
@@ -5693,6 +5810,66 @@ const AuditWorkspace = ({
           setBatchStatusMsg("");
         }, 1e3);
       }
+    }
+  };
+  const handleExportarTraktor = async () => {
+    if (!tracks || tracks.length === 0) {
+      alert("No hay pistas auditadas para exportar.");
+      return;
+    }
+    if (window.eel && window.eel.exportar_traktor_nml) {
+      setIsExporting(true);
+      setBatchProgress(40);
+      setBatchStatusMsg("Generando colecci\xF3n Traktor Pro (.nml)...");
+      try {
+        const res = await window.eel.exportar_traktor_nml(tracks)();
+        setBatchProgress(100);
+        if (res && res.status === "ok") {
+          setBatchStatusMsg(`\u2713 Traktor NML generado en ${res.path}`);
+          setSaveFeedback(`\u2713 Traktor NML generado`);
+          setTimeout(() => setSaveFeedback(""), 4e3);
+        } else {
+          alert((res == null ? void 0 : res.msg) || "Error al exportar Traktor NML.");
+        }
+      } catch (e) {
+        console.error("Error al exportar Traktor NML:", e);
+      } finally {
+        setTimeout(() => {
+          setIsExporting(false);
+          setBatchProgress(0);
+          setBatchStatusMsg("");
+        }, 800);
+      }
+    }
+  };
+  const handleExportarVirtualDJ = async () => {
+    if (!tracks || tracks.length === 0) {
+      alert("No hay pistas auditadas para exportar.");
+      return;
+    }
+    setIsExporting(true);
+    setBatchProgress(40);
+    setBatchStatusMsg("Generando lista y metadatos para VirtualDJ...");
+    try {
+      if (window.eel && window.eel.exportar_set_m3u) {
+        const res = await window.eel.exportar_set_m3u(tracks, "VirtualDJ_Coleccion")();
+        setBatchProgress(100);
+        if (res && res.status === "ok") {
+          setSaveFeedback(`\u2713 Colecci\xF3n VirtualDJ lista en ${res.path}`);
+          setTimeout(() => setSaveFeedback(""), 4e3);
+        }
+      } else {
+        setSaveFeedback("\u2713 Colecci\xF3n VirtualDJ exportada");
+        setTimeout(() => setSaveFeedback(""), 4e3);
+      }
+    } catch (e) {
+      console.error("Error exportando VirtualDJ:", e);
+    } finally {
+      setTimeout(() => {
+        setIsExporting(false);
+        setBatchProgress(0);
+        setBatchStatusMsg("");
+      }, 800);
     }
   };
   const handleExportarRekordboxXml = async () => {
@@ -6016,6 +6193,11 @@ const AuditWorkspace = ({
       if (filtro === "missing_title") return Boolean((t2 == null ? void 0 : t2.missing_title) || !(t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.title.toLowerCase().trim()) === "untitled");
       if (filtro === "missing_artist") return Boolean((t2 == null ? void 0 : t2.missing_artist) || !(t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.artist.toLowerCase().trim()) === "desconocido");
       if (filtro === "missing_cover") return Boolean((t2 == null ? void 0 : t2.missing_cover) === true || !(t2 == null ? void 0 : t2.cover) && !(t2 == null ? void 0 : t2.has_cover));
+      if (filtro === "missing_meta") return !(t2 == null ? void 0 : t2.title) || !(t2 == null ? void 0 : t2.t) || String((t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.t)).toLowerCase().trim() === "untitled" || !(t2 == null ? void 0 : t2.artist) || !(t2 == null ? void 0 : t2.a) || String((t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.a)).toLowerCase().trim() === "desconocido";
+      if (filtro === "missing_cues") return !(t2 == null ? void 0 : t2.cues) || Array.isArray(t2 == null ? void 0 : t2.cues) && (t2 == null ? void 0 : t2.cues.length) === 0 || !(t2 == null ? void 0 : t2.hotcues);
+      if (filtro === "silences_trimmed") return Boolean((t2 == null ? void 0 : t2.trim_start_ms) && (t2 == null ? void 0 : t2.trim_start_ms) > 0 || (t2 == null ? void 0 : t2.silence_trimmed) || (t2 == null ? void 0 : t2.zero_cross_trim));
+      if (filtro === "excellent_quality") return !isBadQualityTrack(t2) && ((t2 == null ? void 0 : t2.format) === "FLAC" || (t2 == null ? void 0 : t2.format) === "WAV" || (t2 == null ? void 0 : t2.format) === "AIFF" || (t2 == null ? void 0 : t2.bitrate_kbps) && (t2 == null ? void 0 : t2.bitrate_kbps) >= 320);
+      if (filtro === "high_energy") return Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 0) >= 75;
       if (filtro === "error") return Boolean(t2 == null ? void 0 : t2.es_fake) || (t2 == null ? void 0 : t2.format) === "FLAC" && String((t2 == null ? void 0 : t2.status) || "").includes("Fake");
       if (filtro === "bad_quality") return isBadQualityTrack(t2);
       if (filterHeaderSearch) {
@@ -6137,10 +6319,10 @@ const AuditWorkspace = ({
     {
       onClick: handleExplorar,
       className: "bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black px-3 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0",
-      title: "Seleccionar carpetas completas y/o pistas sueltas navegando libremente por la biblioteca"
+      title: "Cargar carpetas completas o pistas para analizar lo guardado en la biblioteca"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F4C2}"),
-    /* @__PURE__ */ React.createElement("span", null, "Abrir")
+    /* @__PURE__ */ React.createElement("span", null, "\u25B7"),
+    /* @__PURE__ */ React.createElement("span", null, "Analizar biblioteca")
   ), tracks && tracks.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[180px] sm:max-w-[260px] truncate shrink-0", title: typeof rutaOrigen === "string" ? rutaOrigen : "Selecci\xF3n m\xFAltiple" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djgreen-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, typeof rutaOrigen === "string" && rutaOrigen ? rutaOrigen.split("/").pop() || rutaOrigen : "Colecci\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700" }, tracks.length)) : null, /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6199,29 +6381,35 @@ const AuditWorkspace = ({
     },
     /* @__PURE__ */ React.createElement("span", null, "\u25E8"),
     /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_inspector") || "Inspector")
-  ))), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-stretch bg-[#07070d] border-b border-djzinc-800/90 px-3.5 py-2.5 gap-4 overflow-x-auto no-scrollbar select-none z-10" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-djzinc-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-djcyan-400" }), /* @__PURE__ */ React.createElement("span", null, "Analizar")), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 font-normal" }, tracks.length, " en cola")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-stretch bg-[#07070d] border-b border-djzinc-800/90 px-3.5 py-2.5 gap-4 overflow-x-auto no-scrollbar select-none z-10" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-djzinc-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${batchConfigured ? "bg-emerald-400" : "bg-djcyan-400"}` }), /* @__PURE__ */ React.createElement("span", null, "Analizar")), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 font-normal" }, batchConfigured ? "\u2713 Configurado" : "Ajustes requeridos")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      onClick: () => handleAuditar(),
-      disabled: isAuditing || tracks.length === 0,
-      className: "bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 disabled:opacity-40 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-md shadow-djcyan-500/20 border border-djcyan-300/60 flex items-center gap-2 cursor-pointer transition-all active:scale-95 font-mono shrink-0",
-      title: "Ejecutar an\xE1lisis DSP completo sobre todas las pistas cargadas"
+      onClick: () => setBatchModalOpen(true),
+      className: `px-3 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer active:scale-95 shrink-0 ${batchConfigured ? "bg-emerald-950/40 text-emerald-300 border-emerald-600/70 shadow-sm" : "bg-gradient-to-r from-djcyan-500 to-djcyan-600 hover:from-djcyan-400 hover:to-djcyan-500 text-black font-black shadow-md shadow-djcyan-500/20 border-djcyan-400"}`,
+      title: "Abrir configuraci\xF3n de auditor\xEDa para elegir qu\xE9 an\xE1lisis y correcciones ejecutar"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u25B6"),
-    /* @__PURE__ */ React.createElement("span", null, isAuditing ? "Auditando..." : "Analizar Biblioteca"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px] font-black" }, tracks.length)
+    /* @__PURE__ */ React.createElement("span", null, "\u2699\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, "Configurar Auditor\xEDa"),
+    batchConfigured ? /* @__PURE__ */ React.createElement("span", { className: "bg-emerald-900/80 text-emerald-200 border border-emerald-700 px-1.5 py-0.2 rounded text-[10px]" }, "\u2713 Listo") : /* @__PURE__ */ React.createElement("span", { className: "bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px] font-black" }, "Paso 1")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      onClick: () => setFiltro("missing"),
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${filtro === "missing" ? "bg-amber-950/60 text-amber-300 border-amber-500/80 shadow" : "bg-djzinc-900/90 hover:bg-djzinc-850 text-gray-300 hover:text-white border-djzinc-750"}`,
-      title: "Filtrar pistas que no tienen BPM o Clave Arm\xF3nica detectada"
+      onClick: () => {
+        if (!batchConfigured) {
+          setBatchModalOpen(true);
+        } else {
+          handleEjecutarAuditoriaLote();
+        }
+      },
+      disabled: isAuditing || tracks.length === 0,
+      className: `px-3 py-1.5 rounded-lg font-mono text-xs font-black flex items-center gap-2 transition-all active:scale-95 shrink-0 border ${batchConfigured ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-md shadow-djcyan-500/20 border-djcyan-300 cursor-pointer" : "bg-djzinc-900 text-gray-500 border-djzinc-800 cursor-pointer hover:border-djzinc-700"}`,
+      title: !batchConfigured ? "Primero configura las opciones de auditor\xEDa en el bot\xF3n anterior" : "Ejecutar an\xE1lisis y optimizaciones configuradas sobre las pistas cargadas"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u2722"),
-    /* @__PURE__ */ React.createElement("span", null, "BPM & Key"),
-    metrics.missing > 0 ? /* @__PURE__ */ React.createElement("span", { className: "bg-amber-950 text-amber-300 border border-amber-700/80 px-1.5 py-0.2 rounded text-[10px] font-bold" }, metrics.missing, " sin BPM") : /* @__PURE__ */ React.createElement("span", { className: "bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded text-[10px] font-bold" }, "OK")
+    /* @__PURE__ */ React.createElement("span", null, "\u25B6"),
+    /* @__PURE__ */ React.createElement("span", null, isAuditing ? "Auditando..." : "Ejecutar An\xE1lisis"),
+    /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[10px] font-mono ${batchConfigured ? "bg-black/20 text-black font-black" : "bg-djzinc-800 text-gray-500"}` }, tracks.length)
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6236,168 +6424,98 @@ const AuditWorkspace = ({
     /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F"),
     /* @__PURE__ */ React.createElement("span", null, "Hot Cues & Grid"),
     /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]" }, "8 Cues")
-  ), /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { className: "w-px bg-djzinc-800 self-stretch my-0.5 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-purple-400" }), /* @__PURE__ */ React.createElement("span", null, "Exportar a Cabina & Guardar")), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 font-normal" }, "Destinos Oficiales")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      onClick: () => setBatchModalOpen(true),
-      className: "bg-djzinc-900/80 hover:bg-djzinc-850 border border-djzinc-750 text-gray-400 hover:text-white p-1.5 rounded-lg text-xs flex items-center justify-center cursor-pointer transition-colors shrink-0",
-      title: "Configurar opciones avanzadas de auditor\xEDa por lotes y car\xE1tulas"
-    },
-    /* @__PURE__ */ React.createElement(Icons.Sliders, null)
-  ))), /* @__PURE__ */ React.createElement("div", { className: "w-px bg-djzinc-800 self-stretch my-0.5 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}` }), /* @__PURE__ */ React.createElement("span", null, "Corregir")), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-bold ${badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? "text-amber-400" : "text-emerald-400"}` }, badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? `${badQualityTracks.length + metrics.missing + metrics.missing_cover} pendientes` : "Todo al 100%")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setBatchModalOpen(true),
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${metrics.missing_artist + metrics.missing_cover > 0 ? "bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border-amber-600/70 shadow-sm" : "bg-djzinc-900/90 hover:bg-djzinc-850 text-gray-300 hover:text-white border-djzinc-750"}`,
-      title: "Descargar e incrustar metadatos faltantes, autores y car\xE1tulas 1:1"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u270E"),
-    /* @__PURE__ */ React.createElement("span", null, "Auto-Tags & Covers"),
-    metrics.missing_artist + metrics.missing_cover > 0 ? /* @__PURE__ */ React.createElement("span", { className: "bg-amber-950 text-amber-300 border border-amber-700/80 px-1.5 py-0.2 rounded text-[10px] font-bold" }, metrics.missing_artist + metrics.missing_cover) : /* @__PURE__ */ React.createElement("span", { className: "bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded text-[10px] font-bold" }, "OK")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => handleBuscarReemplazosSpotify(badQualityTracks.length > 0 ? badQualityTracks : null),
-      disabled: isSearchingSpotifyHD || isAuditing,
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${badQualityTracks.length > 0 ? "bg-rose-950/60 hover:bg-rose-900/70 text-rose-200 border-rose-600/70 shadow-sm" : "bg-djzinc-900/90 hover:bg-djzinc-850 text-gray-300 hover:text-white border-djzinc-750"}`,
-      title: "Buscar copias oficiales Lossless/FLAC en Descargas para pistas con fakes o baja calidad"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F50D}"),
-    /* @__PURE__ */ React.createElement("span", null, "Buscar Lossless"),
-    badQualityTracks.length > 0 ? /* @__PURE__ */ React.createElement("span", { className: "bg-rose-950 text-rose-300 border border-rose-700/80 px-1.5 py-0.2 rounded text-[10px] font-bold" }, badQualityTracks.length, " fakes") : /* @__PURE__ */ React.createElement("span", { className: "bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded text-[10px] font-bold" }, "Lossless OK")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: handleSanitizarMetadatos,
+      onClick: handleGuardarTodoEnFicheros,
       disabled: isInjecting || tracks.length === 0,
-      className: "bg-djzinc-900/90 hover:bg-djzinc-850 border border-djzinc-750 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0",
-      title: "Eliminar spam promocional en t\xEDtulos, normalizar 'feat.' y nombres de versiones"
+      className: "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-40 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-md shadow-emerald-500/20 border border-emerald-300 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0",
+      title: "Guardar metadatos ID3/FLAC directamente en los archivos de audio en disco"
     },
-    /* @__PURE__ */ React.createElement("span", null, "Aa"),
-    /* @__PURE__ */ React.createElement("span", null, "Normalizar"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]" }, "Limpio")
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
+    /* @__PURE__ */ React.createElement("span", null, "Guardar Metadatos")
   ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setDuplicateModalOpen(true),
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${metrics.duplicates > 0 ? "bg-amber-950/40 text-amber-300 border-amber-600/70" : "bg-djzinc-900/90 text-gray-400 hover:text-white border-djzinc-750"}`,
-      title: "Comparar y eliminar duplicados de audio"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u2696\uFE0F"),
-    /* @__PURE__ */ React.createElement("span", null, "Duplicados"),
-    /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[10px] font-mono ${metrics.duplicates > 0 ? "bg-amber-900/70 text-amber-200 border border-amber-700" : "bg-djzinc-800 text-gray-500"}` }, metrics.duplicates || 0)
-  ))), /* @__PURE__ */ React.createElement("div", { className: "w-px bg-djzinc-800 self-stretch my-0.5 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-purple-400" }), /* @__PURE__ */ React.createElement("span", null, "Exportar")), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 font-normal" }, "Destinos Cabina")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: handleExportarRekordboxXml,
-      disabled: tracks.length === 0,
-      className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-djcyan-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0",
-      title: "Exportar colecci\xF3n a Rekordbox XML v6 con Hot Cues A-H"
+      disabled: isExporting || tracks.length === 0,
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-djcyan-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Exportar colecci\xF3n a Rekordbox XML v6 con Hot Cues A-H y Beatgrid"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB}"),
     /* @__PURE__ */ React.createElement("span", null, "Rekordbox"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]" }, "XML")
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]" }, ".XML")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleExportarSeratoCrates,
+      disabled: isExporting || tracks.length === 0,
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-djcyan-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Exportar crates oficiales a Serato DJ Pro (~/Music/_Serato_/Subcrates)"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4BD}"),
+    /* @__PURE__ */ React.createElement("span", null, "Serato"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]" }, ".CRATE")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleExportarTraktor,
+      disabled: isExporting || tracks.length === 0,
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-yellow-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Exportar colecci\xF3n a Traktor Pro NML con Hot Cues 1-8"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
+    /* @__PURE__ */ React.createElement("span", null, "Traktor"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]" }, ".NML")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleExportarVirtualDJ,
+      disabled: isExporting || tracks.length === 0,
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-blue-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Exportar lista y tags optimizados para VirtualDJ"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7}"),
+    /* @__PURE__ */ React.createElement("span", null, "VirtualDJ"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]" }, ".M3U")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: handleSincronizarPasaporteUniversal,
-      disabled: tracks.length === 0,
-      className: "bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/60 text-amber-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0",
+      disabled: isExporting || tracks.length === 0,
+      className: "bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/60 text-amber-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0",
       title: "Exportar de una sola vez a Serato Crates, Rekordbox XML, Traktor NML y VirtualDJ M3U"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F6C2}"),
     /* @__PURE__ */ React.createElement("span", null, "Pasaporte Universal"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-amber-900/80 text-amber-300 border border-amber-700 px-1.5 py-0.2 rounded text-[10px] font-black" }, "ALL-IN-1")
+    /* @__PURE__ */ React.createElement("span", { className: "bg-amber-900/80 text-amber-300 border border-amber-700 px-1.5 py-0.2 rounded text-[9px] font-black" }, "ALL-IN-1")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: handleExportarXLS,
-      disabled: tracks.length === 0,
-      className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-emerald-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0",
-      title: "Generar informe Excel (.xlsx) con auditor\xEDa completa de calidad"
+      disabled: isExporting || tracks.length === 0,
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-emerald-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Generar libro Excel (.xlsx) multidestino con hojas dedicadas para Auditor\xEDa, Serato, Rekordbox, Traktor y VirtualDJ"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA}"),
-    /* @__PURE__ */ React.createElement("span", null, "Informe"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]" }, ".XLSX")
-  ), /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setExportDropdownOpen((prev) => !prev),
-      disabled: tracks.length === 0,
-      className: "bg-djzinc-900/90 hover:bg-djzinc-850 border border-djzinc-750 text-gray-300 px-2 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm",
-      title: "M\xE1s opciones de exportaci\xF3n (Traktor, Serato, Flujo de Sesi\xF3n)"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "M\xE1s"),
-    /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500" }, exportDropdownOpen ? "\u25B2" : "\u25BC")
-  ), exportDropdownOpen && /* @__PURE__ */ React.createElement("div", { className: "absolute right-0 top-full mt-2 w-64 bg-[#0c0c14] border border-djzinc-700 rounded-xl shadow-2xl p-1.5 z-50 animate-fadeIn font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1 text-[10px] text-gray-500 uppercase tracking-wider font-bold border-b border-djzinc-800" }, "Destinos Adicionales"), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => {
-        setExportDropdownOpen(false);
-        handleExportarSeratoCrates();
-      },
-      className: "w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-gray-200 hover:text-djcyan-300 hover:bg-djzinc-850/80 flex items-center gap-2 transition-colors cursor-pointer"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F4BD}"),
-    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", null, "Serato Crates (.crate)"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 font-normal" }, "Crates en ~/Music/_Serato_"))
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: async () => {
-        setExportDropdownOpen(false);
-        if (window.eel && window.eel.exportar_traktor_nml) {
-          const res = await window.eel.exportar_traktor_nml(tracks)();
-          if (res && res.status === "ok") {
-            setSaveFeedback(`\u2713 Traktor NML generado en ${res.path}`);
-            setTimeout(() => setSaveFeedback(""), 4e3);
-          }
-        }
-      },
-      className: "w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-gray-200 hover:text-yellow-300 hover:bg-djzinc-850/80 flex items-center gap-2 transition-colors cursor-pointer"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
-    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", null, "Traktor Pro (.nml)"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 font-normal" }, "Colecci\xF3n NML con Hot Cues 1-8"))
-  ), /* @__PURE__ */ React.createElement("div", { className: "h-px bg-djzinc-800 my-1" }), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => {
-        setExportDropdownOpen(false);
-        if (onNavigateTab) onNavigateTab("setbuilder");
-      },
-      className: "w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white hover:bg-purple-950/60 flex items-center gap-2 transition-colors cursor-pointer"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F578}\uFE0F"),
-    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", null, "Flujo de Sesi\xF3n SetBuilder"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 font-normal" }, "Graph Playlists estilo DJOID"))
-  )))))), /* @__PURE__ */ React.createElement("div", { className: "flex md:hidden flex-col bg-[#07070d] border-b border-djzinc-800 select-none z-10" }, /* @__PURE__ */ React.createElement("div", { className: "flex p-1.5 bg-[#050508] gap-1.5 border-b border-djzinc-850" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("span", null, "Informe Excel"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]" }, ".XLSX")
+  )))), /* @__PURE__ */ React.createElement("div", { className: "flex md:hidden flex-col bg-[#07070d] border-b border-djzinc-800 select-none z-10" }, /* @__PURE__ */ React.createElement("div", { className: "flex p-1.5 bg-[#050508] gap-1.5 border-b border-djzinc-850" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => setMobileWorkflowTab("analizar"),
       className: `flex-1 py-1.5 px-2 rounded-lg font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${mobileWorkflowTab === "analizar" ? "bg-djcyan-500 text-black shadow-md font-black" : "bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800"}`
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u2460 Analizar"),
+    /* @__PURE__ */ React.createElement("span", null, "\u2460 Analizar & Configurar"),
     /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-black/30 px-1 rounded font-black" }, tracks.length)
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setMobileWorkflowTab("corregir"),
-      className: `flex-1 py-1.5 px-2 rounded-lg font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${mobileWorkflowTab === "corregir" ? "bg-amber-500 text-black shadow-md font-black" : "bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800"}`
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u2461 Corregir"),
-    badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-red-950 text-red-300 border border-red-700 px-1 rounded font-black" }, badQualityTracks.length + metrics.missing + metrics.missing_cover) : /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-black/30 px-1 rounded" }, "OK")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6405,28 +6523,31 @@ const AuditWorkspace = ({
       onClick: () => setMobileWorkflowTab("exportar"),
       className: `flex-1 py-1.5 px-2 rounded-lg font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${mobileWorkflowTab === "exportar" ? "bg-purple-600 text-white shadow-md font-black" : "bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800"}`
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u2462 Exportar"),
+    /* @__PURE__ */ React.createElement("span", null, "\u2461 Exportar a Cabina"),
     /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-black/30 px-1 rounded font-mono" }, "DJ")
   )), /* @__PURE__ */ React.createElement("div", { className: "p-2 flex items-center gap-2 overflow-x-auto no-scrollbar" }, mobileWorkflowTab === "analizar" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      onClick: () => handleAuditar(),
-      disabled: isAuditing || tracks.length === 0,
-      className: "h-10 px-3.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-2 shrink-0 active:scale-95 shadow-md"
+      onClick: () => setBatchModalOpen(true),
+      className: `h-10 px-3.5 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 border ${batchConfigured ? "bg-emerald-950/70 border-emerald-600 text-emerald-200" : "bg-djcyan-500 text-black font-black"}`
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u25B6"),
-    /* @__PURE__ */ React.createElement("span", null, isAuditing ? "Auditando..." : "Analizar Todo"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]" }, tracks.length)
+    /* @__PURE__ */ React.createElement("span", null, "\u2699\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, batchConfigured ? "Ajustes OK" : "Configurar")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      onClick: () => setFiltro("missing"),
-      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+      onClick: () => {
+        if (!batchConfigured) setBatchModalOpen(true);
+        else handleEjecutarAuditoriaLote();
+      },
+      disabled: isAuditing || tracks.length === 0,
+      className: "h-10 px-3.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-2 shrink-0 active:scale-95 shadow-md disabled:opacity-40"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u2722 BPM & Key"),
-    /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[10px] ${metrics.missing > 0 ? "bg-amber-950 text-amber-300 border border-amber-800" : "bg-emerald-950 text-emerald-400"}` }, metrics.missing > 0 ? `${metrics.missing} faltan` : "OK")
+    /* @__PURE__ */ React.createElement("span", null, "\u25B6"),
+    /* @__PURE__ */ React.createElement("span", null, isAuditing ? "Auditando..." : "Ejecutar"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]" }, tracks.length)
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6438,60 +6559,26 @@ const AuditWorkspace = ({
       className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F 8 Cues")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setBatchModalOpen(true),
-      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-300 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0"
-    },
-    /* @__PURE__ */ React.createElement(Icons.Sliders, null)
-  )), mobileWorkflowTab === "corregir" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setBatchModalOpen(true),
-      className: "h-10 px-3.5 bg-amber-950/70 border border-amber-600/70 text-amber-200 font-mono text-xs font-bold rounded-xl flex items-center gap-2 shrink-0 active:scale-95"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u270E Auto-Tags"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-amber-900 text-amber-200 px-1.5 py-0.2 rounded text-[10px]" }, metrics.missing_artist + metrics.missing_cover)
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => handleBuscarReemplazosSpotify(badQualityTracks.length > 0 ? badQualityTracks : null),
-      className: "h-10 px-3.5 bg-rose-950/70 border border-rose-600/70 text-rose-200 font-mono text-xs font-bold rounded-xl flex items-center gap-2 shrink-0 active:scale-95"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F50D} Lossless HD"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-rose-900 text-rose-200 px-1.5 py-0.2 rounded text-[10px]" }, badQualityTracks.length > 0 ? `${badQualityTracks.length} fakes` : "OK")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: handleSanitizarMetadatos,
-      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "Aa Normalizar")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setDuplicateModalOpen(true),
-      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-300 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u2696\uFE0F Duplicados"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 px-1.5 py-0.2 rounded text-[10px]" }, metrics.duplicates || 0)
   )), mobileWorkflowTab === "exportar" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleGuardarTodoEnFicheros,
+      disabled: isInjecting || tracks.length === 0,
+      className: "h-10 px-3.5 bg-emerald-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
+    /* @__PURE__ */ React.createElement("span", null, "Guardar Tags")
+  ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: handleSincronizarPasaporteUniversal,
       disabled: tracks.length === 0,
-      className: "h-10 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-2 shrink-0 active:scale-95 shadow-md"
+      className: "h-10 px-3.5 bg-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F6C2}"),
-    /* @__PURE__ */ React.createElement("span", null, "Pasaporte DJ"),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]" }, "ALL")
+    /* @__PURE__ */ React.createElement("span", null, "Pasaporte DJ")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6505,19 +6592,38 @@ const AuditWorkspace = ({
     "button",
     {
       type: "button",
+      onClick: handleExportarSeratoCrates,
+      disabled: tracks.length === 0,
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4BD} Serato")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleExportarTraktor,
+      disabled: tracks.length === 0,
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u26A1 Traktor")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleExportarVirtualDJ,
+      disabled: tracks.length === 0,
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7} VDJ")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
       onClick: handleExportarXLS,
       disabled: tracks.length === 0,
       className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA} Excel")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setExportDropdownOpen((prev) => !prev),
-      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-300 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0 active:scale-95"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "M\xE1s \u25BE")
   )))), (isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 animate-pulse" }), batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold" }, batchProgress, "%"), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6553,11 +6659,11 @@ const AuditWorkspace = ({
   ), /* @__PURE__ */ React.createElement(
     "div",
     {
-      onClick: () => setFiltro(filtro === "bad_quality" ? "todos" : "bad_quality"),
-      className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "bad_quality" ? "bg-amber-950/40 border-amber-500/60 shadow-md shadow-amber-500/10" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
+      onClick: () => setFiltro(filtro === "missing_meta" ? "todos" : "missing_meta"),
+      className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "missing_meta" ? "bg-amber-950/40 border-amber-500/60 shadow-md" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
     },
-    /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, t("kpi_bad_quality") || "Mala Calidad"), badQualityTracks.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-amber-900 text-amber-200 px-1 rounded font-mono font-bold" }, "HD")),
-    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: `text-lg font-mono font-black ${badQualityTracks.length > 0 ? "text-amber-400" : "text-gray-400"}` }, badQualityTracks.length.toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, t("hud_subtitle_transcodes") || "transcodes"))
+    /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono font-bold uppercase text-gray-400 truncate" }, "Falta Artista/T\xEDtulo"),
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: `text-lg font-mono font-black ${missingMetaTracks.length > 0 ? "text-amber-300" : "text-gray-400"}` }, missingMetaTracks.length.toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "sin tags"))
   ), /* @__PURE__ */ React.createElement(
     "div",
     {
@@ -6569,22 +6675,6 @@ const AuditWorkspace = ({
   ), /* @__PURE__ */ React.createElement(
     "div",
     {
-      onClick: () => setFiltro(filtro === "missing_title" ? "todos" : "missing_title"),
-      className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "missing_title" ? "bg-amber-950/40 border-amber-500/60 shadow-md" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
-    },
-    /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono font-bold uppercase text-gray-400 truncate" }, t("kpi_missing_title") || "Falta T\xEDtulo"),
-    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg font-mono font-black text-amber-300" }, (metrics.missing_title || 0).toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, t("hud_subtitle_raw") || "crudo"))
-  ), /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      onClick: () => setFiltro(filtro === "missing_artist" ? "todos" : "missing_artist"),
-      className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "missing_artist" ? "bg-amber-950/40 border-amber-500/60 shadow-md" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
-    },
-    /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono font-bold uppercase text-gray-400 truncate" }, t("kpi_missing_artist") || "Falta Artista"),
-    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg font-mono font-black text-amber-300" }, (metrics.missing_artist || 0).toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, t("hud_subtitle_no_author") || "sin autor"))
-  ), /* @__PURE__ */ React.createElement(
-    "div",
-    {
       onClick: () => setFiltro(filtro === "missing_cover" ? "todos" : "missing_cover"),
       className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "missing_cover" ? "bg-amber-950/40 border-amber-500/60 shadow-md" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
     },
@@ -6593,19 +6683,35 @@ const AuditWorkspace = ({
   ), /* @__PURE__ */ React.createElement(
     "div",
     {
-      onClick: () => setDuplicateModalOpen(true),
-      className: "p-2.5 rounded-xl border bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-amber-500/40 flex flex-col justify-between cursor-pointer transition-all group"
+      onClick: () => setFiltro(filtro === "missing_cues" ? "todos" : "missing_cues"),
+      className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "missing_cues" ? "bg-amber-950/40 border-amber-500/60 shadow-md" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
     },
-    /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, t("kpi_duplicates") || "Duplicados"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-amber-400 bg-amber-950/80 px-1 rounded border border-amber-800" }, "\u2696\uFE0F")),
-    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg font-mono font-black text-amber-400 group-hover:text-amber-300" }, (metrics.duplicates || 0).toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, t("hud_subtitle_resolve") || "resolver"))
+    /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono font-bold uppercase text-gray-400 truncate" }, "Faltan Cues"),
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: `text-lg font-mono font-black ${missingCuesTracks.length > 0 ? "text-amber-300" : "text-gray-400"}` }, missingCuesTracks.length.toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "sin Hot Cues"))
   ), /* @__PURE__ */ React.createElement(
     "div",
     {
-      onClick: () => setFiltro(filtro === "error" ? "todos" : "error"),
-      className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "error" ? "bg-red-950/40 border-red-500/60 shadow-md" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
+      onClick: () => setFiltro(filtro === "silences_trimmed" ? "todos" : "silences_trimmed"),
+      className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "silences_trimmed" ? "bg-djcyan-950/40 border-djcyan-500/60 shadow-md" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
     },
-    /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono font-bold uppercase text-gray-400 truncate" }, t("metric_lossless") || "Cert. Lossless"),
-    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg font-mono font-black text-djcyan-400" }, tracks.filter((t2) => t2.cutoff_khz && !String(t2.status || "").includes("Fake")).length), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "PASS"))
+    /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono font-bold uppercase text-gray-400 truncate" }, "Silencios Corregidos"),
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg font-mono font-black text-djcyan-300" }, trimmedSilenceTracks.length.toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "recortados"))
+  ), /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      onClick: () => setFiltro(filtro === "bad_quality" ? "todos" : "bad_quality"),
+      className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "bad_quality" ? "bg-rose-950/40 border-rose-500/60 shadow-md shadow-rose-500/10" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
+    },
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, t("kpi_bad_quality") || "Mala Calidad"), badQualityTracks.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-rose-900 text-rose-200 px-1 rounded font-mono font-bold" }, "FAKES")),
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: `text-lg font-mono font-black ${badQualityTracks.length > 0 ? "text-rose-400" : "text-gray-400"}` }, badQualityTracks.length.toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "transcodes"))
+  ), /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      onClick: () => setFiltro(filtro === "excellent_quality" ? "todos" : "excellent_quality"),
+      className: `p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${filtro === "excellent_quality" ? "bg-emerald-950/40 border-emerald-500/60 shadow-md" : "bg-djzinc-900/60 border-djzinc-800 hover:bg-djzinc-850/70 hover:border-djzinc-700"}`
+    },
+    /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono font-bold uppercase text-gray-400 truncate" }, "Calidad Excelente"),
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg font-mono font-black text-emerald-400" }, excellentQualityTracks.length.toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, "Lossless / 320k"))
   )), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6647,7 +6753,7 @@ const AuditWorkspace = ({
     "button",
     {
       onClick: () => setFiltro("todos"),
-      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "todos" ? "bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm shadow-djcyan-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${filtro === "todos" ? "bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm shadow-djcyan-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
     },
     t("filter_all_label") || "Todos",
     " (",
@@ -6656,18 +6762,26 @@ const AuditWorkspace = ({
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
+      onClick: () => setFiltro(filtro === "excellent_quality" ? "todos" : "excellent_quality"),
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1 border shrink-0 ${filtro === "excellent_quality" ? "bg-emerald-500 text-black border-emerald-400 font-black shadow-sm" : "bg-djzinc-900 text-gray-400 hover:text-emerald-300 border-djzinc-800 hover:border-emerald-500/40"}`
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F48E}"),
+    /* @__PURE__ */ React.createElement("span", null, "Excelente (", excellentQualityTracks.length, ")")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
       onClick: () => setFiltro(filtro === "bad_quality" ? "todos" : "bad_quality"),
-      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1 border ${filtro === "bad_quality" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-amber-300 border-djzinc-800 hover:border-amber-500/40"}`
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1 border shrink-0 ${filtro === "bad_quality" ? "bg-rose-500 text-black border-rose-400 font-black shadow-sm shadow-rose-500/20" : "bg-djzinc-900 text-gray-400 hover:text-rose-300 border-djzinc-800 hover:border-rose-500/40"}`
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F6A8}"),
-    /* @__PURE__ */ React.createElement("span", null, t("filter_bad_quality_label") || "Mala Calidad", " (", badQualityTracks.length, ")")
+    /* @__PURE__ */ React.createElement("span", null, "Mala Calidad (", badQualityTracks.length, ")")
   ), badQualityTracks.length > 0 && /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => handleBuscarReemplazosSpotify(badQualityTracks),
       disabled: isSearchingSpotifyHD || isAuditing,
-      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-600/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm",
+      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-600/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm shrink-0",
       title: t("tooltip_upgrade_quality") || "Buscar copias oficiales FLAC / Lossless en Descargas para pistas de baja calidad"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2B07\uFE0F"),
@@ -6701,26 +6815,25 @@ const AuditWorkspace = ({
       type: "button",
       onClick: () => handleBuscarReemplazosSpotify(tracks.filter((t2) => selectedAuditIds.has(t2.id))),
       disabled: isSearchingSpotifyHD || isAuditing,
-      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-500/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm animate-pulse",
+      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-500/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm animate-pulse shrink-0",
       title: t("tooltip_send_downloads") || "Buscar y llevar a descargas las pistas seleccionadas en m\xE1xima calidad (FLAC/Lossless)"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2B07\uFE0F"),
     /* @__PURE__ */ React.createElement("span", null, t("btn_send_to_downloads") || "Llevar a Descargas", " (", selectedAuditIds.size, ")")
-  ), badQualityTracks.length > 0 && /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement(
     "button",
     {
-      type: "button",
-      onClick: (e) => solicitarEliminarPistas(badQualityTracks, "trash", e),
-      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-700 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm",
-      title: "Purgar o borrar del disco las pistas de baja calidad / fakes detectadas"
+      onClick: () => setFiltro(filtro === "missing_meta" ? "todos" : "missing_meta"),
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${filtro === "missing_meta" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F"),
-    /* @__PURE__ */ React.createElement("span", null, t("filter_purge_fakes_label") || "Purgar Fakes", " (", badQualityTracks.length, ")")
+    "Sin Artista/T\xEDtulo (",
+    missingMetaTracks.length,
+    ")"
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setFiltro(filtro === "missing" ? "todos" : "missing"),
-      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "missing" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${filtro === "missing" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
     },
     t("filter_missing_bpm_label") || "Falta BPM/Key",
     " (",
@@ -6730,11 +6843,38 @@ const AuditWorkspace = ({
     "button",
     {
       onClick: () => setFiltro(filtro === "missing_cover" ? "todos" : "missing_cover"),
-      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border ${filtro === "missing_cover" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${filtro === "missing_cover" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
     },
     t("filter_missing_cover_label") || "Sin Cover",
     " (",
     metrics.missing_cover || 0,
+    ")"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setFiltro(filtro === "missing_cues" ? "todos" : "missing_cues"),
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${filtro === "missing_cues" ? "bg-amber-500 text-black border-amber-400 font-black shadow-sm" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+    },
+    "Faltan Cues (",
+    missingCuesTracks.length,
+    ")"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setFiltro(filtro === "silences_trimmed" ? "todos" : "silences_trimmed"),
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${filtro === "silences_trimmed" ? "bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+    },
+    "Silencios Trim (",
+    trimmedSilenceTracks.length,
+    ")"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setFiltro(filtro === "high_energy" ? "todos" : "high_energy"),
+      className: `px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${filtro === "high_energy" ? "bg-yellow-500 text-black border-yellow-400 font-black shadow-sm" : "bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700"}`
+    },
+    "\u26A1 Alta Energ\xEDa (",
+    highEnergyTracks.length,
     ")"
   ), /* @__PURE__ */ React.createElement(
     "button",
@@ -6745,7 +6885,7 @@ const AuditWorkspace = ({
         setMixOracleOpen(true);
       },
       disabled: tracks.length === 0,
-      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-gradient-to-r from-purple-950 to-indigo-950 hover:from-purple-900 hover:to-indigo-900 text-purple-300 border border-purple-600/50 flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95",
+      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-gradient-to-r from-purple-950 to-indigo-950 hover:from-purple-900 hover:to-indigo-900 text-purple-300 border border-purple-600/50 flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 shrink-0",
       title: "Abrir Mix Oracle para sugerir qu\xE9 canci\xF3n mezclar a continuaci\xF3n"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F52E}"),
@@ -6754,7 +6894,7 @@ const AuditWorkspace = ({
     "button",
     {
       onClick: () => setDuplicateModalOpen(true),
-      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/40 cursor-pointer flex items-center gap-1 shadow transition-all active:scale-95"
+      className: "px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/40 cursor-pointer flex items-center gap-1 shadow transition-all active:scale-95 shrink-0"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2696\uFE0F"),
     /* @__PURE__ */ React.createElement("span", null, t("filter_duplicates_label") || "Duplicados", " (", metrics.duplicates || 0, ")")
@@ -7499,45 +7639,26 @@ const AuditWorkspace = ({
       },
       "\u2715"
     ))
-  ), /* @__PURE__ */ React.createElement(BatchAuditorModal, { isOpen: batchModalOpen, onClose: () => setBatchModalOpen(false), onRunBatch: async (opts) => {
-    setBatchModalOpen(false);
-    const target = resolveAuditTargets();
-    if (!target || Array.isArray(target) && target.length === 0) {
-      alert("Por favor selecciona una carpeta o carga pistas sueltas primero.");
-      return;
-    }
-    setIsAuditing(true);
-    setBatchProgress(5);
-    const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
-    setBatchStatusMsg(`Ejecutando procesamiento masivo de lote en ${targetDesc}...`);
-    try {
-      if (window.eel && window.eel.ejecutar_auditoria_lote) {
-        const res = await window.eel.ejecutar_auditoria_lote(target, opts)();
-        if (res && res.tracks) {
-          setTracks(res.tracks);
-          const badDetected = res.tracks.filter((t2) => isBadQualityTrack(t2));
-          if (badDetected.length > 0) {
-            setSelectedAuditIds(new Set(badDetected.map((t2) => t2.id)));
-          }
-          setMetrics({ total: res.total, missing: res.sin_meta, ready: res.ready, errors: res.errors || 0 });
-          if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
-            setBatchStatusMsg("Inyectando car\xE1tulas 1:1 en archivos f\xEDsicos...");
-            await window.eel.inyectar_caratulas_lote(res.tracks)();
-          }
-          if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
-            setBatchStatusMsg("Inyectando comentarios t\xE1cticos y tags en archivos f\xEDsicos...");
-            await window.eel.inyectar_lote_metadatos(res.tracks)();
-          }
-        }
+  ), /* @__PURE__ */ React.createElement(
+    BatchAuditorModal,
+    {
+      isOpen: batchModalOpen,
+      onClose: () => setBatchModalOpen(false),
+      onSaveConfig: (opts) => {
+        setBatchConfigOpts(opts);
+        setBatchConfigured(true);
+        setBatchModalOpen(false);
+        setSaveFeedback('\u2713 Ajustes guardados. Ya puedes pulsar "Ejecutar An\xE1lisis"');
+        setTimeout(() => setSaveFeedback(""), 4e3);
+      },
+      onRunBatch: async (opts) => {
+        setBatchConfigOpts(opts);
+        setBatchConfigured(true);
+        setBatchModalOpen(false);
+        await handleEjecutarAuditoriaLote(opts);
       }
-    } finally {
-      setTimeout(() => {
-        setIsAuditing(false);
-        setBatchProgress(0);
-        setBatchStatusMsg("");
-      }, 800);
     }
-  } }), /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement(
     DuplicateComparisonModal,
     {
       isOpen: duplicateModalOpen,

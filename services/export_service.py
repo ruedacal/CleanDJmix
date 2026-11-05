@@ -282,17 +282,73 @@ class ExportService:
             
             try:
                 import pandas as pd
-                df = pd.DataFrame(tracks)
-                xlsx_path = os.path.join(destino_dir, "CleanDJmix_Audit_Respaldo.xlsx")
+                xlsx_path = os.path.join(destino_dir, "BeatWave_Audit_Coleccion_Multidestino.xlsx")
                 try:
-                    df.to_excel(xlsx_path, index=False, sheet_name="Audit Master")
+                    with pd.ExcelWriter(xlsx_path, engine="openpyxl") as writer:
+                        # 1. Master Audit
+                        df_master = pd.DataFrame(tracks)
+                        df_master.to_excel(writer, index=False, sheet_name="Audit Master")
+
+                        # 2. Hoja Serato DJ
+                        serato_rows = [{
+                            "Song": t.get("t") or t.get("title") or t.get("f", ""),
+                            "Artist": t.get("a") or t.get("artist", ""),
+                            "BPM": t.get("b") or t.get("bpm", ""),
+                            "Key": t.get("k") or t.get("key", ""),
+                            "Energy": t.get("e") or t.get("energy", ""),
+                            "Genre": t.get("genre", ""),
+                            "Format": t.get("format", ""),
+                            "Path": t.get("path") or t.get("f", "")
+                        } for t in tracks]
+                        pd.DataFrame(serato_rows).to_excel(writer, index=False, sheet_name="Serato DJ")
+
+                        # 3. Hoja Rekordbox
+                        rekord_rows = [{
+                            "TrackID": t.get("id", i + 1),
+                            "Name": t.get("t") or t.get("title") or t.get("f", ""),
+                            "Artist": t.get("a") or t.get("artist", ""),
+                            "Genre": t.get("genre", ""),
+                            "BPM": t.get("b") or t.get("bpm", ""),
+                            "Tonality": t.get("k") or t.get("key", ""),
+                            "Time": t.get("duration") or t.get("d", ""),
+                            "BitRate": t.get("bitrate_kbps", ""),
+                            "SampleRate": t.get("sample_rate_khz", ""),
+                            "Location": t.get("path") or t.get("f", "")
+                        } for i, t in enumerate(tracks)]
+                        pd.DataFrame(rekord_rows).to_excel(writer, index=False, sheet_name="Rekordbox")
+
+                        # 4. Hoja Traktor Pro
+                        traktor_rows = [{
+                            "Title": t.get("t") or t.get("title") or t.get("f", ""),
+                            "Artist": t.get("a") or t.get("artist", ""),
+                            "Tempo": t.get("b") or t.get("bpm", ""),
+                            "MusicalKey": t.get("k") or t.get("key", ""),
+                            "Bitrate": t.get("bitrate_kbps", ""),
+                            "Playtime": t.get("duration") or t.get("d", ""),
+                            "FilePath": t.get("path") or t.get("f", "")
+                        } for t in tracks]
+                        pd.DataFrame(traktor_rows).to_excel(writer, index=False, sheet_name="Traktor Pro")
+
+                        # 5. Hoja VirtualDJ
+                        vdj_rows = [{
+                            "FilePath": t.get("path") or t.get("f", ""),
+                            "Title": t.get("t") or t.get("title") or t.get("f", ""),
+                            "Artist": t.get("a") or t.get("artist", ""),
+                            "BPM": t.get("b") or t.get("bpm", ""),
+                            "Key": t.get("k") or t.get("key", ""),
+                            "Quality": t.get("calidad", "")
+                        } for t in tracks]
+                        pd.DataFrame(vdj_rows).to_excel(writer, index=False, sheet_name="VirtualDJ")
+
                     return {"status": "ok", "path": xlsx_path}
-                except Exception:
-                    csv_path = os.path.join(destino_dir, "CleanDJmix_Audit_Respaldo.csv")
+                except Exception as ex_excel:
+                    # Fallback single sheet o CSV
+                    csv_path = os.path.join(destino_dir, "BeatWave_Audit_Coleccion.csv")
+                    df = pd.DataFrame(tracks)
                     df.to_csv(csv_path, index=False)
                     return {"status": "ok", "path": csv_path}
             except ImportError:
-                csv_path = os.path.join(destino_dir, "CleanDJmix_Audit_Respaldo.csv")
+                csv_path = os.path.join(destino_dir, "BeatWave_Audit_Coleccion.csv")
                 campos = list(tracks[0].keys()) if tracks else []
                 with open(csv_path, "w", newline="", encoding="utf-8") as f:
                     writer = csv.DictWriter(f, fieldnames=campos)
