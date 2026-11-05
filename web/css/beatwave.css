@@ -690,8 +690,8 @@ body.club-mode,
 }
 
 .trippy-distort-vortex {
-    filter: url(#trippy-vortex-filter) saturate(180%) contrast(120%);
-    animation: trippyHueCycle 6s infinite linear, trippyVortexMotion 6s infinite ease-in-out;
+    filter: url(#trippy-vortex-filter) brightness(0.72) contrast(128%) saturate(140%);
+    animation: trippyHueCycle 8s infinite linear, trippyVortexMotion 6s infinite ease-in-out;
     will-change: transform, filter;
 }
 

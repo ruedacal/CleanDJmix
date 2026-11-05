@@ -26212,7 +26212,7 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
 };
 
 // ==============================================================================
-// LOGOTIPO VECTORIAL NATIVO BEATWAVE PRO (100% HTML + CSS + SVG EN CIAN CORPORATIVO)
+// LOGOTIPO VECTORIAL NATIVO BEATWAVE PRO (ONDAS CORPORATIVAS EN CIAN ESTILO GETTY)
 // ==============================================================================
 const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
     // Presets de tamaño: 'sm' (navbar: 36px), 'md' (44px), 'lg' (intro portal: 110px)
@@ -26226,55 +26226,53 @@ const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
         <div 
             className={`relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_16px_rgba(6,182,212,0.85),inset_0_0_10px_rgba(6,182,212,0.35)] backdrop-blur-md select-none group-hover:border-cyan-300 group-hover:shadow-[0_0_24px_rgba(6,182,212,1),inset_0_0_14px_rgba(6,182,212,0.5)] transition-all duration-300 ${sizeClasses} ${className}`}
         >
-            {/* Anillo interior sutil */}
+            {/* Anillo interior concéntrico sutil */}
             <div className="absolute inset-1 rounded-full border border-cyan-400/30 pointer-events-none" />
 
-            {/* SVG Vectorial Nativo de Onda Acústica / Ecualizador en Cian */}
+            {/* SVG Vectorial de Ondas Corporativas de Audio (Inspirado en Getty Images) */}
             <svg 
                 viewBox="0 0 100 100" 
-                className="w-[72%] h-[72%] overflow-visible" 
+                className="w-[74%] h-[74%] overflow-visible" 
                 fill="none" 
                 xmlns="http://www.w3.org/2000/svg"
             >
                 <defs>
-                    <linearGradient id="bw-cyan-bar-grad" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="bw-getty-cyan-grad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#ecfeff" />
-                        <stop offset="35%" stopColor="#22d3ee" />
+                        <stop offset="30%" stopColor="#22d3ee" />
                         <stop offset="100%" stopColor="#0891b2" />
                     </linearGradient>
-                    <filter id="bw-cyan-glow-fx" x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#06b6d4" floodOpacity="0.85" />
+                    <filter id="bw-getty-glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#06b6d4" floodOpacity="0.9" />
                     </filter>
                 </defs>
 
-                <g filter="url(#bw-cyan-glow-fx)">
-                    {/* Línea horizontal central del espectro */}
+                <g filter="url(#bw-getty-glow)" strokeLinecap="round">
+                    {/* Eje horizontal de audio */}
                     <line 
                         x1="12" y1="50" x2="88" y2="50" 
                         stroke="#22d3ee" 
-                        strokeWidth="3.2" 
-                        strokeLinecap="round" 
+                        strokeWidth="2.4" 
                     />
 
-                    {/* Barras verticales del ecualizador simétrico */}
-                    {/* Barra 1 (izq exterior) */}
-                    <line x1="20" y1="42" x2="20" y2="58" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.2" strokeLinecap="round" />
-                    {/* Barra 2 */}
-                    <line x1="28" y1="34" x2="28" y2="66" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.4" strokeLinecap="round" />
-                    {/* Barra 3 */}
-                    <line x1="36" y1="24" x2="36" y2="76" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.8" strokeLinecap="round" />
-                    {/* Barra 4 */}
-                    <line x1="43" y1="32" x2="43" y2="68" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.4" strokeLinecap="round" />
-                    {/* Barra 5 (PICO CENTRAL MÁXIMO) */}
-                    <line x1="50" y1="12" x2="50" y2="88" stroke="url(#bw-cyan-bar-grad)" strokeWidth="4.6" strokeLinecap="round" />
-                    {/* Barra 6 */}
-                    <line x1="57" y1="32" x2="57" y2="68" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.4" strokeLinecap="round" />
-                    {/* Barra 7 */}
-                    <line x1="64" y1="24" x2="64" y2="76" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.8" strokeLinecap="round" />
-                    {/* Barra 8 */}
-                    <line x1="72" y1="34" x2="72" y2="66" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.4" strokeLinecap="round" />
-                    {/* Barra 9 (der exterior) */}
-                    <line x1="80" y1="42" x2="80" y2="58" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.2" strokeLinecap="round" />
+                    {/* Ondas como ecualizador de audio dinámico (silueta corporativa) */}
+                    {/* Oleada 1 (Izquierda): subida y bajada rítmica */}
+                    <line x1="18" y1="42" x2="18" y2="58" stroke="url(#bw-getty-cyan-grad)" strokeWidth="2.8" />
+                    <line x1="24" y1="35" x2="24" y2="65" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.0" />
+                    <line x1="30" y1="24" x2="30" y2="76" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.4" />
+                    <line x1="36" y1="32" x2="36" y2="68" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.0" />
+                    <line x1="42" y1="41" x2="42" y2="59" stroke="url(#bw-getty-cyan-grad)" strokeWidth="2.8" />
+                    
+                    {/* Valle / Puente central */}
+                    <line x1="48" y1="41" x2="48" y2="59" stroke="url(#bw-getty-cyan-grad)" strokeWidth="2.8" />
+
+                    {/* Oleada 2 (Derecha): Crescendo acústico principal con pico dominante */}
+                    <line x1="54" y1="28" x2="54" y2="72" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.2" />
+                    <line x1="60" y1="18" x2="60" y2="82" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.6" />
+                    <line x1="66" y1="10" x2="66" y2="90" stroke="#ecfeff" strokeWidth="4.2" />
+                    <line x1="72" y1="18" x2="72" y2="82" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.6" />
+                    <line x1="78" y1="26" x2="78" y2="74" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.2" />
+                    <line x1="84" y1="36" x2="84" y2="64" stroke="url(#bw-getty-cyan-grad)" strokeWidth="2.8" />
                 </g>
             </svg>
         </div>
@@ -26291,7 +26289,6 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 1.0 (100% visible, alpha 100%)
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
-    const [trippyMode, setTrippyMode] = useState('comic'); // 'comic' | 'comic_warp' | 'liquid' | 'acid' | 'vortex' | 'off' (Efecto Dibujo Comic Cel-Shading & Trippy)
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -26447,114 +26444,13 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: VÍDEO CON EFECTO DIBUJO CÓMIC & DISTORSIÓN TRIPPY (POP ART, CEL-SHADING, INK OUTLINES & WARP) */}
+            {/* FASE 1: VÍDEO CON EFECTO VORTEX OSCURECIDO Y LÁSERES NEÓN */}
             {phase === 'video' && (
                 <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
                     
-                    {/* Definición de Filtros SVG de Dibujo Cómic / Cel-Shading y Distorsión Líquida */}
+                    {/* Definición del Filtro SVG Vortex Integrado */}
                     <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
                         <defs>
-                            {/* Filtro 1: Efecto Dibujo Artístico Sutil (Estilo After Effects Cartoon & Photoshop Oil Paint / Bordes Añadidos) */}
-                            <filter id="trippy-comic-filter" colorInterpolationFilters="sRGB" x="-5%" y="-5%" width="110%" height="110%">
-                                {/* 1. Suavizado de superficie para textura de pintura al óleo / pincelada artística */}
-                                <feGaussianBlur in="SourceGraphic" stdDeviation="0.75" result="oilPaintSmooth" />
-                                
-                                {/* 2. Detección sutil de contornos finos */}
-                                <feConvolveMatrix 
-                                    order="3" 
-                                    kernelMatrix="0 1 0 1 -4 1 0 1 0" 
-                                    preserveAlpha="true" 
-                                    in="SourceGraphic" 
-                                    result="rawEdges" 
-                                />
-                                
-                                {/* 3. Trazos de lápiz sutiles y elegantes (graduales y finos, sin bloques negros duros) */}
-                                <feColorMatrix 
-                                    in="rawEdges" 
-                                    type="matrix" 
-                                    values="-4.2 0 0 0 1.04
-                                            0 -4.2 0 0 1.04
-                                            0 0 -4.2 0 1.04
-                                            0 0 0 1 0" 
-                                    result="sketchPencil" 
-                                />
-                                
-                                {/* 4. Fusión multiply de los trazos de dibujo sobre la imagen suavizada al óleo */}
-                                <feBlend in="oilPaintSmooth" in2="sketchPencil" mode="multiply" result="sketchedBase" />
-                                
-                                {/* 5. Realce sutil de contraste y viveza natural (estilo After Effects) */}
-                                <feColorMatrix in="sketchedBase" type="saturate" values="1.18" result="saturatedDrawing" />
-                                <feComponentTransfer in="saturatedDrawing">
-                                    <feFuncR type="linear" slope="1.06" intercept="-0.02" />
-                                    <feFuncG type="linear" slope="1.06" intercept="-0.02" />
-                                    <feFuncB type="linear" slope="1.06" intercept="-0.02" />
-                                </feComponentTransfer>
-                            </filter>
-
-                            {/* Filtro 2: Dibujo Sutil + Distorsión Líquida Warp */}
-                            <filter id="trippy-comic-warp-filter" colorInterpolationFilters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
-                                <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="3" result="warpNoise">
-                                    <animate 
-                                        attributeName="baseFrequency" 
-                                        dur="12s" 
-                                        values="0.012 0.018; 0.022 0.032; 0.015 0.024; 0.012 0.018" 
-                                        repeatCount="indefinite" 
-                                    />
-                                </feTurbulence>
-                                <feDisplacementMap in="SourceGraphic" in2="warpNoise" scale="32" xChannelSelector="R" yChannelSelector="G" result="warpedSource" />
-                                <feGaussianBlur in="warpedSource" stdDeviation="0.75" result="oilPaintSmooth" />
-                                <feConvolveMatrix 
-                                    order="3" 
-                                    kernelMatrix="0 1 0 1 -4 1 0 1 0" 
-                                    preserveAlpha="true" 
-                                    in="warpedSource" 
-                                    result="rawEdges" 
-                                />
-                                <feColorMatrix 
-                                    in="rawEdges" 
-                                    type="matrix" 
-                                    values="-4.2 0 0 0 1.04
-                                            0 -4.2 0 0 1.04
-                                            0 0 -4.2 0 1.04
-                                            0 0 0 1 0" 
-                                    result="sketchPencil" 
-                                />
-                                <feBlend in="oilPaintSmooth" in2="sketchPencil" mode="multiply" result="sketchedBase" />
-                                <feColorMatrix in="sketchedBase" type="saturate" values="1.20" result="saturatedDrawing" />
-                                <feComponentTransfer in="saturatedDrawing">
-                                    <feFuncR type="linear" slope="1.06" intercept="-0.02" />
-                                    <feFuncG type="linear" slope="1.06" intercept="-0.02" />
-                                    <feFuncB type="linear" slope="1.06" intercept="-0.02" />
-                                </feComponentTransfer>
-                            </filter>
-
-                            {/* Filtro 3: Distorsión Líquida Fluida Ondulante (Warp Continuo) */}
-                            <filter id="trippy-liquid-filter" x="-20%" y="-20%" width="140%" height="140%">
-                                <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="3" result="warpNoise">
-                                    <animate 
-                                        attributeName="baseFrequency" 
-                                        dur="12s" 
-                                        values="0.012 0.018; 0.022 0.032; 0.015 0.024; 0.012 0.018" 
-                                        repeatCount="indefinite" 
-                                    />
-                                </feTurbulence>
-                                <feDisplacementMap in="SourceGraphic" in2="warpNoise" scale="42" xChannelSelector="R" yChannelSelector="G" />
-                            </filter>
-
-                            {/* Filtro 4: Acid Melt (Derretimiento caótico agresivo de alta frecuencia) */}
-                            <filter id="trippy-acid-filter" x="-20%" y="-20%" width="140%" height="140%">
-                                <feTurbulence type="turbulence" baseFrequency="0.032 0.045" numOctaves="4" result="acidNoise">
-                                    <animate 
-                                        attributeName="seed" 
-                                        dur="1.2s" 
-                                        values="1;14;35;62;89;115;1" 
-                                        repeatCount="indefinite" 
-                                    />
-                                </feTurbulence>
-                                <feDisplacementMap in="SourceGraphic" in2="acidNoise" scale="65" xChannelSelector="R" yChannelSelector="B" />
-                            </filter>
-
-                            {/* Filtro 5: Vortex Wave (Ondulación profunda centrada) */}
                             <filter id="trippy-vortex-filter" x="-20%" y="-20%" width="140%" height="140%">
                                 <feTurbulence type="fractalNoise" baseFrequency="0.008 0.028" numOctaves="2" result="vortexNoise">
                                     <animate 
@@ -26569,14 +26465,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         </defs>
                     </svg>
 
-                    {/* Contenedor reactivo con distorsión óptica, dibujo cómic y pulsación */}
-                    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center ${
-                        trippyMode === 'comic' ? 'trippy-distort-comic' :
-                        trippyMode === 'comic_warp' ? 'trippy-distort-comic-warp' :
-                        trippyMode === 'liquid' ? 'trippy-distort-liquid' :
-                        trippyMode === 'acid' ? 'trippy-distort-acid' :
-                        trippyMode === 'vortex' ? 'trippy-distort-vortex' : ''
-                    } ${isBassShaking ? 'anim-bass-shake' : ''}`}>
+                    {/* Contenedor reactivo con distorsión óptica Vortex fija y pulsación de graves */}
+                    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center trippy-distort-vortex ${isBassShaking ? 'anim-bass-shake' : ''}`}>
                         
                         {/* Vídeo Nativo al 100% de Opacidad */}
                         <video
@@ -26594,71 +26484,35 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                             }}
                         />
 
-                        {/* Capas de Efectos Visuales Trippy cuando está activo un modo psicodélico */}
-                        {trippyMode !== 'off' && trippyMode !== 'comic' && (
-                            <>
-                                {/* Capa de Aberración Cromática Roja / Magenta */}
-                                <div 
-                                    className="absolute inset-0 mix-blend-screen pointer-events-none"
-                                    style={{
-                                        background: 'radial-gradient(ellipse at center, rgba(244, 63, 94, 0.25) 0%, transparent 70%)',
-                                        animation: 'trippyRgbSplitRed 0.75s infinite ease-in-out'
-                                    }}
-                                />
+                        {/* Capa de Aberración Cromática Roja / Magenta */}
+                        <div 
+                            className="absolute inset-0 mix-blend-screen pointer-events-none"
+                            style={{
+                                background: 'radial-gradient(ellipse at center, rgba(244, 63, 94, 0.22) 0%, transparent 70%)',
+                                animation: 'trippyRgbSplitRed 0.75s infinite ease-in-out'
+                            }}
+                        />
 
-                                {/* Capa de Aberración Cromática Cian Eléctrico */}
-                                <div 
-                                    className="absolute inset-0 mix-blend-screen pointer-events-none"
-                                    style={{
-                                        background: 'radial-gradient(ellipse at center, rgba(6, 182, 212, 0.25) 0%, transparent 70%)',
-                                        animation: 'trippyRgbSplitCyan 0.75s infinite ease-in-out'
-                                    }}
-                                />
+                        {/* Capa de Aberración Cromática Cian Eléctrico */}
+                        <div 
+                            className="absolute inset-0 mix-blend-screen pointer-events-none"
+                            style={{
+                                background: 'radial-gradient(ellipse at center, rgba(6, 182, 212, 0.22) 0%, transparent 70%)',
+                                animation: 'trippyRgbSplitCyan 0.75s infinite ease-in-out'
+                            }}
+                        />
 
-                                {/* Aura prismática central pulsante */}
-                                <div className="absolute inset-0 trippy-prism-glow mix-blend-color-dodge" />
+                        {/* Aura prismática central pulsante */}
+                        <div className="absolute inset-0 trippy-prism-glow mix-blend-color-dodge pointer-events-none" />
 
-                                {/* Textura de scanlines CRT / VHS analógico */}
-                                <div className="absolute inset-0 trippy-scanlines opacity-35 mix-blend-overlay" />
-                            </>
-                        )}
+                        {/* Textura de scanlines CRT / VHS analógico */}
+                        <div className="absolute inset-0 trippy-scanlines opacity-30 mix-blend-overlay pointer-events-none" />
 
-                        {/* Viñeteado cinematográfico perimetral */}
-                        {trippyMode !== 'off' && (
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.7)_100%)] pointer-events-none" />
-                        )}
-                    </div>
+                        {/* Capa de oscurecimiento profundo cinematográfico solicitada por el usuario */}
+                        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
 
-                    {/* Selector Flotante de Efectos Visuales (Dibujo Cómic & Trippy) */}
-                    <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/85 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl">
-                        <span className="text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-pink-400 to-cyan-400 px-2 flex items-center gap-1.5">
-                            <span>✨</span>
-                            <span>EFECTO VISUAL:</span>
-                        </span>
-                        <div className="flex items-center gap-1 flex-wrap">
-                            {[
-                                { id: 'comic', label: 'Dibujo Sutil', icon: '🎨' },
-                                { id: 'comic_warp', label: 'Dibujo + Warp', icon: '💥' },
-                                { id: 'liquid', label: 'Líquido / Warp', icon: '🌊' },
-                                { id: 'acid', label: 'Acid Melt', icon: '⚡' },
-                                { id: 'vortex', label: 'Vortex', icon: '🌀' },
-                                { id: 'off', label: 'Original', icon: '🎞️' }
-                            ].map(opt => (
-                                <button
-                                    key={opt.id}
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); setTrippyMode(opt.id); }}
-                                    className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                                        trippyMode === opt.id
-                                            ? 'bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-400 text-black font-black shadow-[0_0_12px_rgba(251,191,36,0.6)] scale-105'
-                                            : 'text-gray-400 hover:text-white hover:bg-white/10'
-                                    }`}
-                                >
-                                    <span>{opt.icon}</span>
-                                    <span>{opt.label}</span>
-                                </button>
-                            ))}
-                        </div>
+                        {/* Viñeteado perimetral profundo */}
+                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)] pointer-events-none" />
                     </div>
 
                     {/* Botón sutil en esquina inferior derecha para saltar si el usuario lo desea */}
