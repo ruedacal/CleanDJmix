@@ -469,73 +469,153 @@ const InfoTip = ({ text, title }) => {
     );
 };
 
+// Hash robusto determinista FNV-1a para huella única de cada pista
+function getTrackHash(track) {
+    if (!track) return 1337;
+    const str = `${track.id || ''}|${track.title || track.t || ''}|${track.artist || track.a || ''}|${track.bpm || track.b || ''}|${track.key || track.k || ''}|${track.f || track.path || ''}`;
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return Math.abs(h >>> 0) || 1;
+}
+
 // Función auxiliar para calcular la envolvente estructural profesional por componentes DJ:
-// - bass: Sub-graves (bombo 4x4, sub-bass 30-100Hz) en Azul Cobalto / Índigo profundo
-// - drums: Pegada y caja (kick punch, snare, claps 100-500Hz) en Rojo / Bermellón enérgico
-// - vocals: Vocales y leads melódicos (sintetizadores, formantes vocales 500-3000Hz) en Ámbar / Verde Esmeralda
-// - treble: Agudos y platos (hi-hats, shakers, cymbals, aire >3000Hz) en Cian / Blanco Eléctrico
-function computeTrackStructuralBands(xNorm, seed) {
-    const s = ((seed % 17) - 8) * 0.006;
-    const b1Start = Math.max(0.16, 0.22 + s);
-    const b1End = b1Start + 0.12;
-    const drop1End = b1End + 0.24;
-    const b2Start = drop1End;
-    const b2End = b2Start + 0.14;
-    const drop2End = Math.min(0.88, b2End + 0.20);
+// - Genera arquetipos de estructura diferenciados (Club Extended, Radio Edit, Festival Climax, Melodic, Beat Tool)
+// - Modula densidad rítmica según BPM, alturas y contrastes según Energía, y proporciones según Rol Acústico
+// - Asegura huella visual y silueta única y reconocible para cada tema musical
+function computeTrackStructuralBands(xNorm, seed, track = null) {
+    const trackSeed = track ? getTrackHash(track) : (seed || 1);
+    
+    // Arquetipo estructural (0 a 4) según la semilla única de cada canción
+    const archetype = trackSeed % 5;
+    
+    // Variación determinista de puntos estructurales
+    const s1 = ((trackSeed % 23) - 11) * 0.007; // [-0.077, +0.077]
+    const s2 = (((trackSeed >> 3) % 19) - 9) * 0.006;
+    
+    let b1Start, b1End, drop1End, b2Start, b2End, drop2End;
+    
+    if (archetype === 0) {
+        // Extended Club Mix: Intro larga, primer drop potente, parón central prolongado, re-kick brutal
+        b1Start = Math.max(0.18, 0.25 + s1);
+        b1End = b1Start + 0.12 + Math.abs(s2);
+        drop1End = Math.min(0.68, b1End + 0.22);
+        b2Start = drop1End + 0.04;
+        b2End = Math.min(0.84, b2Start + 0.10);
+        drop2End = 0.90;
+    } else if (archetype === 1) {
+        // Radio / Vocal Edit: Intro corta, drop / estribillo muy temprano, puente vocal
+        b1Start = Math.max(0.08, 0.14 + s1);
+        b1End = b1Start + 0.08;
+        drop1End = Math.min(0.50, b1End + 0.20);
+        b2Start = drop1End + 0.05;
+        b2End = Math.min(0.72, b2Start + 0.12);
+        drop2End = 0.86;
+    } else if (archetype === 2) {
+        // Peak-Time Festival Banger: Build rápido, drop colosal y sostenido, mini break, segundo drop masivo
+        b1Start = Math.max(0.14, 0.18 + s1);
+        b1End = b1Start + 0.10;
+        drop1End = Math.min(0.58, b1End + 0.26);
+        b2Start = drop1End + 0.03;
+        b2End = Math.min(0.76, b2Start + 0.08);
+        drop2End = 0.92;
+    } else if (archetype === 3) {
+        // Progressive / Melodic: Construcción suave, gran breakdown melódico central, clímax tardío
+        b1Start = Math.max(0.22, 0.30 + s1);
+        b1End = b1Start + 0.16 + Math.abs(s2);
+        drop1End = Math.min(0.78, b1End + 0.24);
+        b2Start = 0.99; // 1 solo gran break
+        b2End = 0.99;
+        drop2End = 0.99;
+    } else {
+        // Underground Groove / Tool: Varios micro-cortes y drops constantes
+        b1Start = Math.max(0.12, 0.16 + s1);
+        b1End = b1Start + 0.07;
+        drop1End = Math.min(0.48, b1End + 0.18);
+        b2Start = drop1End + 0.08;
+        b2End = Math.min(0.78, b2Start + 0.09);
+        drop2End = 0.88;
+    }
+
+    // Parámetros acústicos específicos de la pista
+    const bpm = track ? (parseFloat(track.bpm || track.b) || 124) : 124;
+    const bpmGrid = Math.max(80, Math.min(180, bpm)) * 1.5;
+    
+    const rawEnergy = track ? (track.energy !== undefined ? parseFloat(track.energy) : (track.e !== undefined ? parseFloat(track.e) : 0.65)) : 0.65;
+    const energy = Math.max(0.35, Math.min(1.0, rawEnergy <= 1.0 ? rawEnergy : rawEnergy / 10));
+    
+    const role = String(track?.acoustic_role || track?.role || track?.genre || '').toLowerCase();
+    const isBassDriver = role.includes('bass') || role.includes('sub') || role.includes('techno') || role.includes('tech');
+    const isVocalLead = role.includes('vocal') || role.includes('lead') || role.includes('melodic') || role.includes('anthem');
+    const isPercussive = role.includes('drum') || role.includes('perc') || role.includes('tool') || role.includes('groove');
+
+    // Micro-modulaciones armónicas deterministas por pista
+    const f1 = 18 + (trackSeed % 29);
+    const f2 = 37 + ((trackSeed >> 3) % 41);
+    const f3 = 73 + ((trackSeed >> 6) % 53);
+    const microRipple = 0.85 + 0.15 * Math.sin(xNorm * f1) * Math.cos(xNorm * f2);
+    const transientSpike = Math.pow(Math.abs(Math.sin(xNorm * f3)), 12);
+
+    // Patrón rítmico de percusión y bombos modulado por el BPM real
+    const beatGridKick = Math.pow(Math.abs(Math.cos(xNorm * bpmGrid + trackSeed)), 8);
+    const snareHit = Math.pow(Math.abs(Math.sin(xNorm * (bpmGrid * 0.5) + trackSeed)), 10);
+    const hatPattern = 0.35 + 0.65 * Math.pow(Math.abs(Math.sin(xNorm * (bpmGrid * 2))), 3);
 
     let bass = 0.15, drums = 0.15, vocals = 0.15, treble = 0.15;
     let isBreak = false;
 
-    // Patrón rítmico de bombos 4x4 y percusión
-    const beatGridKick = Math.pow(Math.abs(Math.cos(xNorm * 180 + seed)), 8);
-    const snareHit = Math.pow(Math.abs(Math.sin(xNorm * 90 + seed)), 10);
-    const hatPattern = 0.4 + 0.6 * Math.pow(Math.abs(Math.sin(xNorm * 360)), 3);
-
     if (xNorm < b1Start) {
-        // INTRO: Bombo limpio, hi-hats entrando cada 16 compases, vocales lejanas
+        // INTRO: Bombo limpio, hi-hats entrando, vocales lejanas
         const p = xNorm / b1Start;
-        bass = (0.70 + 0.25 * beatGridKick);
-        drums = (0.50 + 0.35 * snareHit) * Math.min(1, p * 1.5);
-        vocals = 0.20 + 0.25 * p * (0.6 + 0.4 * Math.sin(xNorm * 40));
-        treble = (0.30 + 0.45 * p) * hatPattern;
+        bass = (0.55 + 0.35 * beatGridKick) * (isBassDriver ? 1.3 : 1.0);
+        drums = (0.45 + 0.40 * snareHit) * Math.min(1, p * 1.6);
+        vocals = (0.15 + 0.25 * p) * (isVocalLead ? 1.4 : 0.8);
+        treble = (0.30 + 0.50 * p) * hatPattern;
     } else if (xNorm >= b1Start && xNorm < b1End) {
-        // BREAK 1 (PARÓN): Sin bombo/bass. Subida de sintetizadores, vocales prominentes y barrido de agudos
+        // BREAK 1 (PARÓN): Subida de sintetizadores, vocales prominentes
         isBreak = true;
         const p = (xNorm - b1Start) / (b1End - b1Start);
-        bass = 0.04 + 0.03 * Math.sin(xNorm * 15);
-        drums = 0.10 + 0.40 * Math.pow(p, 2) * snareHit; // Snare roll acelerando hacia el drop
-        vocals = 0.85 + 0.15 * Math.sin(p * Math.PI) * (0.8 + 0.2 * Math.cos(xNorm * 30));
-        treble = 0.40 + 0.55 * Math.pow(p, 1.8); // Barrido de filtro paso-altos
+        bass = 0.03 + 0.03 * Math.sin(xNorm * 15);
+        drums = (0.08 + 0.45 * Math.pow(p, 2.2) * snareHit);
+        vocals = (0.80 + 0.20 * Math.sin(p * Math.PI)) * (isVocalLead ? 1.3 : 1.0);
+        treble = 0.35 + 0.60 * Math.pow(p, 1.6);
     } else if (xNorm >= b1End && xNorm < drop1End) {
-        // DROP 1 (CLÍMAX): Pegada atronadora en graves, caja con impacto, vocales en coro y agudos cristalinos
-        bass = 0.92 + 0.08 * beatGridKick;
-        drums = 0.88 + 0.12 * snareHit;
-        vocals = 0.65 + 0.25 * Math.sin(xNorm * 35);
-        treble = 0.82 + 0.18 * hatPattern;
+        // DROP 1 (CLÍMAX): Pegada atronadora en graves, caja con impacto
+        bass = (0.88 + 0.12 * beatGridKick) * (isBassDriver ? 1.15 : 1.0) * energy;
+        drums = (0.84 + 0.16 * snareHit) * (isPercussive ? 1.2 : 1.0) * energy;
+        vocals = (0.60 + 0.30 * Math.sin(xNorm * 35)) * (isVocalLead ? 1.1 : 0.8);
+        treble = (0.75 + 0.25 * hatPattern) * energy;
     } else if (xNorm >= b2Start && xNorm < b2End) {
-        // MID BREAK 2 (GRAN PARÓN / PUENTE VOCAL): Máxima expresión vocal/melódica, ausencia de bombos
+        // BREAK 2 (PUENTE VOCAL / PARÓN CENTRAL)
         isBreak = true;
         const p = (xNorm - b2Start) / (b2End - b2Start);
-        bass = 0.03 + 0.02 * Math.cos(xNorm * 10);
-        drums = 0.08 + 0.50 * Math.pow(p, 2.5) * snareHit; // Redoble final
-        vocals = 0.95 + 0.05 * Math.sin(p * Math.PI); // Vocal en solo / protagonista
-        treble = 0.45 + 0.50 * p;
+        bass = 0.02 + 0.03 * Math.cos(xNorm * 10);
+        drums = 0.06 + 0.50 * Math.pow(p, 2.5) * snareHit;
+        vocals = (0.92 + 0.08 * Math.sin(p * Math.PI)) * (isVocalLead ? 1.25 : 1.0);
+        treble = 0.40 + 0.55 * p;
     } else if (xNorm >= b2End && xNorm < drop2End) {
-        // DROP 2 (RE-KICK MÁXIMO): Toda la pista en máxima compresión y energía bailable
-        bass = 0.98 + 0.02 * beatGridKick;
-        drums = 0.92 + 0.08 * snareHit;
-        vocals = 0.70 + 0.20 * Math.sin(xNorm * 45);
-        treble = 0.88 + 0.12 * hatPattern;
+        // DROP 2 (RE-KICK MÁXIMO)
+        bass = (0.95 + 0.05 * beatGridKick) * (isBassDriver ? 1.2 : 1.0) * energy;
+        drums = (0.90 + 0.10 * snareHit) * (isPercussive ? 1.2 : 1.0) * energy;
+        vocals = (0.65 + 0.25 * Math.sin(xNorm * 45)) * (isVocalLead ? 1.1 : 0.8);
+        treble = (0.85 + 0.15 * hatPattern) * energy;
     } else {
         // OUTRO: Desvanecimiento progresivo para mezcla suave de salida en cabina
-        const p = (xNorm - drop2End) / (1 - drop2End);
-        bass = Math.max(0.08, (0.75 - 0.60 * p) * (0.8 + 0.2 * beatGridKick));
-        drums = Math.max(0.08, (0.55 - 0.45 * p));
-        vocals = Math.max(0.05, (0.35 - 0.30 * p));
-        treble = Math.max(0.05, (0.45 - 0.38 * p));
+        const p = (xNorm - drop2End) / Math.max(0.01, 1 - drop2End);
+        bass = Math.max(0.06, (0.70 - 0.55 * p) * (0.75 + 0.25 * beatGridKick));
+        drums = Math.max(0.06, (0.50 - 0.42 * p));
+        vocals = Math.max(0.04, (0.30 - 0.26 * p));
+        treble = Math.max(0.04, (0.40 - 0.35 * p));
     }
 
-    return { bass, drums, vocals, treble, isBreak };
+    // Aplicar micro-modulación y energía
+    bass = Math.min(1.0, bass * microRipple);
+    drums = Math.min(1.0, drums * (0.9 + 0.2 * transientSpike));
+    treble = Math.min(1.0, treble * (0.85 + 0.15 * microRipple));
+
+    return { bass, drums, vocals, treble, isBreak, energy, archetype };
 }
 
 // Gestor de Ecualizador Web Audio API de 3 Bandas (BASS 250Hz, MID 1000Hz, HI 3500Hz)
@@ -664,8 +744,7 @@ const TableHarmonicWaveform = React.memo(
     const progressRef = useRef(playProgress); // progreso leído por rAF sin setState
     const WIDTH = 112, HEIGHT = 28;
 
-    const rawId = track && track.id ? String(track.id) : "1";
-    const seed  = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const seed = getTrackHash(track);
 
     const handleClickScrub = (e) => {
         e.stopPropagation();
@@ -676,7 +755,7 @@ const TableHarmonicWaveform = React.memo(
         onPlayTrack(track, pct, true);
     };
 
-    // ── Paso 1: Generar bitmap de fondo UNA VEZ por pista ────────────────────
+    // ── Paso 1: Generar bitmap de fondo UNA VEZ por pista (Diseño Rayas BeatWave Logo) ─────
     useEffect(() => {
         let offscreen;
         try { offscreen = new OffscreenCanvas(WIDTH, HEIGHT); }
@@ -686,31 +765,68 @@ const TableHarmonicWaveform = React.memo(
         }
         const ctx = offscreen.getContext('2d');
         const centerY = HEIGHT / 2;
-        ctx.fillStyle = "#040407";
+        ctx.fillStyle = "#030408";
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
-        for (let x = 0; x <= WIDTH; x++) {
+
+        // Rayas corporativas con ancho reducido y paleta en la gama de azules y cian
+        const barWidth = 1.2;
+        const barStep = 2.0;
+
+        for (let x = 0; x <= WIDTH - barWidth; x += barStep) {
             const xNorm = x / WIDTH;
-            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
-            const hBass = (HEIGHT * 0.44) * bass;
-            ctx.fillStyle = isBreak ? "rgba(30,58,138,0.20)" : "rgba(37,99,235,0.88)";
-            ctx.fillRect(x, centerY - hBass, 1, hBass * 2);
-            const hDrums = (HEIGHT * 0.32) * drums;
-            ctx.fillStyle = "rgba(239,68,68,0.85)";
-            ctx.fillRect(x, centerY - hDrums, 1, hDrums * 2);
-            const hVocals = (HEIGHT * 0.24) * vocals;
-            ctx.fillStyle = isBreak ? "rgba(16,185,129,0.95)" : "rgba(245,158,11,0.85)";
-            ctx.fillRect(x, centerY - hVocals, 1, hVocals * 2);
-            const hTreble = (HEIGHT * 0.14) * treble;
-            ctx.fillStyle = "rgba(34,211,238,0.95)";
-            ctx.fillRect(x, centerY - hTreble, 1, hTreble * 2);
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
+            
+            // Altura de barra con amplio rango dinámico y contraste visual entre canciones
+            const barEnergy = Math.min(1.0, (bass * 0.46 + drums * 0.32 + vocals * 0.20 + treble * 0.18) * 1.6);
+            const h = Math.max(1.6, (HEIGHT * 0.45) * barEnergy);
+
+            // Gradiente vertical corporativo: extremos azul cobalto, núcleo cian brillante
+            const grad = ctx.createLinearGradient(0, centerY - h, 0, centerY + h);
+            if (isBreak) {
+                grad.addColorStop(0, "rgba(30, 58, 138, 0.40)");   // Azul cobalto tenue
+                grad.addColorStop(0.5, "rgba(6, 182, 212, 0.70)");  // Cian tenue
+                grad.addColorStop(1, "rgba(30, 58, 138, 0.40)");
+            } else if (barEnergy > 0.75) {
+                // Clímax / Drop: resplandor cian eléctrico con núcleo hielo
+                grad.addColorStop(0, "rgba(37, 99, 235, 0.90)");    // Azul real
+                grad.addColorStop(0.2, "rgba(14, 165, 233, 1.0)");   // Sky blue
+                grad.addColorStop(0.5, "rgba(207, 250, 254, 1.0)");  // Cian blanco núcleo
+                grad.addColorStop(0.8, "rgba(6, 182, 212, 1.0)");    // Cian puro
+                grad.addColorStop(1, "rgba(37, 99, 235, 0.90)");
+            } else {
+                // Secciones rítmicas estándar
+                grad.addColorStop(0, "rgba(30, 64, 175, 0.85)");    // Azul medio
+                grad.addColorStop(0.3, "rgba(2, 132, 199, 0.95)");
+                grad.addColorStop(0.5, "rgba(103, 232, 249, 0.95)"); // Cian luminoso
+                grad.addColorStop(0.7, "rgba(2, 132, 199, 0.95)");
+                grad.addColorStop(1, "rgba(30, 64, 175, 0.85)");
+            }
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            if (typeof ctx.roundRect === 'function') {
+                ctx.roundRect(x, centerY - h, barWidth, h * 2, 0.6);
+            } else {
+                ctx.rect(x, centerY - h, barWidth, h * 2);
+            }
+            ctx.fill();
         }
+
+        // Línea central tenue en cian corporativo
+        ctx.strokeStyle = "rgba(6, 182, 212, 0.25)";
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(WIDTH, centerY);
+        ctx.stroke();
+
         // Convertir a ImageBitmap para renderizado GPU (fallback: canvas auxiliar)
         if (typeof offscreen.transferToImageBitmap === 'function') {
             bgBitmapRef.current = offscreen.transferToImageBitmap();
         } else {
             bgBitmapRef.current = offscreen;
         }
-    }, [seed]); // seed estable por pista → solo recalcula al cambiar de pista
+    }, [seed, track]); // seed y track estables por pista → recalcula al cambiar de pista o datos
 
     // ── Paso 2: Configurar canvas principal con DPR correcto ──────────────────
     useEffect(() => {
@@ -2870,10 +2986,9 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues 
     const containerRef = useRef(null);
     const bitmapRef    = useRef(null);   // ImageBitmap del fondo precalculado
     const rafRef       = useRef(null);
-    const rawId = track && track.id ? String(track.id) : "1";
-    const seed  = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const seed = getTrackHash(track);
 
-    // Construye el bitmap estático del fondo (solo cuando cambia la pista o el ancho)
+    // Construye el bitmap estático del fondo con diseño corporativo de rayas BeatWave Pro
     const buildBitmap = useCallback((width) => {
         const height = 42;
         let offscreen;
@@ -2886,36 +3001,66 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues 
         }
         const ctx = offscreen.getContext("2d");
         const centerY = height / 2;
-        ctx.fillStyle = "#060609";
+        ctx.fillStyle = "#05060a";
         ctx.fillRect(0, 0, width, height);
 
-        for (let x = 0; x <= width; x += 1.5) {
+        // Rayas corporativas con ancho reducido y gama de azules y cian
+        const barWidth = 1.4;
+        const barStep = 2.4;
+
+        for (let x = 0; x <= width - barWidth; x += barStep) {
             const xNorm = x / width;
-            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
-            if (isBreak) { ctx.fillStyle = "rgba(16,185,129,0.08)"; ctx.fillRect(x, 0, 1.5, height); }
-            const hBass   = (height * 0.44) * bass;
-            ctx.fillStyle = isBreak ? "rgba(30,58,138,0.20)" : "rgba(37,99,235,0.88)";
-            ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
-            const hDrums  = (height * 0.32) * drums;
-            ctx.fillStyle = "rgba(239,68,68,0.85)";
-            ctx.fillRect(x, centerY - hDrums, 1.5, hDrums * 2);
-            const hVocals = (height * 0.22) * vocals;
-            ctx.fillStyle = isBreak ? "rgba(16,185,129,0.95)" : "rgba(245,158,11,0.85)";
-            ctx.fillRect(x, centerY - hVocals, 1.5, hVocals * 2);
-            const hTreble = (height * 0.14) * treble;
-            ctx.fillStyle = "rgba(34,211,238,0.95)";
-            ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
+            
+            const barEnergy = Math.min(1.0, (bass * 0.46 + drums * 0.32 + vocals * 0.20 + treble * 0.18) * 1.6);
+            const h = Math.max(2.0, (height * 0.45) * barEnergy);
+
+            // Gradiente vertical estilo ecualizador corporativo BeatWave Pro
+            const grad = ctx.createLinearGradient(0, centerY - h, 0, centerY + h);
+            if (isBreak) {
+                grad.addColorStop(0, "rgba(30, 58, 138, 0.40)");   // Azul cobalto tenue
+                grad.addColorStop(0.5, "rgba(6, 182, 212, 0.65)");  // Cian tenue
+                grad.addColorStop(1, "rgba(30, 58, 138, 0.40)");
+            } else if (barEnergy > 0.75) {
+                // Clímax / Drop: resplandor cian eléctrico con núcleo hielo
+                grad.addColorStop(0, "rgba(37, 99, 235, 0.90)");    // Azul real
+                grad.addColorStop(0.2, "rgba(14, 165, 233, 1.0)");   // Sky blue
+                grad.addColorStop(0.5, "rgba(207, 250, 254, 1.0)");  // Cian blanco núcleo
+                grad.addColorStop(0.8, "rgba(6, 182, 212, 1.0)");    // Cian puro
+                grad.addColorStop(1, "rgba(37, 99, 235, 0.90)");
+            } else {
+                // Secciones rítmicas estándar
+                grad.addColorStop(0, "rgba(30, 64, 175, 0.85)");    // Azul medio
+                grad.addColorStop(0.3, "rgba(2, 132, 199, 0.95)");
+                grad.addColorStop(0.5, "rgba(103, 232, 249, 0.95)"); // Cian luminoso
+                grad.addColorStop(0.7, "rgba(2, 132, 199, 0.95)");
+                grad.addColorStop(1, "rgba(30, 64, 175, 0.85)");
+            }
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            if (typeof ctx.roundRect === "function") {
+                ctx.roundRect(x, centerY - h, barWidth, h * 2, 0.7);
+            } else {
+                ctx.rect(x, centerY - h, barWidth, h * 2);
+            }
+            ctx.fill();
         }
-        ctx.strokeStyle = "rgba(255,255,255,0.08)";
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(width, centerY); ctx.stroke();
+
+        // Línea central de referencia en cian corporativo sutil
+        ctx.strokeStyle = "rgba(6, 182, 212, 0.20)";
+        ctx.lineWidth = 0.75;
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
 
         if (typeof offscreen.transferToImageBitmap === "function") {
             bitmapRef.current = offscreen.transferToImageBitmap();
         } else {
             bitmapRef.current = offscreen; // fallback canvas
         }
-    }, [seed]);
+    }, [seed, track]);
 
     // Reconstruir bitmap cuando cambia la pista, con ResizeObserver para cambios de layout
     useEffect(() => {
@@ -3761,26 +3906,24 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
                     ))}
                 </div>
                 <div className="px-6 py-4 bg-djzinc-900 border-t border-djzinc-800 flex items-center justify-between gap-3 shrink-0">
-                    <button onClick={onClose} className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white bg-djzinc-800 border border-djzinc-700 cursor-pointer">Cancelar</button>
-                    <div className="flex items-center gap-2">
-                        <button 
-                            type="button" 
-                            onClick={() => {
-                                if (onSaveConfig) onSaveConfig(opts);
-                                onClose();
-                            }} 
-                            className="px-4 py-2 rounded-xl text-xs font-bold text-gray-200 hover:text-white bg-djzinc-800 hover:bg-djzinc-750 border border-djzinc-700 cursor-pointer shadow transition-all active:scale-95"
-                        >
-                            Guardar Ajustes
-                        </button>
-                        <button 
-                            type="button" 
-                            onClick={() => onRunBatch(opts)} 
-                            className="px-5 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black cursor-pointer shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all"
-                        >
-                            Ejecutar Auditoría ({activeCount})
-                        </button>
-                    </div>
+                    <button 
+                        type="button"
+                        onClick={onClose} 
+                        className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white bg-djzinc-800 border border-djzinc-700 cursor-pointer transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={() => {
+                            if (onSaveConfig) onSaveConfig(opts);
+                            onClose();
+                        }} 
+                        className="px-6 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black cursor-pointer shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                        <span>✓</span>
+                        <span>Guardar Ajustes ({activeCount} activas)</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -6476,6 +6619,7 @@ const AuditWorkspace = ({
     const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
     const [mobileWorkflowTab, setMobileWorkflowTab] = useState('analizar'); // 'analizar' | 'exportar'
     const [batchConfigured, setBatchConfigured] = useState(false);
+    const [isAppendMode, setIsAppendMode] = useState(false);
     const [batchConfigOpts, setBatchConfigOpts] = useState({
         bpmKey: true,
         energyMood: true,
@@ -7296,14 +7440,15 @@ const AuditWorkspace = ({
 
     const handleConfirmarSeleccionLote = async () => {
         const combined = [...stagedFolders, ...stagedFiles];
+        const append = isAppendMode;
         if (combined.length === 0) {
             // Si el usuario no marcó elementos individuales, carga la carpeta actual abierta
             if (fsCurrentPath) {
                 clearStagedSelection();
                 setSelectedLooseFiles([]);
-                setRutaOrigen(fsCurrentPath);
+                if (!append) setRutaOrigen(fsCurrentPath);
                 setFsBrowserOpen(false);
-                await handleCargarDirectorio(fsCurrentPath);
+                await handleCargarDirectorio(fsCurrentPath, append);
             }
             return;
         }
@@ -7313,21 +7458,28 @@ const AuditWorkspace = ({
         const descParts = [];
         if (stagedFolders.length > 0) descParts.push(`${stagedFolders.length} carpeta(s)`);
         if (stagedFiles.length > 0) descParts.push(`${stagedFiles.length} pista(s)`);
-        setRutaOrigen(descParts.join(' + '));
+        if (!append) setRutaOrigen(descParts.join(' + '));
         setFsBrowserOpen(false);
-        await handleCargarDirectorio(combined);
+        await handleCargarDirectorio(combined, append);
     };
 
     const handleSeleccionarCarpetaUI = async (targetPath) => {
         const finalPath = targetPath || fsCurrentPath;
+        const append = isAppendMode;
         clearStagedSelection();
         setSelectedLooseFiles([]);
-        setRutaOrigen(finalPath);
+        if (!append) setRutaOrigen(finalPath);
         setFsBrowserOpen(false);
-        await handleCargarDirectorio(finalPath);
+        await handleCargarDirectorio(finalPath, append);
     };
 
     const handleExplorar = async () => {
+        setIsAppendMode(false);
+        handleAbrirNavegadorCarpetas(rutaOrigen);
+    };
+
+    const handleAnadirMas = () => {
+        setIsAppendMode(true);
         handleAbrirNavegadorCarpetas(rutaOrigen);
     };
 
@@ -7365,36 +7517,59 @@ const AuditWorkspace = ({
         return null;
     };
 
-    const handleCargarDirectorio = async (pathOverride) => {
+    const handleCargarDirectorio = async (pathOverride, isAppend = false) => {
         const target = pathOverride || rutaOrigen;
         if (!target) return;
-        // Reiniciar estado anterior y limpiar valores cacheados
-        resetAuditWorkspace(true);
+        if (!isAppend) {
+            // Reiniciar estado anterior y limpiar valores cacheados
+            resetAuditWorkspace(true);
+        }
         if (window.eel && window.eel.cargar_metadatos_directorio) {
             setIsLoadingDir(true);
             setBatchProgress(5);
             const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : `archivos en ${target}`;
-            setBatchStatusMsg(`Leyendo metadatos de ${targetDesc}...`);
+            setBatchStatusMsg(isAppend ? `Añadiendo metadatos de ${targetDesc}...` : `Leyendo metadatos de ${targetDesc}...`);
             try {
                 const res = await window.eel.cargar_metadatos_directorio(target)();
                 if (res && Array.isArray(res.tracks)) {
-                    setTracks(res.tracks);
-                    if (res.tracks.length > 0) {
-                        setSelectedTrack(res.tracks[0].id);
+                    if (isAppend) {
+                        const existingPaths = new Set((tracks || []).map(t => String(t.path || t.f || t.id)));
+                        const newTracks = res.tracks.filter(t => !existingPaths.has(String(t.path || t.f || t.id)));
+                        const merged = [...(tracks || []), ...newTracks];
+                        setTracks(merged);
+                        if (!selectedTrack && merged.length > 0) {
+                            setSelectedTrack(merged[0].id);
+                        }
+                        setMetrics({
+                            total: merged.length,
+                            missing: merged.filter(t => t.missing_title || t.missing_artist || !t.genre || !t.bpm).length,
+                            missing_title: merged.filter(t => t.missing_title).length,
+                            missing_artist: merged.filter(t => t.missing_artist).length,
+                            missing_cover: merged.filter(t => t.missing_cover).length,
+                            duplicates: (res.duplicates || 0),
+                            ready: merged.filter(t => !t.missing_title && !t.missing_artist && t.bpm && t.key).length,
+                            errors: 0
+                        });
+                        setRutaOrigen(`${merged.length} pistas en biblioteca`);
                     } else {
-                        setSelectedTrack(null);
+                        setTracks(res.tracks);
+                        if (res.tracks.length > 0) {
+                            setSelectedTrack(res.tracks[0].id);
+                        } else {
+                            setSelectedTrack(null);
+                        }
+                        setMetrics({
+                            total: res.total || 0,
+                            missing: res.sin_meta || 0,
+                            missing_title: res.missing_title !== undefined ? res.missing_title : res.tracks.filter(t => t.missing_title).length,
+                            missing_artist: res.missing_artist !== undefined ? res.missing_artist : res.tracks.filter(t => t.missing_artist).length,
+                            missing_cover: res.missing_cover !== undefined ? res.missing_cover : res.tracks.filter(t => t.missing_cover).length,
+                            duplicates: res.duplicates !== undefined ? res.duplicates : 0,
+                            ready: res.ready !== undefined ? res.ready : Math.max(0, (res.total || 0) - (res.sin_meta || 0)),
+                            errors: res.errors || 0
+                        });
                     }
-                    setMetrics({
-                        total: res.total || 0,
-                        missing: res.sin_meta || 0,
-                        missing_title: res.missing_title !== undefined ? res.missing_title : res.tracks.filter(t => t.missing_title).length,
-                        missing_artist: res.missing_artist !== undefined ? res.missing_artist : res.tracks.filter(t => t.missing_artist).length,
-                        missing_cover: res.missing_cover !== undefined ? res.missing_cover : res.tracks.filter(t => t.missing_cover).length,
-                        duplicates: res.duplicates !== undefined ? res.duplicates : 0,
-                        ready: res.ready !== undefined ? res.ready : Math.max(0, (res.total || 0) - (res.sin_meta || 0)),
-                        errors: res.errors || 0
-                    });
-                } else {
+                } else if (!isAppend) {
                     setTracks([]);
                     setSelectedTrack(null);
                     setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
@@ -7403,6 +7578,7 @@ const AuditWorkspace = ({
                 console.error("Fallo carga metadatos de directorio:", e);
                 setBatchStatusMsg("Error al leer metadatos del directorio.");
             } finally {
+                setIsAppendMode(false);
                 setIsLoadingDir(false);
                 setBatchProgress(0);
                 setBatchStatusMsg('');
@@ -7924,13 +8100,86 @@ const AuditWorkspace = ({
     const [auditSortField, setAuditSortField] = useState('id');
     const [auditSortDir, setAuditSortDir] = useState('asc'); // 'asc' | 'desc'
     const [filterHeaderSearch, setFilterHeaderSearch] = useState('');
+    const [filterHeaderArtist, setFilterHeaderArtist] = useState('');
     const [filterHeaderFormat, setFilterHeaderFormat] = useState('ALL');
+    const [filterHeaderKhz, setFilterHeaderKhz] = useState('ALL');
+    const [filterHeaderKbps, setFilterHeaderKbps] = useState('ALL');
     const [filterHeaderQuality, setFilterHeaderQuality] = useState('ALL');
+    const [filterHeaderLoss, setFilterHeaderLoss] = useState('ALL');
+    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState('ALL');
+    const [filterHeaderLufs, setFilterHeaderLufs] = useState('ALL');
+    const [filterHeaderDuration, setFilterHeaderDuration] = useState('');
+    const [filterHeaderBpm, setFilterHeaderBpm] = useState('');
+    const [filterHeaderKey, setFilterHeaderKey] = useState('');
+    const [filterHeaderCues, setFilterHeaderCues] = useState('ALL');
     const [filterHeaderStatus, setFilterHeaderStatus] = useState('ALL');
     const [filterHeaderEnergy, setFilterHeaderEnergy] = useState('ALL');
     const [filterHeaderDance, setFilterHeaderDance] = useState('ALL');
+    const [filterHeaderPhase, setFilterHeaderPhase] = useState('ALL');
     const [filterHeaderGenre, setFilterHeaderGenre] = useState('');
     const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState('');
+    const [filterHeaderComment, setFilterHeaderComment] = useState('');
+
+    // Visibilidad de Columnas con persistencia en localStorage
+    const DEFAULT_AUDIT_COLUMNS = {
+        id: true,
+        waveform: true,
+        title: true,
+        artist: true,
+        genre: true,
+        subgenre: true,
+        format: true,
+        sample_rate_khz: true,
+        bitrate_kbps: true,
+        calidad: true,
+        perdida_pct: true,
+        cutoff_khz: true,
+        lufs: true,
+        duration: true,
+        bpm: true,
+        key: true,
+        cues: true,
+        e: true,
+        dance: true,
+        fase_badge: true,
+        acoustic_role: true,
+        comment: true,
+        status: true,
+        actions: true,
+    };
+
+    const [visibleColumns, setVisibleColumns] = useState(() => {
+        try {
+            const saved = localStorage.getItem('bw_audit_visible_columns');
+            if (saved) return { ...DEFAULT_AUDIT_COLUMNS, ...JSON.parse(saved) };
+        } catch (_) {}
+        return DEFAULT_AUDIT_COLUMNS;
+    });
+
+    const [columnSelectorOpen, setColumnSelectorOpen] = useState(false);
+
+    const toggleColumnVisibility = (colKey) => {
+        setVisibleColumns(prev => {
+            const next = { ...prev, [colKey]: !prev[colKey] };
+            try { localStorage.setItem('bw_audit_visible_columns', JSON.stringify(next)); } catch (_) {}
+            return next;
+        });
+    };
+
+    const setColumnPreset = (preset) => {
+        let next = { ...DEFAULT_AUDIT_COLUMNS };
+        if (preset === 'all') {
+            Object.keys(next).forEach(k => { next[k] = true; });
+        } else if (preset === 'dj') {
+            Object.keys(next).forEach(k => { next[k] = false; });
+            ['id', 'waveform', 'title', 'artist', 'bpm', 'key', 'cues', 'e', 'dance', 'fase_badge', 'actions'].forEach(k => { next[k] = true; });
+        } else if (preset === 'audio') {
+            Object.keys(next).forEach(k => { next[k] = false; });
+            ['id', 'title', 'artist', 'format', 'sample_rate_khz', 'bitrate_kbps', 'calidad', 'perdida_pct', 'cutoff_khz', 'lufs', 'status', 'actions'].forEach(k => { next[k] = true; });
+        }
+        setVisibleColumns(next);
+        try { localStorage.setItem('bw_audit_visible_columns', JSON.stringify(next)); } catch (_) {}
+    };
 
     const handleSortAudit = (field) => {
         setAuditSortDir(prev => auditSortField === field && prev === 'asc' ? 'desc' : 'asc');
@@ -7940,6 +8189,54 @@ const AuditWorkspace = ({
     const renderSortArrowAudit = (field) => {
         if (auditSortField !== field) return <span className="text-gray-600 ml-1 text-[9px]">↕</span>;
         return <span className="text-djcyan-400 ml-1 font-bold text-[10px]">{auditSortDir === 'asc' ? '▲' : '▼'}</span>;
+    };
+
+    const hasActiveHeaderFilters = Boolean(
+        filterHeaderSearch || 
+        filterHeaderArtist || 
+        filterHeaderGenre || 
+        filterHeaderSubgenre || 
+        filterHeaderFormat !== 'ALL' || 
+        filterHeaderQuality !== 'ALL' || 
+        filterHeaderStatus !== 'ALL' || 
+        filterHeaderEnergy !== 'ALL' || 
+        filterHeaderDance !== 'ALL' || 
+        filterHeaderAcousticRole !== 'ALL' || 
+        filterHeaderKhz !== 'ALL' || 
+        filterHeaderKbps !== 'ALL' || 
+        filterHeaderLoss !== 'ALL' || 
+        filterHeaderCutoff !== 'ALL' || 
+        filterHeaderLufs !== 'ALL' || 
+        filterHeaderDuration || 
+        filterHeaderBpm || 
+        filterHeaderKey || 
+        filterHeaderCues !== 'ALL' || 
+        filterHeaderPhase !== 'ALL' || 
+        filterHeaderComment
+    );
+
+    const handleResetAllHeaderFilters = () => {
+        setFilterHeaderSearch('');
+        setFilterHeaderArtist('');
+        setFilterHeaderGenre('');
+        setFilterHeaderSubgenre('');
+        setFilterHeaderFormat('ALL');
+        setFilterHeaderQuality('ALL');
+        setFilterHeaderStatus('ALL');
+        setFilterHeaderEnergy('ALL');
+        setFilterHeaderDance('ALL');
+        setFilterHeaderAcousticRole('ALL');
+        setFilterHeaderKhz('ALL');
+        setFilterHeaderKbps('ALL');
+        setFilterHeaderLoss('ALL');
+        setFilterHeaderCutoff('ALL');
+        setFilterHeaderLufs('ALL');
+        setFilterHeaderDuration('');
+        setFilterHeaderBpm('');
+        setFilterHeaderKey('');
+        setFilterHeaderCues('ALL');
+        setFilterHeaderPhase('ALL');
+        setFilterHeaderComment('');
     };
 
     const tracksFiltrados = useMemo(() => {
@@ -8000,17 +8297,74 @@ const AuditWorkspace = ({
             if (filtro === 'error') return Boolean(t?.es_fake) || (t?.format === 'FLAC' && String(t?.status || '').includes('Fake'));
             if (filtro === 'bad_quality') return isBadQualityTrack(t);
 
-            // Filtros de Cabecera
+            // Filtros de Cabecera (TODAS LAS COLUMNAS)
             if (filterHeaderSearch) {
                 const hTerm = filterHeaderSearch.toLowerCase();
-                const matchHeader = (t?.t || t?.title || '').toLowerCase().includes(hTerm) || (t?.a || t?.artist || '').toLowerCase().includes(hTerm) || (t?.f || t?.filename || '').toLowerCase().includes(hTerm);
+                const matchHeader = (t?.t || t?.title || '').toLowerCase().includes(hTerm) || (t?.f || t?.filename || '').toLowerCase().includes(hTerm);
                 if (!matchHeader) return false;
+            }
+            if (filterHeaderArtist) {
+                const aTerm = filterHeaderArtist.toLowerCase();
+                if (!(t?.a || t?.artist || '').toLowerCase().includes(aTerm)) return false;
             }
             if (filterHeaderFormat !== 'ALL') {
                 if (String(t?.format || '').toUpperCase() !== filterHeaderFormat) return false;
             }
+            if (filterHeaderKhz !== 'ALL') {
+                const khzVal = String(t?.sample_rate_khz || '');
+                if (!khzVal.includes(filterHeaderKhz)) return false;
+            }
+            if (filterHeaderKbps !== 'ALL') {
+                const kbpsVal = Number(t?.bitrate_kbps || 0);
+                if (filterHeaderKbps === '320' && kbpsVal < 320) return false;
+                if (filterHeaderKbps === 'LOSSLESS' && kbpsVal < 700) return false;
+                if (filterHeaderKbps === 'LOW' && kbpsVal >= 320) return false;
+            }
             if (filterHeaderQuality !== 'ALL') {
                 if (!String(t?.calidad || '').toLowerCase().includes(filterHeaderQuality.toLowerCase())) return false;
+            }
+            if (filterHeaderLoss !== 'ALL') {
+                const isSinPerdida = t?.perdida === 'Sin Pérdida' && !t?.es_fake;
+                if (filterHeaderLoss === 'SIN_PERDIDA' && !isSinPerdida) return false;
+                if (filterHeaderLoss === 'CON_PERDIDA' && isSinPerdida) return false;
+            }
+            if (filterHeaderCutoff !== 'ALL') {
+                const cutoff = Number(t?.cutoff_khz || 0);
+                if (filterHeaderCutoff === 'PASS' && cutoff > 0 && cutoff < 20) return false;
+                if (filterHeaderCutoff === 'CUT' && cutoff > 0 && cutoff >= 20) return false;
+            }
+            if (filterHeaderLufs !== 'ALL') {
+                if (filterHeaderLufs === 'CLIP' && !t?.clipping) return false;
+                if (filterHeaderLufs === 'LOUD' && Number(t?.lufs || -9) < -7) return false;
+                if (filterHeaderLufs === 'QUIET' && Number(t?.lufs || -9) > -14) return false;
+            }
+            if (filterHeaderDuration) {
+                const durTerm = filterHeaderDuration.toLowerCase();
+                if (!String(t?.duration || '').toLowerCase().includes(durTerm)) return false;
+            }
+            if (filterHeaderBpm) {
+                const bpmTerm = filterHeaderBpm.trim();
+                const trkBpm = parseFloat(t?.bpm || t?.b) || 0;
+                if (bpmTerm.startsWith('>')) {
+                    const min = parseFloat(bpmTerm.slice(1)) || 0;
+                    if (trkBpm < min) return false;
+                } else if (bpmTerm.startsWith('<')) {
+                    const max = parseFloat(bpmTerm.slice(1)) || 999;
+                    if (trkBpm > max) return false;
+                } else {
+                    const target = parseFloat(bpmTerm);
+                    if (target && Math.abs(trkBpm - target) > 2.5) return false;
+                }
+            }
+            if (filterHeaderKey) {
+                const keyTerm = filterHeaderKey.trim().toUpperCase();
+                const trkKey = (t?.key || t?.k || '').toUpperCase();
+                if (!trkKey.includes(keyTerm)) return false;
+            }
+            if (filterHeaderCues !== 'ALL') {
+                const hasCues = Boolean(t?.cues && Array.isArray(t?.cues) && t?.cues.length > 0) || Boolean(t?.hotcues);
+                if (filterHeaderCues === 'YES' && !hasCues) return false;
+                if (filterHeaderCues === 'NO' && hasCues) return false;
             }
             if (filterHeaderStatus !== 'ALL') {
                 const isFake = Boolean(t?.es_fake || (t?.format === 'FLAC' && String(t?.status || '').includes('Fake')));
@@ -8030,6 +8384,10 @@ const AuditWorkspace = ({
                 if (filterHeaderDance === 'MED' && (dVal < 65 || dVal >= 80)) return false;
                 if (filterHeaderDance === 'LOW' && dVal >= 65) return false;
             }
+            if (filterHeaderPhase !== 'ALL') {
+                const p = String(t?.fase_badge || '');
+                if (!p.toUpperCase().includes(filterHeaderPhase.toUpperCase())) return false;
+            }
             if (filterHeaderGenre) {
                 const gTerm = filterHeaderGenre.toLowerCase();
                 const trkGenre = (t?.genre || 'House').toLowerCase();
@@ -8042,6 +8400,10 @@ const AuditWorkspace = ({
             }
             if (filterHeaderAcousticRole !== 'ALL') {
                 if (t?.acoustic_role !== filterHeaderAcousticRole) return false;
+            }
+            if (filterHeaderComment) {
+                const cTerm = filterHeaderComment.toLowerCase();
+                if (!(t?.comment || '').toLowerCase().includes(cTerm)) return false;
             }
             return true;
         });
@@ -8096,7 +8458,7 @@ const AuditWorkspace = ({
         });
 
         return result;
-    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, auditSortField, auditSortDir]);
+    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderArtist, filterHeaderGenre, filterHeaderSubgenre, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, filterHeaderAcousticRole, filterHeaderKhz, filterHeaderKbps, filterHeaderLoss, filterHeaderCutoff, filterHeaderLufs, filterHeaderDuration, filterHeaderBpm, filterHeaderKey, filterHeaderCues, filterHeaderPhase, filterHeaderComment, auditSortField, auditSortDir]);
 
     // PERF: Virtualización de filas — solo renderiza las visibles + buffer overscan
     const {
@@ -8130,69 +8492,29 @@ const AuditWorkspace = ({
             <div className="flex-1 flex flex-col min-w-0">
                 {/* 1. TOP BAR TÁCTICA: Ingesta, Contexto de Colección, Guardar e Inspector */}
                 <div className="px-3 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-2 z-20">
-                    {/* IZQUIERDA: Ingesta & Contexto Activo */}
+                    {/* IZQUIERDA: Contexto Activo de Biblioteca */}
                     <div data-tour="tour-audit-select" className="flex items-center gap-1.5 shrink-0">
-                        <button 
-                            onClick={handleExplorar} 
-                            className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black px-3 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0" 
-                            title="Cargar carpetas completas o pistas para analizar lo guardado en la biblioteca"
-                        >
-                            <span>▷</span>
-                            <span>Analizar biblioteca</span>
-                        </button>
-
-                        {tracks && tracks.length > 0 ? (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[180px] sm:max-w-[260px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
+                        {tracks && tracks.length > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[320px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
                                 <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>
+                                <span className="text-gray-400 text-[11px] shrink-0">📁</span>
                                 <span className="truncate">
-                                    {typeof rutaOrigen === 'string' && rutaOrigen ? (rutaOrigen.split('/').pop() || rutaOrigen) : 'Colección'}
+                                    {typeof rutaOrigen === 'string' && rutaOrigen ? (rutaOrigen.split('/').pop() || rutaOrigen) : 'Colección Activa'}
                                 </span>
                                 <span className="px-1.5 py-0.2 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700">
                                     {tracks.length}
                                 </span>
                             </div>
-                        ) : null}
-
-                        <button 
-                            type="button" 
-                            onClick={() => handleCargarDirectorio(resolveAuditTargets())} 
-                            className="p-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono" 
-                            title="Recargar selección actual"
-                        >
-                            🔄
-                        </button>
-
-                        {tracks && tracks.length > 0 && (
-                            <button 
-                                type="button" 
-                                onClick={handleClearAllTracks} 
-                                className="px-2 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 rounded-lg border border-red-800/40 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono flex items-center gap-1" 
-                                title="Vaciar la lista y eliminar todas las pistas del análisis actual"
-                            >
-                                <span>🗑️</span>
-                                <span className="hidden sm:inline text-xs">{t('btn_clear_all') || 'Vaciar'}</span>
-                            </button>
                         )}
                     </div>
 
-                    {/* DERECHA: Feedback de Guardado, Guardar en Disco, Cancelar, HUD e Inspector */}
+                    {/* DERECHA: Feedback de Guardado & Cancelar */}
                     <div className="flex items-center gap-1.5 shrink-0">
                         {saveFeedback && (
-                            <span className="hidden md:inline text-xs font-mono text-djgreen-400 font-bold animate-pulse">
+                            <span className="text-xs font-mono text-djgreen-400 font-bold animate-pulse">
                                 {saveFeedback}
                             </span>
                         )}
-
-                        {/* Persistencia Física en Disco (Guardar) */}
-                        <button 
-                            onClick={handleGuardarTodoEnFicheros} 
-                            disabled={isInjecting || tracks.length === 0}
-                            className="bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 disabled:opacity-50 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.35)] border border-emerald-300/50 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0"
-                            title="Guarda todos los metadatos editados directamente en los archivos de audio en disco"
-                        >
-                            <span>💾</span>
-                            <span>{t('btn_save_all') || 'Guardar'} ({tracks.length})</span>
-                        </button>
 
                         {/* Cancelación de Proceso */}
                         {(isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && (
@@ -8205,36 +8527,6 @@ const AuditWorkspace = ({
                                 <span className="hidden sm:inline">{t('btn_cancel') || 'Cancelar'}</span>
                             </button>
                         )}
-
-                        {/* Toggle de Métricas HUD */}
-                        <button
-                            type="button"
-                            onClick={toggleMetricsCollapsed}
-                            className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                                !metricsCollapsed 
-                                    ? 'bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner' 
-                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
-                            }`}
-                            title={!metricsCollapsed ? "Plegar HUD de métricas completas (Tecla M)" : "Desplegar HUD analítico completo (Tecla M)"}
-                        >
-                            <span>▤</span>
-                            <span className="hidden xl:inline">HUD</span>
-                            <kbd className="text-[9px] bg-black/50 px-1 rounded border border-djzinc-700">M</kbd>
-                        </button>
-
-                        {/* Toggle de Inspector */}
-                        <button
-                            onClick={() => setSidebarOpen(prev => !prev)}
-                            className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                                sidebarOpen 
-                                    ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner' 
-                                    : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
-                            }`}
-                            title={sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}
-                        >
-                            <span>◨</span>
-                            <span className="hidden sm:inline">{t('btn_inspector') || 'Inspector'}</span>
-                        </button>
                     </div>
                 </div>
 
@@ -8250,35 +8542,76 @@ const AuditWorkspace = ({
                                 <span>Analizar</span>
                             </span>
                             <span className="text-[9px] text-gray-500 font-normal">
-                                {batchConfigured ? '✓ Configurado' : 'Ajustes requeridos'}
+                                {batchConfigured ? '✓ Listo' : 'Ajustes'}
                             </span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                            {/* Botón 1: Configurar Auditoría */}
+                            {/* Paso 1: Cargar Biblioteca, Añadir más, Recargar y Vaciar */}
+                            <div className="flex items-center gap-1">
+                                <button 
+                                    type="button"
+                                    onClick={handleExplorar} 
+                                    className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black px-3 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0" 
+                                    title="Cargar carpetas completas o pistas para analizar lo guardado en la biblioteca"
+                                >
+                                    <span>▷</span>
+                                    <span>Cargar biblioteca</span>
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={handleAnadirMas} 
+                                    className="px-2.5 py-1.5 bg-djzinc-900 hover:bg-djzinc-800 text-gray-200 hover:text-white rounded-lg border border-djzinc-750 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono flex items-center gap-1 font-bold" 
+                                    title="Añadir más carpetas o pistas a la biblioteca actual sin vaciar la selección existente"
+                                >
+                                    <span>➕</span>
+                                    <span className="hidden xl:inline">Añadir más</span>
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => handleCargarDirectorio(resolveAuditTargets())} 
+                                    className="px-2 py-1.5 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white border border-djzinc-750 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono rounded-lg" 
+                                    title="Recargar selección actual"
+                                >
+                                    🔄
+                                </button>
+                                {tracks && tracks.length > 0 && (
+                                    <button 
+                                        type="button" 
+                                        onClick={handleClearAllTracks} 
+                                        className="px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 rounded-lg border border-red-800/40 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono flex items-center gap-1" 
+                                        title="Vaciar la lista y eliminar todas las pistas del análisis actual"
+                                    >
+                                        <span>🗑️</span>
+                                        <span className="hidden xl:inline">Vaciar</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Paso 2: Configurar */}
                             <button 
                                 type="button"
                                 onClick={() => setBatchModalOpen(true)} 
-                                className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer active:scale-95 shrink-0 ${
+                                className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer active:scale-95 shrink-0 ${
                                     batchConfigured 
                                         ? 'bg-emerald-950/40 text-emerald-300 border-emerald-600/70 shadow-sm' 
-                                        : 'bg-gradient-to-r from-djcyan-500 to-djcyan-600 hover:from-djcyan-400 hover:to-djcyan-500 text-black font-black shadow-md shadow-djcyan-500/20 border-djcyan-400'
+                                        : 'bg-djzinc-900 hover:bg-djzinc-850 text-gray-200 border-djzinc-750'
                                 }`}
                                 title="Abrir configuración de auditoría para elegir qué análisis y correcciones ejecutar"
                             >
                                 <span>⚙️</span>
-                                <span>Configurar Auditoría</span>
+                                <span>Configurar</span>
                                 {batchConfigured ? (
-                                    <span className="bg-emerald-900/80 text-emerald-200 border border-emerald-700 px-1.5 py-0.2 rounded text-[10px]">
+                                    <span className="bg-emerald-900/80 text-emerald-200 border border-emerald-700 px-1 py-0.2 rounded text-[9px]">
                                         ✓ Listo
                                     </span>
                                 ) : (
-                                    <span className="bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px] font-black">
-                                        Paso 1
+                                    <span className="bg-djzinc-800 text-gray-400 px-1 py-0.2 rounded text-[9px]">
+                                        Paso 2
                                     </span>
                                 )}
                             </button>
 
-                            {/* Botón 2: Ejecutar Análisis (Habilitado solo si batchConfigured) */}
+                            {/* Paso 3: Ejecutar */}
                             <button 
                                 type="button"
                                 onClick={() => {
@@ -8289,7 +8622,7 @@ const AuditWorkspace = ({
                                     }
                                 }} 
                                 disabled={isAuditing || tracks.length === 0}
-                                className={`px-3 py-1.5 rounded-lg font-mono text-xs font-black flex items-center gap-2 transition-all active:scale-95 shrink-0 border ${
+                                className={`px-3 py-1.5 rounded-lg font-mono text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 shrink-0 border ${
                                     batchConfigured 
                                         ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-md shadow-djcyan-500/20 border-djcyan-300 cursor-pointer' 
                                         : 'bg-djzinc-900 text-gray-500 border-djzinc-800 cursor-pointer hover:border-djzinc-700'
@@ -8297,26 +8630,9 @@ const AuditWorkspace = ({
                                 title={!batchConfigured ? "Primero configura las opciones de auditoría en el botón anterior" : "Ejecutar análisis y optimizaciones configuradas sobre las pistas cargadas"}
                             >
                                 <span>▶</span>
-                                <span>{isAuditing ? 'Auditando...' : 'Ejecutar Análisis'}</span>
+                                <span>{isAuditing ? 'Auditando...' : 'Ejecutar'}</span>
                                 <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${batchConfigured ? 'bg-black/20 text-black font-black' : 'bg-djzinc-800 text-gray-500'}`}>
                                     {tracks.length}
-                                </span>
-                            </button>
-
-                            {/* Botón Hot Cues & Grid */}
-                            <button 
-                                type="button"
-                                onClick={() => {
-                                    if (onNavigateTab) onNavigateTab('hotcues');
-                                    else setCueStudioModalOpen(true);
-                                }}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 border border-djzinc-750 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0"
-                                title="Preparar Hot Cues 1-8, Beatgrid y primer Downbeat"
-                            >
-                                <span>🎛️</span>
-                                <span>Hot Cues & Grid</span>
-                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]">
-                                    8 Cues
                                 </span>
                             </button>
                         </div>
@@ -8325,19 +8641,17 @@ const AuditWorkspace = ({
                     {/* SEPARADOR VERTICAL */}
                     <div className="w-px bg-djzinc-800 self-stretch my-0.5 shrink-0"></div>
 
-
-
                     {/* BLOQUE 2: EXPORTAR A CABINA & GUARDAR */}
                     <div className="flex flex-col gap-1 shrink-0">
                         <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400">
                             <span className="flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                                <span>Exportar a Cabina & Guardar</span>
+                                <span>Exportar a Cabina & Metadatos</span>
                             </span>
                             <span className="text-[9px] text-gray-500 font-normal">Destinos Oficiales</span>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                            {/* 1. Guardar Metadatos en Ficheros (Primera opción principal) */}
+                            {/* 1. Guardar Metadatos en Ficheros */}
                             <button 
                                 type="button"
                                 onClick={handleGuardarTodoEnFicheros} 
@@ -8349,68 +8663,64 @@ const AuditWorkspace = ({
                                 <span>Guardar Metadatos</span>
                             </button>
 
-                            {/* 2. Rekordbox */}
+                            {/* 2. Rekordbox con Logo Oficial en SVG sin fondo */}
                             <button 
                                 type="button"
                                 onClick={handleExportarRekordboxXml}
                                 disabled={isExporting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-djcyan-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
-                                title="Exportar colección a Rekordbox XML v6 con Hot Cues A-H y Beatgrid"
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-sky-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
+                                title="Rekordbox (.XML) - Exportar colección a Rekordbox XML v6 con Hot Cues A-H y Beatgrid"
                             >
-                                <span>📋</span>
-                                <span>Rekordbox</span>
-                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">.XML</span>
+                                <PlatformRekordboxLogo size={18} />
+                                <span className="bg-djzinc-800 text-sky-300 border border-sky-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">.XML</span>
                             </button>
 
-                            {/* 3. Serato */}
+                            {/* 3. Serato con Logo Oficial en SVG sin fondo */}
                             <button 
                                 type="button"
                                 onClick={handleExportarSeratoCrates}
                                 disabled={isExporting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-djcyan-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
-                                title="Exportar crates oficiales a Serato DJ Pro (~/Music/_Serato_/Subcrates)"
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-cyan-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
+                                title="Serato DJ Pro (.CRATE) - Exportar crates oficiales a Serato DJ Pro (~/Music/_Serato_/Subcrates)"
                             >
-                                <span>💽</span>
-                                <span>Serato</span>
-                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">.CRATE</span>
+                                <PlatformSeratoLogo size={18} />
+                                <span className="bg-djzinc-800 text-cyan-300 border border-cyan-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">.CRATE</span>
                             </button>
 
-                            {/* 4. Traktor */}
+                            {/* 4. Traktor con Logo Oficial en SVG sin fondo */}
                             <button 
                                 type="button"
                                 onClick={handleExportarTraktor}
                                 disabled={isExporting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-yellow-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
-                                title="Exportar colección a Traktor Pro NML con Hot Cues 1-8"
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-yellow-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
+                                title="Traktor Pro (.NML) - Exportar colección a Traktor Pro NML con Hot Cues 1-8"
                             >
-                                <span>⚡</span>
-                                <span>Traktor</span>
-                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">.NML</span>
+                                <PlatformTraktorLogo size={18} />
+                                <span className="bg-djzinc-800 text-yellow-300 border border-yellow-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">.NML</span>
                             </button>
 
-                            {/* 5. VirtualDJ */}
+                            {/* 5. VirtualDJ con Logo Oficial en SVG sin fondo */}
                             <button 
                                 type="button"
                                 onClick={handleExportarVirtualDJ}
                                 disabled={isExporting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-blue-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
-                                title="Exportar lista y tags optimizados para VirtualDJ"
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-orange-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
+                                title="VirtualDJ (.M3U) - Exportar lista y tags optimizados para VirtualDJ"
                             >
-                                <span>🎧</span>
-                                <span>VirtualDJ</span>
-                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">.M3U</span>
+                                <PlatformVirtualDjLogo size={18} />
+                                <span className="bg-djzinc-800 text-orange-300 border border-orange-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">.M3U</span>
                             </button>
 
-                            {/* 6. Pasaporte Universal DJ */}
+                            {/* 6. Todos (Pasaporte Universal) */}
                             <button 
                                 type="button"
                                 onClick={handleSincronizarPasaporteUniversal}
                                 disabled={isExporting || tracks.length === 0}
-                                className="bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/60 text-amber-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
+                                className="bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/60 text-amber-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
                                 title="Exportar de una sola vez a Serato Crates, Rekordbox XML, Traktor NML y VirtualDJ M3U"
                             >
                                 <span>🛂</span>
-                                <span>Pasaporte Universal</span>
+                                <span>Todos</span>
                                 <span className="bg-amber-900/80 text-amber-300 border border-amber-700 px-1.5 py-0.2 rounded text-[9px] font-black">
                                     ALL-IN-1
                                 </span>
@@ -8421,7 +8731,7 @@ const AuditWorkspace = ({
                                 type="button"
                                 onClick={handleExportarXLS}
                                 disabled={isExporting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-emerald-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0"
+                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-emerald-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
                                 title="Generar libro Excel (.xlsx) multidestino con hojas dedicadas para Auditoría, Serato, Rekordbox, Traktor y VirtualDJ"
                             >
                                 <span>📊</span>
@@ -8429,6 +8739,148 @@ const AuditWorkspace = ({
                                 <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">
                                     .XLSX
                                 </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* SEPARADOR VERTICAL */}
+                    <div className="w-px bg-djzinc-800 self-stretch my-0.5 shrink-0"></div>
+
+                    {/* BLOQUE 3: HERRAMIENTAS Y VISTA (FUERA DEL GRUPO DE EXPORTACIÓN) */}
+                    <div className="flex flex-col gap-1 shrink-0 ml-auto">
+                        <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400">
+                            <span>Vista & Herramientas</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 relative">
+                            {/* Selector de Columnas Visibles */}
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setColumnSelectorOpen(prev => !prev)}
+                                    className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                                        columnSelectorOpen 
+                                            ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-600/70 shadow-inner' 
+                                            : 'bg-djzinc-900 text-gray-300 border-djzinc-750 hover:text-white hover:border-djzinc-650'
+                                    }`}
+                                    title="Configurar visibilidad de columnas de la tabla"
+                                >
+                                    <span>⚙️</span>
+                                    <span>Columnas</span>
+                                    <span className="text-[10px] text-djcyan-400 font-mono">
+                                        ({Object.values(visibleColumns).filter(Boolean).length}/24)
+                                    </span>
+                                    <span className="text-[9px]">▾</span>
+                                </button>
+
+                                {columnSelectorOpen && (
+                                    <div className="absolute right-0 top-full mt-2 w-72 bg-[#0c0c14] border border-djzinc-700/80 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2.5 backdrop-blur-md">
+                                        <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
+                                            <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                                                <span>📋</span>
+                                                <span>Columnas Visibles</span>
+                                            </span>
+                                            <button 
+                                                onClick={() => setColumnSelectorOpen(false)}
+                                                className="text-gray-400 hover:text-white text-xs cursor-pointer px-1"
+                                            >✕</button>
+                                        </div>
+
+                                        {/* Presets rápidos */}
+                                        <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                                            <span className="text-gray-400">Presets:</span>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setColumnPreset('all')}
+                                                className="px-2 py-0.5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-djcyan-300 border border-djzinc-700 cursor-pointer"
+                                            >Todas</button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setColumnPreset('dj')}
+                                                className="px-2 py-0.5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-purple-300 border border-djzinc-750 cursor-pointer"
+                                            >DJ Esencial</button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setColumnPreset('audio')}
+                                                className="px-2 py-0.5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-emerald-300 border border-djzinc-750 cursor-pointer"
+                                            >Auditoría</button>
+                                        </div>
+
+                                        {/* Lista de Checkboxes scrollable */}
+                                        <div className="max-h-64 overflow-y-auto pr-1 space-y-1 text-xs font-mono select-none">
+                                            {[
+                                                { key: 'id', label: '# ID & Checkbox' },
+                                                { key: 'waveform', label: 'Waveform Espectral' },
+                                                { key: 'title', label: 'Archivo / Título' },
+                                                { key: 'artist', label: 'Artista' },
+                                                { key: 'genre', label: 'Género' },
+                                                { key: 'subgenre', label: 'Subgénero' },
+                                                { key: 'format', label: 'Formato Audio' },
+                                                { key: 'sample_rate_khz', label: 'Frecuencia (kHz)' },
+                                                { key: 'bitrate_kbps', label: 'Bitrate (kbps)' },
+                                                { key: 'calidad', label: 'Calidad & Master' },
+                                                { key: 'perdida_pct', label: 'Pérdida / Transcode' },
+                                                { key: 'cutoff_khz', label: 'Corte FFT' },
+                                                { key: 'lufs', label: 'LUFS & True Peak' },
+                                                { key: 'duration', label: 'Duración (Time)' },
+                                                { key: 'bpm', label: 'Tempo (BPM)' },
+                                                { key: 'key', label: 'Tonalidad Camelot' },
+                                                { key: 'cues', label: 'Hot Cues 1-8' },
+                                                { key: 'e', label: 'Energía (⚡ %)' },
+                                                { key: 'dance', label: 'Bailabilidad (🕺 %)' },
+                                                { key: 'fase_badge', label: 'Fase DJ / Mood' },
+                                                { key: 'acoustic_role', label: 'Rol Acústico' },
+                                                { key: 'comment', label: 'Comentario Pro' },
+                                                { key: 'status', label: 'Estado Global' },
+                                                { key: 'actions', label: 'Acción Quitar' },
+                                            ].map(col => (
+                                                <label 
+                                                    key={col.key}
+                                                    className="flex items-center justify-between px-2 py-1 rounded hover:bg-djzinc-850/80 cursor-pointer transition-colors"
+                                                >
+                                                    <span className={`text-[11px] ${visibleColumns[col.key] ? 'text-gray-200' : 'text-gray-500'}`}>
+                                                        {col.label}
+                                                    </span>
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={Boolean(visibleColumns[col.key])}
+                                                        onChange={() => toggleColumnVisibility(col.key)}
+                                                        className="accent-djcyan-400 w-3.5 h-3.5 rounded cursor-pointer"
+                                                    />
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Toggle de Métricas HUD */}
+                            <button
+                                type="button"
+                                onClick={toggleMetricsCollapsed}
+                                className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                                    !metricsCollapsed 
+                                        ? 'bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner' 
+                                        : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
+                                }`}
+                                title={!metricsCollapsed ? "Plegar HUD de métricas completas (Tecla M)" : "Desplegar HUD analítico completo (Tecla M)"}
+                            >
+                                <span>▤</span>
+                                <span className="hidden xl:inline">HUD</span>
+                                <kbd className="text-[9px] bg-black/50 px-1 rounded border border-djzinc-700">M</kbd>
+                            </button>
+
+                            {/* Toggle de Inspector */}
+                            <button
+                                onClick={() => setSidebarOpen(prev => !prev)}
+                                className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                                    sidebarOpen 
+                                        ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner' 
+                                        : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
+                                }`}
+                                title={sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}
+                            >
+                                <span>◨</span>
+                                <span className="hidden sm:inline">{t('btn_inspector') || 'Inspector'}</span>
                             </button>
                         </div>
                     </div>
@@ -8448,7 +8900,7 @@ const AuditWorkspace = ({
                                     : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
                             }`}
                         >
-                            <span>① Analizar & Configurar</span>
+                            <span>① Analizar</span>
                             <span className="text-[9px] bg-black/30 px-1 rounded font-black">
                                 {tracks.length}
                             </span>
@@ -8474,9 +8926,45 @@ const AuditWorkspace = ({
                             <>
                                 <button 
                                     type="button"
+                                    onClick={handleExplorar}
+                                    className="h-10 px-3.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
+                                >
+                                    <span>▷</span>
+                                    <span>Cargar biblioteca</span>
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={handleAnadirMas}
+                                    className="h-10 px-3 bg-djzinc-850 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0 active:scale-95"
+                                    title="Añadir más pistas o carpetas"
+                                >
+                                    <span>➕</span>
+                                    <span>Añadir</span>
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => handleCargarDirectorio(resolveAuditTargets())} 
+                                    className="h-10 px-3 bg-djzinc-850 border border-djzinc-750 text-gray-300 font-mono text-xs rounded-xl flex items-center justify-center shrink-0 active:scale-95" 
+                                    title="Recargar"
+                                >
+                                    🔄
+                                </button>
+                                {tracks && tracks.length > 0 && (
+                                    <button 
+                                        type="button" 
+                                        onClick={handleClearAllTracks} 
+                                        className="h-10 px-3 bg-red-950/40 border border-red-800/50 text-red-400 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0 active:scale-95" 
+                                        title="Vaciar lista"
+                                    >
+                                        <span>🗑️</span>
+                                        <span>Vaciar</span>
+                                    </button>
+                                )}
+                                <button 
+                                    type="button"
                                     onClick={() => setBatchModalOpen(true)}
                                     className={`h-10 px-3.5 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 border ${
-                                        batchConfigured ? 'bg-emerald-950/70 border-emerald-600 text-emerald-200' : 'bg-djcyan-500 text-black font-black'
+                                        batchConfigured ? 'bg-emerald-950/70 border-emerald-600 text-emerald-200' : 'bg-djzinc-900 border-djzinc-700 text-white'
                                     }`}
                                 >
                                     <span>⚙️</span>
@@ -8496,13 +8984,6 @@ const AuditWorkspace = ({
                                     <span className="bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]">
                                         {tracks.length}
                                     </span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={() => { if (onNavigateTab) onNavigateTab('hotcues'); else setCueStudioModalOpen(true); }}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-                                >
-                                    <span>🎛️ 8 Cues</span>
                                 </button>
                             </>
                         )}
@@ -8525,47 +9006,57 @@ const AuditWorkspace = ({
                                     className="h-10 px-3.5 bg-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
                                 >
                                     <span>🛂</span>
-                                    <span>Pasaporte DJ</span>
+                                    <span>Todos</span>
                                 </button>
                                 <button 
                                     type="button"
                                     onClick={handleExportarRekordboxXml}
                                     disabled={tracks.length === 0}
                                     className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+                                    title="Rekordbox (.XML)"
                                 >
-                                    <span>📋 Rekordbox</span>
+                                    <PlatformRekordboxLogo size={18} />
+                                    <span className="text-[10px] text-sky-300 font-mono font-bold">.XML</span>
                                 </button>
                                 <button 
                                     type="button"
                                     onClick={handleExportarSeratoCrates}
                                     disabled={tracks.length === 0}
                                     className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+                                    title="Serato DJ Pro (.CRATE)"
                                 >
-                                    <span>💽 Serato</span>
+                                    <PlatformSeratoLogo size={18} />
+                                    <span className="text-[10px] text-cyan-300 font-mono font-bold">.CRATE</span>
                                 </button>
                                 <button 
                                     type="button"
                                     onClick={handleExportarTraktor}
                                     disabled={tracks.length === 0}
                                     className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+                                    title="Traktor Pro (.NML)"
                                 >
-                                    <span>⚡ Traktor</span>
+                                    <PlatformTraktorLogo size={18} />
+                                    <span className="text-[10px] text-yellow-300 font-mono font-bold">.NML</span>
                                 </button>
                                 <button 
                                     type="button"
                                     onClick={handleExportarVirtualDJ}
                                     disabled={tracks.length === 0}
                                     className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+                                    title="VirtualDJ (.M3U)"
                                 >
-                                    <span>🎧 VDJ</span>
+                                    <PlatformVirtualDjLogo size={18} />
+                                    <span className="text-[10px] text-orange-300 font-mono font-bold">.M3U</span>
                                 </button>
                                 <button 
                                     type="button"
                                     onClick={handleExportarXLS}
                                     disabled={tracks.length === 0}
                                     className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+                                    title="Informe Excel (.XLSX)"
                                 >
-                                    <span>📊 Excel</span>
+                                    <span>📊</span>
+                                    <span className="text-[10px] text-emerald-300 font-mono font-bold">.XLSX</span>
                                 </button>
                             </>
                         )}
@@ -9044,532 +9535,783 @@ const AuditWorkspace = ({
                     <table className="w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table">
                         <thead className="sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400">
                             <tr>
-                                <th className="py-2.5 px-2 w-12 text-center">
-                                    <div className="flex items-center justify-center gap-1">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={tracksFiltrados.length > 0 && tracksFiltrados.every(t => selectedAuditIds.has(t.id))}
-                                            onChange={handleToggleSelectAllVisible}
-                                            className="accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded"
-                                            title="Seleccionar / deseleccionar todas las pistas visibles"
-                                        />
-                                        <span onClick={() => handleSortAudit('id')} className="cursor-pointer hover:text-white text-[9px] font-mono">#</span>
-                                        {renderSortArrowAudit('id')}
-                                    </div>
-                                </th>
-                                <th className="py-2.5 px-2 w-28 text-center text-djcyan-400">{t('th_waveform') || 'Waveform'}</th>
-                                <th onClick={() => handleSortAudit('title')} className="py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'Archivo / Título'} {renderSortArrowAudit('title')}</th>
-                                <th onClick={() => handleSortAudit('artist')} className="py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'Artista'} {renderSortArrowAudit('artist')}</th>
-                                <th onClick={() => handleSortAudit('genre')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_genre') || 'Género'} {renderSortArrowAudit('genre')}</th>
-                                <th onClick={() => handleSortAudit('subgenre')} className="py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors">{t('th_subgenre') || 'Subgénero'} {renderSortArrowAudit('subgenre')}</th>
-                                <th onClick={() => handleSortAudit('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'Formato'} {renderSortArrowAudit('format')}</th>
-                                <th onClick={() => handleSortAudit('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'kHz'} {renderSortArrowAudit('sample_rate_khz')}</th>
-                                <th onClick={() => handleSortAudit('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'kbps'} {renderSortArrowAudit('bitrate_kbps')}</th>
-                                <th onClick={() => handleSortAudit('calidad')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_quality') || 'Calidad'} {renderSortArrowAudit('calidad')}</th>
-                                <th onClick={() => handleSortAudit('perdida_pct')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors">{t('th_loss') || 'Pérdida / Compresión'} {renderSortArrowAudit('perdida_pct')}</th>
-                                <th onClick={() => handleSortAudit('cutoff_khz')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_fft') || 'Cert. FFT'} {renderSortArrowAudit('cutoff_khz')}</th>
-                                <th onClick={() => handleSortAudit('lufs')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" title="Sonoridad integrada LUFS (EBU R128) y pico True Peak (dBFS)">{t('th_lufs_peak') || 'LUFS / Peak'} {renderSortArrowAudit('lufs')}</th>
-                                <th onClick={() => handleSortAudit('duration')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_duration') || 'Time'} {renderSortArrowAudit('duration')}</th>
-                                <th onClick={() => handleSortAudit('bpm')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowAudit('bpm')}</th>
-                                <th onClick={() => handleSortAudit('key')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">Key {renderSortArrowAudit('key')}</th>
-                                <th className="py-2.5 px-1.5 text-center">{t('th_cues') || '8 Hot Cues'}</th>
-                                <th onClick={() => handleSortAudit('e')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">⚡ {t('th_energy') || 'Energía'} {renderSortArrowAudit('e')}</th>
-                                <th onClick={() => handleSortAudit('dance')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">🕺 {t('th_dance') || 'Dance'} {renderSortArrowAudit('dance')}</th>
-                                <th onClick={() => handleSortAudit('fase_badge')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_phase') || 'Fase DJ'} {renderSortArrowAudit('fase_badge')}</th>
-                                <th onClick={() => handleSortAudit('acoustic_role')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-MudDY">{t('th_acoustic_role') || 'Rol Acústico & Anti-Muddy'} {renderSortArrowAudit('acoustic_role')}</th>
-                                <th onClick={() => handleSortAudit('comment')} className="py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors">{t('th_comment_pro') || 'Comentario Pro DJ'} {renderSortArrowAudit('comment')}</th>
-                                <th onClick={() => handleSortAudit('status')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_status') || 'Estado'} {renderSortArrowAudit('status')}</th>
-                                <th className="py-2.5 px-2 text-center w-14 text-red-400/80 font-mono" title="Quitar pista del análisis global">{t('th_remove') || 'Quitar'}</th>
+                                {visibleColumns.id && (
+                                    <th className="py-2.5 px-2 w-12 text-center">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={tracksFiltrados.length > 0 && tracksFiltrados.every(t => selectedAuditIds.has(t.id))}
+                                                onChange={handleToggleSelectAllVisible}
+                                                className="accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded"
+                                                title="Seleccionar / deseleccionar todas las pistas visibles"
+                                            />
+                                            <span onClick={() => handleSortAudit('id')} className="cursor-pointer hover:text-white text-[9px] font-mono">#</span>
+                                            {renderSortArrowAudit('id')}
+                                        </div>
+                                    </th>
+                                )}
+                                {visibleColumns.waveform && (
+                                    <th className="py-2.5 px-2 w-28 text-center text-djcyan-400">{t('th_waveform') || 'Waveform'}</th>
+                                )}
+                                {visibleColumns.title && (
+                                    <th onClick={() => handleSortAudit('title')} className="py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'Archivo / Título'} {renderSortArrowAudit('title')}</th>
+                                )}
+                                {visibleColumns.artist && (
+                                    <th onClick={() => handleSortAudit('artist')} className="py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'Artista'} {renderSortArrowAudit('artist')}</th>
+                                )}
+                                {visibleColumns.genre && (
+                                    <th onClick={() => handleSortAudit('genre')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_genre') || 'Género'} {renderSortArrowAudit('genre')}</th>
+                                )}
+                                {visibleColumns.subgenre && (
+                                    <th onClick={() => handleSortAudit('subgenre')} className="py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors">{t('th_subgenre') || 'Subgénero'} {renderSortArrowAudit('subgenre')}</th>
+                                )}
+                                {visibleColumns.format && (
+                                    <th onClick={() => handleSortAudit('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'Formato'} {renderSortArrowAudit('format')}</th>
+                                )}
+                                {visibleColumns.sample_rate_khz && (
+                                    <th onClick={() => handleSortAudit('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'kHz'} {renderSortArrowAudit('sample_rate_khz')}</th>
+                                )}
+                                {visibleColumns.bitrate_kbps && (
+                                    <th onClick={() => handleSortAudit('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'kbps'} {renderSortArrowAudit('bitrate_kbps')}</th>
+                                )}
+                                {visibleColumns.calidad && (
+                                    <th onClick={() => handleSortAudit('calidad')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_quality') || 'Calidad'} {renderSortArrowAudit('calidad')}</th>
+                                )}
+                                {visibleColumns.perdida_pct && (
+                                    <th onClick={() => handleSortAudit('perdida_pct')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors">{t('th_loss') || 'Pérdida / Compresión'} {renderSortArrowAudit('perdida_pct')}</th>
+                                )}
+                                {visibleColumns.cutoff_khz && (
+                                    <th onClick={() => handleSortAudit('cutoff_khz')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_fft') || 'Cert. FFT'} {renderSortArrowAudit('cutoff_khz')}</th>
+                                )}
+                                {visibleColumns.lufs && (
+                                    <th onClick={() => handleSortAudit('lufs')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" title="Sonoridad integrada LUFS (EBU R128) y pico True Peak (dBFS)">{t('th_lufs_peak') || 'LUFS / Peak'} {renderSortArrowAudit('lufs')}</th>
+                                )}
+                                {visibleColumns.duration && (
+                                    <th onClick={() => handleSortAudit('duration')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_duration') || 'Time'} {renderSortArrowAudit('duration')}</th>
+                                )}
+                                {visibleColumns.bpm && (
+                                    <th onClick={() => handleSortAudit('bpm')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowAudit('bpm')}</th>
+                                )}
+                                {visibleColumns.key && (
+                                    <th onClick={() => handleSortAudit('key')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">Key {renderSortArrowAudit('key')}</th>
+                                )}
+                                {visibleColumns.cues && (
+                                    <th className="py-2.5 px-1.5 text-center">{t('th_cues') || '8 Hot Cues'}</th>
+                                )}
+                                {visibleColumns.e && (
+                                    <th onClick={() => handleSortAudit('e')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">⚡ {t('th_energy') || 'Energía'} {renderSortArrowAudit('e')}</th>
+                                )}
+                                {visibleColumns.dance && (
+                                    <th onClick={() => handleSortAudit('dance')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">🕺 {t('th_dance') || 'Dance'} {renderSortArrowAudit('dance')}</th>
+                                )}
+                                {visibleColumns.fase_badge && (
+                                    <th onClick={() => handleSortAudit('fase_badge')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_phase') || 'Fase DJ'} {renderSortArrowAudit('fase_badge')}</th>
+                                )}
+                                {visibleColumns.acoustic_role && (
+                                    <th onClick={() => handleSortAudit('acoustic_role')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-MudDY">{t('th_acoustic_role') || 'Rol Acústico & Anti-Muddy'} {renderSortArrowAudit('acoustic_role')}</th>
+                                )}
+                                {visibleColumns.comment && (
+                                    <th onClick={() => handleSortAudit('comment')} className="py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors">{t('th_comment_pro') || 'Comentario Pro DJ'} {renderSortArrowAudit('comment')}</th>
+                                )}
+                                {visibleColumns.status && (
+                                    <th onClick={() => handleSortAudit('status')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_status') || 'Estado'} {renderSortArrowAudit('status')}</th>
+                                )}
+                                {visibleColumns.actions && (
+                                    <th className="py-2.5 px-2 text-center w-14 text-red-400/80 font-mono" title="Quitar pista del análisis global">{t('th_remove') || 'Quitar'}</th>
+                                )}
                             </tr>
                             <tr className="bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans">
-                                <th className="p-1 text-center font-mono text-[9px] text-gray-500">
-                                    {(filterHeaderSearch || filterHeaderGenre || filterHeaderSubgenre || filterHeaderFormat !== 'ALL' || filterHeaderQuality !== 'ALL' || filterHeaderStatus !== 'ALL' || filterHeaderEnergy !== 'ALL' || filterHeaderDance !== 'ALL') ? (
-                                        <button 
-                                            onClick={() => {
-                                                setFilterHeaderSearch('');
-                                                setFilterHeaderGenre('');
-                                                setFilterHeaderSubgenre('');
-                                                setFilterHeaderFormat('ALL');
-                                                setFilterHeaderQuality('ALL');
-                                                setFilterHeaderStatus('ALL');
-                                                setFilterHeaderEnergy('ALL');
-                                                setFilterHeaderDance('ALL');
-                                            }}
-                                            title="Limpiar filtros de cabecera"
-                                            className="text-amber-400 hover:text-white cursor-pointer"
-                                        >✕</button>
-                                    ) : (lang === 'en' ? 'filter' : 'filtro')}
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1">
-                                    <input 
-                                        type="text" 
-                                        value={filterHeaderSearch} 
-                                        onChange={(e) => setFilterHeaderSearch(e.target.value)} 
-                                        placeholder={t('placeholder_filter_title') || "Filtrar título/archivo..."} 
-                                        className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
-                                    />
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1 text-center">
-                                    <input 
-                                        type="text" 
-                                        value={filterHeaderGenre} 
-                                        onChange={(e) => setFilterHeaderGenre(e.target.value)} 
-                                        placeholder={lang === 'en' ? "Genre..." : "Género..."} 
-                                        className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    />
-                                </th>
-                                <th className="p-1 text-center">
-                                    <input 
-                                        type="text" 
-                                        value={filterHeaderSubgenre} 
-                                        onChange={(e) => setFilterHeaderSubgenre(e.target.value)} 
-                                        placeholder={lang === 'en' ? "Subgenre..." : "Subgénero..."} 
-                                        className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    />
-                                </th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={filterHeaderFormat} 
-                                        onChange={(e) => setFilterHeaderFormat(e.target.value)}
-                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">{t('filter_all_label') || 'Todos'}</option>
-                                        <option value="FLAC">FLAC</option>
-                                        <option value="MP3">MP3</option>
-                                        <option value="WAV">WAV</option>
-                                        <option value="AIFF">AIFF</option>
-                                        <option value="M4A">M4A</option>
-                                    </select>
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={filterHeaderQuality} 
-                                        onChange={(e) => setFilterHeaderQuality(e.target.value)}
-                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todas</option>
-                                        <option value="Hi-Res">Hi-Res</option>
-                                        <option value="Alta">Alta</option>
-                                        <option value="Media">Media</option>
-                                        <option value="Baja">Baja</option>
-                                    </select>
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1"></th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={filterHeaderEnergy} 
-                                        onChange={(e) => setFilterHeaderEnergy(e.target.value)}
-                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todas</option>
-                                        <option value="HIGH">&gt;80% Alta</option>
-                                        <option value="MED">65-80% Media</option>
-                                        <option value="LOW">&lt;65% Baja</option>
-                                    </select>
-                                </th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={filterHeaderDance} 
-                                        onChange={(e) => setFilterHeaderDance(e.target.value)}
-                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todas</option>
-                                        <option value="HIGH">&gt;80% Alta</option>
-                                        <option value="MED">65-80% Media</option>
-                                        <option value="LOW">&lt;65% Baja</option>
-                                    </select>
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={filterHeaderAcousticRole} 
-                                        onChange={(e) => setFilterHeaderAcousticRole(e.target.value)}
-                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[9.5px] text-djcyan-300 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todos Roles</option>
-                                        <option value="Bass Driver">🔴 Bass Driver</option>
-                                        <option value="Vocal / Lead">🟡 Vocal / Lead</option>
-                                        <option value="Percussive Tool">🟢 Percussive</option>
-                                        <option value="Balanced Full-Range">🔵 Balanced</option>
-                                    </select>
-                                </th>
-                                <th className="p-1"></th>
-                                <th className="p-1 text-center">
-                                    <select 
-                                        value={filterHeaderStatus} 
-                                        onChange={(e) => setFilterHeaderStatus(e.target.value)}
-                                        className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-                                    >
-                                        <option value="ALL">Todos</option>
-                                        <option value="LOSSLESS">Lossless</option>
-                                        <option value="MP3">MP3</option>
-                                        <option value="FAKE">FLAC Fake</option>
-                                    </select>
-                                </th>
-                                <th className="p-1"></th>
+                                {visibleColumns.id && (
+                                    <th className="p-1 text-center font-mono text-[9px] text-gray-500">
+                                        {hasActiveHeaderFilters ? (
+                                            <button 
+                                                onClick={handleResetAllHeaderFilters}
+                                                title="Limpiar todos los filtros de cabecera"
+                                                className="text-amber-400 hover:text-white cursor-pointer font-bold px-1 py-0.5 rounded bg-amber-950/60 border border-amber-600/40"
+                                            >✕</button>
+                                        ) : (lang === 'en' ? 'filtro' : 'filtro')}
+                                    </th>
+                                )}
+                                {visibleColumns.waveform && (
+                                    <th className="p-1"></th>
+                                )}
+                                {visibleColumns.title && (
+                                    <th className="p-1">
+                                        <input 
+                                            type="text" 
+                                            value={filterHeaderSearch} 
+                                            onChange={(e) => setFilterHeaderSearch(e.target.value)} 
+                                            placeholder={t('placeholder_filter_title') || "Filtrar título..."} 
+                                            className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
+                                        />
+                                    </th>
+                                )}
+                                {visibleColumns.artist && (
+                                    <th className="p-1">
+                                        <input 
+                                            type="text" 
+                                            value={filterHeaderArtist} 
+                                            onChange={(e) => setFilterHeaderArtist(e.target.value)} 
+                                            placeholder="Artista..." 
+                                            className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-sans"
+                                        />
+                                    </th>
+                                )}
+                                {visibleColumns.genre && (
+                                    <th className="p-1 text-center">
+                                        <input 
+                                            type="text" 
+                                            value={filterHeaderGenre} 
+                                            onChange={(e) => setFilterHeaderGenre(e.target.value)} 
+                                            placeholder={lang === 'en' ? "Genre..." : "Género..."} 
+                                            className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        />
+                                    </th>
+                                )}
+                                {visibleColumns.subgenre && (
+                                    <th className="p-1 text-center">
+                                        <input 
+                                            type="text" 
+                                            value={filterHeaderSubgenre} 
+                                            onChange={(e) => setFilterHeaderSubgenre(e.target.value)} 
+                                            placeholder={lang === 'en' ? "Subgenre..." : "Subgénero..."} 
+                                            className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        />
+                                    </th>
+                                )}
+                                {visibleColumns.format && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderFormat} 
+                                            onChange={(e) => setFilterHeaderFormat(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">{t('filter_all_label') || 'Todos'}</option>
+                                            <option value="FLAC">FLAC</option>
+                                            <option value="MP3">MP3</option>
+                                            <option value="WAV">WAV</option>
+                                            <option value="AIFF">AIFF</option>
+                                            <option value="M4A">M4A</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.sample_rate_khz && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderKhz} 
+                                            onChange={(e) => setFilterHeaderKhz(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">kHz</option>
+                                            <option value="44.1">44.1</option>
+                                            <option value="48">48</option>
+                                            <option value="96">96</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.bitrate_kbps && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderKbps} 
+                                            onChange={(e) => setFilterHeaderKbps(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">kbps</option>
+                                            <option value="320">≥320k</option>
+                                            <option value="LOSSLESS">Lossless</option>
+                                            <option value="LOW">&lt;320k</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.calidad && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderQuality} 
+                                            onChange={(e) => setFilterHeaderQuality(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Todas</option>
+                                            <option value="Hi-Res">Hi-Res</option>
+                                            <option value="Alta">Alta</option>
+                                            <option value="Media">Media</option>
+                                            <option value="Baja">Baja</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.perdida_pct && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderLoss} 
+                                            onChange={(e) => setFilterHeaderLoss(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Pérdida</option>
+                                            <option value="SIN_PERDIDA">Sin Pérdida</option>
+                                            <option value="CON_PERDIDA">Transcode</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.cutoff_khz && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderCutoff} 
+                                            onChange={(e) => setFilterHeaderCutoff(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">FFT</option>
+                                            <option value="PASS">Pass (≥20k)</option>
+                                            <option value="CUT">Corte (&lt;20k)</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.lufs && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderLufs} 
+                                            onChange={(e) => setFilterHeaderLufs(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">LUFS</option>
+                                            <option value="CLIP">⚠️ CLIP</option>
+                                            <option value="LOUD">&gt; -7 dB</option>
+                                            <option value="QUIET">&lt; -14 dB</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.duration && (
+                                    <th className="p-1 text-center">
+                                        <input 
+                                            type="text" 
+                                            value={filterHeaderDuration} 
+                                            onChange={(e) => setFilterHeaderDuration(e.target.value)} 
+                                            placeholder="05:..." 
+                                            className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono text-center"
+                                        />
+                                    </th>
+                                )}
+                                {visibleColumns.bpm && (
+                                    <th className="p-1 text-center">
+                                        <input 
+                                            type="text" 
+                                            value={filterHeaderBpm} 
+                                            onChange={(e) => setFilterHeaderBpm(e.target.value)} 
+                                            placeholder="128..." 
+                                            className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono text-center"
+                                        />
+                                    </th>
+                                )}
+                                {visibleColumns.key && (
+                                    <th className="p-1 text-center">
+                                        <input 
+                                            type="text" 
+                                            value={filterHeaderKey} 
+                                            onChange={(e) => setFilterHeaderKey(e.target.value)} 
+                                            placeholder="8A..." 
+                                            className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono text-center"
+                                        />
+                                    </th>
+                                )}
+                                {visibleColumns.cues && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderCues} 
+                                            onChange={(e) => setFilterHeaderCues(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Cues</option>
+                                            <option value="YES">Con Cues</option>
+                                            <option value="NO">Sin Cues</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.e && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderEnergy} 
+                                            onChange={(e) => setFilterHeaderEnergy(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">⚡</option>
+                                            <option value="HIGH">&gt;80%</option>
+                                            <option value="MED">65-80%</option>
+                                            <option value="LOW">&lt;65%</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.dance && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderDance} 
+                                            onChange={(e) => setFilterHeaderDance(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">🕺</option>
+                                            <option value="HIGH">&gt;80%</option>
+                                            <option value="MED">65-80%</option>
+                                            <option value="LOW">&lt;65%</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.fase_badge && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderPhase} 
+                                            onChange={(e) => setFilterHeaderPhase(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Fase</option>
+                                            <option value="CAÑA">🔥 Caña</option>
+                                            <option value="BUILD-UP">🚀 Build</option>
+                                            <option value="WARM-UP">🎧 Warm</option>
+                                            <option value="CIERRE">🌌 Cierre</option>
+                                            <option value="CALMA">☕ Calma</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.acoustic_role && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderAcousticRole} 
+                                            onChange={(e) => setFilterHeaderAcousticRole(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[9.5px] text-djcyan-300 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Todos Roles</option>
+                                            <option value="Bass Driver">🔴 Bass</option>
+                                            <option value="Vocal / Lead">🟡 Vocal</option>
+                                            <option value="Percussive Tool">🟢 Perc.</option>
+                                            <option value="Balanced Full-Range">🔵 Balanced</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.comment && (
+                                    <th className="p-1">
+                                        <input 
+                                            type="text" 
+                                            value={filterHeaderComment} 
+                                            onChange={(e) => setFilterHeaderComment(e.target.value)} 
+                                            placeholder="Comentario..." 
+                                            className="w-full bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        />
+                                    </th>
+                                )}
+                                {visibleColumns.status && (
+                                    <th className="p-1 text-center">
+                                        <select 
+                                            value={filterHeaderStatus} 
+                                            onChange={(e) => setFilterHeaderStatus(e.target.value)}
+                                            className="bg-djzinc-900 border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+                                        >
+                                            <option value="ALL">Todos</option>
+                                            <option value="LOSSLESS">Lossless</option>
+                                            <option value="MP3">MP3</option>
+                                            <option value="FAKE">FLAC Fake</option>
+                                        </select>
+                                    </th>
+                                )}
+                                {visibleColumns.actions && (
+                                    <th className="p-1"></th>
+                                )}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracksFiltrados.length === 0 && !isAuditing && (
                                 <tr>
-                                    <td colSpan="23" className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4">
+                                    <td colSpan={Math.max(1, Object.values(visibleColumns).filter(Boolean).length)} className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4">
                                         No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".
                                     </td>
                                 </tr>
                             )}
                             {/* PERF: Virtualización — espaciador superior */}
-                            {virtualPaddingTop > 0 && <tr aria-hidden="true" style={{ height: virtualPaddingTop }}><td /></tr>}
+                            {virtualPaddingTop > 0 && <tr aria-hidden="true" style={{ height: virtualPaddingTop }}><td colSpan={Math.max(1, Object.values(visibleColumns).filter(Boolean).length)} /></tr>}
                             {virtualRows.map((row, i) => {
                                 const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
                                 const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : (row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null)));
                                 const isFake = Boolean(row.es_fake || (row.format === 'FLAC' && String(row.status || '').includes('Fake')));
                                 return (
                                     <tr key={row.id} onClick={() => { setSelectedTrack(row.id); setSidebarOpen(true); if (onPlayTrack) onPlayTrack(row, 0, false); }} className={`cursor-pointer select-none transition-colors ${selectedTrack === row.id ? 'bg-djcyan-950/40 border-l-2 border-djcyan-400' : 'hover:bg-djzinc-850/40'}`}>
-                                        <td className="py-2 px-2 text-center" onClick={(e) => e.stopPropagation()}>
-                                            <div className="flex items-center justify-center gap-1.5">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={selectedAuditIds.has(row.id)}
-                                                    onChange={(e) => handleToggleSelectRow(row.id, e)}
-                                                    className="accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded"
-                                                />
-                                                <span className="text-djzinc-500 font-mono text-[10px] w-4 text-right">{row.id}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-2 px-2 text-center">
-                                            <TableHarmonicWaveform 
-                                                track={row} 
-                                                duration={row.duration || '05:00'} 
-                                                onPlayTrack={onPlayTrack} 
-                                                onTogglePlay={onTogglePlay} 
-                                                isCurrentPlaying={isRowPlaying} 
-                                                playProgress={isRowPlaying ? playProgress : 0} 
-                                            />
-                                        </td>
-                                        <td className="py-2 px-3">
-                                            <div className="flex items-center gap-3">
-                                                <img 
-                                                    src={coverUrl} 
-                                                    className="w-9 h-9 rounded bg-djzinc-800 object-cover shrink-0 border border-djzinc-700 shadow-sm" 
-                                                    alt="cover" 
-                                                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                                                />
-                                                <div className="flex flex-col min-w-0 text-left">
-                                                    <span className="font-semibold text-djcyan-400 text-xs truncate max-w-[210px] flex items-center gap-1.5" title={row.t || row.title || row.f}>
-                                                        <span className="truncate">{row.t || row.title || row.f || 'Desconocido'}</span>
-                                                        {row.version_type && row.version_type !== 'standard' && (
-                                                            <span className="px-1 py-0.2 rounded text-[8px] font-mono font-black uppercase bg-purple-950 text-purple-300 border border-purple-700/60 shrink-0">
-                                                                {row.version_type}
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                    <span className="text-[10px] text-gray-500 font-mono truncate max-w-[210px]" title={row.f}>
-                                                        {row.f || ''}
-                                                    </span>
+                                        {visibleColumns.id && (
+                                            <td className="py-2 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={selectedAuditIds.has(row.id)}
+                                                        onChange={(e) => handleToggleSelectRow(row.id, e)}
+                                                        className="accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded"
+                                                    />
+                                                    <span className="text-djzinc-500 font-mono text-[10px] w-4 text-right">{row.id}</span>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-2 px-2 text-gray-300 truncate max-w-[120px]" title={row.a || row.artist}>{row.a || row.artist}</td>
+                                            </td>
+                                        )}
+                                        {visibleColumns.waveform && (
+                                            <td className="py-2 px-2 text-center">
+                                                <TableHarmonicWaveform 
+                                                    track={row} 
+                                                    duration={row.duration || '05:00'} 
+                                                    onPlayTrack={onPlayTrack} 
+                                                    onTogglePlay={onTogglePlay} 
+                                                    isCurrentPlaying={isRowPlaying} 
+                                                    playProgress={isRowPlaying ? playProgress : 0} 
+                                                />
+                                            </td>
+                                        )}
+                                        {visibleColumns.title && (
+                                            <td className="py-2 px-3">
+                                                <div className="flex items-center gap-3">
+                                                    <img 
+                                                        src={coverUrl} 
+                                                        className="w-9 h-9 rounded bg-djzinc-800 object-cover shrink-0 border border-djzinc-700 shadow-sm" 
+                                                        alt="cover" 
+                                                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
+                                                    />
+                                                    <div className="flex flex-col min-w-0 text-left">
+                                                        <span className="font-semibold text-djcyan-400 text-xs truncate max-w-[210px] flex items-center gap-1.5" title={row.t || row.title || row.f}>
+                                                            <span className="truncate">{row.t || row.title || row.f || 'Desconocido'}</span>
+                                                            {row.version_type && row.version_type !== 'standard' && (
+                                                                <span className="px-1 py-0.2 rounded text-[8px] font-mono font-black uppercase bg-purple-950 text-purple-300 border border-purple-700/60 shrink-0">
+                                                                    {row.version_type}
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-500 font-mono truncate max-w-[210px]" title={row.f}>
+                                                            {row.f || ''}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        )}
+                                        {visibleColumns.artist && (
+                                            <td className="py-2 px-2 text-gray-300 truncate max-w-[120px]" title={row.a || row.artist}>{row.a || row.artist}</td>
+                                        )}
 
                                         {/* GÉNERO */}
-                                        <td className="py-2 px-2 text-center">
-                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[95px] inline-block shadow-sm" title={row.genre || 'House'}>
-                                                {row.genre || 'House'}
-                                            </span>
-                                        </td>
+                                        {visibleColumns.genre && (
+                                            <td className="py-2 px-2 text-center">
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[95px] inline-block shadow-sm" title={row.genre || 'House'}>
+                                                    {row.genre || 'House'}
+                                                </span>
+                                            </td>
+                                        )}
 
                                         {/* SUBGÉNERO */}
-                                        <td className="py-2 px-2 text-center">
-                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block" title={row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}>
-                                                {row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}
-                                            </span>
-                                        </td>
+                                        {visibleColumns.subgenre && (
+                                            <td className="py-2 px-2 text-center">
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block" title={row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}>
+                                                    {row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}
+                                                </span>
+                                            </td>
+                                        )}
 
                                         {/* FORMATO */}
-                                        <td className="py-2 px-2 text-center">
-                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-djcyan-400 border border-djzinc-750">
-                                                {row.format || (row.f ? row.f.split('.').pop().toUpperCase() : 'FLAC')}
-                                            </span>
-                                        </td>
+                                        {visibleColumns.format && (
+                                            <td className="py-2 px-2 text-center">
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-djcyan-400 border border-djzinc-750">
+                                                    {row.format || (row.f ? row.f.split('.').pop().toUpperCase() : 'FLAC')}
+                                                </span>
+                                            </td>
+                                        )}
 
                                         {/* KHZ */}
-                                        <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
-                                            {row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : '44.1 kHz'}
-                                        </td>
+                                        {visibleColumns.sample_rate_khz && (
+                                            <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
+                                                {row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : '44.1 kHz'}
+                                            </td>
+                                        )}
 
                                         {/* KBPS */}
-                                        <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
-                                            {row.bitrate_kbps ? `${row.bitrate_kbps} kbps` : (row.format === 'MP3' ? '320 kbps' : '1062 kbps')}
-                                        </td>
+                                        {visibleColumns.bitrate_kbps && (
+                                            <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
+                                                {row.bitrate_kbps ? `${row.bitrate_kbps} kbps` : (row.format === 'MP3' ? '320 kbps' : '1062 kbps')}
+                                            </td>
+                                        )}
 
                                         {/* CALIDAD */}
-                                        <td className="py-2 px-2 text-center">
-                                            <div className="flex flex-col items-center justify-center gap-1">
-                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
-                                                    isFake ? 'bg-red-950 text-red-400 border-red-800' :
-                                                    (String(row.calidad || '').includes('Alta') || String(row.calidad || '').includes('Hi-Res')) ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800' :
-                                                    String(row.calidad || '').includes('Media') ? 'bg-amber-950/80 text-amber-400 border-amber-800' :
-                                                    (row.calidad && row.calidad !== 'Pendiente Auditoría') ? 'bg-red-950/80 text-red-400 border-red-800' :
-                                                    'bg-djzinc-850 text-gray-400 border-djzinc-750'
-                                                }`}>
-                                                    {row.calidad || (isFake ? 'Baja' : 'Alta')}
-                                                </span>
-                                                {isFlacUpgradeCandidate(row) ? (
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleBuscarReemplazosSpotify([row]);
-                                                        }}
-                                                        className="px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black bg-gradient-to-r from-cyan-950 to-purple-950 hover:from-cyan-900 hover:to-purple-900 text-cyan-300 border border-cyan-500/70 cursor-pointer shadow-sm flex items-center justify-center gap-1 transition-all active:scale-95"
-                                                        title="FLAC no cumple estándares lossless o es de calidad media/fake. Buscar master oficial en Spotify (SuperFLAC)"
-                                                    >
-                                                        <span>💎</span>
-                                                        <span>SuperFLAC</span>
-                                                    </button>
-                                                ) : isBadQualityTrack(row) ? (
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleBuscarReemplazosSpotify([row]);
-                                                        }}
-                                                        className="px-1.5 py-0.5 rounded text-[8px] font-mono font-black bg-amber-950/90 hover:bg-amber-900 text-amber-300 border border-amber-600/70 cursor-pointer shadow flex items-center justify-center gap-1 transition-all active:scale-95"
-                                                        title="Buscar versión oficial en Spotify Ingest para sustituir este track"
-                                                    >
-                                                        <span>🔄</span>
-                                                        <span>Spotify HD</span>
-                                                    </button>
-                                                ) : null}
-                                            </div>
-                                        </td>
+                                        {visibleColumns.calidad && (
+                                            <td className="py-2 px-2 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-1">
+                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
+                                                        isFake ? 'bg-red-950 text-red-400 border-red-800' :
+                                                        (String(row.calidad || '').includes('Alta') || String(row.calidad || '').includes('Hi-Res')) ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800' :
+                                                        String(row.calidad || '').includes('Media') ? 'bg-amber-950/80 text-amber-400 border-amber-800' :
+                                                        (row.calidad && row.calidad !== 'Pendiente Auditoría') ? 'bg-red-950/80 text-red-400 border-red-800' :
+                                                        'bg-djzinc-850 text-gray-400 border-djzinc-750'
+                                                    }`}>
+                                                        {row.calidad || (isFake ? 'Baja' : 'Alta')}
+                                                    </span>
+                                                    {isFlacUpgradeCandidate(row) ? (
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleBuscarReemplazosSpotify([row]);
+                                                            }}
+                                                            className="px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black bg-gradient-to-r from-cyan-950 to-purple-950 hover:from-cyan-900 hover:to-purple-900 text-cyan-300 border border-cyan-500/70 cursor-pointer shadow-sm flex items-center justify-center gap-1 transition-all active:scale-95"
+                                                            title="FLAC no cumple estándares lossless o es de calidad media/fake. Buscar master oficial en Spotify (SuperFLAC)"
+                                                        >
+                                                            <span>💎</span>
+                                                            <span>SuperFLAC</span>
+                                                        </button>
+                                                    ) : isBadQualityTrack(row) ? (
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleBuscarReemplazosSpotify([row]);
+                                                            }}
+                                                            className="px-1.5 py-0.5 rounded text-[8px] font-mono font-black bg-amber-950/90 hover:bg-amber-900 text-amber-300 border border-amber-600/70 cursor-pointer shadow flex items-center justify-center gap-1 transition-all active:scale-95"
+                                                            title="Buscar versión oficial en Spotify Ingest para sustituir este track"
+                                                        >
+                                                            <span>🔄</span>
+                                                            <span>Spotify HD</span>
+                                                        </button>
+                                                    ) : null}
+                                                </div>
+                                            </td>
+                                        )}
 
                                         {/* PÉRDIDA / COMPRESIÓN */}
-                                        <td className="py-2 px-3 text-center">
-                                            {isFake ? (
-                                                <span className="text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800" title={`Corte espectral a ${row.cutoff_khz || '--'}kHz`}>
-                                                    ⚠️ Transcode ({row.perdida_pct || 0}%)
-                                                </span>
-                                            ) : row.perdida === 'Sin Pérdida' ? (
-                                                <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60">
-                                                    Sin Pérdida
-                                                </span>
-                                            ) : (
-                                                <span className="text-[10px] font-mono text-gray-300">
-                                                    {row.perdida || 'Sin auditar'}
-                                                </span>
-                                            )}
-                                        </td>
+                                        {visibleColumns.perdida_pct && (
+                                            <td className="py-2 px-3 text-center">
+                                                {isFake ? (
+                                                    <span className="text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800" title={`Corte espectral a ${row.cutoff_khz || '--'}kHz`}>
+                                                        ⚠️ Transcode ({row.perdida_pct || 0}%)
+                                                    </span>
+                                                ) : row.perdida === 'Sin Pérdida' ? (
+                                                    <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60">
+                                                        Sin Pérdida
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-mono text-gray-300">
+                                                        {row.perdida || 'Sin auditar'}
+                                                    </span>
+                                                )}
+                                            </td>
+                                        )}
 
                                         {/* CERT. FFT */}
-                                        <td className="py-2 px-1.5 text-center">
-                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${isFake ? 'bg-red-950 text-red-400 border-red-800' : 'bg-djgreen-950/80 text-djgreen-400 border-djgreen-800'}`}>
-                                                {row.cutoff_khz ? `${row.cutoff_khz}kHz` : 'PASS'}
-                                            </span>
-                                        </td>
+                                        {visibleColumns.cutoff_khz && (
+                                            <td className="py-2 px-1.5 text-center">
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${isFake ? 'bg-red-950 text-red-400 border-red-800' : 'bg-djgreen-950/80 text-djgreen-400 border-djgreen-800'}`}>
+                                                    {row.cutoff_khz ? `${row.cutoff_khz}kHz` : 'PASS'}
+                                                </span>
+                                            </td>
+                                        )}
 
                                         {/* LUFS & TRUE PEAK */}
-                                        <td className="py-2 px-1.5 text-center font-mono">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <span className={`text-[10px] font-bold ${row.lufs > -7 ? 'text-amber-400' : (row.lufs && row.lufs <= -14) ? 'text-cyan-400' : 'text-emerald-400'}`}>
-                                                    {row.lufs !== undefined ? `${row.lufs} LUFS` : '-9.0 LUFS'}
-                                                </span>
-                                                <span className={`text-[9px] ${row.clipping ? 'text-red-400 font-black animate-pulse' : 'text-gray-500'}`} title={row.clipping ? 'Clipping detectado: pico real supera 0.0 dBFS' : 'Pico inter-sample en rango'}>
-                                                    {row.clipping ? '⚠️ CLIP' : `${row.true_peak !== undefined ? (row.true_peak > 0 ? `+${row.true_peak}` : row.true_peak) : '-0.1'}dB`}
-                                                </span>
-                                            </div>
-                                        </td>
+                                        {visibleColumns.lufs && (
+                                            <td className="py-2 px-1.5 text-center font-mono">
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <span className={`text-[10px] font-bold ${row.lufs > -7 ? 'text-amber-400' : (row.lufs && row.lufs <= -14) ? 'text-cyan-400' : 'text-emerald-400'}`}>
+                                                        {row.lufs !== undefined ? `${row.lufs} LUFS` : '-9.0 LUFS'}
+                                                    </span>
+                                                    <span className={`text-[9px] ${row.clipping ? 'text-red-400 font-black animate-pulse' : 'text-gray-500'}`} title={row.clipping ? 'Clipping detectado: pico real supera 0.0 dBFS' : 'Pico inter-sample en rango'}>
+                                                        {row.clipping ? '⚠️ CLIP' : `${row.true_peak !== undefined ? (row.true_peak > 0 ? `+${row.true_peak}` : row.true_peak) : '-0.1'}dB`}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        )}
 
-                                        <td className="py-2 px-1.5 text-center text-gray-400 font-mono">{row.duration}</td>
-                                        <td className="py-2 px-1.5 text-center"><span className="bg-djzinc-850 text-gray-200 px-1.5 py-0.5 rounded font-mono border border-djzinc-750">{row.b}</span></td>
-                                        <td className="py-2 px-1.5 text-center">
-                                            <span className="px-1.5 py-0.5 rounded font-mono font-bold bg-djcyan-950 text-djcyan-400 border border-djcyan-800/50" title={getHarmonicKeyDisplay(row.k)}>
-                                                {getHarmonicKeyDisplay(row.k)}
-                                            </span>
-                                        </td>
-                                        <td className="py-2 px-1.5 text-center">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedTrack(row.id);
-                                                    if (onNavigateTab) {
-                                                        onNavigateTab('hotcues');
-                                                    } else {
-                                                        setCueStudioModalOpen(true);
-                                                    }
-                                                }}
-                                                className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-pink-950/80 hover:bg-pink-900 text-pink-300 border border-pink-800/60 transition-all shadow active:scale-95 cursor-pointer"
-                                                title="Abrir Estudio de Hot Cues a pantalla completa con reproductor"
-                                            >
-                                                🎛️ 8 Cues
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (onAddTrackToSet) {
-                                                        onAddTrackToSet(row);
-                                                    }
-                                                }}
-                                                className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-800/60 transition-all shadow active:scale-95 cursor-pointer ml-1"
-                                                title="Añadir pista a Set-Builder & Energy Flow Canvas"
-                                            >
-                                                ➕ Set
-                                            </button>
-                                        </td>
+                                        {visibleColumns.duration && (
+                                            <td className="py-2 px-1.5 text-center text-gray-400 font-mono">{row.duration}</td>
+                                        )}
+                                        {visibleColumns.bpm && (
+                                            <td className="py-2 px-1.5 text-center"><span className="bg-djzinc-850 text-gray-200 px-1.5 py-0.5 rounded font-mono border border-djzinc-750">{row.b}</span></td>
+                                        )}
+                                        {visibleColumns.key && (
+                                            <td className="py-2 px-1.5 text-center">
+                                                <span className="px-1.5 py-0.5 rounded font-mono font-bold bg-djcyan-950 text-djcyan-400 border border-djcyan-800/50" title={getHarmonicKeyDisplay(row.k)}>
+                                                    {getHarmonicKeyDisplay(row.k)}
+                                                </span>
+                                            </td>
+                                        )}
+                                        {visibleColumns.cues && (
+                                            <td className="py-2 px-1.5 text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTrack(row.id);
+                                                        if (onNavigateTab) {
+                                                            onNavigateTab('hotcues');
+                                                        } else {
+                                                            setCueStudioModalOpen(true);
+                                                        }
+                                                    }}
+                                                    className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-pink-950/80 hover:bg-pink-900 text-pink-300 border border-pink-800/60 transition-all shadow active:scale-95 cursor-pointer"
+                                                    title="Abrir Estudio de Hot Cues a pantalla completa con reproductor"
+                                                >
+                                                    🎛️ 8 Cues
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (onAddTrackToSet) {
+                                                            onAddTrackToSet(row);
+                                                        }
+                                                    }}
+                                                    className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-800/60 transition-all shadow active:scale-95 cursor-pointer ml-1"
+                                                    title="Añadir pista a Set-Builder & Energy Flow Canvas"
+                                                >
+                                                    ➕ Set
+                                                </button>
+                                            </td>
+                                        )}
 
                                         {/* ENERGÍA */}
-                                        <td className="py-2 px-2 text-center">
-                                            <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
-                                                <div className="flex items-center justify-between w-full text-[9px] font-mono">
-                                                    <span className="text-gray-400">⚡</span>
-                                                    <span className={`font-bold ${row.e >= 82 ? 'text-red-400' : row.e >= 68 ? 'text-amber-400' : 'text-djcyan-400'}`}>{row.e || 80}%</span>
+                                        {visibleColumns.e && (
+                                            <td className="py-2 px-2 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                    <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                        <span className="text-gray-400">⚡</span>
+                                                        <span className={`font-bold ${row.e >= 82 ? 'text-red-400' : row.e >= 68 ? 'text-amber-400' : 'text-djcyan-400'}`}>{row.e || 80}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                        <div 
+                                                            className={`h-full rounded-full ${row.e >= 82 ? 'bg-gradient-to-r from-amber-500 to-red-500' : row.e >= 68 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 'bg-gradient-to-r from-cyan-400 to-blue-500'}`} 
+                                                            style={{ width: `${Math.min(100, Math.max(10, row.e || 80))}%` }}
+                                                        ></div>
+                                                    </div>
                                                 </div>
-                                                <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
-                                                    <div 
-                                                        className={`h-full rounded-full ${row.e >= 82 ? 'bg-gradient-to-r from-amber-500 to-red-500' : row.e >= 68 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 'bg-gradient-to-r from-cyan-400 to-blue-500'}`} 
-                                                        style={{ width: `${Math.min(100, Math.max(10, row.e || 80))}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        </td>
+                                            </td>
+                                        )}
 
                                         {/* DANCEABILITY */}
-                                        <td className="py-2 px-2 text-center">
-                                            <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
-                                                <div className="flex items-center justify-between w-full text-[9px] font-mono">
-                                                    <span className="text-gray-400">🕺</span>
-                                                    <span className="font-bold text-purple-300">{row.dance || row.danceability || 80}%</span>
+                                        {visibleColumns.dance && (
+                                            <td className="py-2 px-2 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                    <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                        <span className="text-gray-400">🕺</span>
+                                                        <span className="font-bold text-purple-300">{row.dance || row.danceability || 80}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                        <div 
+                                                            className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" 
+                                                            style={{ width: `${Math.min(100, Math.max(10, row.dance || row.danceability || 80))}%` }}
+                                                        ></div>
+                                                    </div>
                                                 </div>
-                                                <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
-                                                    <div 
-                                                        className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" 
-                                                        style={{ width: `${Math.min(100, Math.max(10, row.dance || row.danceability || 80))}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        </td>
+                                            </td>
+                                        )}
 
                                         {/* FASE DJ / MOOD */}
-                                        <td className="py-2 px-2 text-center">
-                                            {(() => {
-                                                const badge = row.fase_badge || (row.e >= 82 ? 'CAÑA' : row.e >= 68 ? 'BUILD-UP' : (row.bpm && parseFloat(row.bpm) < 118 ? 'CALMA' : 'WARM-UP'));
-                                                const colorMap = {
-                                                    'CAÑA': 'bg-red-950/80 text-red-300 border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.3)]',
-                                                    'BUILD-UP': 'bg-amber-950/80 text-amber-300 border-amber-700',
-                                                    'WARM-UP': 'bg-cyan-950/80 text-cyan-300 border-cyan-700',
-                                                    'CIERRE': 'bg-purple-950/80 text-purple-300 border-purple-700',
-                                                    'CALMA': 'bg-teal-950/80 text-teal-300 border-teal-700'
-                                                };
-                                                const iconMap = {
-                                                    'CAÑA': '🔥',
-                                                    'BUILD-UP': '🚀',
-                                                    'WARM-UP': '🎧',
-                                                    'CIERRE': '🌌',
-                                                    'CALMA': '☕'
-                                                };
-                                                return (
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold border inline-flex items-center gap-1 ${colorMap[badge] || 'bg-djzinc-800 text-gray-300 border-djzinc-700'}`} title={row.fase_dj || row.recomendacion_dj || row.mood}>
-                                                        <span>{iconMap[badge] || '🎵'}</span>
-                                                        <span>{badge}</span>
-                                                    </span>
-                                                );
-                                            })()}
-                                        </td>
+                                        {visibleColumns.fase_badge && (
+                                            <td className="py-2 px-2 text-center">
+                                                {(() => {
+                                                    const badge = row.fase_badge || (row.e >= 82 ? 'CAÑA' : row.e >= 68 ? 'BUILD-UP' : (row.bpm && parseFloat(row.bpm) < 118 ? 'CALMA' : 'WARM-UP'));
+                                                    const colorMap = {
+                                                        'CAÑA': 'bg-red-950/80 text-red-300 border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.3)]',
+                                                        'BUILD-UP': 'bg-amber-950/80 text-amber-300 border-amber-700',
+                                                        'WARM-UP': 'bg-cyan-950/80 text-cyan-300 border-cyan-700',
+                                                        'CIERRE': 'bg-purple-950/80 text-purple-300 border-purple-700',
+                                                        'CALMA': 'bg-teal-950/80 text-teal-300 border-teal-700'
+                                                    };
+                                                    const iconMap = {
+                                                        'CAÑA': '🔥',
+                                                        'BUILD-UP': '🚀',
+                                                        'WARM-UP': '🎧',
+                                                        'CIERRE': '🌌',
+                                                        'CALMA': '☕'
+                                                    };
+                                                    return (
+                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold border inline-flex items-center gap-1 ${colorMap[badge] || 'bg-djzinc-800 text-gray-300 border-djzinc-700'}`} title={row.fase_dj || row.recomendacion_dj || row.mood}>
+                                                            <span>{iconMap[badge] || '🎵'}</span>
+                                                            <span>{badge}</span>
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </td>
+                                        )}
 
                                         {/* ROL ACÚSTICO & ANTI-MUDDY */}
-                                        <td className="py-2 px-2 text-center">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <span className={`px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${
-                                                    row.acoustic_role === 'Bass Driver' 
-                                                        ? 'bg-rose-950/80 text-rose-300 border-rose-700/80' 
-                                                        : row.acoustic_role === 'Vocal / Lead'
-                                                            ? 'bg-amber-950/80 text-amber-300 border-amber-700/80'
-                                                            : row.acoustic_role === 'Percussive Tool'
-                                                                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/80'
-                                                                : 'bg-djzinc-850 text-gray-300 border-djzinc-700'
-                                                }`} title={`Ratio Espectral: Low ${row.low_ratio || 33}% | Mid ${row.mid_ratio || 33}% | High ${row.high_ratio || 34}%`}>
-                                                    {row.acoustic_role === 'Bass Driver' ? '🔴 Bass Driver' : row.acoustic_role === 'Vocal / Lead' ? '🟡 Vocal / Lead' : row.acoustic_role === 'Percussive Tool' ? '🟢 Percussive' : '🔵 Balanced'}
-                                                </span>
+                                        {visibleColumns.acoustic_role && (
+                                            <td className="py-2 px-2 text-center">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <span className={`px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${
+                                                        row.acoustic_role === 'Bass Driver' 
+                                                            ? 'bg-rose-950/80 text-rose-300 border-rose-700/80' 
+                                                            : row.acoustic_role === 'Vocal / Lead'
+                                                                ? 'bg-amber-950/80 text-amber-300 border-amber-700/80'
+                                                                : row.acoustic_role === 'Percussive Tool'
+                                                                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/80'
+                                                                    : 'bg-djzinc-850 text-gray-300 border-djzinc-700'
+                                                    }`} title={`Ratio Espectral: Low ${row.low_ratio || 33}% | Mid ${row.mid_ratio || 33}% | High ${row.high_ratio || 34}%`}>
+                                                        {row.acoustic_role === 'Bass Driver' ? '🔴 Bass Driver' : row.acoustic_role === 'Vocal / Lead' ? '🟡 Vocal / Lead' : row.acoustic_role === 'Percussive Tool' ? '🟢 Percussive' : '🔵 Balanced'}
+                                                    </span>
 
-                                                {/* Indicador Anti-Muddy dinámico frente a pista seleccionada */}
-                                                {currentTrack && String(currentTrack.id) !== String(row.id) && (
-                                                    (() => {
-                                                        const isCurBass = (currentTrack.low_ratio || 33) >= 45 || currentTrack.acoustic_role === 'Bass Driver';
-                                                        const isRowBass = (row.low_ratio || 33) >= 45 || row.acoustic_role === 'Bass Driver';
-                                                        if (isCurBass && isRowBass) {
-                                                            return (
-                                                                <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-red-950 text-red-300 border border-red-700/80 animate-pulse" title="Riesgo de colisión en subgraves 30-80 Hz">
-                                                                    ⚠️ Colisión Bass
-                                                                </span>
-                                                            );
-                                                        } else if ((isCurBass && (row.acoustic_role === 'Vocal / Lead' || row.acoustic_role === 'Percussive Tool')) || (isRowBass && (currentTrack.acoustic_role === 'Vocal / Lead' || currentTrack.acoustic_role === 'Percussive Tool'))) {
-                                                            return (
-                                                                <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/80" title="Frecuencias complementarias: Mezcla limpia garantizada">
-                                                                    🟢 Anti-Muddy Compl.
-                                                                </span>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    })()
-                                                )}
-                                            </div>
-                                        </td>
+                                                    {/* Indicador Anti-Muddy dinámico frente a pista seleccionada */}
+                                                    {currentTrack && String(currentTrack.id) !== String(row.id) && (
+                                                        (() => {
+                                                            const isCurBass = (currentTrack.low_ratio || 33) >= 45 || currentTrack.acoustic_role === 'Bass Driver';
+                                                            const isRowBass = (row.low_ratio || 33) >= 45 || row.acoustic_role === 'Bass Driver';
+                                                            if (isCurBass && isRowBass) {
+                                                                return (
+                                                                    <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-red-950 text-red-300 border border-red-700/80 animate-pulse" title="Riesgo de colisión en subgraves 30-80 Hz">
+                                                                        ⚠️ Colisión Bass
+                                                                    </span>
+                                                                );
+                                                            } else if ((isCurBass && (row.acoustic_role === 'Vocal / Lead' || row.acoustic_role === 'Percussive Tool')) || (isRowBass && (currentTrack.acoustic_role === 'Vocal / Lead' || currentTrack.acoustic_role === 'Percussive Tool'))) {
+                                                                return (
+                                                                    <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/80" title="Frecuencias complementarias: Mezcla limpia garantizada">
+                                                                        🟢 Anti-Muddy Compl.
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()
+                                                    )}
+                                                </div>
+                                            </td>
+                                        )}
 
                                         {/* COMENTARIO PRO DJ */}
-                                        <td className="py-2 px-2 text-left">
-                                            <div className="flex items-center gap-1.5 max-w-[260px]">
-                                                <span className="text-emerald-400 text-xs shrink-0">💬</span>
-                                                <span className="text-[10.5px] font-mono text-gray-200 truncate" title={row.comment || `[${row.b || '--'} BPM | ${row.k || '--'}] Intro limpia 32b • Drop contundente • Outro 64b`}>
-                                                    {row.comment || `[${row.b || '--'} BPM | ${row.k || '--'}] Intro limpia 32b • Drop contundente • Outro 64b`}
-                                                </span>
-                                            </div>
-                                        </td>
+                                        {visibleColumns.comment && (
+                                            <td className="py-2 px-2 text-left">
+                                                <div className="flex items-center gap-1.5 max-w-[260px]">
+                                                    <span className="text-emerald-400 text-xs shrink-0">💬</span>
+                                                    <span className="text-[10.5px] font-mono text-gray-200 truncate" title={row.comment || `[${row.b || '--'} BPM | ${row.k || '--'}] Intro limpia 32b • Drop contundente • Outro 64b`}>
+                                                        {row.comment || `[${row.b || '--'} BPM | ${row.k || '--'}] Intro limpia 32b • Drop contundente • Outro 64b`}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        )}
 
                                         {/* ESTADO */}
-                                        <td className="py-2 px-2 text-center">
-                                            {isFake ? (
-                                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" title="¡Alerta! Falso FLAC con corte lossy previo">
-                                                    FLAC FAKE
-                                                </span>
-                                            ) : String(row.status || '').includes('VERDADERO') || String(row.status || '').includes('True') || String(row.status || '').includes('HI-RES') ? (
-                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                                                    {row.status}
-                                                </span>
-                                            ) : row.format === 'MP3' || String(row.status || '').includes('MP3') ? (
-                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-cyan-300 border border-djzinc-700">
-                                                    {row.status}
-                                                </span>
-                                            ) : (
-                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-djzinc-850 text-gray-300 border border-djzinc-750">
-                                                    {row.status}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="py-2 px-2 text-center" onClick={(e) => e.stopPropagation()}>
-                                            <button 
-                                                type="button"
-                                                onClick={(e) => handleRemoveSingleTrack(row.id, e)}
-                                                className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-800/60 cursor-pointer transition-all active:scale-90"
-                                                title="Quitar pista del análisis (eliminar de la lista global)"
-                                            >
-                                                <span className="text-xs">🗑️</span>
-                                            </button>
-                                        </td>
+                                        {visibleColumns.status && (
+                                            <td className="py-2 px-2 text-center">
+                                                {isFake ? (
+                                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" title="¡Alerta! Falso FLAC con corte lossy previo">
+                                                        FLAC FAKE
+                                                    </span>
+                                                ) : String(row.status || '').includes('VERDADERO') || String(row.status || '').includes('True') || String(row.status || '').includes('HI-RES') ? (
+                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                                                        {row.status}
+                                                    </span>
+                                                ) : row.format === 'MP3' || String(row.status || '').includes('MP3') ? (
+                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-cyan-300 border border-djzinc-700">
+                                                        {row.status}
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-djzinc-850 text-gray-300 border border-djzinc-750">
+                                                        {row.status}
+                                                    </span>
+                                                )}
+                                            </td>
+                                        )}
+                                        {visibleColumns.actions && (
+                                            <td className="py-2 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                                                <button 
+                                                    type="button"
+                                                    onClick={(e) => handleRemoveSingleTrack(row.id, e)}
+                                                    className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-800/60 cursor-pointer transition-all active:scale-90"
+                                                    title="Quitar pista del análisis (eliminar de la lista global)"
+                                                >
+                                                    <span className="text-xs">🗑️</span>
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}
                             {/* PERF: Virtualización — espaciador inferior */}
-                            {virtualPaddingBottom > 0 && <tr aria-hidden="true" style={{ height: virtualPaddingBottom }}><td /></tr>}
+                            {virtualPaddingBottom > 0 && <tr aria-hidden="true" style={{ height: virtualPaddingBottom }}><td colSpan={Math.max(1, Object.values(visibleColumns).filter(Boolean).length)} /></tr>}
                         </tbody>
                     </table>
 
@@ -17435,7 +18177,8 @@ const TaxonomyWorkspace = ({
                                     }`}
                                     title="Exporta archivos .crate oficiales a ~/Music/_Serato_/Subcrates para importación instantánea en Serato DJ Pro"
                                 >
-                                    💽 Exportar Serato (.crate)
+                                    <img src="/assets/logos/serato.png" alt="Serato" className="h-3.5 w-auto object-contain shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
+                                    <span>Exportar Serato (.crate)</span>
                                 </button>
 
                                 <button
@@ -17449,7 +18192,8 @@ const TaxonomyWorkspace = ({
                                     }`}
                                     title="Genera archivo rekordbox.xml estándar Pioneer DJ con Hot Cues y playlists"
                                 >
-                                    📋 Exportar Rekordbox XML
+                                    <img src="/assets/logos/rekordbox.png" alt="Rekordbox" className="h-3.5 w-auto object-contain shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
+                                    <span>Exportar Rekordbox XML</span>
                                 </button>
 
                                 <button
@@ -25301,43 +26045,47 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
 };
 
 // =======================================================
-// VECTOR SVG BRAND LOGOS PARA SUITES DJ DE CABINA
+// OFICIAL BRAND VECTOR SVGs PARA SUITES DJ DE CABINA (100% TRANSPARENTE, SIN FONDO BLANCO)
 // =======================================================
 const PlatformSeratoLogo = ({ size = 20, className = "" }) => (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-        <rect width="32" height="32" rx="7" fill="#021a24" />
-        <path d="M7 21.5L12.5 9H16.5L11 21.5H7Z" fill="#00d1e8" />
-        <path d="M14 23L19.5 10.5H23.5L18 23H14Z" fill="#00d1e8" />
-        <path d="M21 21.5L24.5 13.5H27.5L24 21.5H21Z" fill="#22d3ee" fillOpacity="0.8" />
-        <circle cx="26" cy="23" r="1.5" fill="#00d1e8" />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shrink-0 ${className}`}>
+        <path d="M7 29L14.5 11H19.5L12 29H7Z" fill="#00d1e8" />
+        <path d="M16 31L23.5 13H28.5L21 31H16Z" fill="#00e5ff" />
+        <path d="M25 29L29.5 18H34L29.5 29H25Z" fill="#38bdf8" />
+        <circle cx="32" cy="31" r="2.2" fill="#00e5ff" />
     </svg>
 );
 
 const PlatformRekordboxLogo = ({ size = 20, className = "" }) => (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-        <rect width="32" height="32" rx="7" fill="#091b33" />
-        <circle cx="16" cy="16" r="9" stroke="#38bdf8" strokeWidth="2" strokeDasharray="3 1.5" />
-        <circle cx="16" cy="16" r="5" stroke="#00e5ff" strokeWidth="1.8" />
-        <circle cx="16" cy="16" r="2" fill="#38bdf8" />
-        <path d="M16 4V8M16 24V28M4 16H8M24 16H28" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shrink-0 ${className}`}>
+        <circle cx="20" cy="20" r="18" stroke="#38bdf8" strokeWidth="2" strokeDasharray="6 3" strokeLinecap="round" opacity="0.85" />
+        <circle cx="20" cy="20" r="13" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="20" cy="20" r="7.5" stroke="#38bdf8" strokeWidth="1.8" strokeDasharray="3 2" />
+        <circle cx="20" cy="20" r="3.5" fill="#00e5ff" />
+        <path d="M20 2V7M20 33V38M2 20H7M33 20H38" stroke="#38bdf8" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M7.27 7.27L10.8 10.8M29.2 29.2L32.73 32.73M7.27 32.73L10.8 29.2M29.2 10.8L32.73 7.27" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" opacity="0.75" />
     </svg>
 );
 
 const PlatformVirtualDjLogo = ({ size = 20, className = "" }) => (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-        <rect width="32" height="32" rx="7" fill="#2a1202" />
-        <circle cx="16" cy="16" r="10" stroke="#f97316" strokeWidth="1.6" />
-        <circle cx="16" cy="16" r="6.5" stroke="#fb923c" strokeWidth="0.8" strokeDasharray="1.5 1.5" />
-        <text x="16" y="19" textAnchor="middle" fill="#ffedd5" fontSize="8" fontWeight="900" fontFamily="system-ui, sans-serif" letterSpacing="0.5">VDJ</text>
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shrink-0 ${className}`}>
+        <circle cx="20" cy="20" r="18" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round" />
+        <circle cx="20" cy="20" r="14.5" stroke="#fb923c" strokeWidth="1" strokeDasharray="2 1.5" opacity="0.75" />
+        <circle cx="20" cy="20" r="11.5" stroke="#ea580c" strokeWidth="1.2" />
+        <path d="M12 12.5L20 28.5L28 12.5H23.5L20 20.5L16.5 12.5H12Z" fill="#ffedd5" />
+        <path d="M14.5 12.5L20 24L25.5 12.5H23.5L20 19.5L16.5 12.5H14.5Z" fill="#f97316" />
+        <circle cx="20" cy="20" r="2.2" fill="#ffffff" />
+        <circle cx="20" cy="20" r="1" fill="#ea580c" />
     </svg>
 );
 
 const PlatformTraktorLogo = ({ size = 20, className = "" }) => (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-        <rect width="32" height="32" rx="7" fill="#241a02" />
-        <rect x="7" y="8" width="18" height="4" rx="1" fill="#facc15" />
-        <path d="M13.5 12H18.5V23.5C18.5 24.3 17.8 25 17 25H15C14.2 25 13.5 24.3 13.5 23.5V12Z" fill="#facc15" />
-        <circle cx="22" cy="19" r="2" fill="#eab308" />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shrink-0 ${className}`}>
+        <rect x="5" y="8" width="30" height="6.5" rx="2" fill="#facc15" />
+        <path d="M16 14.5H24V29.5C24 30.88 22.88 32 21.5 32H18.5C17.12 32 16 30.88 16 29.5V14.5Z" fill="#facc15" />
+        <path d="M10 18L13 22H11L14 27" stroke="#eab308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
+        <circle cx="28" cy="22" r="2.5" fill="#facc15" />
+        <circle cx="28" cy="28" r="1.8" fill="#eab308" />
     </svg>
 );
 
