@@ -17674,7 +17674,7 @@ const BeatWaveLogoBadge = ({ size = "sm", className = "" }) => {
     {
       className: `relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_16px_rgba(6,182,212,0.85),inset_0_0_10px_rgba(6,182,212,0.35)] backdrop-blur-md select-none group-hover:border-cyan-300 group-hover:shadow-[0_0_24px_rgba(6,182,212,1),inset_0_0_14px_rgba(6,182,212,0.5)] transition-all duration-300 ${sizeClasses} ${className}`
     },
-    /* @__PURE__ */ React.createElement("div", { className: "absolute inset-1 rounded-full border border-cyan-400/30 pointer-events-none" }),
+    /* @__PURE__ */ React.createElement("div", { className: "absolute inset-1 rounded-full border border-cyan-400/25 pointer-events-none" }),
     /* @__PURE__ */ React.createElement(
       "svg",
       {
@@ -17683,18 +17683,68 @@ const BeatWaveLogoBadge = ({ size = "sm", className = "" }) => {
         fill: "none",
         xmlns: "http://www.w3.org/2000/svg"
       },
-      /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("linearGradient", { id: "bw-getty-cyan-grad", x1: "0", y1: "0", x2: "0", y2: "1" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#ecfeff" }), /* @__PURE__ */ React.createElement("stop", { offset: "30%", stopColor: "#22d3ee" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#0891b2" })), /* @__PURE__ */ React.createElement("filter", { id: "bw-getty-glow", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feDropShadow", { dx: "0", dy: "0", stdDeviation: "2.2", floodColor: "#06b6d4", floodOpacity: "0.9" }))),
-      /* @__PURE__ */ React.createElement("g", { filter: "url(#bw-getty-glow)", strokeLinecap: "round" }, /* @__PURE__ */ React.createElement(
-        "line",
+      /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("linearGradient", { id: "bw-bar-cyan-grad", x1: "0", y1: "0", x2: "0", y2: "1" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#a5f3fc" }), /* @__PURE__ */ React.createElement("stop", { offset: "25%", stopColor: "#67e8f9" }), /* @__PURE__ */ React.createElement("stop", { offset: "55%", stopColor: "#22d3ee" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#0891b2" })), /* @__PURE__ */ React.createElement("filter", { id: "bw-bar-glow-fx", x: "-30%", y: "-30%", width: "160%", height: "160%" }, /* @__PURE__ */ React.createElement("feDropShadow", { dx: "0", dy: "0", stdDeviation: "2.5", floodColor: "#06b6d4", floodOpacity: "0.95" }))),
+      /* @__PURE__ */ React.createElement("g", { filter: "url(#bw-bar-glow-fx)" }, /* @__PURE__ */ React.createElement(
+        "rect",
         {
-          x1: "12",
-          y1: "50",
-          x2: "88",
-          y2: "50",
-          stroke: "#22d3ee",
-          strokeWidth: "2.4"
+          x: "13.3",
+          y: "40.3",
+          width: "11.8",
+          height: "35.9",
+          rx: "5.9",
+          ry: "5.9",
+          fill: "url(#bw-bar-cyan-grad)",
+          className: "bw-equalizer-bar-1"
         }
-      ), /* @__PURE__ */ React.createElement("line", { x1: "18", y1: "42", x2: "18", y2: "58", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "2.8" }), /* @__PURE__ */ React.createElement("line", { x1: "24", y1: "35", x2: "24", y2: "65", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "3.0" }), /* @__PURE__ */ React.createElement("line", { x1: "30", y1: "24", x2: "30", y2: "76", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "3.4" }), /* @__PURE__ */ React.createElement("line", { x1: "36", y1: "32", x2: "36", y2: "68", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "3.0" }), /* @__PURE__ */ React.createElement("line", { x1: "42", y1: "41", x2: "42", y2: "59", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "2.8" }), /* @__PURE__ */ React.createElement("line", { x1: "48", y1: "41", x2: "48", y2: "59", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "2.8" }), /* @__PURE__ */ React.createElement("line", { x1: "54", y1: "28", x2: "54", y2: "72", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "3.2" }), /* @__PURE__ */ React.createElement("line", { x1: "60", y1: "18", x2: "60", y2: "82", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "3.6" }), /* @__PURE__ */ React.createElement("line", { x1: "66", y1: "10", x2: "66", y2: "90", stroke: "#ecfeff", strokeWidth: "4.2" }), /* @__PURE__ */ React.createElement("line", { x1: "72", y1: "18", x2: "72", y2: "82", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "3.6" }), /* @__PURE__ */ React.createElement("line", { x1: "78", y1: "26", x2: "78", y2: "74", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "3.2" }), /* @__PURE__ */ React.createElement("line", { x1: "84", y1: "36", x2: "84", y2: "64", stroke: "url(#bw-getty-cyan-grad)", strokeWidth: "2.8" }))
+      ), /* @__PURE__ */ React.createElement(
+        "rect",
+        {
+          x: "28.7",
+          y: "27.1",
+          width: "11.8",
+          height: "53.8",
+          rx: "5.9",
+          ry: "5.9",
+          fill: "url(#bw-bar-cyan-grad)",
+          className: "bw-equalizer-bar-2"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "rect",
+        {
+          x: "44.1",
+          y: "17.0",
+          width: "11.8",
+          height: "66.0",
+          rx: "5.9",
+          ry: "5.9",
+          fill: "url(#bw-bar-cyan-grad)",
+          className: "bw-equalizer-bar-3"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "rect",
+        {
+          x: "59.5",
+          y: "30.0",
+          width: "11.8",
+          height: "50.1",
+          rx: "5.9",
+          ry: "5.9",
+          fill: "url(#bw-bar-cyan-grad)",
+          className: "bw-equalizer-bar-4"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "rect",
+        {
+          x: "74.9",
+          y: "44.2",
+          width: "11.8",
+          height: "32.0",
+          rx: "5.9",
+          ry: "5.9",
+          fill: "url(#bw-bar-cyan-grad)",
+          className: "bw-equalizer-bar-5"
+        }
+      ))
     )
   );
 };

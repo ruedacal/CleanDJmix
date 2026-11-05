@@ -26212,7 +26212,8 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
 };
 
 // ==============================================================================
-// LOGOTIPO VECTORIAL NATIVO BEATWAVE PRO (ONDAS CORPORATIVAS EN CIAN ESTILO GETTY)
+// ==============================================================================
+// LOGOTIPO CORPORATIVO BEATWAVE PRO (5 BARRAS ANIMADAS EN BUCLE CONSTANTE DE 3S)
 // ==============================================================================
 const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
     // Presets de tamaño: 'sm' (navbar: 36px), 'md' (44px), 'lg' (intro portal: 110px)
@@ -26227,9 +26228,9 @@ const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
             className={`relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_16px_rgba(6,182,212,0.85),inset_0_0_10px_rgba(6,182,212,0.35)] backdrop-blur-md select-none group-hover:border-cyan-300 group-hover:shadow-[0_0_24px_rgba(6,182,212,1),inset_0_0_14px_rgba(6,182,212,0.5)] transition-all duration-300 ${sizeClasses} ${className}`}
         >
             {/* Anillo interior concéntrico sutil */}
-            <div className="absolute inset-1 rounded-full border border-cyan-400/30 pointer-events-none" />
+            <div className="absolute inset-1 rounded-full border border-cyan-400/25 pointer-events-none" />
 
-            {/* SVG Vectorial de Ondas Corporativas de Audio (Inspirado en Getty Images) */}
+            {/* SVG Vectorial Nativo de 5 Barras Ecualizadoras Animadas en Cian Corporativo */}
             <svg 
                 viewBox="0 0 100 100" 
                 className="w-[74%] h-[74%] overflow-visible" 
@@ -26237,42 +26238,48 @@ const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
                 xmlns="http://www.w3.org/2000/svg"
             >
                 <defs>
-                    <linearGradient id="bw-getty-cyan-grad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ecfeff" />
-                        <stop offset="30%" stopColor="#22d3ee" />
+                    <linearGradient id="bw-bar-cyan-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#a5f3fc" />
+                        <stop offset="25%" stopColor="#67e8f9" />
+                        <stop offset="55%" stopColor="#22d3ee" />
                         <stop offset="100%" stopColor="#0891b2" />
                     </linearGradient>
-                    <filter id="bw-getty-glow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#06b6d4" floodOpacity="0.9" />
+                    <filter id="bw-bar-glow-fx" x="-30%" y="-30%" width="160%" height="160%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#06b6d4" floodOpacity="0.95" />
                     </filter>
                 </defs>
 
-                <g filter="url(#bw-getty-glow)" strokeLinecap="round">
-                    {/* Eje horizontal de audio */}
-                    <line 
-                        x1="12" y1="50" x2="88" y2="50" 
-                        stroke="#22d3ee" 
-                        strokeWidth="2.4" 
+                <g filter="url(#bw-bar-glow-fx)">
+                    {/* Barra 1 (Izquierda exterior) */}
+                    <rect 
+                        x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-1" 
                     />
-
-                    {/* Ondas como ecualizador de audio dinámico (silueta corporativa) */}
-                    {/* Oleada 1 (Izquierda): subida y bajada rítmica */}
-                    <line x1="18" y1="42" x2="18" y2="58" stroke="url(#bw-getty-cyan-grad)" strokeWidth="2.8" />
-                    <line x1="24" y1="35" x2="24" y2="65" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.0" />
-                    <line x1="30" y1="24" x2="30" y2="76" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.4" />
-                    <line x1="36" y1="32" x2="36" y2="68" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.0" />
-                    <line x1="42" y1="41" x2="42" y2="59" stroke="url(#bw-getty-cyan-grad)" strokeWidth="2.8" />
-                    
-                    {/* Valle / Puente central */}
-                    <line x1="48" y1="41" x2="48" y2="59" stroke="url(#bw-getty-cyan-grad)" strokeWidth="2.8" />
-
-                    {/* Oleada 2 (Derecha): Crescendo acústico principal con pico dominante */}
-                    <line x1="54" y1="28" x2="54" y2="72" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.2" />
-                    <line x1="60" y1="18" x2="60" y2="82" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.6" />
-                    <line x1="66" y1="10" x2="66" y2="90" stroke="#ecfeff" strokeWidth="4.2" />
-                    <line x1="72" y1="18" x2="72" y2="82" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.6" />
-                    <line x1="78" y1="26" x2="78" y2="74" stroke="url(#bw-getty-cyan-grad)" strokeWidth="3.2" />
-                    <line x1="84" y1="36" x2="84" y2="64" stroke="url(#bw-getty-cyan-grad)" strokeWidth="2.8" />
+                    {/* Barra 2 (Izquierda interior) */}
+                    <rect 
+                        x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-2" 
+                    />
+                    {/* Barra 3 (Centro - Pico Máximo) */}
+                    <rect 
+                        x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-3" 
+                    />
+                    {/* Barra 4 (Derecha interior) */}
+                    <rect 
+                        x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-4" 
+                    />
+                    {/* Barra 5 (Derecha exterior) */}
+                    <rect 
+                        x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-5" 
+                    />
                 </g>
             </svg>
         </div>
