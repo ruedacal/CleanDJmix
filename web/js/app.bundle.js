@@ -17946,14 +17946,14 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     )), /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: "relative z-10 flex flex-col items-center justify-center my-auto text-center px-4 anim-smooth-logo-entrance"
+        className: "relative z-10 flex flex-col items-center justify-center my-auto text-center px-4"
       },
       /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 max-w-4xl select-none group" }, /* @__PURE__ */ React.createElement(
         "img",
         {
-          src: "/assets/beatwave_mascot.png",
-          alt: "BeatWave Mascot",
-          className: "w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 object-contain drop-shadow-[0_0_45px_rgba(6,182,212,0.85)] filter animate-pulse group-hover:scale-105 transition-transform duration-300"
+          src: "/assets/beatwave_wave_icon.png",
+          alt: "BeatWave Wave Icon",
+          className: "h-20 sm:h-28 md:h-32 w-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.85)] filter group-hover:scale-105 transition-transform duration-300"
         }
       ), /* @__PURE__ */ React.createElement(
         "img",
@@ -18313,14 +18313,6 @@ const App = () => {
     if (tutorialOpen || copilotModalOpen) {
       if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
       setIsLogoTechnoActive(false);
-    } else {
-      if (!initialTechnoPlayedRef.current) {
-        initialTechnoPlayedRef.current = true;
-        const timer = setTimeout(() => {
-          triggerLogoTechno();
-        }, 400);
-        return () => clearTimeout(timer);
-      }
     }
   }, [tutorialOpen, copilotModalOpen]);
   useEffect(() => {
@@ -18883,9 +18875,9 @@ const App = () => {
     /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center shrink-0" }, /* @__PURE__ */ React.createElement(
       "img",
       {
-        src: "/assets/beatwave_mascot.png",
-        alt: "BeatWave Mascot",
-        className: `h-10 sm:h-11 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? "scale-110 drop-shadow-[0_0_20px_rgba(6,182,212,0.95)] anim-woofer-cone-3d" : "group-hover:scale-105 drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]"}`
+        src: "/assets/beatwave_wave_icon.png",
+        alt: "BeatWave Wave Icon",
+        className: `h-8 sm:h-9 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? "scale-110 drop-shadow-[0_0_20px_rgba(6,182,212,0.95)]" : "group-hover:scale-105 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]"}`
       }
     )),
     /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0" }, /* @__PURE__ */ React.createElement(

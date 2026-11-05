@@ -26626,16 +26626,16 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         </button>
                     </div>
 
-                    {/* CENTRO: ENTRADA CINEMÁTICA Y SUAVE DEL LOGOTIPO BEATWAVE PRO */}
+                    {/* CENTRO: LOGOTIPO BEATWAVE PRO LIMPIO Y ESTÁTICO (SIN ANIMACIÓN DE ENTRADA) */}
                     <div 
-                        className="relative z-10 flex flex-col items-center justify-center my-auto text-center px-4 anim-smooth-logo-entrance"
+                        className="relative z-10 flex flex-col items-center justify-center my-auto text-center px-4"
                     >
-                        {/* COMPOSICIÓN OFICIAL: ALTAVOZ A LA IZQUIERDA Y LETRAS A LA DERECHA */}
+                        {/* COMPOSICIÓN OFICIAL: ICONO ONDA CIAN A LA IZQUIERDA Y LETRAS A LA DERECHA */}
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 max-w-4xl select-none group">
                             <img 
-                                src="/assets/beatwave_mascot.png" 
-                                alt="BeatWave Mascot" 
-                                className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 object-contain drop-shadow-[0_0_45px_rgba(6,182,212,0.85)] filter animate-pulse group-hover:scale-105 transition-transform duration-300"
+                                src="/assets/beatwave_wave_icon.png" 
+                                alt="BeatWave Wave Icon" 
+                                className="h-20 sm:h-28 md:h-32 w-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.85)] filter group-hover:scale-105 transition-transform duration-300"
                             />
                             <img 
                                 src="/assets/beatwave_text.png" 
@@ -27030,21 +27030,11 @@ const App = () => {
         }, 10000);
     };
 
-    // La animación no debe iniciarse hasta que el usuario deje de ver el tutorial o cierre las modales
+    // Animación automática al entrar al panel eliminada a petición del usuario (logotipo limpio y estático)
     useEffect(() => {
         if (tutorialOpen || copilotModalOpen) {
-            // Si el tutorial o modales están abiertos, asegurar que no corra la animación
             if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
             setIsLogoTechnoActive(false);
-        } else {
-            // Solo cuando el usuario no está viendo el tutorial ni ninguna modal
-            if (!initialTechnoPlayedRef.current) {
-                initialTechnoPlayedRef.current = true;
-                const timer = setTimeout(() => {
-                    triggerLogoTechno();
-                }, 400);
-                return () => clearTimeout(timer);
-            }
         }
     }, [tutorialOpen, copilotModalOpen]);
 
@@ -27661,12 +27651,12 @@ const App = () => {
                         className="flex items-center gap-3 sm:gap-3.5 select-none cursor-pointer group"
                         title={isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"}
                     >
-                        {/* ALTAVOZ / MASCOTA CORPORATIVA BEATWAVE A LA IZQUIERDA */}
+                        {/* ICONO OFICIAL ONDA CIAN BEATWAVE A LA IZQUIERDA */}
                         <div className="relative flex items-center justify-center shrink-0">
                             <img 
-                                src="/assets/beatwave_mascot.png" 
-                                alt="BeatWave Mascot" 
-                                className={`h-10 sm:h-11 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? 'scale-110 drop-shadow-[0_0_20px_rgba(6,182,212,0.95)] anim-woofer-cone-3d' : 'group-hover:scale-105 drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]'}`}
+                                src="/assets/beatwave_wave_icon.png" 
+                                alt="BeatWave Wave Icon" 
+                                className={`h-8 sm:h-9 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? 'scale-110 drop-shadow-[0_0_20px_rgba(6,182,212,0.95)]' : 'group-hover:scale-105 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]'}`}
                             />
                         </div>
 
