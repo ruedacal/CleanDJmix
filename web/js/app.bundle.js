@@ -4801,6 +4801,7 @@ const AuditWorkspace = ({
   const [saveFeedback, setSaveFeedback] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const [mobileWorkflowTab, setMobileWorkflowTab] = useState("analizar");
   const [mixOracleOpen, setMixOracleOpen] = useState(false);
   const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState(null);
   const [selectedAuditIds, setSelectedAuditIds] = useState(/* @__PURE__ */ new Set());
@@ -4834,9 +4835,9 @@ const AuditWorkspace = ({
   const tableScrollRef = useRef(null);
   const [metricsCollapsed, setMetricsCollapsed] = useState(() => {
     try {
-      return localStorage.getItem("bw_metrics_collapsed") === "true";
+      return localStorage.getItem("bw_metrics_collapsed") !== "false";
     } catch (e) {
-      return false;
+      return true;
     }
   });
   const toggleMetricsCollapsed = () => {
@@ -6131,7 +6132,7 @@ const AuditWorkspace = ({
       });
     }
   };
-  return /* @__PURE__ */ React.createElement("div", { className: "flex w-full h-full overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "px-3 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-2 z-20 overflow-x-hidden" }, /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-audit-select", className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "flex w-full h-full overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "px-3 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-2 z-20" }, /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-audit-select", className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: handleExplorar,
@@ -6140,7 +6141,7 @@ const AuditWorkspace = ({
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4C2}"),
     /* @__PURE__ */ React.createElement("span", null, "Abrir")
-  ), tracks && tracks.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[160px] truncate shrink-0", title: typeof rutaOrigen === "string" ? rutaOrigen : "Selecci\xF3n m\xFAltiple" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djgreen-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, typeof rutaOrigen === "string" && rutaOrigen ? rutaOrigen.split("/").pop() || rutaOrigen : "Colecci\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700" }, tracks.length)) : null, /* @__PURE__ */ React.createElement(
+  ), tracks && tracks.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[180px] sm:max-w-[260px] truncate shrink-0", title: typeof rutaOrigen === "string" ? rutaOrigen : "Selecci\xF3n m\xFAltiple" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djgreen-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, typeof rutaOrigen === "string" && rutaOrigen ? rutaOrigen.split("/").pop() || rutaOrigen : "Colecci\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700" }, tracks.length)) : null, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -6159,104 +6160,185 @@ const AuditWorkspace = ({
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F5D1}\uFE0F"),
     /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline text-xs" }, t("btn_clear_all") || "Vaciar")
-  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center bg-djzinc-950 p-1 rounded-xl border border-djzinc-800/90 shadow-inner shrink-0 text-xs font-mono font-bold gap-1 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" }, saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "hidden md:inline text-xs font-mono text-djgreen-400 font-bold animate-pulse" }, saveFeedback), /* @__PURE__ */ React.createElement(
     "button",
     {
-      type: "button",
-      onClick: () => {
-        setFiltro("todos");
-      },
-      className: `px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${filtro === "todos" || filtro === "bad_quality" || filtro === "error" ? "bg-djzinc-850 text-djcyan-300 border border-djcyan-500/40 shadow-sm" : "text-gray-400 hover:text-white"}`,
-      title: "Etapa 1: Diagn\xF3stico espectral DSP, corte de frecuencias y certificaci\xF3n lossless"
+      onClick: handleGuardarTodoEnFicheros,
+      disabled: isInjecting || tracks.length === 0,
+      className: "bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 disabled:opacity-50 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.35)] border border-emerald-300/50 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0",
+      title: "Guarda todos los metadatos editados directamente en los archivos de audio en disco"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u2460 DSP"),
-    /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djcyan-950 text-djcyan-400 px-1.5 py-0.2 rounded border border-djcyan-800/60" }, metrics.errors > 0 ? `${metrics.errors} Fakes` : "OK")
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
+    /* @__PURE__ */ React.createElement("span", null, t("btn_save_all") || "Guardar", " (", tracks.length, ")")
+  ), (isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: handleCancelarProceso,
+      className: "bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-2.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0",
+      title: "Detener el proceso actual inmediatamente"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2715"),
+    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_cancel") || "Cancelar")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      onClick: () => {
-        setFiltro("missing");
-      },
-      className: `px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${["missing", "missing_title", "missing_artist", "missing_cover"].includes(filtro) ? "bg-djzinc-850 text-amber-300 border border-amber-500/40 shadow-sm" : "text-gray-400 hover:text-white"}`,
-      title: "Etapa 2: Curadur\xEDa de metadatos, tags ID3, artistas y portadas 1:1"
+      onClick: toggleMetricsCollapsed,
+      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${!metricsCollapsed ? "bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
+      title: !metricsCollapsed ? "Plegar HUD de m\xE9tricas completas (Tecla M)" : "Desplegar HUD anal\xEDtico completo (Tecla M)"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u2461 Tags"),
-    metrics.missing + metrics.missing_cover > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-amber-950/80 text-amber-400 border border-amber-800/50 px-1.5 py-0.2 rounded" }, metrics.missing + metrics.missing_cover)
+    /* @__PURE__ */ React.createElement("span", null, "\u25A4"),
+    /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline" }, "HUD"),
+    /* @__PURE__ */ React.createElement("kbd", { className: "text-[9px] bg-black/50 px-1 rounded border border-djzinc-700" }, "M")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
-      type: "button",
-      onClick: () => {
-        if (onNavigateTab) {
-          onNavigateTab("hotcues");
-        } else {
-          setCueStudioModalOpen(true);
-        }
-      },
-      className: "px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 shrink-0",
-      title: "Etapa 3: Preparaci\xF3n de Hot Cues 1-8, Beatgrid y primer Downbeat"
+      onClick: () => setSidebarOpen((prev) => !prev),
+      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${sidebarOpen ? "bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
+      title: sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u2462 Cues"),
-    /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djzinc-900 text-gray-500 px-1.5 py-0.2 rounded border border-djzinc-800" }, "8")
-  ), /* @__PURE__ */ React.createElement("div", { className: "w-px h-5 bg-djzinc-800 my-auto mx-1 shrink-0" }), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setBatchModalOpen(true),
-      className: "bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-700/80 text-gray-300 hover:text-white px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors font-mono shrink-0 shadow-sm",
-      title: "Configurar opciones avanzadas de auditor\xEDa por lotes y car\xE1tulas"
-    },
-    /* @__PURE__ */ React.createElement(Icons.Sliders, null),
-    /* @__PURE__ */ React.createElement("span", null, t("btn_audit_batch") || "Lote")
-  ), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("span", null, "\u25E8"),
+    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_inspector") || "Inspector")
+  ))), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-stretch bg-[#07070d] border-b border-djzinc-800/90 px-3.5 py-2.5 gap-4 overflow-x-auto no-scrollbar select-none z-10" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-djzinc-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-djcyan-400" }), /* @__PURE__ */ React.createElement("span", null, "Analizar")), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 font-normal" }, tracks.length, " en cola")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => handleAuditar(),
-      disabled: isAuditing,
-      className: "bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-black px-3.5 py-1 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0",
+      disabled: isAuditing || tracks.length === 0,
+      className: "bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 disabled:opacity-40 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-md shadow-djcyan-500/20 border border-djcyan-300/60 flex items-center gap-2 cursor-pointer transition-all active:scale-95 font-mono shrink-0",
       title: "Ejecutar an\xE1lisis DSP completo sobre todas las pistas cargadas"
     },
-    /* @__PURE__ */ React.createElement(Icons.Library, null),
-    /* @__PURE__ */ React.createElement("span", null, isAuditing ? lang === "en" ? "Auditing..." : "Auditando..." : t("btn_execute_audit") || "Auditar")
-  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("span", null, "\u25B6"),
+    /* @__PURE__ */ React.createElement("span", null, isAuditing ? "Auditando..." : "Analizar Biblioteca"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px] font-black" }, tracks.length)
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setFiltro("missing"),
+      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${filtro === "missing" ? "bg-amber-950/60 text-amber-300 border-amber-500/80 shadow" : "bg-djzinc-900/90 hover:bg-djzinc-850 text-gray-300 hover:text-white border-djzinc-750"}`,
+      title: "Filtrar pistas que no tienen BPM o Clave Arm\xF3nica detectada"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2722"),
+    /* @__PURE__ */ React.createElement("span", null, "BPM & Key"),
+    metrics.missing > 0 ? /* @__PURE__ */ React.createElement("span", { className: "bg-amber-950 text-amber-300 border border-amber-700/80 px-1.5 py-0.2 rounded text-[10px] font-bold" }, metrics.missing, " sin BPM") : /* @__PURE__ */ React.createElement("span", { className: "bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded text-[10px] font-bold" }, "OK")
+  ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => {
-        if (onNavigateTab) onNavigateTab("setbuilder");
+        if (onNavigateTab) onNavigateTab("hotcues");
+        else setCueStudioModalOpen(true);
       },
-      className: "bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-200 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow shrink-0",
-      title: "Generar flujo no lineal de sesi\xF3n (Graph Playlists estilo DJOID)"
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 border border-djzinc-750 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Preparar Hot Cues 1-8, Beatgrid y primer Downbeat"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F578}\uFE0F"),
-    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "Flujo Sesi\xF3n")
-  ), /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-export-crates", className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, "Hot Cues & Grid"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]" }, "8 Cues")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setBatchModalOpen(true),
+      className: "bg-djzinc-900/80 hover:bg-djzinc-850 border border-djzinc-750 text-gray-400 hover:text-white p-1.5 rounded-lg text-xs flex items-center justify-center cursor-pointer transition-colors shrink-0",
+      title: "Configurar opciones avanzadas de auditor\xEDa por lotes y car\xE1tulas"
+    },
+    /* @__PURE__ */ React.createElement(Icons.Sliders, null)
+  ))), /* @__PURE__ */ React.createElement("div", { className: "w-px bg-djzinc-800 self-stretch my-0.5 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}` }), /* @__PURE__ */ React.createElement("span", null, "Corregir")), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-bold ${badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? "text-amber-400" : "text-emerald-400"}` }, badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? `${badQualityTracks.length + metrics.missing + metrics.missing_cover} pendientes` : "Todo al 100%")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setBatchModalOpen(true),
+      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${metrics.missing_artist + metrics.missing_cover > 0 ? "bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border-amber-600/70 shadow-sm" : "bg-djzinc-900/90 hover:bg-djzinc-850 text-gray-300 hover:text-white border-djzinc-750"}`,
+      title: "Descargar e incrustar metadatos faltantes, autores y car\xE1tulas 1:1"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u270E"),
+    /* @__PURE__ */ React.createElement("span", null, "Auto-Tags & Covers"),
+    metrics.missing_artist + metrics.missing_cover > 0 ? /* @__PURE__ */ React.createElement("span", { className: "bg-amber-950 text-amber-300 border border-amber-700/80 px-1.5 py-0.2 rounded text-[10px] font-bold" }, metrics.missing_artist + metrics.missing_cover) : /* @__PURE__ */ React.createElement("span", { className: "bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded text-[10px] font-bold" }, "OK")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleBuscarReemplazosSpotify(badQualityTracks.length > 0 ? badQualityTracks : null),
+      disabled: isSearchingSpotifyHD || isAuditing,
+      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${badQualityTracks.length > 0 ? "bg-rose-950/60 hover:bg-rose-900/70 text-rose-200 border-rose-600/70 shadow-sm" : "bg-djzinc-900/90 hover:bg-djzinc-850 text-gray-300 hover:text-white border-djzinc-750"}`,
+      title: "Buscar copias oficiales Lossless/FLAC en Descargas para pistas con fakes o baja calidad"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F50D}"),
+    /* @__PURE__ */ React.createElement("span", null, "Buscar Lossless"),
+    badQualityTracks.length > 0 ? /* @__PURE__ */ React.createElement("span", { className: "bg-rose-950 text-rose-300 border border-rose-700/80 px-1.5 py-0.2 rounded text-[10px] font-bold" }, badQualityTracks.length, " fakes") : /* @__PURE__ */ React.createElement("span", { className: "bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded text-[10px] font-bold" }, "Lossless OK")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleSanitizarMetadatos,
+      disabled: isInjecting || tracks.length === 0,
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 border border-djzinc-750 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Eliminar spam promocional en t\xEDtulos, normalizar 'feat.' y nombres de versiones"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "Aa"),
+    /* @__PURE__ */ React.createElement("span", null, "Normalizar"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]" }, "Limpio")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setDuplicateModalOpen(true),
+      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${metrics.duplicates > 0 ? "bg-amber-950/40 text-amber-300 border-amber-600/70" : "bg-djzinc-900/90 text-gray-400 hover:text-white border-djzinc-750"}`,
+      title: "Comparar y eliminar duplicados de audio"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2696\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, "Duplicados"),
+    /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[10px] font-mono ${metrics.duplicates > 0 ? "bg-amber-900/70 text-amber-200 border border-amber-700" : "bg-djzinc-800 text-gray-500"}` }, metrics.duplicates || 0)
+  ))), /* @__PURE__ */ React.createElement("div", { className: "w-px bg-djzinc-800 self-stretch my-0.5 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-purple-400" }), /* @__PURE__ */ React.createElement("span", null, "Exportar")), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 font-normal" }, "Destinos Cabina")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleExportarRekordboxXml,
+      disabled: tracks.length === 0,
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-djcyan-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Exportar colecci\xF3n a Rekordbox XML v6 con Hot Cues A-H"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB}"),
+    /* @__PURE__ */ React.createElement("span", null, "Rekordbox"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]" }, "XML")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleSincronizarPasaporteUniversal,
+      disabled: tracks.length === 0,
+      className: "bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/60 text-amber-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Exportar de una sola vez a Serato Crates, Rekordbox XML, Traktor NML y VirtualDJ M3U"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F6C2}"),
+    /* @__PURE__ */ React.createElement("span", null, "Pasaporte Universal"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-amber-900/80 text-amber-300 border border-amber-700 px-1.5 py-0.2 rounded text-[10px] font-black" }, "ALL-IN-1")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleExportarXLS,
+      disabled: tracks.length === 0,
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-emerald-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm shrink-0",
+      title: "Generar informe Excel (.xlsx) con auditor\xEDa completa de calidad"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA}"),
+    /* @__PURE__ */ React.createElement("span", null, "Informe"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-700 px-1.5 py-0.2 rounded text-[10px]" }, ".XLSX")
+  ), /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => setExportDropdownOpen((prev) => !prev),
       disabled: tracks.length === 0,
-      className: "bg-djzinc-900 hover:bg-djzinc-850 disabled:opacity-40 text-white font-mono font-bold text-xs px-2.5 sm:px-3 py-1.5 rounded-lg border border-djzinc-750 flex items-center gap-1.5 cursor-pointer transition-all shadow shrink-0",
-      title: "Desplegar opciones de exportaci\xF3n a Serato, Rekordbox, Traktor y Excel"
+      className: "bg-djzinc-900/90 hover:bg-djzinc-850 border border-djzinc-750 text-gray-300 px-2 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm",
+      title: "M\xE1s opciones de exportaci\xF3n (Traktor, Serato, Flujo de Sesi\xF3n)"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F680} Exportar"),
-    /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[9px]" }, exportDropdownOpen ? "\u25B2" : "\u25BC")
-  ), exportDropdownOpen && /* @__PURE__ */ React.createElement("div", { className: "absolute right-0 top-full mt-2 w-64 bg-[#0c0c14] border border-djzinc-700 rounded-xl shadow-2xl p-1.5 z-50 animate-fadeIn font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1 text-[10px] text-gray-500 uppercase tracking-wider font-bold border-b border-djzinc-800" }, "Destinos de Cabina"), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => {
-        setExportDropdownOpen(false);
-        handleSincronizarPasaporteUniversal();
-      },
-      className: "w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-amber-300 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/50 flex items-center gap-2.5 transition-colors cursor-pointer my-1 shadow-sm",
-      title: "Exportar de una sola vez a Serato Crates, Rekordbox XML, Traktor NML y VirtualDJ M3U"
-    },
-    /* @__PURE__ */ React.createElement("span", { className: "text-base" }, "\u{1F6C2}"),
-    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "font-black text-amber-200" }, "Pasaporte Universal DJ"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-amber-400/80 font-normal" }, "Serato + Rekordbox + Traktor + VDJ"))
-  ), /* @__PURE__ */ React.createElement("div", { className: "h-px bg-djzinc-800 my-1" }), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("span", null, "M\xE1s"),
+    /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500" }, exportDropdownOpen ? "\u25B2" : "\u25BC")
+  ), exportDropdownOpen && /* @__PURE__ */ React.createElement("div", { className: "absolute right-0 top-full mt-2 w-64 bg-[#0c0c14] border border-djzinc-700 rounded-xl shadow-2xl p-1.5 z-50 animate-fadeIn font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1 text-[10px] text-gray-500 uppercase tracking-wider font-bold border-b border-djzinc-800" }, "Destinos Adicionales"), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -6268,18 +6350,6 @@ const AuditWorkspace = ({
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4BD}"),
     /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", null, "Serato Crates (.crate)"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 font-normal" }, "Crates en ~/Music/_Serato_"))
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => {
-        setExportDropdownOpen(false);
-        handleExportarRekordboxXml();
-      },
-      className: "w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-gray-200 hover:text-djcyan-300 hover:bg-djzinc-850/80 flex items-center gap-2 transition-colors cursor-pointer"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB}"),
-    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", null, "Rekordbox XML v6"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 font-normal" }, "Hot Cues A-H + Memory Cues"))
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6298,58 +6368,157 @@ const AuditWorkspace = ({
     },
     /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
     /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", null, "Traktor Pro (.nml)"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 font-normal" }, "Colecci\xF3n NML con Hot Cues 1-8"))
-  ), /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { className: "h-px bg-djzinc-800 my-1" }), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => {
         setExportDropdownOpen(false);
-        handleExportarXLS();
+        if (onNavigateTab) onNavigateTab("setbuilder");
       },
-      className: "w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-gray-200 hover:text-emerald-300 hover:bg-djzinc-850/80 flex items-center gap-2 transition-colors cursor-pointer"
+      className: "w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white hover:bg-purple-950/60 flex items-center gap-2 transition-colors cursor-pointer"
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA}"),
-    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", null, "Informe Excel (.xlsx)"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 font-normal" }, "Auditor\xEDa completa de calidad"))
-  ))), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F578}\uFE0F"),
+    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", null, "Flujo de Sesi\xF3n SetBuilder"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 font-normal" }, "Graph Playlists estilo DJOID"))
+  )))))), /* @__PURE__ */ React.createElement("div", { className: "flex md:hidden flex-col bg-[#07070d] border-b border-djzinc-800 select-none z-10" }, /* @__PURE__ */ React.createElement("div", { className: "flex p-1.5 bg-[#050508] gap-1.5 border-b border-djzinc-850" }, /* @__PURE__ */ React.createElement(
     "button",
     {
-      onClick: handleGuardarTodoEnFicheros,
-      disabled: isInjecting || tracks.length === 0,
-      className: "bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 disabled:opacity-50 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.35)] border border-emerald-300/50 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0",
-      title: "Guarda todos los metadatos editados directamente en los archivos de audio en disco"
+      type: "button",
+      onClick: () => setMobileWorkflowTab("analizar"),
+      className: `flex-1 py-1.5 px-2 rounded-lg font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${mobileWorkflowTab === "analizar" ? "bg-djcyan-500 text-black shadow-md font-black" : "bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800"}`
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
-    /* @__PURE__ */ React.createElement("span", null, t("btn_save_all") || "Guardar", " (", tracks.length, ")")
-  ), (isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: handleCancelarProceso,
-      className: "bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-2.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0",
-      title: "Detener el proceso actual inmediatamente"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u2715"),
-    /* @__PURE__ */ React.createElement("span", null, t("btn_cancel") || "Cancelar")
+    /* @__PURE__ */ React.createElement("span", null, "\u2460 Analizar"),
+    /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-black/30 px-1 rounded font-black" }, tracks.length)
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      onClick: toggleMetricsCollapsed,
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${metricsCollapsed ? "bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
-      title: metricsCollapsed ? "Desplegar HUD de m\xE9tricas completas (Tecla M)" : "Plegar m\xE9tricas para ganar espacio vertical (Tecla M)"
+      onClick: () => setMobileWorkflowTab("corregir"),
+      className: `flex-1 py-1.5 px-2 rounded-lg font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${mobileWorkflowTab === "corregir" ? "bg-amber-500 text-black shadow-md font-black" : "bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800"}`
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u25A4"),
-    /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline" }, "HUD"),
-    /* @__PURE__ */ React.createElement("kbd", { className: "text-[9px] bg-black/50 px-1 rounded border border-djzinc-700" }, "M")
+    /* @__PURE__ */ React.createElement("span", null, "\u2461 Corregir"),
+    badQualityTracks.length + metrics.missing + metrics.missing_cover > 0 ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-red-950 text-red-300 border border-red-700 px-1 rounded font-black" }, badQualityTracks.length + metrics.missing + metrics.missing_cover) : /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-black/30 px-1 rounded" }, "OK")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
-      onClick: () => setSidebarOpen((prev) => !prev),
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${sidebarOpen ? "bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
-      title: sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"
+      type: "button",
+      onClick: () => setMobileWorkflowTab("exportar"),
+      className: `flex-1 py-1.5 px-2 rounded-lg font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${mobileWorkflowTab === "exportar" ? "bg-purple-600 text-white shadow-md font-black" : "bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800"}`
     },
-    /* @__PURE__ */ React.createElement("span", null, "\u25E8"),
-    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_inspector") || "Inspector")
-  ))), (isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 animate-pulse" }), batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold" }, batchProgress, "%"), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("span", null, "\u2462 Exportar"),
+    /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-black/30 px-1 rounded font-mono" }, "DJ")
+  )), /* @__PURE__ */ React.createElement("div", { className: "p-2 flex items-center gap-2 overflow-x-auto no-scrollbar" }, mobileWorkflowTab === "analizar" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleAuditar(),
+      disabled: isAuditing || tracks.length === 0,
+      className: "h-10 px-3.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-2 shrink-0 active:scale-95 shadow-md"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u25B6"),
+    /* @__PURE__ */ React.createElement("span", null, isAuditing ? "Auditando..." : "Analizar Todo"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]" }, tracks.length)
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setFiltro("missing"),
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2722 BPM & Key"),
+    /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[10px] ${metrics.missing > 0 ? "bg-amber-950 text-amber-300 border border-amber-800" : "bg-emerald-950 text-emerald-400"}` }, metrics.missing > 0 ? `${metrics.missing} faltan` : "OK")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        if (onNavigateTab) onNavigateTab("hotcues");
+        else setCueStudioModalOpen(true);
+      },
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F 8 Cues")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setBatchModalOpen(true),
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-300 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0"
+    },
+    /* @__PURE__ */ React.createElement(Icons.Sliders, null)
+  )), mobileWorkflowTab === "corregir" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setBatchModalOpen(true),
+      className: "h-10 px-3.5 bg-amber-950/70 border border-amber-600/70 text-amber-200 font-mono text-xs font-bold rounded-xl flex items-center gap-2 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u270E Auto-Tags"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-amber-900 text-amber-200 px-1.5 py-0.2 rounded text-[10px]" }, metrics.missing_artist + metrics.missing_cover)
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleBuscarReemplazosSpotify(badQualityTracks.length > 0 ? badQualityTracks : null),
+      className: "h-10 px-3.5 bg-rose-950/70 border border-rose-600/70 text-rose-200 font-mono text-xs font-bold rounded-xl flex items-center gap-2 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F50D} Lossless HD"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-rose-900 text-rose-200 px-1.5 py-0.2 rounded text-[10px]" }, badQualityTracks.length > 0 ? `${badQualityTracks.length} fakes` : "OK")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleSanitizarMetadatos,
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "Aa Normalizar")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setDuplicateModalOpen(true),
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-300 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2696\uFE0F Duplicados"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 px-1.5 py-0.2 rounded text-[10px]" }, metrics.duplicates || 0)
+  )), mobileWorkflowTab === "exportar" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleSincronizarPasaporteUniversal,
+      disabled: tracks.length === 0,
+      className: "h-10 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-2 shrink-0 active:scale-95 shadow-md"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F6C2}"),
+    /* @__PURE__ */ React.createElement("span", null, "Pasaporte DJ"),
+    /* @__PURE__ */ React.createElement("span", { className: "bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]" }, "ALL")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleExportarRekordboxXml,
+      disabled: tracks.length === 0,
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB} Rekordbox")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleExportarXLS,
+      disabled: tracks.length === 0,
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA} Excel")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setExportDropdownOpen((prev) => !prev),
+      className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-300 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0 active:scale-95"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "M\xE1s \u25BE")
+  )))), (isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 animate-pulse" }), batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold" }, batchProgress, "%"), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: handleCancelarProceso,
