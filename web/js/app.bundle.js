@@ -17751,7 +17751,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
   if (!isOpen) return null;
   const [phase, setPhase] = useState("video");
   const [videoOpacity, setVideoOpacity] = useState(0);
-  const [selectedAlpha, setSelectedAlpha] = useState(0.85);
+  const [selectedAlpha, setSelectedAlpha] = useState(0.9);
   const [isMuted, setIsMuted] = useState(false);
   const [isBassShaking, setIsBassShaking] = useState(false);
   const videoRef = useRef(null);
@@ -17766,6 +17766,17 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     const vid = videoRef.current;
     if (!vid) return;
     vid.currentTime = 0;
+    vid.muted = false;
+    vid.volume = 1;
+    const tryUnmute = () => {
+      if (vid) {
+        vid.muted = false;
+        vid.volume = 1;
+        setIsMuted(false);
+        vid.play().catch(() => {
+        });
+      }
+    };
     const playPromise = vid.play();
     if (playPromise !== void 0) {
       playPromise.then(() => {
@@ -17775,24 +17786,24 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         setIsMuted(true);
         vid.play().catch(() => {
         });
-        const unmuteSilently = () => {
-          if (vid) {
-            vid.muted = false;
-            setIsMuted(false);
-          }
-          window.removeEventListener("pointerdown", unmuteSilently);
-          window.removeEventListener("keydown", unmuteSilently);
+        const triggerEvents = ["pointermove", "mousemove", "mouseenter", "touchstart", "focus", "wheel", "scroll", "keydown", "pointerdown"];
+        const onUserInteract = () => {
+          tryUnmute();
+          triggerEvents.forEach((ev) => window.removeEventListener(ev, onUserInteract));
         };
-        window.addEventListener("pointerdown", unmuteSilently, { once: true });
-        window.addEventListener("keydown", unmuteSilently, { once: true });
+        triggerEvents.forEach((ev) => window.addEventListener(ev, onUserInteract, { passive: true, once: true }));
       });
     }
   }, []);
   const handleTimeUpdate = () => {
     const vid = videoRef.current;
     if (!vid || !vid.duration) return;
-    if (vid.currentTime >= 9.259 && !isBassShaking) {
+    if (vid.currentTime >= 9.258 && !isBassShaking) {
       setIsBassShaking(true);
+    }
+    const targetAlpha = vid.currentTime >= 15.175 ? 0.75 : 0.9;
+    if (selectedAlpha !== targetAlpha) {
+      setSelectedAlpha(targetAlpha);
     }
     const timeLeft = vid.duration - vid.currentTime;
     if (timeLeft <= 2 && videoOpacity > 0.02) {
@@ -17812,24 +17823,6 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     }, 200);
   };
   const handleAction = (action) => {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) {
-        const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(130, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.28);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(1e-3, ctx.currentTime + 0.32);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      }
-    } catch (_) {
-    }
     if (action === "login") {
       onClose();
       if (onOpenLogin) onOpenLogin();
@@ -17928,25 +17921,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
           animation: "trippyRgbSplitCyan 0.75s infinite ease-in-out"
         }
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-prism-glow mix-blend-color-dodge pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-scanlines opacity-30 mix-blend-overlay pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-black/40 pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)] pointer-events-none" })), /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/85 backdrop-blur-md border border-cyan-500/40 p-1.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.35)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300 px-2 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39A}\uFE0F"), /* @__PURE__ */ React.createElement("span", null, "ALPHA:")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, [
-      { val: 0.75, label: "75%" },
-      { val: 0.8, label: "80%" },
-      { val: 0.85, label: "85%" },
-      { val: 0.9, label: "90%" },
-      { val: 1, label: "100%" }
-    ].map((opt) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: opt.label,
-        type: "button",
-        onClick: (e) => {
-          e.stopPropagation();
-          setSelectedAlpha(opt.val);
-        },
-        className: `px-2.5 py-1 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer ${selectedAlpha === opt.val ? "bg-gradient-to-r from-cyan-400 to-teal-400 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.8)] scale-105" : "text-gray-400 hover:text-white hover:bg-white/10"}`
-      },
-      opt.label
-    )))), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-prism-glow mix-blend-color-dodge pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-scanlines opacity-30 mix-blend-overlay pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-black/40 pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)] pointer-events-none" })), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -17972,7 +17947,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
       {
         className: "relative z-10 flex flex-col items-center justify-center my-auto text-center px-4"
       },
-      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 max-w-4xl select-none group" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement(
         "img",
         {
           src: "/assets/beatwave_text.png",
@@ -18882,11 +18857,11 @@ const App = () => {
       dur: "2.0s",
       repeatCount: "indefinite"
     }
-  ))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 shrink-0 min-w-max" }, /* @__PURE__ */ React.createElement(
+  ))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0 min-w-max" }, /* @__PURE__ */ React.createElement(
     "div",
     {
       onClick: triggerLogoTechno,
-      className: "flex items-center gap-3 sm:gap-3.5 select-none cursor-pointer group",
+      className: "flex items-center gap-1.5 sm:gap-2 select-none cursor-pointer group",
       title: isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"
     },
     /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "sm" }),
