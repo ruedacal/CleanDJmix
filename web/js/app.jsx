@@ -4305,17 +4305,26 @@ const UserAccountModal = ({
         setTimeout(() => setSaveSuccessMsg(''), 3000);
     };
 
-    return (
-        <div className="fixed inset-0 z-50 overflow-hidden select-none">
-            {/* Backdrop Sólido Plano sin Blur Transparente */}
+    // Cerrar modal con tecla Escape
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[99999] overflow-hidden select-none">
+            {/* Backdrop Sólido Plano con Desenfoque */}
             <div 
-                className="fixed inset-0 bg-[#000000] opacity-85 transition-opacity animate-fadeIn" 
+                className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity animate-fadeIn" 
                 onClick={onClose}
             />
 
             {/* Columna Lateral Derecha (Slide-over Drawer) - Fondo Plano Sólido 100% Opaco */}
             <aside 
-                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[500px] md:w-[530px] max-w-[95vw] h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+                className="fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[500px] md:w-[540px] max-w-[95vw] h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Perfil con Avatar y Datos Rápidos */}
@@ -4842,7 +4851,8 @@ const UserAccountModal = ({
                     </button>
                 </div>
             </aside>
-        </div>
+        </div>,
+        document.body
     );
 };
 
@@ -6187,38 +6197,39 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     // ESTADO PLEGADO: Pestaña vertical adherida al borde derecho
     // ─────────────────────────────────────────────────────────────────────────
     if (isFolded) {
-        return (
+        return ReactDOM.createPortal(
             <div 
                 onClick={() => setIsFolded(false)}
-                className="fixed top-1/2 -translate-y-1/2 right-0 z-50 bg-[#090a18] border-l-2 border-y border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.6)] px-3.5 py-4 rounded-l-2xl cursor-pointer hover:bg-pink-950 hover:translate-x-[-4px] transition-all flex flex-col items-center gap-2 text-white font-mono text-xs select-none animate-fadeIn"
-                title="Haga clic para desplegar el Manual Interactivo al 60% de pantalla"
+                className="fixed top-1/2 -translate-y-1/2 right-0 z-[99999] bg-[#090a18] border-l-2 border-y border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.6)] px-3.5 py-4 rounded-l-2xl cursor-pointer hover:bg-pink-950 hover:translate-x-[-4px] transition-all flex flex-col items-center gap-2 text-white font-mono text-xs select-none animate-fadeIn"
+                title="Haga clic para desplegar el Manual Interactivo"
             >
                 <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
                 <span className="font-black text-pink-200 [writing-mode:vertical-rl] tracking-wider uppercase text-xs rotate-180 flex items-center gap-1.5">
-                    📖 MANUAL 60% • {activeSec.badge}
+                    📖 MANUAL • {activeSec.badge}
                 </span>
                 <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-pink-950 text-pink-200 border border-pink-600 font-bold uppercase mt-1">
                     ◀ Desplegar
                 </span>
-            </div>
+            </div>,
+            document.body
         );
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // MANUAL EXCLUSIVO: COLUMNA LATERAL DERECHA AL 60% DE ANCHO (EL 40% QUEDA TOTALMENTE VISIBLE)
+    // MANUAL EXCLUSIVO: COLUMNA LATERAL DERECHA (DESACOPLADA CON PORTAL)
     // ─────────────────────────────────────────────────────────────────────────
-    return (
-        <div className="fixed inset-0 z-50 overflow-hidden select-none pointer-events-none">
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[99999] overflow-hidden select-none pointer-events-none">
             {/* Backdrop sutil clicable para cerrar sin tapar la cabina detrás */}
             <div 
-                className="fixed inset-0 bg-black/10 backdrop-blur-[0.5px] pointer-events-auto transition-opacity"
+                className="fixed inset-0 bg-black/60 backdrop-blur-[1px] pointer-events-auto transition-opacity"
                 onClick={onClose}
                 title="Haz clic fuera para cerrar el manual y volver a la cabina"
             />
 
-            {/* Columna Lateral Derecha al 60% exacto de pantalla vertical */}
+            {/* Columna Lateral Derecha */}
             <aside 
-                className="fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[85vw] md:w-[70vw] lg:w-[60vw] min-w-[60vw] max-w-[60vw] h-full bg-[#080914] border-l-2 border-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.85)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
+                className="fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#080914] border-l-2 border-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Drawer */}
@@ -6326,7 +6337,8 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     </button>
                 </div>
             </aside>
-        </div>
+        </div>,
+        document.body
     );
 };
 
@@ -6571,6 +6583,524 @@ const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayT
                 </div>
             </div>
         </div>
+    );
+};
+
+// ─── MODAL GESTOR DE BIBLIOTECAS Y ESTRUCTURADOR DE CARPETAS VIRTUALES / EN DISCO ───
+const CustomLibraryModal = ({
+    isOpen,
+    onClose,
+    libraries = [],
+    activeLibraryId,
+    onSaveLibraries,
+    onSelectLibrary,
+    currentTracks = [],
+    selectedTrackIds = new Set(),
+    onMaterializarEnDisco
+}) => {
+    if (!isOpen) return null;
+
+    const [activeLibId, setActiveLibId] = useState(activeLibraryId || (libraries[0] && libraries[0].id) || 'lib_default');
+    const [libNameInput, setLibNameInput] = useState('');
+    const [newFolderName, setNewFolderName] = useState('');
+    const [selectedFolderId, setSelectedFolderId] = useState(null);
+    const [feedbackMsg, setFeedbackMsg] = useState('');
+    const [searchTrack, setSearchTrack] = useState('');
+
+    const currentLib = libraries.find(l => l.id === activeLibId) || libraries[0] || {
+        id: 'lib_default',
+        name: 'Mi Biblioteca Principal',
+        folders: []
+    };
+
+    useEffect(() => {
+        if (currentLib) {
+            setLibNameInput(currentLib.name || '');
+            if (!selectedFolderId && currentLib.folders && currentLib.folders.length > 0) {
+                setSelectedFolderId(currentLib.folders[0].id);
+            }
+        }
+    }, [currentLib?.id]);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    // Crear nueva biblioteca
+    const handleCreateNewLibrary = () => {
+        const newId = `lib_${Date.now()}`;
+        const newLib = {
+            id: newId,
+            name: `Nueva Biblioteca ${libraries.length + 1}`,
+            createdAt: new Date().toISOString(),
+            folders: [
+                { id: `f_${Date.now()}_1`, name: '01 - Warm Up', tracks: [] },
+                { id: `f_${Date.now()}_2`, name: '02 - Peak Time', tracks: [] },
+                { id: `f_${Date.now()}_3`, name: '03 - Melodic & Deep', tracks: [] },
+            ]
+        };
+        const updated = [...libraries, newLib];
+        if (onSaveLibraries) onSaveLibraries(updated, newId);
+        setActiveLibId(newId);
+        setSelectedFolderId(newLib.folders[0].id);
+        setFeedbackMsg('✓ Biblioteca creada');
+        setTimeout(() => setFeedbackMsg(''), 2500);
+    };
+
+    // Renombrar biblioteca
+    const handleUpdateLibraryName = () => {
+        if (!libNameInput.trim()) return;
+        const updated = libraries.map(l => l.id === activeLibId ? { ...l, name: libNameInput.trim() } : l);
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setFeedbackMsg(`✓ Nombre actualizado: ${libNameInput.trim()}`);
+        setTimeout(() => setFeedbackMsg(''), 2500);
+    };
+
+    // Añadir carpeta virtual
+    const handleAddFolder = () => {
+        if (!newFolderName.trim()) return;
+        const newF = {
+            id: `f_${Date.now()}`,
+            name: newFolderName.trim(),
+            tracks: []
+        };
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                return { ...l, folders: [...(l.folders || []), newF] };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setNewFolderName('');
+        setSelectedFolderId(newF.id);
+        setFeedbackMsg(`✓ Carpeta virtual "${newF.name}" creada`);
+        setTimeout(() => setFeedbackMsg(''), 2500);
+    };
+
+    // Eliminar carpeta
+    const handleDeleteFolder = (folderId) => {
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                return { ...l, folders: (l.folders || []).filter(f => f.id !== folderId) };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        if (selectedFolderId === folderId) {
+            setSelectedFolderId(null);
+        }
+    };
+
+    // Asignar pistas actuales o seleccionadas a la carpeta seleccionada
+    const handleAssignTracksToActiveFolder = (folderId, onlySelected = false) => {
+        const tracksToAssign = onlySelected 
+            ? currentTracks.filter(t => selectedTrackIds.has(t.id))
+            : currentTracks;
+
+        if (tracksToAssign.length === 0) {
+            alert("No hay pistas cargadas para asignar.");
+            return;
+        }
+
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                const newFolders = (l.folders || []).map(f => {
+                    if (f.id === folderId) {
+                        const existingIds = new Set((f.tracks || []).map(t => t.id || t.file_path));
+                        const added = tracksToAssign.filter(t => !existingIds.has(t.id || t.file_path));
+                        return { ...f, tracks: [...(f.tracks || []), ...added] };
+                    }
+                    return f;
+                });
+                return { ...l, folders: newFolders };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setFeedbackMsg(`✓ ${tracksToAssign.length} pista(s) asignadas`);
+        setTimeout(() => setFeedbackMsg(''), 3000);
+    };
+
+    // Auto-organizar por Género (crea carpetas y reparte pistas automáticamente)
+    const handleAutoGroupByGenre = () => {
+        if (!currentTracks || currentTracks.length === 0) {
+            alert("Carga pistas en la biblioteca para auto-organizar por género.");
+            return;
+        }
+        const byGenre = {};
+        currentTracks.forEach(t => {
+            const g = (t.genre || t.subgenre || 'Electrónica General').trim();
+            if (!byGenre[g]) byGenre[g] = [];
+            byGenre[g].push(t);
+        });
+
+        const newFolders = Object.entries(byGenre).map(([genreName, trList], idx) => ({
+            id: `f_auto_${idx}_${Date.now()}`,
+            name: genreName,
+            tracks: trList
+        }));
+
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                return { ...l, folders: newFolders };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        if (newFolders.length > 0) setSelectedFolderId(newFolders[0].id);
+        setFeedbackMsg(`✓ ${newFolders.length} carpetas generadas automáticamente por género`);
+        setTimeout(() => setFeedbackMsg(''), 3500);
+    };
+
+    // Quitar pista de carpeta
+    const handleRemoveTrackFromFolder = (folderId, trackKey) => {
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                const newFolders = (l.folders || []).map(f => {
+                    if (f.id === folderId) {
+                        return { ...f, tracks: (f.tracks || []).filter(t => (t.id || t.file_path) !== trackKey) };
+                    }
+                    return f;
+                });
+                return { ...l, folders: newFolders };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+    };
+
+    const activeFolder = (currentLib.folders || []).find(f => f.id === selectedFolderId) || (currentLib.folders && currentLib.folders[0]);
+
+    const folderTracks = activeFolder?.tracks || [];
+    const filteredFolderTracks = folderTracks.filter(t => {
+        if (!searchTrack.trim()) return true;
+        const q = searchTrack.toLowerCase();
+        return (t.title && t.title.toLowerCase().includes(q)) || (t.artist && t.artist.toLowerCase().includes(q));
+    });
+
+    const totalTracksInLib = (currentLib.folders || []).reduce((acc, f) => acc + (f.tracks?.length || 0), 0);
+
+    return ReactDOM.createPortal(
+        <div 
+            className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+            onClick={onClose}
+        >
+            <div 
+                className="bg-[#0b0c16] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden text-gray-200 my-auto animate-fadeIn"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Cabecera */}
+                <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0c0e1e] to-[#080911] shrink-0">
+                    <div className="flex items-center gap-3">
+                        <span className="text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner">📚</span>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
+                                    Gestor de Bibliotecas & Estructura de Carpetas
+                                </h3>
+                                <span className="px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black">
+                                    {totalTracksInLib} pistas organizadas
+                                </span>
+                            </div>
+                            <p className="text-[11px] text-gray-400 font-sans mt-0.5">
+                                Crea bibliotecas personalizadas con carpetas virtuales. Puedes materializarlas en disco cuando quieras conservando tus respaldos originales.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {feedbackMsg && (
+                            <span className="text-xs font-mono text-emerald-400 font-bold animate-pulse hidden sm:inline">
+                                {feedbackMsg}
+                            </span>
+                        )}
+                        <button 
+                            type="button" 
+                            onClick={onClose}
+                            className="px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-rose-950 hover:text-rose-200 text-gray-300 border border-djzinc-700 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
+                            title="Cerrar modal (ESC)"
+                        >
+                            <span>✕</span>
+                            <span>Cerrar</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Barra de Selección y Nombre de Biblioteca */}
+                <div className="px-5 py-3 border-b border-djzinc-800 bg-[#070810] flex flex-wrap items-center justify-between gap-3 shrink-0">
+                    <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
+                        <span className="text-[11px] font-mono uppercase font-bold text-gray-400">Biblioteca:</span>
+                        <select
+                            value={activeLibId}
+                            onChange={(e) => {
+                                const id = e.target.value;
+                                setActiveLibId(id);
+                                if (onSelectLibrary) onSelectLibrary(id);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-white font-bold outline-none focus:border-djcyan-400"
+                        >
+                            {libraries.map(lib => (
+                                <option key={lib.id} value={lib.id}>
+                                    {lib.name} ({lib.folders?.length || 0} carpetas)
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* Input para renombrar biblioteca activa */}
+                        <div className="flex items-center gap-1">
+                            <input 
+                                type="text"
+                                value={libNameInput}
+                                onChange={(e) => setLibNameInput(e.target.value)}
+                                placeholder="Nombre de la biblioteca"
+                                className="px-3 py-1 bg-djzinc-950 border border-djzinc-750 rounded-lg text-xs font-mono text-white outline-none focus:border-djcyan-400 w-44"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleUpdateLibraryName}
+                                className="px-2.5 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 text-xs font-mono font-bold cursor-pointer transition-colors"
+                                title="Guardar nombre"
+                            >
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleCreateNewLibrary}
+                            className="px-3 py-1.5 rounded-xl bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
+                            title="Crear una nueva biblioteca en blanco"
+                        >
+                            <span>➕</span>
+                            <span>Nueva Biblioteca</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Contenido Principal en 2 Paneles (Carpetas a la izquierda, Pistas a la derecha) */}
+                <div className="flex-1 min-h-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-djzinc-800 overflow-hidden">
+                    
+                    {/* PANEL IZQUIERDO: Estructura de Carpetas */}
+                    <div className="w-full md:w-5/12 p-4 flex flex-col gap-3 bg-[#080912] overflow-y-auto custom-scrollbar">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-djcyan-400 flex items-center gap-1.5">
+                                <span>📁</span>
+                                <span>Carpetas Creadas ({currentLib.folders?.length || 0})</span>
+                            </h4>
+                            <button
+                                type="button"
+                                onClick={handleAutoGroupByGenre}
+                                className="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/60 text-[10px] font-mono font-bold cursor-pointer transition-colors"
+                                title="Crea carpetas automáticamente a partir de los géneros musicales de tus pistas cargadas"
+                            >
+                                ⚡ Auto por Género
+                            </button>
+                        </div>
+
+                        {/* Input para añadir nueva carpeta */}
+                        <div className="flex items-center gap-1.5">
+                            <input 
+                                type="text"
+                                value={newFolderName}
+                                onChange={(e) => setNewFolderName(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleAddFolder(); }}
+                                placeholder="Nombre de nueva carpeta..."
+                                className="flex-1 px-3 py-1.5 bg-djzinc-950 border border-djzinc-750 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleAddFolder}
+                                className="px-3 py-1.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs rounded-xl cursor-pointer active:scale-95 shadow-sm"
+                            >
+                                + Crear
+                            </button>
+                        </div>
+
+                        {/* Lista de Carpetas */}
+                        <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
+                            {(!currentLib.folders || currentLib.folders.length === 0) ? (
+                                <div className="p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl">
+                                    No hay carpetas creadas. Crea una arriba o pulsa "Auto por Género".
+                                </div>
+                            ) : (
+                                currentLib.folders.map(f => {
+                                    const isSelected = selectedFolderId === f.id;
+                                    const trCount = f.tracks?.length || 0;
+                                    return (
+                                        <div
+                                            key={f.id}
+                                            onClick={() => setSelectedFolderId(f.id)}
+                                            className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
+                                                isSelected 
+                                                    ? 'bg-djcyan-950/40 border-djcyan-500/80 text-white shadow-md' 
+                                                    : 'bg-djzinc-900/50 border-djzinc-800 text-gray-300 hover:bg-djzinc-900 hover:border-djzinc-750'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="text-base shrink-0">{isSelected ? '📂' : '📁'}</span>
+                                                <div className="truncate">
+                                                    <span className="text-xs font-mono font-bold block truncate">{f.name}</span>
+                                                    <span className="text-[10px] text-gray-400 font-mono">{trCount} pista(s) asignadas</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAssignTracksToActiveFolder(f.id, false)}
+                                                    className="px-2 py-0.5 rounded bg-djzinc-800 hover:bg-djcyan-950 hover:text-djcyan-300 text-gray-300 text-[10px] font-mono border border-djzinc-700 cursor-pointer"
+                                                    title={`Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`}
+                                                >
+                                                    + Asignar ({currentTracks.length})
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteFolder(f.id)}
+                                                    className="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer"
+                                                    title="Eliminar carpeta"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    {/* PANEL DERECHO: Pistas Dentro de la Carpeta Seleccionada */}
+                    <div className="w-full md:w-7/12 p-4 flex flex-col gap-3 bg-[#0a0b16] overflow-hidden">
+                        <div className="flex items-center justify-between shrink-0">
+                            <div>
+                                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                                    <span>🎵</span>
+                                    <span>Pistas en: <span className="text-djcyan-300">{activeFolder?.name || 'Ninguna carpeta'}</span></span>
+                                </h4>
+                                <span className="text-[10px] font-mono text-gray-400">
+                                    {folderTracks.length} pista(s) en esta carpeta
+                                </span>
+                            </div>
+
+                            {activeFolder && (
+                                <div className="flex items-center gap-1.5">
+                                    {selectedTrackIds.size > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAssignTracksToActiveFolder(activeFolder.id, true)}
+                                            className="px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/70 text-[11px] font-mono font-bold cursor-pointer"
+                                            title="Asignar solo las pistas seleccionadas con checkbox"
+                                        >
+                                            + Asignar Seleccionadas ({selectedTrackIds.size})
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAssignTracksToActiveFolder(activeFolder.id, false)}
+                                        className="px-2.5 py-1 rounded-lg bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/70 text-[11px] font-mono font-bold cursor-pointer"
+                                    >
+                                        + Añadir Todas ({currentTracks.length})
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Buscador de pistas en la carpeta */}
+                        {folderTracks.length > 5 && (
+                            <div className="relative shrink-0">
+                                <span className="absolute left-3 top-2 text-xs text-gray-500">🔍</span>
+                                <input 
+                                    type="text"
+                                    value={searchTrack}
+                                    onChange={(e) => setSearchTrack(e.target.value)}
+                                    placeholder="Buscar en esta carpeta por título o artista..."
+                                    className="w-full pl-8 pr-3 py-1.5 bg-djzinc-950 border border-djzinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
+                                />
+                            </div>
+                        )}
+
+                        {/* Lista de pistas */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 border border-djzinc-800/80 rounded-xl bg-[#070810] p-2">
+                            {(!activeFolder || folderTracks.length === 0) ? (
+                                <div className="py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2">
+                                    <span className="text-2xl">📂</span>
+                                    <span>Esta carpeta está vacía.</span>
+                                    <span className="text-[11px] text-gray-600">
+                                        Pulsa "+ Añadir Todas" o "+ Asignar Seleccionadas" para organizar pistas aquí.
+                                    </span>
+                                </div>
+                            ) : (
+                                filteredFolderTracks.map((tr, tIdx) => {
+                                    const trKey = tr.id || tr.file_path || tIdx;
+                                    return (
+                                        <div key={trKey} className="py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-djzinc-900/60 rounded-lg group">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="font-mono text-[10px] text-gray-500 w-5">{tIdx + 1}</span>
+                                                <div className="truncate">
+                                                    <span className="text-xs font-mono font-bold text-white block truncate">
+                                                        {tr.title || tr.filename || tr.file_path?.split('/').pop() || 'Sin título'}
+                                                    </span>
+                                                    <span className="text-[10px] font-mono text-gray-400 block truncate">
+                                                        {tr.artist || 'Artista desconocido'} • {tr.genre || tr.subgenre || 'Electrónica'} • {tr.bpm ? `${Math.round(tr.bpm)} BPM` : ''} {tr.key || ''}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveTrackFromFolder(activeFolder.id, trKey)}
+                                                className="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 text-xs transition-opacity cursor-pointer"
+                                                title="Quitar de esta carpeta"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Pie: Acciones de Guardado y Crear en Disco */}
+                <div className="px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex flex-wrap items-center justify-between gap-3 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-gray-400">
+                            🔒 Los cambios quedan guardados automáticamente para tu próxima sesión.
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                        {/* Botón Principal: Crear en Disco (Materializar) */}
+                        <button
+                            type="button"
+                            onClick={() => onMaterializarEnDisco && onMaterializarEnDisco(currentLib)}
+                            disabled={!currentLib.folders || currentLib.folders.length === 0}
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-black text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                            title="Selecciona una carpeta o USB en disco para crear una copia física de tus pistas organizadas por carpetas"
+                        >
+                            <span className="text-sm">💾</span>
+                            <span>Crear en Disco (Copia Física Estructurada)</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-mono font-bold text-xs cursor-pointer transition-colors"
+                        >
+                            Listo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>,
+        document.body
     );
 };
 
@@ -7703,17 +8233,19 @@ const AuditWorkspace = ({
             alert("No hay pistas auditadas para exportar.");
             return;
         }
+        const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar el Informe Excel (.xlsx):");
+        if (!destino) return;
         if (window.eel && window.eel.exportar_auditoria_xls) {
             setIsExporting(true);
             setBatchProgress(25);
             setBatchStatusMsg("Generando reporte de auditoría en formato Excel (XLSX)...");
             try {
-                const res = await window.eel.exportar_auditoria_xls(tracks, rutaOrigen)();
+                const res = await window.eel.exportar_auditoria_xls(tracks, destino)();
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     const nombreArchivo = res.path ? res.path.split('/').pop() : "CleanDJmix_Audit_Respaldo.xlsx";
                     setBatchStatusMsg(`✓ Exportado con éxito: ${nombreArchivo}`);
-                    setSaveFeedback(`✓ Exportado con éxito: ${nombreArchivo}`);
+                    setSaveFeedback(`✓ Informe guardado en: ${destino}`);
                     setTimeout(() => setSaveFeedback(''), 4000);
                 } else {
                     setBatchStatusMsg("Error al exportar a Excel.");
@@ -7733,54 +8265,58 @@ const AuditWorkspace = ({
         }
     };
 
-    const handleExportarSeratoCrates = async () => {
+    // Exportación / Inyección de Metadatos nativos requeridos por Serato DJ Pro en los archivos
+    const handleExportarSerato = async () => {
         if (!tracks || tracks.length === 0) {
-            alert("No hay pistas auditadas para exportar.");
+            alert("No hay pistas auditadas para configurar para Serato.");
             return;
         }
-        if (window.eel && window.eel.exportar_serato_crates) {
-            setIsExporting(true);
-            setBatchProgress(40);
-            setBatchStatusMsg("Generando archivos .crate oficiales para Serato DJ Pro...");
-            try {
-                const res = await window.eel.exportar_serato_crates(tracks)();
+        setIsInjecting(true);
+        setBatchProgress(15);
+        setBatchStatusMsg("Inyectando configuración y metadatos nativos para Serato DJ Pro en los archivos...");
+        try {
+            if (window.eel && window.eel.inyectar_lote_metadatos) {
+                const res = await window.eel.inyectar_lote_metadatos(tracks)();
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
-                    setBatchStatusMsg(`✓ ${res.total_crates} crates generados en ~/Music/_Serato_/Subcrates`);
-                    setSaveFeedback(`✓ ${res.total_crates} crates exportados a Serato`);
-                    setTimeout(() => setSaveFeedback(''), 4000);
+                    const total = res.total_inyectadas || tracks.length;
+                    setBatchStatusMsg(`✓ ${total} pistas configuradas con metadatos oficiales de Serato DJ Pro`);
+                    setSaveFeedback(`✓ Metadatos Serato inyectados en los archivos de audio`);
+                    setTimeout(() => setSaveFeedback(''), 4500);
                 } else {
-                    setBatchStatusMsg("Error al exportar crates de Serato.");
-                    alert(res?.msg || "Error al exportar crates de Serato.");
+                    alert(res?.msg || "Error al inyectar metadatos para Serato.");
                 }
-            } catch (e) {
-                console.error("Error al exportar crates Serato:", e);
-                setBatchStatusMsg("Error durante la exportación.");
-            } finally {
-                setTimeout(() => {
-                    setIsExporting(false);
-                    setBatchProgress(0);
-                    setBatchStatusMsg('');
-                }, 1000);
             }
+        } catch (e) {
+            console.error("Error al inyectar metadatos Serato:", e);
+            alert("Error al procesar pistas para Serato DJ Pro.");
+        } finally {
+            setTimeout(() => {
+                setIsInjecting(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 800);
         }
     };
+    const handleExportarSeratoCrates = handleExportarSerato;
 
     const handleExportarTraktor = async () => {
         if (!tracks || tracks.length === 0) {
             alert("No hay pistas auditadas para exportar.");
             return;
         }
+        const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar colección Traktor (.nml):");
+        if (!destino) return;
         if (window.eel && window.eel.exportar_traktor_nml) {
             setIsExporting(true);
             setBatchProgress(40);
             setBatchStatusMsg("Generando colección Traktor Pro (.nml)...");
             try {
-                const res = await window.eel.exportar_traktor_nml(tracks)();
+                const res = await window.eel.exportar_traktor_nml(tracks, destino)();
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     setBatchStatusMsg(`✓ Traktor NML generado en ${res.path}`);
-                    setSaveFeedback(`✓ Traktor NML generado`);
+                    setSaveFeedback(`✓ Traktor NML guardado en ${destino}`);
                     setTimeout(() => setSaveFeedback(''), 4000);
                 } else {
                     alert(res?.msg || "Error al exportar Traktor NML.");
@@ -7802,15 +8338,17 @@ const AuditWorkspace = ({
             alert("No hay pistas auditadas para exportar.");
             return;
         }
+        const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar lista VirtualDJ (.m3u):");
+        if (!destino) return;
         setIsExporting(true);
         setBatchProgress(40);
         setBatchStatusMsg("Generando lista y metadatos para VirtualDJ...");
         try {
             if (window.eel && window.eel.exportar_set_m3u) {
-                const res = await window.eel.exportar_set_m3u(tracks, "VirtualDJ_Coleccion")();
+                const res = await window.eel.exportar_set_m3u(tracks, "VirtualDJ_Coleccion", destino)();
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
-                    setSaveFeedback(`✓ Colección VirtualDJ lista en ${res.path}`);
+                    setSaveFeedback(`✓ Colección VirtualDJ guardada en ${destino}`);
                     setTimeout(() => setSaveFeedback(''), 4000);
                 }
             } else {
@@ -7833,17 +8371,18 @@ const AuditWorkspace = ({
             alert("No hay pistas auditadas para exportar.");
             return;
         }
+        const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar rekordbox.xml:");
+        if (!destino) return;
         if (window.eel && window.eel.exportar_rekordbox_xml) {
             setIsExporting(true);
             setBatchProgress(40);
             setBatchStatusMsg("Generando archivo rekordbox.xml estándar Pioneer DJ...");
             try {
-                const targetDir = rutaOrigen || "/Users/admin/Music/mi musica";
-                const res = await window.eel.exportar_rekordbox_xml(tracks, targetDir, "rekordbox.xml")();
+                const res = await window.eel.exportar_rekordbox_xml(tracks, destino, "rekordbox.xml")();
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     setBatchStatusMsg(`✓ rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists)`);
-                    setSaveFeedback(`✓ rekordbox.xml generado en ${res.path}`);
+                    setSaveFeedback(`✓ rekordbox.xml guardado en ${destino}`);
                     setTimeout(() => setSaveFeedback(''), 4000);
                 } else {
                     setBatchStatusMsg("Error al exportar rekordbox.xml.");
@@ -7867,27 +8406,27 @@ const AuditWorkspace = ({
             alert("No hay pistas cargadas para exportar.");
             return;
         }
+        const destino = await solicitarCarpetaDestino("Selecciona la carpeta destino para la exportación universal:");
+        if (!destino) return;
         setIsExporting(true);
         setBatchProgress(30);
         setBatchStatusMsg("Ejecutando Pasaporte Universal: Serato, Rekordbox, Traktor y VirtualDJ...");
         try {
-            const targetDir = rutaOrigen || "/Users/admin/Music/mi musica";
             let res = null;
             if (window.eel && window.eel.sincronizar_pasaporte_universal) {
-                res = await window.eel.sincronizar_pasaporte_universal(tracks, targetDir)();
+                res = await window.eel.sincronizar_pasaporte_universal(tracks, destino)();
             } else {
                 const resp = await fetch('/api/export/universal_sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tracks, destino_dir: targetDir })
+                    body: JSON.stringify({ tracks, destino_dir: destino })
                 });
                 res = await resp.json();
             }
             setBatchProgress(100);
             if (res && res.status === 'ok') {
-                const cratesCount = res.serato?.total_crates || 0;
                 setBatchStatusMsg(`✓ Pasaporte Universal Sincronizado: ${tracks.length} pistas en 4 plataformas.`);
-                setSaveFeedback(`✓ Sincronizado: Serato (${cratesCount} crates), Rekordbox, Traktor NML y VirtualDJ M3U`);
+                setSaveFeedback(`✓ Sincronizado en ${destino}: Rekordbox XML, Traktor NML y VirtualDJ M3U`);
                 setTimeout(() => setSaveFeedback(''), 5000);
             } else {
                 alert("Error sincronizando: " + (res?.msg || "Fallo inesperado"));
@@ -8218,6 +8757,125 @@ const AuditWorkspace = ({
     const [columnSelectorOpen, setColumnSelectorOpen] = useState(false);
     const [columnSearchText, setColumnSearchText] = useState('');
     const [isDragOver, setIsDragOver] = useState(false);
+
+    // Estado y Persistencia de Bibliotecas Personalizadas con Carpetas Virtuales y en Disco
+    const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
+    const [customLibraries, setCustomLibraries] = useState(() => {
+        try {
+            const saved = localStorage.getItem('bw_user_custom_libraries');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (_) {}
+        return [
+            {
+                id: 'lib_default',
+                name: 'Mi Biblioteca Principal',
+                createdAt: new Date().toISOString(),
+                folders: [
+                    { id: 'f_warm', name: '01 - Warm Up', tracks: [] },
+                    { id: 'f_peak', name: '02 - Peak Time', tracks: [] },
+                    { id: 'f_deep', name: '03 - Deep & Melodic', tracks: [] },
+                    { id: 'f_close', name: '04 - Closing & Special', tracks: [] }
+                ]
+            }
+        ];
+    });
+    const [activeCustomLibId, setActiveCustomLibId] = useState(() => {
+        try {
+            return localStorage.getItem('bw_active_custom_library_id') || 'lib_default';
+        } catch (_) {
+            return 'lib_default';
+        }
+    });
+
+    const activeCustomLib = customLibraries.find(l => l.id === activeCustomLibId) || customLibraries[0];
+
+    const saveCustomLibraries = (newLibs, newActiveId = null) => {
+        setCustomLibraries(newLibs);
+        try {
+            localStorage.setItem('bw_user_custom_libraries', JSON.stringify(newLibs));
+            if (newActiveId) {
+                setActiveCustomLibId(newActiveId);
+                localStorage.setItem('bw_active_custom_library_id', newActiveId);
+            }
+        } catch (_) {}
+    };
+
+    // Cerrar modal de columnas con ESC
+    useEffect(() => {
+        if (!columnSelectorOpen) return;
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                setColumnSelectorOpen(false);
+                setColumnSearchText('');
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [columnSelectorOpen]);
+
+    // Selector universal de carpeta destino para todas las descargas / exportaciones
+    const solicitarCarpetaDestino = async (promptMsg = "Selecciona la carpeta destino para guardar:") => {
+        if (window.eel && window.eel.seleccionar_directorio) {
+            try {
+                const ruta = await window.eel.seleccionar_directorio(promptMsg)();
+                return (ruta && typeof ruta === 'string' && ruta.trim()) ? ruta.trim() : null;
+            } catch (e) {
+                console.error("Error al seleccionar carpeta destino:", e);
+                return null;
+            }
+        }
+        return rutaOrigen || "/Users/admin/Music/mi musica";
+    };
+
+    // Materializar biblioteca en disco preservando copias originales como respaldo
+    const handleMaterializarBibliotecaEnDisco = async (lib) => {
+        if (!lib || !lib.folders || lib.folders.length === 0) {
+            alert("Crea al menos una carpeta y asigna pistas para materializar en disco.");
+            return;
+        }
+        const destino = await solicitarCarpetaDestino(`Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`);
+        if (!destino) return;
+
+        const estructura = lib.folders.map(f => {
+            let fTracks = f.tracks || [];
+            if (fTracks.length === 0 && tracks && tracks.length > 0) {
+                fTracks = tracks.filter(t => (t.genre && t.genre.toLowerCase() === f.name.toLowerCase()) || (t.subgenre && t.subgenre.toLowerCase() === f.name.toLowerCase()));
+            }
+            return {
+                folder_name: f.name,
+                tracks: fTracks
+            };
+        });
+
+        setIsExporting(true);
+        setBatchProgress(20);
+        setBatchStatusMsg(`Copiando biblioteca "${lib.name}" en disco preservando respaldos...`);
+        try {
+            if (window.eel && window.eel.crear_biblioteca_en_disco) {
+                const res = await window.eel.crear_biblioteca_en_disco(lib.name, estructura, destino)();
+                setBatchProgress(100);
+                if (res && res.status === 'ok') {
+                    setBatchStatusMsg(`✓ Biblioteca "${lib.name}" creada en: ${res.base_dir}`);
+                    setSaveFeedback(`✓ ${res.total_copied} pistas copiadas en ${lib.name}`);
+                    alert(`¡Biblioteca materializada con éxito en disco!\n\nUbicación: ${res.base_dir}\nPistas copiadas: ${res.total_copied}\n\nTus archivos originales de respaldo permanecen 100% intactos.`);
+                } else {
+                    alert(res?.msg || "Error al crear la estructura en disco.");
+                }
+            }
+        } catch (err) {
+            console.error("Error materializando biblioteca:", err);
+            alert("Error al crear biblioteca en disco.");
+        } finally {
+            setTimeout(() => {
+                setIsExporting(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+            }, 800);
+        }
+    };
 
     const toggleColumnVisibility = (colKey) => {
         setVisibleColumns(prev => {
@@ -8559,12 +9217,12 @@ const AuditWorkspace = ({
     return (
         <div className="flex w-full h-full overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0">
-                {/* 1. TOP BAR TÁCTICA: Ingesta, Contexto de Colección, Guardar e Inspector */}
-                <div className="px-3 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-2 z-20">
-                    {/* IZQUIERDA: Contexto Activo de Biblioteca */}
-                    <div data-tour="tour-audit-select" className="flex items-center gap-1.5 shrink-0">
+                {/* 1. TOP BAR TÁCTICA: Ingesta, Contexto de Colección, Crear Biblioteca & Vista y Herramientas */}
+                <div className="px-3.5 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-3 z-20">
+                    {/* IZQUIERDA: Contexto Activo de Biblioteca & Crear Biblioteca */}
+                    <div data-tour="tour-audit-select" className="flex items-center gap-2 shrink-0">
                         {tracks && tracks.length > 0 && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[320px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[280px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
                                 <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>
                                 <span className="text-gray-400 text-[11px] shrink-0">📁</span>
                                 <span className="truncate">
@@ -8575,21 +9233,87 @@ const AuditWorkspace = ({
                                 </span>
                             </div>
                         )}
+
+                        {/* Botón Gestor / Crear Biblioteca Persistente */}
+                        <button
+                            type="button"
+                            onClick={() => setIsLibraryModalOpen(true)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0"
+                            title="Crear o gestionar biblioteca personalizada, estructurada en carpetas virtuales y copia física en disco"
+                        >
+                            <span>📚</span>
+                            <span className="hidden sm:inline">Biblioteca:</span>
+                            <span className="text-white font-black truncate max-w-[130px]">{activeCustomLib ? activeCustomLib.name : 'Crear Biblioteca'}</span>
+                            <span className="px-1.5 py-0.2 rounded bg-djzinc-900 text-djcyan-300 text-[10px] font-bold border border-djzinc-750">
+                                {activeCustomLib?.folders?.length || 0}
+                            </span>
+                        </button>
                     </div>
 
-                    {/* DERECHA: Feedback de Guardado & Cancelar */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    {/* DERECHA: Vista y Herramientas (Columnas, HUD, Inspector) + Feedback & Cancelar */}
+                    <div className="flex items-center gap-2 shrink-0 ml-auto">
                         {saveFeedback && (
-                            <span className="text-xs font-mono text-djgreen-400 font-bold animate-pulse">
+                            <span className="text-xs font-mono text-djgreen-400 font-bold animate-pulse hidden md:inline">
                                 {saveFeedback}
                             </span>
                         )}
+
+                        {/* Grupo Vista y Herramientas (Alineado a la derecha en la barra superior) */}
+                        <div className="flex items-center gap-1.5 bg-djzinc-950/80 p-0.5 rounded-xl border border-djzinc-800 shrink-0">
+                            {/* Selector de Columnas Visibles (Abre Modal Pro de Configuración) */}
+                            <button
+                                type="button"
+                                onClick={() => setColumnSelectorOpen(true)}
+                                className={`px-2.5 py-1 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 ${
+                                    columnSelectorOpen 
+                                        ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-600/70 shadow-inner' 
+                                        : 'bg-djzinc-900 text-gray-300 border-djzinc-750 hover:text-white hover:border-djzinc-650'
+                                }`}
+                                title="Abrir Centro de Personalización de Columnas y Vistas"
+                            >
+                                <span>⚙️</span>
+                                <span>Columnas</span>
+                                <span className="text-[10px] text-djcyan-400 font-mono font-bold">
+                                    ({Object.values(visibleColumns).filter(Boolean).length}/24)
+                                </span>
+                            </button>
+
+                            {/* Toggle de Métricas HUD */}
+                            <button
+                                type="button"
+                                onClick={toggleMetricsCollapsed}
+                                className={`px-2.5 py-1 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                                    !metricsCollapsed 
+                                        ? 'bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner' 
+                                        : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
+                                }`}
+                                title={!metricsCollapsed ? "Plegar HUD de métricas completas (Tecla M)" : "Desplegar HUD analítico completo (Tecla M)"}
+                            >
+                                <span>▤</span>
+                                <span className="hidden xl:inline">HUD</span>
+                                <kbd className="text-[9px] bg-black/50 px-1 rounded border border-djzinc-700">M</kbd>
+                            </button>
+
+                            {/* Toggle de Inspector */}
+                            <button
+                                onClick={() => setSidebarOpen(prev => !prev)}
+                                className={`px-2.5 py-1 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                                    sidebarOpen 
+                                        ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner' 
+                                        : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
+                                }`}
+                                title={sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}
+                            >
+                                <span>◨</span>
+                                <span className="hidden sm:inline">{t('btn_inspector') || 'Inspector'}</span>
+                            </button>
+                        </div>
 
                         {/* Cancelación de Proceso */}
                         {(isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && (
                             <button 
                                 onClick={handleCancelarProceso}
-                                className="bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-2.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0"
+                                className="bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0"
                                 title="Detener el proceso actual inmediatamente"
                             >
                                 <span>✕</span>
@@ -8729,7 +9453,7 @@ const AuditWorkspace = ({
                                 title="Guardar metadatos ID3/FLAC directamente en los archivos de audio en disco"
                             >
                                 <span>💾</span>
-                                <span>Guardar Metadatos</span>
+                                <span>Metadatos</span>
                             </button>
 
                             {/* 2. Rekordbox con Logo Oficial en SVG sin fondo */}
@@ -8747,13 +9471,13 @@ const AuditWorkspace = ({
                             {/* 3. Serato con Logo Oficial en SVG sin fondo */}
                             <button 
                                 type="button"
-                                onClick={handleExportarSeratoCrates}
-                                disabled={isExporting || tracks.length === 0}
+                                onClick={handleExportarSerato}
+                                disabled={isInjecting || tracks.length === 0}
                                 className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-cyan-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
-                                title="Serato DJ Pro (.CRATE) - Exportar crates oficiales a Serato DJ Pro (~/Music/_Serato_/Subcrates)"
+                                title="Serato DJ Pro - Inyectar metadatos oficiales en las pistas (Hot Cues Markers2, BeatGrid, BPM, TKEY y agrupaciones)"
                             >
                                 <PlatformSeratoLogo size={18} />
-                                <span className="bg-djzinc-800 text-cyan-300 border border-cyan-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">.CRATE</span>
+                                <span className="bg-djzinc-800 text-cyan-300 border border-cyan-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">TAGS</span>
                             </button>
 
                             {/* 4. Traktor con Logo Oficial en SVG sin fondo */}
@@ -8804,282 +9528,13 @@ const AuditWorkspace = ({
                                 title="Generar libro Excel (.xlsx) multidestino con hojas dedicadas para Auditoría, Serato, Rekordbox, Traktor y VirtualDJ"
                             >
                                 <span>📊</span>
-                                <span>Informe Excel</span>
+                                <span>Informe</span>
                                 <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">
                                     .XLSX
                                 </span>
                             </button>
                         </div>
                     </div>
-
-                    {/* SEPARADOR VERTICAL */}
-                    <div className="w-px bg-djzinc-800 self-stretch my-0.5 shrink-0"></div>
-
-                    {/* BLOQUE 3: HERRAMIENTAS Y VISTA (FUERA DEL GRUPO DE EXPORTACIÓN) */}
-                    <div className="flex flex-col gap-1 shrink-0 ml-auto">
-                        <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400">
-                            <span>Vista & Herramientas</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 relative">
-                            {/* Selector de Columnas Visibles (Abre Modal Pro de Configuración) */}
-                            <div>
-                                <button
-                                    type="button"
-                                    onClick={() => setColumnSelectorOpen(true)}
-                                    className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 ${
-                                        columnSelectorOpen 
-                                            ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-600/70 shadow-inner' 
-                                            : 'bg-djzinc-900 text-gray-300 border-djzinc-750 hover:text-white hover:border-djzinc-650'
-                                    }`}
-                                    title="Abrir Centro de Personalización de Columnas y Vistas"
-                                >
-                                    <span>⚙️</span>
-                                    <span>Columnas</span>
-                                    <span className="text-[10px] text-djcyan-400 font-mono font-bold">
-                                        ({Object.values(visibleColumns).filter(Boolean).length}/24)
-                                    </span>
-                                </button>
-
-                                {/* MODAL PRO: CENTRO DE CONFIGURACIÓN DE COLUMNAS (CATEGORIZADA CON BUSCADOR) */}
-                                {columnSelectorOpen && (
-                                    <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fadeIn">
-                                        <div className="bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden text-gray-200">
-                                            {/* Cabecera */}
-                                            <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910]">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner">⚙️</span>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
-                                                                Centro de Columnas & Vistas
-                                                            </h3>
-                                                            <span className="px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black">
-                                                                {Object.values(visibleColumns).filter(Boolean).length} de 24 activas
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-[11px] text-gray-400 font-sans mt-0.5">
-                                                            Personaliza las columnas visibles en la tabla principal según tu flujo de trabajo de análisis o preparación de cabina DJ.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
-                                                    className="w-8 h-8 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-750 flex items-center justify-center cursor-pointer transition-colors"
-                                                    title="Cerrar modal"
-                                                >
-                                                    ✕
-                                                </button>
-                                            </div>
-
-                                            {/* Buscador y Presets */}
-                                            <div className="p-4 border-b border-djzinc-800/80 bg-[#080910] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                {/* Buscador en vivo */}
-                                                <div className="relative flex-1 max-w-md">
-                                                    <span className="absolute left-3 top-2.5 text-xs text-gray-400">🔍</span>
-                                                    <input 
-                                                        type="text" 
-                                                        value={columnSearchText}
-                                                        onChange={(e) => setColumnSearchText(e.target.value)}
-                                                        placeholder="Buscar columna (ej. bpm, lufs, cues, transcode, cutoff)..."
-                                                        className="w-full pl-8 pr-8 py-2 bg-djzinc-900 border border-djzinc-750 rounded-xl text-xs font-mono text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500/70 focus:ring-1 focus:ring-djcyan-500/40 transition-all"
-                                                    />
-                                                    {columnSearchText && (
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => setColumnSearchText('')}
-                                                            className="absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-white cursor-pointer"
-                                                        >✕</button>
-                                                    )}
-                                                </div>
-
-                                                {/* Presets Rápidos */}
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <span className="text-[10px] font-mono text-gray-400 uppercase font-bold shrink-0">Presets:</span>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => setColumnPreset('all')}
-                                                        className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
-                                                    >
-                                                        👁️ Ver Todas (24)
-                                                    </button>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => setColumnPreset('dj')}
-                                                        className="px-2.5 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
-                                                    >
-                                                        ⚡ Cabina DJ (8)
-                                                    </button>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => setColumnPreset('audio')}
-                                                        className="px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
-                                                    >
-                                                        🔬 Auditoría Acústica (9)
-                                                    </button>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => setColumnPreset('tags')}
-                                                        className="px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
-                                                    >
-                                                        🏷️ Metadatos (7)
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Cuadrícula de Categorías Temáticas */}
-                                            <div className="flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar">
-                                                {COLUMN_CATEGORIES.map(cat => {
-                                                    const q = (columnSearchText || '').trim().toLowerCase();
-                                                    const matchingCols = cat.columns.filter(col => {
-                                                        if (!q) return true;
-                                                        return col.label.toLowerCase().includes(q) || col.key.toLowerCase().includes(q) || col.desc.toLowerCase().includes(q);
-                                                    });
-                                                    if (q && matchingCols.length === 0) return null;
-
-                                                    const activeInCat = matchingCols.filter(c => visibleColumns[c.key]).length;
-
-                                                    return (
-                                                        <div key={cat.id} className="p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-2.5">
-                                                            {/* Encabezado de la categoría */}
-                                                            <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-base">{cat.icon}</span>
-                                                                    <span className={`font-mono text-xs font-black uppercase tracking-wider ${cat.color}`}>
-                                                                        {cat.name}
-                                                                    </span>
-                                                                    <span className="text-[10px] font-mono text-gray-500 font-bold">
-                                                                        ({activeInCat}/{matchingCols.length})
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            const next = { ...visibleColumns };
-                                                                            matchingCols.forEach(c => { next[c.key] = true; });
-                                                                            setVisibleColumns(next);
-                                                                            try { localStorage.setItem('bw_audit_visible_columns', JSON.stringify(next)); } catch (_) {}
-                                                                        }}
-                                                                        className="text-djcyan-400 hover:text-djcyan-300 cursor-pointer hover:underline"
-                                                                    >
-                                                                        Todas
-                                                                    </button>
-                                                                    <span className="text-gray-600">/</span>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            const next = { ...visibleColumns };
-                                                                            matchingCols.forEach(c => { next[c.key] = false; });
-                                                                            setVisibleColumns(next);
-                                                                            try { localStorage.setItem('bw_audit_visible_columns', JSON.stringify(next)); } catch (_) {}
-                                                                        }}
-                                                                        className="text-gray-500 hover:text-gray-300 cursor-pointer hover:underline"
-                                                                    >
-                                                                        Ninguna
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Lista de Columnas */}
-                                                            <div className="space-y-1.5">
-                                                                {matchingCols.map(col => {
-                                                                    const isChecked = Boolean(visibleColumns[col.key]);
-                                                                    return (
-                                                                        <label 
-                                                                            key={col.key}
-                                                                            className={`flex items-start justify-between p-2 rounded-lg border transition-all cursor-pointer select-none ${
-                                                                                isChecked 
-                                                                                    ? 'bg-djzinc-850/80 border-djzinc-700/80 text-white' 
-                                                                                    : 'bg-djzinc-950/40 border-djzinc-850/60 text-gray-500 hover:border-djzinc-800'
-                                                                            }`}
-                                                                        >
-                                                                            <div className="flex flex-col pr-2">
-                                                                                <span className={`text-xs font-mono font-bold ${isChecked ? 'text-white' : 'text-gray-400'}`}>
-                                                                                    {col.label}
-                                                                                </span>
-                                                                                <span className="text-[10.5px] text-gray-400 font-sans leading-tight mt-0.5">
-                                                                                    {col.desc}
-                                                                                </span>
-                                                                            </div>
-                                                                            <input 
-                                                                                type="checkbox"
-                                                                                checked={isChecked}
-                                                                                onChange={() => toggleColumnVisibility(col.key)}
-                                                                                className="accent-djcyan-400 w-4 h-4 rounded cursor-pointer mt-0.5 shrink-0"
-                                                                            />
-                                                                        </label>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-
-                                            {/* Pie de modal */}
-                                            <div className="px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex items-center justify-between flex-wrap gap-2">
-                                                <div className="flex items-center gap-2">
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => setColumnPreset('reset')}
-                                                        className="px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
-                                                    >
-                                                        ↺ Restablecer por Defecto
-                                                    </button>
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => setColumnPreset('none')}
-                                                        className="px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-400 hover:text-white border border-djzinc-750 text-xs font-mono cursor-pointer transition-all active:scale-95"
-                                                    >
-                                                        Deseleccionar Todas
-                                                    </button>
-                                                </div>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
-                                                    className="px-5 py-1.5 rounded-lg bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95"
-                                                >
-                                                    ✓ Aplicar y Guardar ({Object.values(visibleColumns).filter(Boolean).length} Activas)
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Toggle de Métricas HUD */}
-                            <button
-                                type="button"
-                                onClick={toggleMetricsCollapsed}
-                                className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                                    !metricsCollapsed 
-                                        ? 'bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner' 
-                                        : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
-                                }`}
-                                title={!metricsCollapsed ? "Plegar HUD de métricas completas (Tecla M)" : "Desplegar HUD analítico completo (Tecla M)"}
-                            >
-                                <span>▤</span>
-                                <span className="hidden xl:inline">HUD</span>
-                                <kbd className="text-[9px] bg-black/50 px-1 rounded border border-djzinc-700">M</kbd>
-                            </button>
-
-                            {/* Toggle de Inspector */}
-                            <button
-                                onClick={() => setSidebarOpen(prev => !prev)}
-                                className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                                    sidebarOpen 
-                                        ? 'bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner' 
-                                        : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
-                                }`}
-                                title={sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}
-                            >
-                                <span>◨</span>
-                                <span className="hidden sm:inline">{t('btn_inspector') || 'Inspector'}</span>
-                            </button>
-                        </div>
-                    </div>
-
                 </div>
 
                 {/* 2.B: VERSIÓN APP HÍBRIDA / MÓVIL (md:hidden) */}
@@ -9189,19 +9644,11 @@ const AuditWorkspace = ({
                                     type="button"
                                     onClick={handleGuardarTodoEnFicheros}
                                     disabled={isInjecting || tracks.length === 0}
-                                    className="h-10 px-3.5 bg-emerald-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
+                                    className="h-10 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
+                                    title="Guardar metadatos en archivos"
                                 >
                                     <span>💾</span>
-                                    <span>Guardar Tags</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleSincronizarPasaporteUniversal}
-                                    disabled={tracks.length === 0}
-                                    className="h-10 px-3.5 bg-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
-                                >
-                                    <span>🛂</span>
-                                    <span>Todos</span>
+                                    <span>Metadatos</span>
                                 </button>
                                 <button 
                                     type="button"
@@ -9215,13 +9662,13 @@ const AuditWorkspace = ({
                                 </button>
                                 <button 
                                     type="button"
-                                    onClick={handleExportarSeratoCrates}
-                                    disabled={tracks.length === 0}
+                                    onClick={handleExportarSerato}
+                                    disabled={isInjecting || tracks.length === 0}
                                     className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-                                    title="Serato DJ Pro (.CRATE)"
+                                    title="Serato DJ Pro - Inyectar metadatos oficiales en las pistas"
                                 >
                                     <PlatformSeratoLogo size={18} />
-                                    <span className="text-[10px] text-cyan-300 font-mono font-bold">.CRATE</span>
+                                    <span className="text-[10px] text-cyan-300 font-mono font-bold">TAGS</span>
                                 </button>
                                 <button 
                                     type="button"
@@ -9245,12 +9692,23 @@ const AuditWorkspace = ({
                                 </button>
                                 <button 
                                     type="button"
+                                    onClick={handleSincronizarPasaporteUniversal}
+                                    disabled={tracks.length === 0}
+                                    className="h-10 px-3.5 bg-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
+                                    title="Exportar a todas las aplicaciones DJ"
+                                >
+                                    <span>🛂</span>
+                                    <span>Todos</span>
+                                </button>
+                                <button 
+                                    type="button"
                                     onClick={handleExportarXLS}
                                     disabled={tracks.length === 0}
                                     className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
                                     title="Informe Excel (.XLSX)"
                                 >
                                     <span>📊</span>
+                                    <span className="text-xs font-bold text-gray-200">Informe</span>
                                     <span className="text-[10px] text-emerald-300 font-mono font-bold">.XLSX</span>
                                 </button>
                             </>
@@ -12068,6 +12526,234 @@ const AuditWorkspace = ({
                         </div>
                     </div>
                 </div>
+            )}
+            {/* Modal Gestor & Creador de Bibliotecas Personalizadas en Disco / Virtual */}
+            {isLibraryModalOpen && (
+                <CustomLibraryModal
+                    isOpen={isLibraryModalOpen}
+                    onClose={() => setIsLibraryModalOpen(false)}
+                    libraries={customLibraries}
+                    activeLibraryId={activeCustomLibId}
+                    onSaveLibraries={(updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId)}
+                    onSelectLibrary={(id) => saveCustomLibraries(customLibraries, id)}
+                    currentTracks={tracks}
+                    selectedTrackIds={selectedAuditIds}
+                    onMaterializarEnDisco={(lib) => handleMaterializarBibliotecaEnDisco(lib)}
+                />
+            )}
+
+            {/* Modal Pro Desacoplado con Portal: Centro de Columnas & Vistas */}
+            {columnSelectorOpen && ReactDOM.createPortal(
+                <div 
+                    className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+                    onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
+                >
+                    <div 
+                        className="bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden text-gray-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Cabecera */}
+                        <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0">
+                            <div className="flex items-center gap-3">
+                                <span className="text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner">⚙️</span>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
+                                            Centro de Columnas & Vistas
+                                        </h3>
+                                        <span className="px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black">
+                                            {Object.values(visibleColumns).filter(Boolean).length} de 24 activas
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-gray-400 font-sans mt-0.5">
+                                        Personaliza las columnas visibles en la tabla principal según tu flujo de trabajo de análisis o preparación de cabina DJ.
+                                    </p>
+                                </div>
+                            </div>
+                            <button 
+                                type="button" 
+                                onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
+                                className="w-9 h-9 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-750 flex items-center justify-center cursor-pointer transition-colors text-sm font-bold shadow-sm"
+                                title="Cerrar modal (Esc)"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Buscador y Presets */}
+                        <div className="p-4 border-b border-djzinc-800/80 bg-[#080910] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                            {/* Buscador en vivo */}
+                            <div className="relative flex-1 max-w-md">
+                                <span className="absolute left-3 top-2.5 text-xs text-gray-400">🔍</span>
+                                <input 
+                                    type="text" 
+                                    value={columnSearchText}
+                                    onChange={(e) => setColumnSearchText(e.target.value)}
+                                    placeholder="Buscar columna (ej. bpm, lufs, cues, transcode, cutoff)..."
+                                    className="w-full pl-8 pr-8 py-2 bg-djzinc-900 border border-djzinc-750 rounded-xl text-xs font-mono text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500/70 focus:ring-1 focus:ring-djcyan-500/40 transition-all"
+                                />
+                                {columnSearchText && (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setColumnSearchText('')}
+                                        className="absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-white cursor-pointer"
+                                    >✕</button>
+                                )}
+                            </div>
+
+                            {/* Presets Rápidos */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] font-mono text-gray-400 uppercase font-bold shrink-0">Presets:</span>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setColumnPreset('all')}
+                                    className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                >
+                                    👁️ Ver Todas (24)
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setColumnPreset('dj')}
+                                    className="px-2.5 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                >
+                                    ⚡ Cabina DJ (8)
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setColumnPreset('audio')}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                >
+                                    🔬 Auditoría Acústica (9)
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setColumnPreset('tags')}
+                                    className="px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                >
+                                    🏷️ Metadatos (7)
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Cuadrícula de Categorías Temáticas */}
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar">
+                            {COLUMN_CATEGORIES.map(cat => {
+                                const q = (columnSearchText || '').trim().toLowerCase();
+                                const matchingCols = cat.columns.filter(col => {
+                                    if (!q) return true;
+                                    return col.label.toLowerCase().includes(q) || col.key.toLowerCase().includes(q) || col.desc.toLowerCase().includes(q);
+                                });
+                                if (q && matchingCols.length === 0) return null;
+
+                                const activeInCat = matchingCols.filter(c => visibleColumns[c.key]).length;
+
+                                return (
+                                    <div key={cat.id} className="p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-2.5">
+                                        {/* Encabezado de la categoría */}
+                                        <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-base">{cat.icon}</span>
+                                                <span className={`font-mono text-xs font-black uppercase tracking-wider ${cat.color}`}>
+                                                    {cat.name}
+                                                </span>
+                                                <span className="text-[10px] font-mono text-gray-500 font-bold">
+                                                    ({activeInCat}/{matchingCols.length})
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = { ...visibleColumns };
+                                                        matchingCols.forEach(c => { next[c.key] = true; });
+                                                        setVisibleColumns(next);
+                                                        try { localStorage.setItem('bw_audit_visible_columns', JSON.stringify(next)); } catch (_) {}
+                                                    }}
+                                                    className="text-djcyan-400 hover:text-djcyan-300 cursor-pointer hover:underline"
+                                                >
+                                                    Todas
+                                                </button>
+                                                <span className="text-gray-600">/</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = { ...visibleColumns };
+                                                        matchingCols.forEach(c => { next[c.key] = false; });
+                                                        setVisibleColumns(next);
+                                                        try { localStorage.setItem('bw_audit_visible_columns', JSON.stringify(next)); } catch (_) {}
+                                                    }}
+                                                    className="text-gray-500 hover:text-gray-300 cursor-pointer hover:underline"
+                                                >
+                                                    Ninguna
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Lista de Columnas */}
+                                        <div className="space-y-1.5">
+                                            {matchingCols.map(col => {
+                                                const isChecked = Boolean(visibleColumns[col.key]);
+                                                return (
+                                                    <label 
+                                                        key={col.key}
+                                                        className={`flex items-start justify-between p-2 rounded-lg border transition-all cursor-pointer select-none ${
+                                                            isChecked 
+                                                                ? 'bg-djzinc-850/80 border-djzinc-700/80 text-white' 
+                                                                : 'bg-djzinc-950/40 border-djzinc-850/60 text-gray-500 hover:border-djzinc-800'
+                                                        }`}
+                                                    >
+                                                        <div className="flex flex-col pr-2">
+                                                            <span className={`text-xs font-mono font-bold ${isChecked ? 'text-white' : 'text-gray-400'}`}>
+                                                                {col.label}
+                                                            </span>
+                                                            <span className="text-[10.5px] text-gray-400 font-sans leading-tight mt-0.5">
+                                                                {col.desc}
+                                                            </span>
+                                                        </div>
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => toggleColumnVisibility(col.key)}
+                                                            className="accent-djcyan-400 w-4 h-4 rounded cursor-pointer mt-0.5 shrink-0"
+                                                        />
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Pie de modal */}
+                        <div className="px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex items-center justify-between flex-wrap gap-2 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setColumnPreset('reset')}
+                                    className="px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                >
+                                    ↺ Restablecer por Defecto
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setColumnPreset('none')}
+                                    className="px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-400 hover:text-white border border-djzinc-750 text-xs font-mono cursor-pointer transition-all active:scale-95"
+                                >
+                                    Deseleccionar Todas
+                                </button>
+                            </div>
+                            <button 
+                                type="button" 
+                                onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
+                                className="px-5 py-2 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95"
+                            >
+                                ✓ Aplicar y Guardar ({Object.values(visibleColumns).filter(Boolean).length} Activas)
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
         </div>
     );

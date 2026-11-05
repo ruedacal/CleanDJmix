@@ -520,14 +520,15 @@ class AuditService:
             "files": ficheros
         }
 
-    def seleccionar_directorio(self):
+    def seleccionar_directorio(self, prompt="Selecciona tu carpeta de música DJ (FLAC, MP3, WAV):"):
         if not self._lock.acquire(blocking=False):
             return ""
         try:
             # Script con activación de System Events para ventana en primer plano sin lag
-            script = '''tell application "System Events"
+            safe_prompt = prompt.replace('"', '\\"')
+            script = f'''tell application "System Events"
     activate
-    set folderPath to POSIX path of (choose folder with prompt "Selecciona tu carpeta de música DJ (FLAC, MP3, WAV):")
+    set folderPath to POSIX path of (choose folder with prompt "{safe_prompt}")
 end tell
 return folderPath'''
             proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=30)

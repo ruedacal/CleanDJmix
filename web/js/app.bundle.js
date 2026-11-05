@@ -3447,344 +3447,354 @@ const UserAccountModal = ({
     setSaveSuccessMsg(`\u2713 Sesi\xF3n "${name}" guardada con \xE9xito`);
     setTimeout(() => setSaveSuccessMsg(""), 3e3);
   };
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 overflow-hidden select-none" }, /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      className: "fixed inset-0 bg-[#000000] opacity-85 transition-opacity animate-fadeIn",
-      onClick: onClose
-    }
-  ), /* @__PURE__ */ React.createElement(
-    "aside",
-    {
-      className: "fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[500px] md:w-[530px] max-w-[95vw] h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight",
-      onClick: (e) => e.stopPropagation()
-    },
-    /* @__PURE__ */ React.createElement("div", { className: "p-4 sm:p-5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-full overflow-hidden border-2 border-cyan-400 bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]" }, avatarUrl ? /* @__PURE__ */ React.createElement("img", { src: avatarUrl, alt: "Avatar DJ", className: "w-full h-full object-cover" }) : /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7}")), /* @__PURE__ */ React.createElement(
-      "button",
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+  return ReactDOM.createPortal(
+    /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[99999] overflow-hidden select-none" }, /* @__PURE__ */ React.createElement(
+      "div",
       {
-        type: "button",
-        onClick: () => fileInputRef.current && fileInputRef.current.click(),
-        className: "absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-cyan-400 hover:bg-cyan-300 text-black flex items-center justify-center text-[10px] font-black border-2 border-[#0d0e1c] shadow cursor-pointer transition-transform hover:scale-110",
-        title: "Cambiar imagen del c\xEDrculo (Subir foto)"
-      },
-      "\u{1F4F7}"
-    ), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "file",
-        ref: fileInputRef,
-        onChange: handleAvatarUpload,
-        accept: "image/*",
-        className: "hidden"
+        className: "fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity animate-fadeIn",
+        onClick: onClose
       }
-    )), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-base font-mono font-black uppercase text-white tracking-wider truncate max-w-[210px]" }, alias), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 px-2 py-0.5 rounded-full font-black shrink-0" }, userProfile && userProfile.plan || "PRO CABINA VIP")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-mono truncate max-w-[240px]" }, email), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-0.5 text-[10px] font-mono text-emerald-400" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" }), /* @__PURE__ */ React.createElement("span", null, "Cabina Activa \u2022 0 Latencia")))), /* @__PURE__ */ React.createElement(
-      "button",
+    ), /* @__PURE__ */ React.createElement(
+      "aside",
       {
-        type: "button",
-        onClick: onClose,
-        className: "w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer shrink-0",
-        title: "Cerrar (ESC)"
+        className: "fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[500px] md:w-[540px] max-w-[95vw] h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight",
+        onClick: (e) => e.stopPropagation()
       },
-      "\u2715"
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 sm:p-5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-full overflow-hidden border-2 border-cyan-400 bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]" }, avatarUrl ? /* @__PURE__ */ React.createElement("img", { src: avatarUrl, alt: "Avatar DJ", className: "w-full h-full object-cover" }) : /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7}")), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => fileInputRef.current && fileInputRef.current.click(),
+          className: "absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-cyan-400 hover:bg-cyan-300 text-black flex items-center justify-center text-[10px] font-black border-2 border-[#0d0e1c] shadow cursor-pointer transition-transform hover:scale-110",
+          title: "Cambiar imagen del c\xEDrculo (Subir foto)"
+        },
+        "\u{1F4F7}"
+      ), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "file",
+          ref: fileInputRef,
+          onChange: handleAvatarUpload,
+          accept: "image/*",
+          className: "hidden"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-base font-mono font-black uppercase text-white tracking-wider truncate max-w-[210px]" }, alias), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 px-2 py-0.5 rounded-full font-black shrink-0" }, userProfile && userProfile.plan || "PRO CABINA VIP")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-mono truncate max-w-[240px]" }, email), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-0.5 text-[10px] font-mono text-emerald-400" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" }), /* @__PURE__ */ React.createElement("span", null, "Cabina Activa \u2022 0 Latencia")))), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          className: "w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer shrink-0",
+          title: "Cerrar (ESC)"
+        },
+        "\u2715"
+      )),
+      /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#0d0e1a] border-b border-djzinc-800 grid grid-cols-3 gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            onClose();
+            if (onNavigateTab) onNavigateTab("trends");
+          },
+          className: "p-2.5 rounded-xl bg-[#141528] hover:bg-[#1c1e38] border border-indigo-700/60 text-indigo-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
+          title: "Explorar Tendencias Musicales Globales y Festivales"
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "text-base group-hover:scale-110 transition-transform" }, "\u{1F4C8}"),
+        /* @__PURE__ */ React.createElement("span", { className: "truncate" }, "Trends")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            onClose();
+            if (onNavigateTab) onNavigateTab("knowledge");
+          },
+          className: "p-2.5 rounded-xl bg-[#181329] hover:bg-[#231a3d] border border-purple-700/60 text-purple-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
+          title: "Academia de Gu\xEDas, Armon\xEDa y Teor\xEDa DJ"
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "text-base group-hover:scale-110 transition-transform" }, "\u{1F393}"),
+        /* @__PURE__ */ React.createElement("span", { className: "truncate" }, "Gu\xEDas")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            onClose();
+            if (onOpenShortcuts) onOpenShortcuts();
+          },
+          className: "p-2.5 rounded-xl bg-[#0f1d2a] hover:bg-[#14283b] border border-cyan-700/60 text-cyan-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
+          title: "Ver Chuleta de Atajos de Teclado DJ"
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "text-base group-hover:scale-110 transition-transform" }, "\u2328\uFE0F"),
+        /* @__PURE__ */ React.createElement("span", { className: "truncate" }, "Atajos")
+      )),
+      /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-[#06070e] border-b border-djzinc-800 flex items-center gap-2 font-mono text-xs shrink-0 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setActiveTab("profile"),
+          className: `px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === "profile" ? "bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+        },
+        /* @__PURE__ */ React.createElement("span", null, "\u{1F464}"),
+        " ",
+        /* @__PURE__ */ React.createElement("span", null, "Datos & Seguridad")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setActiveTab("sessions"),
+          className: `px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === "sessions" ? "bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+        },
+        /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
+        " ",
+        /* @__PURE__ */ React.createElement("span", null, "Sesiones & Estados")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setActiveTab("preferences"),
+          className: `px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === "preferences" ? "bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+        },
+        /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F"),
+        " ",
+        /* @__PURE__ */ React.createElement("span", null, "Suite & Audio")
+      )),
+      saveSuccessMsg && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-emerald-950/90 border-b border-emerald-600/70 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0" }, /* @__PURE__ */ React.createElement("span", null, "\u2728"), /* @__PURE__ */ React.createElement("span", null, saveSuccessMsg)),
+      /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-5" }, activeTab === "profile" && /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("label", { className: "text-[11px] font-mono text-gray-400 uppercase font-bold block" }, "Avatares DJ de Cabina R\xE1pidos"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto py-1" }, [
+        { label: "Cyber", icon: "\u{1F3A7}", bg: "from-cyan-500 to-blue-600" },
+        { label: "Vinilo", icon: "\u{1F4BD}", bg: "from-purple-500 to-indigo-600" },
+        { label: "Neon", icon: "\u26A1", bg: "from-pink-500 to-rose-600" },
+        { label: "Club", icon: "\u{1F576}\uFE0F", bg: "from-amber-500 to-orange-600" },
+        { label: "Vocal", icon: "\u{1F399}\uFE0F", bg: "from-emerald-500 to-teal-600" }
+      ].map((preset, pIdx) => /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: pIdx,
+          type: "button",
+          onClick: () => handleSelectPresetAvatar(`data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="%230c0c16"/><text x="40" y="48" font-size="34" text-anchor="middle" dominant-baseline="middle">${preset.icon}</text></svg>`),
+          className: "px-2.5 py-1.5 rounded-xl bg-djzinc-950 border border-djzinc-750 hover:border-cyan-400 flex items-center gap-1.5 text-xs font-mono font-bold cursor-pointer transition-all hover:scale-105 shrink-0"
+        },
+        /* @__PURE__ */ React.createElement("span", null, preset.icon),
+        /* @__PURE__ */ React.createElement("span", null, preset.label)
+      )), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => fileInputRef.current && fileInputRef.current.click(),
+          className: "px-3 py-1.5 rounded-xl bg-cyan-950 border border-cyan-600 text-cyan-300 font-mono font-bold text-xs hover:bg-cyan-900 cursor-pointer shrink-0"
+        },
+        "+ Subir Foto"
+      ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-3 p-4 rounded-2xl bg-[#0c0d18] border border-djzinc-800" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-cyan-300 tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB}"), " ", /* @__PURE__ */ React.createElement("span", null, "Datos Personales & Facturaci\xF3n")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Alias / Nombre Art\xEDstico"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: alias,
+          onChange: (e) => setAlias(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
+          placeholder: "DJ Alex"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Nombre Completo"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: fullName,
+          onChange: (e) => setFullName(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
+          placeholder: "Alejandro Rueda"
+        }
+      ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Correo Electr\xF3nico"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "email",
+          value: email,
+          onChange: (e) => setEmail(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
+          placeholder: "alex.dj@beatwave.pro"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Tel\xE9fono / M\xF3vil"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "tel",
+          value: phone,
+          onChange: (e) => setPhone(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
+          placeholder: "+34 612 345 678"
+        }
+      ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Direcci\xF3n de Cabina / Residencia"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: address,
+          onChange: (e) => setAddress(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
+          placeholder: "Gran V\xEDa 28, 4\xBA B"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Ciudad"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: city,
+          onChange: (e) => setCity(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
+          placeholder: "Madrid"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Pa\xEDs"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: country,
+          onChange: (e) => setCountry(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
+          placeholder: "Espa\xF1a"
+        }
+      ))), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleSavePersonalData,
+          className: "w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md mt-2"
+        },
+        "\u{1F4BE} Guardar Datos Personales"
+      )), /* @__PURE__ */ React.createElement("form", { onSubmit: handleUpdatePassword, className: "space-y-3 p-4 rounded-2xl bg-[#0c0d18] border border-djzinc-800" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-pink-400 tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F512}"), " ", /* @__PURE__ */ React.createElement("span", null, "Modificar Contrase\xF1a de Acceso")), passwordMsg.text && /* @__PURE__ */ React.createElement("div", { className: `p-2 rounded-xl text-xs font-mono font-bold animate-fadeIn ${passwordMsg.type === "success" ? "bg-emerald-950/80 text-emerald-300 border border-emerald-700" : "bg-rose-950/80 text-rose-300 border border-rose-700"}` }, passwordMsg.text), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Contrase\xF1a Actual"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "password",
+          value: currentPassword,
+          onChange: (e) => setCurrentPassword(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-pink-500 outline-none",
+          placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Nueva Contrase\xF1a"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "password",
+          value: newPassword,
+          onChange: (e) => setNewPassword(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-pink-500 outline-none",
+          placeholder: "Nueva clave..."
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Repetir Nueva Contrase\xF1a"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "password",
+          value: confirmPassword,
+          onChange: (e) => setConfirmPassword(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-pink-500 outline-none",
+          placeholder: "Confirmar clave..."
+        }
+      ))), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "submit",
+          className: "w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md mt-2"
+        },
+        "\u{1F511} Actualizar Contrase\xF1a"
+      ))), activeTab === "sessions" && /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-gradient-to-r from-cyan-950/40 to-djzinc-900 border border-cyan-500/40 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-ping" }), "ESTADO ACTUAL EN CABINA"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-[10px] font-bold" }, "Auto-Guardado Activo")), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-gray-300 space-y-1" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("strong", null, "Carpeta:"), " ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-400 text-[11px]" }, currentSessionSnapshot.folder || "/Users/admin/Music/mi musica")), /* @__PURE__ */ React.createElement("div", { className: "flex gap-4 text-[11px]" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, "Pistas en Lote:"), " ", currentSessionSnapshot.tracksCount || 0), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, "Pesta\xF1a Activa:"), " ", /* @__PURE__ */ React.createElement("span", { className: "uppercase text-cyan-300 font-mono" }, currentSessionSnapshot.activeTab || "AUDIT")))), /* @__PURE__ */ React.createElement("form", { onSubmit: handleCreateSnapshot, className: "pt-2 flex gap-2" }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          placeholder: "Nombre de la sesi\xF3n (ej: Space Ibiza Warmup)...",
+          value: sessionNameInput,
+          onChange: (e) => setSessionNameInput(e.target.value),
+          className: "flex-1 px-3 py-1.5 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "submit",
+          className: "px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 whitespace-nowrap shadow-md"
+        },
+        "\u{1F4BE} Guardar Estado"
+      ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", null, "Sesiones Guardadas (", savedSessions.length, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "Reanuda cualquier sesi\xF3n con 1 clic")), savedSessions.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-xl bg-djzinc-900/60 border border-djzinc-800 text-center text-xs text-gray-500 font-mono" }, "No hay sesiones guardadas todav\xEDa. Guarda tu sesi\xF3n actual arriba para continuar cuando quieras.") : /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, savedSessions.map((sess) => /* @__PURE__ */ React.createElement("div", { key: sess.id, className: "p-3 rounded-xl bg-[#0c0d18] border border-djzinc-800 hover:border-cyan-500/40 transition-all flex items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate" }, sess.name), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 text-[10px] font-mono text-gray-400 mt-0.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4C5} ", sess.date), /* @__PURE__ */ React.createElement("span", null, "\u{1F3B5} ", sess.tracksCount || 0, " pistas"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 uppercase" }, sess.activeTab || "audit"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0 font-mono" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            if (onLoadSession) onLoadSession(sess);
+            setSaveSuccessMsg(`\u2713 Sesi\xF3n "${sess.name}" cargada. \xA1Listo para mezclar!`);
+            setTimeout(() => setSaveSuccessMsg(""), 3e3);
+          },
+          className: "px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 text-xs font-bold transition-all cursor-pointer flex items-center gap-1",
+          title: "Cargar y reanudar esta sesi\xF3n"
+        },
+        /* @__PURE__ */ React.createElement("span", null, "\u21BA"),
+        /* @__PURE__ */ React.createElement("span", null, "Reanudar")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => onDeleteSession && onDeleteSession(sess.id),
+          className: "p-1 rounded-lg bg-djzinc-900 hover:bg-rose-950 text-gray-500 hover:text-rose-400 text-xs transition-colors cursor-pointer",
+          title: "Eliminar sesi\xF3n guardada"
+        },
+        "\u2715"
+      ))))))), activeTab === "preferences" && /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[11px] font-mono text-gray-400 uppercase font-bold block" }, "Software DJ Principal"), /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: djSoftware,
+          onChange: (e) => setDjSoftware(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+        },
+        /* @__PURE__ */ React.createElement("option", { value: "Serato DJ Pro" }, "Serato DJ Pro"),
+        /* @__PURE__ */ React.createElement("option", { value: "Rekordbox 7" }, "Rekordbox 7 (Pioneer DJ)"),
+        /* @__PURE__ */ React.createElement("option", { value: "Traktor Pro 3" }, "Traktor Pro 3 (Native Instruments)"),
+        /* @__PURE__ */ React.createElement("option", { value: "VirtualDJ 2024" }, "VirtualDJ Pro 2024"),
+        /* @__PURE__ */ React.createElement("option", { value: "Engine DJ" }, "Engine DJ (Denon DJ)")
+      )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[11px] font-mono text-gray-400 uppercase font-bold block" }, "Interfaz de Audio"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: audioInterface,
+          onChange: (e) => setAudioInterface(e.target.value),
+          className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
+        }
+      ))), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("label", { className: "text-[11px] font-mono text-gray-400 uppercase font-bold block flex justify-between" }, /* @__PURE__ */ React.createElement("span", null, "Target de Normalizaci\xF3n Ac\xFAstica (LUFS)"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, targetLufs, " LUFS")), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "range",
+          min: "-14",
+          max: "-6",
+          step: "0.5",
+          value: targetLufs,
+          onChange: (e) => setTargetLufs(parseFloat(e.target.value)),
+          className: "w-full accent-cyan-400 cursor-pointer"
+        }
+      ), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-500 font-sans" }, "-9.0 LUFS es el est\xE1ndar recomendado para festivales y discotecas con pegada contundente y m\xE1xima claridad.")), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-xl bg-[#0c0d18] border border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white text-xs font-mono" }, "Auto-Guardado Continuo de Estados"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400" }, "Guarda carpetas, listas y filtros al vuelo en segundo plano")), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "checkbox",
+          checked: autoSaveEnabled,
+          onChange: (e) => setAutoSaveEnabled(e.target.checked),
+          className: "w-4 h-4 accent-cyan-400 rounded cursor-pointer"
+        }
+      )), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleSavePersonalData,
+          className: "w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md"
+        },
+        "Guardar Preferencias de Cabina"
+      ))),
+      /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#080811] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "BeatWave Pro v1.0.0 \u2022 Centro de Control DJ"), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          className: "px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer"
+        },
+        "Cerrar (ESC)"
+      ))
     )),
-    /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#0d0e1a] border-b border-djzinc-800 grid grid-cols-3 gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          onClose();
-          if (onNavigateTab) onNavigateTab("trends");
-        },
-        className: "p-2.5 rounded-xl bg-[#141528] hover:bg-[#1c1e38] border border-indigo-700/60 text-indigo-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
-        title: "Explorar Tendencias Musicales Globales y Festivales"
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "text-base group-hover:scale-110 transition-transform" }, "\u{1F4C8}"),
-      /* @__PURE__ */ React.createElement("span", { className: "truncate" }, "Trends")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          onClose();
-          if (onNavigateTab) onNavigateTab("knowledge");
-        },
-        className: "p-2.5 rounded-xl bg-[#181329] hover:bg-[#231a3d] border border-purple-700/60 text-purple-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
-        title: "Academia de Gu\xEDas, Armon\xEDa y Teor\xEDa DJ"
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "text-base group-hover:scale-110 transition-transform" }, "\u{1F393}"),
-      /* @__PURE__ */ React.createElement("span", { className: "truncate" }, "Gu\xEDas")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          onClose();
-          if (onOpenShortcuts) onOpenShortcuts();
-        },
-        className: "p-2.5 rounded-xl bg-[#0f1d2a] hover:bg-[#14283b] border border-cyan-700/60 text-cyan-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group",
-        title: "Ver Chuleta de Atajos de Teclado DJ"
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "text-base group-hover:scale-110 transition-transform" }, "\u2328\uFE0F"),
-      /* @__PURE__ */ React.createElement("span", { className: "truncate" }, "Atajos")
-    )),
-    /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-[#06070e] border-b border-djzinc-800 flex items-center gap-2 font-mono text-xs shrink-0 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setActiveTab("profile"),
-        className: `px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === "profile" ? "bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, "\u{1F464}"),
-      " ",
-      /* @__PURE__ */ React.createElement("span", null, "Datos & Seguridad")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setActiveTab("sessions"),
-        className: `px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === "sessions" ? "bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
-      " ",
-      /* @__PURE__ */ React.createElement("span", null, "Sesiones & Estados")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setActiveTab("preferences"),
-        className: `px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === "preferences" ? "bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F"),
-      " ",
-      /* @__PURE__ */ React.createElement("span", null, "Suite & Audio")
-    )),
-    saveSuccessMsg && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-emerald-950/90 border-b border-emerald-600/70 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0" }, /* @__PURE__ */ React.createElement("span", null, "\u2728"), /* @__PURE__ */ React.createElement("span", null, saveSuccessMsg)),
-    /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-5" }, activeTab === "profile" && /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("label", { className: "text-[11px] font-mono text-gray-400 uppercase font-bold block" }, "Avatares DJ de Cabina R\xE1pidos"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto py-1" }, [
-      { label: "Cyber", icon: "\u{1F3A7}", bg: "from-cyan-500 to-blue-600" },
-      { label: "Vinilo", icon: "\u{1F4BD}", bg: "from-purple-500 to-indigo-600" },
-      { label: "Neon", icon: "\u26A1", bg: "from-pink-500 to-rose-600" },
-      { label: "Club", icon: "\u{1F576}\uFE0F", bg: "from-amber-500 to-orange-600" },
-      { label: "Vocal", icon: "\u{1F399}\uFE0F", bg: "from-emerald-500 to-teal-600" }
-    ].map((preset, pIdx) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: pIdx,
-        type: "button",
-        onClick: () => handleSelectPresetAvatar(`data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="%230c0c16"/><text x="40" y="48" font-size="34" text-anchor="middle" dominant-baseline="middle">${preset.icon}</text></svg>`),
-        className: "px-2.5 py-1.5 rounded-xl bg-djzinc-950 border border-djzinc-750 hover:border-cyan-400 flex items-center gap-1.5 text-xs font-mono font-bold cursor-pointer transition-all hover:scale-105 shrink-0"
-      },
-      /* @__PURE__ */ React.createElement("span", null, preset.icon),
-      /* @__PURE__ */ React.createElement("span", null, preset.label)
-    )), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => fileInputRef.current && fileInputRef.current.click(),
-        className: "px-3 py-1.5 rounded-xl bg-cyan-950 border border-cyan-600 text-cyan-300 font-mono font-bold text-xs hover:bg-cyan-900 cursor-pointer shrink-0"
-      },
-      "+ Subir Foto"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-3 p-4 rounded-2xl bg-[#0c0d18] border border-djzinc-800" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-cyan-300 tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB}"), " ", /* @__PURE__ */ React.createElement("span", null, "Datos Personales & Facturaci\xF3n")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Alias / Nombre Art\xEDstico"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: alias,
-        onChange: (e) => setAlias(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
-        placeholder: "DJ Alex"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Nombre Completo"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: fullName,
-        onChange: (e) => setFullName(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
-        placeholder: "Alejandro Rueda"
-      }
-    ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Correo Electr\xF3nico"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "email",
-        value: email,
-        onChange: (e) => setEmail(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
-        placeholder: "alex.dj@beatwave.pro"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Tel\xE9fono / M\xF3vil"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "tel",
-        value: phone,
-        onChange: (e) => setPhone(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
-        placeholder: "+34 612 345 678"
-      }
-    ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Direcci\xF3n de Cabina / Residencia"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: address,
-        onChange: (e) => setAddress(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
-        placeholder: "Gran V\xEDa 28, 4\xBA B"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Ciudad"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: city,
-        onChange: (e) => setCity(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
-        placeholder: "Madrid"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Pa\xEDs"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: country,
-        onChange: (e) => setCountry(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none",
-        placeholder: "Espa\xF1a"
-      }
-    ))), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleSavePersonalData,
-        className: "w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md mt-2"
-      },
-      "\u{1F4BE} Guardar Datos Personales"
-    )), /* @__PURE__ */ React.createElement("form", { onSubmit: handleUpdatePassword, className: "space-y-3 p-4 rounded-2xl bg-[#0c0d18] border border-djzinc-800" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-pink-400 tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F512}"), " ", /* @__PURE__ */ React.createElement("span", null, "Modificar Contrase\xF1a de Acceso")), passwordMsg.text && /* @__PURE__ */ React.createElement("div", { className: `p-2 rounded-xl text-xs font-mono font-bold animate-fadeIn ${passwordMsg.type === "success" ? "bg-emerald-950/80 text-emerald-300 border border-emerald-700" : "bg-rose-950/80 text-rose-300 border border-rose-700"}` }, passwordMsg.text), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Contrase\xF1a Actual"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "password",
-        value: currentPassword,
-        onChange: (e) => setCurrentPassword(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-pink-500 outline-none",
-        placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Nueva Contrase\xF1a"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "password",
-        value: newPassword,
-        onChange: (e) => setNewPassword(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-pink-500 outline-none",
-        placeholder: "Nueva clave..."
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10.5px] font-mono text-gray-400 uppercase font-bold block" }, "Repetir Nueva Contrase\xF1a"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "password",
-        value: confirmPassword,
-        onChange: (e) => setConfirmPassword(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-pink-500 outline-none",
-        placeholder: "Confirmar clave..."
-      }
-    ))), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "submit",
-        className: "w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md mt-2"
-      },
-      "\u{1F511} Actualizar Contrase\xF1a"
-    ))), activeTab === "sessions" && /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-gradient-to-r from-cyan-950/40 to-djzinc-900 border border-cyan-500/40 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-ping" }), "ESTADO ACTUAL EN CABINA"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-[10px] font-bold" }, "Auto-Guardado Activo")), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-gray-300 space-y-1" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("strong", null, "Carpeta:"), " ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-400 text-[11px]" }, currentSessionSnapshot.folder || "/Users/admin/Music/mi musica")), /* @__PURE__ */ React.createElement("div", { className: "flex gap-4 text-[11px]" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, "Pistas en Lote:"), " ", currentSessionSnapshot.tracksCount || 0), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, "Pesta\xF1a Activa:"), " ", /* @__PURE__ */ React.createElement("span", { className: "uppercase text-cyan-300 font-mono" }, currentSessionSnapshot.activeTab || "AUDIT")))), /* @__PURE__ */ React.createElement("form", { onSubmit: handleCreateSnapshot, className: "pt-2 flex gap-2" }, /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        placeholder: "Nombre de la sesi\xF3n (ej: Space Ibiza Warmup)...",
-        value: sessionNameInput,
-        onChange: (e) => setSessionNameInput(e.target.value),
-        className: "flex-1 px-3 py-1.5 rounded-xl bg-djzinc-950 border border-djzinc-750 text-xs font-mono text-white focus:border-cyan-400 outline-none"
-      }
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "submit",
-        className: "px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 whitespace-nowrap shadow-md"
-      },
-      "\u{1F4BE} Guardar Estado"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", null, "Sesiones Guardadas (", savedSessions.length, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "Reanuda cualquier sesi\xF3n con 1 clic")), savedSessions.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-xl bg-djzinc-900/60 border border-djzinc-800 text-center text-xs text-gray-500 font-mono" }, "No hay sesiones guardadas todav\xEDa. Guarda tu sesi\xF3n actual arriba para continuar cuando quieras.") : /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, savedSessions.map((sess) => /* @__PURE__ */ React.createElement("div", { key: sess.id, className: "p-3 rounded-xl bg-[#0c0d18] border border-djzinc-800 hover:border-cyan-500/40 transition-all flex items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate" }, sess.name), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 text-[10px] font-mono text-gray-400 mt-0.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4C5} ", sess.date), /* @__PURE__ */ React.createElement("span", null, "\u{1F3B5} ", sess.tracksCount || 0, " pistas"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 uppercase" }, sess.activeTab || "audit"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0 font-mono" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          if (onLoadSession) onLoadSession(sess);
-          setSaveSuccessMsg(`\u2713 Sesi\xF3n "${sess.name}" cargada. \xA1Listo para mezclar!`);
-          setTimeout(() => setSaveSuccessMsg(""), 3e3);
-        },
-        className: "px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 text-xs font-bold transition-all cursor-pointer flex items-center gap-1",
-        title: "Cargar y reanudar esta sesi\xF3n"
-      },
-      /* @__PURE__ */ React.createElement("span", null, "\u21BA"),
-      /* @__PURE__ */ React.createElement("span", null, "Reanudar")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => onDeleteSession && onDeleteSession(sess.id),
-        className: "p-1 rounded-lg bg-djzinc-900 hover:bg-rose-950 text-gray-500 hover:text-rose-400 text-xs transition-colors cursor-pointer",
-        title: "Eliminar sesi\xF3n guardada"
-      },
-      "\u2715"
-    ))))))), activeTab === "preferences" && /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[11px] font-mono text-gray-400 uppercase font-bold block" }, "Software DJ Principal"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: djSoftware,
-        onChange: (e) => setDjSoftware(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
-      },
-      /* @__PURE__ */ React.createElement("option", { value: "Serato DJ Pro" }, "Serato DJ Pro"),
-      /* @__PURE__ */ React.createElement("option", { value: "Rekordbox 7" }, "Rekordbox 7 (Pioneer DJ)"),
-      /* @__PURE__ */ React.createElement("option", { value: "Traktor Pro 3" }, "Traktor Pro 3 (Native Instruments)"),
-      /* @__PURE__ */ React.createElement("option", { value: "VirtualDJ 2024" }, "VirtualDJ Pro 2024"),
-      /* @__PURE__ */ React.createElement("option", { value: "Engine DJ" }, "Engine DJ (Denon DJ)")
-    )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[11px] font-mono text-gray-400 uppercase font-bold block" }, "Interfaz de Audio"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: audioInterface,
-        onChange: (e) => setAudioInterface(e.target.value),
-        className: "w-full px-3 py-2 rounded-xl bg-djzinc-950 border border-djzinc-800 text-xs font-mono text-white focus:border-cyan-400 outline-none"
-      }
-    ))), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("label", { className: "text-[11px] font-mono text-gray-400 uppercase font-bold block flex justify-between" }, /* @__PURE__ */ React.createElement("span", null, "Target de Normalizaci\xF3n Ac\xFAstica (LUFS)"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, targetLufs, " LUFS")), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "range",
-        min: "-14",
-        max: "-6",
-        step: "0.5",
-        value: targetLufs,
-        onChange: (e) => setTargetLufs(parseFloat(e.target.value)),
-        className: "w-full accent-cyan-400 cursor-pointer"
-      }
-    ), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-500 font-sans" }, "-9.0 LUFS es el est\xE1ndar recomendado para festivales y discotecas con pegada contundente y m\xE1xima claridad.")), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-xl bg-[#0c0d18] border border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white text-xs font-mono" }, "Auto-Guardado Continuo de Estados"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400" }, "Guarda carpetas, listas y filtros al vuelo en segundo plano")), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "checkbox",
-        checked: autoSaveEnabled,
-        onChange: (e) => setAutoSaveEnabled(e.target.checked),
-        className: "w-4 h-4 accent-cyan-400 rounded cursor-pointer"
-      }
-    )), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleSavePersonalData,
-        className: "w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md"
-      },
-      "Guardar Preferencias de Cabina"
-    ))),
-    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#080811] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "BeatWave Pro v1.0.0 \u2022 Centro de Control DJ"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: onClose,
-        className: "px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer"
-      },
-      "Cerrar (ESC)"
-    ))
-  ));
+    document.body
+  );
 };
 const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
   if (!isOpen) return null;
@@ -4685,79 +4695,85 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onN
     );
   }));
   if (isFolded) {
-    return /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        onClick: () => setIsFolded(false),
-        className: "fixed top-1/2 -translate-y-1/2 right-0 z-50 bg-[#090a18] border-l-2 border-y border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.6)] px-3.5 py-4 rounded-l-2xl cursor-pointer hover:bg-pink-950 hover:translate-x-[-4px] transition-all flex flex-col items-center gap-2 text-white font-mono text-xs select-none animate-fadeIn",
-        title: "Haga clic para desplegar el Manual Interactivo al 60% de pantalla"
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping" }),
-      /* @__PURE__ */ React.createElement("span", { className: "font-black text-pink-200 [writing-mode:vertical-rl] tracking-wider uppercase text-xs rotate-180 flex items-center gap-1.5" }, "\u{1F4D6} MANUAL 60% \u2022 ", activeSec.badge),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] px-1.5 py-0.5 rounded bg-pink-950 text-pink-200 border border-pink-600 font-bold uppercase mt-1" }, "\u25C0 Desplegar")
+    return ReactDOM.createPortal(
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          onClick: () => setIsFolded(false),
+          className: "fixed top-1/2 -translate-y-1/2 right-0 z-[99999] bg-[#090a18] border-l-2 border-y border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.6)] px-3.5 py-4 rounded-l-2xl cursor-pointer hover:bg-pink-950 hover:translate-x-[-4px] transition-all flex flex-col items-center gap-2 text-white font-mono text-xs select-none animate-fadeIn",
+          title: "Haga clic para desplegar el Manual Interactivo"
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping" }),
+        /* @__PURE__ */ React.createElement("span", { className: "font-black text-pink-200 [writing-mode:vertical-rl] tracking-wider uppercase text-xs rotate-180 flex items-center gap-1.5" }, "\u{1F4D6} MANUAL \u2022 ", activeSec.badge),
+        /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] px-1.5 py-0.5 rounded bg-pink-950 text-pink-200 border border-pink-600 font-bold uppercase mt-1" }, "\u25C0 Desplegar")
+      ),
+      document.body
     );
   }
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 overflow-hidden select-none pointer-events-none" }, /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      className: "fixed inset-0 bg-black/10 backdrop-blur-[0.5px] pointer-events-auto transition-opacity",
-      onClick: onClose,
-      title: "Haz clic fuera para cerrar el manual y volver a la cabina"
-    }
-  ), /* @__PURE__ */ React.createElement(
-    "aside",
-    {
-      className: "fixed top-0 bottom-0 right-0 z-50 w-full sm:w-[85vw] md:w-[70vw] lg:w-[60vw] min-w-[60vw] max-w-[60vw] h-full bg-[#080914] border-l-2 border-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.85)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto",
-      onClick: (e) => e.stopPropagation()
-    },
-    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-750 bg-[#0d0f20] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0" }, "\u{1F4D6}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "MANUAL MAESTRO DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-pink-950 text-pink-200 border border-pink-500 px-2 py-0.5 rounded-full font-black" }, "60% ANCHO \u2022 CABINA ACTIVA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-300 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, activeSec.tag))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
-      "button",
+  return ReactDOM.createPortal(
+    /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[99999] overflow-hidden select-none pointer-events-none" }, /* @__PURE__ */ React.createElement(
+      "div",
       {
-        type: "button",
-        onClick: () => setIsFolded(true),
-        className: "px-3 py-1.5 rounded-xl bg-[#14162a] hover:bg-pink-950 text-gray-200 hover:text-pink-200 flex items-center gap-1 font-mono text-xs border border-djzinc-700 hover:border-pink-500 transition-colors cursor-pointer",
-        title: "Plegar manual a pesta\xF1a lateral para interactuar libremente con la cabina"
-      },
-      /* @__PURE__ */ React.createElement("span", null, "\u21E5"),
-      /* @__PURE__ */ React.createElement("span", null, "Plegar")
+        className: "fixed inset-0 bg-black/60 backdrop-blur-[1px] pointer-events-auto transition-opacity",
+        onClick: onClose,
+        title: "Haz clic fuera para cerrar el manual y volver a la cabina"
+      }
     ), /* @__PURE__ */ React.createElement(
-      "button",
+      "aside",
       {
-        type: "button",
-        onClick: onClose,
-        className: "w-8 h-8 rounded-xl bg-[#14162a] hover:bg-rose-950 text-gray-300 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer",
-        title: "Cerrar manual (ESC)"
+        className: "fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#080914] border-l-2 border-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto",
+        onClick: (e) => e.stopPropagation()
       },
-      "\u2715"
-    ))),
-    renderSectionsBar(),
-    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-2 bg-[#0c0e1e] border-b border-djzinc-750 flex items-center justify-between text-xs font-mono shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold uppercase text-[10px] tracking-wider hidden sm:inline" }, "Vistas de Contenido:"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#14162c] p-1 rounded-xl border border-djzinc-750" }, [
-      { id: "all", label: "\u{1F31F} Todo" },
-      { id: "sim", label: "\u{1F3AC} Simulador" },
-      { id: "controls", label: `\u{1F39B}\uFE0F Controles (${activeSec.controls ? activeSec.controls.length : 0})` },
-      { id: "guide", label: "\u{1F4D6} Gu\xEDa Pro" }
-    ].map((tb) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: tb.id,
-        type: "button",
-        onClick: () => setActiveManualTab(tb.id),
-        className: `px-3 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${activeManualTab === tb.id ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-[0_0_12px_rgba(236,72,153,0.5)] border border-pink-400" : "text-gray-300 hover:text-white hover:bg-[#1f2242]"}`,
-        style: { color: "#ffffff" }
-      },
-      tb.label
-    )))),
-    /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-6" }, (activeManualTab === "all" || activeManualTab === "sim") && renderSimulatorCard(), (activeManualTab === "all" || activeManualTab === "controls") && renderControlsCatalog(), (activeManualTab === "all" || activeManualTab === "guide") && renderSectionStoryAndDetails()),
-    /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#0a0c18] border-t border-djzinc-750 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 text-[10.5px] flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4A1}"), /* @__PURE__ */ React.createElement("span", null, "Pulsa ", /* @__PURE__ */ React.createElement("strong", null, "Plegar"), " para usar la cabina visible al 40% detr\xE1s sin cerrar")), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: onClose,
-        className: "px-4 py-1.5 rounded-xl bg-[#16182e] hover:bg-[#202446] text-white font-black text-xs border border-djzinc-700 transition-colors cursor-pointer"
-      },
-      "Cerrar (ESC)"
-    ))
-  ));
+      /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-750 bg-[#0d0f20] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0" }, "\u{1F4D6}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "MANUAL MAESTRO DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-pink-950 text-pink-200 border border-pink-500 px-2 py-0.5 rounded-full font-black" }, "60% ANCHO \u2022 CABINA ACTIVA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-300 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, activeSec.tag))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setIsFolded(true),
+          className: "px-3 py-1.5 rounded-xl bg-[#14162a] hover:bg-pink-950 text-gray-200 hover:text-pink-200 flex items-center gap-1 font-mono text-xs border border-djzinc-700 hover:border-pink-500 transition-colors cursor-pointer",
+          title: "Plegar manual a pesta\xF1a lateral para interactuar libremente con la cabina"
+        },
+        /* @__PURE__ */ React.createElement("span", null, "\u21E5"),
+        /* @__PURE__ */ React.createElement("span", null, "Plegar")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          className: "w-8 h-8 rounded-xl bg-[#14162a] hover:bg-rose-950 text-gray-300 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer",
+          title: "Cerrar manual (ESC)"
+        },
+        "\u2715"
+      ))),
+      renderSectionsBar(),
+      /* @__PURE__ */ React.createElement("div", { className: "px-5 py-2 bg-[#0c0e1e] border-b border-djzinc-750 flex items-center justify-between text-xs font-mono shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold uppercase text-[10px] tracking-wider hidden sm:inline" }, "Vistas de Contenido:"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#14162c] p-1 rounded-xl border border-djzinc-750" }, [
+        { id: "all", label: "\u{1F31F} Todo" },
+        { id: "sim", label: "\u{1F3AC} Simulador" },
+        { id: "controls", label: `\u{1F39B}\uFE0F Controles (${activeSec.controls ? activeSec.controls.length : 0})` },
+        { id: "guide", label: "\u{1F4D6} Gu\xEDa Pro" }
+      ].map((tb) => /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: tb.id,
+          type: "button",
+          onClick: () => setActiveManualTab(tb.id),
+          className: `px-3 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${activeManualTab === tb.id ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-[0_0_12px_rgba(236,72,153,0.5)] border border-pink-400" : "text-gray-300 hover:text-white hover:bg-[#1f2242]"}`,
+          style: { color: "#ffffff" }
+        },
+        tb.label
+      )))),
+      /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-6" }, (activeManualTab === "all" || activeManualTab === "sim") && renderSimulatorCard(), (activeManualTab === "all" || activeManualTab === "controls") && renderControlsCatalog(), (activeManualTab === "all" || activeManualTab === "guide") && renderSectionStoryAndDetails()),
+      /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#0a0c18] border-t border-djzinc-750 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 text-[10.5px] flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4A1}"), /* @__PURE__ */ React.createElement("span", null, "Pulsa ", /* @__PURE__ */ React.createElement("strong", null, "Plegar"), " para usar la cabina visible al 40% detr\xE1s sin cerrar")), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          className: "px-4 py-1.5 rounded-xl bg-[#16182e] hover:bg-[#202446] text-white font-black text-xs border border-djzinc-700 transition-colors cursor-pointer"
+        },
+        "Cerrar (ESC)"
+      ))
+    )),
+    document.body
+  );
 };
 const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayTrack, onSelectTrack }) => {
   if (!isOpen || !currentTrack) return null;
@@ -4876,6 +4892,379 @@ const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayT
     "Cerrar (ESC)"
   ))));
 };
+const CustomLibraryModal = ({
+  isOpen,
+  onClose,
+  libraries = [],
+  activeLibraryId,
+  onSaveLibraries,
+  onSelectLibrary,
+  currentTracks = [],
+  selectedTrackIds = /* @__PURE__ */ new Set(),
+  onMaterializarEnDisco
+}) => {
+  var _a;
+  if (!isOpen) return null;
+  const [activeLibId, setActiveLibId] = useState(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
+  const [libNameInput, setLibNameInput] = useState("");
+  const [newFolderName, setNewFolderName] = useState("");
+  const [selectedFolderId, setSelectedFolderId] = useState(null);
+  const [feedbackMsg, setFeedbackMsg] = useState("");
+  const [searchTrack, setSearchTrack] = useState("");
+  const currentLib = libraries.find((l) => l.id === activeLibId) || libraries[0] || {
+    id: "lib_default",
+    name: "Mi Biblioteca Principal",
+    folders: []
+  };
+  useEffect(() => {
+    if (currentLib) {
+      setLibNameInput(currentLib.name || "");
+      if (!selectedFolderId && currentLib.folders && currentLib.folders.length > 0) {
+        setSelectedFolderId(currentLib.folders[0].id);
+      }
+    }
+  }, [currentLib == null ? void 0 : currentLib.id]);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+  const handleCreateNewLibrary = () => {
+    const newId = `lib_${Date.now()}`;
+    const newLib = {
+      id: newId,
+      name: `Nueva Biblioteca ${libraries.length + 1}`,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      folders: [
+        { id: `f_${Date.now()}_1`, name: "01 - Warm Up", tracks: [] },
+        { id: `f_${Date.now()}_2`, name: "02 - Peak Time", tracks: [] },
+        { id: `f_${Date.now()}_3`, name: "03 - Melodic & Deep", tracks: [] }
+      ]
+    };
+    const updated = [...libraries, newLib];
+    if (onSaveLibraries) onSaveLibraries(updated, newId);
+    setActiveLibId(newId);
+    setSelectedFolderId(newLib.folders[0].id);
+    setFeedbackMsg("\u2713 Biblioteca creada");
+    setTimeout(() => setFeedbackMsg(""), 2500);
+  };
+  const handleUpdateLibraryName = () => {
+    if (!libNameInput.trim()) return;
+    const updated = libraries.map((l) => l.id === activeLibId ? { ...l, name: libNameInput.trim() } : l);
+    if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+    setFeedbackMsg(`\u2713 Nombre actualizado: ${libNameInput.trim()}`);
+    setTimeout(() => setFeedbackMsg(""), 2500);
+  };
+  const handleAddFolder = () => {
+    if (!newFolderName.trim()) return;
+    const newF = {
+      id: `f_${Date.now()}`,
+      name: newFolderName.trim(),
+      tracks: []
+    };
+    const updated = libraries.map((l) => {
+      if (l.id === activeLibId) {
+        return { ...l, folders: [...l.folders || [], newF] };
+      }
+      return l;
+    });
+    if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+    setNewFolderName("");
+    setSelectedFolderId(newF.id);
+    setFeedbackMsg(`\u2713 Carpeta virtual "${newF.name}" creada`);
+    setTimeout(() => setFeedbackMsg(""), 2500);
+  };
+  const handleDeleteFolder = (folderId) => {
+    const updated = libraries.map((l) => {
+      if (l.id === activeLibId) {
+        return { ...l, folders: (l.folders || []).filter((f) => f.id !== folderId) };
+      }
+      return l;
+    });
+    if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+    if (selectedFolderId === folderId) {
+      setSelectedFolderId(null);
+    }
+  };
+  const handleAssignTracksToActiveFolder = (folderId, onlySelected = false) => {
+    const tracksToAssign = onlySelected ? currentTracks.filter((t) => selectedTrackIds.has(t.id)) : currentTracks;
+    if (tracksToAssign.length === 0) {
+      alert("No hay pistas cargadas para asignar.");
+      return;
+    }
+    const updated = libraries.map((l) => {
+      if (l.id === activeLibId) {
+        const newFolders = (l.folders || []).map((f) => {
+          if (f.id === folderId) {
+            const existingIds = new Set((f.tracks || []).map((t) => t.id || t.file_path));
+            const added = tracksToAssign.filter((t) => !existingIds.has(t.id || t.file_path));
+            return { ...f, tracks: [...f.tracks || [], ...added] };
+          }
+          return f;
+        });
+        return { ...l, folders: newFolders };
+      }
+      return l;
+    });
+    if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+    setFeedbackMsg(`\u2713 ${tracksToAssign.length} pista(s) asignadas`);
+    setTimeout(() => setFeedbackMsg(""), 3e3);
+  };
+  const handleAutoGroupByGenre = () => {
+    if (!currentTracks || currentTracks.length === 0) {
+      alert("Carga pistas en la biblioteca para auto-organizar por g\xE9nero.");
+      return;
+    }
+    const byGenre = {};
+    currentTracks.forEach((t) => {
+      const g = (t.genre || t.subgenre || "Electr\xF3nica General").trim();
+      if (!byGenre[g]) byGenre[g] = [];
+      byGenre[g].push(t);
+    });
+    const newFolders = Object.entries(byGenre).map(([genreName, trList], idx) => ({
+      id: `f_auto_${idx}_${Date.now()}`,
+      name: genreName,
+      tracks: trList
+    }));
+    const updated = libraries.map((l) => {
+      if (l.id === activeLibId) {
+        return { ...l, folders: newFolders };
+      }
+      return l;
+    });
+    if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+    if (newFolders.length > 0) setSelectedFolderId(newFolders[0].id);
+    setFeedbackMsg(`\u2713 ${newFolders.length} carpetas generadas autom\xE1ticamente por g\xE9nero`);
+    setTimeout(() => setFeedbackMsg(""), 3500);
+  };
+  const handleRemoveTrackFromFolder = (folderId, trackKey) => {
+    const updated = libraries.map((l) => {
+      if (l.id === activeLibId) {
+        const newFolders = (l.folders || []).map((f) => {
+          if (f.id === folderId) {
+            return { ...f, tracks: (f.tracks || []).filter((t) => (t.id || t.file_path) !== trackKey) };
+          }
+          return f;
+        });
+        return { ...l, folders: newFolders };
+      }
+      return l;
+    });
+    if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+  };
+  const activeFolder = (currentLib.folders || []).find((f) => f.id === selectedFolderId) || currentLib.folders && currentLib.folders[0];
+  const folderTracks = (activeFolder == null ? void 0 : activeFolder.tracks) || [];
+  const filteredFolderTracks = folderTracks.filter((t) => {
+    if (!searchTrack.trim()) return true;
+    const q = searchTrack.toLowerCase();
+    return t.title && t.title.toLowerCase().includes(q) || t.artist && t.artist.toLowerCase().includes(q);
+  });
+  const totalTracksInLib = (currentLib.folders || []).reduce((acc, f) => {
+    var _a2;
+    return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+  }, 0);
+  return ReactDOM.createPortal(
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto",
+        onClick: onClose
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "bg-[#0b0c16] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden text-gray-200 my-auto animate-fadeIn",
+          onClick: (e) => e.stopPropagation()
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0c0e1e] to-[#080911] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" }, "\u{1F4DA}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider" }, "Gestor de Bibliotecas & Estructura de Carpetas"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black" }, totalTracksInLib, " pistas organizadas")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans mt-0.5" }, "Crea bibliotecas personalizadas con carpetas virtuales. Puedes materializarlas en disco cuando quieras conservando tus respaldos originales."))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, feedbackMsg && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-emerald-400 font-bold animate-pulse hidden sm:inline" }, feedbackMsg), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: onClose,
+            className: "px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-rose-950 hover:text-rose-200 text-gray-300 border border-djzinc-700 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm",
+            title: "Cerrar modal (ESC)"
+          },
+          /* @__PURE__ */ React.createElement("span", null, "\u2715"),
+          /* @__PURE__ */ React.createElement("span", null, "Cerrar")
+        ))),
+        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 border-b border-djzinc-800 bg-[#070810] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap flex-1 min-w-[280px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono uppercase font-bold text-gray-400" }, "Biblioteca:"), /* @__PURE__ */ React.createElement(
+          "select",
+          {
+            value: activeLibId,
+            onChange: (e) => {
+              const id = e.target.value;
+              setActiveLibId(id);
+              if (onSelectLibrary) onSelectLibrary(id);
+            },
+            className: "px-3 py-1.5 rounded-xl bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-white font-bold outline-none focus:border-djcyan-400"
+          },
+          libraries.map((lib) => {
+            var _a2;
+            return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a2 = lib.folders) == null ? void 0 : _a2.length) || 0, " carpetas)");
+          })
+        ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: libNameInput,
+            onChange: (e) => setLibNameInput(e.target.value),
+            placeholder: "Nombre de la biblioteca",
+            className: "px-3 py-1 bg-djzinc-950 border border-djzinc-750 rounded-lg text-xs font-mono text-white outline-none focus:border-djcyan-400 w-44"
+          }
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleUpdateLibraryName,
+            className: "px-2.5 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 text-xs font-mono font-bold cursor-pointer transition-colors",
+            title: "Guardar nombre"
+          },
+          "Guardar"
+        ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleCreateNewLibrary,
+            className: "px-3 py-1.5 rounded-xl bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm",
+            title: "Crear una nueva biblioteca en blanco"
+          },
+          /* @__PURE__ */ React.createElement("span", null, "\u2795"),
+          /* @__PURE__ */ React.createElement("span", null, "Nueva Biblioteca")
+        ))),
+        /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-djzinc-800 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "w-full md:w-5/12 p-4 flex flex-col gap-3 bg-[#080912] overflow-y-auto custom-scrollbar" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-djcyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4C1}"), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", ((_a = currentLib.folders) == null ? void 0 : _a.length) || 0, ")")), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleAutoGroupByGenre,
+            className: "px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/60 text-[10px] font-mono font-bold cursor-pointer transition-colors",
+            title: "Crea carpetas autom\xE1ticamente a partir de los g\xE9neros musicales de tus pistas cargadas"
+          },
+          "\u26A1 Auto por G\xE9nero"
+        )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: newFolderName,
+            onChange: (e) => setNewFolderName(e.target.value),
+            onKeyDown: (e) => {
+              if (e.key === "Enter") handleAddFolder();
+            },
+            placeholder: "Nombre de nueva carpeta...",
+            className: "flex-1 px-3 py-1.5 bg-djzinc-950 border border-djzinc-750 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
+          }
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleAddFolder,
+            className: "px-3 py-1.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs rounded-xl cursor-pointer active:scale-95 shadow-sm"
+          },
+          "+ Crear"
+        )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 flex-1 overflow-y-auto pr-1" }, !currentLib.folders || currentLib.folders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl" }, 'No hay carpetas creadas. Crea una arriba o pulsa "Auto por G\xE9nero".') : currentLib.folders.map((f) => {
+          var _a2;
+          const isSelected = selectedFolderId === f.id;
+          const trCount = ((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0;
+          return /* @__PURE__ */ React.createElement(
+            "div",
+            {
+              key: f.id,
+              onClick: () => setSelectedFolderId(f.id),
+              className: `p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? "bg-djcyan-950/40 border-djcyan-500/80 text-white shadow-md" : "bg-djzinc-900/50 border-djzinc-800 text-gray-300 hover:bg-djzinc-900 hover:border-djzinc-750"}`
+            },
+            /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, isSelected ? "\u{1F4C2}" : "\u{1F4C1}"), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold block truncate" }, f.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono" }, trCount, " pista(s) asignadas"))),
+            /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: () => handleAssignTracksToActiveFolder(f.id, false),
+                className: "px-2 py-0.5 rounded bg-djzinc-800 hover:bg-djcyan-950 hover:text-djcyan-300 text-gray-300 text-[10px] font-mono border border-djzinc-700 cursor-pointer",
+                title: `Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`
+              },
+              "+ Asignar (",
+              currentTracks.length,
+              ")"
+            ), /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: () => handleDeleteFolder(f.id),
+                className: "w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer",
+                title: "Eliminar carpeta"
+              },
+              "\u2715"
+            ))
+          );
+        }))), /* @__PURE__ */ React.createElement("div", { className: "w-full md:w-7/12 p-4 flex flex-col gap-3 bg-[#0a0b16] overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F3B5}"), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, (activeFolder == null ? void 0 : activeFolder.name) || "Ninguna carpeta"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, folderTracks.length, " pista(s) en esta carpeta")), activeFolder && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, selectedTrackIds.size > 0 && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => handleAssignTracksToActiveFolder(activeFolder.id, true),
+            className: "px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/70 text-[11px] font-mono font-bold cursor-pointer",
+            title: "Asignar solo las pistas seleccionadas con checkbox"
+          },
+          "+ Asignar Seleccionadas (",
+          selectedTrackIds.size,
+          ")"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => handleAssignTracksToActiveFolder(activeFolder.id, false),
+            className: "px-2.5 py-1 rounded-lg bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/70 text-[11px] font-mono font-bold cursor-pointer"
+          },
+          "+ A\xF1adir Todas (",
+          currentTracks.length,
+          ")"
+        ))), folderTracks.length > 5 && /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-3 top-2 text-xs text-gray-500" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: searchTrack,
+            onChange: (e) => setSearchTrack(e.target.value),
+            placeholder: "Buscar en esta carpeta por t\xEDtulo o artista...",
+            className: "w-full pl-8 pr-3 py-1.5 bg-djzinc-950 border border-djzinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
+          }
+        )), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 border border-djzinc-800/80 rounded-xl bg-[#070810] p-2" }, !activeFolder || folderTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-2xl" }, "\u{1F4C2}"), /* @__PURE__ */ React.createElement("span", null, "Esta carpeta est\xE1 vac\xEDa."), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-600" }, 'Pulsa "+ A\xF1adir Todas" o "+ Asignar Seleccionadas" para organizar pistas aqu\xED.')) : filteredFolderTracks.map((tr, tIdx) => {
+          var _a2;
+          const trKey = tr.id || tr.file_path || tIdx;
+          return /* @__PURE__ */ React.createElement("div", { key: trKey, className: "py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-djzinc-900/60 rounded-lg group" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10px] text-gray-500 w-5" }, tIdx + 1), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white block truncate" }, tr.title || tr.filename || ((_a2 = tr.file_path) == null ? void 0 : _a2.split("/").pop()) || "Sin t\xEDtulo"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 block truncate" }, tr.artist || "Artista desconocido", " \u2022 ", tr.genre || tr.subgenre || "Electr\xF3nica", " \u2022 ", tr.bpm ? `${Math.round(tr.bpm)} BPM` : "", " ", tr.key || ""))), /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => handleRemoveTrackFromFolder(activeFolder.id, trKey),
+              className: "opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 text-xs transition-opacity cursor-pointer",
+              title: "Quitar de esta carpeta"
+            },
+            "\u2715"
+          ));
+        })))),
+        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono text-gray-400" }, "\u{1F512} Los cambios quedan guardados autom\xE1ticamente para tu pr\xF3xima sesi\xF3n.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => onMaterializarEnDisco && onMaterializarEnDisco(currentLib),
+            disabled: !currentLib.folders || currentLib.folders.length === 0,
+            className: "px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-black text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95",
+            title: "Selecciona una carpeta o USB en disco para crear una copia f\xEDsica de tus pistas organizadas por carpetas"
+          },
+          /* @__PURE__ */ React.createElement("span", { className: "text-sm" }, "\u{1F4BE}"),
+          /* @__PURE__ */ React.createElement("span", null, "Crear en Disco (Copia F\xEDsica Estructurada)")
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: onClose,
+            className: "px-4 py-2 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-mono font-bold text-xs cursor-pointer transition-colors"
+          },
+          "Listo"
+        )))
+      )
+    ),
+    document.body
+  );
+};
 const AuditWorkspace = ({
   tracks: externalTracks,
   setTracks: setExternalTracks,
@@ -4899,7 +5288,7 @@ const AuditWorkspace = ({
   audioRef,
   onAuditProgressChange
 }) => {
-  var _a;
+  var _a, _b;
   const [localRutaOrigen, setLocalRutaOrigen] = useState("");
   const rutaOrigen = currentFolder || localRutaOrigen;
   const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
@@ -5331,7 +5720,7 @@ const AuditWorkspace = ({
       setBatchProgress(90);
       setBatchStatusMsg(`\u2713 ${results.length} pistas transferidas a Descargas. Redirigiendo a Pool Ingest...`);
       const formattedTracks = results.map((r, i) => {
-        var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+        var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j, _k;
         const isVerified = (r.match_score !== void 0 ? r.match_score >= 80 : true) && r.es_misma_pista !== false;
         return {
           id: `sp_hd_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
@@ -5344,7 +5733,7 @@ const AuditWorkspace = ({
           duration: r.duration || "03:45",
           origin: "audit_upgrade",
           reemplazo_de: r.reemplazo_de || r.filename || (targetTracks[i] ? `${targetTracks[i].artist || targetTracks[i].a || ""} - ${targetTracks[i].title || targetTracks[i].t || ""}` : null),
-          original_file: r.original_file || r.filename || ((_a2 = targetTracks[i]) == null ? void 0 : _a2.filename) || ((_b = targetTracks[i]) == null ? void 0 : _b.f) || null,
+          original_file: r.original_file || r.filename || ((_a2 = targetTracks[i]) == null ? void 0 : _a2.filename) || ((_b2 = targetTracks[i]) == null ? void 0 : _b2.f) || null,
           original_path: r.original_path || ((_c = targetTracks[i]) == null ? void 0 : _c.path) || ((_d = targetTracks[i]) == null ? void 0 : _d.filepath) || ((_e = targetTracks[i]) == null ? void 0 : _e.f) || null,
           original_duration: r.original_duration || ((_f = targetTracks[i]) == null ? void 0 : _f.duration) || null,
           original_artist: r.original_artist || ((_g = targetTracks[i]) == null ? void 0 : _g.artist) || ((_h = targetTracks[i]) == null ? void 0 : _h.a) || "Desconocido",
@@ -5878,17 +6267,19 @@ const AuditWorkspace = ({
       alert("No hay pistas auditadas para exportar.");
       return;
     }
+    const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar el Informe Excel (.xlsx):");
+    if (!destino) return;
     if (window.eel && window.eel.exportar_auditoria_xls) {
       setIsExporting(true);
       setBatchProgress(25);
       setBatchStatusMsg("Generando reporte de auditor\xEDa en formato Excel (XLSX)...");
       try {
-        const res = await window.eel.exportar_auditoria_xls(tracks, rutaOrigen)();
+        const res = await window.eel.exportar_auditoria_xls(tracks, destino)();
         setBatchProgress(100);
         if (res && res.status === "ok") {
           const nombreArchivo = res.path ? res.path.split("/").pop() : "CleanDJmix_Audit_Respaldo.xlsx";
           setBatchStatusMsg(`\u2713 Exportado con \xE9xito: ${nombreArchivo}`);
-          setSaveFeedback(`\u2713 Exportado con \xE9xito: ${nombreArchivo}`);
+          setSaveFeedback(`\u2713 Informe guardado en: ${destino}`);
           setTimeout(() => setSaveFeedback(""), 4e3);
         } else {
           setBatchStatusMsg("Error al exportar a Excel.");
@@ -5907,53 +6298,56 @@ const AuditWorkspace = ({
       }
     }
   };
-  const handleExportarSeratoCrates = async () => {
+  const handleExportarSerato = async () => {
     if (!tracks || tracks.length === 0) {
-      alert("No hay pistas auditadas para exportar.");
+      alert("No hay pistas auditadas para configurar para Serato.");
       return;
     }
-    if (window.eel && window.eel.exportar_serato_crates) {
-      setIsExporting(true);
-      setBatchProgress(40);
-      setBatchStatusMsg("Generando archivos .crate oficiales para Serato DJ Pro...");
-      try {
-        const res = await window.eel.exportar_serato_crates(tracks)();
+    setIsInjecting(true);
+    setBatchProgress(15);
+    setBatchStatusMsg("Inyectando configuraci\xF3n y metadatos nativos para Serato DJ Pro en los archivos...");
+    try {
+      if (window.eel && window.eel.inyectar_lote_metadatos) {
+        const res = await window.eel.inyectar_lote_metadatos(tracks)();
         setBatchProgress(100);
         if (res && res.status === "ok") {
-          setBatchStatusMsg(`\u2713 ${res.total_crates} crates generados en ~/Music/_Serato_/Subcrates`);
-          setSaveFeedback(`\u2713 ${res.total_crates} crates exportados a Serato`);
-          setTimeout(() => setSaveFeedback(""), 4e3);
+          const total = res.total_inyectadas || tracks.length;
+          setBatchStatusMsg(`\u2713 ${total} pistas configuradas con metadatos oficiales de Serato DJ Pro`);
+          setSaveFeedback(`\u2713 Metadatos Serato inyectados en los archivos de audio`);
+          setTimeout(() => setSaveFeedback(""), 4500);
         } else {
-          setBatchStatusMsg("Error al exportar crates de Serato.");
-          alert((res == null ? void 0 : res.msg) || "Error al exportar crates de Serato.");
+          alert((res == null ? void 0 : res.msg) || "Error al inyectar metadatos para Serato.");
         }
-      } catch (e) {
-        console.error("Error al exportar crates Serato:", e);
-        setBatchStatusMsg("Error durante la exportaci\xF3n.");
-      } finally {
-        setTimeout(() => {
-          setIsExporting(false);
-          setBatchProgress(0);
-          setBatchStatusMsg("");
-        }, 1e3);
       }
+    } catch (e) {
+      console.error("Error al inyectar metadatos Serato:", e);
+      alert("Error al procesar pistas para Serato DJ Pro.");
+    } finally {
+      setTimeout(() => {
+        setIsInjecting(false);
+        setBatchProgress(0);
+        setBatchStatusMsg("");
+      }, 800);
     }
   };
+  const handleExportarSeratoCrates = handleExportarSerato;
   const handleExportarTraktor = async () => {
     if (!tracks || tracks.length === 0) {
       alert("No hay pistas auditadas para exportar.");
       return;
     }
+    const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar colecci\xF3n Traktor (.nml):");
+    if (!destino) return;
     if (window.eel && window.eel.exportar_traktor_nml) {
       setIsExporting(true);
       setBatchProgress(40);
       setBatchStatusMsg("Generando colecci\xF3n Traktor Pro (.nml)...");
       try {
-        const res = await window.eel.exportar_traktor_nml(tracks)();
+        const res = await window.eel.exportar_traktor_nml(tracks, destino)();
         setBatchProgress(100);
         if (res && res.status === "ok") {
           setBatchStatusMsg(`\u2713 Traktor NML generado en ${res.path}`);
-          setSaveFeedback(`\u2713 Traktor NML generado`);
+          setSaveFeedback(`\u2713 Traktor NML guardado en ${destino}`);
           setTimeout(() => setSaveFeedback(""), 4e3);
         } else {
           alert((res == null ? void 0 : res.msg) || "Error al exportar Traktor NML.");
@@ -5974,15 +6368,17 @@ const AuditWorkspace = ({
       alert("No hay pistas auditadas para exportar.");
       return;
     }
+    const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar lista VirtualDJ (.m3u):");
+    if (!destino) return;
     setIsExporting(true);
     setBatchProgress(40);
     setBatchStatusMsg("Generando lista y metadatos para VirtualDJ...");
     try {
       if (window.eel && window.eel.exportar_set_m3u) {
-        const res = await window.eel.exportar_set_m3u(tracks, "VirtualDJ_Coleccion")();
+        const res = await window.eel.exportar_set_m3u(tracks, "VirtualDJ_Coleccion", destino)();
         setBatchProgress(100);
         if (res && res.status === "ok") {
-          setSaveFeedback(`\u2713 Colecci\xF3n VirtualDJ lista en ${res.path}`);
+          setSaveFeedback(`\u2713 Colecci\xF3n VirtualDJ guardada en ${destino}`);
           setTimeout(() => setSaveFeedback(""), 4e3);
         }
       } else {
@@ -6004,17 +6400,18 @@ const AuditWorkspace = ({
       alert("No hay pistas auditadas para exportar.");
       return;
     }
+    const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar rekordbox.xml:");
+    if (!destino) return;
     if (window.eel && window.eel.exportar_rekordbox_xml) {
       setIsExporting(true);
       setBatchProgress(40);
       setBatchStatusMsg("Generando archivo rekordbox.xml est\xE1ndar Pioneer DJ...");
       try {
-        const targetDir = rutaOrigen || "/Users/admin/Music/mi musica";
-        const res = await window.eel.exportar_rekordbox_xml(tracks, targetDir, "rekordbox.xml")();
+        const res = await window.eel.exportar_rekordbox_xml(tracks, destino, "rekordbox.xml")();
         setBatchProgress(100);
         if (res && res.status === "ok") {
           setBatchStatusMsg(`\u2713 rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists)`);
-          setSaveFeedback(`\u2713 rekordbox.xml generado en ${res.path}`);
+          setSaveFeedback(`\u2713 rekordbox.xml guardado en ${destino}`);
           setTimeout(() => setSaveFeedback(""), 4e3);
         } else {
           setBatchStatusMsg("Error al exportar rekordbox.xml.");
@@ -6033,32 +6430,31 @@ const AuditWorkspace = ({
     }
   };
   const handleSincronizarPasaporteUniversal = async () => {
-    var _a2;
     if (!tracks || tracks.length === 0) {
       alert("No hay pistas cargadas para exportar.");
       return;
     }
+    const destino = await solicitarCarpetaDestino("Selecciona la carpeta destino para la exportaci\xF3n universal:");
+    if (!destino) return;
     setIsExporting(true);
     setBatchProgress(30);
     setBatchStatusMsg("Ejecutando Pasaporte Universal: Serato, Rekordbox, Traktor y VirtualDJ...");
     try {
-      const targetDir = rutaOrigen || "/Users/admin/Music/mi musica";
       let res = null;
       if (window.eel && window.eel.sincronizar_pasaporte_universal) {
-        res = await window.eel.sincronizar_pasaporte_universal(tracks, targetDir)();
+        res = await window.eel.sincronizar_pasaporte_universal(tracks, destino)();
       } else {
         const resp = await fetch("/api/export/universal_sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tracks, destino_dir: targetDir })
+          body: JSON.stringify({ tracks, destino_dir: destino })
         });
         res = await resp.json();
       }
       setBatchProgress(100);
       if (res && res.status === "ok") {
-        const cratesCount = ((_a2 = res.serato) == null ? void 0 : _a2.total_crates) || 0;
         setBatchStatusMsg(`\u2713 Pasaporte Universal Sincronizado: ${tracks.length} pistas en 4 plataformas.`);
-        setSaveFeedback(`\u2713 Sincronizado: Serato (${cratesCount} crates), Rekordbox, Traktor NML y VirtualDJ M3U`);
+        setSaveFeedback(`\u2713 Sincronizado en ${destino}: Rekordbox XML, Traktor NML y VirtualDJ M3U`);
         setTimeout(() => setSaveFeedback(""), 5e3);
       } else {
         alert("Error sincronizando: " + ((res == null ? void 0 : res.msg) || "Fallo inesperado"));
@@ -6377,6 +6773,120 @@ const AuditWorkspace = ({
   const [columnSelectorOpen, setColumnSelectorOpen] = useState(false);
   const [columnSearchText, setColumnSearchText] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
+  const [customLibraries, setCustomLibraries] = useState(() => {
+    try {
+      const saved = localStorage.getItem("bw_user_custom_libraries");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {
+    }
+    return [
+      {
+        id: "lib_default",
+        name: "Mi Biblioteca Principal",
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        folders: [
+          { id: "f_warm", name: "01 - Warm Up", tracks: [] },
+          { id: "f_peak", name: "02 - Peak Time", tracks: [] },
+          { id: "f_deep", name: "03 - Deep & Melodic", tracks: [] },
+          { id: "f_close", name: "04 - Closing & Special", tracks: [] }
+        ]
+      }
+    ];
+  });
+  const [activeCustomLibId, setActiveCustomLibId] = useState(() => {
+    try {
+      return localStorage.getItem("bw_active_custom_library_id") || "lib_default";
+    } catch (_) {
+      return "lib_default";
+    }
+  });
+  const activeCustomLib = customLibraries.find((l) => l.id === activeCustomLibId) || customLibraries[0];
+  const saveCustomLibraries = (newLibs, newActiveId = null) => {
+    setCustomLibraries(newLibs);
+    try {
+      localStorage.setItem("bw_user_custom_libraries", JSON.stringify(newLibs));
+      if (newActiveId) {
+        setActiveCustomLibId(newActiveId);
+        localStorage.setItem("bw_active_custom_library_id", newActiveId);
+      }
+    } catch (_) {
+    }
+  };
+  useEffect(() => {
+    if (!columnSelectorOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setColumnSelectorOpen(false);
+        setColumnSearchText("");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [columnSelectorOpen]);
+  const solicitarCarpetaDestino = async (promptMsg = "Selecciona la carpeta destino para guardar:") => {
+    if (window.eel && window.eel.seleccionar_directorio) {
+      try {
+        const ruta = await window.eel.seleccionar_directorio(promptMsg)();
+        return ruta && typeof ruta === "string" && ruta.trim() ? ruta.trim() : null;
+      } catch (e) {
+        console.error("Error al seleccionar carpeta destino:", e);
+        return null;
+      }
+    }
+    return rutaOrigen || "/Users/admin/Music/mi musica";
+  };
+  const handleMaterializarBibliotecaEnDisco = async (lib) => {
+    if (!lib || !lib.folders || lib.folders.length === 0) {
+      alert("Crea al menos una carpeta y asigna pistas para materializar en disco.");
+      return;
+    }
+    const destino = await solicitarCarpetaDestino(`Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`);
+    if (!destino) return;
+    const estructura = lib.folders.map((f) => {
+      let fTracks = f.tracks || [];
+      if (fTracks.length === 0 && tracks && tracks.length > 0) {
+        fTracks = tracks.filter((t2) => t2.genre && t2.genre.toLowerCase() === f.name.toLowerCase() || t2.subgenre && t2.subgenre.toLowerCase() === f.name.toLowerCase());
+      }
+      return {
+        folder_name: f.name,
+        tracks: fTracks
+      };
+    });
+    setIsExporting(true);
+    setBatchProgress(20);
+    setBatchStatusMsg(`Copiando biblioteca "${lib.name}" en disco preservando respaldos...`);
+    try {
+      if (window.eel && window.eel.crear_biblioteca_en_disco) {
+        const res = await window.eel.crear_biblioteca_en_disco(lib.name, estructura, destino)();
+        setBatchProgress(100);
+        if (res && res.status === "ok") {
+          setBatchStatusMsg(`\u2713 Biblioteca "${lib.name}" creada en: ${res.base_dir}`);
+          setSaveFeedback(`\u2713 ${res.total_copied} pistas copiadas en ${lib.name}`);
+          alert(`\xA1Biblioteca materializada con \xE9xito en disco!
+
+Ubicaci\xF3n: ${res.base_dir}
+Pistas copiadas: ${res.total_copied}
+
+Tus archivos originales de respaldo permanecen 100% intactos.`);
+        } else {
+          alert((res == null ? void 0 : res.msg) || "Error al crear la estructura en disco.");
+        }
+      }
+    } catch (err) {
+      console.error("Error materializando biblioteca:", err);
+      alert("Error al crear biblioteca en disco.");
+    } finally {
+      setTimeout(() => {
+        setIsExporting(false);
+        setBatchProgress(0);
+        setBatchStatusMsg("");
+      }, 800);
+    }
+  };
   const toggleColumnVisibility = (colKey) => {
     setVisibleColumns((prev) => {
       const next = { ...prev, [colKey]: !prev[colKey] };
@@ -6690,11 +7200,54 @@ const AuditWorkspace = ({
       });
     }
   };
-  return /* @__PURE__ */ React.createElement("div", { className: "flex w-full h-full overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "px-3 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-2 z-20" }, /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-audit-select", className: "flex items-center gap-1.5 shrink-0" }, tracks && tracks.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[320px] truncate shrink-0", title: typeof rutaOrigen === "string" ? rutaOrigen : "Selecci\xF3n m\xFAltiple" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djgreen-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[11px] shrink-0" }, "\u{1F4C1}"), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, typeof rutaOrigen === "string" && rutaOrigen ? rutaOrigen.split("/").pop() || rutaOrigen : "Colecci\xF3n Activa"), /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700" }, tracks.length))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" }, saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse" }, saveFeedback), (isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "flex w-full h-full overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "px-3.5 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-3 z-20" }, /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-audit-select", className: "flex items-center gap-2 shrink-0" }, tracks && tracks.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[280px] truncate shrink-0", title: typeof rutaOrigen === "string" ? rutaOrigen : "Selecci\xF3n m\xFAltiple" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djgreen-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[11px] shrink-0" }, "\u{1F4C1}"), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, typeof rutaOrigen === "string" && rutaOrigen ? rutaOrigen.split("/").pop() || rutaOrigen : "Colecci\xF3n Activa"), /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 bg-djzinc-800 text-djcyan-300 font-bold rounded text-[10px] shrink-0 border border-djzinc-700" }, tracks.length)), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setIsLibraryModalOpen(true),
+      className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0",
+      title: "Crear o gestionar biblioteca personalizada, estructurada en carpetas virtuales y copia f\xEDsica en disco"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F4DA}"),
+    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "Biblioteca:"),
+    /* @__PURE__ */ React.createElement("span", { className: "text-white font-black truncate max-w-[130px]" }, activeCustomLib ? activeCustomLib.name : "Crear Biblioteca"),
+    /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-djzinc-900 text-djcyan-300 text-[10px] font-bold border border-djzinc-750" }, ((_a = activeCustomLib == null ? void 0 : activeCustomLib.folders) == null ? void 0 : _a.length) || 0)
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0 ml-auto" }, saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse hidden md:inline" }, saveFeedback), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-950/80 p-0.5 rounded-xl border border-djzinc-800 shrink-0" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setColumnSelectorOpen(true),
+      className: `px-2.5 py-1 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 ${columnSelectorOpen ? "bg-djcyan-950 text-djcyan-300 border-djcyan-600/70 shadow-inner" : "bg-djzinc-900 text-gray-300 border-djzinc-750 hover:text-white hover:border-djzinc-650"}`,
+      title: "Abrir Centro de Personalizaci\xF3n de Columnas y Vistas"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2699\uFE0F"),
+    /* @__PURE__ */ React.createElement("span", null, "Columnas"),
+    /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-djcyan-400 font-mono font-bold" }, "(", Object.values(visibleColumns).filter(Boolean).length, "/24)")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: toggleMetricsCollapsed,
+      className: `px-2.5 py-1 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${!metricsCollapsed ? "bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
+      title: !metricsCollapsed ? "Plegar HUD de m\xE9tricas completas (Tecla M)" : "Desplegar HUD anal\xEDtico completo (Tecla M)"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u25A4"),
+    /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline" }, "HUD"),
+    /* @__PURE__ */ React.createElement("kbd", { className: "text-[9px] bg-black/50 px-1 rounded border border-djzinc-700" }, "M")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setSidebarOpen((prev) => !prev),
+      className: `px-2.5 py-1 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${sidebarOpen ? "bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
+      title: sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u25E8"),
+    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_inspector") || "Inspector")
+  )), (isAuditing || isLoadingDir || isInjecting || isExporting || batchProgress > 0) && /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: handleCancelarProceso,
-      className: "bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-2.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0",
+      className: "bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0",
       title: "Detener el proceso actual inmediatamente"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2715"),
@@ -6777,7 +7330,7 @@ const AuditWorkspace = ({
       title: "Guardar metadatos ID3/FLAC directamente en los archivos de audio en disco"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
-    /* @__PURE__ */ React.createElement("span", null, "Guardar Metadatos")
+    /* @__PURE__ */ React.createElement("span", null, "Metadatos")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6793,13 +7346,13 @@ const AuditWorkspace = ({
     "button",
     {
       type: "button",
-      onClick: handleExportarSeratoCrates,
-      disabled: isExporting || tracks.length === 0,
+      onClick: handleExportarSerato,
+      disabled: isInjecting || tracks.length === 0,
       className: "bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-cyan-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95",
-      title: "Serato DJ Pro (.CRATE) - Exportar crates oficiales a Serato DJ Pro (~/Music/_Serato_/Subcrates)"
+      title: "Serato DJ Pro - Inyectar metadatos oficiales en las pistas (Hot Cues Markers2, BeatGrid, BPM, TKEY y agrupaciones)"
     },
     /* @__PURE__ */ React.createElement(PlatformSeratoLogo, { size: 18 }),
-    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-cyan-300 border border-cyan-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold" }, ".CRATE")
+    /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-cyan-300 border border-cyan-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold" }, "TAGS")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -6844,193 +7397,8 @@ const AuditWorkspace = ({
       title: "Generar libro Excel (.xlsx) multidestino con hojas dedicadas para Auditor\xEDa, Serato, Rekordbox, Traktor y VirtualDJ"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA}"),
-    /* @__PURE__ */ React.createElement("span", null, "Informe Excel"),
+    /* @__PURE__ */ React.createElement("span", null, "Informe"),
     /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]" }, ".XLSX")
-  ))), /* @__PURE__ */ React.createElement("div", { className: "w-px bg-djzinc-800 self-stretch my-0.5 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0 ml-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Vista & Herramientas")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 relative" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setColumnSelectorOpen(true),
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 ${columnSelectorOpen ? "bg-djcyan-950 text-djcyan-300 border-djcyan-600/70 shadow-inner" : "bg-djzinc-900 text-gray-300 border-djzinc-750 hover:text-white hover:border-djzinc-650"}`,
-      title: "Abrir Centro de Personalizaci\xF3n de Columnas y Vistas"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u2699\uFE0F"),
-    /* @__PURE__ */ React.createElement("span", null, "Columnas"),
-    /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-djcyan-400 font-mono font-bold" }, "(", Object.values(visibleColumns).filter(Boolean).length, "/24)")
-  ), columnSelectorOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" }, "\u2699\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider" }, "Centro de Columnas & Vistas"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black" }, Object.values(visibleColumns).filter(Boolean).length, " de 24 activas")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans mt-0.5" }, "Personaliza las columnas visibles en la tabla principal seg\xFAn tu flujo de trabajo de an\xE1lisis o preparaci\xF3n de cabina DJ."))), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => {
-        setColumnSelectorOpen(false);
-        setColumnSearchText("");
-      },
-      className: "w-8 h-8 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-750 flex items-center justify-center cursor-pointer transition-colors",
-      title: "Cerrar modal"
-    },
-    "\u2715"
-  )), /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800/80 bg-[#080910] flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 max-w-md" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-3 top-2.5 text-xs text-gray-400" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      type: "text",
-      value: columnSearchText,
-      onChange: (e) => setColumnSearchText(e.target.value),
-      placeholder: "Buscar columna (ej. bpm, lufs, cues, transcode, cutoff)...",
-      className: "w-full pl-8 pr-8 py-2 bg-djzinc-900 border border-djzinc-750 rounded-xl text-xs font-mono text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500/70 focus:ring-1 focus:ring-djcyan-500/40 transition-all"
-    }
-  ), columnSearchText && /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setColumnSearchText(""),
-      className: "absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-white cursor-pointer"
-    },
-    "\u2715"
-  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 uppercase font-bold shrink-0" }, "Presets:"), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setColumnPreset("all"),
-      className: "px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
-    },
-    "\u{1F441}\uFE0F Ver Todas (24)"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setColumnPreset("dj"),
-      className: "px-2.5 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
-    },
-    "\u26A1 Cabina DJ (8)"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setColumnPreset("audio"),
-      className: "px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
-    },
-    "\u{1F52C} Auditor\xEDa Ac\xFAstica (9)"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setColumnPreset("tags"),
-      className: "px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
-    },
-    "\u{1F3F7}\uFE0F Metadatos (7)"
-  ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar" }, COLUMN_CATEGORIES.map((cat) => {
-    const q = (columnSearchText || "").trim().toLowerCase();
-    const matchingCols = cat.columns.filter((col) => {
-      if (!q) return true;
-      return col.label.toLowerCase().includes(q) || col.key.toLowerCase().includes(q) || col.desc.toLowerCase().includes(q);
-    });
-    if (q && matchingCols.length === 0) return null;
-    const activeInCat = matchingCols.filter((c) => visibleColumns[c.key]).length;
-    return /* @__PURE__ */ React.createElement("div", { key: cat.id, className: "p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-base" }, cat.icon), /* @__PURE__ */ React.createElement("span", { className: `font-mono text-xs font-black uppercase tracking-wider ${cat.color}` }, cat.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 font-bold" }, "(", activeInCat, "/", matchingCols.length, ")")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          const next = { ...visibleColumns };
-          matchingCols.forEach((c) => {
-            next[c.key] = true;
-          });
-          setVisibleColumns(next);
-          try {
-            localStorage.setItem("bw_audit_visible_columns", JSON.stringify(next));
-          } catch (_) {
-          }
-        },
-        className: "text-djcyan-400 hover:text-djcyan-300 cursor-pointer hover:underline"
-      },
-      "Todas"
-    ), /* @__PURE__ */ React.createElement("span", { className: "text-gray-600" }, "/"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          const next = { ...visibleColumns };
-          matchingCols.forEach((c) => {
-            next[c.key] = false;
-          });
-          setVisibleColumns(next);
-          try {
-            localStorage.setItem("bw_audit_visible_columns", JSON.stringify(next));
-          } catch (_) {
-          }
-        },
-        className: "text-gray-500 hover:text-gray-300 cursor-pointer hover:underline"
-      },
-      "Ninguna"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" }, matchingCols.map((col) => {
-      const isChecked = Boolean(visibleColumns[col.key]);
-      return /* @__PURE__ */ React.createElement(
-        "label",
-        {
-          key: col.key,
-          className: `flex items-start justify-between p-2 rounded-lg border transition-all cursor-pointer select-none ${isChecked ? "bg-djzinc-850/80 border-djzinc-700/80 text-white" : "bg-djzinc-950/40 border-djzinc-850/60 text-gray-500 hover:border-djzinc-800"}`
-        },
-        /* @__PURE__ */ React.createElement("div", { className: "flex flex-col pr-2" }, /* @__PURE__ */ React.createElement("span", { className: `text-xs font-mono font-bold ${isChecked ? "text-white" : "text-gray-400"}` }, col.label), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-gray-400 font-sans leading-tight mt-0.5" }, col.desc)),
-        /* @__PURE__ */ React.createElement(
-          "input",
-          {
-            type: "checkbox",
-            checked: isChecked,
-            onChange: () => toggleColumnVisibility(col.key),
-            className: "accent-djcyan-400 w-4 h-4 rounded cursor-pointer mt-0.5 shrink-0"
-          }
-        )
-      );
-    })));
-  })), /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex items-center justify-between flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setColumnPreset("reset"),
-      className: "px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
-    },
-    "\u21BA Restablecer por Defecto"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setColumnPreset("none"),
-      className: "px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-400 hover:text-white border border-djzinc-750 text-xs font-mono cursor-pointer transition-all active:scale-95"
-    },
-    "Deseleccionar Todas"
-  )), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => {
-        setColumnSelectorOpen(false);
-        setColumnSearchText("");
-      },
-      className: "px-5 py-1.5 rounded-lg bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95"
-    },
-    "\u2713 Aplicar y Guardar (",
-    Object.values(visibleColumns).filter(Boolean).length,
-    " Activas)"
-  ))))), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: toggleMetricsCollapsed,
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${!metricsCollapsed ? "bg-amber-950/50 text-amber-300 border-amber-600/60 shadow-inner" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
-      title: !metricsCollapsed ? "Plegar HUD de m\xE9tricas completas (Tecla M)" : "Desplegar HUD anal\xEDtico completo (Tecla M)"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u25A4"),
-    /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline" }, "HUD"),
-    /* @__PURE__ */ React.createElement("kbd", { className: "text-[9px] bg-black/50 px-1 rounded border border-djzinc-700" }, "M")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setSidebarOpen((prev) => !prev),
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${sidebarOpen ? "bg-djcyan-950 text-djcyan-400 border-djcyan-700/60 shadow-inner" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`,
-      title: sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u25E8"),
-    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_inspector") || "Inspector")
   )))), /* @__PURE__ */ React.createElement("div", { className: "flex md:hidden flex-col bg-[#07070d] border-b border-djzinc-800 select-none z-10" }, /* @__PURE__ */ React.createElement("div", { className: "flex p-1.5 bg-[#050508] gap-1.5 border-b border-djzinc-850" }, /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -7116,20 +7484,11 @@ const AuditWorkspace = ({
       type: "button",
       onClick: handleGuardarTodoEnFicheros,
       disabled: isInjecting || tracks.length === 0,
-      className: "h-10 px-3.5 bg-emerald-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
+      className: "h-10 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md",
+      title: "Guardar metadatos en archivos"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4BE}"),
-    /* @__PURE__ */ React.createElement("span", null, "Guardar Tags")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: handleSincronizarPasaporteUniversal,
-      disabled: tracks.length === 0,
-      className: "h-10 px-3.5 bg-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u{1F6C2}"),
-    /* @__PURE__ */ React.createElement("span", null, "Todos")
+    /* @__PURE__ */ React.createElement("span", null, "Metadatos")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -7145,13 +7504,13 @@ const AuditWorkspace = ({
     "button",
     {
       type: "button",
-      onClick: handleExportarSeratoCrates,
-      disabled: tracks.length === 0,
+      onClick: handleExportarSerato,
+      disabled: isInjecting || tracks.length === 0,
       className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95",
-      title: "Serato DJ Pro (.CRATE)"
+      title: "Serato DJ Pro - Inyectar metadatos oficiales en las pistas"
     },
     /* @__PURE__ */ React.createElement(PlatformSeratoLogo, { size: 18 }),
-    /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-cyan-300 font-mono font-bold" }, ".CRATE")
+    /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-cyan-300 font-mono font-bold" }, "TAGS")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -7178,12 +7537,24 @@ const AuditWorkspace = ({
     "button",
     {
       type: "button",
+      onClick: handleSincronizarPasaporteUniversal,
+      disabled: tracks.length === 0,
+      className: "h-10 px-3.5 bg-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md",
+      title: "Exportar a todas las aplicaciones DJ"
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u{1F6C2}"),
+    /* @__PURE__ */ React.createElement("span", null, "Todos")
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
       onClick: handleExportarXLS,
       disabled: tracks.length === 0,
       className: "h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95",
       title: "Informe Excel (.XLSX)"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA}"),
+    /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-gray-200" }, "Informe"),
     /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-emerald-300 font-mono font-bold" }, ".XLSX")
   )))), (isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 animate-pulse" }), batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold" }, batchProgress, "%"), /* @__PURE__ */ React.createElement(
     "button",
@@ -8128,7 +8499,7 @@ const AuditWorkspace = ({
   }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Dividir por 2" }, "/2"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     const v = parseFloat(currentTrack.b);
     if (!isNaN(v)) updateCurrentTrackField("b", (v * 2).toFixed(2));
-  }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", ((_a = CAMELOT_WHEEL_DATA[currentTrack.k]) == null ? void 0 : _a.classical) || "Am", ")")), /* @__PURE__ */ React.createElement(
+  }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", ((_b = CAMELOT_WHEEL_DATA[currentTrack.k]) == null ? void 0 : _b.classical) || "Am", ")")), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -8667,6 +9038,196 @@ const AuditWorkspace = ({
         /* @__PURE__ */ React.createElement("span", null, deleteModalState.mode === "list_only" ? "Quitar de la Lista" : "Confirmar Eliminaci\xF3n")
       ))
     )
+  ), isLibraryModalOpen && /* @__PURE__ */ React.createElement(
+    CustomLibraryModal,
+    {
+      isOpen: isLibraryModalOpen,
+      onClose: () => setIsLibraryModalOpen(false),
+      libraries: customLibraries,
+      activeLibraryId: activeCustomLibId,
+      onSaveLibraries: (updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId),
+      onSelectLibrary: (id) => saveCustomLibraries(customLibraries, id),
+      currentTracks: tracks,
+      selectedTrackIds: selectedAuditIds,
+      onMaterializarEnDisco: (lib) => handleMaterializarBibliotecaEnDisco(lib)
+    }
+  ), columnSelectorOpen && ReactDOM.createPortal(
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn",
+        onClick: () => {
+          setColumnSelectorOpen(false);
+          setColumnSearchText("");
+        }
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden text-gray-200",
+          onClick: (e) => e.stopPropagation()
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" }, "\u2699\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider" }, "Centro de Columnas & Vistas"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black" }, Object.values(visibleColumns).filter(Boolean).length, " de 24 activas")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans mt-0.5" }, "Personaliza las columnas visibles en la tabla principal seg\xFAn tu flujo de trabajo de an\xE1lisis o preparaci\xF3n de cabina DJ."))), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setColumnSelectorOpen(false);
+              setColumnSearchText("");
+            },
+            className: "w-9 h-9 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-750 flex items-center justify-center cursor-pointer transition-colors text-sm font-bold shadow-sm",
+            title: "Cerrar modal (Esc)"
+          },
+          "\u2715"
+        )),
+        /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800/80 bg-[#080910] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 max-w-md" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-3 top-2.5 text-xs text-gray-400" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: columnSearchText,
+            onChange: (e) => setColumnSearchText(e.target.value),
+            placeholder: "Buscar columna (ej. bpm, lufs, cues, transcode, cutoff)...",
+            className: "w-full pl-8 pr-8 py-2 bg-djzinc-900 border border-djzinc-750 rounded-xl text-xs font-mono text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500/70 focus:ring-1 focus:ring-djcyan-500/40 transition-all"
+          }
+        ), columnSearchText && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setColumnSearchText(""),
+            className: "absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-white cursor-pointer"
+          },
+          "\u2715"
+        )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 uppercase font-bold shrink-0" }, "Presets:"), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setColumnPreset("all"),
+            className: "px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u{1F441}\uFE0F Ver Todas (24)"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setColumnPreset("dj"),
+            className: "px-2.5 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u26A1 Cabina DJ (8)"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setColumnPreset("audio"),
+            className: "px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u{1F52C} Auditor\xEDa Ac\xFAstica (9)"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setColumnPreset("tags"),
+            className: "px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u{1F3F7}\uFE0F Metadatos (7)"
+        ))),
+        /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar" }, COLUMN_CATEGORIES.map((cat) => {
+          const q = (columnSearchText || "").trim().toLowerCase();
+          const matchingCols = cat.columns.filter((col) => {
+            if (!q) return true;
+            return col.label.toLowerCase().includes(q) || col.key.toLowerCase().includes(q) || col.desc.toLowerCase().includes(q);
+          });
+          if (q && matchingCols.length === 0) return null;
+          const activeInCat = matchingCols.filter((c) => visibleColumns[c.key]).length;
+          return /* @__PURE__ */ React.createElement("div", { key: cat.id, className: "p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-base" }, cat.icon), /* @__PURE__ */ React.createElement("span", { className: `font-mono text-xs font-black uppercase tracking-wider ${cat.color}` }, cat.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 font-bold" }, "(", activeInCat, "/", matchingCols.length, ")")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => {
+                const next = { ...visibleColumns };
+                matchingCols.forEach((c) => {
+                  next[c.key] = true;
+                });
+                setVisibleColumns(next);
+                try {
+                  localStorage.setItem("bw_audit_visible_columns", JSON.stringify(next));
+                } catch (_) {
+                }
+              },
+              className: "text-djcyan-400 hover:text-djcyan-300 cursor-pointer hover:underline"
+            },
+            "Todas"
+          ), /* @__PURE__ */ React.createElement("span", { className: "text-gray-600" }, "/"), /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => {
+                const next = { ...visibleColumns };
+                matchingCols.forEach((c) => {
+                  next[c.key] = false;
+                });
+                setVisibleColumns(next);
+                try {
+                  localStorage.setItem("bw_audit_visible_columns", JSON.stringify(next));
+                } catch (_) {
+                }
+              },
+              className: "text-gray-500 hover:text-gray-300 cursor-pointer hover:underline"
+            },
+            "Ninguna"
+          ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" }, matchingCols.map((col) => {
+            const isChecked = Boolean(visibleColumns[col.key]);
+            return /* @__PURE__ */ React.createElement(
+              "label",
+              {
+                key: col.key,
+                className: `flex items-start justify-between p-2 rounded-lg border transition-all cursor-pointer select-none ${isChecked ? "bg-djzinc-850/80 border-djzinc-700/80 text-white" : "bg-djzinc-950/40 border-djzinc-850/60 text-gray-500 hover:border-djzinc-800"}`
+              },
+              /* @__PURE__ */ React.createElement("div", { className: "flex flex-col pr-2" }, /* @__PURE__ */ React.createElement("span", { className: `text-xs font-mono font-bold ${isChecked ? "text-white" : "text-gray-400"}` }, col.label), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-gray-400 font-sans leading-tight mt-0.5" }, col.desc)),
+              /* @__PURE__ */ React.createElement(
+                "input",
+                {
+                  type: "checkbox",
+                  checked: isChecked,
+                  onChange: () => toggleColumnVisibility(col.key),
+                  className: "accent-djcyan-400 w-4 h-4 rounded cursor-pointer mt-0.5 shrink-0"
+                }
+              )
+            );
+          })));
+        })),
+        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex items-center justify-between flex-wrap gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setColumnPreset("reset"),
+            className: "px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
+          },
+          "\u21BA Restablecer por Defecto"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setColumnPreset("none"),
+            className: "px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-400 hover:text-white border border-djzinc-750 text-xs font-mono cursor-pointer transition-all active:scale-95"
+          },
+          "Deseleccionar Todas"
+        )), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setColumnSelectorOpen(false);
+              setColumnSearchText("");
+            },
+            className: "px-5 py-2 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95"
+          },
+          "\u2713 Aplicar y Guardar (",
+          Object.values(visibleColumns).filter(Boolean).length,
+          " Activas)"
+        ))
+      )
+    ),
+    document.body
   ));
 };
 const HotCuesWorkspace = ({

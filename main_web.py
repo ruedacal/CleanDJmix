@@ -304,8 +304,12 @@ def cue_audio_mac(nombre_archivo=""):
 atexit.register(lambda: audio_playback_svc.detener_mac())
 
 @eel.expose
-def seleccionar_directorio():
-    return audit_svc.seleccionar_directorio()
+def seleccionar_directorio(prompt="Selecciona tu carpeta de música DJ (FLAC, MP3, WAV):"):
+    return audit_svc.seleccionar_directorio(prompt)
+
+@eel.expose
+def crear_biblioteca_en_disco(nombre_biblioteca, estructura_carpetas, destino_dir):
+    return export_svc.crear_biblioteca_en_disco(nombre_biblioteca, estructura_carpetas, destino_dir)
 
 @eel.expose
 def listar_subcarpetas_sistema(ruta_base=""):

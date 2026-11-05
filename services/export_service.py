@@ -803,3 +803,47 @@ class ExportService:
             results["errors"].append(f"M3U8: {str(e)}")
 
         return results
+
+    def crear_biblioteca_en_disco(
+        self,
+        nombre_biblioteca: str,
+        estructura_carpetas: List[Dict[str, Any]],
+        destino_dir: str
+    ) -> Dict[str, Any]:
+        """Crea una copia física estructurada de las pistas en carpetas en disco, preservando los originales como respaldo."""
+        import shutil
+        if not destino_dir or not os.path.isdir(destino_dir):
+            return {"status": "error", "msg": "Directorio de destino no válido o inaccesible."}
+
+        sanitized_lib_name = "".join(c for c in (nombre_biblioteca or "Mi_Biblioteca_DJ") if c.isalnum() or c in " _-").strip() or "Mi_Biblioteca_DJ"
+        base_dir = os.path.join(destino_dir, sanitized_lib_name)
+        os.makedirs(base_dir, exist_ok=True)
+
+        copied = 0
+        errors = []
+        for folder_item in estructura_carpetas:
+            folder_name = "".join(c for c in folder_item.get("folder_name", "General") if c.isalnum() or c in " _-").strip() or "General"
+            folder_path = os.path.join(base_dir, folder_name)
+            os.makedirs(folder_path, exist_ok=True)
+
+            for track in folder_item.get("tracks", []):
+                src_path = track.get("file_path") or track.get("path")
+                if not src_path or not os.path.isfile(src_path):
+                    continue
+                try:
+                    filename = os.path.basename(src_path)
+                    dest_file = os.path.join(folder_path, filename)
+                    # Copiar preservando metadatos y timestamp
+                    if not os.path.exists(dest_file):
+                        shutil.copy2(src_path, dest_file)
+                    copied += 1
+                except Exception as ex:
+                    errors.append(f"{os.path.basename(src_path)}: {str(ex)}")
+
+        return {
+            "status": "ok",
+            "base_dir": base_dir,
+            "total_copied": copied,
+            "errors": errors
+        }
+
