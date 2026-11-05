@@ -4,7 +4,7 @@ import struct
 import base64
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC, FLACNoHeaderError, Picture
-from mutagen.id3 import ID3, TIT1, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, APIC, TPE4, TCOM, TYER, ID3NoHeaderError
+from mutagen.id3 import ID3, TIT1, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, APIC, TPE4, TCOM, TYER, TPUB, ID3NoHeaderError
 from mutagen.aiff import AIFF
 from mutagen.mp4 import MP4, MP4Cover
 
@@ -847,7 +847,7 @@ class AudioProcessorService:
         return ""
 
     @staticmethod
-    def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None) -> bool:
+    def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None, modo_serato: bool = False) -> bool:
         """Inyecta metadatos profesionales para DJs (BPM exacto, Camelot TKEY, Comentario Táctico COMM,
         Serato Markers2 Cues, Serato BeatGrid, Carátula 1:1, ISRC, Género) en archivos FLAC, MP3, AIFF, M4A y WAV."""
         if not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
@@ -867,7 +867,7 @@ class AudioProcessorService:
 
         raw_key = meta_track.get("key") or meta_track.get("k") or ""
         key_camelot = AudioProcessorService.normalizar_key(raw_key) if raw_key else ""
-        comment = str(meta_track.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b")
+        comment = str(meta_track.get("comment") or "")
         genre_val = str(meta_track.get("genre") or meta_track.get("mood") or "Tech House").strip()
         subgenre_val = str(meta_track.get("subgenre") or "").strip()
         if subgenre_val and subgenre_val.lower() not in genre_val.lower():
@@ -888,11 +888,77 @@ class AudioProcessorService:
 
         downbeat_ms = int(float(meta_track.get("first_downbeat_ms") or 0))
         trim_ms = float(meta_track.get("trim_start_ms") or 0.0)
-        dance_val = int(meta_track.get("danceability") or meta_track.get("dance") or 85)
-        mood_val = str(meta_track.get("mood") or "Peak Time")
+
+        dance_raw = meta_track.get("danceability") or meta_track.get("dance") or meta_track.get("d") or 85
+        try:
+            dance_val = int(re.sub(r"[^\d]", "", str(dance_raw)) or "85")
+        except Exception:
+            dance_val = 85
+
+        energy_raw = meta_track.get("energy") or meta_track.get("energia") or meta_track.get("e") or 80
+        try:
+            energy_val = int(re.sub(r"[^\d]", "", str(energy_raw)) or "80")
+        except Exception:
+            energy_val = 80
+
+        mood_val = str(meta_track.get("mood") or "Peak Time").strip()
         cues_list = meta_track.get("cues") or []
-        remixer_val = str(meta_track.get("remixer") or meta_track.get("version") or "").strip()
-        composer_val = str(meta_track.get("composer") or meta_track.get("acoustic_role") or f"⚡E:{dance_val}% 🕺D:{dance_val}%").strip()
+        es_serato = modo_serato or bool(meta_track.get("modo_serato")) or bool(meta_track.get("export_serato"))
+
+        # 1. Agrupamiento (Grouping): Solo el Mood
+        grouping_val = mood_val
+
+        # 2. Etiqueta (Label): La Energía
+        label_val = f"⚡{energy_val}%"
+
+        # 3. Remixer: La Danceability
+        if es_serato or not meta_track.get("remixer"):
+            remixer_val = f"🕺{dance_val}%"
+        else:
+            remixer_val = str(meta_track.get("remixer") or meta_track.get("version") or "").strip()
+
+        # 4. Álbum: En modo Serato (o por defecto), Subgénero y Mix Armónico táctico:
+        # Ejemplo: [BUILD-UP E81%] Dark / Industrial. Mix Armónico: 7A (Neutral) • 8A/6A (Cambio Energía)
+        from services.mood_intelligence_service import MoodIntelligenceService
+        sub_display = str(
+            subgenre_val or
+            meta_track.get("mood_subtag") or
+            meta_track.get("subtag") or
+            (f"{mood_val} / {genre_val}" if genre_val and genre_val != mood_val else f"{mood_val} / Driving")
+        ).strip()
+
+        tactical_album = MoodIntelligenceService.generar_album_tactico_serato(
+            bpm=bpm_float,
+            key=key_camelot,
+            mood=mood_val,
+            subtag=sub_display,
+            subgenre=sub_display,
+            energy=energy_val,
+            lang="es"
+        )
+
+        if es_serato or not meta_track.get("album") or meta_track.get("album") in ("CleanDJmix PRO", ""):
+            album_val = tactical_album
+        else:
+            album_val = str(meta_track.get("album"))
+
+        # 5. Comentario: Sin BPM ni Tonalidad (Estructura y Ubicación DJ)
+        raw_cmt = str(comment).strip()
+        if es_serato or not raw_cmt or any(x in raw_cmt for x in ("BPM", "Mix Armónico", "Harmonic Mix")) or raw_cmt.startswith("["):
+            tactical_comment = MoodIntelligenceService.generar_comentario_tactico(
+                bpm=bpm_float,
+                key=key_camelot,
+                mood=mood_val,
+                subtag=sub_display,
+                energy=energy_val,
+                cues=cues_list,
+                first_downbeat_ms=downbeat_ms,
+                lang="es"
+            )
+        else:
+            tactical_comment = raw_cmt
+
+        composer_val = str(meta_track.get("composer") or meta_track.get("acoustic_role") or f"⚡E:{energy_val}% 🕺D:{dance_val}%").strip()
         year_raw = str(meta_track.get("year") or meta_track.get("y") or meta_track.get("date") or "").strip()
         year_match = re.search(r'\b(19\d\d|20\d\d)\b', year_raw)
         year_str = year_match.group(1) if year_match else ""
@@ -941,9 +1007,6 @@ class AudioProcessorService:
             cover_source = AudioProcessorService.resolver_caratula_local_o_remota(ruta, artist, title)
         cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
 
-        grouping_val = f"{mood_val} • ⚡{dance_val}% • 🕺{dance_val}% • {genre_val}"
-        tactical_comment = f"[{mood_val} | ⚡{dance_val}% | 🕺{dance_val}% | {key_camelot}] {comment}" if not str(comment).startswith("[") else comment
-
         try:
             if ext == ".flac":
                 with open(ruta, "rb") as f_check:
@@ -954,12 +1017,15 @@ class AudioProcessorService:
                 audio = FLAC(ruta)
                 audio["TITLE"] = [title]
                 audio["ARTIST"] = [artist]
-                audio["ALBUM"] = [album]
+                audio["ALBUM"] = [album_val]
                 audio["BPM"] = [bpm_str]
                 if key_camelot:
                     audio["INITIALKEY"] = [key_camelot]
                     audio["KEY"] = [key_camelot]
                 audio["GROUPING"] = [grouping_val]
+                audio["LABEL"] = [label_val]
+                audio["ORGANIZATION"] = [label_val]
+                audio["PUBLISHER"] = [label_val]
                 audio["COMMENT"] = [tactical_comment]
                 audio["DESCRIPTION"] = [tactical_comment]
                 audio["GENRE"] = [genre_full]
@@ -975,7 +1041,7 @@ class AudioProcessorService:
                 if isrc:
                     audio["ISRC"] = [isrc]
                 audio["DANCEABILITY"] = [str(dance_val)]
-                audio["ENERGY"] = [str(dance_val)]
+                audio["ENERGY"] = [str(energy_val)]
                 audio["MOOD"] = [mood_val]
                 audio["SERATO_PLAYLIST"] = [mood_val]
                 if trim_ms > 0:
@@ -1017,23 +1083,29 @@ class AudioProcessorService:
                 # encoding=1 (UTF-16 con BOM) requerido para compatibilidad absoluta en Serato
                 id3.add(TIT2(encoding=1, text=[title]))
                 id3.add(TPE1(encoding=1, text=[artist]))
-                id3.add(TALB(encoding=1, text=[album]))
+                id3.add(TALB(encoding=1, text=[album_val]))
                 id3.add(TBPM(encoding=1, text=[bpm_str]))
                 if key_camelot:
                     id3.add(TKEY(encoding=1, text=[key_camelot]))
                     id3.add(TXXX(encoding=1, desc="INITIALKEY", text=[key_camelot]))
                     id3.add(TXXX(encoding=1, desc="KEY", text=[key_camelot]))
 
-                # Inyección de Grouping (TIT1): Columna visible en Serato DJ Pro para Danceability, Energy y Mood
+                # Inyección de Grouping (TIT1): Columna visible en Serato DJ Pro solo para Mood
                 id3.add(TIT1(encoding=1, text=[grouping_val]))
 
-                # Inyección de Comentario Táctico con desglose armónico y de energía
+                # Inyección de Etiqueta (TPUB): Columna visible en Serato DJ Pro para Energía
+                id3.add(TPUB(encoding=1, text=[label_val]))
+                id3.add(TXXX(encoding=1, desc="LABEL", text=[label_val]))
+                id3.add(TXXX(encoding=1, desc="ORGANIZATION", text=[label_val]))
+
+                # Inyección de Remixer (TPE4): Columna visible en Serato DJ Pro para Danceability
+                id3.add(TPE4(encoding=1, text=[remixer_val]))
+
+                # Inyección de Comentario Táctico sin BPM ni Tonalidad (Estructura y Ubicación DJ)
                 id3.add(COMM(encoding=1, lang="eng", desc="", text=[tactical_comment]))
                 id3.add(TCON(encoding=1, text=[genre_full]))
                 if subgenre_val:
                     id3.add(TXXX(encoding=1, desc="SUBGENRE", text=[subgenre_val]))
-                if remixer_val:
-                    id3.add(TPE4(encoding=1, text=[remixer_val]))
                 if composer_val:
                     id3.add(TCOM(encoding=1, text=[composer_val]))
                 if year_str:
@@ -1042,7 +1114,7 @@ class AudioProcessorService:
                     id3.add(TSRC(encoding=1, text=[isrc]))
 
                 id3.add(TXXX(encoding=1, desc="DANCEABILITY", text=[str(dance_val)]))
-                id3.add(TXXX(encoding=1, desc="ENERGY", text=[str(dance_val)]))
+                id3.add(TXXX(encoding=1, desc="ENERGY", text=[str(energy_val)]))
                 id3.add(TXXX(encoding=1, desc="MOOD", text=[mood_val]))
                 id3.add(TXXX(encoding=1, desc="SERATO_PLAYLIST", text=[mood_val]))
 
@@ -1104,25 +1176,27 @@ class AudioProcessorService:
                 tags = audio.tags
                 tags.add(TIT2(encoding=1, text=[title]))
                 tags.add(TPE1(encoding=1, text=[artist]))
-                tags.add(TALB(encoding=1, text=[album]))
+                tags.add(TALB(encoding=1, text=[album_val]))
                 tags.add(TBPM(encoding=1, text=[bpm_str]))
                 if key_camelot:
                     tags.add(TKEY(encoding=1, text=[key_camelot]))
                     tags.add(TXXX(encoding=1, desc="INITIALKEY", text=[key_camelot]))
                     tags.add(TXXX(encoding=1, desc="KEY", text=[key_camelot]))
                 tags.add(TIT1(encoding=1, text=[grouping_val]))
+                tags.add(TPUB(encoding=1, text=[label_val]))
+                tags.add(TXXX(encoding=1, desc="LABEL", text=[label_val]))
+                tags.add(TXXX(encoding=1, desc="ORGANIZATION", text=[label_val]))
+                tags.add(TPE4(encoding=1, text=[remixer_val]))
                 tags.add(COMM(encoding=1, lang="eng", desc="", text=[tactical_comment]))
                 tags.add(TCON(encoding=1, text=[genre_full]))
                 if subgenre_val:
                     tags.add(TXXX(encoding=1, desc="SUBGENRE", text=[subgenre_val]))
-                if remixer_val:
-                    tags.add(TPE4(encoding=1, text=[remixer_val]))
                 if composer_val:
                     tags.add(TCOM(encoding=1, text=[composer_val]))
                 if year_str:
                     tags.add(TYER(encoding=1, text=[year_str]))
                 tags.add(TXXX(encoding=1, desc="DANCEABILITY", text=[str(dance_val)]))
-                tags.add(TXXX(encoding=1, desc="ENERGY", text=[str(dance_val)]))
+                tags.add(TXXX(encoding=1, desc="ENERGY", text=[str(energy_val)]))
                 tags.add(TXXX(encoding=1, desc="MOOD", text=[mood_val]))
                 tags.add(TXXX(encoding=1, desc="SERATO_PLAYLIST", text=[mood_val]))
                 if trim_ms > 0:
@@ -1154,7 +1228,7 @@ class AudioProcessorService:
                 audio = MP4(ruta)
                 audio["\xa9nam"] = [title]
                 audio["\xa9ART"] = [artist]
-                audio["\xa9alb"] = [album]
+                audio["\xa9alb"] = [album_val]
                 try:
                     audio["tmpo"] = [int(bpm_float)]
                 except Exception:
@@ -1162,19 +1236,20 @@ class AudioProcessorService:
                 audio["\xa9cmt"] = [tactical_comment]
                 audio["\xa9gen"] = [genre_full]
                 audio["\xa9grp"] = [grouping_val]
+                audio["----:com.apple.iTunes:LABEL"] = [label_val.encode("utf-8")]
+                audio["----:com.apple.iTunes:ORGANIZATION"] = [label_val.encode("utf-8")]
+                audio["----:com.apple.iTunes:REMIXER"] = [remixer_val.encode("utf-8")]
                 if subgenre_val:
                     audio["----:com.apple.iTunes:SUBGENRE"] = [subgenre_val.encode("utf-8")]
                 if key_camelot:
                     audio["----:com.apple.iTunes:initialkey"] = [key_camelot.encode("utf-8")]
                     audio["----:com.apple.iTunes:KEY"] = [key_camelot.encode("utf-8")]
-                if remixer_val:
-                    audio["----:com.apple.iTunes:REMIXER"] = [remixer_val.encode("utf-8")]
                 if composer_val:
                     audio["\xa9wrt"] = [composer_val]
                 if year_str:
                     audio["\xa9day"] = [year_str]
                 audio["----:com.apple.iTunes:DANCEABILITY"] = [str(dance_val).encode("utf-8")]
-                audio["----:com.apple.iTunes:ENERGY"] = [str(dance_val).encode("utf-8")]
+                audio["----:com.apple.iTunes:ENERGY"] = [str(energy_val).encode("utf-8")]
                 audio["----:com.apple.iTunes:MOOD"] = [mood_val.encode("utf-8")]
                 if trim_ms > 0:
                     audio["----:com.apple.iTunes:TRIM_START_MS"] = [f"{trim_ms:.1f}".encode("utf-8")]

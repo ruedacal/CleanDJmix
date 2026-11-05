@@ -19,12 +19,14 @@ import bottle
 # exigen este token como cabecera X-Session-Token o parámetro ?token=
 _REMOTE_MODE = False          # se activa con el argumento --remote al arrancar
 _SESSION_TOKEN: str = secrets.token_hex(24)   # 48 caracteres hex aleatorios
+_PORT: int = 8000
 
 def _cors_localhost_only():
     """Establece cabeceras CORS restringidas al origen localhost."""
     origin = bottle.request.environ.get("HTTP_ORIGIN", "")
     # Permitimos solo orígenes del propio host local
     allowed_origins = {
+        f"http://localhost:{_PORT}", f"http://127.0.0.1:{_PORT}",
         "http://localhost:8000", "http://127.0.0.1:8000",
         "http://localhost",      "http://127.0.0.1",
     }
@@ -1158,7 +1160,7 @@ def api_copilot_info():
     ip = copilot_service.get_local_ip()
     return json.dumps({
         "local_ip": ip,
-        "companion_url": f"http://{ip}:8000/copilot.html",
+        "companion_url": f"http://{ip}:{_PORT}/copilot.html",
         "active_platform": copilot_service.detect_active_platform(),
         "platform_mode": copilot_service.platform_mode,
         "platforms": copilot_service.get_available_platforms(),
@@ -1199,7 +1201,7 @@ def eel_copilot_get_info():
     ip = copilot_service.get_local_ip()
     return {
         "local_ip": ip,
-        "companion_url": f"http://{ip}:8000/copilot.html",
+        "companion_url": f"http://{ip}:{_PORT}/copilot.html",
         "active_platform": copilot_service.detect_active_platform(),
         "platform_mode": copilot_service.platform_mode,
         "platforms": copilot_service.get_available_platforms(),
@@ -1208,6 +1210,34 @@ def eel_copilot_get_info():
     }
 
 if __name__ == "__main__":
+    import socket
+
+    def _is_port_in_use(port_num, host_ip="127.0.0.1"):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.3)
+            return s.connect_ex((host_ip, port_num)) == 0
+
+    # ── Soporte de puerto configurable o auto-detección si 8000 está ocupado ──
+    custom_port = None
+    for i, arg in enumerate(sys.argv):
+        if arg == "--port" and i + 1 < len(sys.argv):
+            try:
+                custom_port = int(sys.argv[i + 1])
+            except ValueError:
+                pass
+        elif arg.startswith("--port="):
+            try:
+                custom_port = int(arg.split("=", 1)[1])
+            except ValueError:
+                pass
+
+    if custom_port:
+        _PORT = custom_port
+    else:
+        while _is_port_in_use(_PORT):
+            print(f"[BEATWAVE PRO] ℹ️ Puerto {_PORT} en uso por otra instancia. Probando puerto siguiente...")
+            _PORT += 1
+
     # ── Modo de red: por defecto solo localhost; --remote habilita LAN con token ──
     if "--remote" in sys.argv:
         _REMOTE_MODE = True
@@ -1218,6 +1248,8 @@ if __name__ == "__main__":
     else:
         _REMOTE_MODE = False
         _host = "127.0.0.1"
+
+    print(f"[BEATWAVE PRO] 🚀 Iniciando servidor en http://{_host}:{_PORT}...")
 
     try:
         try:
@@ -1240,7 +1272,7 @@ if __name__ == "__main__":
                 "--no-first-run",
                 "--disable-default-apps"
             ],
-            port=8000
+            port=_PORT
         )
     except (SystemExit, KeyboardInterrupt):
         print("\n[CleanDJmix PRO] Servidor detenido.")

@@ -20,17 +20,33 @@ def test_generar_comentario_tactico_es_y_en():
     comment_es = MoodIntelligenceService.generar_comentario_tactico(
         bpm=128.0, key="8A", mood="Peak Time", subtag="Peak Time / Driving", energy=88, lang="es"
     )
-    assert "128.0 BPM" in comment_es
-    assert "8A" in comment_es
-    assert "Mix Armónico" in comment_es
-    assert "8B" in comment_es  # Relative Camelot
+    # BPM y Tonalidad deben estar eliminados del comentario
+    assert "128.0 BPM" not in comment_es
+    assert "8A" not in comment_es
+    assert "Estructura:" in comment_es
+    assert "Ubicación DJ:" in comment_es
 
     comment_en = MoodIntelligenceService.generar_comentario_tactico(
         bpm=128.0, key="8A", mood="Peak Time", subtag="Peak Time / Driving", energy=88, lang="en"
     )
-    assert "128.0 BPM" in comment_en
-    assert "Harmonic Mix" in comment_en
-    assert "Structure" in comment_en
+    assert "128.0 BPM" not in comment_en
+    assert "Structure:" in comment_en
+    assert "Set Role:" in comment_en
+
+def test_generar_album_tactico_serato():
+    # Ejemplo solicitado: [BUILD-UP E81%] Dark / Industrial. Mix Armónico: 7A (Neutral) • 8A/6A (Cambio Energía)
+    album_str = MoodIntelligenceService.generar_album_tactico_serato(
+        bpm=128.0, key="7A", mood="Dark", subtag="Dark / Industrial", energy=81, lang="es"
+    )
+    assert "[BUILD-UP E81%]" in album_str
+    assert "Dark / Industrial" in album_str
+    assert "Mix Armónico: 7A (Neutral) • 8A/6A (Cambio Energía)" in album_str
+
+    album_str_en = MoodIntelligenceService.generar_album_tactico_serato(
+        bpm=128.0, key="7A", mood="Dark", subtag="Dark / Industrial", energy=81, lang="en"
+    )
+    assert "[BUILD-UP E81%]" in album_str_en
+    assert "Harmonic Mix: 7A (Neutral) • 8A/6A (Energy Shift)" in album_str_en
 
 def test_clasificar_fase_sesion_dj():
     # 1. Warm-Up / Apertura

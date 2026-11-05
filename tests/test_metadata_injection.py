@@ -403,3 +403,47 @@ def test_inyectar_caratulas_lote(tmp_path):
     id3 = ID3(str(mp3_file))
     apic_keys = [k for k in id3.keys() if k.startswith("APIC")]
     assert len(apic_keys) > 0
+
+def test_escribir_metadatos_serato_column_mapping_mp3(tmp_path):
+    mp3_file = tmp_path / "serato_test.mp3"
+    with open(str(mp3_file), "wb") as f:
+        f.write(b"\xff\xfb\x90\x64" * 1000)
+
+    meta = {
+        "title": "Industrial Darkness",
+        "artist": "Techno Producer",
+        "bpm": "128.00",
+        "key": "7A",
+        "mood": "Dark",
+        "subgenre": "Dark / Industrial",
+        "energy": 81,
+        "danceability": 84
+    }
+
+    ok = AudioProcessorService.escribir_metadatos_pro(str(mp3_file), meta, modo_serato=True)
+    assert ok is True
+
+    from mutagen.id3 import ID3
+    id3 = ID3(str(mp3_file))
+
+    # 1. Agrupamiento (TIT1): Solo el mood
+    assert id3["TIT1"].text[0] == "Dark"
+
+    # 2. Etiqueta (TPUB): La energía
+    assert id3["TPUB"].text[0] == "⚡81%"
+    assert id3["TXXX:LABEL"].text[0] == "⚡81%"
+
+    # 3. Remixer (TPE4): La danceability
+    assert id3["TPE4"].text[0] == "🕺84%"
+
+    # 4. Álbum (TALB): [BUILD-UP E81%] Dark / Industrial. Mix Armónico: 7A (Neutral) • 8A/6A (Cambio Energía)
+    assert "[BUILD-UP E81%]" in id3["TALB"].text[0]
+    assert "Dark / Industrial" in id3["TALB"].text[0]
+    assert "Mix Armónico: 7A (Neutral) • 8A/6A (Cambio Energía)" in id3["TALB"].text[0]
+
+    # 5. Comentario (COMM): Sin BPM ni Tonalidad
+    comment_text = str(id3.getall("COMM")[0].text[0])
+    assert "128.0 BPM" not in comment_text
+    assert "7A" not in comment_text
+    assert "Estructura:" in comment_text
+    assert "Ubicación DJ:" in comment_text

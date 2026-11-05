@@ -239,6 +239,43 @@ class MoodIntelligenceService:
         }
 
     @classmethod
+    def generar_album_tactico_serato(
+        cls,
+        bpm: float,
+        key: str,
+        mood: str = "",
+        subtag: str = "",
+        subgenre: str = "",
+        energy: int = 80,
+        lang: str = "es"
+    ) -> str:
+        """
+        Genera el contenido de la columna Álbum optimizado para Serato DJ Pro.
+        Ejemplo: '[BUILD-UP E81%] Dark / Industrial. Mix Armónico: 7A (Neutral) • 8A/6A (Cambio Energía)'
+        """
+        key = str(key or "8A").upper().strip()
+        rel = cls.CAMELOT_RELATIONS.get(key, {})
+        fase_data = cls.clasificar_fase_sesion_dj(bpm, key=key, energy=energy)
+        fase_badge = fase_data.get("fase_badge", "BUILD-UP")
+
+        sub_display = str(subgenre or subtag or mood or "General").strip()
+
+        same_k = rel.get("same", key)
+        up_k = rel.get("up", key)
+        down_k = rel.get("down", key)
+
+        if str(lang).lower().startswith("en"):
+            return (
+                f"[{fase_badge} E{energy}%] {sub_display}. "
+                f"Harmonic Mix: {same_k} (Neutral) • {up_k}/{down_k} (Energy Shift)"
+            )
+        else:
+            return (
+                f"[{fase_badge} E{energy}%] {sub_display}. "
+                f"Mix Armónico: {same_k} (Neutral) • {up_k}/{down_k} (Cambio Energía)"
+            )
+
+    @classmethod
     def generar_comentario_tactico(
         cls,
         bpm: float,
@@ -250,20 +287,10 @@ class MoodIntelligenceService:
         first_downbeat_ms: float = 0,
         lang: str = "es"
     ) -> str:
-        """Genera un comentario táctico profesional de cabina DJ en español o inglés con recomendación de sesión."""
+        """Genera un comentario táctico profesional de cabina DJ en español o inglés con recomendación de sesión (sin BPM ni Tonalidad)."""
         key = str(key or "8A").upper().strip()
-        rel = cls.CAMELOT_RELATIONS.get(key, {})
-        bpm_str = f"{float(bpm):.1f}" if bpm else "128.0"
-
         fase_data = cls.clasificar_fase_sesion_dj(bpm, key=key, energy=energy)
-        fase_badge = fase_data["fase_badge"]
         fase_desc = fase_data["recomendacion"]
-
-        # Consejos de mezcla armónica Camelot
-        same_k = rel.get("same", key)
-        up_k = rel.get("up", key)
-        down_k = rel.get("down", key)
-        rel_k = rel.get("rel", key)
 
         # Detección de estructura de Cues si existen
         intro_bars = 32
@@ -281,18 +308,14 @@ class MoodIntelligenceService:
                     break_bar = bar_val
 
         if lang.lower().startswith("en"):
-            # Versión en Inglés
+            # Versión en Inglés (sin BPM ni Tonalidad redundantes)
             comment = (
-                f"[{fase_badge} | {bpm_str} BPM | {key} | E{energy}%] {subtag or mood}. "
-                f"Harmonic Mix: {same_k} (Neutral) • {up_k}/{down_k} (Energy Shift) • {rel_k} (Relative). "
                 f"Structure: Intro {intro_bars}b -> Drop Bar {drop_bar} -> Break Bar {break_bar} -> Outro {outro_bars}b. "
                 f"Set Role: {fase_desc}"
             )
         else:
-            # Versión en Español
+            # Versión en Español (sin BPM ni Tonalidad redundantes)
             comment = (
-                f"[{fase_badge} | {bpm_str} BPM | {key} | E{energy}%] {subtag or mood}. "
-                f"Mix Armónico: {same_k} (Neutral) • {up_k}/{down_k} (Cambio Energía) • {rel_k} (Modo Relativo). "
                 f"Estructura: Intro {intro_bars}b -> Drop c.{drop_bar} -> Break c.{break_bar} -> Outro {outro_bars}b. "
                 f"Ubicación DJ: {fase_desc}"
             )

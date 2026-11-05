@@ -57,15 +57,28 @@ class ExportService:
         except Exception as e:
             return {"status": "error", "msg": f"No se pudo crear directorio Serato: {e}"}
 
-        # Agrupar pistas por Género y Subgénero
+        # Agrupar pistas por Género y Subgénero y aplicar metadatos Pro optimizados para Serato
         por_genero = {}
         por_subgenero = {}
         todas_rutas = []
+
+        try:
+            from infrastructure.audio_processor import AudioProcessorService
+        except ImportError:
+            AudioProcessorService = None
 
         for t in tracks:
             p = t.get("path") or t.get("f")
             if not p:
                 continue
+
+            # Inyectar metadatos optimizados en el archivo físico para Serato DJ Pro
+            if AudioProcessorService and os.path.exists(p):
+                try:
+                    AudioProcessorService.escribir_metadatos_pro(p, t, modo_serato=True)
+                except Exception as tag_err:
+                    print(f"[SERATO EXPORT TAG WARN] No se pudo escribir metadatos en {p}: {tag_err}")
+
             todas_rutas.append(p)
             gen = str(t.get("genre") or "Tech House").strip()
             subg = str(t.get("subgenre") or "General").strip()
