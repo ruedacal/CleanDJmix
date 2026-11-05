@@ -6308,6 +6308,64 @@ const AuditWorkspace = ({
     status: true,
     actions: true
   };
+  const COLUMN_CATEGORIES = [
+    {
+      id: "identity",
+      name: "Identificaci\xF3n B\xE1sica",
+      icon: "\u{1F3B5}",
+      color: "text-djcyan-400",
+      columns: [
+        { key: "id", label: "# ID & Checkbox", desc: "Identificador y selector de lote" },
+        { key: "waveform", label: "Waveform Espectral", desc: "Forma de onda corporativa interactiva" },
+        { key: "title", label: "Archivo / T\xEDtulo", desc: "Nombre del archivo o t\xEDtulo ID3" },
+        { key: "artist", label: "Artista", desc: "Int\xE9rprete o creador principal" },
+        { key: "genre", label: "G\xE9nero Musical", desc: "Clasificaci\xF3n electr\xF3nica primaria" },
+        { key: "subgenre", label: "Subg\xE9nero", desc: "Taxonom\xEDa electr\xF3nica de precisi\xF3n" }
+      ]
+    },
+    {
+      id: "performance",
+      name: "Rendimiento en Cabina DJ",
+      icon: "\u{1F39B}\uFE0F",
+      color: "text-purple-400",
+      columns: [
+        { key: "bpm", label: "Tempo Real (BPM)", desc: "Velocidad con Zero-Crossing y Beatgrid" },
+        { key: "key", label: "Tonalidad Camelot", desc: "Rueda arm\xF3nica Camelot (ej. 8A = Am)" },
+        { key: "cues", label: "Hot Cues 1-8", desc: "8 saltos t\xE1cticos (Intro, Drops, Breaks, Outro)" },
+        { key: "fase_badge", label: "Fase DJ / Mood", desc: "Momento de sesi\xF3n (Warm-Up, Peak, Cierre)" },
+        { key: "acoustic_role", label: "Rol Ac\xFAstico", desc: "Funci\xF3n en mezcla (Bass Driver, Lead, Perc.)" }
+      ]
+    },
+    {
+      id: "quality",
+      name: "Calidad & An\xE1lisis Espectral",
+      icon: "\u{1F52C}",
+      color: "text-emerald-400",
+      columns: [
+        { key: "format", label: "Formato Audio", desc: "Extensi\xF3n y c\xF3dec (FLAC, MP3, WAV, AIFF)" },
+        { key: "sample_rate_khz", label: "Frecuencia (kHz)", desc: "Tasa de muestreo (44.1, 48, 96 kHz)" },
+        { key: "bitrate_kbps", label: "Bitrate (kbps)", desc: "Tasa de bits real calculada" },
+        { key: "calidad", label: "Calidad Master", desc: "Certificaci\xF3n ac\xFAstica y pureza sonora" },
+        { key: "perdida_pct", label: "P\xE9rdida / Transcode", desc: "P\xE9rdida de espectro respecto a m\xE1ster" },
+        { key: "cutoff_khz", label: "Corte FFT (Cutoff)", desc: "Frecuencia de agudos para cazar fakes" }
+      ]
+    },
+    {
+      id: "metadata",
+      name: "Din\xE1mica & Metadatos Pro",
+      icon: "\u{1F4CA}",
+      color: "text-amber-400",
+      columns: [
+        { key: "lufs", label: "LUFS & True Peak", desc: "Sonoridad EBU R128 y pico dBFS de club" },
+        { key: "duration", label: "Duraci\xF3n (Time)", desc: "Tiempo total de reproducci\xF3n MM:SS" },
+        { key: "e", label: "Energ\xEDa (\u26A1 %)", desc: "Intensidad ac\xFAstica percibida de 0 a 100%" },
+        { key: "dance", label: "Bailabilidad (\u{1F57A} %)", desc: "Regularidad r\xEDtmica para pista de baile" },
+        { key: "comment", label: "Comentario Pro", desc: "Tag t\xE1ctico formateado para display CDJ" },
+        { key: "status", label: "Estado Global", desc: "Veredicto de auditor\xEDa (Lossless, MP3, Fake)" },
+        { key: "actions", label: "Acci\xF3n Quitar", desc: "Bot\xF3n r\xE1pido para retirar pista de lista" }
+      ]
+    }
+  ];
   const [visibleColumns, setVisibleColumns] = useState(() => {
     try {
       const saved = localStorage.getItem("bw_audit_visible_columns");
@@ -6317,6 +6375,8 @@ const AuditWorkspace = ({
     return DEFAULT_AUDIT_COLUMNS;
   });
   const [columnSelectorOpen, setColumnSelectorOpen] = useState(false);
+  const [columnSearchText, setColumnSearchText] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
   const toggleColumnVisibility = (colKey) => {
     setVisibleColumns((prev) => {
       const next = { ...prev, [colKey]: !prev[colKey] };
@@ -6333,20 +6393,34 @@ const AuditWorkspace = ({
       Object.keys(next).forEach((k) => {
         next[k] = true;
       });
+    } else if (preset === "none") {
+      Object.keys(next).forEach((k) => {
+        next[k] = false;
+      });
+      next.title = true;
     } else if (preset === "dj") {
       Object.keys(next).forEach((k) => {
         next[k] = false;
       });
-      ["id", "waveform", "title", "artist", "bpm", "key", "cues", "e", "dance", "fase_badge", "actions"].forEach((k) => {
+      ["id", "waveform", "title", "artist", "bpm", "key", "cues", "fase_badge"].forEach((k) => {
         next[k] = true;
       });
     } else if (preset === "audio") {
       Object.keys(next).forEach((k) => {
         next[k] = false;
       });
-      ["id", "title", "artist", "format", "sample_rate_khz", "bitrate_kbps", "calidad", "perdida_pct", "cutoff_khz", "lufs", "status", "actions"].forEach((k) => {
+      ["id", "title", "format", "sample_rate_khz", "bitrate_kbps", "calidad", "cutoff_khz", "perdida_pct", "lufs"].forEach((k) => {
         next[k] = true;
       });
+    } else if (preset === "tags") {
+      Object.keys(next).forEach((k) => {
+        next[k] = false;
+      });
+      ["id", "title", "artist", "genre", "subgenre", "comment", "status"].forEach((k) => {
+        next[k] = true;
+      });
+    } else if (preset === "reset") {
+      next = { ...DEFAULT_AUDIT_COLUMNS };
     }
     setVisibleColumns(next);
     try {
@@ -6772,90 +6846,171 @@ const AuditWorkspace = ({
     /* @__PURE__ */ React.createElement("span", null, "\u{1F4CA}"),
     /* @__PURE__ */ React.createElement("span", null, "Informe Excel"),
     /* @__PURE__ */ React.createElement("span", { className: "bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]" }, ".XLSX")
-  ))), /* @__PURE__ */ React.createElement("div", { className: "w-px bg-djzinc-800 self-stretch my-0.5 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0 ml-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Vista & Herramientas")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 relative" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { className: "w-px bg-djzinc-800 self-stretch my-0.5 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0 ml-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Vista & Herramientas")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 relative" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
-      onClick: () => setColumnSelectorOpen((prev) => !prev),
-      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${columnSelectorOpen ? "bg-djcyan-950 text-djcyan-300 border-djcyan-600/70 shadow-inner" : "bg-djzinc-900 text-gray-300 border-djzinc-750 hover:text-white hover:border-djzinc-650"}`,
-      title: "Configurar visibilidad de columnas de la tabla"
+      onClick: () => setColumnSelectorOpen(true),
+      className: `px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 ${columnSelectorOpen ? "bg-djcyan-950 text-djcyan-300 border-djcyan-600/70 shadow-inner" : "bg-djzinc-900 text-gray-300 border-djzinc-750 hover:text-white hover:border-djzinc-650"}`,
+      title: "Abrir Centro de Personalizaci\xF3n de Columnas y Vistas"
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2699\uFE0F"),
     /* @__PURE__ */ React.createElement("span", null, "Columnas"),
-    /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-djcyan-400 font-mono" }, "(", Object.values(visibleColumns).filter(Boolean).length, "/24)"),
-    /* @__PURE__ */ React.createElement("span", { className: "text-[9px]" }, "\u25BE")
-  ), columnSelectorOpen && /* @__PURE__ */ React.createElement("div", { className: "absolute right-0 top-full mt-2 w-72 bg-[#0c0c14] border border-djzinc-700/80 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2.5 backdrop-blur-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4CB}"), /* @__PURE__ */ React.createElement("span", null, "Columnas Visibles")), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-djcyan-400 font-mono font-bold" }, "(", Object.values(visibleColumns).filter(Boolean).length, "/24)")
+  ), columnSelectorOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" }, "\u2699\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider" }, "Centro de Columnas & Vistas"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black" }, Object.values(visibleColumns).filter(Boolean).length, " de 24 activas")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans mt-0.5" }, "Personaliza las columnas visibles en la tabla principal seg\xFAn tu flujo de trabajo de an\xE1lisis o preparaci\xF3n de cabina DJ."))), /* @__PURE__ */ React.createElement(
     "button",
     {
-      onClick: () => setColumnSelectorOpen(false),
-      className: "text-gray-400 hover:text-white text-xs cursor-pointer px-1"
+      type: "button",
+      onClick: () => {
+        setColumnSelectorOpen(false);
+        setColumnSearchText("");
+      },
+      className: "w-8 h-8 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-750 flex items-center justify-center cursor-pointer transition-colors",
+      title: "Cerrar modal"
     },
     "\u2715"
-  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Presets:"), /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800/80 bg-[#080910] flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 max-w-md" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-3 top-2.5 text-xs text-gray-400" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: columnSearchText,
+      onChange: (e) => setColumnSearchText(e.target.value),
+      placeholder: "Buscar columna (ej. bpm, lufs, cues, transcode, cutoff)...",
+      className: "w-full pl-8 pr-8 py-2 bg-djzinc-900 border border-djzinc-750 rounded-xl text-xs font-mono text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500/70 focus:ring-1 focus:ring-djcyan-500/40 transition-all"
+    }
+  ), columnSearchText && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setColumnSearchText(""),
+      className: "absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-white cursor-pointer"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 uppercase font-bold shrink-0" }, "Presets:"), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => setColumnPreset("all"),
-      className: "px-2 py-0.5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-djcyan-300 border border-djzinc-700 cursor-pointer"
+      className: "px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
     },
-    "Todas"
+    "\u{1F441}\uFE0F Ver Todas (24)"
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => setColumnPreset("dj"),
-      className: "px-2 py-0.5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-purple-300 border border-djzinc-750 cursor-pointer"
+      className: "px-2.5 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
     },
-    "DJ Esencial"
+    "\u26A1 Cabina DJ (8)"
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
       onClick: () => setColumnPreset("audio"),
-      className: "px-2 py-0.5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-emerald-300 border border-djzinc-750 cursor-pointer"
+      className: "px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
     },
-    "Auditor\xEDa"
-  )), /* @__PURE__ */ React.createElement("div", { className: "max-h-64 overflow-y-auto pr-1 space-y-1 text-xs font-mono select-none" }, [
-    { key: "id", label: "# ID & Checkbox" },
-    { key: "waveform", label: "Waveform Espectral" },
-    { key: "title", label: "Archivo / T\xEDtulo" },
-    { key: "artist", label: "Artista" },
-    { key: "genre", label: "G\xE9nero" },
-    { key: "subgenre", label: "Subg\xE9nero" },
-    { key: "format", label: "Formato Audio" },
-    { key: "sample_rate_khz", label: "Frecuencia (kHz)" },
-    { key: "bitrate_kbps", label: "Bitrate (kbps)" },
-    { key: "calidad", label: "Calidad & Master" },
-    { key: "perdida_pct", label: "P\xE9rdida / Transcode" },
-    { key: "cutoff_khz", label: "Corte FFT" },
-    { key: "lufs", label: "LUFS & True Peak" },
-    { key: "duration", label: "Duraci\xF3n (Time)" },
-    { key: "bpm", label: "Tempo (BPM)" },
-    { key: "key", label: "Tonalidad Camelot" },
-    { key: "cues", label: "Hot Cues 1-8" },
-    { key: "e", label: "Energ\xEDa (\u26A1 %)" },
-    { key: "dance", label: "Bailabilidad (\u{1F57A} %)" },
-    { key: "fase_badge", label: "Fase DJ / Mood" },
-    { key: "acoustic_role", label: "Rol Ac\xFAstico" },
-    { key: "comment", label: "Comentario Pro" },
-    { key: "status", label: "Estado Global" },
-    { key: "actions", label: "Acci\xF3n Quitar" }
-  ].map((col) => /* @__PURE__ */ React.createElement(
-    "label",
+    "\u{1F52C} Auditor\xEDa Ac\xFAstica (9)"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
     {
-      key: col.key,
-      className: "flex items-center justify-between px-2 py-1 rounded hover:bg-djzinc-850/80 cursor-pointer transition-colors"
+      type: "button",
+      onClick: () => setColumnPreset("tags"),
+      className: "px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
     },
-    /* @__PURE__ */ React.createElement("span", { className: `text-[11px] ${visibleColumns[col.key] ? "text-gray-200" : "text-gray-500"}` }, col.label),
-    /* @__PURE__ */ React.createElement(
-      "input",
+    "\u{1F3F7}\uFE0F Metadatos (7)"
+  ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar" }, COLUMN_CATEGORIES.map((cat) => {
+    const q = (columnSearchText || "").trim().toLowerCase();
+    const matchingCols = cat.columns.filter((col) => {
+      if (!q) return true;
+      return col.label.toLowerCase().includes(q) || col.key.toLowerCase().includes(q) || col.desc.toLowerCase().includes(q);
+    });
+    if (q && matchingCols.length === 0) return null;
+    const activeInCat = matchingCols.filter((c) => visibleColumns[c.key]).length;
+    return /* @__PURE__ */ React.createElement("div", { key: cat.id, className: "p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-base" }, cat.icon), /* @__PURE__ */ React.createElement("span", { className: `font-mono text-xs font-black uppercase tracking-wider ${cat.color}` }, cat.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 font-bold" }, "(", activeInCat, "/", matchingCols.length, ")")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement(
+      "button",
       {
-        type: "checkbox",
-        checked: Boolean(visibleColumns[col.key]),
-        onChange: () => toggleColumnVisibility(col.key),
-        className: "accent-djcyan-400 w-3.5 h-3.5 rounded cursor-pointer"
-      }
-    )
+        type: "button",
+        onClick: () => {
+          const next = { ...visibleColumns };
+          matchingCols.forEach((c) => {
+            next[c.key] = true;
+          });
+          setVisibleColumns(next);
+          try {
+            localStorage.setItem("bw_audit_visible_columns", JSON.stringify(next));
+          } catch (_) {
+          }
+        },
+        className: "text-djcyan-400 hover:text-djcyan-300 cursor-pointer hover:underline"
+      },
+      "Todas"
+    ), /* @__PURE__ */ React.createElement("span", { className: "text-gray-600" }, "/"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          const next = { ...visibleColumns };
+          matchingCols.forEach((c) => {
+            next[c.key] = false;
+          });
+          setVisibleColumns(next);
+          try {
+            localStorage.setItem("bw_audit_visible_columns", JSON.stringify(next));
+          } catch (_) {
+          }
+        },
+        className: "text-gray-500 hover:text-gray-300 cursor-pointer hover:underline"
+      },
+      "Ninguna"
+    ))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" }, matchingCols.map((col) => {
+      const isChecked = Boolean(visibleColumns[col.key]);
+      return /* @__PURE__ */ React.createElement(
+        "label",
+        {
+          key: col.key,
+          className: `flex items-start justify-between p-2 rounded-lg border transition-all cursor-pointer select-none ${isChecked ? "bg-djzinc-850/80 border-djzinc-700/80 text-white" : "bg-djzinc-950/40 border-djzinc-850/60 text-gray-500 hover:border-djzinc-800"}`
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "flex flex-col pr-2" }, /* @__PURE__ */ React.createElement("span", { className: `text-xs font-mono font-bold ${isChecked ? "text-white" : "text-gray-400"}` }, col.label), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-gray-400 font-sans leading-tight mt-0.5" }, col.desc)),
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: isChecked,
+            onChange: () => toggleColumnVisibility(col.key),
+            className: "accent-djcyan-400 w-4 h-4 rounded cursor-pointer mt-0.5 shrink-0"
+          }
+        )
+      );
+    })));
+  })), /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex items-center justify-between flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setColumnPreset("reset"),
+      className: "px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
+    },
+    "\u21BA Restablecer por Defecto"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setColumnPreset("none"),
+      className: "px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-400 hover:text-white border border-djzinc-750 text-xs font-mono cursor-pointer transition-all active:scale-95"
+    },
+    "Deseleccionar Todas"
+  )), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setColumnSelectorOpen(false);
+        setColumnSearchText("");
+      },
+      className: "px-5 py-1.5 rounded-lg bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95"
+    },
+    "\u2713 Aplicar y Guardar (",
+    Object.values(visibleColumns).filter(Boolean).length,
+    " Activas)"
   ))))), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -7304,7 +7459,35 @@ const AuditWorkspace = ({
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2696\uFE0F"),
     /* @__PURE__ */ React.createElement("span", null, t("filter_duplicates_label") || "Duplicados", " (", metrics.duplicates || 0, ")")
-  ))), saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse shrink-0" }, saveFeedback)), /* @__PURE__ */ React.createElement("div", { ref: tableScrollRef, className: "flex-1 overflow-auto bg-[#0f0f13]" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400" }, /* @__PURE__ */ React.createElement("tr", null, visibleColumns.id && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-12 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1" }, /* @__PURE__ */ React.createElement(
+  ))), saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse shrink-0" }, saveFeedback)), /* @__PURE__ */ React.createElement("div", { ref: tableScrollRef, className: "flex-1 overflow-auto bg-[#0f0f13] flex flex-col" }, tracks.length === 0 ? (
+    /* EMPTY STATE TÁCTICO ONBOARDING (DROPZONE & GUÍA EN 3 PASOS) */
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        onDragOver: (e) => {
+          e.preventDefault();
+          setIsDragOver(true);
+        },
+        onDragLeave: () => setIsDragOver(false),
+        onDrop: (e) => {
+          e.preventDefault();
+          setIsDragOver(false);
+          handleExplorar();
+        },
+        className: "flex-1 flex flex-col items-center justify-center p-6 text-center select-none animate-fadeIn my-auto"
+      },
+      /* @__PURE__ */ React.createElement("div", { className: `max-w-2xl w-full p-8 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center gap-6 ${isDragOver ? "border-djcyan-400 bg-djcyan-950/30 shadow-[0_0_40px_rgba(6,182,212,0.25)] scale-[1.01]" : "border-djzinc-750 bg-[#0a0b12]/90 hover:border-djcyan-500/40 shadow-xl"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-16 h-16 rounded-2xl bg-gradient-to-br from-djcyan-500/20 to-blue-600/20 border border-djcyan-500/40 flex items-center justify-center text-3xl shadow-inner" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-xl sm:text-2xl text-white uppercase tracking-wider mt-1" }, "Auditor\xEDa & Inteligencia Ac\xFAstica ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "DJ")), /* @__PURE__ */ React.createElement("p", { className: "text-xs sm:text-sm text-gray-400 max-w-lg leading-relaxed font-sans" }, "Ingesta h\xEDbrida de alta velocidad. Arrastra carpetas completas o pistas sueltas para calcular BPM exacto, Hot Cues, Key Camelot y certificar archivos sin p\xE9rdidas reales.")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center gap-3" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleExplorar,
+          className: "bg-gradient-to-r from-djcyan-400 via-djcyan-500 to-blue-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black font-mono px-6 py-3 rounded-xl text-sm shadow-lg shadow-djcyan-500/25 cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "text-base" }, "\u25B7"),
+        /* @__PURE__ */ React.createElement("span", null, "Cargar Biblioteca o Pistas")
+      )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-2 flex-wrap text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500" }, "Formatos compatibles:"), ["FLAC 24-bit", "WAV Studio", "AIFF", "MP3 320k", "M4A / AAC", "OGG"].map((fmt) => /* @__PURE__ */ React.createElement("span", { key: fmt, className: "px-2 py-0.5 rounded-md bg-djzinc-900 border border-djzinc-800 text-gray-300" }, fmt))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-4 border-t border-djzinc-800/80 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-djcyan-400 uppercase" }, "Paso 1 \u2022 Ingesta"), /* @__PURE__ */ React.createElement("strong", { className: "text-xs text-white" }, "Carpetas & Pistas"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans leading-tight" }, "Carga tu biblioteca completa o acumula pistas en la cesta sin sobreescribir.")), /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-purple-400 uppercase" }, "Paso 2 \u2022 Auditor\xEDa"), /* @__PURE__ */ React.createElement("strong", { className: "text-xs text-white" }, "An\xE1lisis FFT & Cues"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans leading-tight" }, "Zero-Crossing BPM, Camelot Key, 8 Hot Cues y detecci\xF3n de falsificaciones de bitrate.")), /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-emerald-400 uppercase" }, "Paso 3 \u2022 Cabina"), /* @__PURE__ */ React.createElement("strong", { className: "text-xs text-white" }, "Sincronizaci\xF3n Total"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans leading-tight" }, "Exporta a Rekordbox XML, Serato Crates, Traktor NML, VirtualDJ M3U y Excel multidestino."))))
+    )
+  ) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400" }, /* @__PURE__ */ React.createElement("tr", null, visibleColumns.id && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-12 text-center", title: "ID secuencial de pista y casilla para selecci\xF3n masiva o acciones en lote" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1" }, /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "checkbox",
@@ -7313,7 +7496,7 @@ const AuditWorkspace = ({
       className: "accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded",
       title: "Seleccionar / deseleccionar todas las pistas visibles"
     }
-  ), /* @__PURE__ */ React.createElement("span", { onClick: () => handleSortAudit("id"), className: "cursor-pointer hover:text-white text-[9px] font-mono" }, "#"), renderSortArrowAudit("id"))), visibleColumns.waveform && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-28 text-center text-djcyan-400" }, t("th_waveform") || "Waveform"), visibleColumns.title && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("title"), className: "py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors" }, t("th_title") || "Archivo / T\xEDtulo", " ", renderSortArrowAudit("title")), visibleColumns.artist && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("artist"), className: "py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors" }, t("th_artist") || "Artista", " ", renderSortArrowAudit("artist")), visibleColumns.genre && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("genre"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_genre") || "G\xE9nero", " ", renderSortArrowAudit("genre")), visibleColumns.subgenre && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("subgenre"), className: "py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors" }, t("th_subgenre") || "Subg\xE9nero", " ", renderSortArrowAudit("subgenre")), visibleColumns.format && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("format"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_format") || "Formato", " ", renderSortArrowAudit("format")), visibleColumns.sample_rate_khz && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("sample_rate_khz"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, t("th_khz") || "kHz", " ", renderSortArrowAudit("sample_rate_khz")), visibleColumns.bitrate_kbps && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("bitrate_kbps"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" }, t("th_kbps") || "kbps", " ", renderSortArrowAudit("bitrate_kbps")), visibleColumns.calidad && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("calidad"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" }, t("th_quality") || "Calidad", " ", renderSortArrowAudit("calidad")), visibleColumns.perdida_pct && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("perdida_pct"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" }, t("th_loss") || "P\xE9rdida / Compresi\xF3n", " ", renderSortArrowAudit("perdida_pct")), visibleColumns.cutoff_khz && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("cutoff_khz"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, t("th_fft") || "Cert. FFT", " ", renderSortArrowAudit("cutoff_khz")), visibleColumns.lufs && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("lufs"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors", title: "Sonoridad integrada LUFS (EBU R128) y pico True Peak (dBFS)" }, t("th_lufs_peak") || "LUFS / Peak", " ", renderSortArrowAudit("lufs")), visibleColumns.duration && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("duration"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, t("th_duration") || "Time", " ", renderSortArrowAudit("duration")), visibleColumns.bpm && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("bpm"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, "BPM ", renderSortArrowAudit("bpm")), visibleColumns.key && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("key"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" }, "Key ", renderSortArrowAudit("key")), visibleColumns.cues && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-1.5 text-center" }, t("th_cues") || "8 Hot Cues"), visibleColumns.e && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("e"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "\u26A1 ", t("th_energy") || "Energ\xEDa", " ", renderSortArrowAudit("e")), visibleColumns.dance && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("dance"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "\u{1F57A} ", t("th_dance") || "Dance", " ", renderSortArrowAudit("dance")), visibleColumns.fase_badge && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("fase_badge"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, t("th_phase") || "Fase DJ", " ", renderSortArrowAudit("fase_badge")), visibleColumns.acoustic_role && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("acoustic_role"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400", title: "Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-MudDY" }, t("th_acoustic_role") || "Rol Ac\xFAstico & Anti-Muddy", " ", renderSortArrowAudit("acoustic_role")), visibleColumns.comment && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("comment"), className: "py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors" }, t("th_comment_pro") || "Comentario Pro DJ", " ", renderSortArrowAudit("comment")), visibleColumns.status && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("status"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, t("th_status") || "Estado", " ", renderSortArrowAudit("status")), visibleColumns.actions && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-14 text-red-400/80 font-mono", title: "Quitar pista del an\xE1lisis global" }, t("th_remove") || "Quitar")), /* @__PURE__ */ React.createElement("tr", { className: "bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans" }, visibleColumns.id && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, hasActiveHeaderFilters ? /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("span", { onClick: () => handleSortAudit("id"), className: "cursor-pointer hover:text-white text-[9px] font-mono" }, "#"), renderSortArrowAudit("id"))), visibleColumns.waveform && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-28 text-center text-djcyan-400", title: "Huella ac\xFAstica corporativa en 4 bandas espectrales (Bajos, Pegada, Vocales, Agudos) con scrubber y reproducci\xF3n interactiva" }, t("th_waveform") || "Waveform"), visibleColumns.title && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("title"), className: "py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors", title: "Nombre del archivo de audio o etiqueta ID3 Title. Doble clic en la fila para abrir inspector" }, t("th_title") || "Archivo / T\xEDtulo", " ", renderSortArrowAudit("title")), visibleColumns.artist && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("artist"), className: "py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors", title: "Artista o creador principal del track. Reconoce colaboraciones y remezclas" }, t("th_artist") || "Artista", " ", renderSortArrowAudit("artist")), visibleColumns.genre && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("genre"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors", title: "Clasificaci\xF3n de g\xE9nero musical primario (House, Techno, Drum & Bass, etc.)" }, t("th_genre") || "G\xE9nero", " ", renderSortArrowAudit("genre")), visibleColumns.subgenre && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("subgenre"), className: "py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors", title: "Taxonom\xEDa electr\xF3nica de precisi\xF3n calculada seg\xFAn caracter\xEDsticas t\xEDmbricas y tempo" }, t("th_subgenre") || "Subg\xE9nero", " ", renderSortArrowAudit("subgenre")), visibleColumns.format && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("format"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors", title: "Contenedor y formato de audio (FLAC, WAV, AIFF, MP3, M4A). Identifica compresi\xF3n con o sin p\xE9rdida" }, t("th_format") || "Formato", " ", renderSortArrowAudit("format")), visibleColumns.sample_rate_khz && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("sample_rate_khz"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors", title: "Frecuencia de muestreo (44.1 kHz est\xE1ndar CD, 48 kHz / 96 kHz Hi-Res Studio)" }, t("th_khz") || "kHz", " ", renderSortArrowAudit("sample_rate_khz")), visibleColumns.bitrate_kbps && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("bitrate_kbps"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors", title: "Tasa de bits real calculada en disco (320 kbps para MP3 de alta fidelidad, 800-1411 kbps para Lossless)" }, t("th_kbps") || "kbps", " ", renderSortArrowAudit("bitrate_kbps")), visibleColumns.calidad && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("calidad"), className: "py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors", title: "Certificaci\xF3n ac\xFAstica de pureza sonora del Master Engine (Master Studio, Alta Calidad, Compresi\xF3n Fuerte o Fake detectado)" }, t("th_quality") || "Calidad", " ", renderSortArrowAudit("calidad")), visibleColumns.perdida_pct && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("perdida_pct"), className: "py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors", title: "P\xE9rdida de espectro respecto a una fuente anal\xF3gica/m\xE1ster pura sin compresi\xF3n" }, t("th_loss") || "P\xE9rdida / Compresi\xF3n", " ", renderSortArrowAudit("perdida_pct")), visibleColumns.cutoff_khz && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("cutoff_khz"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors", title: "Frecuencia m\xE1xima de corte FFT en agudos. Esencial para cazar fakes: si un FLAC corta a 16 kHz, fue inflado desde un MP3 de 128 kbps" }, t("th_fft") || "Cert. FFT", " ", renderSortArrowAudit("cutoff_khz")), visibleColumns.lufs && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("lufs"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors", title: "Sonoridad integrada en LUFS (EBU R128) y True Peak en dBFS. Rango ideal para mezclar en club: -8 a -6 LUFS" }, t("th_lufs_peak") || "LUFS / Peak", " ", renderSortArrowAudit("lufs")), visibleColumns.duration && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("duration"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors", title: "Duraci\xF3n total de la canci\xF3n en minutos y segundos (MM:SS)" }, t("th_duration") || "Time", " ", renderSortArrowAudit("duration")), visibleColumns.bpm && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("bpm"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors", title: "Tempo exacto en pulsos por minuto con c\xE1lculo de Zero-Crossing y Beatgrid para mezcla sincronizada" }, "BPM ", renderSortArrowAudit("bpm")), visibleColumns.key && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("key"), className: "py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors", title: "Tonalidad arm\xF3nica seg\xFAn la rueda Camelot (ej. 8A = La menor). Facilita mezclas en armon\xEDa sin choques tonales" }, "Key ", renderSortArrowAudit("key")), visibleColumns.cues && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-1.5 text-center", title: "8 Hot Cues fijados autom\xE1ticamente en Beat 1.0.0, Drops, Breakdowns y Outro listos para Rekordbox, Serato y Traktor" }, t("th_cues") || "8 Hot Cues"), visibleColumns.e && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("e"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors", title: "\xCDndice de energ\xEDa ac\xFAstica percibida (0% a 100%) seg\xFAn densidad de graves y transitorios r\xEDtmicos" }, "\u26A1 ", t("th_energy") || "Energ\xEDa", " ", renderSortArrowAudit("e")), visibleColumns.dance && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("dance"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors", title: "\xCDndice de regularidad r\xEDtmica y cadencia bailable para la pista de baile" }, "\u{1F57A} ", t("th_dance") || "Dance", " ", renderSortArrowAudit("dance")), visibleColumns.fase_badge && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("fase_badge"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors", title: "Fase de la sesi\xF3n DJ (Warm-Up, Build-Up, Ca\xF1a / Cl\xEDmax, Cierre, Calma)" }, t("th_phase") || "Fase DJ", " ", renderSortArrowAudit("fase_badge")), visibleColumns.acoustic_role && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("acoustic_role"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400", title: "Rol espectral en la mezcla (Bass Driver, Vocal/Lead, Percussive Tool, Balanced) y compatibilidad Anti-Muddy" }, t("th_acoustic_role") || "Rol Ac\xFAstico & Anti-Muddy", " ", renderSortArrowAudit("acoustic_role")), visibleColumns.comment && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("comment"), className: "py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors", title: "Tag de comentario inteligente formateado para mostrar m\xE9tricas clave en la pantalla del reproductor DJ (CDJ/XDJ)" }, t("th_comment_pro") || "Comentario Pro DJ", " ", renderSortArrowAudit("comment")), visibleColumns.status && /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortAudit("status"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors", title: "Veredicto de auditor\xEDa global: Lossless verificado, MP3 de cabina, o FLAC Fake que requiere reemplazo" }, t("th_status") || "Estado", " ", renderSortArrowAudit("status")), visibleColumns.actions && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-14 text-red-400/80 font-mono", title: "Quitar pista del an\xE1lisis global" }, t("th_remove") || "Quitar")), /* @__PURE__ */ React.createElement("tr", { className: "bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans" }, visibleColumns.id && /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, hasActiveHeaderFilters ? /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: handleResetAllHeaderFilters,
@@ -7539,7 +7722,15 @@ const AuditWorkspace = ({
     /* @__PURE__ */ React.createElement("option", { value: "LOSSLESS" }, "Lossless"),
     /* @__PURE__ */ React.createElement("option", { value: "MP3" }, "MP3"),
     /* @__PURE__ */ React.createElement("option", { value: "FAKE" }, "FLAC Fake")
-  )), visibleColumns.actions && /* @__PURE__ */ React.createElement("th", { className: "p-1" }))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length), className: "py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4" }, 'No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".')), virtualPaddingTop > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingTop } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })), virtualRows.map((row, i) => {
+  )), visibleColumns.actions && /* @__PURE__ */ React.createElement("th", { className: "p-1" }))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length), className: "py-16 text-center text-gray-400 font-mono text-xs whitespace-normal px-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-2.5 max-w-md mx-auto" }, /* @__PURE__ */ React.createElement("span", { className: "text-3xl" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement("strong", { className: "text-white text-sm" }, "Sin coincidencias con los filtros activos"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans leading-relaxed" }, "Hay ", tracks.length, " pista(s) cargadas en la biblioteca, pero los filtros de columna actuales ocultan todos los resultados."), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleResetAllHeaderFilters,
+      className: "mt-1 px-3 py-1.5 rounded-lg bg-djcyan-500/20 hover:bg-djcyan-500/30 text-djcyan-300 border border-djcyan-500/40 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
+    },
+    "\u2715 Limpiar Filtros de Cabecera"
+  )))), virtualPaddingTop > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingTop } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })), virtualRows.map((row, i) => {
     const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
     const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
     const isFake = Boolean(row.es_fake || row.format === "FLAC" && String(row.status || "").includes("Fake"));
@@ -7679,7 +7870,15 @@ const AuditWorkspace = ({
       },
       /* @__PURE__ */ React.createElement("span", { className: "text-xs" }, "\u{1F5D1}\uFE0F")
     )));
-  }), virtualPaddingBottom > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingBottom } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })))), /* @__PURE__ */ React.createElement("div", { className: "block md:hidden p-2 space-y-2.5 pb-36" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 font-mono text-xs" }, "No hay pistas cargadas en esta vista. Selecciona una carpeta o audita pistas sueltas."), tracksFiltrados.map((row) => {
+  }), virtualPaddingBottom > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingBottom } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })))), /* @__PURE__ */ React.createElement("div", { className: "block md:hidden p-2 space-y-2.5 pb-36" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("div", { className: "py-14 text-center text-gray-400 font-mono text-xs px-4 flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-2xl" }, "\u{1F50D}"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, "Sin coincidencias con los filtros"), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: handleResetAllHeaderFilters,
+      className: "mt-1 px-3 py-1.5 rounded-lg bg-djcyan-500/20 text-djcyan-300 border border-djcyan-500/40 text-xs font-mono font-bold cursor-pointer"
+    },
+    "Limpiar Filtros"
+  )), tracksFiltrados.map((row) => {
     const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
     const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
     const isFake = Boolean(row.es_fake || row.format === "FLAC" && String(row.status || "").includes("Fake"));
@@ -7790,7 +7989,7 @@ const AuditWorkspace = ({
         /* @__PURE__ */ React.createElement("span", null, "SuperFLAC Spotify HD")
       ))
     );
-  })))), sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && /* @__PURE__ */ React.createElement("aside", { key: currentTrack ? currentTrack.id : "none", className: "w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Gear, null), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs uppercase tracking-wider text-gray-200" }, "Inspector DJ Granular")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded" }, "Track #", currentTrack.id || "--"), /* @__PURE__ */ React.createElement(
+  }))))), sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && /* @__PURE__ */ React.createElement("aside", { key: currentTrack ? currentTrack.id : "none", className: "w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Gear, null), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs uppercase tracking-wider text-gray-200" }, "Inspector DJ Granular")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded" }, "Track #", currentTrack.id || "--"), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setSidebarOpen(false),

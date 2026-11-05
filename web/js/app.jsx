@@ -8120,7 +8120,7 @@ const AuditWorkspace = ({
     const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState('');
     const [filterHeaderComment, setFilterHeaderComment] = useState('');
 
-    // Visibilidad de Columnas con persistencia en localStorage
+    // Visibilidad de Columnas con persistencia en localStorage y categorización tematica
     const DEFAULT_AUDIT_COLUMNS = {
         id: true,
         waveform: true,
@@ -8148,6 +8148,65 @@ const AuditWorkspace = ({
         actions: true,
     };
 
+    const COLUMN_CATEGORIES = [
+        {
+            id: 'identity',
+            name: 'Identificación Básica',
+            icon: '🎵',
+            color: 'text-djcyan-400',
+            columns: [
+                { key: 'id', label: '# ID & Checkbox', desc: 'Identificador y selector de lote' },
+                { key: 'waveform', label: 'Waveform Espectral', desc: 'Forma de onda corporativa interactiva' },
+                { key: 'title', label: 'Archivo / Título', desc: 'Nombre del archivo o título ID3' },
+                { key: 'artist', label: 'Artista', desc: 'Intérprete o creador principal' },
+                { key: 'genre', label: 'Género Musical', desc: 'Clasificación electrónica primaria' },
+                { key: 'subgenre', label: 'Subgénero', desc: 'Taxonomía electrónica de precisión' },
+            ]
+        },
+        {
+            id: 'performance',
+            name: 'Rendimiento en Cabina DJ',
+            icon: '🎛️',
+            color: 'text-purple-400',
+            columns: [
+                { key: 'bpm', label: 'Tempo Real (BPM)', desc: 'Velocidad con Zero-Crossing y Beatgrid' },
+                { key: 'key', label: 'Tonalidad Camelot', desc: 'Rueda armónica Camelot (ej. 8A = Am)' },
+                { key: 'cues', label: 'Hot Cues 1-8', desc: '8 saltos tácticos (Intro, Drops, Breaks, Outro)' },
+                { key: 'fase_badge', label: 'Fase DJ / Mood', desc: 'Momento de sesión (Warm-Up, Peak, Cierre)' },
+                { key: 'acoustic_role', label: 'Rol Acústico', desc: 'Función en mezcla (Bass Driver, Lead, Perc.)' },
+            ]
+        },
+        {
+            id: 'quality',
+            name: 'Calidad & Análisis Espectral',
+            icon: '🔬',
+            color: 'text-emerald-400',
+            columns: [
+                { key: 'format', label: 'Formato Audio', desc: 'Extensión y códec (FLAC, MP3, WAV, AIFF)' },
+                { key: 'sample_rate_khz', label: 'Frecuencia (kHz)', desc: 'Tasa de muestreo (44.1, 48, 96 kHz)' },
+                { key: 'bitrate_kbps', label: 'Bitrate (kbps)', desc: 'Tasa de bits real calculada' },
+                { key: 'calidad', label: 'Calidad Master', desc: 'Certificación acústica y pureza sonora' },
+                { key: 'perdida_pct', label: 'Pérdida / Transcode', desc: 'Pérdida de espectro respecto a máster' },
+                { key: 'cutoff_khz', label: 'Corte FFT (Cutoff)', desc: 'Frecuencia de agudos para cazar fakes' },
+            ]
+        },
+        {
+            id: 'metadata',
+            name: 'Dinámica & Metadatos Pro',
+            icon: '📊',
+            color: 'text-amber-400',
+            columns: [
+                { key: 'lufs', label: 'LUFS & True Peak', desc: 'Sonoridad EBU R128 y pico dBFS de club' },
+                { key: 'duration', label: 'Duración (Time)', desc: 'Tiempo total de reproducción MM:SS' },
+                { key: 'e', label: 'Energía (⚡ %)', desc: 'Intensidad acústica percibida de 0 a 100%' },
+                { key: 'dance', label: 'Bailabilidad (🕺 %)', desc: 'Regularidad rítmica para pista de baile' },
+                { key: 'comment', label: 'Comentario Pro', desc: 'Tag táctico formateado para display CDJ' },
+                { key: 'status', label: 'Estado Global', desc: 'Veredicto de auditoría (Lossless, MP3, Fake)' },
+                { key: 'actions', label: 'Acción Quitar', desc: 'Botón rápido para retirar pista de lista' },
+            ]
+        }
+    ];
+
     const [visibleColumns, setVisibleColumns] = useState(() => {
         try {
             const saved = localStorage.getItem('bw_audit_visible_columns');
@@ -8157,6 +8216,8 @@ const AuditWorkspace = ({
     });
 
     const [columnSelectorOpen, setColumnSelectorOpen] = useState(false);
+    const [columnSearchText, setColumnSearchText] = useState('');
+    const [isDragOver, setIsDragOver] = useState(false);
 
     const toggleColumnVisibility = (colKey) => {
         setVisibleColumns(prev => {
@@ -8170,12 +8231,20 @@ const AuditWorkspace = ({
         let next = { ...DEFAULT_AUDIT_COLUMNS };
         if (preset === 'all') {
             Object.keys(next).forEach(k => { next[k] = true; });
+        } else if (preset === 'none') {
+            Object.keys(next).forEach(k => { next[k] = false; });
+            next.title = true; // Mantener al menos el título
         } else if (preset === 'dj') {
             Object.keys(next).forEach(k => { next[k] = false; });
-            ['id', 'waveform', 'title', 'artist', 'bpm', 'key', 'cues', 'e', 'dance', 'fase_badge', 'actions'].forEach(k => { next[k] = true; });
+            ['id', 'waveform', 'title', 'artist', 'bpm', 'key', 'cues', 'fase_badge'].forEach(k => { next[k] = true; });
         } else if (preset === 'audio') {
             Object.keys(next).forEach(k => { next[k] = false; });
-            ['id', 'title', 'artist', 'format', 'sample_rate_khz', 'bitrate_kbps', 'calidad', 'perdida_pct', 'cutoff_khz', 'lufs', 'status', 'actions'].forEach(k => { next[k] = true; });
+            ['id', 'title', 'format', 'sample_rate_khz', 'bitrate_kbps', 'calidad', 'cutoff_khz', 'perdida_pct', 'lufs'].forEach(k => { next[k] = true; });
+        } else if (preset === 'tags') {
+            Object.keys(next).forEach(k => { next[k] = false; });
+            ['id', 'title', 'artist', 'genre', 'subgenre', 'comment', 'status'].forEach(k => { next[k] = true; });
+        } else if (preset === 'reset') {
+            next = { ...DEFAULT_AUDIT_COLUMNS };
         }
         setVisibleColumns(next);
         try { localStorage.setItem('bw_audit_visible_columns', JSON.stringify(next)); } catch (_) {}
@@ -8752,102 +8821,228 @@ const AuditWorkspace = ({
                             <span>Vista & Herramientas</span>
                         </div>
                         <div className="flex items-center gap-1.5 relative">
-                            {/* Selector de Columnas Visibles */}
-                            <div className="relative">
+                            {/* Selector de Columnas Visibles (Abre Modal Pro de Configuración) */}
+                            <div>
                                 <button
                                     type="button"
-                                    onClick={() => setColumnSelectorOpen(prev => !prev)}
-                                    className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                                    onClick={() => setColumnSelectorOpen(true)}
+                                    className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 ${
                                         columnSelectorOpen 
                                             ? 'bg-djcyan-950 text-djcyan-300 border-djcyan-600/70 shadow-inner' 
                                             : 'bg-djzinc-900 text-gray-300 border-djzinc-750 hover:text-white hover:border-djzinc-650'
                                     }`}
-                                    title="Configurar visibilidad de columnas de la tabla"
+                                    title="Abrir Centro de Personalización de Columnas y Vistas"
                                 >
                                     <span>⚙️</span>
                                     <span>Columnas</span>
-                                    <span className="text-[10px] text-djcyan-400 font-mono">
+                                    <span className="text-[10px] text-djcyan-400 font-mono font-bold">
                                         ({Object.values(visibleColumns).filter(Boolean).length}/24)
                                     </span>
-                                    <span className="text-[9px]">▾</span>
                                 </button>
 
+                                {/* MODAL PRO: CENTRO DE CONFIGURACIÓN DE COLUMNAS (CATEGORIZADA CON BUSCADOR) */}
                                 {columnSelectorOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-72 bg-[#0c0c14] border border-djzinc-700/80 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2.5 backdrop-blur-md">
-                                        <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
-                                            <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
-                                                <span>📋</span>
-                                                <span>Columnas Visibles</span>
-                                            </span>
-                                            <button 
-                                                onClick={() => setColumnSelectorOpen(false)}
-                                                className="text-gray-400 hover:text-white text-xs cursor-pointer px-1"
-                                            >✕</button>
-                                        </div>
-
-                                        {/* Presets rápidos */}
-                                        <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                                            <span className="text-gray-400">Presets:</span>
-                                            <button 
-                                                type="button"
-                                                onClick={() => setColumnPreset('all')}
-                                                className="px-2 py-0.5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-djcyan-300 border border-djzinc-700 cursor-pointer"
-                                            >Todas</button>
-                                            <button 
-                                                type="button"
-                                                onClick={() => setColumnPreset('dj')}
-                                                className="px-2 py-0.5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-purple-300 border border-djzinc-750 cursor-pointer"
-                                            >DJ Esencial</button>
-                                            <button 
-                                                type="button"
-                                                onClick={() => setColumnPreset('audio')}
-                                                className="px-2 py-0.5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-emerald-300 border border-djzinc-750 cursor-pointer"
-                                            >Auditoría</button>
-                                        </div>
-
-                                        {/* Lista de Checkboxes scrollable */}
-                                        <div className="max-h-64 overflow-y-auto pr-1 space-y-1 text-xs font-mono select-none">
-                                            {[
-                                                { key: 'id', label: '# ID & Checkbox' },
-                                                { key: 'waveform', label: 'Waveform Espectral' },
-                                                { key: 'title', label: 'Archivo / Título' },
-                                                { key: 'artist', label: 'Artista' },
-                                                { key: 'genre', label: 'Género' },
-                                                { key: 'subgenre', label: 'Subgénero' },
-                                                { key: 'format', label: 'Formato Audio' },
-                                                { key: 'sample_rate_khz', label: 'Frecuencia (kHz)' },
-                                                { key: 'bitrate_kbps', label: 'Bitrate (kbps)' },
-                                                { key: 'calidad', label: 'Calidad & Master' },
-                                                { key: 'perdida_pct', label: 'Pérdida / Transcode' },
-                                                { key: 'cutoff_khz', label: 'Corte FFT' },
-                                                { key: 'lufs', label: 'LUFS & True Peak' },
-                                                { key: 'duration', label: 'Duración (Time)' },
-                                                { key: 'bpm', label: 'Tempo (BPM)' },
-                                                { key: 'key', label: 'Tonalidad Camelot' },
-                                                { key: 'cues', label: 'Hot Cues 1-8' },
-                                                { key: 'e', label: 'Energía (⚡ %)' },
-                                                { key: 'dance', label: 'Bailabilidad (🕺 %)' },
-                                                { key: 'fase_badge', label: 'Fase DJ / Mood' },
-                                                { key: 'acoustic_role', label: 'Rol Acústico' },
-                                                { key: 'comment', label: 'Comentario Pro' },
-                                                { key: 'status', label: 'Estado Global' },
-                                                { key: 'actions', label: 'Acción Quitar' },
-                                            ].map(col => (
-                                                <label 
-                                                    key={col.key}
-                                                    className="flex items-center justify-between px-2 py-1 rounded hover:bg-djzinc-850/80 cursor-pointer transition-colors"
+                                    <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fadeIn">
+                                        <div className="bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden text-gray-200">
+                                            {/* Cabecera */}
+                                            <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910]">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner">⚙️</span>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
+                                                                Centro de Columnas & Vistas
+                                                            </h3>
+                                                            <span className="px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black">
+                                                                {Object.values(visibleColumns).filter(Boolean).length} de 24 activas
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[11px] text-gray-400 font-sans mt-0.5">
+                                                            Personaliza las columnas visibles en la tabla principal según tu flujo de trabajo de análisis o preparación de cabina DJ.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
+                                                    className="w-8 h-8 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-750 flex items-center justify-center cursor-pointer transition-colors"
+                                                    title="Cerrar modal"
                                                 >
-                                                    <span className={`text-[11px] ${visibleColumns[col.key] ? 'text-gray-200' : 'text-gray-500'}`}>
-                                                        {col.label}
-                                                    </span>
+                                                    ✕
+                                                </button>
+                                            </div>
+
+                                            {/* Buscador y Presets */}
+                                            <div className="p-4 border-b border-djzinc-800/80 bg-[#080910] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                {/* Buscador en vivo */}
+                                                <div className="relative flex-1 max-w-md">
+                                                    <span className="absolute left-3 top-2.5 text-xs text-gray-400">🔍</span>
                                                     <input 
-                                                        type="checkbox"
-                                                        checked={Boolean(visibleColumns[col.key])}
-                                                        onChange={() => toggleColumnVisibility(col.key)}
-                                                        className="accent-djcyan-400 w-3.5 h-3.5 rounded cursor-pointer"
+                                                        type="text" 
+                                                        value={columnSearchText}
+                                                        onChange={(e) => setColumnSearchText(e.target.value)}
+                                                        placeholder="Buscar columna (ej. bpm, lufs, cues, transcode, cutoff)..."
+                                                        className="w-full pl-8 pr-8 py-2 bg-djzinc-900 border border-djzinc-750 rounded-xl text-xs font-mono text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500/70 focus:ring-1 focus:ring-djcyan-500/40 transition-all"
                                                     />
-                                                </label>
-                                            ))}
+                                                    {columnSearchText && (
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => setColumnSearchText('')}
+                                                            className="absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-white cursor-pointer"
+                                                        >✕</button>
+                                                    )}
+                                                </div>
+
+                                                {/* Presets Rápidos */}
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className="text-[10px] font-mono text-gray-400 uppercase font-bold shrink-0">Presets:</span>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setColumnPreset('all')}
+                                                        className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                                    >
+                                                        👁️ Ver Todas (24)
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setColumnPreset('dj')}
+                                                        className="px-2.5 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                                    >
+                                                        ⚡ Cabina DJ (8)
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setColumnPreset('audio')}
+                                                        className="px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                                    >
+                                                        🔬 Auditoría Acústica (9)
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setColumnPreset('tags')}
+                                                        className="px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                                    >
+                                                        🏷️ Metadatos (7)
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Cuadrícula de Categorías Temáticas */}
+                                            <div className="flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar">
+                                                {COLUMN_CATEGORIES.map(cat => {
+                                                    const q = (columnSearchText || '').trim().toLowerCase();
+                                                    const matchingCols = cat.columns.filter(col => {
+                                                        if (!q) return true;
+                                                        return col.label.toLowerCase().includes(q) || col.key.toLowerCase().includes(q) || col.desc.toLowerCase().includes(q);
+                                                    });
+                                                    if (q && matchingCols.length === 0) return null;
+
+                                                    const activeInCat = matchingCols.filter(c => visibleColumns[c.key]).length;
+
+                                                    return (
+                                                        <div key={cat.id} className="p-3.5 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-2.5">
+                                                            {/* Encabezado de la categoría */}
+                                                            <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-base">{cat.icon}</span>
+                                                                    <span className={`font-mono text-xs font-black uppercase tracking-wider ${cat.color}`}>
+                                                                        {cat.name}
+                                                                    </span>
+                                                                    <span className="text-[10px] font-mono text-gray-500 font-bold">
+                                                                        ({activeInCat}/{matchingCols.length})
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const next = { ...visibleColumns };
+                                                                            matchingCols.forEach(c => { next[c.key] = true; });
+                                                                            setVisibleColumns(next);
+                                                                            try { localStorage.setItem('bw_audit_visible_columns', JSON.stringify(next)); } catch (_) {}
+                                                                        }}
+                                                                        className="text-djcyan-400 hover:text-djcyan-300 cursor-pointer hover:underline"
+                                                                    >
+                                                                        Todas
+                                                                    </button>
+                                                                    <span className="text-gray-600">/</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const next = { ...visibleColumns };
+                                                                            matchingCols.forEach(c => { next[c.key] = false; });
+                                                                            setVisibleColumns(next);
+                                                                            try { localStorage.setItem('bw_audit_visible_columns', JSON.stringify(next)); } catch (_) {}
+                                                                        }}
+                                                                        className="text-gray-500 hover:text-gray-300 cursor-pointer hover:underline"
+                                                                    >
+                                                                        Ninguna
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Lista de Columnas */}
+                                                            <div className="space-y-1.5">
+                                                                {matchingCols.map(col => {
+                                                                    const isChecked = Boolean(visibleColumns[col.key]);
+                                                                    return (
+                                                                        <label 
+                                                                            key={col.key}
+                                                                            className={`flex items-start justify-between p-2 rounded-lg border transition-all cursor-pointer select-none ${
+                                                                                isChecked 
+                                                                                    ? 'bg-djzinc-850/80 border-djzinc-700/80 text-white' 
+                                                                                    : 'bg-djzinc-950/40 border-djzinc-850/60 text-gray-500 hover:border-djzinc-800'
+                                                                            }`}
+                                                                        >
+                                                                            <div className="flex flex-col pr-2">
+                                                                                <span className={`text-xs font-mono font-bold ${isChecked ? 'text-white' : 'text-gray-400'}`}>
+                                                                                    {col.label}
+                                                                                </span>
+                                                                                <span className="text-[10.5px] text-gray-400 font-sans leading-tight mt-0.5">
+                                                                                    {col.desc}
+                                                                                </span>
+                                                                            </div>
+                                                                            <input 
+                                                                                type="checkbox"
+                                                                                checked={isChecked}
+                                                                                onChange={() => toggleColumnVisibility(col.key)}
+                                                                                className="accent-djcyan-400 w-4 h-4 rounded cursor-pointer mt-0.5 shrink-0"
+                                                                            />
+                                                                        </label>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Pie de modal */}
+                                            <div className="px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex items-center justify-between flex-wrap gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setColumnPreset('reset')}
+                                                        className="px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                                    >
+                                                        ↺ Restablecer por Defecto
+                                                    </button>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setColumnPreset('none')}
+                                                        className="px-3 py-1.5 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-gray-400 hover:text-white border border-djzinc-750 text-xs font-mono cursor-pointer transition-all active:scale-95"
+                                                    >
+                                                        Deseleccionar Todas
+                                                    </button>
+                                                </div>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
+                                                    className="px-5 py-1.5 rounded-lg bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95"
+                                                >
+                                                    ✓ Aplicar y Guardar ({Object.values(visibleColumns).filter(Boolean).length} Activas)
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -9531,12 +9726,86 @@ const AuditWorkspace = ({
                     {saveFeedback && <span className="text-xs font-mono text-djgreen-400 font-bold animate-pulse shrink-0">{saveFeedback}</span>}
                 </div>
 
-                <div ref={tableScrollRef} className="flex-1 overflow-auto bg-[#0f0f13]">
+                <div ref={tableScrollRef} className="flex-1 overflow-auto bg-[#0f0f13] flex flex-col">
+                    {tracks.length === 0 ? (
+                        /* EMPTY STATE TÁCTICO ONBOARDING (DROPZONE & GUÍA EN 3 PASOS) */
+                        <div 
+                            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                            onDragLeave={() => setIsDragOver(false)}
+                            onDrop={(e) => { 
+                                e.preventDefault(); 
+                                setIsDragOver(false); 
+                                handleExplorar(); 
+                            }}
+                            className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none animate-fadeIn my-auto"
+                        >
+                            <div className={`max-w-2xl w-full p-8 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center gap-6 ${
+                                isDragOver 
+                                    ? 'border-djcyan-400 bg-djcyan-950/30 shadow-[0_0_40px_rgba(6,182,212,0.25)] scale-[1.01]' 
+                                    : 'border-djzinc-750 bg-[#0a0b12]/90 hover:border-djcyan-500/40 shadow-xl'
+                            }`}>
+                                {/* Emblema & Título */}
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-djcyan-500/20 to-blue-600/20 border border-djcyan-500/40 flex items-center justify-center text-3xl shadow-inner">
+                                        🎛️
+                                    </div>
+                                    <h2 className="font-syne font-black text-xl sm:text-2xl text-white uppercase tracking-wider mt-1">
+                                        Auditoría & Inteligencia Acústica <span className="text-djcyan-400">DJ</span>
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-gray-400 max-w-lg leading-relaxed font-sans">
+                                        Ingesta híbrida de alta velocidad. Arrastra carpetas completas o pistas sueltas para calcular BPM exacto, Hot Cues, Key Camelot y certificar archivos sin pérdidas reales.
+                                    </p>
+                                </div>
+
+                                {/* Botón Principal de Ingesta */}
+                                <div className="flex flex-col sm:flex-row items-center gap-3">
+                                    <button 
+                                        type="button"
+                                        onClick={handleExplorar}
+                                        className="bg-gradient-to-r from-djcyan-400 via-djcyan-500 to-blue-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black font-mono px-6 py-3 rounded-xl text-sm shadow-lg shadow-djcyan-500/25 cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                    >
+                                        <span className="text-base">▷</span>
+                                        <span>Cargar Biblioteca o Pistas</span>
+                                    </button>
+                                </div>
+
+                                {/* Badges de Formatos de Audio Soportados */}
+                                <div className="flex items-center justify-center gap-2 flex-wrap text-[10px] font-mono text-gray-400">
+                                    <span className="text-gray-500">Formatos compatibles:</span>
+                                    {['FLAC 24-bit', 'WAV Studio', 'AIFF', 'MP3 320k', 'M4A / AAC', 'OGG'].map(fmt => (
+                                        <span key={fmt} className="px-2 py-0.5 rounded-md bg-djzinc-900 border border-djzinc-800 text-gray-300">
+                                            {fmt}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                {/* 3 Pasos del Flujo de Trabajo */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-4 border-t border-djzinc-800/80 text-left">
+                                    <div className="p-3 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-1">
+                                        <span className="text-[10px] font-mono font-bold text-djcyan-400 uppercase">Paso 1 • Ingesta</span>
+                                        <strong className="text-xs text-white">Carpetas & Pistas</strong>
+                                        <p className="text-[11px] text-gray-400 font-sans leading-tight">Carga tu biblioteca completa o acumula pistas en la cesta sin sobreescribir.</p>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-1">
+                                        <span className="text-[10px] font-mono font-bold text-purple-400 uppercase">Paso 2 • Auditoría</span>
+                                        <strong className="text-xs text-white">Análisis FFT & Cues</strong>
+                                        <p className="text-[11px] text-gray-400 font-sans leading-tight">Zero-Crossing BPM, Camelot Key, 8 Hot Cues y detección de falsificaciones de bitrate.</p>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-1">
+                                        <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">Paso 3 • Cabina</span>
+                                        <strong className="text-xs text-white">Sincronización Total</strong>
+                                        <p className="text-[11px] text-gray-400 font-sans leading-tight">Exporta a Rekordbox XML, Serato Crates, Traktor NML, VirtualDJ M3U y Excel multidestino.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
                     <table className="w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table">
                         <thead className="sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400">
                             <tr>
                                 {visibleColumns.id && (
-                                    <th className="py-2.5 px-2 w-12 text-center">
+                                    <th className="py-2.5 px-2 w-12 text-center" title="ID secuencial de pista y casilla para selección masiva o acciones en lote">
                                         <div className="flex items-center justify-center gap-1">
                                             <input 
                                                 type="checkbox" 
@@ -9551,73 +9820,119 @@ const AuditWorkspace = ({
                                     </th>
                                 )}
                                 {visibleColumns.waveform && (
-                                    <th className="py-2.5 px-2 w-28 text-center text-djcyan-400">{t('th_waveform') || 'Waveform'}</th>
+                                    <th className="py-2.5 px-2 w-28 text-center text-djcyan-400" title="Huella acústica corporativa en 4 bandas espectrales (Bajos, Pegada, Vocales, Agudos) con scrubber y reproducción interactiva">
+                                        {t('th_waveform') || 'Waveform'}
+                                    </th>
                                 )}
                                 {visibleColumns.title && (
-                                    <th onClick={() => handleSortAudit('title')} className="py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'Archivo / Título'} {renderSortArrowAudit('title')}</th>
+                                    <th onClick={() => handleSortAudit('title')} className="py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition-colors" title="Nombre del archivo de audio o etiqueta ID3 Title. Doble clic en la fila para abrir inspector">
+                                        {t('th_title') || 'Archivo / Título'} {renderSortArrowAudit('title')}
+                                    </th>
                                 )}
                                 {visibleColumns.artist && (
-                                    <th onClick={() => handleSortAudit('artist')} className="py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'Artista'} {renderSortArrowAudit('artist')}</th>
+                                    <th onClick={() => handleSortAudit('artist')} className="py-2.5 px-2 w-28 cursor-pointer hover:text-white transition-colors" title="Artista o creador principal del track. Reconoce colaboraciones y remezclas">
+                                        {t('th_artist') || 'Artista'} {renderSortArrowAudit('artist')}
+                                    </th>
                                 )}
                                 {visibleColumns.genre && (
-                                    <th onClick={() => handleSortAudit('genre')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_genre') || 'Género'} {renderSortArrowAudit('genre')}</th>
+                                    <th onClick={() => handleSortAudit('genre')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" title="Clasificación de género musical primario (House, Techno, Drum & Bass, etc.)">
+                                        {t('th_genre') || 'Género'} {renderSortArrowAudit('genre')}
+                                    </th>
                                 )}
                                 {visibleColumns.subgenre && (
-                                    <th onClick={() => handleSortAudit('subgenre')} className="py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors">{t('th_subgenre') || 'Subgénero'} {renderSortArrowAudit('subgenre')}</th>
+                                    <th onClick={() => handleSortAudit('subgenre')} className="py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white transition-colors" title="Taxonomía electrónica de precisión calculada según características tímbricas y tempo">
+                                        {t('th_subgenre') || 'Subgénero'} {renderSortArrowAudit('subgenre')}
+                                    </th>
                                 )}
                                 {visibleColumns.format && (
-                                    <th onClick={() => handleSortAudit('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'Formato'} {renderSortArrowAudit('format')}</th>
+                                    <th onClick={() => handleSortAudit('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" title="Contenedor y formato de audio (FLAC, WAV, AIFF, MP3, M4A). Identifica compresión con o sin pérdida">
+                                        {t('th_format') || 'Formato'} {renderSortArrowAudit('format')}
+                                    </th>
                                 )}
                                 {visibleColumns.sample_rate_khz && (
-                                    <th onClick={() => handleSortAudit('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_khz') || 'kHz'} {renderSortArrowAudit('sample_rate_khz')}</th>
+                                    <th onClick={() => handleSortAudit('sample_rate_khz')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" title="Frecuencia de muestreo (44.1 kHz estándar CD, 48 kHz / 96 kHz Hi-Res Studio)">
+                                        {t('th_khz') || 'kHz'} {renderSortArrowAudit('sample_rate_khz')}
+                                    </th>
                                 )}
                                 {visibleColumns.bitrate_kbps && (
-                                    <th onClick={() => handleSortAudit('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">{t('th_kbps') || 'kbps'} {renderSortArrowAudit('bitrate_kbps')}</th>
+                                    <th onClick={() => handleSortAudit('bitrate_kbps')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors" title="Tasa de bits real calculada en disco (320 kbps para MP3 de alta fidelidad, 800-1411 kbps para Lossless)">
+                                        {t('th_kbps') || 'kbps'} {renderSortArrowAudit('bitrate_kbps')}
+                                    </th>
                                 )}
                                 {visibleColumns.calidad && (
-                                    <th onClick={() => handleSortAudit('calidad')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors">{t('th_quality') || 'Calidad'} {renderSortArrowAudit('calidad')}</th>
+                                    <th onClick={() => handleSortAudit('calidad')} className="py-2.5 px-2 text-center w-24 cursor-pointer hover:text-white transition-colors" title="Certificación acústica de pureza sonora del Master Engine (Master Studio, Alta Calidad, Compresión Fuerte o Fake detectado)">
+                                        {t('th_quality') || 'Calidad'} {renderSortArrowAudit('calidad')}
+                                    </th>
                                 )}
                                 {visibleColumns.perdida_pct && (
-                                    <th onClick={() => handleSortAudit('perdida_pct')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors">{t('th_loss') || 'Pérdida / Compresión'} {renderSortArrowAudit('perdida_pct')}</th>
+                                    <th onClick={() => handleSortAudit('perdida_pct')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" title="Pérdida de espectro respecto a una fuente analógica/máster pura sin compresión">
+                                        {t('th_loss') || 'Pérdida / Compresión'} {renderSortArrowAudit('perdida_pct')}
+                                    </th>
                                 )}
                                 {visibleColumns.cutoff_khz && (
-                                    <th onClick={() => handleSortAudit('cutoff_khz')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_fft') || 'Cert. FFT'} {renderSortArrowAudit('cutoff_khz')}</th>
+                                    <th onClick={() => handleSortAudit('cutoff_khz')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" title="Frecuencia máxima de corte FFT en agudos. Esencial para cazar fakes: si un FLAC corta a 16 kHz, fue inflado desde un MP3 de 128 kbps">
+                                        {t('th_fft') || 'Cert. FFT'} {renderSortArrowAudit('cutoff_khz')}
+                                    </th>
                                 )}
                                 {visibleColumns.lufs && (
-                                    <th onClick={() => handleSortAudit('lufs')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" title="Sonoridad integrada LUFS (EBU R128) y pico True Peak (dBFS)">{t('th_lufs_peak') || 'LUFS / Peak'} {renderSortArrowAudit('lufs')}</th>
+                                    <th onClick={() => handleSortAudit('lufs')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" title="Sonoridad integrada en LUFS (EBU R128) y True Peak en dBFS. Rango ideal para mezclar en club: -8 a -6 LUFS">
+                                        {t('th_lufs_peak') || 'LUFS / Peak'} {renderSortArrowAudit('lufs')}
+                                    </th>
                                 )}
                                 {visibleColumns.duration && (
-                                    <th onClick={() => handleSortAudit('duration')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">{t('th_duration') || 'Time'} {renderSortArrowAudit('duration')}</th>
+                                    <th onClick={() => handleSortAudit('duration')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" title="Duración total de la canción en minutos y segundos (MM:SS)">
+                                        {t('th_duration') || 'Time'} {renderSortArrowAudit('duration')}
+                                    </th>
                                 )}
                                 {visibleColumns.bpm && (
-                                    <th onClick={() => handleSortAudit('bpm')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">BPM {renderSortArrowAudit('bpm')}</th>
+                                    <th onClick={() => handleSortAudit('bpm')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" title="Tempo exacto en pulsos por minuto con cálculo de Zero-Crossing y Beatgrid para mezcla sincronizada">
+                                        BPM {renderSortArrowAudit('bpm')}
+                                    </th>
                                 )}
                                 {visibleColumns.key && (
-                                    <th onClick={() => handleSortAudit('key')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors">Key {renderSortArrowAudit('key')}</th>
+                                    <th onClick={() => handleSortAudit('key')} className="py-2.5 px-1.5 text-center cursor-pointer hover:text-white transition-colors" title="Tonalidad armónica según la rueda Camelot (ej. 8A = La menor). Facilita mezclas en armonía sin choques tonales">
+                                        Key {renderSortArrowAudit('key')}
+                                    </th>
                                 )}
                                 {visibleColumns.cues && (
-                                    <th className="py-2.5 px-1.5 text-center">{t('th_cues') || '8 Hot Cues'}</th>
+                                    <th className="py-2.5 px-1.5 text-center" title="8 Hot Cues fijados automáticamente en Beat 1.0.0, Drops, Breakdowns y Outro listos para Rekordbox, Serato y Traktor">
+                                        {t('th_cues') || '8 Hot Cues'}
+                                    </th>
                                 )}
                                 {visibleColumns.e && (
-                                    <th onClick={() => handleSortAudit('e')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">⚡ {t('th_energy') || 'Energía'} {renderSortArrowAudit('e')}</th>
+                                    <th onClick={() => handleSortAudit('e')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" title="Índice de energía acústica percibida (0% a 100%) según densidad de graves y transitorios rítmicos">
+                                        ⚡ {t('th_energy') || 'Energía'} {renderSortArrowAudit('e')}
+                                    </th>
                                 )}
                                 {visibleColumns.dance && (
-                                    <th onClick={() => handleSortAudit('dance')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">🕺 {t('th_dance') || 'Dance'} {renderSortArrowAudit('dance')}</th>
+                                    <th onClick={() => handleSortAudit('dance')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" title="Índice de regularidad rítmica y cadencia bailable para la pista de baile">
+                                        🕺 {t('th_dance') || 'Dance'} {renderSortArrowAudit('dance')}
+                                    </th>
                                 )}
                                 {visibleColumns.fase_badge && (
-                                    <th onClick={() => handleSortAudit('fase_badge')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_phase') || 'Fase DJ'} {renderSortArrowAudit('fase_badge')}</th>
+                                    <th onClick={() => handleSortAudit('fase_badge')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" title="Fase de la sesión DJ (Warm-Up, Build-Up, Caña / Clímax, Cierre, Calma)">
+                                        {t('th_phase') || 'Fase DJ'} {renderSortArrowAudit('fase_badge')}
+                                    </th>
                                 )}
                                 {visibleColumns.acoustic_role && (
-                                    <th onClick={() => handleSortAudit('acoustic_role')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Rol espectral (Bass Driver, Vocal/Lead, Percussive) y compatibilidad Anti-MudDY">{t('th_acoustic_role') || 'Rol Acústico & Anti-Muddy'} {renderSortArrowAudit('acoustic_role')}</th>
+                                    <th onClick={() => handleSortAudit('acoustic_role')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Rol espectral en la mezcla (Bass Driver, Vocal/Lead, Percussive Tool, Balanced) y compatibilidad Anti-Muddy">
+                                        {t('th_acoustic_role') || 'Rol Acústico & Anti-Muddy'} {renderSortArrowAudit('acoustic_role')}
+                                    </th>
                                 )}
                                 {visibleColumns.comment && (
-                                    <th onClick={() => handleSortAudit('comment')} className="py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors">{t('th_comment_pro') || 'Comentario Pro DJ'} {renderSortArrowAudit('comment')}</th>
+                                    <th onClick={() => handleSortAudit('comment')} className="py-2.5 px-2 text-left cursor-pointer hover:text-white transition-colors" title="Tag de comentario inteligente formateado para mostrar métricas clave en la pantalla del reproductor DJ (CDJ/XDJ)">
+                                        {t('th_comment_pro') || 'Comentario Pro DJ'} {renderSortArrowAudit('comment')}
+                                    </th>
                                 )}
                                 {visibleColumns.status && (
-                                    <th onClick={() => handleSortAudit('status')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">{t('th_status') || 'Estado'} {renderSortArrowAudit('status')}</th>
+                                    <th onClick={() => handleSortAudit('status')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" title="Veredicto de auditoría global: Lossless verificado, MP3 de cabina, o FLAC Fake que requiere reemplazo">
+                                        {t('th_status') || 'Estado'} {renderSortArrowAudit('status')}
+                                    </th>
                                 )}
                                 {visibleColumns.actions && (
-                                    <th className="py-2.5 px-2 text-center w-14 text-red-400/80 font-mono" title="Quitar pista del análisis global">{t('th_remove') || 'Quitar'}</th>
+                                    <th className="py-2.5 px-2 text-center w-14 text-red-400/80 font-mono" title="Quitar pista del análisis global">
+                                        {t('th_remove') || 'Quitar'}
+                                    </th>
                                 )}
                             </tr>
                             <tr className="bg-djzinc-950/90 border-b border-djzinc-800 text-[10px] lowercase font-sans">
@@ -9916,8 +10231,21 @@ const AuditWorkspace = ({
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
                             {tracksFiltrados.length === 0 && !isAuditing && (
                                 <tr>
-                                    <td colSpan={Math.max(1, Object.values(visibleColumns).filter(Boolean).length)} className="py-12 text-center text-gray-500 font-mono text-xs whitespace-normal px-4">
-                                        No hay pistas cargadas en esta vista. Selecciona una carpeta y pulsa "Auditar Todo".
+                                    <td colSpan={Math.max(1, Object.values(visibleColumns).filter(Boolean).length)} className="py-16 text-center text-gray-400 font-mono text-xs whitespace-normal px-4">
+                                        <div className="flex flex-col items-center justify-center gap-2.5 max-w-md mx-auto">
+                                            <span className="text-3xl">🔍</span>
+                                            <strong className="text-white text-sm">Sin coincidencias con los filtros activos</strong>
+                                            <p className="text-[11px] text-gray-400 font-sans leading-relaxed">
+                                                Hay {tracks.length} pista(s) cargadas en la biblioteca, pero los filtros de columna actuales ocultan todos los resultados.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={handleResetAllHeaderFilters}
+                                                className="mt-1 px-3 py-1.5 rounded-lg bg-djcyan-500/20 hover:bg-djcyan-500/30 text-djcyan-300 border border-djcyan-500/40 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
+                                            >
+                                                ✕ Limpiar Filtros de Cabecera
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             )}
@@ -10318,8 +10646,16 @@ const AuditWorkspace = ({
                     {/* VISTA MÓVIL TÁCTIL: TARJETAS RESPONSIVAS (< 768px) CON PB-36 */}
                     <div className="block md:hidden p-2 space-y-2.5 pb-36">
                         {tracksFiltrados.length === 0 && !isAuditing && (
-                            <div className="py-12 text-center text-gray-500 font-mono text-xs">
-                                No hay pistas cargadas en esta vista. Selecciona una carpeta o audita pistas sueltas.
+                            <div className="py-14 text-center text-gray-400 font-mono text-xs px-4 flex flex-col items-center gap-2">
+                                <span className="text-2xl">🔍</span>
+                                <span className="text-white font-bold">Sin coincidencias con los filtros</span>
+                                <button
+                                    type="button"
+                                    onClick={handleResetAllHeaderFilters}
+                                    className="mt-1 px-3 py-1.5 rounded-lg bg-djcyan-500/20 text-djcyan-300 border border-djcyan-500/40 text-xs font-mono font-bold cursor-pointer"
+                                >
+                                    Limpiar Filtros
+                                </button>
                             </div>
                         )}
                         {tracksFiltrados.map((row) => {
@@ -10486,6 +10822,8 @@ const AuditWorkspace = ({
                             );
                         })}
                     </div>
+                    </>
+                )}
                 </div>
             </div>
 
