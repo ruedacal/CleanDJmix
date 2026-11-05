@@ -17674,7 +17674,6 @@ const BeatWaveLogoBadge = ({ size = "sm", className = "" }) => {
     {
       className: `relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_16px_rgba(6,182,212,0.85),inset_0_0_10px_rgba(6,182,212,0.35)] backdrop-blur-md select-none group-hover:border-cyan-300 group-hover:shadow-[0_0_24px_rgba(6,182,212,1),inset_0_0_14px_rgba(6,182,212,0.5)] transition-all duration-300 ${sizeClasses} ${className}`
     },
-    /* @__PURE__ */ React.createElement("div", { className: "absolute inset-1 rounded-full border border-cyan-400/25 pointer-events-none" }),
     /* @__PURE__ */ React.createElement(
       "svg",
       {
