@@ -26221,7 +26221,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 1.0 (100% visible, alpha 100%)
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
-    const [trippyMode, setTrippyMode] = useState('psychedelic'); // 'psychedelic' | 'acid' | 'off' (Efecto Trippy Envato)
+    const [trippyMode, setTrippyMode] = useState('liquid'); // 'liquid' | 'acid' | 'vortex' | 'off' (Efecto Trippy Envato con Distorsión Líquida)
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -26377,13 +26377,59 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: VÍDEO CON EFECTO TRIPPY (ESTILO ENVATO: PSICODÉLICO, RGB SPLIT & GLITCH) */}
+            {/* FASE 1: VÍDEO CON DISTORSIÓN TRIPPY (ESTILO ENVATO: LIQUID WARP, ACID MELT, TURBULENT DISPLACEMENT) */}
             {phase === 'video' && (
                 <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
-                    {/* Contenedor reactivo con distorsión óptica, hue-rotate y pulsación */}
+                    
+                    {/* Definición de Filtros SVG de Distorsión Líquida y Deformación Ondulante (Turbulent Displacement) */}
+                    <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
+                        <defs>
+                            {/* Filtro 1: Distorsión Líquida Fluida Ondulante (Warp Continuo) */}
+                            <filter id="trippy-liquid-filter" x="-20%" y="-20%" width="140%" height="140%">
+                                <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="3" result="warpNoise">
+                                    <animate 
+                                        attributeName="baseFrequency" 
+                                        dur="12s" 
+                                        values="0.012 0.018; 0.022 0.032; 0.015 0.024; 0.012 0.018" 
+                                        repeatCount="indefinite" 
+                                    />
+                                </feTurbulence>
+                                <feDisplacementMap in="SourceGraphic" in2="warpNoise" scale="42" xChannelSelector="R" yChannelSelector="G" />
+                            </filter>
+
+                            {/* Filtro 2: Acid Melt (Derretimiento caótico agresivo de alta frecuencia) */}
+                            <filter id="trippy-acid-filter" x="-20%" y="-20%" width="140%" height="140%">
+                                <feTurbulence type="turbulence" baseFrequency="0.032 0.045" numOctaves="4" result="acidNoise">
+                                    <animate 
+                                        attributeName="seed" 
+                                        dur="1.2s" 
+                                        values="1;14;35;62;89;115;1" 
+                                        repeatCount="indefinite" 
+                                    />
+                                </feTurbulence>
+                                <feDisplacementMap in="SourceGraphic" in2="acidNoise" scale="65" xChannelSelector="R" yChannelSelector="B" />
+                            </filter>
+
+                            {/* Filtro 3: Vortex Wave (Ondulación profunda centrada) */}
+                            <filter id="trippy-vortex-filter" x="-20%" y="-20%" width="140%" height="140%">
+                                <feTurbulence type="fractalNoise" baseFrequency="0.008 0.028" numOctaves="2" result="vortexNoise">
+                                    <animate 
+                                        attributeName="baseFrequency" 
+                                        dur="8s" 
+                                        values="0.006 0.02; 0.018 0.055; 0.006 0.02" 
+                                        repeatCount="indefinite" 
+                                    />
+                                </feTurbulence>
+                                <feDisplacementMap in="SourceGraphic" in2="vortexNoise" scale="50" xChannelSelector="G" yChannelSelector="R" />
+                            </filter>
+                        </defs>
+                    </svg>
+
+                    {/* Contenedor reactivo con distorsión óptica, desplazamiento líquido y pulsación */}
                     <div className={`relative w-full h-full overflow-hidden flex items-center justify-center ${
-                        trippyMode === 'psychedelic' ? 'trippy-fx-active' :
-                        trippyMode === 'acid' ? 'trippy-fx-acid' : ''
+                        trippyMode === 'liquid' ? 'trippy-distort-liquid' :
+                        trippyMode === 'acid' ? 'trippy-distort-acid' :
+                        trippyMode === 'vortex' ? 'trippy-distort-vortex' : ''
                     } ${isBassShaking ? 'anim-bass-shake' : ''}`}>
                         
                         {/* Vídeo Nativo al 100% de Opacidad */}
@@ -26409,7 +26455,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                 <div 
                                     className="absolute inset-0 mix-blend-screen pointer-events-none"
                                     style={{
-                                        background: 'radial-gradient(ellipse at center, rgba(244, 63, 94, 0.22) 0%, transparent 70%)',
+                                        background: 'radial-gradient(ellipse at center, rgba(244, 63, 94, 0.25) 0%, transparent 70%)',
                                         animation: 'trippyRgbSplitRed 0.75s infinite ease-in-out'
                                     }}
                                 />
@@ -26418,7 +26464,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                 <div 
                                     className="absolute inset-0 mix-blend-screen pointer-events-none"
                                     style={{
-                                        background: 'radial-gradient(ellipse at center, rgba(6, 182, 212, 0.22) 0%, transparent 70%)',
+                                        background: 'radial-gradient(ellipse at center, rgba(6, 182, 212, 0.25) 0%, transparent 70%)',
                                         animation: 'trippyRgbSplitCyan 0.75s infinite ease-in-out'
                                     }}
                                 />
@@ -26435,16 +26481,17 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         )}
                     </div>
 
-                    {/* Selector Flotante de Efecto Trippy (Envato Style) */}
-                    <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/75 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl">
+                    {/* Selector Flotante de Distorsión Trippy (Envato Style) */}
+                    <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl">
                         <span className="text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 px-2 flex items-center gap-1.5">
                             <span>🌀</span>
-                            <span>EFECTO TRIPPY:</span>
+                            <span>DISTORSIÓN TRIPPY:</span>
                         </span>
                         <div className="flex items-center gap-1">
                             {[
-                                { id: 'psychedelic', label: 'Psicodélico', icon: '🌈' },
-                                { id: 'acid', label: 'Acid Glitch', icon: '⚡' },
+                                { id: 'liquid', label: 'Líquido / Warp', icon: '🌊' },
+                                { id: 'acid', label: 'Acid Melt', icon: '⚡' },
+                                { id: 'vortex', label: 'Vortex', icon: '🌀' },
                                 { id: 'off', label: 'Original', icon: '🎞️' }
                             ].map(opt => (
                                 <button

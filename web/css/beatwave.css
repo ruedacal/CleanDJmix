@@ -546,7 +546,7 @@ body.club-mode,
 }
 
 /* ==========================================================================
-   TRIPPY EFFECTS (ENVATO TEMPLATE STYLE) - PSYCHEDELIC, RGB SPLIT & GLITCH
+   TRIPPY EFFECTS (ENVATO TEMPLATE STYLE) - LIQUID WARP, ACID MELT & DISTORTION
    ========================================================================== */
 
 @keyframes trippyHueCycle {
@@ -567,45 +567,78 @@ body.club-mode,
     }
 }
 
-@keyframes trippyLensPulse {
+@keyframes trippyWaveMotion {
     0%, 100% {
-        transform: scale(1.0) rotate(0deg);
+        transform: scale(1.09) translate3d(0, 0, 0) skewX(0deg);
     }
-    33% {
-        transform: scale(1.03) rotate(0.4deg) skewX(-0.4deg);
+    25% {
+        transform: scale(1.12) translate3d(-6px, 4px, 0) skewX(-1.5deg) skewY(0.8deg);
     }
-    66% {
-        transform: scale(1.05) rotate(-0.4deg) skewX(0.4deg);
+    50% {
+        transform: scale(1.10) translate3d(5px, -5px, 0) skewX(1.8deg) skewY(-1.2deg);
+    }
+    75% {
+        transform: scale(1.13) translate3d(-4px, -3px, 0) skewX(-1deg) skewY(1deg);
+    }
+}
+
+@keyframes trippyAcidMotion {
+    0%, 100% {
+        transform: scale(1.12) translate3d(0, 0, 0) rotate(0deg);
+    }
+    20% {
+        transform: scale(1.15) translate3d(-8px, 6px, 0) rotate(-1deg) skewX(2deg);
+    }
+    40% {
+        transform: scale(1.11) translate3d(7px, -6px, 0) rotate(1.2deg) skewY(-2deg);
+    }
+    60% {
+        transform: scale(1.16) translate3d(-6px, -5px, 0) rotate(-0.8deg) skewX(-1.5deg);
+    }
+    80% {
+        transform: scale(1.13) translate3d(8px, 5px, 0) rotate(1deg) skewY(1.5deg);
+    }
+}
+
+@keyframes trippyVortexMotion {
+    0% {
+        transform: scale(1.10) rotate(0deg) skewX(0deg);
+    }
+    50% {
+        transform: scale(1.15) rotate(2deg) skewX(-2.5deg);
+    }
+    100% {
+        transform: scale(1.10) rotate(0deg) skewX(0deg);
     }
 }
 
 @keyframes trippyRgbSplitRed {
     0%, 100% {
         transform: translate3d(0, 0, 0);
-        opacity: 0.1;
+        opacity: 0.15;
     }
     20%, 80% {
-        transform: translate3d(-5px, 1px, 0) scale(1.01);
-        opacity: 0.65;
+        transform: translate3d(-8px, 3px, 0) scale(1.02);
+        opacity: 0.70;
     }
     50% {
-        transform: translate3d(6px, -2px, 0) scale(1.02);
-        opacity: 0.75;
+        transform: translate3d(9px, -4px, 0) scale(1.03);
+        opacity: 0.85;
     }
 }
 
 @keyframes trippyRgbSplitCyan {
     0%, 100% {
         transform: translate3d(0, 0, 0);
-        opacity: 0.1;
+        opacity: 0.15;
     }
     25%, 75% {
-        transform: translate3d(5px, -1px, 0) scale(1.01);
-        opacity: 0.65;
+        transform: translate3d(8px, -3px, 0) scale(1.02);
+        opacity: 0.70;
     }
     55% {
-        transform: translate3d(-6px, 2px, 0) scale(1.02);
-        opacity: 0.75;
+        transform: translate3d(-9px, 4px, 0) scale(1.03);
+        opacity: 0.85;
     }
 }
 
@@ -623,12 +656,12 @@ body.club-mode,
 
 @keyframes trippyPrismGlow {
     0%, 100% {
-        opacity: 0.2;
-        background: radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.35), transparent 65%);
+        opacity: 0.25;
+        background: radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.4), transparent 65%);
     }
     50% {
-        opacity: 0.5;
-        background: radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.45), transparent 70%);
+        opacity: 0.6;
+        background: radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.55), transparent 70%);
     }
 }
 
@@ -637,13 +670,23 @@ body.club-mode,
     pointer-events: none;
 }
 
-.trippy-fx-active {
-    animation: trippyHueCycle 8s infinite linear, trippyLensPulse 4s infinite ease-in-out;
+/* Modos de distorsión líquida con SVG Displacement Maps (After Effects Turbulent Displace) */
+.trippy-distort-liquid {
+    filter: url(#trippy-liquid-filter);
+    animation: trippyHueCycle 8s infinite linear, trippyWaveMotion 5s infinite ease-in-out;
+    will-change: transform, filter;
 }
 
-.trippy-fx-acid {
-    animation: trippyHueCycle 3.5s infinite linear, trippyLensPulse 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
-    filter: invert(12%) hue-rotate(180deg) saturate(250%) contrast(145%);
+.trippy-distort-acid {
+    filter: url(#trippy-acid-filter) invert(8%) saturate(260%) contrast(140%);
+    animation: trippyHueCycle 3.5s infinite linear, trippyAcidMotion 2.2s infinite ease-in-out;
+    will-change: transform, filter;
+}
+
+.trippy-distort-vortex {
+    filter: url(#trippy-vortex-filter) saturate(180%) contrast(120%);
+    animation: trippyHueCycle 6s infinite linear, trippyVortexMotion 6s infinite ease-in-out;
+    will-change: transform, filter;
 }
 
 
