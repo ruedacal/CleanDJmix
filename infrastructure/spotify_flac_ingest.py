@@ -303,11 +303,36 @@ class SpotifyFlacIngestService:
                     cand = m_file.group(1).replace("&amp;", "&")
                     file_url = cand if cand.startswith("http") else f"https://superflac.com{cand}"
                     print(f"[SUPERFLAC] Enlace binario obtenido: {file_url[:80]}...")
-                    r_stream = self.session.get(file_url, stream=True, timeout=60, allow_redirects=True)
-                    if r_stream.status_code == 200:
-                        return r_stream, "OK"
-                    else:
-                        r_stream.close()
+                    
+                    # Gestión activa de la cola de descarga remota (SuperFLAC Queue & 429/502 Backoff)
+                    for q_att in range(4):
+                        try:
+                            r_stream = self.session.get(file_url, stream=True, timeout=12, allow_redirects=True)
+                            if r_stream.status_code == 200:
+                                ctype = r_stream.headers.get("content-type", "").lower()
+                                if not any(x in ctype for x in ["html", "json"]):
+                                    return r_stream, "OK"
+                                r_stream.close()
+                                break
+
+                            if r_stream.status_code == 429:
+                                pos = r_stream.headers.get("x-queue-position", "1")
+                                retry_s = float(r_stream.headers.get("retry-after", "2.0"))
+                                print(f"[SUPERFLAC QUEUE] En cola de streaming (puesto {pos}). Esperando {retry_s}s (reintento {q_att+1}/4)...")
+                                r_stream.close()
+                                time.sleep(max(1.5, retry_s))
+                            elif r_stream.status_code == 502:
+                                print(f"[SUPERFLAC WARN] HTTP 502 en pasarela remota (reintento {q_att+1}/4)...")
+                                r_stream.close()
+                                time.sleep(1.5)
+                            else:
+                                r_stream.close()
+                                time.sleep(1.2)
+                        except Exception as q_err:
+                            print(f"[SUPERFLAC WARN] Error de conexión al stream ({q_err}) (reintento {q_att+1}/4)...")
+                            time.sleep(1.5)
+
+                    return None, "SuperFLAC no entregó el stream binario en los reintentos"
 
                 # Si aún está procesando (sigue devolviendo hx-get)
                 m_hx = re.search(r'hx-get=["\'](https?://[^"\s>]+)["\']', body) or re.search(r'hx-get=["\'](/downloads/[^"\s>]+)["\']', body)
@@ -387,6 +412,16 @@ class SpotifyFlacIngestService:
                     print(f"[SUPERFLAC] Reintentando con URL alternativa resuelta: {alt_url}")
                     res_obj, status_code, info_msg = self._solicitar_descarga_segura(alt_url, quality="FLAC")
             if not res_obj:
+                print(f"[SUPERFLAC FALLO] No se pudo negociar stream ({info_msg}). Activando Fallback Master Engine...")
+                try:
+                    from infrastructure.flac_ingest_engine import FlacIngestEngine
+                    engine = FlacIngestEngine(output_dir=dest_folder)
+                    res_engine = engine.descargar_flac_sync(meta_track, formato=ext_final)
+                    if res_engine and res_engine.get("status") == "ok" and os.path.exists(res_engine.get("path", "")):
+                        print(f"[FALLBACK MASTER OK] Descargado via Master Engine: {res_engine['path']}")
+                        return {"status": "ok", "msg": "Descarga completada via Master Engine", "path": res_engine["path"]}
+                except Exception as fb_err:
+                    print(f"[FALLBACK WARN] Error en Master Engine: {fb_err}")
                 return {"status": "error", "msg": info_msg, "path": ""}
 
         try:
@@ -394,6 +429,16 @@ class SpotifyFlacIngestService:
                 print(f"[SUPERFLAC] Resolviendo stream binario desde: {res_obj}...")
                 r_stream, err_stream = self._resolver_stream_final(res_obj)
                 if not r_stream:
+                    print(f"[SUPERFLAC FALLO] SuperFLAC no entregó stream ({err_stream}). Activando Fallback Master Engine...")
+                    try:
+                        from infrastructure.flac_ingest_engine import FlacIngestEngine
+                        engine = FlacIngestEngine(output_dir=dest_folder)
+                        res_engine = engine.descargar_flac_sync(meta_track, formato=ext_final)
+                        if res_engine and res_engine.get("status") == "ok" and os.path.exists(res_engine.get("path", "")):
+                            print(f"[FALLBACK MASTER OK] Descargado via Master Engine: {res_engine['path']}")
+                            return {"status": "ok", "msg": "Descarga completada via Master Engine", "path": res_engine["path"]}
+                    except Exception as fb_err:
+                        print(f"[FALLBACK WARN] Error en Master Engine: {fb_err}")
                     return {"status": "error", "msg": err_stream, "path": ""}
                 with r_stream:
                     with open(ruta_temp_flac, "wb") as f:
@@ -411,6 +456,15 @@ class SpotifyFlacIngestService:
                     header_snippet = check_f.read(128)
                     if not header_snippet.startswith(b"fLaC") and not header_snippet.startswith(b"ID3") and not (len(header_snippet) >= 2 and header_snippet[0] == 0xFF):
                         os.remove(ruta_temp_flac)
+                        print(f"[SUPERFLAC WARN] Cabecera inválida. Activando Fallback Master Engine...")
+                        try:
+                            from infrastructure.flac_ingest_engine import FlacIngestEngine
+                            engine = FlacIngestEngine(output_dir=dest_folder)
+                            res_engine = engine.descargar_flac_sync(meta_track, formato=ext_final)
+                            if res_engine and res_engine.get("status") == "ok" and os.path.exists(res_engine.get("path", "")):
+                                return {"status": "ok", "msg": "Descarga completada via Master Engine", "path": res_engine["path"]}
+                        except Exception as fb_err:
+                            print(f"[FALLBACK WARN] Error en Master Engine: {fb_err}")
                         return {
                             "status": "error",
                             "msg": f"Cabecera inválida (no es audio reconocido): {header_snippet[:60]}",
@@ -420,6 +474,15 @@ class SpotifyFlacIngestService:
             if not os.path.exists(ruta_temp_flac) or os.path.getsize(ruta_temp_flac) < 2048:
                 if os.path.exists(ruta_temp_flac):
                     os.remove(ruta_temp_flac)
+                print(f"[SUPERFLAC WARN] Archivo vacío o incompleto. Activando Fallback Master Engine...")
+                try:
+                    from infrastructure.flac_ingest_engine import FlacIngestEngine
+                    engine = FlacIngestEngine(output_dir=dest_folder)
+                    res_engine = engine.descargar_flac_sync(meta_track, formato=ext_final)
+                    if res_engine and res_engine.get("status") == "ok" and os.path.exists(res_engine.get("path", "")):
+                        return {"status": "ok", "msg": "Descarga completada via Master Engine", "path": res_engine["path"]}
+                except Exception as fb_err:
+                    print(f"[FALLBACK WARN] Error en Master Engine: {fb_err}")
                 return {"status": "error", "msg": "El archivo devuelto está vacío o incompleto.", "path": ""}
 
             # Detección de stream nativo para evitar transcodificación innecesaria
