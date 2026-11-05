@@ -26212,6 +26212,76 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
 };
 
 // ==============================================================================
+// LOGOTIPO VECTORIAL NATIVO BEATWAVE PRO (100% HTML + CSS + SVG EN CIAN CORPORATIVO)
+// ==============================================================================
+const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
+    // Presets de tamaño: 'sm' (navbar: 36px), 'md' (44px), 'lg' (intro portal: 110px)
+    const sizeClasses = {
+        sm: 'w-8 h-8 sm:w-9 sm:h-9',
+        md: 'w-10 h-10 sm:w-11 sm:h-11',
+        lg: 'w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32'
+    }[size] || size;
+
+    return (
+        <div 
+            className={`relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_16px_rgba(6,182,212,0.85),inset_0_0_10px_rgba(6,182,212,0.35)] backdrop-blur-md select-none group-hover:border-cyan-300 group-hover:shadow-[0_0_24px_rgba(6,182,212,1),inset_0_0_14px_rgba(6,182,212,0.5)] transition-all duration-300 ${sizeClasses} ${className}`}
+        >
+            {/* Anillo interior sutil */}
+            <div className="absolute inset-1 rounded-full border border-cyan-400/30 pointer-events-none" />
+
+            {/* SVG Vectorial Nativo de Onda Acústica / Ecualizador en Cian */}
+            <svg 
+                viewBox="0 0 100 100" 
+                className="w-[72%] h-[72%] overflow-visible" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <defs>
+                    <linearGradient id="bw-cyan-bar-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ecfeff" />
+                        <stop offset="35%" stopColor="#22d3ee" />
+                        <stop offset="100%" stopColor="#0891b2" />
+                    </linearGradient>
+                    <filter id="bw-cyan-glow-fx" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#06b6d4" floodOpacity="0.85" />
+                    </filter>
+                </defs>
+
+                <g filter="url(#bw-cyan-glow-fx)">
+                    {/* Línea horizontal central del espectro */}
+                    <line 
+                        x1="12" y1="50" x2="88" y2="50" 
+                        stroke="#22d3ee" 
+                        strokeWidth="3.2" 
+                        strokeLinecap="round" 
+                    />
+
+                    {/* Barras verticales del ecualizador simétrico */}
+                    {/* Barra 1 (izq exterior) */}
+                    <line x1="20" y1="42" x2="20" y2="58" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.2" strokeLinecap="round" />
+                    {/* Barra 2 */}
+                    <line x1="28" y1="34" x2="28" y2="66" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.4" strokeLinecap="round" />
+                    {/* Barra 3 */}
+                    <line x1="36" y1="24" x2="36" y2="76" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.8" strokeLinecap="round" />
+                    {/* Barra 4 */}
+                    <line x1="43" y1="32" x2="43" y2="68" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.4" strokeLinecap="round" />
+                    {/* Barra 5 (PICO CENTRAL MÁXIMO) */}
+                    <line x1="50" y1="12" x2="50" y2="88" stroke="url(#bw-cyan-bar-grad)" strokeWidth="4.6" strokeLinecap="round" />
+                    {/* Barra 6 */}
+                    <line x1="57" y1="32" x2="57" y2="68" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.4" strokeLinecap="round" />
+                    {/* Barra 7 */}
+                    <line x1="64" y1="24" x2="64" y2="76" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.8" strokeLinecap="round" />
+                    {/* Barra 8 */}
+                    <line x1="72" y1="34" x2="72" y2="66" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.4" strokeLinecap="round" />
+                    {/* Barra 9 (der exterior) */}
+                    <line x1="80" y1="42" x2="80" y2="58" stroke="url(#bw-cyan-bar-grad)" strokeWidth="3.2" strokeLinecap="round" />
+                </g>
+            </svg>
+        </div>
+    );
+};
+
+// ==============================================================================
 // PRESENTACIÓN ESPECTACULAR A PANTALLA COMPLETA CON VÍDEO DE FONDO Y LÁSERES
 // ==============================================================================
 const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour }) => {
@@ -26384,9 +26454,12 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                     {/* Definición de Filtros SVG de Dibujo Cómic / Cel-Shading y Distorsión Líquida */}
                     <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
                         <defs>
-                            {/* Filtro 1: Efecto Dibujo Cómic / Cel-Shading (Trazos de tinta negra + Posterización de color estilo rotoscopia / pop art) */}
-                            <filter id="trippy-comic-filter" colorInterpolationFilters="sRGB" x="-10%" y="-10%" width="120%" height="120%">
-                                {/* Detección convolucional de contornos / bordes */}
+                            {/* Filtro 1: Efecto Dibujo Artístico Sutil (Estilo After Effects Cartoon & Photoshop Oil Paint / Bordes Añadidos) */}
+                            <filter id="trippy-comic-filter" colorInterpolationFilters="sRGB" x="-5%" y="-5%" width="110%" height="110%">
+                                {/* 1. Suavizado de superficie para textura de pintura al óleo / pincelada artística */}
+                                <feGaussianBlur in="SourceGraphic" stdDeviation="0.75" result="oilPaintSmooth" />
+                                
+                                {/* 2. Detección sutil de contornos finos */}
                                 <feConvolveMatrix 
                                     order="3" 
                                     kernelMatrix="0 1 0 1 -4 1 0 1 0" 
@@ -26394,34 +26467,31 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                     in="SourceGraphic" 
                                     result="rawEdges" 
                                 />
-                                {/* Umbralización inversa para convertir bordes en trazos entintados negros */}
+                                
+                                {/* 3. Trazos de lápiz sutiles y elegantes (graduales y finos, sin bloques negros duros) */}
                                 <feColorMatrix 
                                     in="rawEdges" 
                                     type="matrix" 
-                                    values="-12 0 0 0 1
-                                            0 -12 0 0 1
-                                            0 0 -12 0 1
+                                    values="-4.2 0 0 0 1.04
+                                            0 -4.2 0 0 1.04
+                                            0 0 -4.2 0 1.04
                                             0 0 0 1 0" 
-                                    result="blackInk" 
+                                    result="sketchPencil" 
                                 />
-                                {/* Posterización de color a bandas planas discretas de dibujo (Cel-Shading) */}
-                                <feComponentTransfer in="SourceGraphic" result="posterized">
-                                    <feFuncR type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
-                                    <feFuncG type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
-                                    <feFuncB type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
-                                </feComponentTransfer>
-                                {/* Multiplicación de las líneas de tinta negra sobre el color posterizado */}
-                                <feBlend in="posterized" in2="blackInk" mode="multiply" result="comicBase" />
-                                {/* Contraste y saturación intensa de ilustración gráfica */}
-                                <feColorMatrix in="comicBase" type="saturate" values="1.45" result="comicSaturated" />
-                                <feComponentTransfer in="comicSaturated">
-                                    <feFuncR type="linear" slope="1.2" intercept="-0.08" />
-                                    <feFuncG type="linear" slope="1.2" intercept="-0.08" />
-                                    <feFuncB type="linear" slope="1.2" intercept="-0.08" />
+                                
+                                {/* 4. Fusión multiply de los trazos de dibujo sobre la imagen suavizada al óleo */}
+                                <feBlend in="oilPaintSmooth" in2="sketchPencil" mode="multiply" result="sketchedBase" />
+                                
+                                {/* 5. Realce sutil de contraste y viveza natural (estilo After Effects) */}
+                                <feColorMatrix in="sketchedBase" type="saturate" values="1.18" result="saturatedDrawing" />
+                                <feComponentTransfer in="saturatedDrawing">
+                                    <feFuncR type="linear" slope="1.06" intercept="-0.02" />
+                                    <feFuncG type="linear" slope="1.06" intercept="-0.02" />
+                                    <feFuncB type="linear" slope="1.06" intercept="-0.02" />
                                 </feComponentTransfer>
                             </filter>
 
-                            {/* Filtro 2: Dibujo Cómic + Distorsión Líquida Warp (Fusión de Toon Shading y Desplazamiento Fluido) */}
+                            {/* Filtro 2: Dibujo Sutil + Distorsión Líquida Warp */}
                             <filter id="trippy-comic-warp-filter" colorInterpolationFilters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
                                 <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="3" result="warpNoise">
                                     <animate 
@@ -26431,7 +26501,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                         repeatCount="indefinite" 
                                     />
                                 </feTurbulence>
-                                <feDisplacementMap in="SourceGraphic" in2="warpNoise" scale="38" xChannelSelector="R" yChannelSelector="G" result="warpedSource" />
+                                <feDisplacementMap in="SourceGraphic" in2="warpNoise" scale="32" xChannelSelector="R" yChannelSelector="G" result="warpedSource" />
+                                <feGaussianBlur in="warpedSource" stdDeviation="0.75" result="oilPaintSmooth" />
                                 <feConvolveMatrix 
                                     order="3" 
                                     kernelMatrix="0 1 0 1 -4 1 0 1 0" 
@@ -26442,23 +26513,18 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                 <feColorMatrix 
                                     in="rawEdges" 
                                     type="matrix" 
-                                    values="-12 0 0 0 1
-                                            0 -12 0 0 1
-                                            0 0 -12 0 1
+                                    values="-4.2 0 0 0 1.04
+                                            0 -4.2 0 0 1.04
+                                            0 0 -4.2 0 1.04
                                             0 0 0 1 0" 
-                                    result="blackInk" 
+                                    result="sketchPencil" 
                                 />
-                                <feComponentTransfer in="warpedSource" result="posterized">
-                                    <feFuncR type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
-                                    <feFuncG type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
-                                    <feFuncB type="discrete" tableValues="0 0.22 0.45 0.7 0.95 1.0" />
-                                </feComponentTransfer>
-                                <feBlend in="posterized" in2="blackInk" mode="multiply" result="comicBase" />
-                                <feColorMatrix in="comicBase" type="saturate" values="1.45" result="comicSaturated" />
-                                <feComponentTransfer in="comicSaturated">
-                                    <feFuncR type="linear" slope="1.2" intercept="-0.08" />
-                                    <feFuncG type="linear" slope="1.2" intercept="-0.08" />
-                                    <feFuncB type="linear" slope="1.2" intercept="-0.08" />
+                                <feBlend in="oilPaintSmooth" in2="sketchPencil" mode="multiply" result="sketchedBase" />
+                                <feColorMatrix in="sketchedBase" type="saturate" values="1.20" result="saturatedDrawing" />
+                                <feComponentTransfer in="saturatedDrawing">
+                                    <feFuncR type="linear" slope="1.06" intercept="-0.02" />
+                                    <feFuncG type="linear" slope="1.06" intercept="-0.02" />
+                                    <feFuncB type="linear" slope="1.06" intercept="-0.02" />
                                 </feComponentTransfer>
                             </filter>
 
@@ -26571,8 +26637,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         </span>
                         <div className="flex items-center gap-1 flex-wrap">
                             {[
-                                { id: 'comic', label: 'Dibujo Cómic', icon: '🎨' },
-                                { id: 'comic_warp', label: 'Cómic + Warp', icon: '💥' },
+                                { id: 'comic', label: 'Dibujo Sutil', icon: '🎨' },
+                                { id: 'comic_warp', label: 'Dibujo + Warp', icon: '💥' },
                                 { id: 'liquid', label: 'Líquido / Warp', icon: '🌊' },
                                 { id: 'acid', label: 'Acid Melt', icon: '⚡' },
                                 { id: 'vortex', label: 'Vortex', icon: '🌀' },
@@ -26626,17 +26692,13 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         </button>
                     </div>
 
-                    {/* CENTRO: LOGOTIPO BEATWAVE PRO LIMPIO Y ESTÁTICO (SIN ANIMACIÓN DE ENTRADA) */}
+                    {/* CENTRO: LOGOTIPO BEATWAVE PRO NATIVO VECTORIAL (HTML + CSS + SVG EN CIAN) */}
                     <div 
                         className="relative z-10 flex flex-col items-center justify-center my-auto text-center px-4"
                     >
-                        {/* COMPOSICIÓN OFICIAL: ICONO ONDA CIAN A LA IZQUIERDA Y LETRAS A LA DERECHA */}
+                        {/* COMPOSICIÓN OFICIAL: INSIGNIA CIRCULAR VECTORIAL EN CIAN Y LETRAS A LA DERECHA */}
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 max-w-4xl select-none group">
-                            <img 
-                                src="/assets/beatwave_wave_icon.png" 
-                                alt="BeatWave Wave Icon" 
-                                className="h-20 sm:h-28 md:h-32 w-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.85)] filter group-hover:scale-105 transition-transform duration-300"
-                            />
+                            <BeatWaveLogoBadge size="lg" />
                             <img 
                                 src="/assets/beatwave_text.png" 
                                 alt="BEAT WAVE PRO • Precision Audio Intelligence" 
@@ -27651,14 +27713,8 @@ const App = () => {
                         className="flex items-center gap-3 sm:gap-3.5 select-none cursor-pointer group"
                         title={isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"}
                     >
-                        {/* ICONO OFICIAL ONDA CIAN BEATWAVE A LA IZQUIERDA */}
-                        <div className="relative flex items-center justify-center shrink-0">
-                            <img 
-                                src="/assets/beatwave_wave_icon.png" 
-                                alt="BeatWave Wave Icon" 
-                                className={`h-8 sm:h-9 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? 'scale-110 drop-shadow-[0_0_20px_rgba(6,182,212,0.95)]' : 'group-hover:scale-105 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]'}`}
-                            />
-                        </div>
+                        {/* LOGOTIPO OFICIAL BEATWAVE PRO NATIVO VECTORIAL (HTML + CSS + SVG EN CIAN) */}
+                        <BeatWaveLogoBadge size="sm" />
 
                         {/* LETRAS OFICIALES BEATWAVE PRO A LA DERECHA */}
                         <div className="flex items-center shrink-0">

@@ -17663,6 +17663,42 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
     )))
   ));
 };
+const BeatWaveLogoBadge = ({ size = "sm", className = "" }) => {
+  const sizeClasses = {
+    sm: "w-8 h-8 sm:w-9 sm:h-9",
+    md: "w-10 h-10 sm:w-11 sm:h-11",
+    lg: "w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32"
+  }[size] || size;
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      className: `relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_16px_rgba(6,182,212,0.85),inset_0_0_10px_rgba(6,182,212,0.35)] backdrop-blur-md select-none group-hover:border-cyan-300 group-hover:shadow-[0_0_24px_rgba(6,182,212,1),inset_0_0_14px_rgba(6,182,212,0.5)] transition-all duration-300 ${sizeClasses} ${className}`
+    },
+    /* @__PURE__ */ React.createElement("div", { className: "absolute inset-1 rounded-full border border-cyan-400/30 pointer-events-none" }),
+    /* @__PURE__ */ React.createElement(
+      "svg",
+      {
+        viewBox: "0 0 100 100",
+        className: "w-[72%] h-[72%] overflow-visible",
+        fill: "none",
+        xmlns: "http://www.w3.org/2000/svg"
+      },
+      /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("linearGradient", { id: "bw-cyan-bar-grad", x1: "0", y1: "0", x2: "0", y2: "1" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#ecfeff" }), /* @__PURE__ */ React.createElement("stop", { offset: "35%", stopColor: "#22d3ee" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#0891b2" })), /* @__PURE__ */ React.createElement("filter", { id: "bw-cyan-glow-fx", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feDropShadow", { dx: "0", dy: "0", stdDeviation: "2.2", floodColor: "#06b6d4", floodOpacity: "0.85" }))),
+      /* @__PURE__ */ React.createElement("g", { filter: "url(#bw-cyan-glow-fx)" }, /* @__PURE__ */ React.createElement(
+        "line",
+        {
+          x1: "12",
+          y1: "50",
+          x2: "88",
+          y2: "50",
+          stroke: "#22d3ee",
+          strokeWidth: "3.2",
+          strokeLinecap: "round"
+        }
+      ), /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "42", x2: "20", y2: "58", stroke: "url(#bw-cyan-bar-grad)", strokeWidth: "3.2", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("line", { x1: "28", y1: "34", x2: "28", y2: "66", stroke: "url(#bw-cyan-bar-grad)", strokeWidth: "3.4", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("line", { x1: "36", y1: "24", x2: "36", y2: "76", stroke: "url(#bw-cyan-bar-grad)", strokeWidth: "3.8", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("line", { x1: "43", y1: "32", x2: "43", y2: "68", stroke: "url(#bw-cyan-bar-grad)", strokeWidth: "3.4", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("line", { x1: "50", y1: "12", x2: "50", y2: "88", stroke: "url(#bw-cyan-bar-grad)", strokeWidth: "4.6", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("line", { x1: "57", y1: "32", x2: "57", y2: "68", stroke: "url(#bw-cyan-bar-grad)", strokeWidth: "3.4", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("line", { x1: "64", y1: "24", x2: "64", y2: "76", stroke: "url(#bw-cyan-bar-grad)", strokeWidth: "3.8", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("line", { x1: "72", y1: "34", x2: "72", y2: "66", stroke: "url(#bw-cyan-bar-grad)", strokeWidth: "3.4", strokeLinecap: "round" }), /* @__PURE__ */ React.createElement("line", { x1: "80", y1: "42", x2: "80", y2: "58", stroke: "url(#bw-cyan-bar-grad)", strokeWidth: "3.2", strokeLinecap: "round" }))
+    )
+  );
+};
 const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour }) => {
   if (!isOpen) return null;
   const [phase, setPhase] = useState("video");
@@ -17802,7 +17838,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         }
       }
     },
-    phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("svg", { className: "absolute w-0 h-0 pointer-events-none", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "trippy-comic-filter", colorInterpolationFilters: "sRGB", x: "-10%", y: "-10%", width: "120%", height: "120%" }, /* @__PURE__ */ React.createElement(
+    phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("svg", { className: "absolute w-0 h-0 pointer-events-none", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "trippy-comic-filter", colorInterpolationFilters: "sRGB", x: "-5%", y: "-5%", width: "110%", height: "110%" }, /* @__PURE__ */ React.createElement("feGaussianBlur", { in: "SourceGraphic", stdDeviation: "0.75", result: "oilPaintSmooth" }), /* @__PURE__ */ React.createElement(
       "feConvolveMatrix",
       {
         order: "3",
@@ -17816,10 +17852,10 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
       {
         in: "rawEdges",
         type: "matrix",
-        values: "-12 0 0 0 1\n                                            0 -12 0 0 1\n                                            0 0 -12 0 1\n                                            0 0 0 1 0",
-        result: "blackInk"
+        values: "-4.2 0 0 0 1.04\n                                            0 -4.2 0 0 1.04\n                                            0 0 -4.2 0 1.04\n                                            0 0 0 1 0",
+        result: "sketchPencil"
       }
-    ), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "SourceGraphic", result: "posterized" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" })), /* @__PURE__ */ React.createElement("feBlend", { in: "posterized", in2: "blackInk", mode: "multiply", result: "comicBase" }), /* @__PURE__ */ React.createElement("feColorMatrix", { in: "comicBase", type: "saturate", values: "1.45", result: "comicSaturated" }), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "comicSaturated" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "linear", slope: "1.2", intercept: "-0.08" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "linear", slope: "1.2", intercept: "-0.08" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "linear", slope: "1.2", intercept: "-0.08" }))), /* @__PURE__ */ React.createElement("filter", { id: "trippy-comic-warp-filter", colorInterpolationFilters: "sRGB", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0.015 0.02", numOctaves: "3", result: "warpNoise" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("feBlend", { in: "oilPaintSmooth", in2: "sketchPencil", mode: "multiply", result: "sketchedBase" }), /* @__PURE__ */ React.createElement("feColorMatrix", { in: "sketchedBase", type: "saturate", values: "1.18", result: "saturatedDrawing" }), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "saturatedDrawing" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "linear", slope: "1.06", intercept: "-0.02" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "linear", slope: "1.06", intercept: "-0.02" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "linear", slope: "1.06", intercept: "-0.02" }))), /* @__PURE__ */ React.createElement("filter", { id: "trippy-comic-warp-filter", colorInterpolationFilters: "sRGB", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0.015 0.02", numOctaves: "3", result: "warpNoise" }, /* @__PURE__ */ React.createElement(
       "animate",
       {
         attributeName: "baseFrequency",
@@ -17827,7 +17863,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         values: "0.012 0.018; 0.022 0.032; 0.015 0.024; 0.012 0.018",
         repeatCount: "indefinite"
       }
-    )), /* @__PURE__ */ React.createElement("feDisplacementMap", { in: "SourceGraphic", in2: "warpNoise", scale: "38", xChannelSelector: "R", yChannelSelector: "G", result: "warpedSource" }), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("feDisplacementMap", { in: "SourceGraphic", in2: "warpNoise", scale: "32", xChannelSelector: "R", yChannelSelector: "G", result: "warpedSource" }), /* @__PURE__ */ React.createElement("feGaussianBlur", { in: "warpedSource", stdDeviation: "0.75", result: "oilPaintSmooth" }), /* @__PURE__ */ React.createElement(
       "feConvolveMatrix",
       {
         order: "3",
@@ -17841,10 +17877,10 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
       {
         in: "rawEdges",
         type: "matrix",
-        values: "-12 0 0 0 1\n                                            0 -12 0 0 1\n                                            0 0 -12 0 1\n                                            0 0 0 1 0",
-        result: "blackInk"
+        values: "-4.2 0 0 0 1.04\n                                            0 -4.2 0 0 1.04\n                                            0 0 -4.2 0 1.04\n                                            0 0 0 1 0",
+        result: "sketchPencil"
       }
-    ), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "warpedSource", result: "posterized" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "discrete", tableValues: "0 0.22 0.45 0.7 0.95 1.0" })), /* @__PURE__ */ React.createElement("feBlend", { in: "posterized", in2: "blackInk", mode: "multiply", result: "comicBase" }), /* @__PURE__ */ React.createElement("feColorMatrix", { in: "comicBase", type: "saturate", values: "1.45", result: "comicSaturated" }), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "comicSaturated" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "linear", slope: "1.2", intercept: "-0.08" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "linear", slope: "1.2", intercept: "-0.08" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "linear", slope: "1.2", intercept: "-0.08" }))), /* @__PURE__ */ React.createElement("filter", { id: "trippy-liquid-filter", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0.015 0.02", numOctaves: "3", result: "warpNoise" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("feBlend", { in: "oilPaintSmooth", in2: "sketchPencil", mode: "multiply", result: "sketchedBase" }), /* @__PURE__ */ React.createElement("feColorMatrix", { in: "sketchedBase", type: "saturate", values: "1.20", result: "saturatedDrawing" }), /* @__PURE__ */ React.createElement("feComponentTransfer", { in: "saturatedDrawing" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "linear", slope: "1.06", intercept: "-0.02" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "linear", slope: "1.06", intercept: "-0.02" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "linear", slope: "1.06", intercept: "-0.02" }))), /* @__PURE__ */ React.createElement("filter", { id: "trippy-liquid-filter", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0.015 0.02", numOctaves: "3", result: "warpNoise" }, /* @__PURE__ */ React.createElement(
       "animate",
       {
         attributeName: "baseFrequency",
@@ -17903,8 +17939,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         }
       }
     ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-prism-glow mix-blend-color-dodge" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-scanlines opacity-35 mix-blend-overlay" })), trippyMode !== "off" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.7)_100%)] pointer-events-none" })), /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/85 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-2xl" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-pink-400 to-cyan-400 px-2 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "\u2728"), /* @__PURE__ */ React.createElement("span", null, "EFECTO VISUAL:")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 flex-wrap" }, [
-      { id: "comic", label: "Dibujo C\xF3mic", icon: "\u{1F3A8}" },
-      { id: "comic_warp", label: "C\xF3mic + Warp", icon: "\u{1F4A5}" },
+      { id: "comic", label: "Dibujo Sutil", icon: "\u{1F3A8}" },
+      { id: "comic_warp", label: "Dibujo + Warp", icon: "\u{1F4A5}" },
       { id: "liquid", label: "L\xEDquido / Warp", icon: "\u{1F30A}" },
       { id: "acid", label: "Acid Melt", icon: "\u26A1" },
       { id: "vortex", label: "Vortex", icon: "\u{1F300}" },
@@ -17948,14 +17984,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
       {
         className: "relative z-10 flex flex-col items-center justify-center my-auto text-center px-4"
       },
-      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 max-w-4xl select-none group" }, /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: "/assets/beatwave_wave_icon.png",
-          alt: "BeatWave Wave Icon",
-          className: "h-20 sm:h-28 md:h-32 w-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.85)] filter group-hover:scale-105 transition-transform duration-300"
-        }
-      ), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 max-w-4xl select-none group" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement(
         "img",
         {
           src: "/assets/beatwave_text.png",
@@ -18872,14 +18901,7 @@ const App = () => {
       className: "flex items-center gap-3 sm:gap-3.5 select-none cursor-pointer group",
       title: isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"
     },
-    /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center shrink-0" }, /* @__PURE__ */ React.createElement(
-      "img",
-      {
-        src: "/assets/beatwave_wave_icon.png",
-        alt: "BeatWave Wave Icon",
-        className: `h-8 sm:h-9 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? "scale-110 drop-shadow-[0_0_20px_rgba(6,182,212,0.95)]" : "group-hover:scale-105 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]"}`
-      }
-    )),
+    /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "sm" }),
     /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0" }, /* @__PURE__ */ React.createElement(
       "img",
       {
