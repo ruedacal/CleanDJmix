@@ -6528,15 +6528,67 @@ const AuditWorkspace = ({
 
     const currentTrack = tracks.find(t => t.id === selectedTrack) || tracks[0] || {};
 
+    // Reinicia todos los valores cacheados en botones, filtros y métricas
+    const resetAuditWorkspace = (keepFolder = false) => {
+        if (!keepFolder) {
+            if (setRutaOrigen) setRutaOrigen('');
+            if (setCurrentFolder) setCurrentFolder('');
+        }
+        setTracks([]);
+        setSelectedTrack(null);
+        if (onClearAllTracks) onClearAllTracks();
+        setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+        setSelectedAuditIds(new Set());
+        setSelectedLooseFiles([]);
+        setStagedFolders([]);
+        setStagedFiles([]);
+        setSelectedFsFiles([]);
+        setFiltro('todos');
+        setBusqueda('');
+        setFilterHeaderSearch('');
+        setFilterHeaderFormat('ALL');
+        setFilterHeaderQuality('ALL');
+        setFilterHeaderStatus('ALL');
+        setFilterHeaderEnergy('ALL');
+        setFilterHeaderDance('ALL');
+        setFilterHeaderGenre('');
+        setFilterHeaderSubgenre('');
+        setFilterHeaderAcousticRole('ALL');
+        setBatchProgress(0);
+        setBatchStatusMsg('');
+        setSaveFeedback('');
+        setIsAuditing(false);
+        setIsLoadingDir(false);
+        setIsInjecting(false);
+        setIsExporting(false);
+        setExportDropdownOpen(false);
+        setBatchModalOpen(false);
+        if (typeof onAuditProgressChange === 'function') {
+            onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
+        }
+    };
+
     useEffect(() => {
         if (window.eel && typeof window.eel.expose === 'function') {
             window.actualizar_progreso_batch = (pct, msg) => {
+                if (!msg || msg.includes('detenid') || msg.includes('cancelad')) {
+                    setBatchProgress(0);
+                    setBatchStatusMsg('');
+                    setIsAuditing(false);
+                    setIsLoadingDir(false);
+                    setIsInjecting(false);
+                    setIsExporting(false);
+                    if (typeof onAuditProgressChange === 'function') {
+                        onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
+                    }
+                    return;
+                }
                 setBatchProgress(pct);
                 setBatchStatusMsg(msg);
             };
             window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
         }
-    }, []);
+    }, [onAuditProgressChange]);
 
     // Notificar al componente raíz (App) para persistir estado y mostrar progreso entre pestañas
     useEffect(() => {
@@ -6671,7 +6723,7 @@ const AuditWorkspace = ({
         }
     };
 
-    // Vaciar lista completa
+    // Vaciar lista completa y reiniciar valores en botones
     const handleClearAllTracks = (e) => {
         if (e && e.stopPropagation) e.stopPropagation();
         if (!tracks || tracks.length === 0) return;
@@ -6682,20 +6734,13 @@ const AuditWorkspace = ({
 
         if (!window.confirm(confirmMsg)) return;
 
-        if (onClearAllTracks) {
-            onClearAllTracks();
-        } else {
-            setTracks([]);
-            setSelectedTrack(null);
-            if (audioRef && audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-            }
-            if (onPlayTrack) onPlayTrack(null);
+        if (audioRef && audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
         }
+        if (onPlayTrack) onPlayTrack(null);
 
-        setSelectedAuditIds(new Set());
-        setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+        resetAuditWorkspace(false);
         setSaveFeedback(lang === 'en' ? "✓ Analysis list emptied." : "✓ Lista de análisis vaciada.");
         setTimeout(() => setSaveFeedback(''), 2500);
     };
@@ -7191,6 +7236,7 @@ const AuditWorkspace = ({
         if (combined.length === 0) {
             // Si el usuario no marcó elementos individuales, carga la carpeta actual abierta
             if (fsCurrentPath) {
+                clearStagedSelection();
                 setSelectedLooseFiles([]);
                 setRutaOrigen(fsCurrentPath);
                 setFsBrowserOpen(false);
@@ -7199,6 +7245,7 @@ const AuditWorkspace = ({
             return;
         }
 
+        clearStagedSelection();
         setSelectedLooseFiles(stagedFiles);
         const descParts = [];
         if (stagedFolders.length > 0) descParts.push(`${stagedFolders.length} carpeta(s)`);
@@ -7210,6 +7257,7 @@ const AuditWorkspace = ({
 
     const handleSeleccionarCarpetaUI = async (targetPath) => {
         const finalPath = targetPath || fsCurrentPath;
+        clearStagedSelection();
         setSelectedLooseFiles([]);
         setRutaOrigen(finalPath);
         setFsBrowserOpen(false);
@@ -7257,13 +7305,13 @@ const AuditWorkspace = ({
     const handleCargarDirectorio = async (pathOverride) => {
         const target = pathOverride || rutaOrigen;
         if (!target) return;
+        // Reiniciar estado anterior y limpiar valores cacheados
+        resetAuditWorkspace(true);
         if (window.eel && window.eel.cargar_metadatos_directorio) {
             setIsLoadingDir(true);
             setBatchProgress(5);
             const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : `archivos en ${target}`;
             setBatchStatusMsg(`Leyendo metadatos de ${targetDesc}...`);
-            // Limpiar selección previa para evitar track residual de otra carpeta
-            setSelectedTrack(null);
             try {
                 const res = await window.eel.cargar_metadatos_directorio(target)();
                 if (res && Array.isArray(res.tracks)) {
@@ -7288,17 +7336,16 @@ const AuditWorkspace = ({
                     setSelectedTrack(null);
                     setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
                 }
-                setBatchProgress(100);
-                setBatchStatusMsg(`✓ Completado: ${res?.total || 0} pistas cargadas.`);
             } catch (e) {
                 console.error("Fallo carga metadatos de directorio:", e);
                 setBatchStatusMsg("Error al leer metadatos del directorio.");
             } finally {
-                setTimeout(() => {
-                    setIsLoadingDir(false);
-                    setBatchProgress(0);
-                    setBatchStatusMsg('');
-                }, 600);
+                setIsLoadingDir(false);
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+                if (typeof onAuditProgressChange === 'function') {
+                    onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
+                }
             }
         }
     };
@@ -7342,11 +7389,12 @@ const AuditWorkspace = ({
                 console.error("Fallo auditoría:", e);
                 setBatchStatusMsg("Error durante la auditoría.");
             } finally {
-                setTimeout(() => { 
-                    setIsAuditing(false); 
-                    setBatchProgress(0); 
-                    setBatchStatusMsg(''); 
-                }, 600);
+                setIsAuditing(false); 
+                setBatchProgress(0); 
+                setBatchStatusMsg(''); 
+                if (typeof onAuditProgressChange === 'function') {
+                    onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
+                }
             }
         }
     };
@@ -7681,8 +7729,10 @@ const AuditWorkspace = ({
         setIsInjecting(false);
         setIsExporting(false);
         setBatchProgress(0);
-        setBatchStatusMsg(lang === 'en' ? '✕ Process stopped by user.' : '✕ Proceso cancelado por el usuario.');
-        setTimeout(() => setBatchStatusMsg(''), 2500);
+        setBatchStatusMsg('');
+        if (typeof onAuditProgressChange === 'function') {
+            onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
+        }
     };
 
     // Estado de Ordenación y Filtros por Cabecera de Tabla
@@ -11104,13 +11154,19 @@ const HotCuesWorkspace = ({
     const handleCargarDirectorio = async (nuevaRuta) => {
         setFsBrowserOpen(false);
         if (setCurrentFolder) setCurrentFolder(nuevaRuta);
+        setFilterQuery('');
+        setSelectedCueId(1);
+        setSaveStatus('');
+        setAutoMappingStatus('');
+        if (setTracks) setTracks([]);
+        if (setSelectedTrack) setSelectedTrack(null);
         if (window.eel && window.eel.cargar_metadatos_directorio) {
             setIsLoadingDir(true);
             try {
                 const res = await window.eel.cargar_metadatos_directorio(nuevaRuta)();
                 if (res && Array.isArray(res.tracks)) {
-                    setTracks(res.tracks);
-                    if (res.tracks.length > 0) {
+                    if (setTracks) setTracks(res.tracks);
+                    if (res.tracks.length > 0 && setSelectedTrack) {
                         setSelectedTrack(res.tracks[0].id);
                     }
                 }
@@ -12546,6 +12602,14 @@ const SpotifyWorkspace = ({
     useEffect(() => {
         if (window.eel && typeof window.eel.expose === 'function') {
             const updateDownload = (pct, msg) => {
+                if (!msg || msg.includes('detenid') || msg.includes('cancelad') || msg.includes('CANCELAD')) {
+                    setDownloadProgress(0);
+                    setFftProgress(0);
+                    setIsDownloading(false);
+                    setIsAuditingFft(false);
+                    setDownloadingMsg('');
+                    return;
+                }
                 setDownloadProgress(pct);
                 setDownloadingMsg(msg || '');
                 setIsDownloading(true);
@@ -12629,7 +12693,8 @@ const SpotifyWorkspace = ({
                     setDownloadProgress(0);
                     setFftProgress(0);
                     setIsAuditingFft(false);
-                }, 7000);
+                    setDownloadingMsg('');
+                }, 1500);
             };
 
             const notifyOriginalPurged = (info) => {
@@ -19852,7 +19917,7 @@ const SetBuilderWorkspace = ({
                 }
                 const folderName = res.path ? res.path.split('/').pop() : 'la carpeta';
                 setExportStatus({ type: 'success', msg: `✓ Se han añadido ${formattedTracks.length} pistas al Set desde "${folderName}"` });
-            } else if (res && res.status === 'cancelado') {
+            } else if (!res || res.status === 'cancelado') {
                 setExportStatus(null);
             } else {
                 setExportStatus({ type: 'error', msg: 'No se encontraron pistas de audio compatibles en la carpeta seleccionada.' });
@@ -19861,7 +19926,7 @@ const SetBuilderWorkspace = ({
             console.error("Error al añadir carpeta al set:", err);
             setExportStatus({ type: 'error', msg: `Error: ${err.message || err}` });
         } finally {
-            setTimeout(() => setExportStatus(null), 5000);
+            setTimeout(() => setExportStatus(prev => (prev && prev.type === 'loading' ? null : prev)), 2500);
         }
     };
 
@@ -26855,6 +26920,9 @@ const App = () => {
                 return;
             }
             setCurrentFolder(target);
+            setAuditTracks([]);
+            setSelectedTrack(null);
+            setGlobalAuditInfo({ isAuditing: false, progress: 0, statusMsg: '' });
             if (window.eel && window.eel.cargar_metadatos_directorio) {
                 const res = await window.eel.cargar_metadatos_directorio(target)();
                 if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {

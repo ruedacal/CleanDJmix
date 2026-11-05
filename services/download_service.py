@@ -277,19 +277,30 @@ class DownloadService:
 
             if self._cancelar:
                 resumen_msg = f"[CANCELADO] Lote cancelado. Descargadas: {completadas}, Pendientes: {total - procesadas}."
+                try:
+                    eel_ref.actualizar_estado_descarga(0, resumen_msg)()
+                    if hasattr(eel_ref, "actualizar_estado_fft"):
+                        eel_ref.actualizar_estado_fft(0, resumen_msg)()
+                    stats = {"total": total, "completadas": completadas, "fallidas": fallidas, "cancelado": True}
+                    try:
+                        eel_ref.notificar_fin_lote(resumen_msg, stats)()
+                    except Exception:
+                        eel_ref.notificar_fin_lote(resumen_msg)()
+                except Exception:
+                    pass
             else:
                 resumen_msg = f"✅ [COMPLETADO 100%] Lote finalizado: {completadas} pistas descargadas y certificadas por FFT."
-            try:
-                eel_ref.actualizar_estado_descarga(100, resumen_msg)()
-                if hasattr(eel_ref, "actualizar_estado_fft"):
-                    eel_ref.actualizar_estado_fft(100, f"✅ [AUDITORÍA FINALIZADA] {completadas} pistas certificadas por FFT.")()
-                stats = {"total": total, "completadas": completadas, "fallidas": fallidas}
                 try:
-                    eel_ref.notificar_fin_lote(resumen_msg, stats)()
+                    eel_ref.actualizar_estado_descarga(100, resumen_msg)()
+                    if hasattr(eel_ref, "actualizar_estado_fft"):
+                        eel_ref.actualizar_estado_fft(100, f"✅ [AUDITORÍA FINALIZADA] {completadas} pistas certificadas por FFT.")()
+                    stats = {"total": total, "completadas": completadas, "fallidas": fallidas}
+                    try:
+                        eel_ref.notificar_fin_lote(resumen_msg, stats)()
+                    except Exception:
+                        eel_ref.notificar_fin_lote(resumen_msg)()
                 except Exception:
-                    eel_ref.notificar_fin_lote(resumen_msg)()
-            except Exception:
-                pass
+                    pass
 
         threading.Thread(target=worker, daemon=True).start()
         return {"status": "iniciado"}

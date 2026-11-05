@@ -979,7 +979,7 @@ return folderPath'''
             if self._cancelar_proceso:
                 print(f"[AUDITORIA] Detenida por el usuario en ({idx}/{total_files})")
                 if progreso_cb:
-                    progreso_cb(100, f"Auditoría detenida por el usuario. {len(tracks_auditados)} pistas listas.")
+                    progreso_cb(0, f"Auditoría detenida por el usuario.")
                 break
 
             full_path = os.path.join(root, file)
@@ -1281,7 +1281,7 @@ return folderPath'''
             if self._cancelar_proceso:
                 print(f"[AUDIT SERVICE] Carga de metadatos detenida por el usuario en ({idx}/{total_files})")
                 if progreso_cb:
-                    progreso_cb(100, f"Carga detenida por el usuario. {len(tracks_cargados)} pistas leídas.")
+                    progreso_cb(0, f"Carga detenida por el usuario.")
                 break
 
             full_path = os.path.join(root, file)
@@ -1552,6 +1552,8 @@ return folderPath'''
             _cooperative_yield()
             if self._cancelar_proceso:
                 print(f"[CARATULAS] Cancelado por usuario en ({idx}/{total})")
+                if progreso_cb:
+                    progreso_cb(0, "Inyección de carátulas cancelada.")
                 break
             pct = int(5 + (idx / total) * 90)
             target_path = t.get("path")
@@ -1612,6 +1614,8 @@ return folderPath'''
             _cooperative_yield()
             if self._cancelar_proceso:
                 print(f"[METADATOS] Cancelado por usuario en ({idx}/{total})")
+                if progreso_cb:
+                    progreso_cb(0, "Inyección de metadatos cancelada.")
                 break
             pct = int(5 + (idx / total) * 90)
             target_path = t.get("path")
