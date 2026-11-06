@@ -596,13 +596,13 @@ body.club-mode,
 
 @keyframes trippyVortexMotion {
     0% {
-        transform: scale(1.10) rotate(0deg) skewX(0deg);
+        transform: scale(1.04) rotate(0deg) skewX(0deg);
     }
     50% {
-        transform: scale(1.15) rotate(2deg) skewX(-2.5deg);
+        transform: scale(1.08) rotate(1.5deg) skewX(-1.5deg);
     }
     100% {
-        transform: scale(1.10) rotate(0deg) skewX(0deg);
+        transform: scale(1.04) rotate(0deg) skewX(0deg);
     }
 }
 
@@ -690,9 +690,10 @@ body.club-mode,
 }
 
 .trippy-distort-vortex {
-    filter: url(#trippy-vortex-filter) brightness(0.72) contrast(128%) saturate(140%);
-    animation: trippyHueCycle 8s infinite linear, trippyVortexMotion 6s infinite ease-in-out;
-    will-change: transform, filter;
+    filter: url(#trippy-vortex-filter) brightness(0.85) contrast(125%) saturate(160%);
+    animation: trippyVortexMotion 7s infinite ease-in-out;
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 /* ==============================================================================

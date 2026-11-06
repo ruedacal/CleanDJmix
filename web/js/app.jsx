@@ -5716,9 +5716,9 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 ctx.stroke();
             }
 
-            // Dimensiones seguras de renderizado (evita colisiones con el HUD superior y la dock bar inferior)
-            const boxY = 38;
-            const boxH = Math.max(140, h - boxY - 44);
+            // Dimensiones seguras de renderizado (evita colisiones con el HUD superior y la barra inferior)
+            const boxY = 36;
+            const boxH = Math.max(140, h - boxY - 14);
             const bottomY = boxY + boxH;
 
             // ─────────────────────────────────────────────────────────────────
@@ -6108,7 +6108,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 // Telemetría inferior
                 ctx.fillStyle = '#64748b';
                 ctx.font = '8px monospace';
-                ctx.fillText('QUANTIZE 1/4 BEAT • ALINEACIÓN AUTOMÁTICA A 32 TIEMPOS • REKORDBOX & SERATO SYNCED', 18, h - 8);
+                ctx.fillText('QUANTIZE 1/4 BEAT • ALINEACIÓN AUTOMÁTICA A 32 TIEMPOS • REKORDBOX & SERATO SYNCED', 18, bottomY - 6);
             }
 
             // ─────────────────────────────────────────────────────────────────
@@ -6174,17 +6174,17 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
                 ctx.fillStyle = '#22d3ee';
                 ctx.font = 'bold 8.5px monospace';
-                ctx.fillText('DNA ACÚSTICO & MOOD', 18, 18);
+                ctx.fillText('DNA ACÚSTICO & MOOD', 18, boxY + 14);
 
                 ctx.fillStyle = '#64748b';
                 ctx.font = '7.5px monospace';
-                ctx.fillText('Peak-Time • Bass Driver', 18, h - 8);
+                ctx.fillText('Peak-Time • Bass Driver', 18, bottomY - 6);
 
                 // 2. Espectrograma FFT Quirúrgico (Derecha)
                 const fftX = w * 0.48;
                 const fftW = w - fftX - 16;
-                const fftH = h - 54;
-                const fftY = 24;
+                const fftH = boxH - 12;
+                const fftY = boxY + 4;
 
                 ctx.fillStyle = '#070914';
                 ctx.strokeStyle = '#1e243b';
@@ -6247,7 +6247,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             // ─────────────────────────────────────────────────────────────────
             else if (activeSectionKey === 'copilot') {
                 const deckW = (w - 44) / 2;
-                const deckH = (boxH - 20) * 0.46;
+                const deckH = (boxH - 24) * 0.46;
 
                 // Deck 1 (Master / On Air)
                 ctx.fillStyle = '#080d1a';
@@ -6257,23 +6257,23 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
                 ctx.fillStyle = '#10b981';
                 ctx.font = 'bold 8px monospace';
-                ctx.fillText('● DECK 1 [MASTER / ON AIR]', 24, 34);
+                ctx.fillText('● DECK 1 [MASTER / ON AIR]', 24, boxY + 18);
 
                 ctx.fillStyle = '#ffffff';
                 ctx.font = 'bold 9px sans-serif';
-                ctx.fillText('Tales of the Desert - Charlotte', 24, 46);
+                ctx.fillText('Tales of the Desert - Charlotte', 24, boxY + 30);
 
                 ctx.fillStyle = '#94a3b8';
                 ctx.font = '7.5px monospace';
-                ctx.fillText('8A • 132.0 BPM • Trim 0.0dB • LUFS -6.4', 24, 57);
+                ctx.fillText('8A • 132.0 BPM • Trim 0.0dB • LUFS -6.4', 24, boxY + 41);
 
                 // Forma de onda Deck 1
                 ctx.strokeStyle = '#06b6d4';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 for (let x = 0; x < deckW - 16; x += 3) {
-                    const wave = Math.sin((x + t * 40) * 0.06) * 8 + Math.cos((x - t * 20) * 0.12) * 4;
-                    const wy = 20 + deckH - 12 + wave;
+                    const wave = Math.sin((x + t * 40) * 0.06) * 7 + Math.cos((x - t * 20) * 0.12) * 3;
+                    const wy = boxY + deckH - 8 + wave;
                     if (x === 0) ctx.moveTo(24 + x, wy); else ctx.lineTo(24 + x, wy);
                 }
                 ctx.stroke();
@@ -6287,30 +6287,30 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
                 ctx.fillStyle = '#06b6d4';
                 ctx.font = 'bold 8px monospace';
-                ctx.fillText('● DECK 2 [CUE / SYNC]', d2X + 8, 34);
+                ctx.fillText('● DECK 2 [CUE / SYNC]', d2X + 8, boxY + 18);
 
                 ctx.fillStyle = '#ffffff';
                 ctx.font = 'bold 9px sans-serif';
-                ctx.fillText('Burning Sky - Chlär', d2X + 8, 46);
+                ctx.fillText('Burning Sky - Chlär', d2X + 8, boxY + 30);
 
                 ctx.fillStyle = '#94a3b8';
                 ctx.font = '7.5px monospace';
-                ctx.fillText('8A • 132.0 BPM (Sync) • Trim -1.8dB • LUFS -8.8', d2X + 8, 57);
+                ctx.fillText('8A • 132.0 BPM (Sync) • Trim -1.8dB • LUFS -8.8', d2X + 8, boxY + 41);
 
                 // Forma de onda Deck 2
                 ctx.strokeStyle = '#ec4899';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 for (let x = 0; x < deckW - 16; x += 3) {
-                    const wave = Math.sin((x + t * 40) * 0.06) * 7 + Math.sin((x + t * 15) * 0.08) * 4;
-                    const wy = 20 + deckH - 12 + wave;
+                    const wave = Math.sin((x + t * 40) * 0.06) * 6 + Math.sin((x + t * 15) * 0.08) * 3;
+                    const wy = boxY + deckH - 8 + wave;
                     if (x === 0) ctx.moveTo(d2X + 8 + x, wy); else ctx.lineTo(d2X + 8 + x, wy);
                 }
                 ctx.stroke();
 
                 // Panel Central: Radar Anti-Muddy DSP (<100Hz)
-                const dspY = boxY + deckH + 12;
-                const dspH = boxH - deckH - 16;
+                const dspY = boxY + deckH + 10;
+                const dspH = boxH - deckH - 14;
                 const isClash = simStep < 2;
 
                 ctx.fillStyle = '#0a0d20';
@@ -6666,7 +6666,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 </div>
 
                 {/* Lienzo Visual Animado con Renderizado Canvas Dinámico a 60 FPS */}
-                <div className="flex-1 min-h-[250px] rounded-2xl bg-[#060712] border-2 border-djzinc-750 relative overflow-hidden flex flex-col justify-between p-3 shadow-inner">
+                <div className="flex-1 rounded-2xl bg-[#060712] border-2 border-djzinc-750 relative overflow-hidden p-3 shadow-inner" style={{ minHeight: "320px" }}>
                     {/* Canvas a 60 FPS */}
                     <div className="absolute inset-0 w-full h-full pointer-events-none">
                         <canvas ref={canvasRef} className="w-full h-full" />
@@ -6682,9 +6682,10 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                             60 FPS LIVE SIMULATOR
                         </span>
                     </div>
+                </div>
 
-                    {/* Barra Inferior Acoplada con Botones Spotlight y Descripción del Paso */}
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 mt-auto px-3 py-2 bg-[#060814]/92 backdrop-blur-md border-t border-djzinc-800 -mx-3 -mb-3 rounded-b-xl">
+                {/* Barra Inferior Desacoplada con Botones Spotlight y Descripción del Paso (Sin colisiones ni cortes) */}
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-[#080a1c] border border-djzinc-750 rounded-xl shrink-0 shadow-md">
                         <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                         {activeSectionKey === 'copilot' && (
                             <>
@@ -6740,13 +6741,12 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         </div>
                     </div>
                 </div>
-            </div>
         );
     };
 
     // Render de la Tarjeta del Simulador
     const renderSimulatorCard = () => (
-        <div className="flex flex-col gap-2.5 bg-[#0a0c18] border border-djzinc-750 rounded-2xl p-3.5 sm:p-4 shadow-inner relative overflow-hidden h-[480px] shrink-0">
+        <div className="flex flex-col gap-2.5 bg-[#0a0c18] border border-djzinc-750 rounded-2xl p-3.5 sm:p-4 shadow-inner relative overflow-hidden shrink-0" style={{ height: "520px", minHeight: "520px" }}>
             <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 shrink-0">
                 <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
@@ -28980,7 +28980,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
     const [phase, setPhase] = useState('video'); // 'video' | 'portal'
     const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 1.0 (Fade-in 2s)
-    const [selectedAlpha, setSelectedAlpha] = useState(0.90); // 90% parte inicial -> 75% segmento chicas (automático definitivo)
+    const [selectedAlpha, setSelectedAlpha] = useState(0.80); // Alpha 80% corporativo solicitado por el usuario
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
 
@@ -29047,10 +29047,9 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
             setIsBassShaking(true);
         }
 
-        // Alpha dinámico definitivo: 90% parte inicial hasta las chicas (15.175s), y 75% desde las chicas hasta el final
-        const targetAlpha = vid.currentTime >= 15.175 ? 0.75 : 0.90;
-        if (selectedAlpha !== targetAlpha) {
-            setSelectedAlpha(targetAlpha);
+        // Alpha fijo al 80% solicitado por el usuario para todas las etapas del vídeo
+        if (selectedAlpha !== 0.80) {
+            setSelectedAlpha(0.80);
         }
 
         // SALIDA DEL VÍDEO: Fade-out suave de 2.0 segundos a negro absoluto
@@ -29142,14 +29141,24 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: VÍDEO CINEMÁTICO CORPORATIVO BEATWAVE (GRADACIÓN CIAN & ALTO RENDIMIENTO 60 FPS) */}
+            {/* FASE 1: VÍDEO CINEMÁTICO CORPORATIVO BEATWAVE (EFECTO VORTEX FLUIDO & CIAN SATURADO ALPHA 80%) */}
             {phase === 'video' && (
                 <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
                     
-                    {/* Contenedor reactivo con aceleración por hardware GPU (Desktop, Mobile, Tablet, Web) */}
-                    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center transform-gpu ${isBassShaking ? 'anim-bass-shake' : ''}`}>
+                    {/* Filtro SVG Vortex Optimizado y Rebajado para GPU (Fluido en Desktop, Mobile, Tablet y Web) */}
+                    <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
+                        <defs>
+                            <filter id="trippy-vortex-filter" x="-10%" y="-10%" width="120%" height="120%">
+                                <feTurbulence type="fractalNoise" baseFrequency="0.010 0.018" numOctaves="1" result="vortexNoise" />
+                                <feDisplacementMap in="SourceGraphic" in2="vortexNoise" scale="14" xChannelSelector="G" yChannelSelector="R" />
+                            </filter>
+                        </defs>
+                    </svg>
+
+                    {/* Contenedor reactivo con efecto Vortex rebajado y pulsación de graves */}
+                    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center trippy-distort-vortex ${isBassShaking ? 'anim-bass-shake' : ''}`}>
                         
-                        {/* Vídeo Nativo Optimizado con Filtro de Contraste y Brillo Oscuro */}
+                        {/* Vídeo Nativo Saturado en Cian Eléctrico a Alpha 80% */}
                         <video
                             ref={videoRef}
                             autoPlay
@@ -29162,26 +29171,26 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                             className="w-full h-full object-cover pointer-events-none"
                             style={{ 
                                 opacity: videoOpacity * selectedAlpha, 
-                                filter: 'brightness(0.78) contrast(125%) saturate(115%)',
+                                filter: 'brightness(0.92) contrast(128%) saturate(155%)',
                                 transform: 'translateZ(0)',
                                 willChange: 'opacity, transform',
                                 transition: videoOpacity === 0 ? 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 300ms ease' 
                             }}
                         />
 
-                        {/* 1. Capa de Gradación Timbral Cian Corporativo BeatWave (mix-blend-color: recolorea preservando siluetas y detalles) */}
+                        {/* 1. Capa de Saturación Cian Eléctrico BeatWave (mix-blend-color) */}
                         <div 
                             className="absolute inset-0 pointer-events-none mix-blend-color"
                             style={{
-                                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.78) 0%, rgba(8, 145, 178, 0.85) 50%, rgba(14, 116, 144, 0.90) 100%)'
+                                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.72) 0%, rgba(8, 145, 178, 0.82) 50%, rgba(14, 116, 144, 0.88) 100%)'
                             }}
                         />
 
-                        {/* 2. Resplandor Cian Eléctrico en Altas Luces y Pantallas de Cabina */}
+                        {/* 2. Resplandor Cian Neón en Altas Luces y Pantallas (mix-blend-screen) */}
                         <div 
                             className="absolute inset-0 pointer-events-none mix-blend-screen"
                             style={{
-                                background: 'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(6, 182, 212, 0.28) 0%, rgba(8, 145, 178, 0.12) 50%, transparent 80%)'
+                                background: 'radial-gradient(ellipse 75% 65% at 50% 45%, rgba(6, 182, 212, 0.35) 0%, rgba(8, 145, 178, 0.15) 55%, transparent 85%)'
                             }}
                         />
 
@@ -29189,7 +29198,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         <div 
                             className="absolute inset-0 pointer-events-none mix-blend-multiply"
                             style={{
-                                background: 'rgba(3, 7, 18, 0.50)'
+                                background: 'rgba(3, 7, 18, 0.45)'
                             }}
                         />
 
@@ -29197,12 +29206,12 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         <div 
                             className="absolute inset-0 pointer-events-none"
                             style={{
-                                background: 'radial-gradient(ellipse at center, transparent 30%, rgba(4, 7, 16, 0.55) 70%, rgba(0, 0, 0, 0.95) 100%)'
+                                background: 'radial-gradient(ellipse at center, transparent 35%, rgba(4, 7, 16, 0.50) 70%, rgba(0, 0, 0, 0.95) 100%)'
                             }}
                         />
 
                         {/* 5. Aura Perimetral Suave de Cabina */}
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.12)_0%,transparent_75%)] pointer-events-none mix-blend-screen" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.14)_0%,transparent_75%)] pointer-events-none mix-blend-screen" />
                     </div>
 
                     {/* Botón sutil en esquina inferior derecha para saltar si el usuario lo desea */}
