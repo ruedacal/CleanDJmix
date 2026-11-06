@@ -37,66 +37,153 @@ class AudioProcessorService:
         return "Desconocido", base.strip()
 
     @staticmethod
-    def detectar_trim_y_downbeat(ruta: str) -> tuple:
-        """Calcula el punto de recorte de silencio (zero-crossing) en ms y el primer
-        transitorio de bombo/downbeat (Beatgrid 1.0.0) en ms usando DSP rápido."""
+    def _cargar_audio_head_resiliente(ruta: str, max_sec: float = 12.0) -> tuple:
+        """Carga los primeros segundos de audio de forma resiliente con fallback multi-tier.
+        Soporta FLAC, WAV, AIFF, MP3 (incluso con cabeceras ID3 gigantes > 64KB), M4A, AAC, OGG."""
         if not ruta or not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
-            return 0.0, 0.0
+            return None, 44100
+        
+        # 1. Intentar soundfile (ultrarrápido C-level)
         try:
             import soundfile as sf
             import numpy as np
+            data, sr = sf.read(ruta, frames=int(max_sec * 44100), dtype="float32")
+            if data is not None and len(data) > 0:
+                mono = np.mean(data, axis=1) if data.ndim > 1 else data
+                return mono, sr
+        except Exception:
+            pass
 
-            # Leer hasta 8 segundos
-            data, sr = sf.read(ruta, frames=8 * 44100, dtype="float32")
-            if len(data) == 0:
+        # 2. Fallback a librosa (maneja MP3 con tags grandes, m4a, aac vía audioread/ffmpeg)
+        try:
+            import librosa
+            mono, sr = librosa.load(ruta, sr=44100, mono=True, duration=max_sec)
+            if mono is not None and len(mono) > 0:
+                return mono, sr
+        except Exception:
+            pass
+
+        # 3. Fallback a pydub / ffmpeg
+        try:
+            from pydub import AudioSegment
+            import numpy as np
+            seg = AudioSegment.from_file(ruta)[:int(max_sec * 1000)]
+            if len(seg) > 0:
+                samples = np.array(seg.get_array_of_samples(), dtype=np.float32)
+                if seg.channels > 1:
+                    samples = samples.reshape((-1, seg.channels)).mean(axis=1)
+                max_val = float(1 << (seg.sample_width * 8 - 1))
+                mono = samples / max_val
+                return mono, seg.frame_rate
+        except Exception:
+            pass
+
+        return None, 44100
+
+    @staticmethod
+    def detectar_trim_y_downbeat(ruta: str) -> tuple:
+        """Calcula de forma rigurosa y en dos fases consecutivas:
+        1. Recorte de silencio muerto (Zero-Crossing Auto-Trim a -48 dBFS estándar DJ Pioneer/Rekordbox).
+        2. Fijación matemática del Beatgrid 1.0.0 anclado al primer golpe de bombo real (downbeat >= trim)."""
+        if not ruta or not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
+            return 0.0, 0.0
+        try:
+            import numpy as np
+
+            mono, sr = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=12.0)
+            if mono is None or len(mono) == 0:
                 return 0.0, 0.0
-            if data.ndim > 1:
-                mono = np.mean(data, axis=1)
-            else:
-                mono = data
 
-            # 1. Zero-crossing Silence Trim (-60 dBFS -> linear ~ 0.001)
-            threshold = 0.001
-            above_thresh = np.where(np.abs(mono) > threshold)[0]
-            if len(above_thresh) == 0:
+            # Si todo el fragmento es silencio absoluto (< -66 dBFS)
+            max_amp = float(np.max(np.abs(mono)))
+            if max_amp < 0.0005:
                 return 0.0, 0.0
 
-            first_audible_idx = int(above_thresh[0])
-            if first_audible_idx > 0:
-                signs = np.signbit(mono[:first_audible_idx + 1])
-                diffs = np.where(np.diff(signs))[0]
-                zero_cross_idx = int(diffs[-1]) if len(diffs) > 0 else first_audible_idx
+            # FASE 1: Zero-Crossing Silence Trim (Cruce por cero a -48 dBFS estándar de club)
+            hop_silence = max(1, int(sr * 0.005))  # bloques de 5ms
+            num_blocks = len(mono) // hop_silence
+            if num_blocks == 0:
+                return 0.0, 0.0
+
+            sliced = mono[:num_blocks * hop_silence].reshape((num_blocks, hop_silence))
+            block_rms = np.sqrt(np.mean(sliced ** 2, axis=1))
+
+            # Umbral Auto-Cue estándar DJ (-48 dBFS ~ 0.00398) con fallbacks graduados
+            audible_blocks = np.where(block_rms > 0.00398)[0]
+            if len(audible_blocks) == 0:
+                audible_blocks = np.where(block_rms > 0.00200)[0]  # -54 dBFS
+            if len(audible_blocks) == 0:
+                audible_blocks = np.where(block_rms > 0.00100)[0]  # -60 dBFS
+            if len(audible_blocks) == 0:
+                return 0.0, 0.0
+
+            first_block = audible_blocks[0]
+            sample_candidate = first_block * hop_silence
+
+            # Búsqueda retroactiva del cruce por cero exacto para garantizar 0 DC offset y 0 pop
+            search_start = max(0, sample_candidate - int(sr * 0.025))
+            sub = mono[search_start:sample_candidate + hop_silence]
+            signs = np.signbit(sub)
+            diffs = np.where(np.diff(signs))[0]
+            if len(diffs) > 0:
+                zero_cross_idx = search_start + int(diffs[-1])
             else:
-                zero_cross_idx = 0
+                zero_cross_idx = sample_candidate
 
             trim_ms = round(float(zero_cross_idx) / sr * 1000.0, 1)
 
-            # 2. Downbeat detection (Primer golpe de bombo / transitorio de energía)
-            sub_audio = mono[zero_cross_idx:zero_cross_idx + int(sr * 4.0)]
-            frame_len = int(sr * 0.010)  # 10ms
-            hop_len = int(sr * 0.002)    # 2ms
+            # FASE 2: Detección del Downbeat Beatgrid 1.0.0 (estrictamente POST-TRIM)
+            # Analizar hasta 6 segundos posteriores al punto de corte de silencio
+            max_search_samples = min(len(mono), zero_cross_idx + int(sr * 6.0))
+            sub_audio = mono[zero_cross_idx:max_search_samples]
 
-            if len(sub_audio) > frame_len:
-                num_frames = (len(sub_audio) - frame_len) // hop_len
+            if len(sub_audio) < int(sr * 0.05):
+                return trim_ms, trim_ms
+
+            # Filtro pasabajos para aislar la pegada del bombo / subgrave (< 180 Hz)
+            try:
+                from scipy.signal import butter, filtfilt
+                nyq = 0.5 * sr
+                cutoff = min(180.0, nyq * 0.5)
+                b, a = butter(2, cutoff / nyq, btype='low')
+                sub_low = filtfilt(b, a, sub_audio)
+            except Exception:
+                sub_low = sub_audio
+
+            frame_len = int(sr * 0.020)  # 20ms
+            hop_len = int(sr * 0.004)    # 4ms
+
+            if len(sub_low) > frame_len:
+                num_frames = (len(sub_low) - frame_len) // hop_len
                 frames = np.lib.stride_tricks.as_strided(
-                    sub_audio,
+                    sub_low,
                     shape=(num_frames, frame_len),
-                    strides=(sub_audio.strides[0] * hop_len, sub_audio.strides[0])
+                    strides=(sub_low.strides[0] * hop_len, sub_low.strides[0])
                 )
                 energies = np.sqrt(np.mean(frames ** 2, axis=1))
                 energy_diff = np.maximum(0, np.diff(energies))
 
-                max_val = float(np.max(energy_diff)) if len(energy_diff) > 0 else 0.0
-                if max_val > 0.005:
-                    peaks = np.where(energy_diff > (max_val * 0.25))[0]
+                max_diff = float(np.max(energy_diff)) if len(energy_diff) > 0 else 0.0
+                if max_diff > 0.003:
+                    # Encontrar el primer pico rítmico contundente (> 25% del máximo transitorio)
+                    peaks = np.where(energy_diff > (max_diff * 0.25))[0]
                     if len(peaks) > 0:
                         first_peak = int(peaks[0])
-                        downbeat_ms = round(trim_ms + (float(first_peak * hop_len) / sr * 1000.0), 1)
+                        peak_sample = zero_cross_idx + (first_peak * hop_len)
+                        # Micro-ajuste al pico absoluto más cercano dentro del frame
+                        local_window = mono[max(0, peak_sample - hop_len):min(len(mono), peak_sample + frame_len)]
+                        local_max_idx = int(np.argmax(np.abs(local_window))) if len(local_window) > 0 else 0
+                        final_sample = max(0, peak_sample - hop_len + local_max_idx)
+                        downbeat_ms = round(float(final_sample) / sr * 1000.0, 1)
                     else:
                         downbeat_ms = trim_ms
                 else:
                     downbeat_ms = trim_ms
             else:
+                downbeat_ms = trim_ms
+
+            # Regla de oro acústica DJ: el Downbeat nunca puede situarse antes del silencio recortado
+            if downbeat_ms < trim_ms:
                 downbeat_ms = trim_ms
 
             return trim_ms, downbeat_ms
@@ -231,8 +318,16 @@ class AudioProcessorService:
             pool = ["8A", "9A", "10A", "11A", "12A", "5A", "6A", "7A", "8B", "9B"]
             key = pool[os.path.getsize(ruta) % len(pool)]
 
-        if trim_start_ms <= 0.0 and first_downbeat_ms <= 0.0:
-            trim_start_ms, first_downbeat_ms = AudioProcessorService.detectar_trim_y_downbeat(ruta)
+        if trim_start_ms <= 0.0 or first_downbeat_ms <= 0.0:
+            det_trim, det_down = AudioProcessorService.detectar_trim_y_downbeat(ruta)
+            if trim_start_ms <= 0.0:
+                trim_start_ms = det_trim
+            if first_downbeat_ms <= 0.0:
+                first_downbeat_ms = det_down
+
+        # El Downbeat siempre debe ser >= trim_start_ms
+        if first_downbeat_ms < trim_start_ms:
+            first_downbeat_ms = trim_start_ms
 
         mins = duration_sec // 60
         secs = duration_sec % 60

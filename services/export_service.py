@@ -199,6 +199,16 @@ class ExportService:
                     SampleRate="44100"
                 )
 
+                # Beatgrid oficial Rekordbox Pioneer (<TEMPO Inizio=... Bpm=... Metro="4/4" Battito="1"/>)
+                downbeat_sec = float(t.get("first_downbeat_ms") or 0.0) / 1000.0
+                ET.SubElement(
+                    track_el, "TEMPO",
+                    Inizio=f"{downbeat_sec:.3f}",
+                    Bpm=bpm_str,
+                    Metro="4/4",
+                    Battito="1"
+                )
+
                 # Hot Cues oficiales Pioneer (Type="1", Num="0".."7") y Memory Cues (Type="0", Num="-1")
                 cues = t.get("cues") or []
                 for c_idx, cue in enumerate(cues):

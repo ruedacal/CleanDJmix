@@ -823,12 +823,26 @@ return folderPath'''
                 return {"status": "error", "msg": "Archivo no encontrado", "trim_start_ms": 0.0, "first_downbeat_ms": 0.0}
 
         trim_ms, downbeat_ms = AudioProcessorService.detectar_trim_y_downbeat(filepath)
+        cues = []
+        try:
+            info = AudioProcessorService.analizar_track_avanzado(filepath)
+            bpm_val = float(info.get("bpm") or 128.0)
+            dur_ms = int(float(info.get("duration_sec", 300)) * 1000)
+            cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
+                duration_ms=dur_ms,
+                bpm=bpm_val,
+                downbeat_ms=int(downbeat_ms)
+            )
+        except Exception:
+            pass
+
         return {
             "status": "ok",
             "id": track_id,
             "path": filepath,
             "trim_start_ms": trim_ms,
-            "first_downbeat_ms": downbeat_ms
+            "first_downbeat_ms": downbeat_ms,
+            "cues": cues
         }
 
     @staticmethod

@@ -540,8 +540,22 @@ function computeTrackStructuralBands(xNorm, seed, track = null) {
     }
 
     // Parámetros acústicos específicos de la pista
+    const durMs = track ? parseDurationMs(track.duration || "05:00") : 300000;
+    const curMs = xNorm * durMs;
+    const trimMs = (track && track.trim_start_ms) ? parseFloat(track.trim_start_ms) : 0;
+    const downbeatMs = (track && track.first_downbeat_ms) ? parseFloat(track.first_downbeat_ms) : 0;
+
+    // Si la posición analizada pertenece a la zona de silencio previa al recorte:
+    if (trimMs > 0 && curMs < trimMs) {
+        return { bass: 0.005, drums: 0.005, vocals: 0.005, treble: 0.005, isBreak: false, isSilence: true };
+    }
+
     const bpm = track ? (parseFloat(track.bpm || track.b) || 124) : 124;
-    const bpmGrid = Math.max(80, Math.min(180, bpm)) * 1.5;
+    const beatMs = 60000.0 / Math.max(30.0, bpm);
+    
+    // Fase rítmica armónica anclada al Downbeat 1.0.0
+    // En curMs = downbeatMs, beatPhase = 0 -> cos(PI * 0) = 1.0 (golpe exacto de bombo coincidente con la línea de beatgrid)
+    const beatPhase = (curMs - downbeatMs) / beatMs;
     
     const rawEnergy = track ? (track.energy !== undefined ? parseFloat(track.energy) : (track.e !== undefined ? parseFloat(track.e) : 0.65)) : 0.65;
     const energy = Math.max(0.35, Math.min(1.0, rawEnergy <= 1.0 ? rawEnergy : rawEnergy / 10));
@@ -558,10 +572,13 @@ function computeTrackStructuralBands(xNorm, seed, track = null) {
     const microRipple = 0.85 + 0.15 * Math.sin(xNorm * f1) * Math.cos(xNorm * f2);
     const transientSpike = Math.pow(Math.abs(Math.sin(xNorm * f3)), 12);
 
-    // Patrón rítmico de percusión y bombos modulado por el BPM real
-    const beatGridKick = Math.pow(Math.abs(Math.cos(xNorm * bpmGrid + trackSeed)), 8);
-    const snareHit = Math.pow(Math.abs(Math.sin(xNorm * (bpmGrid * 0.5) + trackSeed)), 10);
-    const hatPattern = 0.35 + 0.65 * Math.pow(Math.abs(Math.sin(xNorm * (bpmGrid * 2))), 3);
+    // Patrón rítmico sincrónico milimétrico con el Beatgrid:
+    // Bombo en cada negra (beatPhase = 0, 1, 2, 3...)
+    const beatGridKick = Math.pow(Math.abs(Math.cos(Math.PI * beatPhase)), 10);
+    // Caja en tiempos 2 y 4 (beatPhase = 1, 3, 5...)
+    const snareHit = Math.pow(Math.abs(Math.cos(Math.PI * (beatPhase - 1) * 0.5)), 8);
+    // Hi-hats en contratiempos (offbeats beatPhase = 0.5, 1.5, 2.5...)
+    const hatPattern = 0.35 + 0.65 * Math.pow(Math.abs(Math.sin(Math.PI * beatPhase)), 4);
 
     let bass = 0.15, drums = 0.15, vocals = 0.15, treble = 0.15;
     let isBreak = false;
@@ -1128,8 +1145,9 @@ const RekordboxWaveform = ({
                 if (bx < 0 || bx > width) continue;
                 const bIdx = Math.round((t - downbeatMs) / beatMs);
                 const isBar = (bIdx % 4 === 0);
+                const isSilent = trimMs > 0 && t < trimMs;
                 ctx.beginPath();
-                ctx.strokeStyle = isBar ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.05)";
+                ctx.strokeStyle = isSilent ? "rgba(255, 255, 255, 0.02)" : (isBar ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.05)");
                 ctx.lineWidth = isBar ? 1.0 : 0.75;
                 ctx.moveTo(bx, 0);
                 ctx.lineTo(bx, height);
@@ -1137,10 +1155,25 @@ const RekordboxWaveform = ({
             }
         }
 
+        // Sombreado de silencio inicial recortado
+        if (trimMs > 0 && durMs > 0) {
+            const trimX = (trimMs / durMs) * width;
+            if (trimX > 0) {
+                ctx.fillStyle = "rgba(239, 68, 68, 0.06)";
+                ctx.fillRect(0, 0, trimX, height);
+                ctx.strokeStyle = "rgba(239, 68, 68, 0.45)";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(trimX, 0);
+                ctx.lineTo(trimX, height);
+                ctx.stroke();
+            }
+        }
+
         // 2. Renderizado estructural por capas de instrumentación (Bass, Drums, Vocales, Treble)
         for (let x = 0; x <= width; x += 1.5) {
             const xNorm = x / width;
-            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
 
             // Sombreado de fondo para Parones (Breakdowns)
             if (isBreak) {
@@ -1591,7 +1624,7 @@ const ZoomableRekordboxWaveform = ({
         // Renderizado estructural en miniatura
         for (let x = 0; x <= mWidth; x += 2) {
             const xNorm = x / mWidth;
-            const { bass, drums, isBreak } = computeTrackStructuralBands(xNorm, seed);
+            const { bass, drums, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
             const h = (mHeight * 0.42) * Math.max(0.1, (bass + drums) * 0.7);
             ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.4)" : "rgba(6, 182, 212, 0.75)";
             ctx.fillRect(x, mCenterY - h, 1.8, h * 2);
@@ -1605,7 +1638,7 @@ const ZoomableRekordboxWaveform = ({
             ctx.fillStyle = color;
             ctx.fillRect(cx - 1, 0, 2, mHeight);
         });
-    }, [containerWidth, seed, durMs, activeCues]);
+    }, [containerWidth, seed, durMs, activeCues, track]);
 
     // Navegación y Salto por click/arrastre en el Minimapa
     const handleMinimapInteraction = (e) => {
@@ -1683,8 +1716,9 @@ const ZoomableRekordboxWaveform = ({
                 if (bx < 0 || bx > totalWidth) continue;
                 const bIdx = Math.round((t - downbeatMs) / beatMs);
                 const isBar = (bIdx % 4 === 0);
+                const isSilent = trimMs > 0 && t < trimMs;
                 ctx.beginPath();
-                ctx.strokeStyle = isBar ? "rgba(255, 255, 255, 0.20)" : "rgba(255, 255, 255, 0.08)";
+                ctx.strokeStyle = isSilent ? "rgba(255, 255, 255, 0.02)" : (isBar ? "rgba(255, 255, 255, 0.20)" : "rgba(255, 255, 255, 0.08)");
                 ctx.lineWidth = isBar ? 1.0 : 0.75;
                 ctx.moveTo(bx, 0);
                 ctx.lineTo(bx, height);
@@ -1692,10 +1726,25 @@ const ZoomableRekordboxWaveform = ({
             }
         }
 
+        // Sombreado de silencio inicial recortado
+        if (trimMs > 0 && durMs > 0) {
+            const trimX = (trimMs / durMs) * totalWidth;
+            if (trimX > 0) {
+                ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
+                ctx.fillRect(0, 0, trimX, height);
+                ctx.strokeStyle = "rgba(239, 68, 68, 0.55)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(trimX, 0);
+                ctx.lineTo(trimX, height);
+                ctx.stroke();
+            }
+        }
+
         // 2. FORMA DE ONDA DE 4 BANDAS EN ALTA RESOLUCIÓN A TRAVÉS DE TODO EL ANCHO ZOOMED
         for (let x = 0; x <= totalWidth; x += 1.5) {
             const xNorm = x / totalWidth;
-            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed);
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
 
             // Fondo tenue de Breakdown
             if (isBreak) {
@@ -7788,8 +7837,11 @@ const AuditWorkspace = ({
                 if (res && res.status === 'ok') {
                     updateCurrentTrackField('trim_start_ms', res.trim_start_ms);
                     updateCurrentTrackField('first_downbeat_ms', res.first_downbeat_ms);
+                    if (res.cues && Array.isArray(res.cues) && res.cues.length > 0) {
+                        updateCurrentTrackField('cues', res.cues);
+                    }
                     setBatchProgress(100);
-                    setBatchStatusMsg(`✓ Trim: -${res.trim_start_ms}ms | Beatgrid 1.0.0: ${res.first_downbeat_ms}ms`);
+                    setBatchStatusMsg(`✓ Trim: -${res.trim_start_ms}ms | Beatgrid 1.0.0: ${res.first_downbeat_ms}ms (8 Cues sincronizados)`);
                 } else {
                     setBatchStatusMsg("No se pudo detectar el corte de silencio.");
                 }
@@ -27899,11 +27951,12 @@ const CopilotSeratoWaveform = ({
         // Rejilla de compases (Beatgrid Serato)
         const bpm = deck.bpm || 130.0;
         const beatSec = 60.0 / bpm;
+        const downbeatSec = (deck && deck.first_downbeat_ms) ? (parseFloat(deck.first_downbeat_ms) / 1000.0) : 0.0;
         if (beatSec > 0) {
-            const firstBeatIdx = Math.floor(startSec / beatSec);
-            const lastBeatIdx = Math.ceil(endSec / beatSec);
+            const firstBeatIdx = Math.floor((startSec - downbeatSec) / beatSec);
+            const lastBeatIdx = Math.ceil((endSec - downbeatSec) / beatSec);
             for (let b = firstBeatIdx; b <= lastBeatIdx; b++) {
-                const bSec = b * beatSec;
+                const bSec = downbeatSec + (b * beatSec);
                 const bx = playheadX + ((bSec - currentSec) / windowSec) * w;
                 if (bx >= 0 && bx <= w) {
                     const isBar = (b % 4 === 0);
@@ -27967,7 +28020,7 @@ const CopilotSeratoWaveform = ({
             const sliceNorm = sliceSec / durSec;
 
             if (sliceNorm >= 0.0 && sliceNorm <= 1.0) {
-                const { bass, drums, vocals, treble } = computeTrackStructuralBands(sliceNorm, seed);
+                const { bass, drums, vocals, treble } = computeTrackStructuralBands(sliceNorm, seed, deck);
                 const maxAmp = (h / 2) - 10;
 
                 // 1. Sub-Bass & Bombo (Azul Cobalto)
@@ -28108,7 +28161,7 @@ const CopilotSeratoWaveform = ({
             for (let j = 0; j < mSlices; j++) {
                 const mx = j * mStep;
                 const mNorm = mx / mw;
-                const { bass, treble } = computeTrackStructuralBands(mNorm, seed);
+                const { bass, treble } = computeTrackStructuralBands(mNorm, seed, deck);
                 const mHalf = mh / 2;
                 const bAmp = bass * (mHalf - 2);
                 const tAmp = treble * (mHalf - 4);
