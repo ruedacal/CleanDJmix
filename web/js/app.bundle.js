@@ -19858,20 +19858,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }
         }
       },
-      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("svg", { className: "absolute w-0 h-0 pointer-events-none", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "trippy-vortex-filter", x: "-20%", y: "-20%", width: "140%", height: "140%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0.008 0.028", numOctaves: "2", result: "vortexNoise" }, /* @__PURE__ */ React.createElement(
-        "animate",
-        {
-          attributeName: "baseFrequency",
-          dur: "8s",
-          values: "0.006 0.02; 0.018 0.055; 0.006 0.02",
-          repeatCount: "indefinite"
-        }
-      )), /* @__PURE__ */ React.createElement("feDisplacementMap", { in: "SourceGraphic", in2: "vortexNoise", scale: "50", xChannelSelector: "G", yChannelSelector: "R" })))), /* @__PURE__ */ React.createElement("div", { className: `relative w-full h-full overflow-hidden flex items-center justify-center trippy-distort-vortex ${isBassShaking ? "anim-bass-shake" : ""}` }, /* @__PURE__ */ React.createElement(
+      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: `relative w-full h-full overflow-hidden flex items-center justify-center transform-gpu ${isBassShaking ? "anim-bass-shake" : ""}` }, /* @__PURE__ */ React.createElement(
         "video",
         {
           ref: videoRef,
           autoPlay: true,
           playsInline: true,
+          preload: "auto",
           muted: isMuted,
           onTimeUpdate: handleTimeUpdate,
           onEnded: handleVideoEnded,
@@ -19879,28 +19872,45 @@ Respuesta: ${qa.a}`).join("\n\n"),
           className: "w-full h-full object-cover pointer-events-none",
           style: {
             opacity: videoOpacity * selectedAlpha,
+            filter: "brightness(0.78) contrast(125%) saturate(115%)",
+            transform: "translateZ(0)",
+            willChange: "opacity, transform",
             transition: videoOpacity === 0 ? "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)" : "opacity 300ms ease"
           }
         }
       ), /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "absolute inset-0 mix-blend-screen pointer-events-none",
+          className: "absolute inset-0 pointer-events-none mix-blend-color",
           style: {
-            background: "radial-gradient(ellipse at center, rgba(244, 63, 94, 0.22) 0%, transparent 70%)",
-            animation: "trippyRgbSplitRed 0.75s infinite ease-in-out"
+            background: "linear-gradient(135deg, rgba(6, 182, 212, 0.78) 0%, rgba(8, 145, 178, 0.85) 50%, rgba(14, 116, 144, 0.90) 100%)"
           }
         }
       ), /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "absolute inset-0 mix-blend-screen pointer-events-none",
+          className: "absolute inset-0 pointer-events-none mix-blend-screen",
           style: {
-            background: "radial-gradient(ellipse at center, rgba(6, 182, 212, 0.22) 0%, transparent 70%)",
-            animation: "trippyRgbSplitCyan 0.75s infinite ease-in-out"
+            background: "radial-gradient(ellipse 70% 60% at 50% 45%, rgba(6, 182, 212, 0.28) 0%, rgba(8, 145, 178, 0.12) 50%, transparent 80%)"
           }
         }
-      ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-prism-glow mix-blend-color-dodge pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 trippy-scanlines opacity-30 mix-blend-overlay pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-black/40 pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)] pointer-events-none" })), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
+      ), /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "absolute inset-0 pointer-events-none mix-blend-multiply",
+          style: {
+            background: "rgba(3, 7, 18, 0.50)"
+          }
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "absolute inset-0 pointer-events-none",
+          style: {
+            background: "radial-gradient(ellipse at center, transparent 30%, rgba(4, 7, 16, 0.55) 70%, rgba(0, 0, 0, 0.95) 100%)"
+          }
+        }
+      ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.12)_0%,transparent_75%)] pointer-events-none mix-blend-screen" })), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",

@@ -29142,35 +29142,19 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: VÍDEO CON EFECTO VORTEX OSCURECIDO Y LÁSERES NEÓN */}
+            {/* FASE 1: VÍDEO CINEMÁTICO CORPORATIVO BEATWAVE (GRADACIÓN CIAN & ALTO RENDIMIENTO 60 FPS) */}
             {phase === 'video' && (
                 <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
                     
-                    {/* Definición del Filtro SVG Vortex Integrado */}
-                    <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
-                        <defs>
-                            <filter id="trippy-vortex-filter" x="-20%" y="-20%" width="140%" height="140%">
-                                <feTurbulence type="fractalNoise" baseFrequency="0.008 0.028" numOctaves="2" result="vortexNoise">
-                                    <animate 
-                                        attributeName="baseFrequency" 
-                                        dur="8s" 
-                                        values="0.006 0.02; 0.018 0.055; 0.006 0.02" 
-                                        repeatCount="indefinite" 
-                                    />
-                                </feTurbulence>
-                                <feDisplacementMap in="SourceGraphic" in2="vortexNoise" scale="50" xChannelSelector="G" yChannelSelector="R" />
-                            </filter>
-                        </defs>
-                    </svg>
-
-                    {/* Contenedor reactivo con distorsión óptica Vortex fija y pulsación de graves */}
-                    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center trippy-distort-vortex ${isBassShaking ? 'anim-bass-shake' : ''}`}>
+                    {/* Contenedor reactivo con aceleración por hardware GPU (Desktop, Mobile, Tablet, Web) */}
+                    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center transform-gpu ${isBassShaking ? 'anim-bass-shake' : ''}`}>
                         
-                        {/* Vídeo Nativo al 100% de Opacidad */}
+                        {/* Vídeo Nativo Optimizado con Filtro de Contraste y Brillo Oscuro */}
                         <video
                             ref={videoRef}
                             autoPlay
                             playsInline
+                            preload="auto"
                             muted={isMuted}
                             onTimeUpdate={handleTimeUpdate}
                             onEnded={handleVideoEnded}
@@ -29178,39 +29162,47 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                             className="w-full h-full object-cover pointer-events-none"
                             style={{ 
                                 opacity: videoOpacity * selectedAlpha, 
+                                filter: 'brightness(0.78) contrast(125%) saturate(115%)',
+                                transform: 'translateZ(0)',
+                                willChange: 'opacity, transform',
                                 transition: videoOpacity === 0 ? 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 300ms ease' 
                             }}
                         />
 
-                        {/* Capa de Aberración Cromática Roja / Magenta */}
+                        {/* 1. Capa de Gradación Timbral Cian Corporativo BeatWave (mix-blend-color: recolorea preservando siluetas y detalles) */}
                         <div 
-                            className="absolute inset-0 mix-blend-screen pointer-events-none"
+                            className="absolute inset-0 pointer-events-none mix-blend-color"
                             style={{
-                                background: 'radial-gradient(ellipse at center, rgba(244, 63, 94, 0.22) 0%, transparent 70%)',
-                                animation: 'trippyRgbSplitRed 0.75s infinite ease-in-out'
+                                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.78) 0%, rgba(8, 145, 178, 0.85) 50%, rgba(14, 116, 144, 0.90) 100%)'
                             }}
                         />
 
-                        {/* Capa de Aberración Cromática Cian Eléctrico */}
+                        {/* 2. Resplandor Cian Eléctrico en Altas Luces y Pantallas de Cabina */}
                         <div 
-                            className="absolute inset-0 mix-blend-screen pointer-events-none"
+                            className="absolute inset-0 pointer-events-none mix-blend-screen"
                             style={{
-                                background: 'radial-gradient(ellipse at center, rgba(6, 182, 212, 0.22) 0%, transparent 70%)',
-                                animation: 'trippyRgbSplitCyan 0.75s infinite ease-in-out'
+                                background: 'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(6, 182, 212, 0.28) 0%, rgba(8, 145, 178, 0.12) 50%, transparent 80%)'
                             }}
                         />
 
-                        {/* Aura prismática central pulsante */}
-                        <div className="absolute inset-0 trippy-prism-glow mix-blend-color-dodge pointer-events-none" />
+                        {/* 3. Profundidad Oscura y Contraste de Cabina (mix-blend-multiply) */}
+                        <div 
+                            className="absolute inset-0 pointer-events-none mix-blend-multiply"
+                            style={{
+                                background: 'rgba(3, 7, 18, 0.50)'
+                            }}
+                        />
 
-                        {/* Textura de scanlines CRT / VHS analógico */}
-                        <div className="absolute inset-0 trippy-scanlines opacity-30 mix-blend-overlay pointer-events-none" />
+                        {/* 4. Viñeteado Perimetral Profundo Cinematográfico */}
+                        <div 
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                                background: 'radial-gradient(ellipse at center, transparent 30%, rgba(4, 7, 16, 0.55) 70%, rgba(0, 0, 0, 0.95) 100%)'
+                            }}
+                        />
 
-                        {/* Capa de oscurecimiento profundo cinematográfico solicitada por el usuario */}
-                        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-
-                        {/* Viñeteado perimetral profundo */}
-                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)] pointer-events-none" />
+                        {/* 5. Aura Perimetral Suave de Cabina */}
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.12)_0%,transparent_75%)] pointer-events-none mix-blend-screen" />
                     </div>
 
                     {/* Botón sutil en esquina inferior derecha para saltar si el usuario lo desea */}
