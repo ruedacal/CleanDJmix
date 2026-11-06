@@ -330,6 +330,9 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 .bw-rail-live.is-active { border-color: rgba(244, 63, 94, 0.45); color: var(--bw-white); background: rgba(244, 63, 94, 0.08); }
 
 @media (min-width: 1280px) {
+    .bw-rail[data-expanded='true'] {
+        width: 224px;
+    }
     .bw-rail[data-expanded='true'] .bw-rail-item,
     .bw-rail[data-expanded='true'] .bw-rail-live {
         flex-direction: row;

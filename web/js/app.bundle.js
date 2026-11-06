@@ -166,8 +166,9 @@
       },
       /* @__PURE__ */ React.createElement("span", { className: "bw-led", "aria-hidden": "true" }),
       /* @__PURE__ */ React.createElement(Icon, { size: 18 }),
-      /* @__PURE__ */ React.createElement("span", { className: expanded ? "bw-rail-label" : "bw-rail-caption" }, label),
-      badge != null && expanded && /* @__PURE__ */ React.createElement("span", { className: "bw-rail-badge" }, badge)
+      /* @__PURE__ */ React.createElement("span", { className: "bw-rail-label" }, label),
+      /* @__PURE__ */ React.createElement("span", { className: "bw-rail-caption" }, label),
+      badge != null && /* @__PURE__ */ React.createElement("span", { className: "bw-rail-badge" }, badge)
     );
   };
   var SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, auditInfo, trackCount, onOpenCopilot }) => {
@@ -189,7 +190,8 @@
           className: `bw-rail-live ${copilotActive ? "is-active" : ""} ${expanded ? "is-expanded" : ""}`
         },
         /* @__PURE__ */ React.createElement("span", { className: "bw-live-dot", "aria-hidden": "true" }),
-        /* @__PURE__ */ React.createElement("span", { className: expanded ? "bw-rail-label" : "bw-rail-caption" }, COPILOT_ITEM.fallback),
+        /* @__PURE__ */ React.createElement("span", { className: "bw-rail-label" }, COPILOT_ITEM.fallback),
+        /* @__PURE__ */ React.createElement("span", { className: "bw-rail-caption" }, COPILOT_ITEM.fallback),
         expanded && /* @__PURE__ */ React.createElement("span", { className: "bw-kbd ml-auto" }, "LIVE")
       )),
       /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto bw-scroll-thin flex flex-col gap-4 px-2 pb-3" }, NAV_GROUPS.map((group) => /* @__PURE__ */ React.createElement("div", { key: group.id, className: "flex flex-col gap-0.5", role: "group", "aria-label": group.label }, /* @__PURE__ */ React.createElement("span", { className: `bw-eyebrow px-2 pb-1 pt-2 ${expanded ? "hidden xl:block" : "hidden"}` }, group.label), /* @__PURE__ */ React.createElement("span", { className: `mx-auto my-1 h-px w-6 bg-white/10 ${expanded ? "xl:hidden" : ""}`, "aria-hidden": "true" }), group.items.map((item) => {
@@ -14763,57 +14765,58 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       alert(`Copiado al portapapeles:
 ${text}`);
     };
-    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#040407] overflow-y-auto p-4 sm:p-6 text-gray-200 space-y-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-djzinc-800 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 via-djcyan-500 to-indigo-500 p-0.5 shadow-lg shadow-djcyan-500/20 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-full h-full bg-[#08080d] rounded-[10px] flex items-center justify-center text-djcyan-400" }, /* @__PURE__ */ React.createElement(Icons.Radar, null))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h2", { className: "text-lg font-black text-white tracking-wide" }, "RADAR AC\xDASTICO BEATWAVE"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 text-[9px] font-mono font-bold bg-gradient-to-r from-blue-950 to-indigo-950 text-djcyan-400 border border-djcyan-800/80 rounded shadow" }, selectedEngine === "hybrid" ? "\u26A1 Modo H\xEDbrido Pro (Red Ac\xFAstica)" : selectedEngine === "audd" ? "\u{1F7E3} Identificaci\xF3n Ac\xFAstica Pro" : "\u{1F535} Escaneo Espectral Smart Drop")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio."))), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-djcyan-400 animate-pulse" : "bg-djgreen-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#08080f] border border-djzinc-800 rounded-2xl p-3.5 shadow-xl space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-bold text-gray-400 uppercase tracking-wider" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1 bg-djzinc-900 p-1 rounded-xl border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#09090b] overflow-y-auto p-4 sm:p-6 text-zinc-300 space-y-5 select-none font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] shadow-[0_0_15px_rgba(34,211,238,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Radar, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h2", { className: "text-sm font-semibold tracking-wider text-white uppercase font-syne" }, "Radar Ac\xFAstico"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded" }, selectedEngine === "hybrid" ? "H\xEDbrido Pro (Smart Drop)" : selectedEngine === "audd" ? "Identificaci\xF3n Ac\xFAstica Pro" : "Escaneo Espectral")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio."))), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-[10.5px]" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Motor activo" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setSelectedEngine("hybrid"),
-        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${selectedEngine === "hybrid" ? "bg-gradient-to-r from-emerald-500 to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20" : "text-gray-400 hover:text-white"}`,
+        className: `ws-seg-btn ${selectedEngine === "hybrid" ? "ws-seg-on" : ""}`,
+        "aria-pressed": selectedEngine === "hybrid",
         title: "Combina escaneo espectral de drop con respaldo ac\xFAstico autom\xE1tico para m\xE1xima precisi\xF3n"
       },
-      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 13 }),
       /* @__PURE__ */ React.createElement("span", null, "H\xEDbrido Pro (Recomendado)")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setSelectedEngine("shazamio"),
-        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${selectedEngine === "shazamio" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : "text-gray-400 hover:text-white"}`,
+        className: `ws-seg-btn ${selectedEngine === "shazamio" ? "ws-seg-on" : ""}`,
+        "aria-pressed": selectedEngine === "shazamio",
         title: "Escaneo multi-segmento de drops y breakdowns para pistas de DJ"
       },
-      /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-sky-400 ", "aria-hidden": "true" }),
-      /* @__PURE__ */ React.createElement("span", null, "Escaneo Espectral Smart Drop")
+      /* @__PURE__ */ React.createElement("span", null, "Escaneo Espectral")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setSelectedEngine("audd"),
-        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${selectedEngine === "audd" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-gray-400 hover:text-white"}`,
+        className: `ws-seg-btn ${selectedEngine === "audd" ? "ws-seg-on" : ""}`,
+        "aria-pressed": selectedEngine === "audd",
         title: "Red de Identificaci\xF3n Ac\xFAstica Pro (ISRC y Cat\xE1logo Global)"
       },
-      /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-violet-400 ", "aria-hidden": "true" }),
-      /* @__PURE__ */ React.createElement("span", null, "Identificaci\xF3n Ac\xFAstica Pro")
+      /* @__PURE__ */ React.createElement("span", null, "Identificaci\xF3n Pro (ISRC)")
     ))), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setShowConfig(!showConfig),
-        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${showConfig || auddToken ? "bg-purple-950/60 border-purple-700 text-purple-300" : "bg-djzinc-900 border-djzinc-750 text-gray-400 hover:text-white"}`,
+        className: `ws-btn ${showConfig || auddToken ? "ws-btn-active" : "ws-btn-outline"}`,
         title: "Configurar claves de API o token personalizado"
       },
-      /* @__PURE__ */ React.createElement(Icons.Gear, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, showConfig ? "Ocultar Opciones" : "Opciones API"),
       auddToken && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" })
-    )), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[#05050a] p-3 rounded-xl border border-djzinc-800 text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 font-bold block" }, "Token de Red Ac\xFAstica API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400" }, 'Por defecto BeatWave usa el token p\xFAblico comunitario ("test"). Si posees tu propio token de API ac\xFAstica, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
+    )), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-3.5 rounded-xl border border-[var(--bw-line-strong)] text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-bold block" }, "Token de Red Ac\xFAstica API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-zinc-400" }, 'Por defecto BeatWave usa el token comunitario ("test"). Si posees tu propio token de API ac\xFAstica, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
         value: auddToken,
         onChange: (e) => setAuddToken(e.target.value),
         placeholder: "test (predeterminado)",
-        className: "w-full sm:w-64 px-2.5 py-1.5 bg-djzinc-900 border border-djzinc-750 rounded-lg text-xs text-white font-mono focus:border-purple-500 outline-none"
+        className: "w-full sm:w-64 px-2.5 py-1.5 bg-[var(--bw-surface-1)] border border-[var(--bw-line-strong)] rounded-lg text-xs text-white font-mono focus:border-cyan-400 outline-none"
       }
-    )))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#09090f] p-5 rounded-2xl border border-djzinc-800 flex flex-col items-center text-center justify-between relative overflow-hidden shadow-lg group hover:border-djcyan-500/40 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold uppercase text-djcyan-400 tracking-wider" }, "MODO A \u2022 CAPTURA AMBIENTAL"), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "Escucha en Directo por Micr\xF3fono"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-xs mx-auto" }, "Captura m\xFAsica ambiental en cabina y consulta la red de identificaci\xF3n ac\xFAstica global.")), /* @__PURE__ */ React.createElement("div", { className: "ws-seg" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 pl-1 text-[9px] uppercase tracking-wider" }, "Entrada:"), /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-5 rounded-xl border border-[var(--bw-line)] hover:border-[var(--bw-line-strong)] flex flex-col items-center text-center justify-between relative overflow-hidden shadow-sm transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-cyan-400" }, "MODO A \u2022 CAPTURA AMBIENTAL"), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-white" }, "Escucha en Directo por Micr\xF3fono"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 max-w-xs mx-auto" }, "Captura m\xFAsica ambiental en cabina y consulta la red de identificaci\xF3n ac\xFAstica global.")), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Fuente de micr\xF3fono" }, /* @__PURE__ */ React.createElement("span", { className: "ws-seg-label" }, "Entrada"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -14821,7 +14824,8 @@ ${text}`);
           setMicCaptureMode("auto");
           setMicPermissionError(null);
         },
-        className: `px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === "auto" ? "bg-djcyan-500 text-black font-bold" : "text-gray-400 hover:text-white"}`,
+        className: `ws-seg-btn ${micCaptureMode === "auto" ? "ws-seg-on" : ""}`,
+        "aria-pressed": micCaptureMode === "auto",
         title: "Auto: prueba primero el micr\xF3fono del navegador y si falla conmuta al hardware de sistema autom\xE1ticamente"
       },
       "Auto"
@@ -14851,7 +14855,7 @@ ${text}`);
         title: "Micr\xF3fono de Hardware (macOS / FFmpeg directo sin restricciones de navegador)"
       },
       "Hardware (macOS)"
-    )), /* @__PURE__ */ React.createElement("div", { className: "my-3 relative flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ws-radar-ring-2 ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "my-4 relative flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ws-radar-ring-2 ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -14862,22 +14866,22 @@ ${text}`);
       },
       /* @__PURE__ */ React.createElement(Icons.Mic, null),
       /* @__PURE__ */ React.createElement("span", { className: "ws-radar-label" }, isListening ? `${countdown}s` : "ESCUCHAR")
-    )), micPermissionError && !isListening && /* @__PURE__ */ React.createElement("div", { className: "mt-3 p-3 bg-amber-950/90 border border-amber-600/70 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-amber-300" }, /* @__PURE__ */ React.createElement(Icons.Lock, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Micr\xF3fono de navegador restringido")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "\u2022 En la barra del navegador, haz clic en el ", /* @__PURE__ */ React.createElement("strong", null, "icono del candado"), " (a la izquierda de la URL) y cambia Micr\xF3fono a ", /* @__PURE__ */ React.createElement("strong", null, "Permitir"), "."), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "\u2022 En macOS: ", /* @__PURE__ */ React.createElement("strong", null, "Ajustes del Sistema > Privacidad & Seguridad > Micr\xF3fono"), " y activa tu navegador."), /* @__PURE__ */ React.createElement(
+    )), micPermissionError && !isListening && /* @__PURE__ */ React.createElement("div", { className: "mt-3 p-3 bg-amber-950/60 border border-amber-600/40 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-amber-300" }, /* @__PURE__ */ React.createElement(Icons.Lock, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Micr\xF3fono de navegador restringido")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "\u2022 En la barra del navegador, haz clic en el ", /* @__PURE__ */ React.createElement("strong", null, "icono del candado"), " y cambia Micr\xF3fono a ", /* @__PURE__ */ React.createElement("strong", null, "Permitir"), "."), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "\u2022 En macOS: ", /* @__PURE__ */ React.createElement("strong", null, "Ajustes del Sistema > Privacidad > Micr\xF3fono"), "."), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: startHardwareMicrophoneListening,
-        className: "mt-1 w-full py-1.5 px-2 bg-gradient-to-r from-djcyan-500 to-emerald-400 hover:from-djcyan-400 hover:to-emerald-300 text-black font-bold text-[11px] rounded-lg cursor-pointer transition-all shadow"
+        className: "ws-btn ws-btn-primary w-full justify-center mt-1"
       },
-      /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14 }),
       " Usar Captura Hardware de Sistema"
-    )), isListening && /* @__PURE__ */ React.createElement("div", { className: "w-52 mt-3.5 flex flex-col items-center gap-1.5 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[10px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "SE\xD1AL DE MICR\xD3FONO"), /* @__PURE__ */ React.createElement("span", { className: micLevel > 15 ? "text-djcyan-400 font-bold" : "text-amber-400" }, micLevel, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full h-2 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800 p-0.5" }, /* @__PURE__ */ React.createElement(
+    )), isListening && /* @__PURE__ */ React.createElement("div", { className: "w-52 mt-3.5 flex flex-col items-center gap-1.5 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[10px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "SE\xD1AL DE MICR\xD3FONO"), /* @__PURE__ */ React.createElement("span", { className: micLevel > 15 ? "text-cyan-400 font-bold" : "text-amber-400" }, micLevel, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full h-2 bg-[var(--bw-surface-3)] rounded-full overflow-hidden border border-[var(--bw-line)] p-0.5" }, /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: `h-full transition-all duration-75 rounded-full ${micLevel > 70 ? "bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500" : micLevel > 20 ? "bg-gradient-to-r from-cyan-500 to-emerald-400" : "bg-djcyan-500"}`,
+        className: "h-full transition-all duration-75 rounded-full bg-cyan-400",
         style: { width: `${Math.max(4, micLevel)}%` }
       }
-    )), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500" }, micLevel > 10 ? "\u2713 Captando audio ambiental" : "Acerca el altavoz o sube el volumen")), isListening && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-3 z-10" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-500" }, micLevel > 10 ? "\u2713 Captando audio ambiental" : "Acerca el altavoz o sube el volumen")), isListening && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-3 z-10" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -14885,10 +14889,10 @@ ${text}`);
           e.stopPropagation();
           stopMicrophoneListeningEarly();
         },
-        className: "px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 cursor-pointer flex items-center gap-1 transition-all",
+        className: "ws-btn ws-btn-primary text-xs",
         title: "Enviar grabaci\xF3n inmediatamente sin esperar al final de los 10 segundos"
       },
-      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, "Identificar Ya")
     ), /* @__PURE__ */ React.createElement(
       "button",
@@ -14898,12 +14902,12 @@ ${text}`);
           e.stopPropagation();
           cancelListening();
         },
-        className: "px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-800 hover:bg-red-950 text-gray-300 hover:text-red-300 border border-djzinc-700 cursor-pointer transition-all",
+        className: "ws-btn ws-btn-ghost text-xs",
         title: "Cancelar la captura actual"
       },
-      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14 }),
       " Cancelar"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono text-gray-400" }, isListening ? /* @__PURE__ */ React.createElement("span", { className: "text-red-400 font-bold animate-pulse" }, "\u25CF Grabando audio del micr\xF3fono...") : isAnalyzing ? /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, "\u25CF Analizando huella ac\xFAstica...") : /* @__PURE__ */ React.createElement("span", null, "Haz clic para iniciar la escucha de 10 segundos"))), /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono text-zinc-400" }, isListening ? /* @__PURE__ */ React.createElement("span", { className: "text-rose-400 font-bold animate-pulse" }, "\u25CF Grabando audio del micr\xF3fono...") : isAnalyzing ? /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "\u25CF Analizando huella ac\xFAstica...") : /* @__PURE__ */ React.createElement("span", null, "Haz clic para iniciar la escucha de 10 segundos"))), /* @__PURE__ */ React.createElement(
       "div",
       {
         onDragOver: (e) => {
@@ -14918,10 +14922,10 @@ ${text}`);
             handleFileSelect(e.dataTransfer.files[0]);
           }
         },
-        className: `bg-[#09090f] p-5 rounded-2xl border flex flex-col items-center text-center justify-between transition-all cursor-pointer shadow-lg ${dragOver ? "border-djcyan-400 bg-djcyan-950/20 scale-[1.01]" : "border-djzinc-800 hover:border-djcyan-500/40"}`,
+        className: `bg-[var(--bw-surface-1)] p-5 rounded-xl border flex flex-col items-center text-center justify-between transition-all cursor-pointer shadow-sm group ${dragOver ? "border-cyan-400 bg-cyan-950/20 scale-[1.01]" : "border-[var(--bw-line)] hover:border-[var(--bw-line-strong)]"}`,
         onClick: () => fileInputRef.current && fileInputRef.current.click()
       },
-      /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-4" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold uppercase text-purple-400 tracking-wider" }, "MODO B \u2022 ANALIZADOR DE ARCHIVO"), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "Subir o Arrastrar Archivo de Audio"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-xs mx-auto" }, "Arrastra cualquier archivo local (.mp3, .flac, .wav, .m4a) para extraer su huella digital y metadatos.")),
+      /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-4" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-zinc-400" }, "MODO B \u2022 ANALIZADOR DE ARCHIVO"), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-white" }, "Subir o Arrastrar Archivo de Audio"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 max-w-xs mx-auto" }, "Arrastra cualquier archivo local (.mp3, .flac, .wav, .m4a) para extraer su huella digital y metadatos.")),
       /* @__PURE__ */ React.createElement(
         "input",
         {
@@ -14938,34 +14942,34 @@ ${text}`);
           className: "hidden"
         }
       ),
-      /* @__PURE__ */ React.createElement("div", { className: "my-3 w-28 h-28 rounded-2xl border-2 border-dashed border-djzinc-700 hover:border-djcyan-400 flex flex-col items-center justify-center transition-colors bg-djzinc-950" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px] mb-1" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-gray-300" }, "ARRASTRAR AQU\xCD")),
-      /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Formatos: MP3, FLAC, WAV, M4A, OGG"))
-    )), identifiedTrack && /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-r from-blue-950/50 via-djzinc-950 to-indigo-950/50 p-5 rounded-2xl border-2 border-djcyan-500/50 shadow-2xl space-y-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-black text-djcyan-400 uppercase tracking-wider" }, "PISTA IDENTIFICADA"), identifiedTrack.motor_usado && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gradient-to-r from-blue-950 to-indigo-950 text-djcyan-300 border border-djcyan-700/60 shadow" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }), " ", identifiedTrack.motor_usado)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, identifiedTrack.isrc && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 bg-djzinc-900 px-2 py-0.5 rounded border border-djzinc-750" }, "ISRC: ", identifiedTrack.isrc), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "my-3 w-32 h-28 rounded-xl border-2 border-dashed border-[var(--bw-line-strong)] group-hover:border-[var(--bw-cyan)] flex flex-col items-center justify-center transition-colors bg-[var(--bw-surface-2)]" }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 22, className: "text-zinc-400 group-hover:text-[var(--bw-cyan)] mb-1.5 transition-colors" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-zinc-300" }, "ARRASTRAR AQU\xCD")),
+      /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono text-zinc-500" }, /* @__PURE__ */ React.createElement("span", null, "Formatos: MP3, FLAC, WAV, M4A, OGG"))
+    )), identifiedTrack && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-5 rounded-xl border border-cyan-500/40 shadow-xl space-y-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-[var(--bw-line)] pb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider" }, "PISTA IDENTIFICADA"), identifiedTrack.motor_usado && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-700/60" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 12, className: "inline-block align-[-2px]" }), " ", identifiedTrack.motor_usado)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, identifiedTrack.isrc && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 bg-[var(--bw-surface-1)] px-2 py-0.5 rounded border border-[var(--bw-line)]" }, "ISRC: ", identifiedTrack.isrc), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: handleDescartarDeteccion,
-        className: "w-6 h-6 rounded-full bg-djzinc-850 hover:bg-red-950 text-gray-400 hover:text-red-400 flex items-center justify-center text-xs font-bold border border-djzinc-750 cursor-pointer transition-colors",
+        className: "ws-icon-btn w-6 h-6",
         title: "Descartar esta detecci\xF3n"
       },
-      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14 })
     ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row items-center gap-6" }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement(
       "img",
       {
         src: getValidCover(identifiedTrack.cover),
         alt: "Track Artwork",
-        className: "w-44 h-44 rounded-2xl object-cover border-2 border-djzinc-700 shadow-2xl"
+        className: "w-40 h-40 rounded-xl object-cover border border-[var(--bw-line-strong)] shadow-xl"
       }
     ), identifiedTrack.preview_url && /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => togglePlayPreview(identifiedTrack.preview_url),
-        className: `absolute inset-0 m-auto w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer font-black text-lg ${previewPlaying ? "bg-emerald-500 text-black scale-105 shadow-[0_0_20px_rgba(16,185,129,0.7)]" : "bg-djcyan-500 text-black hover:scale-110 shadow-[0_0_20px_rgba(6,182,212,0.6)]"}`,
+        className: `absolute inset-0 m-auto w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all cursor-pointer font-black text-base ${previewPlaying ? "bg-emerald-400 text-black scale-105" : "bg-[var(--bw-cyan)] text-black hover:scale-105 shadow-[0_0_16px_rgba(34,211,238,0.45)]"}`,
         title: "Reproducir pre-escucha de audio oficial"
       },
-      previewPlaying ? "\u275A\u275A" : "\u25B6"
-    ), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 left-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-gray-300 border border-djzinc-700" }, "Pre-Escucha 30s")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 space-y-3.5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { className: "text-2xl font-black text-white truncate", title: identifiedTrack.title }, identifiedTrack.title), /* @__PURE__ */ React.createElement("p", { className: "text-lg font-bold text-djcyan-400 truncate mt-0.5", title: identifiedTrack.artist }, identifiedTrack.artist)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "\xC1lbum"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 font-semibold truncate block", title: identifiedTrack.album }, identifiedTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "G\xE9nero"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-semibold truncate block" }, identifiedTrack.genre || "Electronic")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Lanzamiento"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 font-semibold truncate block" }, identifiedTrack.year || "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Sello / Label"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-semibold truncate block", title: identifiedTrack.label }, identifiedTrack.label || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded-xl border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]" }), "Comentario T\xE1ctico DJ & Gu\xEDa de Mezcla"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[10px]" }, "Tag ID3 / Libreta")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.MessageSquare, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement(
+      previewPlaying ? /* @__PURE__ */ React.createElement(Icons.Pause, { size: 18 }) : /* @__PURE__ */ React.createElement(Icons.Play, { size: 18 })
+    ), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 left-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[9.5px] font-mono text-zinc-300 border border-[var(--bw-line)]" }, "Pre-Escucha 30s")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 space-y-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { className: "text-xl font-bold text-white truncate", title: identifiedTrack.title }, identifiedTrack.title), /* @__PURE__ */ React.createElement("p", { className: "text-base font-semibold text-cyan-400 truncate mt-0.5", title: identifiedTrack.artist }, identifiedTrack.artist)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "\xC1lbum"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-semibold truncate block", title: identifiedTrack.album }, identifiedTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "G\xE9nero"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-semibold truncate block" }, identifiedTrack.genre || "Electronic")), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "Lanzamiento"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-semibold truncate block" }, identifiedTrack.year || "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "Sello / Label"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300 font-semibold truncate block", title: identifiedTrack.label }, identifiedTrack.label || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-3 rounded-xl border border-[var(--bw-line)] space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10.5px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" }), "Comentario T\xE1ctico DJ & Gu\xEDa de Mezcla"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500 text-[10px]" }, "Tag ID3 / Libreta")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.MessageSquare, { size: 14, className: "text-zinc-400 shrink-0" }), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
@@ -14975,82 +14979,82 @@ ${text}`);
           setIdentifiedTrack((prev) => ({ ...prev, comment: val, comentario: val }));
         },
         placeholder: "Escribe aqu\xED el comentario estrat\xE9gico para cabina...",
-        className: "flex-1 bg-djzinc-950 border border-djzinc-750 focus:border-djcyan-400 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-200 outline-none transition-colors"
+        className: "flex-1 bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] focus:border-cyan-400 rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-200 outline-none transition-colors"
       }
     )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1 pt-0.5" }, [
-      { label: "\u{1F525} Peak Time", text: `[${identifiedTrack.genre || "Electronic"}] Peak Time \u2022 Drop Contundente \u2022 Outro R\xE1pido 32b` },
-      { label: "\u{1F3A7} Warm Up", text: `[${identifiedTrack.genre || "Electronic"}] Warm Up Groovy \u2022 Entrada Progresiva 64b \u2022 Mezcla Limpia` },
-      { label: "\u{1F3A4} Breakdown", text: `[${identifiedTrack.genre || "Electronic"}] Breakdown Vocal Intenso \u2022 Mezcla Larga con Graves` },
-      { label: "\u26A1 After", text: `[${identifiedTrack.genre || "Electronic"}] Afterhours \u2022 Dark Hypnotic \u2022 Bombo Pesado Sub-Bass` }
+      { label: "Peak Time", text: `[${identifiedTrack.genre || "Electronic"}] Peak Time \u2022 Drop Contundente \u2022 Outro R\xE1pido 32b` },
+      { label: "Warm Up", text: `[${identifiedTrack.genre || "Electronic"}] Warm Up Groovy \u2022 Entrada Progresiva 64b \u2022 Mezcla Limpia` },
+      { label: "Breakdown", text: `[${identifiedTrack.genre || "Electronic"}] Breakdown Vocal Intenso \u2022 Mezcla Larga con Graves` },
+      { label: "After", text: `[${identifiedTrack.genre || "Electronic"}] Afterhours \u2022 Dark Hypnotic \u2022 Bombo Pesado Sub-Bass` }
     ].map((tpl, tIdx) => /* @__PURE__ */ React.createElement(
       "button",
       {
         key: tIdx,
         type: "button",
         onClick: () => setIdentifiedTrack((prev) => ({ ...prev, comment: tpl.text, comentario: tpl.text })),
-        className: "px-2 py-0.5 text-[9px] font-mono bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white rounded border border-djzinc-800 cursor-pointer transition-colors",
+        className: "px-2 py-0.5 text-[9.5px] font-mono bg-[var(--bw-surface-2)] hover:bg-[var(--bw-surface-3)] text-zinc-400 hover:text-white rounded border border-[var(--bw-line)] cursor-pointer transition-colors",
         title: `Insertar: "${tpl.text}"`
       },
       tpl.label
-    )))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-3 pt-2" }, /* @__PURE__ */ React.createElement(
+    )))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 pt-1" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => handleApuntarEnLista(identifiedTrack),
-        className: "px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center gap-2 cursor-pointer transition-all active:scale-95",
+        className: "ws-btn ws-btn-primary",
         title: "A\xF1adir esta pista a tu Libreta Digital de Apuntes DJ"
       },
-      /* @__PURE__ */ React.createElement(Icons.FileText, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Notebook, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, "Apuntar en Lista")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
-        onClick: handleDescartarDeteccion,
-        className: "px-4 py-2.5 bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-800 font-mono font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
-        title: "Descartar esta detecci\xF3n y dejar el radar listo"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", null, "Descartar")
-    ), /* @__PURE__ */ React.createElement("div", { className: "h-6 w-px bg-djzinc-800 hidden sm:block" }), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
         onClick: () => handleSendToSpotifyInternal(identifiedTrack),
-        className: "px-3.5 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-djgreen-400 border border-djgreen-800/80 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95",
+        className: "ws-btn ws-btn-outline",
         title: "Enviar a la cola de descarga en FLAC"
       },
-      /* @__PURE__ */ React.createElement(Icons.Download, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Download, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, "Record Pool")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => handleSendToAuditInternal(identifiedTrack),
-        className: "px-3.5 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-400 border border-djcyan-800/80 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95",
+        className: "ws-btn ws-btn-outline",
         title: "A\xF1adir a la tabla de auditor\xEDa para an\xE1lisis DSP"
       },
-      /* @__PURE__ */ React.createElement(Icons.Copy, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Copy, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, "Auditor\xEDa DJ")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => handleCopyToClipboard(identifiedTrack),
-        className: "px-3 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 rounded-xl text-xs font-mono cursor-pointer transition-colors",
+        className: "ws-btn ws-btn-ghost",
         title: "Copiar texto al portapapeles"
       },
       "Copiar"
-    ))))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#09090f] border border-djzinc-800 rounded-2xl p-5 shadow-xl space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3 border-b border-djzinc-800 pb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-bold text-sm shadow" }, /* @__PURE__ */ React.createElement(Icons.Notebook, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white font-mono uppercase tracking-wider" }, "Libreta Digital de Apuntes DJ"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono font-black" }, notebookTracks.length, " apuntes")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, "Colecci\xF3n de pistas cazadas en vivo en el radar, listas para exportar o enviar a producci\xF3n."))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, notebookFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-emerald-400 animate-pulse mr-2" }, notebookFeedback), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleDescartarDeteccion,
+        className: "ws-btn ws-btn-danger ml-auto",
+        title: "Descartar esta detecci\xF3n y dejar el radar listo"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Descartar")
+    ))))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-5 shadow-sm space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3 border-b border-[var(--bw-line)] pb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] font-bold text-sm shadow" }, /* @__PURE__ */ React.createElement(Icons.Notebook, { size: 15 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs font-bold text-white font-mono uppercase tracking-wider" }, "Libreta Digital de Apuntes DJ"), /* @__PURE__ */ React.createElement("span", { className: "ws-count ws-count-on" }, notebookTracks.length, " apuntes")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-400" }, "Colecci\xF3n de pistas cazadas en vivo en el radar, listas para exportar o enviar a producci\xF3n."))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, notebookFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-emerald-400 animate-pulse mr-2" }, notebookFeedback), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: handleExportarNotebookXLS,
         disabled: notebookTracks.length === 0,
-        className: "px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-djgreen-400 border border-djgreen-700/60 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-40",
+        className: "ws-btn ws-btn-outline",
         title: "Descargar listado en formato Excel (.xls / .xlsx)"
       },
-      /* @__PURE__ */ React.createElement(Icons.Excel, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Excel, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, "Descargar XLS")
     ), /* @__PURE__ */ React.createElement(
       "button",
@@ -15058,22 +15062,22 @@ ${text}`);
         type: "button",
         onClick: handleExportarNotebookTXT,
         disabled: notebookTracks.length === 0,
-        className: "px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-700/60 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-40",
+        className: "ws-btn ws-btn-outline",
         title: "Descargar tracklist limpio en formato texto (.txt)"
       },
-      /* @__PURE__ */ React.createElement(Icons.FileText, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.FileText, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, "Descargar TXT")
     ), notebookTracks.length > 0 && /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: handleVaciarNotebook,
-        className: "px-2.5 py-1.5 bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800/80 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-colors",
+        className: "ws-btn ws-btn-danger",
         title: "Vaciar todos los apuntes"
       },
-      /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14 }),
       " Vaciar"
-    ))), notebookTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-10 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-850 rounded-xl bg-djzinc-950/50" }, /* @__PURE__ */ React.createElement(Icons.FileText, { size: 14, className: "inline-block align-[-2px] block mb-1" }), "Tu libreta de apuntes est\xE1 vac\xEDa. Cuando identifiques un track en el Radar, pulsa ", /* @__PURE__ */ React.createElement("strong", { className: "text-emerald-400" }, '"Apuntar en Lista"'), " para guardarlo aqu\xED.") : /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "bg-[#0d0d14] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2 px-2 text-center w-8" }, "#"), /* @__PURE__ */ React.createElement("th", { className: "py-2 px-2 w-10 text-center" }, "PLAY"), /* @__PURE__ */ React.createElement("th", { className: "py-2 px-3 min-w-[220px]" }, "PISTA / \xC1LBUM"), /* @__PURE__ */ React.createElement("th", { className: "py-2 px-3 min-w-[150px]" }, "ARTISTA"), /* @__PURE__ */ React.createElement("th", { className: "py-2 px-2 text-center w-24" }, "G\xC9NERO"), /* @__PURE__ */ React.createElement("th", { className: "py-2 px-2 text-center w-28" }, "SUBG\xC9NERO"), /* @__PURE__ */ React.createElement("th", { className: "py-2 px-2 text-center w-16" }, "A\xD1O"), /* @__PURE__ */ React.createElement("th", { className: "py-2 px-3 min-w-[220px] text-left text-djcyan-400" }, "COMENTARIO / NOTA DJ"), /* @__PURE__ */ React.createElement("th", { className: "py-2 px-3 text-center w-28" }, "HORA APUNTE"), /* @__PURE__ */ React.createElement("th", { className: "py-2 px-3 text-center w-36" }, "ACCIONES"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, notebookTracks.map((row, idx) => {
+    ))), notebookTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-10 text-center text-zinc-500 font-mono text-xs border border-dashed border-[var(--bw-line-strong)] rounded-xl bg-[var(--bw-surface-2)]" }, /* @__PURE__ */ React.createElement(Icons.FileText, { size: 16, className: "inline-block align-[-2px] block mb-1 text-zinc-400" }), "Tu libreta de apuntes est\xE1 vac\xEDa. Cuando identifiques un track en el Radar, pulsa ", /* @__PURE__ */ React.createElement("strong", { className: "text-cyan-400" }, '"Apuntar en Lista"'), " para guardarlo aqu\xED.") : /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "bg-[var(--bw-surface-2)] border-b border-[var(--bw-line-strong)] text-[10px] font-mono uppercase text-zinc-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-8" }, "#"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-10 text-center" }, "PLAY"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 min-w-[220px]" }, "PISTA / \xC1LBUM"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 min-w-[150px]" }, "ARTISTA"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-24" }, "G\xC9NERO"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-28" }, "SUBG\xC9NERO"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-16" }, "A\xD1O"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 min-w-[220px] text-left text-cyan-400" }, "COMENTARIO / NOTA DJ"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "HORA APUNTE"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-36" }, "ACCIONES"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-[var(--bw-line)] font-sans" }, notebookTracks.map((row, idx) => {
       const isRowPlaying = previewPlaying && audioRef.current.src === row.preview_url;
       return /* @__PURE__ */ React.createElement("tr", { key: row.notebook_id || idx, className: "hover:bg-[#12121a] transition-colors" }, /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center text-gray-500 font-mono" }, idx + 1), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, row.preview_url ? /* @__PURE__ */ React.createElement(
         "button",
@@ -17620,18 +17624,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
     };
     const selBpmAvg = selectedMapTracks.length > 0 ? Math.round(selectedMapTracks.reduce((acc, t) => acc + (parseFloat(t.bpm || t.b) || 126), 0) / selectedMapTracks.length) : 126;
     const selEnergyAvg = selectedMapTracks.length > 0 ? Math.round(selectedMapTracks.reduce((acc, t) => acc + parseInt(t.energy !== void 0 ? t.energy : t.e || 75, 10), 0) / selectedMapTracks.length) : 80;
-    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-map w-full h-full flex flex-col bg-[#07070c] text-white overflow-hidden relative select-none" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950/90 border-b border-djzinc-800/90 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20 backdrop-blur-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-xl bg-gradient-to-br from-djcyan-400 to-indigo-600 flex items-center justify-center text-black font-black text-sm shadow-[0_0_15px_rgba(6,182,212,0.4)]" }, /* @__PURE__ */ React.createElement(Icons.Map, null)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-black text-sm tracking-wider uppercase" }, "SCATTER MAP"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono px-1.5 py-0.2 rounded bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 font-bold" }, "PAISAJE 2D")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono hidden sm:inline" }, "Distancia = Compatibilidad Ac\xFAstica"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center bg-djzinc-900 p-0.5 rounded-xl border border-djzinc-800 text-xs font-mono font-bold" }, [
-      { id: "energy_dance", label: "\u26A1 Energ\xEDa / Dance", title: "X: Energ\xEDa (0-100%) vs Y: Bailabilidad (0-100%)" },
-      { id: "bpm_energy", label: "\u{1F941} BPM / Energ\xEDa", title: "X: Tempo BPM vs Y: Nivel de Energ\xEDa" },
-      { id: "camelot_wheel", label: "\u2638 Rueda Camelot", title: "Proyecci\xF3n Radial Arm\xF3nica 12 Slices Camelot 2D" },
-      { id: "acoustic_clusters", label: "\u{1F30C} Clusters AI", title: "Agrupaci\xF3n Multi-dimensional por G\xE9nero y Timbre" }
+    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-map w-full h-full flex flex-col bg-[#09090b] text-zinc-300 overflow-hidden relative select-none font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "p-2.5 sm:px-4 bg-[var(--bw-surface-1)] border-b border-[var(--bw-line)] flex flex-wrap items-center justify-between gap-2.5 shrink-0 z-20 backdrop-blur-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] shadow-sm" }, /* @__PURE__ */ React.createElement(Icons.Map, { size: 15 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-bold text-xs tracking-wider uppercase text-white" }, "Scatter Map"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 font-bold" }, "2D")))), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Proyecci\xF3n espacial" }, [
+      { id: "energy_dance", label: "Energ\xEDa / Dance", title: "X: Energ\xEDa (0-100%) vs Y: Bailabilidad (0-100%)" },
+      { id: "bpm_energy", label: "BPM / Energ\xEDa", title: "X: Tempo BPM vs Y: Nivel de Energ\xEDa" },
+      { id: "camelot_wheel", label: "Rueda Camelot", title: "Proyecci\xF3n Radial Arm\xF3nica 12 Slices Camelot 2D" },
+      { id: "acoustic_clusters", label: "Clusters AI", title: "Agrupaci\xF3n Multi-dimensional por G\xE9nero y Timbre" }
     ].map((proj) => /* @__PURE__ */ React.createElement(
       "button",
       {
         key: proj.id,
         type: "button",
         onClick: () => setProjectionMode(proj.id),
-        className: `px-2.5 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${projectionMode === proj.id ? "bg-djcyan-500 text-black font-black shadow-md shadow-djcyan-500/20" : "text-gray-400 hover:text-white hover:bg-djzinc-800"}`,
+        className: `ws-seg-btn ${projectionMode === proj.id ? "ws-seg-on" : ""}`,
+        "aria-pressed": projectionMode === proj.id,
         title: proj.title
       },
       proj.label
@@ -17650,15 +17655,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
         "aria-pressed": colorMode === c.id
       },
       c.label
-    ))), /* @__PURE__ */ React.createElement("div", { className: "ws-seg" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Herramienta de selecci\xF3n" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setToolMode("pan"),
         className: `ws-seg-btn ${toolMode === "pan" ? "ws-seg-on" : ""}`,
+        "aria-pressed": toolMode === "pan",
         title: "Modo Navegar: Arrastra el fondo para moverte y usa la rueda para hacer zoom"
       },
-      /* @__PURE__ */ React.createElement(Icons.Target, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Target, { size: 13 }),
       " ",
       /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "Navegar")
     ), /* @__PURE__ */ React.createElement(
@@ -17667,9 +17673,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
         type: "button",
         onClick: () => setToolMode("lasso"),
         className: `ws-seg-btn ${toolMode === "lasso" ? "ws-seg-on" : ""}`,
+        "aria-pressed": toolMode === "lasso",
         title: "Herramienta Lasso: Dibuja a mano alzada para capturar una zona de pistas"
       },
-      /* @__PURE__ */ React.createElement(Icons.Pencil, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Pencil, { size: 13 }),
       " ",
       /* @__PURE__ */ React.createElement("span", null, "Lasso")
     ), /* @__PURE__ */ React.createElement(
@@ -17678,9 +17685,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
         type: "button",
         onClick: () => setToolMode("box"),
         className: `ws-seg-btn ${toolMode === "box" ? "ws-seg-on" : ""}`,
+        "aria-pressed": toolMode === "box",
         title: "Herramienta Caja: Haz clic y arrastra un rect\xE1ngulo para seleccionar un grupo"
       },
-      /* @__PURE__ */ React.createElement("span", null, "\u2B1A"),
+      /* @__PURE__ */ React.createElement(Icons.Grid, { size: 13 }),
       " ",
       /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "Caja")
     ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
@@ -17690,38 +17698,38 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onClick: () => {
           if (onNavigateTab) onNavigateTab("setbuilder");
         },
-        className: "bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-200 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow shrink-0",
+        className: "ws-btn ws-btn-outline",
         title: "Ir a Set Builder para generar el flujo de sesi\xF3n en Grafo DAG (DJOID Graph Playlists)"
       },
-      /* @__PURE__ */ React.createElement(Icons.Radar, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Flow, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", { className: "hidden md:inline" }, "Graph Playlists")
-    ), /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-2.5 text-gray-500 pointer-events-none flex items-center" }, /* @__PURE__ */ React.createElement(Icons.Search, null)), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-2.5 text-zinc-500 pointer-events-none flex items-center" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 13 })), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
         value: searchQuery,
         onChange: (e) => setSearchQuery(e.target.value),
         placeholder: "Buscar en el mapa",
-        className: "w-36 sm:w-48 bg-djzinc-900 border border-djzinc-750 rounded-xl pl-8 pr-7 py-1 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-djcyan-500 shadow-inner"
+        className: "w-32 sm:w-44 bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] rounded-lg pl-7 pr-6 py-1 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-cyan-400"
       }
     ), searchQuery && /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setSearchQuery(""),
-        className: "absolute right-2 text-xs text-gray-400 hover:text-white cursor-pointer px-1",
+        className: "absolute right-2 text-xs text-zinc-400 hover:text-white cursor-pointer px-1",
         title: "Borrar b\xFAsqueda"
       },
-      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 12 })
     )), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setShowHarmonicPaths((prev) => !prev),
-        className: `p-1.5 rounded-lg border text-xs font-mono cursor-pointer transition-colors ${showHarmonicPaths ? "bg-djcyan-950/80 text-djcyan-300 border-djcyan-600/60" : "bg-djzinc-900 text-gray-500 border-djzinc-800"}`,
+        className: `ws-btn ${showHarmonicPaths ? "ws-btn-active" : "ws-btn-outline"} px-2`,
         title: showHarmonicPaths ? "Ocultar l\xEDneas de mezcla arm\xF3nica" : "Mostrar enlaces arm\xF3nicos entre pistas compatibles"
       },
-      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" })
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 13 })
     ))), /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "flex-1 w-full h-full relative overflow-hidden bg-black" }, /* @__PURE__ */ React.createElement(
       "canvas",
       {
@@ -17963,24 +17971,24 @@ Respuesta: ${qa.a}`).join("\n\n"),
         title: "Acercar (+)"
       },
       "+"
-    ))))), activeTracks.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm z-30" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-md w-full bg-djzinc-950 border border-djzinc-800 p-6 rounded-2xl shadow-2xl text-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-2xl bg-gradient-to-br from-djcyan-500 to-indigo-600 flex items-center justify-center text-black text-2xl mx-auto mb-4 shadow-[0_0_25px_rgba(6,182,212,0.4)]" }, /* @__PURE__ */ React.createElement(Icons.Star, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-lg text-white mb-2" }, "Explora tu Biblioteca como un Paisaje Espacial"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-mono mb-5 leading-relaxed" }, "Scatter Map posiciona cada pista seg\xFAn su energ\xEDa, danza, BPM y tonalidad. La proximidad espacial revela qu\xE9 temas mezclan naturalmente juntos."), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2.5" }, /* @__PURE__ */ React.createElement(
+    ))))), activeTracks.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm z-30" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-md w-full bg-[var(--bw-surface-1)] border border-[var(--bw-line-strong)] p-6 rounded-xl shadow-2xl text-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] mx-auto mb-3.5 shadow-[0_0_20px_rgba(34,211,238,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Map, { size: 24 })), /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-bold text-base text-white mb-1.5 uppercase tracking-wide" }, "Paisaje Espacial de Cabina"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 font-mono mb-5 leading-relaxed" }, "Scatter Map posiciona cada pista seg\xFAn su energ\xEDa, danza, BPM y tonalidad. La proximidad espacial revela qu\xE9 temas mezclan naturalmente juntos."), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setUseDemo(true),
-        className: "w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all"
+        className: "ws-btn ws-btn-primary w-full justify-center h-9 text-xs"
       },
-      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
-      " Cargar Demo Electr\xF3nica (16 Tracks)"
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Cargar Demo Electr\xF3nica (16 Tracks)")
     ), onSelectDirectory && /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: onSelectDirectory,
-        className: "w-full py-2.5 px-4 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs cursor-pointer active:scale-95 transition-all"
+        className: "ws-btn ws-btn-outline w-full justify-center h-9 text-xs"
       },
-      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }),
-      " Abrir Carpeta de M\xFAsica Local"
+      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Carpeta de M\xFAsica Local")
     )))), hoveredTrack && /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -18029,7 +18037,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
             onPlayTrack(selectedTrack, 0, true);
           }
         },
-        className: "flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all cursor-pointer"
+        className: "ws-btn ws-btn-primary flex-1 justify-center"
       },
       /* @__PURE__ */ React.createElement("span", null, Boolean(nowPlayingTrack && isPlaying && (nowPlayingTrack.id === selectedTrack.id || nowPlayingTrack.title === selectedTrack.title)) ? "\u23F8 Pausar" : "\u25B6 Escuchar Preview")
     ), /* @__PURE__ */ React.createElement(
@@ -18041,20 +18049,22 @@ Respuesta: ${qa.a}`).join("\n\n"),
             onAddTracksToSet([selectedTrack]);
           }
         },
-        className: "py-2 px-3 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all",
+        className: "ws-btn ws-btn-outline",
         title: "A\xF1adir esta pista al Set Builder"
       },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Plus, { size: 14, className: "inline-block align-[-2px]" }), " Set")
-    ))), selectedMapTracks.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[620px] bg-[#0c0d16]/95 border border-amber-500/50 p-3.5 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.25)] backdrop-blur-xl z-40 animate-slideUp font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between pb-2 mb-2 border-b border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-white" }, "Zona Seleccionada: ", /* @__PURE__ */ React.createElement("span", { className: "text-amber-300 font-black" }, selectedMapTracks.length, " pistas"))), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement(Icons.Plus, { size: 14 }),
+      " ",
+      /* @__PURE__ */ React.createElement("span", null, "Set")
+    ))), selectedMapTracks.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[620px] bg-[rgba(14,14,18,0.96)] border border-cyan-500/50 p-3.5 rounded-xl shadow-[0_0_30px_rgba(34,211,238,0.25)] backdrop-blur-xl z-40 animate-slideUp font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between pb-2 mb-2 border-b border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-white" }, "Zona Seleccionada: ", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-300 font-black" }, selectedMapTracks.length, " pistas"))), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setSelectedMapTracks([]),
-        className: "text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-djzinc-800 cursor-pointer"
+        className: "ws-btn ws-btn-ghost text-xs py-1"
       },
-      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 12 }),
       " Deseleccionar"
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 text-[11px] text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Wave, { size: 14, className: "inline-block align-[-2px]" }), " Promedio: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, selBpmAvg, " BPM")), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }), " Energ\xEDa: ", /* @__PURE__ */ React.createElement("strong", { className: "text-amber-300" }, selEnergyAvg, "%"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 text-[11px] text-zinc-400" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Wave, { size: 14, className: "inline-block align-[-2px]" }), " Promedio: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, selBpmAvg, " BPM")), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }), " Energ\xEDa: ", /* @__PURE__ */ React.createElement("strong", { className: "text-amber-300" }, selEnergyAvg, "%"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -18063,10 +18073,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
             onPlayTrack(selectedMapTracks[0], 0, true);
           }
         },
-        className: "px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-white text-xs font-bold border border-djzinc-700 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all",
+        className: "ws-btn ws-btn-outline",
         title: "Reproducir primer tema de la zona capturada"
       },
-      /* @__PURE__ */ React.createElement(Icons.Play, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Play, { size: 13 }),
       " ",
       /* @__PURE__ */ React.createElement("span", null, "Reproducir Zona")
     ), /* @__PURE__ */ React.createElement(
@@ -18078,10 +18088,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
             onAddTracksToSet(selectedMapTracks);
           }
         },
-        className: "px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer active:scale-95 transition-all",
+        className: "ws-btn ws-btn-primary",
         title: "Enviar pistas capturadas en esta zona directamente al Set Builder"
       },
-      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 13 }),
       " ",
       /* @__PURE__ */ React.createElement("span", null, "Enviar a Set")
     ), /* @__PURE__ */ React.createElement(
@@ -18096,10 +18106,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
             onNavigateTab("setbuilder");
           }
         },
-        className: "px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-500/30 cursor-pointer active:scale-95 transition-all",
+        className: "ws-btn ws-btn-outline",
         title: "Enviar pistas capturadas y generar Flujo de Sesi\xF3n (Graph Playlists)"
       },
-      /* @__PURE__ */ React.createElement(Icons.Radar, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Flow, { size: 13 }),
       " ",
       /* @__PURE__ */ React.createElement("span", null, "Flujo Sesi\xF3n (DAG)")
     ))))));

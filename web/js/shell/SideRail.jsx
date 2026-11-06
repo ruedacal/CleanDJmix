@@ -14,8 +14,9 @@ const RailButton = ({ item, isActive, expanded, onSelect, t, badge }) => {
         >
             <span className="bw-led" aria-hidden="true" />
             <Icon size={18} />
-            <span className={expanded ? 'bw-rail-label' : 'bw-rail-caption'}>{label}</span>
-            {badge != null && expanded && <span className="bw-rail-badge">{badge}</span>}
+            <span className="bw-rail-label">{label}</span>
+            <span className="bw-rail-caption">{label}</span>
+            {badge != null && <span className="bw-rail-badge">{badge}</span>}
         </button>
     );
 };
@@ -38,7 +39,8 @@ export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, a
                     className={`bw-rail-live ${copilotActive ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
                 >
                     <span className="bw-live-dot" aria-hidden="true" />
-                    <span className={expanded ? 'bw-rail-label' : 'bw-rail-caption'}>{COPILOT_ITEM.fallback}</span>
+                    <span className="bw-rail-label">{COPILOT_ITEM.fallback}</span>
+                    <span className="bw-rail-caption">{COPILOT_ITEM.fallback}</span>
                     {expanded && <span className="bw-kbd ml-auto">LIVE</span>}
                 </button>
             </div>

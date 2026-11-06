@@ -20256,146 +20256,126 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     };
 
     return (
-        <div className="ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#040407] overflow-y-auto p-4 sm:p-6 text-gray-200 space-y-6">
+        <div className="ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#09090b] overflow-y-auto p-4 sm:p-6 text-zinc-300 space-y-5 select-none font-sans">
             {/* Header del Radar Shazam */}
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-djzinc-800 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 via-djcyan-500 to-indigo-500 p-0.5 shadow-lg shadow-djcyan-500/20 flex items-center justify-center">
-                        <div className="w-full h-full bg-[#08080d] rounded-[10px] flex items-center justify-center text-djcyan-400">
-                            <Icons.Radar />
-                        </div>
+                    <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+                        <Icons.Radar size={20} />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-black text-white tracking-wide">
-                                RADAR ACÚSTICO BEATWAVE
+                            <h2 className="text-sm font-semibold tracking-wider text-white uppercase font-syne">
+                                Radar Acústico
                             </h2>
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold bg-gradient-to-r from-blue-950 to-indigo-950 text-djcyan-400 border border-djcyan-800/80 rounded shadow">
-                                {selectedEngine === 'hybrid' ? '⚡ Modo Híbrido Pro (Red Acústica)' : selectedEngine === 'audd' ? '🟣 Identificación Acústica Pro' : '🔵 Escaneo Espectral Smart Drop'}
+                            <span className="px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded">
+                                {selectedEngine === 'hybrid' ? 'Híbrido Pro (Smart Drop)' : selectedEngine === 'audd' ? 'Identificación Acústica Pro' : 'Escaneo Espectral'}
                             </span>
                         </div>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-zinc-400">
                             Identifica pistas desconocidas al instante escuchando con el micrófono o cargando archivos de audio.
                         </p>
                     </div>
                 </div>
 
                 {statusMsg && (
-                    <div className="px-3 py-1.5 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono flex items-center gap-2 shadow">
-                        <span className={`w-2 h-2 rounded-full ${isAnalyzing || isListening ? 'bg-djcyan-400 animate-pulse' : 'bg-djgreen-400'}`}></span>
-                        <span className="text-gray-300">{statusMsg}</span>
+                    <div className="px-3 py-1.5 rounded-lg bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] text-xs font-mono flex items-center gap-2 shadow">
+                        <span className={`w-2 h-2 rounded-full ${isAnalyzing || isListening ? 'bg-cyan-400 animate-pulse' : 'bg-emerald-400'}`}></span>
+                        <span className="text-zinc-300">{statusMsg}</span>
                     </div>
                 )}
             </div>
 
             {/* Barra de Selección de Motores Acústicos y Configuración */}
-            <div className="bg-[#08080f] border border-djzinc-800 rounded-2xl p-3.5 shadow-xl space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[11px] font-mono font-bold text-gray-400 uppercase tracking-wider">
-                            Motor Activo:
-                        </span>
-                        <div className="flex flex-wrap items-center gap-1 bg-djzinc-900 p-1 rounded-xl border border-djzinc-750">
-                            <button
-                                type="button"
-                                onClick={() => setSelectedEngine('hybrid')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                                    selectedEngine === 'hybrid'
-                                        ? 'bg-gradient-to-r from-emerald-500 to-djcyan-400 text-black shadow-lg shadow-djcyan-500/20'
-                                        : 'text-gray-400 hover:text-white'
-                                }`}
-                                title="Combina escaneo espectral de drop con respaldo acústico automático para máxima precisión"
-                            >
-                                <Icons.Zap size={14} className="inline-block align-[-2px]" />
-                                <span>Híbrido Pro (Recomendado)</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedEngine('shazamio')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                                    selectedEngine === 'shazamio'
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                        : 'text-gray-400 hover:text-white'
-                                }`}
-                                title="Escaneo multi-segmento de drops y breakdowns para pistas de DJ"
-                            >
-                                <span className="inline-block w-2 h-2 rounded-full bg-sky-400 " aria-hidden="true" />
-                                <span>Escaneo Espectral Smart Drop</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedEngine('audd')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                                    selectedEngine === 'audd'
-                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
-                                        : 'text-gray-400 hover:text-white'
-                                }`}
-                                title="Red de Identificación Acústica Pro (ISRC y Catálogo Global)"
-                            >
-                                <span className="inline-block w-2 h-2 rounded-full bg-violet-400 " aria-hidden="true" />
-                                <span>Identificación Acústica Pro</span>
-                            </button>
-                        </div>
+            <div className="bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="bw-eyebrow text-[10.5px]">Motor Activo:</span>
+                    <div className="ws-seg" role="group" aria-label="Motor activo">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedEngine('hybrid')}
+                            className={`ws-seg-btn ${selectedEngine === 'hybrid' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={selectedEngine === 'hybrid'}
+                            title="Combina escaneo espectral de drop con respaldo acústico automático para máxima precisión"
+                        >
+                            <Icons.Zap size={13} />
+                            <span>Híbrido Pro (Recomendado)</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedEngine('shazamio')}
+                            className={`ws-seg-btn ${selectedEngine === 'shazamio' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={selectedEngine === 'shazamio'}
+                            title="Escaneo multi-segmento de drops y breakdowns para pistas de DJ"
+                        >
+                            <span>Escaneo Espectral</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedEngine('audd')}
+                            className={`ws-seg-btn ${selectedEngine === 'audd' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={selectedEngine === 'audd'}
+                            title="Red de Identificación Acústica Pro (ISRC y Catálogo Global)"
+                        >
+                            <span>Identificación Pro (ISRC)</span>
+                        </button>
                     </div>
-
-                    <button
-                        type="button"
-                        onClick={() => setShowConfig(!showConfig)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                            showConfig || auddToken 
-                                ? 'bg-purple-950/60 border-purple-700 text-purple-300' 
-                                : 'bg-djzinc-900 border-djzinc-750 text-gray-400 hover:text-white'
-                        }`}
-                        title="Configurar claves de API o token personalizado"
-                    >
-                        <Icons.Gear size={14} className="inline-block align-[-2px]" />
-                        <span>{showConfig ? 'Ocultar Opciones' : 'Opciones API'}</span>
-                        {auddToken && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
-                    </button>
                 </div>
 
-                {showConfig && (
-                    <div className="bg-[#05050a] p-3 rounded-xl border border-djzinc-800 text-xs font-mono space-y-2 animate-fadeIn">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                            <div>
-                                <span className="text-gray-200 font-bold block">Token de Red Acústica API:</span>
-                                <span className="text-[10px] text-gray-400">
-                                    Por defecto BeatWave usa el token público comunitario ("test"). Si posees tu propio token de API acústica, ingrésalo aquí para consultas comerciales ilimitadas.
-                                </span>
-                            </div>
-                            <input
-                                type="text"
-                                value={auddToken}
-                                onChange={(e) => setAuddToken(e.target.value)}
-                                placeholder="test (predeterminado)"
-                                className="w-full sm:w-64 px-2.5 py-1.5 bg-djzinc-900 border border-djzinc-750 rounded-lg text-xs text-white font-mono focus:border-purple-500 outline-none"
-                            />
-                        </div>
-                    </div>
-                )}
+                <button
+                    type="button"
+                    onClick={() => setShowConfig(!showConfig)}
+                    className={`ws-btn ${showConfig || auddToken ? 'ws-btn-active' : 'ws-btn-outline'}`}
+                    title="Configurar claves de API o token personalizado"
+                >
+                    <Icons.Sliders size={14} />
+                    <span>{showConfig ? 'Ocultar Opciones' : 'Opciones API'}</span>
+                    {auddToken && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+                </button>
             </div>
+
+            {showConfig && (
+                <div className="bg-[var(--bw-surface-2)] p-3.5 rounded-xl border border-[var(--bw-line-strong)] text-xs font-mono space-y-2 animate-fadeIn">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div>
+                            <span className="text-zinc-200 font-bold block">Token de Red Acústica API:</span>
+                            <span className="text-[10.5px] text-zinc-400">
+                                Por defecto BeatWave usa el token comunitario ("test"). Si posees tu propio token de API acústica, ingrésalo aquí para consultas comerciales ilimitadas.
+                            </span>
+                        </div>
+                        <input
+                            type="text"
+                            value={auddToken}
+                            onChange={(e) => setAuddToken(e.target.value)}
+                            placeholder="test (predeterminado)"
+                            className="w-full sm:w-64 px-2.5 py-1.5 bg-[var(--bw-surface-1)] border border-[var(--bw-line-strong)] rounded-lg text-xs text-white font-mono focus:border-cyan-400 outline-none"
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Dos Módulos de Entrada: Micrófono & Carga de Archivo */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Módulo 1: Micrófono en Directo */}
-                <div className="bg-[#09090f] p-5 rounded-2xl border border-djzinc-800 flex flex-col items-center text-center justify-between relative overflow-hidden shadow-lg group hover:border-djcyan-500/40 transition-all">
+                <div className="bg-[var(--bw-surface-1)] p-5 rounded-xl border border-[var(--bw-line)] hover:border-[var(--bw-line-strong)] flex flex-col items-center text-center justify-between relative overflow-hidden shadow-sm transition-all">
                     <div className="space-y-1 mb-2">
-                        <span className="text-[10px] font-mono font-bold uppercase text-djcyan-400 tracking-wider">
+                        <span className="bw-eyebrow text-cyan-400">
                             MODO A • CAPTURA AMBIENTAL
                         </span>
-                        <h3 className="text-base font-bold text-white">Escucha en Directo por Micrófono</h3>
-                        <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                        <h3 className="text-sm font-semibold text-white">Escucha en Directo por Micrófono</h3>
+                        <p className="text-xs text-zinc-400 max-w-xs mx-auto">
                             Captura música ambiental en cabina y consulta la red de identificación acústica global.
                         </p>
                     </div>
 
                     {/* Selector de Fuente de Entrada */}
-                    <div className="ws-seg">
-                        <span className="text-gray-500 pl-1 text-[9px] uppercase tracking-wider">Entrada:</span>
+                    <div className="ws-seg" role="group" aria-label="Fuente de micrófono">
+                        <span className="ws-seg-label">Entrada</span>
                         <button
                             type="button"
                             onClick={() => { setMicCaptureMode('auto'); setMicPermissionError(null); }}
-                            className={`px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === 'auto' ? 'bg-djcyan-500 text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                            className={`ws-seg-btn ${micCaptureMode === 'auto' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={micCaptureMode === 'auto'}
                             title="Auto: prueba primero el micrófono del navegador y si falla conmuta al hardware de sistema automáticamente"
                         >
                             Auto
@@ -20420,7 +20400,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         </button>
                     </div>
 
-                    <div className="my-3 relative flex flex-col items-center justify-center">
+                    <div className="my-4 relative flex flex-col items-center justify-center">
                         <div className="relative flex items-center justify-center">
                             <span className={`ws-radar-ring ${isListening ? 'ws-radar-ring-live' : ''}`} aria-hidden="true"></span>
                             <span className={`ws-radar-ring ws-radar-ring-2 ${isListening ? 'ws-radar-ring-live' : ''}`} aria-hidden="true"></span>
@@ -20439,23 +20419,23 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         </div>
 
                         {micPermissionError && !isListening && (
-                            <div className="mt-3 p-3 bg-amber-950/90 border border-amber-600/70 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn">
+                            <div className="mt-3 p-3 bg-amber-950/60 border border-amber-600/40 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn">
                                 <div className="flex items-center gap-1.5 font-bold text-amber-300">
                                     <Icons.Lock size={14} className="inline-block align-[-2px]" />
                                     <span>Micrófono de navegador restringido</span>
                                 </div>
-                                <p className="text-[10px] text-gray-300 leading-tight">
-                                    • En la barra del navegador, haz clic en el <strong>icono del candado</strong> (a la izquierda de la URL) y cambia Micrófono a <strong>Permitir</strong>.
+                                <p className="text-[10px] text-zinc-300 leading-tight">
+                                    • En la barra del navegador, haz clic en el <strong>icono del candado</strong> y cambia Micrófono a <strong>Permitir</strong>.
                                 </p>
-                                <p className="text-[10px] text-gray-300 leading-tight">
-                                    • En macOS: <strong>Ajustes del Sistema &gt; Privacidad & Seguridad &gt; Micrófono</strong> y activa tu navegador.
+                                <p className="text-[10px] text-zinc-300 leading-tight">
+                                    • En macOS: <strong>Ajustes del Sistema &gt; Privacidad &gt; Micrófono</strong>.
                                 </p>
                                 <button
                                     type="button"
                                     onClick={startHardwareMicrophoneListening}
-                                    className="mt-1 w-full py-1.5 px-2 bg-gradient-to-r from-djcyan-500 to-emerald-400 hover:from-djcyan-400 hover:to-emerald-300 text-black font-bold text-[11px] rounded-lg cursor-pointer transition-all shadow"
+                                    className="ws-btn ws-btn-primary w-full justify-center mt-1"
                                 >
-                                    <Icons.Sliders size={14} className="inline-block align-[-2px]" /> Usar Captura Hardware de Sistema
+                                    <Icons.Sliders size={14} /> Usar Captura Hardware de Sistema
                                 </button>
                             </div>
                         )}
@@ -20463,20 +20443,16 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         {isListening && (
                             <div className="w-52 mt-3.5 flex flex-col items-center gap-1.5 animate-fadeIn">
                                 <div className="flex items-center justify-between w-full text-[10px] font-mono">
-                                    <span className="text-gray-400">SEÑAL DE MICRÓFONO</span>
-                                    <span className={micLevel > 15 ? "text-djcyan-400 font-bold" : "text-amber-400"}>{micLevel}%</span>
+                                    <span className="text-zinc-400">SEÑAL DE MICRÓFONO</span>
+                                    <span className={micLevel > 15 ? "text-cyan-400 font-bold" : "text-amber-400"}>{micLevel}%</span>
                                 </div>
-                                <div className="w-full h-2 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800 p-0.5">
+                                <div className="w-full h-2 bg-[var(--bw-surface-3)] rounded-full overflow-hidden border border-[var(--bw-line)] p-0.5">
                                     <div 
-                                        className={`h-full transition-all duration-75 rounded-full ${
-                                            micLevel > 70 ? 'bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500' :
-                                            micLevel > 20 ? 'bg-gradient-to-r from-cyan-500 to-emerald-400' :
-                                            'bg-djcyan-500'
-                                        }`}
+                                        className="h-full transition-all duration-75 rounded-full bg-cyan-400"
                                         style={{ width: `${Math.max(4, micLevel)}%` }}
                                     />
                                 </div>
-                                <span className="text-[10px] font-mono text-gray-500">
+                                <span className="text-[10px] font-mono text-zinc-500">
                                     {micLevel > 10 ? "✓ Captando audio ambiental" : "Acerca el altavoz o sube el volumen"}
                                 </span>
                             </div>
@@ -20487,29 +20463,29 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); stopMicrophoneListeningEarly(); }}
-                                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 cursor-pointer flex items-center gap-1 transition-all"
+                                    className="ws-btn ws-btn-primary text-xs"
                                     title="Enviar grabación inmediatamente sin esperar al final de los 10 segundos"
                                 >
-                                    <Icons.Zap size={14} className="inline-block align-[-2px]" />
+                                    <Icons.Zap size={14} />
                                     <span>Identificar Ya</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); cancelListening(); }}
-                                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-800 hover:bg-red-950 text-gray-300 hover:text-red-300 border border-djzinc-700 cursor-pointer transition-all"
+                                    className="ws-btn ws-btn-ghost text-xs"
                                     title="Cancelar la captura actual"
                                 >
-                                    <Icons.Close size={14} className="inline-block align-[-2px]" /> Cancelar
+                                    <Icons.Close size={14} /> Cancelar
                                 </button>
                             </div>
                         )}
                     </div>
 
-                    <div className="text-[11px] font-mono text-gray-400">
+                    <div className="text-[11px] font-mono text-zinc-400">
                         {isListening ? (
-                            <span className="text-red-400 font-bold animate-pulse">● Grabando audio del micrófono...</span>
+                            <span className="text-rose-400 font-bold animate-pulse">● Grabando audio del micrófono...</span>
                         ) : isAnalyzing ? (
-                            <span className="text-djcyan-400 font-bold">● Analizando huella acústica...</span>
+                            <span className="text-cyan-400 font-bold">● Analizando huella acústica...</span>
                         ) : (
                             <span>Haz clic para iniciar la escucha de 10 segundos</span>
                         )}
@@ -20527,17 +20503,17 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                             handleFileSelect(e.dataTransfer.files[0]);
                         }
                     }}
-                    className={`bg-[#09090f] p-5 rounded-2xl border flex flex-col items-center text-center justify-between transition-all cursor-pointer shadow-lg ${
-                        dragOver ? 'border-djcyan-400 bg-djcyan-950/20 scale-[1.01]' : 'border-djzinc-800 hover:border-djcyan-500/40'
+                    className={`bg-[var(--bw-surface-1)] p-5 rounded-xl border flex flex-col items-center text-center justify-between transition-all cursor-pointer shadow-sm group ${
+                        dragOver ? 'border-cyan-400 bg-cyan-950/20 scale-[1.01]' : 'border-[var(--bw-line)] hover:border-[var(--bw-line-strong)]'
                     }`}
                     onClick={() => fileInputRef.current && fileInputRef.current.click()}
                 >
                     <div className="space-y-1 mb-4">
-                        <span className="text-[10px] font-mono font-bold uppercase text-purple-400 tracking-wider">
+                        <span className="bw-eyebrow text-zinc-400">
                             MODO B • ANALIZADOR DE ARCHIVO
                         </span>
-                        <h3 className="text-base font-bold text-white">Subir o Arrastrar Archivo de Audio</h3>
-                        <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                        <h3 className="text-sm font-semibold text-white">Subir o Arrastrar Archivo de Audio</h3>
+                        <p className="text-xs text-zinc-400 max-w-xs mx-auto">
                             Arrastra cualquier archivo local (.mp3, .flac, .wav, .m4a) para extraer su huella digital y metadatos.
                         </p>
                     </div>
@@ -20556,12 +20532,12 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         className="hidden" 
                     />
 
-                    <div className="my-3 w-28 h-28 rounded-2xl border-2 border-dashed border-djzinc-700 hover:border-djcyan-400 flex flex-col items-center justify-center transition-colors bg-djzinc-950">
-                        <Icons.Folder size={14} className="inline-block align-[-2px] mb-1" />
-                        <span className="text-[10px] font-mono font-bold text-gray-300">ARRASTRAR AQUÍ</span>
+                    <div className="my-3 w-32 h-28 rounded-xl border-2 border-dashed border-[var(--bw-line-strong)] group-hover:border-[var(--bw-cyan)] flex flex-col items-center justify-center transition-colors bg-[var(--bw-surface-2)]">
+                        <Icons.Upload size={22} className="text-zinc-400 group-hover:text-[var(--bw-cyan)] mb-1.5 transition-colors" />
+                        <span className="text-[10px] font-mono font-bold text-zinc-300">ARRASTRAR AQUÍ</span>
                     </div>
 
-                    <div className="text-[11px] font-mono text-gray-400">
+                    <div className="text-[11px] font-mono text-zinc-500">
                         <span>Formatos: MP3, FLAC, WAV, M4A, OGG</span>
                     </div>
                 </div>
@@ -20569,32 +20545,32 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
 
             {/* Resultado de Identificación Activa con Reproductor y Acciones */}
             {identifiedTrack && (
-                <div className="bg-gradient-to-r from-blue-950/50 via-djzinc-950 to-indigo-950/50 p-5 rounded-2xl border-2 border-djcyan-500/50 shadow-2xl space-y-4 animate-fadeIn">
-                    <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-3">
+                <div className="bg-[var(--bw-surface-2)] p-5 rounded-xl border border-cyan-500/40 shadow-xl space-y-4 animate-fadeIn">
+                    <div className="flex items-center justify-between border-b border-[var(--bw-line)] pb-3">
                         <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse"></span>
-                            <span className="text-xs font-mono font-black text-djcyan-400 uppercase tracking-wider">
+                            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse"></span>
+                            <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
                                 PISTA IDENTIFICADA
                             </span>
                             {identifiedTrack.motor_usado && (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gradient-to-r from-blue-950 to-indigo-950 text-djcyan-300 border border-djcyan-700/60 shadow">
-                                    <Icons.Zap size={14} className="inline-block align-[-2px]" /> {identifiedTrack.motor_usado}
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-700/60">
+                                    <Icons.Zap size={12} className="inline-block align-[-2px]" /> {identifiedTrack.motor_usado}
                                 </span>
                             )}
                         </div>
                         <div className="flex items-center gap-2">
                             {identifiedTrack.isrc && (
-                                <span className="text-[10px] font-mono text-gray-400 bg-djzinc-900 px-2 py-0.5 rounded border border-djzinc-750">
+                                <span className="text-[10px] font-mono text-zinc-400 bg-[var(--bw-surface-1)] px-2 py-0.5 rounded border border-[var(--bw-line)]">
                                     ISRC: {identifiedTrack.isrc}
                                 </span>
                             )}
                             <button
                                 type="button"
                                 onClick={handleDescartarDeteccion}
-                                className="w-6 h-6 rounded-full bg-djzinc-850 hover:bg-red-950 text-gray-400 hover:text-red-400 flex items-center justify-center text-xs font-bold border border-djzinc-750 cursor-pointer transition-colors"
+                                className="ws-icon-btn w-6 h-6"
                                 title="Descartar esta detección"
                             >
-                                <Icons.Close size={14} className="inline-block align-[-2px]" />
+                                <Icons.Close size={14} />
                             </button>
                         </div>
                     </div>
@@ -20605,75 +20581,75 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                             <img 
                                 src={getValidCover(identifiedTrack.cover)} 
                                 alt="Track Artwork" 
-                                className="w-44 h-44 rounded-2xl object-cover border-2 border-djzinc-700 shadow-2xl"
+                                className="w-40 h-40 rounded-xl object-cover border border-[var(--bw-line-strong)] shadow-xl"
                             />
                             {identifiedTrack.preview_url && (
                                 <button
                                     type="button"
                                     onClick={() => togglePlayPreview(identifiedTrack.preview_url)}
-                                    className={`absolute inset-0 m-auto w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer font-black text-lg ${
+                                    className={`absolute inset-0 m-auto w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all cursor-pointer font-black text-base ${
                                         previewPlaying 
-                                            ? 'bg-emerald-500 text-black scale-105 shadow-[0_0_20px_rgba(16,185,129,0.7)]' 
-                                            : 'bg-djcyan-500 text-black hover:scale-110 shadow-[0_0_20px_rgba(6,182,212,0.6)]'
+                                            ? 'bg-emerald-400 text-black scale-105' 
+                                            : 'bg-[var(--bw-cyan)] text-black hover:scale-105 shadow-[0_0_16px_rgba(34,211,238,0.45)]'
                                     }`}
                                     title="Reproducir pre-escucha de audio oficial"
                                 >
-                                    {previewPlaying ? '❚❚' : '▶'}
+                                    {previewPlaying ? <Icons.Pause size={18} /> : <Icons.Play size={18} />}
                                 </button>
                             )}
-                            <span className="absolute bottom-2 left-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-gray-300 border border-djzinc-700">
+                            <span className="absolute bottom-2 left-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[9.5px] font-mono text-zinc-300 border border-[var(--bw-line)]">
                                 Pre-Escucha 30s
                             </span>
                         </div>
 
-                        <div className="flex-1 min-w-0 space-y-3.5">
+                        <div className="flex-1 min-w-0 space-y-3">
                             <div>
-                                <h1 className="text-2xl font-black text-white truncate" title={identifiedTrack.title}>
+                                <h1 className="text-xl font-bold text-white truncate" title={identifiedTrack.title}>
                                     {identifiedTrack.title}
                                 </h1>
-                                <p className="text-lg font-bold text-djcyan-400 truncate mt-0.5" title={identifiedTrack.artist}>
+                                <p className="text-base font-semibold text-cyan-400 truncate mt-0.5" title={identifiedTrack.artist}>
                                     {identifiedTrack.artist}
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                                <div className="bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
-                                    <span className="text-[9px] text-gray-500 block uppercase">Álbum</span>
-                                    <span className="text-gray-200 font-semibold truncate block" title={identifiedTrack.album}>
+                                <div className="bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]">
+                                    <span className="text-[9px] text-zinc-500 block uppercase">Álbum</span>
+                                    <span className="text-zinc-200 font-semibold truncate block" title={identifiedTrack.album}>
                                         {identifiedTrack.album || '--'}
                                     </span>
                                 </div>
-                                <div className="bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
-                                    <span className="text-[9px] text-gray-500 block uppercase">Género</span>
+                                <div className="bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]">
+                                    <span className="text-[9px] text-zinc-500 block uppercase">Género</span>
                                     <span className="text-emerald-400 font-semibold truncate block">
                                         {identifiedTrack.genre || 'Electronic'}
                                     </span>
                                 </div>
-                                <div className="bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
-                                    <span className="text-[9px] text-gray-500 block uppercase">Lanzamiento</span>
-                                    <span className="text-gray-200 font-semibold truncate block">
+                                <div className="bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]">
+                                    <span className="text-[9px] text-zinc-500 block uppercase">Lanzamiento</span>
+                                    <span className="text-zinc-200 font-semibold truncate block">
                                         {identifiedTrack.year || '--'}
                                     </span>
                                 </div>
-                                <div className="bg-[#050508] p-2.5 rounded-lg border border-djzinc-800">
-                                    <span className="text-[9px] text-gray-500 block uppercase">Sello / Label</span>
-                                    <span className="text-gray-300 font-semibold truncate block" title={identifiedTrack.label}>
+                                <div className="bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]">
+                                    <span className="text-[9px] text-zinc-500 block uppercase">Sello / Label</span>
+                                    <span className="text-zinc-300 font-semibold truncate block" title={identifiedTrack.label}>
                                         {identifiedTrack.label || '--'}
                                     </span>
                                 </div>
                             </div>
 
                             {/* SECCIÓN VISIBLE: COMENTARIO TÁCTICO & NOTA DE MEZCLA DJ */}
-                            <div className="bg-[#050508] p-3 rounded-xl border border-djzinc-800 space-y-2">
-                                <div className="flex items-center justify-between text-[11px] font-mono">
-                                    <span className="text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+                            <div className="bg-[var(--bw-surface-1)] p-3 rounded-xl border border-[var(--bw-line)] space-y-2">
+                                <div className="flex items-center justify-between text-[10.5px] font-mono">
+                                    <span className="text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                         Comentario Táctico DJ & Guía de Mezcla
                                     </span>
-                                    <span className="text-gray-500 text-[10px]">Tag ID3 / Libreta</span>
+                                    <span className="text-zinc-500 text-[10px]">Tag ID3 / Libreta</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Icons.MessageSquare size={14} className="inline-block align-[-2px]" />
+                                    <Icons.MessageSquare size={14} className="text-zinc-400 shrink-0" />
                                     <input 
                                         type="text" 
                                         value={identifiedTrack.comment || identifiedTrack.comentario || ''} 
@@ -20682,21 +20658,21 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                             setIdentifiedTrack(prev => ({ ...prev, comment: val, comentario: val }));
                                         }} 
                                         placeholder="Escribe aquí el comentario estratégico para cabina..."
-                                        className="flex-1 bg-djzinc-950 border border-djzinc-750 focus:border-djcyan-400 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-200 outline-none transition-colors"
+                                        className="flex-1 bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] focus:border-cyan-400 rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-200 outline-none transition-colors"
                                     />
                                 </div>
                                 <div className="flex flex-wrap items-center gap-1 pt-0.5">
                                     {[
-                                        { label: '🔥 Peak Time', text: `[${identifiedTrack.genre || 'Electronic'}] Peak Time • Drop Contundente • Outro Rápido 32b` },
-                                        { label: '🎧 Warm Up', text: `[${identifiedTrack.genre || 'Electronic'}] Warm Up Groovy • Entrada Progresiva 64b • Mezcla Limpia` },
-                                        { label: '🎤 Breakdown', text: `[${identifiedTrack.genre || 'Electronic'}] Breakdown Vocal Intenso • Mezcla Larga con Graves` },
-                                        { label: '⚡ After', text: `[${identifiedTrack.genre || 'Electronic'}] Afterhours • Dark Hypnotic • Bombo Pesado Sub-Bass` }
+                                        { label: 'Peak Time', text: `[${identifiedTrack.genre || 'Electronic'}] Peak Time • Drop Contundente • Outro Rápido 32b` },
+                                        { label: 'Warm Up', text: `[${identifiedTrack.genre || 'Electronic'}] Warm Up Groovy • Entrada Progresiva 64b • Mezcla Limpia` },
+                                        { label: 'Breakdown', text: `[${identifiedTrack.genre || 'Electronic'}] Breakdown Vocal Intenso • Mezcla Larga con Graves` },
+                                        { label: 'After', text: `[${identifiedTrack.genre || 'Electronic'}] Afterhours • Dark Hypnotic • Bombo Pesado Sub-Bass` }
                                     ].map((tpl, tIdx) => (
                                         <button
                                             key={tIdx}
                                             type="button"
                                             onClick={() => setIdentifiedTrack(prev => ({ ...prev, comment: tpl.text, comentario: tpl.text }))}
-                                            className="px-2 py-0.5 text-[9px] font-mono bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white rounded border border-djzinc-800 cursor-pointer transition-colors"
+                                            className="px-2 py-0.5 text-[9.5px] font-mono bg-[var(--bw-surface-2)] hover:bg-[var(--bw-surface-3)] text-zinc-400 hover:text-white rounded border border-[var(--bw-line)] cursor-pointer transition-colors"
                                             title={`Insertar: "${tpl.text}"`}
                                         >
                                             {tpl.label}
@@ -20705,57 +20681,55 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 </div>
                             </div>
 
-                            {/* DOS BOTONES PRINCIPALES: APUNTAR EN LISTA O DESCARTAR */}
-                            <div className="flex flex-wrap items-center gap-3 pt-2">
+                            {/* ACCIONES PRINCIPALES */}
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
                                 <button
                                     type="button"
                                     onClick={() => handleApuntarEnLista(identifiedTrack)}
-                                    className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                                    className="ws-btn ws-btn-primary"
                                     title="Añadir esta pista a tu Libreta Digital de Apuntes DJ"
                                 >
-                                    <Icons.FileText size={14} className="inline-block align-[-2px]" />
+                                    <Icons.Notebook size={14} />
                                     <span>Apuntar en Lista</span>
                                 </button>
 
                                 <button
                                     type="button"
-                                    onClick={handleDescartarDeteccion}
-                                    className="px-4 py-2.5 bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-800 font-mono font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
-                                    title="Descartar esta detección y dejar el radar listo"
-                                >
-                                    <Icons.Trash size={14} className="inline-block align-[-2px]" />
-                                    <span>Descartar</span>
-                                </button>
-
-                                <div className="h-6 w-px bg-djzinc-800 hidden sm:block"></div>
-
-                                <button
-                                    type="button"
                                     onClick={() => handleSendToSpotifyInternal(identifiedTrack)}
-                                    className="px-3.5 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-djgreen-400 border border-djgreen-800/80 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                                    className="ws-btn ws-btn-outline"
                                     title="Enviar a la cola de descarga en FLAC"
                                 >
-                                    <Icons.Download size={14} className="inline-block align-[-2px]" />
+                                    <Icons.Download size={14} />
                                     <span>Record Pool</span>
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => handleSendToAuditInternal(identifiedTrack)}
-                                    className="px-3.5 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-400 border border-djcyan-800/80 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                                    className="ws-btn ws-btn-outline"
                                     title="Añadir a la tabla de auditoría para análisis DSP"
                                 >
-                                    <Icons.Copy size={14} className="inline-block align-[-2px]" />
+                                    <Icons.Copy size={14} />
                                     <span>Auditoría DJ</span>
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => handleCopyToClipboard(identifiedTrack)}
-                                    className="px-3 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 border border-djzinc-750 rounded-xl text-xs font-mono cursor-pointer transition-colors"
+                                    className="ws-btn ws-btn-ghost"
                                     title="Copiar texto al portapapeles"
                                 >
                                     Copiar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleDescartarDeteccion}
+                                    className="ws-btn ws-btn-danger ml-auto"
+                                    title="Descartar esta detección y dejar el radar listo"
+                                >
+                                    <Icons.Trash size={14} />
+                                    <span>Descartar</span>
                                 </button>
                             </div>
                         </div>
@@ -20764,22 +20738,22 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             )}
 
             {/* LIBRETA DIGITAL DE APUNTES DJ CON DESCARGA XLS Y TXT */}
-            <div className="bg-[#09090f] border border-djzinc-800 rounded-2xl p-5 shadow-xl space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-djzinc-800 pb-3">
+            <div className="bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--bw-line)] pb-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-bold text-sm shadow">
-                            <Icons.Notebook size={14} className="inline-block align-[-2px]" />
+                        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] font-bold text-sm shadow">
+                            <Icons.Notebook size={15} />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-sm font-black text-white font-mono uppercase tracking-wider">
+                                <h3 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
                                     Libreta Digital de Apuntes DJ
                                 </h3>
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono font-black">
+                                <span className="ws-count ws-count-on">
                                     {notebookTracks.length} apuntes
                                 </span>
                             </div>
-                            <p className="text-[11px] text-gray-400">
+                            <p className="text-[11px] text-zinc-400">
                                 Colección de pistas cazadas en vivo en el radar, listas para exportar o enviar a producción.
                             </p>
                         </div>
@@ -20796,10 +20770,10 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                             type="button"
                             onClick={handleExportarNotebookXLS}
                             disabled={notebookTracks.length === 0}
-                            className="px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-djgreen-400 border border-djgreen-700/60 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-40"
+                            className="ws-btn ws-btn-outline"
                             title="Descargar listado en formato Excel (.xls / .xlsx)"
                         >
-                            <Icons.Excel size={14} className="inline-block align-[-2px]" />
+                            <Icons.Excel size={14} />
                             <span>Descargar XLS</span>
                         </button>
 
@@ -20807,10 +20781,10 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                             type="button"
                             onClick={handleExportarNotebookTXT}
                             disabled={notebookTracks.length === 0}
-                            className="px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-700/60 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-40"
+                            className="ws-btn ws-btn-outline"
                             title="Descargar tracklist limpio en formato texto (.txt)"
                         >
-                            <Icons.FileText size={14} className="inline-block align-[-2px]" />
+                            <Icons.FileText size={14} />
                             <span>Descargar TXT</span>
                         </button>
 
@@ -20818,10 +20792,10 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                             <button
                                 type="button"
                                 onClick={handleVaciarNotebook}
-                                className="px-2.5 py-1.5 bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800/80 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-colors"
+                                className="ws-btn ws-btn-danger"
                                 title="Vaciar todos los apuntes"
                             >
-                                <Icons.Trash size={14} className="inline-block align-[-2px]" /> Vaciar
+                                <Icons.Trash size={14} /> Vaciar
                             </button>
                         )}
                     </div>
@@ -20829,28 +20803,28 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
 
                 {/* Lista / Tabla de Apuntes */}
                 {notebookTracks.length === 0 ? (
-                    <div className="py-10 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-850 rounded-xl bg-djzinc-950/50">
-                        <Icons.FileText size={14} className="inline-block align-[-2px] block mb-1" />
-                        Tu libreta de apuntes está vacía. Cuando identifiques un track en el Radar, pulsa <strong className="text-emerald-400">"Apuntar en Lista"</strong> para guardarlo aquí.
+                    <div className="py-10 text-center text-zinc-500 font-mono text-xs border border-dashed border-[var(--bw-line-strong)] rounded-xl bg-[var(--bw-surface-2)]">
+                        <Icons.FileText size={16} className="inline-block align-[-2px] block mb-1 text-zinc-400" />
+                        Tu libreta de apuntes está vacía. Cuando identifiques un track en el Radar, pulsa <strong className="text-cyan-400">"Apuntar en Lista"</strong> para guardarlo aquí.
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
-                            <thead className="bg-[#0d0d14] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400">
+                            <thead className="bg-[var(--bw-surface-2)] border-b border-[var(--bw-line-strong)] text-[10px] font-mono uppercase text-zinc-400">
                                 <tr>
-                                    <th className="py-2 px-2 text-center w-8">#</th>
-                                    <th className="py-2 px-2 w-10 text-center">PLAY</th>
-                                    <th className="py-2 px-3 min-w-[220px]">PISTA / ÁLBUM</th>
-                                    <th className="py-2 px-3 min-w-[150px]">ARTISTA</th>
-                                    <th className="py-2 px-2 text-center w-24">GÉNERO</th>
-                                    <th className="py-2 px-2 text-center w-28">SUBGÉNERO</th>
-                                    <th className="py-2 px-2 text-center w-16">AÑO</th>
-                                    <th className="py-2 px-3 min-w-[220px] text-left text-djcyan-400">COMENTARIO / NOTA DJ</th>
-                                    <th className="py-2 px-3 text-center w-28">HORA APUNTE</th>
-                                    <th className="py-2 px-3 text-center w-36">ACCIONES</th>
+                                    <th className="py-2.5 px-2 text-center w-8">#</th>
+                                    <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
+                                    <th className="py-2.5 px-3 min-w-[220px]">PISTA / ÁLBUM</th>
+                                    <th className="py-2.5 px-3 min-w-[150px]">ARTISTA</th>
+                                    <th className="py-2.5 px-2 text-center w-24">GÉNERO</th>
+                                    <th className="py-2.5 px-2 text-center w-28">SUBGÉNERO</th>
+                                    <th className="py-2.5 px-2 text-center w-16">AÑO</th>
+                                    <th className="py-2.5 px-3 min-w-[220px] text-left text-cyan-400">COMENTARIO / NOTA DJ</th>
+                                    <th className="py-2.5 px-3 text-center w-28">HORA APUNTE</th>
+                                    <th className="py-2.5 px-3 text-center w-36">ACCIONES</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-djzinc-850/60 font-sans">
+                            <tbody className="divide-y divide-[var(--bw-line)] font-sans">
                                 {notebookTracks.map((row, idx) => {
                                     const isRowPlaying = previewPlaying && audioRef.current.src === row.preview_url;
                                     return (
@@ -25075,45 +25049,39 @@ const MapWorkspace = ({
         : 80;
 
     return (
-        <div className="ws-module ws-mod-map w-full h-full flex flex-col bg-[#07070c] text-white overflow-hidden relative select-none">
+        <div className="ws-module ws-mod-map w-full h-full flex flex-col bg-[#09090b] text-zinc-300 overflow-hidden relative select-none font-sans">
             {/* BARRA SUPERIOR DE HERRAMIENTAS Y CONTROLES DEL MAPA */}
-            <div className="p-3 bg-djzinc-950/90 border-b border-djzinc-800/90 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20 backdrop-blur-md">
+            <div className="p-2.5 sm:px-4 bg-[var(--bw-surface-1)] border-b border-[var(--bw-line)] flex flex-wrap items-center justify-between gap-2.5 shrink-0 z-20 backdrop-blur-md">
                 {/* LADO IZQUIERDO: TÍTULO Y SELECTOR DE PROYECCIÓN ESPACIAL */}
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-djcyan-400 to-indigo-600 flex items-center justify-center text-black font-black text-sm shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-                            <Icons.Map />
+                        <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] shadow-sm">
+                            <Icons.Map size={15} />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-syne font-black text-sm tracking-wider uppercase">SCATTER MAP</span>
-                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 font-bold">
-                                    PAISAJE 2D
+                            <div className="flex items-center gap-1.5">
+                                <span className="font-syne font-bold text-xs tracking-wider uppercase text-white">Scatter Map</span>
+                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 font-bold">
+                                    2D
                                 </span>
                             </div>
-                            <span className="text-[10px] text-gray-400 font-mono hidden sm:inline">
-                                Distancia = Compatibilidad Acústica
-                            </span>
                         </div>
                     </div>
 
-                    {/* SELECTOR DE PROYECCIÓN DE COORDENADAS */}
-                    <div className="flex items-center bg-djzinc-900 p-0.5 rounded-xl border border-djzinc-800 text-xs font-mono font-bold">
+                    {/* SELECTOR DE PROYECCIÓN DE COORDENADAS CON DS 3.0 */}
+                    <div className="ws-seg" role="group" aria-label="Proyección espacial">
                         {[
-                            { id: 'energy_dance', label: '⚡ Energía / Dance', title: 'X: Energía (0-100%) vs Y: Bailabilidad (0-100%)' },
-                            { id: 'bpm_energy', label: '🥁 BPM / Energía', title: 'X: Tempo BPM vs Y: Nivel de Energía' },
-                            { id: 'camelot_wheel', label: '☸ Rueda Camelot', title: 'Proyección Radial Armónica 12 Slices Camelot 2D' },
-                            { id: 'acoustic_clusters', label: '🌌 Clusters AI', title: 'Agrupación Multi-dimensional por Género y Timbre' }
+                            { id: 'energy_dance', label: 'Energía / Dance', title: 'X: Energía (0-100%) vs Y: Bailabilidad (0-100%)' },
+                            { id: 'bpm_energy', label: 'BPM / Energía', title: 'X: Tempo BPM vs Y: Nivel de Energía' },
+                            { id: 'camelot_wheel', label: 'Rueda Camelot', title: 'Proyección Radial Armónica 12 Slices Camelot 2D' },
+                            { id: 'acoustic_clusters', label: 'Clusters AI', title: 'Agrupación Multi-dimensional por Género y Timbre' }
                         ].map(proj => (
                             <button
                                 key={proj.id}
                                 type="button"
                                 onClick={() => setProjectionMode(proj.id)}
-                                className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                                    projectionMode === proj.id
-                                        ? 'bg-djcyan-500 text-black font-black shadow-md shadow-djcyan-500/20'
-                                        : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
-                                }`}
+                                className={`ws-seg-btn ${projectionMode === proj.id ? 'ws-seg-on' : ''}`}
+                                aria-pressed={projectionMode === proj.id}
                                 title={proj.title}
                             >
                                 {proj.label}
@@ -25146,30 +25114,33 @@ const MapWorkspace = ({
                     </div>
 
                     {/* SELECTOR DE HERRAMIENTA: NAVEGAR vs LASSO SPATIAL COLLECT */}
-                    <div className="ws-seg">
+                    <div className="ws-seg" role="group" aria-label="Herramienta de selección">
                         <button
                             type="button"
                             onClick={() => setToolMode('pan')}
                             className={`ws-seg-btn ${toolMode === 'pan' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={toolMode === 'pan'}
                             title="Modo Navegar: Arrastra el fondo para moverte y usa la rueda para hacer zoom"
                         >
-                            <Icons.Target size={14} className="inline-block align-[-2px]" /> <span className="hidden sm:inline">Navegar</span>
+                            <Icons.Target size={13} /> <span className="hidden sm:inline">Navegar</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setToolMode('lasso')}
                             className={`ws-seg-btn ${toolMode === 'lasso' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={toolMode === 'lasso'}
                             title="Herramienta Lasso: Dibuja a mano alzada para capturar una zona de pistas"
                         >
-                            <Icons.Pencil size={14} className="inline-block align-[-2px]" /> <span>Lasso</span>
+                            <Icons.Pencil size={13} /> <span>Lasso</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setToolMode('box')}
                             className={`ws-seg-btn ${toolMode === 'box' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={toolMode === 'box'}
                             title="Herramienta Caja: Haz clic y arrastra un rectángulo para seleccionar un grupo"
                         >
-                            <span>⬚</span> <span className="hidden sm:inline">Caja</span>
+                            <Icons.Grid size={13} /> <span className="hidden sm:inline">Caja</span>
                         </button>
                     </div>
                 </div>
@@ -25181,32 +25152,32 @@ const MapWorkspace = ({
                         onClick={() => {
                             if (onNavigateTab) onNavigateTab('setbuilder');
                         }}
-                        className="bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-200 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow shrink-0"
+                        className="ws-btn ws-btn-outline"
                         title="Ir a Set Builder para generar el flujo de sesión en Grafo DAG (DJOID Graph Playlists)"
                     >
-                        <Icons.Radar size={14} className="inline-block align-[-2px]" />
+                        <Icons.Flow size={14} />
                         <span className="hidden md:inline">Graph Playlists</span>
                     </button>
-                    {/* BUSCADOR: Limpio, sin artefactos, con icono SVG */}
+                    {/* BUSCADOR */}
                     <div className="relative flex items-center">
-                        <span className="absolute left-2.5 text-gray-500 pointer-events-none flex items-center">
-                            <Icons.Search />
+                        <span className="absolute left-2.5 text-zinc-500 pointer-events-none flex items-center">
+                            <Icons.Search size={13} />
                         </span>
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Buscar en el mapa"
-                            className="w-36 sm:w-48 bg-djzinc-900 border border-djzinc-750 rounded-xl pl-8 pr-7 py-1 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-djcyan-500 shadow-inner"
+                            className="w-32 sm:w-44 bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] rounded-lg pl-7 pr-6 py-1 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-cyan-400"
                         />
                         {searchQuery && (
                             <button
                                 type="button"
                                 onClick={() => setSearchQuery('')}
-                                className="absolute right-2 text-xs text-gray-400 hover:text-white cursor-pointer px-1"
+                                className="absolute right-2 text-xs text-zinc-400 hover:text-white cursor-pointer px-1"
                                 title="Borrar búsqueda"
                             >
-                                <Icons.Close size={14} className="inline-block align-[-2px]" />
+                                <Icons.Close size={12} />
                             </button>
                         )}
                     </div>
@@ -25215,12 +25186,10 @@ const MapWorkspace = ({
                     <button
                         type="button"
                         onClick={() => setShowHarmonicPaths(prev => !prev)}
-                        className={`p-1.5 rounded-lg border text-xs font-mono cursor-pointer transition-colors ${
-                            showHarmonicPaths ? 'bg-djcyan-950/80 text-djcyan-300 border-djcyan-600/60' : 'bg-djzinc-900 text-gray-500 border-djzinc-800'
-                        }`}
+                        className={`ws-btn ${showHarmonicPaths ? 'ws-btn-active' : 'ws-btn-outline'} px-2`}
                         title={showHarmonicPaths ? "Ocultar líneas de mezcla armónica" : "Mostrar enlaces armónicos entre pistas compatibles"}
                     >
-                        <Icons.Zap size={14} className="inline-block align-[-2px]" />
+                        <Icons.Zap size={13} />
                     </button>
                 </div>
             </div>
@@ -25586,31 +25555,33 @@ const MapWorkspace = ({
                 {/* BANNER INFORMATIVO SI LA BIBLIOTECA ESTÁ VACÍA */}
                 {activeTracks.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm z-30">
-                        <div className="max-w-md w-full bg-djzinc-950 border border-djzinc-800 p-6 rounded-2xl shadow-2xl text-center">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-djcyan-500 to-indigo-600 flex items-center justify-center text-black text-2xl mx-auto mb-4 shadow-[0_0_25px_rgba(6,182,212,0.4)]">
-                                <Icons.Star size={14} className="inline-block align-[-2px]" />
+                        <div className="max-w-md w-full bg-[var(--bw-surface-1)] border border-[var(--bw-line-strong)] p-6 rounded-xl shadow-2xl text-center">
+                            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] mx-auto mb-3.5 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
+                                <Icons.Map size={24} />
                             </div>
-                            <h3 className="font-syne font-black text-lg text-white mb-2">
-                                Explora tu Biblioteca como un Paisaje Espacial
+                            <h3 className="font-syne font-bold text-base text-white mb-1.5 uppercase tracking-wide">
+                                Paisaje Espacial de Cabina
                             </h3>
-                            <p className="text-xs text-gray-400 font-mono mb-5 leading-relaxed">
+                            <p className="text-xs text-zinc-400 font-mono mb-5 leading-relaxed">
                                 Scatter Map posiciona cada pista según su energía, danza, BPM y tonalidad. La proximidad espacial revela qué temas mezclan naturalmente juntos.
                             </p>
-                            <div className="flex flex-col gap-2.5">
+                            <div className="flex flex-col gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setUseDemo(true)}
-                                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all"
+                                    className="ws-btn ws-btn-primary w-full justify-center h-9 text-xs"
                                 >
-                                    <Icons.Zap size={14} className="inline-block align-[-2px]" /> Cargar Demo Electrónica (16 Tracks)
+                                    <Icons.Zap size={14} />
+                                    <span>Cargar Demo Electrónica (16 Tracks)</span>
                                 </button>
                                 {onSelectDirectory && (
                                     <button
                                         type="button"
                                         onClick={onSelectDirectory}
-                                        className="w-full py-2.5 px-4 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs cursor-pointer active:scale-95 transition-all"
+                                        className="ws-btn ws-btn-outline w-full justify-center h-9 text-xs"
                                     >
-                                        <Icons.Folder size={14} className="inline-block align-[-2px]" /> Abrir Carpeta de Música Local
+                                        <Icons.Folder size={14} />
+                                        <span>Abrir Carpeta de Música Local</span>
                                     </button>
                                 )}
                             </div>
@@ -25749,7 +25720,7 @@ const MapWorkspace = ({
                                         onPlayTrack(selectedTrack, 0, true);
                                     }
                                 }}
-                                className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all cursor-pointer"
+                                className="ws-btn ws-btn-primary flex-1 justify-center"
                             >
                                 <span>{Boolean(nowPlayingTrack && isPlaying && (nowPlayingTrack.id === selectedTrack.id || nowPlayingTrack.title === selectedTrack.title)) ? '⏸ Pausar' : '▶ Escuchar Preview'}</span>
                             </button>
@@ -25761,10 +25732,10 @@ const MapWorkspace = ({
                                         onAddTracksToSet([selectedTrack]);
                                     }
                                 }}
-                                className="py-2 px-3 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+                                className="ws-btn ws-btn-outline"
                                 title="Añadir esta pista al Set Builder"
                             >
-                                <span><Icons.Plus size={14} className="inline-block align-[-2px]" /> Set</span>
+                                <Icons.Plus size={14} /> <span>Set</span>
                             </button>
                         </div>
                     </div>
@@ -25772,25 +25743,25 @@ const MapWorkspace = ({
 
                 {/* DRAWER FLOTANTE DE SELECCIÓN DE ZONA ("COLLECT FROM SPACE") */}
                 {selectedMapTracks.length > 0 && (
-                    <div className="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[620px] bg-[#0c0d16]/95 border border-amber-500/50 p-3.5 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.25)] backdrop-blur-xl z-40 animate-slideUp font-mono">
-                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-djzinc-800/80">
+                    <div className="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[620px] bg-[rgba(14,14,18,0.96)] border border-cyan-500/50 p-3.5 rounded-xl shadow-[0_0_30px_rgba(34,211,238,0.25)] backdrop-blur-xl z-40 animate-slideUp font-mono">
+                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--bw-line)]">
                             <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
                                 <span className="text-xs font-bold text-white">
-                                    Zona Seleccionada: <span className="text-amber-300 font-black">{selectedMapTracks.length} pistas</span>
+                                    Zona Seleccionada: <span className="text-cyan-300 font-black">{selectedMapTracks.length} pistas</span>
                                 </span>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setSelectedMapTracks([])}
-                                className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-djzinc-800 cursor-pointer"
+                                className="ws-btn ws-btn-ghost text-xs py-1"
                             >
-                                <Icons.Close size={14} className="inline-block align-[-2px]" /> Deseleccionar
+                                <Icons.Close size={12} /> Deseleccionar
                             </button>
                         </div>
 
                         <div className="flex items-center justify-between gap-3 flex-wrap">
-                            <div className="flex items-center gap-3 text-[11px] text-gray-400">
+                            <div className="flex items-center gap-3 text-[11px] text-zinc-400">
                                 <span><Icons.Wave size={14} className="inline-block align-[-2px]" /> Promedio: <strong className="text-white">{selBpmAvg} BPM</strong></span>
                                 <span><Icons.Zap size={14} className="inline-block align-[-2px]" /> Energía: <strong className="text-amber-300">{selEnergyAvg}%</strong></span>
                             </div>
@@ -25803,10 +25774,10 @@ const MapWorkspace = ({
                                             onPlayTrack(selectedMapTracks[0], 0, true);
                                         }
                                     }}
-                                    className="px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-white text-xs font-bold border border-djzinc-700 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                                    className="ws-btn ws-btn-outline"
                                     title="Reproducir primer tema de la zona capturada"
                                 >
-                                    <Icons.Play size={14} className="inline-block align-[-2px]" /> <span>Reproducir Zona</span>
+                                    <Icons.Play size={13} /> <span>Reproducir Zona</span>
                                 </button>
                                 <button
                                     type="button"
@@ -25815,10 +25786,10 @@ const MapWorkspace = ({
                                             onAddTracksToSet(selectedMapTracks);
                                         }
                                     }}
-                                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer active:scale-95 transition-all"
+                                    className="ws-btn ws-btn-primary"
                                     title="Enviar pistas capturadas en esta zona directamente al Set Builder"
                                 >
-                                    <Icons.Zap size={14} className="inline-block align-[-2px]" /> <span>Enviar a Set</span>
+                                    <Icons.Zap size={13} /> <span>Enviar a Set</span>
                                 </button>
                                 <button
                                     type="button"
@@ -25830,10 +25801,10 @@ const MapWorkspace = ({
                                             onNavigateTab('setbuilder');
                                         }
                                     }}
-                                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-500/30 cursor-pointer active:scale-95 transition-all"
+                                    className="ws-btn ws-btn-outline"
                                     title="Enviar pistas capturadas y generar Flujo de Sesión (Graph Playlists)"
                                 >
-                                    <Icons.Radar size={14} className="inline-block align-[-2px]" /> <span>Flujo Sesión (DAG)</span>
+                                    <Icons.Flow size={13} /> <span>Flujo Sesión (DAG)</span>
                                 </button>
                             </div>
                         </div>
