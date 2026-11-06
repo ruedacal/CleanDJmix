@@ -5716,6 +5716,11 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 ctx.stroke();
             }
 
+            // Dimensiones seguras de renderizado (evita colisiones con el HUD superior y la dock bar inferior)
+            const boxY = 38;
+            const boxH = Math.max(140, h - boxY - 44);
+            const bottomY = boxY + boxH;
+
             // ─────────────────────────────────────────────────────────────────
             // 1. MAP: Scatter Map 2D + Mini-Map + Zoom a Pista + Rueda Camelot
             // ─────────────────────────────────────────────────────────────────
@@ -5725,7 +5730,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 // Ejes del Mapa
                 ctx.fillStyle = '#475569';
                 ctx.font = 'bold 8.5px monospace';
-                ctx.fillText('120 BPM ──────────────────────────────── 138 BPM', 24, h - 8);
+                ctx.fillText('120 BPM ──────────────────────────────── 138 BPM', 24, bottomY - 6);
 
                 // Constelación de Pistas en el Universo 2D
                 const sampleTracks = [
@@ -5747,7 +5752,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     const driftX = Math.sin(t * 0.8 + idx) * 1.5;
                     const driftY = Math.cos(t * 0.6 + idx) * 1.5;
                     const px = 20 + st.x * (mapW - 40) + driftX;
-                    const py = 20 + st.y * (h - 50) + driftY;
+                    const py = boxY + 12 + st.y * (boxH - 36) + driftY;
 
                     // Halo de nodo
                     ctx.beginPath();
@@ -5766,7 +5771,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
                 // Selección Lasso animada alrededor del cluster Peak-Time
                 const lassoX = 20 + 0.40 * (mapW - 40);
-                const lassoY = 20 + 0.34 * (h - 50);
+                const lassoY = boxY + 12 + 0.34 * (boxH - 36);
                 ctx.setLineDash([4, 4]);
                 ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
                 ctx.lineWidth = 1.5;
@@ -5778,7 +5783,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 // Pista Seleccionada: Mira Retículo + Zoom Loupe
                 const sel = sampleTracks.find(s => s.target);
                 const selX = 20 + sel.x * (mapW - 40) + Math.sin(t * 0.8 + 2) * 1.5;
-                const selY = 20 + sel.y * (h - 50) + Math.cos(t * 0.6 + 2) * 1.5;
+                const selY = boxY + 12 + sel.y * (boxH - 36) + Math.cos(t * 0.6 + 2) * 1.5;
 
                 // Retículo de Selección
                 ctx.beginPath();
@@ -5800,7 +5805,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 const cardW = 158;
                 const cardH = 64;
                 const cardX = Math.min(selX + 22, mapW - cardW - 5);
-                const cardY = Math.max(16, selY - 32);
+                const cardY = Math.max(boxY + 6, Math.min(selY - 32, bottomY - cardH - 6));
 
                 // Línea conector líder
                 ctx.beginPath();
@@ -5844,7 +5849,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
                 // Mini-Map de Contexto en la Esquina Superior Izquierda
                 const mmX = 14;
-                const mmY = 12;
+                const mmY = boxY + 6;
                 const mmW = 72;
                 const mmH = 44;
                 ctx.fillStyle = '#050714ee';
@@ -5869,8 +5874,8 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
                 // Rueda Camelot en el Lado Derecho (60% alpha)
                 const cx = w * 0.81;
-                const cy = h * 0.50;
-                const rOuter = Math.min(w * 0.17, h * 0.38);
+                const cy = boxY + boxH * 0.50;
+                const rOuter = Math.min(w * 0.17, boxH * 0.42);
                 const rInner = rOuter * 0.55;
 
                 const camelotKeys = ['1A','2A','3A','4A','5A','6A','7A','8A','9A','10A','11A','12A'];
@@ -5923,18 +5928,18 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 // Header Score AI
                 ctx.fillStyle = '#a855f7';
                 ctx.font = 'bold 9px monospace';
-                ctx.fillText('SCORE ARMÓNICO GEMINI AI: 96% ✨ (DJOID DAG Graph • Flujo Sin Choques Tonales)', 20, 18);
+                ctx.fillText('SCORE ARMÓNICO GEMINI AI: 96% ✨ (DJOID DAG Graph • Flujo Sin Choques Tonales)', 20, boxY + 14);
 
                 // Nodos de la Curva de Energía con Datos Reales
                 const setNodes = [
-                    { x: w * 0.12, y: h * 0.72, tag: '01 WARM-UP', title: 'Jon Hopkins - Singularity', bpm: '120 BPM', key: '7A', energy: '⚡61%', col: '#06b6d4' },
-                    { x: w * 0.35, y: h * 0.58, tag: '02 BUILD', title: 'Kölsch - Mirage', bpm: '126 BPM', key: '7A', energy: '⚡69%', col: '#3b82f6', match: 'Clave Idéntica ✨' },
-                    { x: w * 0.63, y: h * 0.36, tag: '03 PEAK MAIN', title: 'Charlotte - Tales', bpm: '132 BPM', key: '8A', energy: '⚡88%', col: '#a855f7', match: '+1 Armónico 🚀' },
-                    { x: w * 0.88, y: h * 0.22, tag: '04 CLIMAX', title: 'Chlär - Burning Sky', bpm: '138 BPM', key: '9A', energy: '⚡93%', col: '#f43f5e' }
+                    { x: w * 0.12, y: boxY + boxH * 0.74, tag: '01 WARM-UP', title: 'Jon Hopkins - Singularity', bpm: '120 BPM', key: '7A', energy: '⚡61%', col: '#06b6d4' },
+                    { x: w * 0.35, y: boxY + boxH * 0.56, tag: '02 BUILD', title: 'Kölsch - Mirage', bpm: '126 BPM', key: '7A', energy: '⚡69%', col: '#3b82f6', match: 'Clave Idéntica ✨' },
+                    { x: w * 0.63, y: boxY + boxH * 0.36, tag: '03 PEAK MAIN', title: 'Charlotte - Tales', bpm: '132 BPM', key: '8A', energy: '⚡88%', col: '#a855f7', match: '+1 Armónico 🚀' },
+                    { x: w * 0.88, y: boxY + boxH * 0.20, tag: '04 CLIMAX', title: 'Chlär - Burning Sky', bpm: '138 BPM', key: '9A', energy: '⚡93%', col: '#f43f5e' }
                 ];
 
                 // Bifurcación Alternativa DAG (Rama hacia abajo)
-                const forkNode = { x: w * 0.63, y: h * 0.80, tag: '03b ALT GROOVE (DAG)', title: 'Drunken Kong - How Far', bpm: '130 BPM', key: '9B', energy: '⚡81%', col: '#f59e0b' };
+                const forkNode = { x: w * 0.63, y: boxY + boxH * 0.84, tag: '03b ALT GROOVE (DAG)', title: 'Drunken Kong - How Far', bpm: '130 BPM', key: '9B', energy: '⚡81%', col: '#f59e0b' };
 
                 // Curva Bézier Principal
                 ctx.strokeStyle = '#a855f7';
@@ -6010,8 +6015,8 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             // 3. CUES: Fraseo Musical 32 Beats + 8 Performance Pads RGB
             // ─────────────────────────────────────────────────────────────────
             else if (activeSectionKey === 'hotcues') {
-                const waveY = h * 0.28;
-                const waveH = 46;
+                const waveY = boxY + boxH * 0.30;
+                const waveH = 42;
 
                 // Bloques de Fraseo Musical de 32 Tiempos
                 const phraseBlocks = [
@@ -6055,9 +6060,9 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 ctx.stroke();
 
                 // 8 Performance Pads Hardware Iluminados
-                const padAreaY = h * 0.58;
+                const padAreaY = boxY + boxH * 0.64;
                 const padW = (w - 36) / 8;
-                const padH = 46;
+                const padH = Math.min(46, boxH * 0.30);
 
                 const padDefs = [
                     { num: 1, label: 'INTRO', col: '#10b981' },
@@ -6111,8 +6116,8 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             // ─────────────────────────────────────────────────────────────────
             else if (activeSectionKey === 'audit') {
                 const radCX = w * 0.24;
-                const radCY = h * 0.52;
-                const radR = Math.min(w * 0.18, h * 0.36);
+                const radCY = boxY + boxH * 0.50;
+                const radR = Math.min(w * 0.18, boxH * 0.40);
 
                 // 1. Radar Pentagonal de DNA Acústico (Izquierda)
                 const axes = [
@@ -6242,13 +6247,13 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             // ─────────────────────────────────────────────────────────────────
             else if (activeSectionKey === 'copilot') {
                 const deckW = (w - 44) / 2;
-                const deckH = h * 0.40;
+                const deckH = (boxH - 20) * 0.46;
 
                 // Deck 1 (Master / On Air)
                 ctx.fillStyle = '#080d1a';
                 ctx.strokeStyle = '#10b981';
                 ctx.lineWidth = 1.2;
-                drawRoundRect(ctx, 16, 20, deckW, deckH, 8, true, true);
+                drawRoundRect(ctx, 16, boxY + 4, deckW, deckH, 8, true, true);
 
                 ctx.fillStyle = '#10b981';
                 ctx.font = 'bold 8px monospace';
@@ -6278,7 +6283,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 ctx.fillStyle = '#080d1a';
                 ctx.strokeStyle = '#06b6d4';
                 ctx.lineWidth = 1.2;
-                drawRoundRect(ctx, d2X, 20, deckW, deckH, 8, true, true);
+                drawRoundRect(ctx, d2X, boxY + 4, deckW, deckH, 8, true, true);
 
                 ctx.fillStyle = '#06b6d4';
                 ctx.font = 'bold 8px monospace';
@@ -6304,8 +6309,8 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 ctx.stroke();
 
                 // Panel Central: Radar Anti-Muddy DSP (<100Hz)
-                const dspY = deckH + 30;
-                const dspH = h - dspY - 10;
+                const dspY = boxY + deckH + 12;
+                const dspH = boxH - deckH - 16;
                 const isClash = simStep < 2;
 
                 ctx.fillStyle = '#0a0d20';
@@ -6346,32 +6351,30 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             // 6. POOL (Spotify / SuperFLAC): Pipeline de Descarga + A/B Dual
             // ─────────────────────────────────────────────────────────────────
             else if (activeSectionKey === 'spotify') {
-                ctx.fillStyle = '#10b981';
-                ctx.font = 'bold 9px monospace';
-                ctx.fillText('SUPERFLAC LOSSLESS INGEST & DUAL A/B ENGINE', 18, 16);
-
                 const colW = (w - 48) / 3;
+                const cY = boxY + 4;
+                const cH = boxH - 8;
 
                 // 1. Etapa de Búsqueda y Resolución ISRC (Izquierda)
                 ctx.fillStyle = '#080d1a';
                 ctx.strokeStyle = '#10b98166';
-                drawRoundRect(ctx, 16, 26, colW, h - 38, 8, true, true);
+                drawRoundRect(ctx, 16, cY, colW, cH, 8, true, true);
 
                 ctx.fillStyle = '#34d399';
                 ctx.font = 'bold 8px monospace';
-                ctx.fillText('1. RESOLUCIÓN ISRC', 24, 40);
+                ctx.fillText('1. RESOLUCIÓN ISRC', 24, cY + 16);
 
                 ctx.fillStyle = '#ffffff';
                 ctx.font = 'bold 8.5px sans-serif';
-                ctx.fillText('Charlotte - Tales', 24, 55);
+                ctx.fillText('Charlotte - Tales', 24, cY + 32);
 
                 ctx.fillStyle = '#64748b';
                 ctx.font = '7.5px monospace';
-                ctx.fillText('ISRC: BE-A12-24-00031', 24, 68);
-                ctx.fillText('Tidal / Qobuz Master', 24, 79);
+                ctx.fillText('ISRC: BE-A12-24-00031', 24, cY + 46);
+                ctx.fillText('Tidal / Qobuz Master', 24, cY + 58);
 
                 // Scanning line
-                const scanY = 90 + ((t * 20) % 35);
+                const scanY = cY + 68 + ((t * 20) % Math.max(30, cH - 80));
                 ctx.strokeStyle = '#10b981';
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
@@ -6383,19 +6386,19 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 const c2X = 20 + colW + 8;
                 ctx.fillStyle = '#080d1a';
                 ctx.strokeStyle = '#06b6d466';
-                drawRoundRect(ctx, c2X, 26, colW, h - 38, 8, true, true);
+                drawRoundRect(ctx, c2X, cY, colW, cH, 8, true, true);
 
                 ctx.fillStyle = '#22d3ee';
                 ctx.font = 'bold 8px monospace';
-                ctx.fillText('2. PIPELINE FLAC 24-BIT', c2X + 8, 40);
+                ctx.fillText('2. PIPELINE FLAC 24-BIT', c2X + 8, cY + 16);
 
                 ctx.fillStyle = '#ffffff';
                 ctx.font = 'bold 8px monospace';
-                ctx.fillText('2.304 kbps / 48kHz', c2X + 8, 55);
+                ctx.fillText('2.304 kbps / 48kHz', c2X + 8, cY + 32);
 
                 // 4 Canales de streaming
                 for (let ch = 0; ch < 4; ch++) {
-                    const chy = 68 + ch * 14;
+                    const chy = cY + 44 + ch * 14;
                     ctx.fillStyle = '#1e293b';
                     ctx.fillRect(c2X + 8, chy, colW - 16, 8);
 
@@ -6406,13 +6409,13 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
                 ctx.fillStyle = '#10b981';
                 ctx.font = 'bold 7.5px monospace';
-                ctx.fillText('✓ BUFFER 100% LOSSLESS', c2X + 8, h - 20);
+                ctx.fillText('✓ BUFFER 100% LOSSLESS', c2X + 8, cY + cH - 12);
 
                 // 3. Comparador Dual A/B & Certificación FFT (Derecha)
                 const c3X = c2X + colW + 8;
                 ctx.fillStyle = '#080d1a';
                 ctx.strokeStyle = '#a855f766';
-                drawRoundRect(ctx, c3X, 26, colW, h - 38, 8, true, true);
+                drawRoundRect(ctx, c3X, cY, colW, cH, 8, true, true);
 
                 ctx.fillStyle = '#c084fc';
                 ctx.font = 'bold 8px monospace';
@@ -6447,20 +6450,18 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             // 7. CRATES: Árbol Timbral 2 Niveles + Pasaporte Universal DJ
             // ─────────────────────────────────────────────────────────────────
             else if (activeSectionKey === 'crates') {
-                ctx.fillStyle = '#f97316';
-                ctx.font = 'bold 9px monospace';
-                ctx.fillText('TAXONOMÍA TIMBRAL DE 2 NIVELES & PASAPORTE UNIVERSAL DJ', 18, 16);
-
                 const treeW = w * 0.42;
+                const cY = boxY + 4;
+                const cH = boxH - 8;
 
                 // Árbol Jerárquico (Izquierda)
                 ctx.fillStyle = '#070918';
                 ctx.strokeStyle = '#f9731666';
-                drawRoundRect(ctx, 16, 26, treeW, h - 38, 8, true, true);
+                drawRoundRect(ctx, 16, cY, treeW, cH, 8, true, true);
 
                 ctx.fillStyle = '#fb923c';
                 ctx.font = 'bold 8px monospace';
-                ctx.fillText('ÁRBOL TIMBRAL DE GÉNERO', 24, 40);
+                ctx.fillText('ÁRBOL TIMBRAL DE GÉNERO', 24, cY + 16);
 
                 const branches = [
                     { name: '├─ Peak Time', role: '[Bass Driver]', count: '420 trk' },
@@ -6470,7 +6471,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 ];
 
                 branches.forEach((br, bIdx) => {
-                    const by = 55 + bIdx * 18;
+                    const by = cY + 36 + bIdx * 18;
                     ctx.fillStyle = '#ffffff';
                     ctx.font = '8px monospace';
                     ctx.fillText(br.name, 24, by);
@@ -6490,11 +6491,11 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
                 ctx.fillStyle = '#070918';
                 ctx.strokeStyle = '#06b6d466';
-                drawRoundRect(ctx, coreX, 26, coreW, h - 38, 8, true, true);
+                drawRoundRect(ctx, coreX, cY, coreW, cH, 8, true, true);
 
                 ctx.fillStyle = '#22d3ee';
                 ctx.font = 'bold 8px monospace';
-                ctx.fillText('PASAPORTE UNIVERSAL DJ', coreX + 8, 40);
+                ctx.fillText('PASAPORTE UNIVERSAL DJ', coreX + 8, cY + 16);
 
                 const targets = [
                     { name: '➔ SERATO DJ PRO', fmt: '.crate binario' },
@@ -6504,7 +6505,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 ];
 
                 targets.forEach((tgt, tIdx) => {
-                    const ty = 56 + tIdx * 16;
+                    const ty = cY + 36 + tIdx * 18;
                     ctx.fillStyle = '#ffffff';
                     ctx.font = 'bold 7.5px monospace';
                     ctx.fillText(tgt.name, coreX + 8, ty);
@@ -6514,10 +6515,10 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     ctx.fillText(tgt.fmt, coreX + coreW - 68, ty);
                 });
 
-                // USB Pendrive Status
+                // USB Pendrive Status (dentro del panel derecho)
                 ctx.fillStyle = '#10b981';
                 ctx.font = 'bold 8px monospace';
-                ctx.fillText('✓ CABINA READY: Sincronizado a USB en 1 Clic', coreX + 8, h - 20);
+                ctx.fillText('✓ CABINA READY: Sincronizado a USB en 1 Clic', coreX + 8, cY + cH - 14);
             }
 
             // ─────────────────────────────────────────────────────────────────
@@ -6525,8 +6526,8 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             // ─────────────────────────────────────────────────────────────────
             else if (activeSectionKey === 'radar') {
                 const rx = w * 0.40;
-                const ry = h * 0.52;
-                const rr = Math.min(w * 0.28, h * 0.38);
+                const ry = boxY + boxH * 0.50;
+                const rr = Math.min(w * 0.28, boxH * 0.42);
 
                 ctx.strokeStyle = '#4338ca';
                 ctx.lineWidth = 1.2;
@@ -6573,23 +6574,23 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 const pW = w - pX - 16;
                 ctx.fillStyle = '#0a0d24';
                 ctx.strokeStyle = '#6366f1';
-                drawRoundRect(ctx, pX, 26, pW, h - 38, 8, true, true);
+                drawRoundRect(ctx, pX, boxY + 4, pW, boxH - 8, 8, true, true);
 
                 ctx.fillStyle = '#818cf8';
                 ctx.font = 'bold 8px monospace';
-                ctx.fillText('1001TRACKLISTS SCAN', pX + 8, 40);
+                ctx.fillText('1001TRACKLISTS SCAN', pX + 8, boxY + 20);
 
                 ctx.fillStyle = '#ffffff';
                 ctx.font = 'bold 8.5px sans-serif';
-                ctx.fillText('Tales of the Desert', pX + 8, 55);
+                ctx.fillText('Tales of the Desert', pX + 8, boxY + 36);
 
                 ctx.fillStyle = '#a5b4fc';
                 ctx.font = '7.5px monospace';
-                ctx.fillText('Charlotte de Witte', pX + 8, 67);
+                ctx.fillText('Charlotte de Witte', pX + 8, boxY + 50);
 
                 ctx.fillStyle = '#10b981';
                 ctx.font = 'bold 7.5px monospace';
-                ctx.fillText('Match 98% con tu Maleta', pX + 8, 82);
+                ctx.fillText('Match 98% con tu Maleta', pX + 8, boxY + 66);
             }
 
             animId = requestAnimationFrame(render);
@@ -6672,18 +6673,19 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     </div>
 
                     {/* HUD Superpuesto con Información de Estado del Paso */}
-                    <div className="relative z-10 flex items-center justify-between w-full">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/80 border border-pink-500/70 text-white font-mono text-[10.5px] font-black shadow-md">
+                    <div className="relative z-10 flex items-center justify-between w-full pointer-events-none">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/85 border border-pink-500/80 text-white font-mono text-[10.5px] font-black shadow-md">
                             <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
                             <span>{stepInfo.label}</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded bg-black/80 border border-cyan-500/60 text-cyan-300 font-mono text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded bg-black/85 border border-cyan-500/70 text-cyan-300 font-mono text-[10px] font-bold">
                             60 FPS LIVE SIMULATOR
                         </span>
                     </div>
 
-                    {/* Botones de Spotlight Zoom Rápido */}
-                    <div className="relative z-10 flex flex-wrap items-center gap-1.5 mt-auto pt-2">
+                    {/* Barra Inferior Acoplada con Botones Spotlight y Descripción del Paso */}
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 mt-auto px-3 py-2 bg-[#060814]/92 backdrop-blur-md border-t border-djzinc-800 -mx-3 -mb-3 rounded-b-xl">
+                        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                         {activeSectionKey === 'copilot' && (
                             <>
                                 <button type="button" onClick={() => setZoomFocus('deck')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'deck' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Decks Master/Cue</button>
@@ -6732,9 +6734,10 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                 <button type="button" onClick={() => setZoomFocus('genres')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'genres' ? 'bg-purple-500 text-black' : 'bg-black/70 text-purple-300 border border-purple-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Micro-Géneros</button>
                             </>
                         )}
-                        <span className="text-[10px] text-gray-300 font-mono ml-auto truncate max-w-[220px]">
+                        </div>
+                        <div className="text-[10px] sm:text-[10.5px] text-gray-200 font-mono truncate max-w-[280px] sm:max-w-[420px] ml-auto bg-black/80 px-2.5 py-1 rounded-md border border-djzinc-700/80 shadow-sm text-right shrink-0">
                             {stepInfo.desc}
-                        </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -6743,7 +6746,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
     // Render de la Tarjeta del Simulador
     const renderSimulatorCard = () => (
-        <div className="flex flex-col gap-2.5 bg-[#0a0c18] border border-djzinc-750 rounded-2xl p-3.5 sm:p-4 shadow-inner relative overflow-hidden h-[360px] shrink-0">
+        <div className="flex flex-col gap-2.5 bg-[#0a0c18] border border-djzinc-750 rounded-2xl p-3.5 sm:p-4 shadow-inner relative overflow-hidden h-[480px] shrink-0">
             <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 shrink-0">
                 <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>

@@ -4932,11 +4932,14 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           ctx.lineTo(w, y);
           ctx.stroke();
         }
+        const boxY = 38;
+        const boxH = Math.max(140, h - boxY - 44);
+        const bottomY = boxY + boxH;
         if (activeSectionKey === "map") {
           const mapW = w * 0.6;
           ctx.fillStyle = "#475569";
           ctx.font = "bold 8.5px monospace";
-          ctx.fillText("120 BPM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 138 BPM", 24, h - 8);
+          ctx.fillText("120 BPM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 138 BPM", 24, bottomY - 6);
           const sampleTracks = [
             { x: 0.14, y: 0.68, col: "#f59e0b", k: "7A", bpm: 122 },
             { x: 0.2, y: 0.5, col: "#06b6d4", k: "8A", bpm: 126 },
@@ -4955,7 +4958,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             const driftX = Math.sin(t * 0.8 + idx) * 1.5;
             const driftY = Math.cos(t * 0.6 + idx) * 1.5;
             const px = 20 + st.x * (mapW - 40) + driftX;
-            const py = 20 + st.y * (h - 50) + driftY;
+            const py = boxY + 12 + st.y * (boxH - 36) + driftY;
             ctx.beginPath();
             ctx.arc(px, py, st.target ? 6 : 3.5, 0, Math.PI * 2);
             ctx.fillStyle = st.col;
@@ -4969,7 +4972,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             }
           });
           const lassoX = 20 + 0.4 * (mapW - 40);
-          const lassoY = 20 + 0.34 * (h - 50);
+          const lassoY = boxY + 12 + 0.34 * (boxH - 36);
           ctx.setLineDash([4, 4]);
           ctx.strokeStyle = "rgba(6, 182, 212, 0.6)";
           ctx.lineWidth = 1.5;
@@ -4979,7 +4982,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           ctx.setLineDash([]);
           const sel = sampleTracks.find((s) => s.target);
           const selX = 20 + sel.x * (mapW - 40) + Math.sin(t * 0.8 + 2) * 1.5;
-          const selY = 20 + sel.y * (h - 50) + Math.cos(t * 0.6 + 2) * 1.5;
+          const selY = boxY + 12 + sel.y * (boxH - 36) + Math.cos(t * 0.6 + 2) * 1.5;
           ctx.beginPath();
           ctx.arc(selX, selY, 14 + Math.sin(t * 4) * 2, 0, Math.PI * 2);
           ctx.strokeStyle = "#06b6d4";
@@ -5000,7 +5003,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           const cardW = 158;
           const cardH = 64;
           const cardX = Math.min(selX + 22, mapW - cardW - 5);
-          const cardY = Math.max(16, selY - 32);
+          const cardY = Math.max(boxY + 6, Math.min(selY - 32, bottomY - cardH - 6));
           ctx.beginPath();
           ctx.moveTo(selX, selY);
           ctx.lineTo(cardX, cardY + cardH / 2);
@@ -5032,7 +5035,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             ctx.fillRect(cardX + 8 + wx, cardY + 50, 2, wh);
           }
           const mmX = 14;
-          const mmY = 12;
+          const mmY = boxY + 6;
           const mmW = 72;
           const mmH = 44;
           ctx.fillStyle = "#050714ee";
@@ -5051,8 +5054,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           ctx.lineWidth = 1;
           ctx.strokeRect(vpX, vpY, 24, 16);
           const cx = w * 0.81;
-          const cy = h * 0.5;
-          const rOuter = Math.min(w * 0.17, h * 0.38);
+          const cy = boxY + boxH * 0.5;
+          const rOuter = Math.min(w * 0.17, boxH * 0.42);
           const rInner = rOuter * 0.55;
           const camelotKeys = ["1A", "2A", "3A", "4A", "5A", "6A", "7A", "8A", "9A", "10A", "11A", "12A"];
           const colors = ["#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e", "#f97316", "#eab308", "#10b981"];
@@ -5092,14 +5095,14 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         } else if (activeSectionKey === "setbuilder") {
           ctx.fillStyle = "#a855f7";
           ctx.font = "bold 9px monospace";
-          ctx.fillText("SCORE ARM\xD3NICO GEMINI AI: 96% \u2728 (DJOID DAG Graph \u2022 Flujo Sin Choques Tonales)", 20, 18);
+          ctx.fillText("SCORE ARM\xD3NICO GEMINI AI: 96% \u2728 (DJOID DAG Graph \u2022 Flujo Sin Choques Tonales)", 20, boxY + 14);
           const setNodes = [
-            { x: w * 0.12, y: h * 0.72, tag: "01 WARM-UP", title: "Jon Hopkins - Singularity", bpm: "120 BPM", key: "7A", energy: "\u26A161%", col: "#06b6d4" },
-            { x: w * 0.35, y: h * 0.58, tag: "02 BUILD", title: "K\xF6lsch - Mirage", bpm: "126 BPM", key: "7A", energy: "\u26A169%", col: "#3b82f6", match: "Clave Id\xE9ntica \u2728" },
-            { x: w * 0.63, y: h * 0.36, tag: "03 PEAK MAIN", title: "Charlotte - Tales", bpm: "132 BPM", key: "8A", energy: "\u26A188%", col: "#a855f7", match: "+1 Arm\xF3nico \u{1F680}" },
-            { x: w * 0.88, y: h * 0.22, tag: "04 CLIMAX", title: "Chl\xE4r - Burning Sky", bpm: "138 BPM", key: "9A", energy: "\u26A193%", col: "#f43f5e" }
+            { x: w * 0.12, y: boxY + boxH * 0.74, tag: "01 WARM-UP", title: "Jon Hopkins - Singularity", bpm: "120 BPM", key: "7A", energy: "\u26A161%", col: "#06b6d4" },
+            { x: w * 0.35, y: boxY + boxH * 0.56, tag: "02 BUILD", title: "K\xF6lsch - Mirage", bpm: "126 BPM", key: "7A", energy: "\u26A169%", col: "#3b82f6", match: "Clave Id\xE9ntica \u2728" },
+            { x: w * 0.63, y: boxY + boxH * 0.36, tag: "03 PEAK MAIN", title: "Charlotte - Tales", bpm: "132 BPM", key: "8A", energy: "\u26A188%", col: "#a855f7", match: "+1 Arm\xF3nico \u{1F680}" },
+            { x: w * 0.88, y: boxY + boxH * 0.2, tag: "04 CLIMAX", title: "Chl\xE4r - Burning Sky", bpm: "138 BPM", key: "9A", energy: "\u26A193%", col: "#f43f5e" }
           ];
-          const forkNode = { x: w * 0.63, y: h * 0.8, tag: "03b ALT GROOVE (DAG)", title: "Drunken Kong - How Far", bpm: "130 BPM", key: "9B", energy: "\u26A181%", col: "#f59e0b" };
+          const forkNode = { x: w * 0.63, y: boxY + boxH * 0.84, tag: "03b ALT GROOVE (DAG)", title: "Drunken Kong - How Far", bpm: "130 BPM", key: "9B", energy: "\u26A181%", col: "#f59e0b" };
           ctx.strokeStyle = "#a855f7";
           ctx.lineWidth = 3.5;
           ctx.beginPath();
@@ -5153,8 +5156,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             ctx.fillText(`${node.bpm} \u2022 ${node.key} \u2022 ${node.energy}`, cx + 5, cy + 30);
           });
         } else if (activeSectionKey === "hotcues") {
-          const waveY = h * 0.28;
-          const waveH = 46;
+          const waveY = boxY + boxH * 0.3;
+          const waveH = 42;
           const phraseBlocks = [
             { name: "INTRO (32b)", w: w * 0.24, col: "rgba(16, 185, 129, 0.15)", border: "#10b981" },
             { name: "PERCUSSION (32b)", w: w * 0.24, col: "rgba(6, 182, 212, 0.15)", border: "#06b6d4" },
@@ -5189,9 +5192,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           ctx.moveTo(playX, waveY - 22);
           ctx.lineTo(playX, waveY + 28);
           ctx.stroke();
-          const padAreaY = h * 0.58;
+          const padAreaY = boxY + boxH * 0.64;
           const padW = (w - 36) / 8;
-          const padH = 46;
+          const padH = Math.min(46, boxH * 0.3);
           const padDefs = [
             { num: 1, label: "INTRO", col: "#10b981" },
             { num: 2, label: "PERC", col: "#06b6d4" },
@@ -5228,8 +5231,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           ctx.fillText("QUANTIZE 1/4 BEAT \u2022 ALINEACI\xD3N AUTOM\xC1TICA A 32 TIEMPOS \u2022 REKORDBOX & SERATO SYNCED", 18, h - 8);
         } else if (activeSectionKey === "audit") {
           const radCX = w * 0.24;
-          const radCY = h * 0.52;
-          const radR = Math.min(w * 0.18, h * 0.36);
+          const radCY = boxY + boxH * 0.5;
+          const radR = Math.min(w * 0.18, boxH * 0.4);
           const axes = [
             { name: "Energ\xEDa", val: 0.88, icon: "\u26A188%" },
             { name: "Dance", val: 0.74, icon: "\u{1F483}74%" },
@@ -5332,11 +5335,11 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           }
         } else if (activeSectionKey === "copilot") {
           const deckW = (w - 44) / 2;
-          const deckH = h * 0.4;
+          const deckH = (boxH - 20) * 0.46;
           ctx.fillStyle = "#080d1a";
           ctx.strokeStyle = "#10b981";
           ctx.lineWidth = 1.2;
-          drawRoundRect(ctx, 16, 20, deckW, deckH, 8, true, true);
+          drawRoundRect(ctx, 16, boxY + 4, deckW, deckH, 8, true, true);
           ctx.fillStyle = "#10b981";
           ctx.font = "bold 8px monospace";
           ctx.fillText("\u25CF DECK 1 [MASTER / ON AIR]", 24, 34);
@@ -5360,7 +5363,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           ctx.fillStyle = "#080d1a";
           ctx.strokeStyle = "#06b6d4";
           ctx.lineWidth = 1.2;
-          drawRoundRect(ctx, d2X, 20, deckW, deckH, 8, true, true);
+          drawRoundRect(ctx, d2X, boxY + 4, deckW, deckH, 8, true, true);
           ctx.fillStyle = "#06b6d4";
           ctx.font = "bold 8px monospace";
           ctx.fillText("\u25CF DECK 2 [CUE / SYNC]", d2X + 8, 34);
@@ -5380,8 +5383,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             else ctx.lineTo(d2X + 8 + x, wy);
           }
           ctx.stroke();
-          const dspY = deckH + 30;
-          const dspH = h - dspY - 10;
+          const dspY = boxY + deckH + 12;
+          const dspH = boxH - deckH - 16;
           const isClash = simStep < 2;
           ctx.fillStyle = "#0a0d20";
           ctx.strokeStyle = isClash ? "#ef4444" : "#10b981";
@@ -5409,24 +5412,23 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           ctx.fillStyle = "#64748b";
           ctx.fillText("Sube Trim Deck 2", meterX, dspY + 28);
         } else if (activeSectionKey === "spotify") {
-          ctx.fillStyle = "#10b981";
-          ctx.font = "bold 9px monospace";
-          ctx.fillText("SUPERFLAC LOSSLESS INGEST & DUAL A/B ENGINE", 18, 16);
           const colW = (w - 48) / 3;
+          const cY = boxY + 4;
+          const cH = boxH - 8;
           ctx.fillStyle = "#080d1a";
           ctx.strokeStyle = "#10b98166";
-          drawRoundRect(ctx, 16, 26, colW, h - 38, 8, true, true);
+          drawRoundRect(ctx, 16, cY, colW, cH, 8, true, true);
           ctx.fillStyle = "#34d399";
           ctx.font = "bold 8px monospace";
-          ctx.fillText("1. RESOLUCI\xD3N ISRC", 24, 40);
+          ctx.fillText("1. RESOLUCI\xD3N ISRC", 24, cY + 16);
           ctx.fillStyle = "#ffffff";
           ctx.font = "bold 8.5px sans-serif";
-          ctx.fillText("Charlotte - Tales", 24, 55);
+          ctx.fillText("Charlotte - Tales", 24, cY + 32);
           ctx.fillStyle = "#64748b";
           ctx.font = "7.5px monospace";
-          ctx.fillText("ISRC: BE-A12-24-00031", 24, 68);
-          ctx.fillText("Tidal / Qobuz Master", 24, 79);
-          const scanY = 90 + t * 20 % 35;
+          ctx.fillText("ISRC: BE-A12-24-00031", 24, cY + 46);
+          ctx.fillText("Tidal / Qobuz Master", 24, cY + 58);
+          const scanY = cY + 68 + t * 20 % Math.max(30, cH - 80);
           ctx.strokeStyle = "#10b981";
           ctx.lineWidth = 1.5;
           ctx.beginPath();
@@ -5436,15 +5438,15 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           const c2X = 20 + colW + 8;
           ctx.fillStyle = "#080d1a";
           ctx.strokeStyle = "#06b6d466";
-          drawRoundRect(ctx, c2X, 26, colW, h - 38, 8, true, true);
+          drawRoundRect(ctx, c2X, cY, colW, cH, 8, true, true);
           ctx.fillStyle = "#22d3ee";
           ctx.font = "bold 8px monospace";
-          ctx.fillText("2. PIPELINE FLAC 24-BIT", c2X + 8, 40);
+          ctx.fillText("2. PIPELINE FLAC 24-BIT", c2X + 8, cY + 16);
           ctx.fillStyle = "#ffffff";
           ctx.font = "bold 8px monospace";
-          ctx.fillText("2.304 kbps / 48kHz", c2X + 8, 55);
+          ctx.fillText("2.304 kbps / 48kHz", c2X + 8, cY + 32);
           for (let ch = 0; ch < 4; ch++) {
-            const chy = 68 + ch * 14;
+            const chy = cY + 44 + ch * 14;
             ctx.fillStyle = "#1e293b";
             ctx.fillRect(c2X + 8, chy, colW - 16, 8);
             const packetX = c2X + 8 + (t * 40 + ch * 25) % (colW - 24);
@@ -5453,11 +5455,11 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           }
           ctx.fillStyle = "#10b981";
           ctx.font = "bold 7.5px monospace";
-          ctx.fillText("\u2713 BUFFER 100% LOSSLESS", c2X + 8, h - 20);
+          ctx.fillText("\u2713 BUFFER 100% LOSSLESS", c2X + 8, cY + cH - 12);
           const c3X = c2X + colW + 8;
           ctx.fillStyle = "#080d1a";
           ctx.strokeStyle = "#a855f766";
-          drawRoundRect(ctx, c3X, 26, colW, h - 38, 8, true, true);
+          drawRoundRect(ctx, c3X, cY, colW, cH, 8, true, true);
           ctx.fillStyle = "#c084fc";
           ctx.font = "bold 8px monospace";
           ctx.fillText("3. AUDITOR\xCDA A/B", c3X + 8, 40);
@@ -5481,16 +5483,15 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           ctx.font = "6.5px monospace";
           ctx.fillText("Frecuencias hasta 22kHz", c3X + 12, 98);
         } else if (activeSectionKey === "crates") {
-          ctx.fillStyle = "#f97316";
-          ctx.font = "bold 9px monospace";
-          ctx.fillText("TAXONOM\xCDA TIMBRAL DE 2 NIVELES & PASAPORTE UNIVERSAL DJ", 18, 16);
           const treeW = w * 0.42;
+          const cY = boxY + 4;
+          const cH = boxH - 8;
           ctx.fillStyle = "#070918";
           ctx.strokeStyle = "#f9731666";
-          drawRoundRect(ctx, 16, 26, treeW, h - 38, 8, true, true);
+          drawRoundRect(ctx, 16, cY, treeW, cH, 8, true, true);
           ctx.fillStyle = "#fb923c";
           ctx.font = "bold 8px monospace";
-          ctx.fillText("\xC1RBOL TIMBRAL DE G\xC9NERO", 24, 40);
+          ctx.fillText("\xC1RBOL TIMBRAL DE G\xC9NERO", 24, cY + 16);
           const branches = [
             { name: "\u251C\u2500 Peak Time", role: "[Bass Driver]", count: "420 trk" },
             { name: "\u251C\u2500 Raw / Hypnotic", role: "[Percussive Tool]", count: "310 trk" },
@@ -5498,7 +5499,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             { name: "\u2514\u2500 Deep / Warmup", role: "[Atmospheric]", count: "230 trk" }
           ];
           branches.forEach((br, bIdx) => {
-            const by = 55 + bIdx * 18;
+            const by = cY + 36 + bIdx * 18;
             ctx.fillStyle = "#ffffff";
             ctx.font = "8px monospace";
             ctx.fillText(br.name, 24, by);
@@ -5513,10 +5514,10 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           const coreW = w - coreX - 16;
           ctx.fillStyle = "#070918";
           ctx.strokeStyle = "#06b6d466";
-          drawRoundRect(ctx, coreX, 26, coreW, h - 38, 8, true, true);
+          drawRoundRect(ctx, coreX, cY, coreW, cH, 8, true, true);
           ctx.fillStyle = "#22d3ee";
           ctx.font = "bold 8px monospace";
-          ctx.fillText("PASAPORTE UNIVERSAL DJ", coreX + 8, 40);
+          ctx.fillText("PASAPORTE UNIVERSAL DJ", coreX + 8, cY + 16);
           const targets = [
             { name: "\u2794 SERATO DJ PRO", fmt: ".crate binario" },
             { name: "\u2794 PIONEER REKORDBOX", fmt: "rekordbox.xml" },
@@ -5524,7 +5525,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             { name: "\u2794 VIRTUAL DJ", fmt: "playlist.m3u8" }
           ];
           targets.forEach((tgt, tIdx) => {
-            const ty = 56 + tIdx * 16;
+            const ty = cY + 36 + tIdx * 18;
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 7.5px monospace";
             ctx.fillText(tgt.name, coreX + 8, ty);
@@ -5534,11 +5535,11 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           });
           ctx.fillStyle = "#10b981";
           ctx.font = "bold 8px monospace";
-          ctx.fillText("\u2713 CABINA READY: Sincronizado a USB en 1 Clic", coreX + 8, h - 20);
+          ctx.fillText("\u2713 CABINA READY: Sincronizado a USB en 1 Clic", coreX + 8, cY + cH - 14);
         } else if (activeSectionKey === "radar") {
           const rx = w * 0.4;
-          const ry = h * 0.52;
-          const rr = Math.min(w * 0.28, h * 0.38);
+          const ry = boxY + boxH * 0.5;
+          const rr = Math.min(w * 0.28, boxH * 0.42);
           ctx.strokeStyle = "#4338ca";
           ctx.lineWidth = 1.2;
           ctx.beginPath();
@@ -5577,19 +5578,19 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           const pW = w - pX - 16;
           ctx.fillStyle = "#0a0d24";
           ctx.strokeStyle = "#6366f1";
-          drawRoundRect(ctx, pX, 26, pW, h - 38, 8, true, true);
+          drawRoundRect(ctx, pX, boxY + 4, pW, boxH - 8, 8, true, true);
           ctx.fillStyle = "#818cf8";
           ctx.font = "bold 8px monospace";
-          ctx.fillText("1001TRACKLISTS SCAN", pX + 8, 40);
+          ctx.fillText("1001TRACKLISTS SCAN", pX + 8, boxY + 20);
           ctx.fillStyle = "#ffffff";
           ctx.font = "bold 8.5px sans-serif";
-          ctx.fillText("Tales of the Desert", pX + 8, 55);
+          ctx.fillText("Tales of the Desert", pX + 8, boxY + 36);
           ctx.fillStyle = "#a5b4fc";
           ctx.font = "7.5px monospace";
-          ctx.fillText("Charlotte de Witte", pX + 8, 67);
+          ctx.fillText("Charlotte de Witte", pX + 8, boxY + 50);
           ctx.fillStyle = "#10b981";
           ctx.font = "bold 7.5px monospace";
-          ctx.fillText("Match 98% con tu Maleta", pX + 8, 82);
+          ctx.fillText("Match 98% con tu Maleta", pX + 8, boxY + 66);
         }
         animId = requestAnimationFrame(render);
       };
@@ -5640,9 +5641,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         },
         /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }),
         /* @__PURE__ */ React.createElement("span", null, zoomFocus ? "Zoom 1.6x Activo" : "Zoom Enfoque")
-      ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-[250px] rounded-2xl bg-[#060712] border-2 border-djzinc-750 relative overflow-hidden flex flex-col justify-between p-3 shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full pointer-events-none" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, className: "w-full h-full" })), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between w-full" }, /* @__PURE__ */ React.createElement("div", { className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/80 border border-pink-500/70 text-white font-mono text-[10.5px] font-black shadow-md" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-pink-500 animate-ping" }), /* @__PURE__ */ React.createElement("span", null, stepInfo.label)), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-black/80 border border-cyan-500/60 text-cyan-300 font-mono text-[10px] font-bold" }, "60 FPS LIVE SIMULATOR")), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex flex-wrap items-center gap-1.5 mt-auto pt-2" }, activeSectionKey === "copilot" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("deck"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "deck" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Decks Master/Cue"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("dsp"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "dsp" ? "bg-pink-500 text-black" : "bg-black/70 text-pink-300 border border-pink-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Anti-Muddy Radar")), activeSectionKey === "audit" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("dna"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "dna" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " DNA Ac\xFAstico & Mood"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("fft"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "fft" ? "bg-emerald-500 text-black" : "bg-black/70 text-emerald-300 border border-emerald-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " FFT Anti-Fake 16k")), activeSectionKey === "hotcues" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("phrase"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "phrase" ? "bg-amber-500 text-black" : "bg-black/70 text-amber-300 border border-amber-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Fraseo 32 Beats"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("pads"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "pads" ? "bg-rose-500 text-black" : "bg-black/70 text-rose-300 border border-rose-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " 8 Pads RGB CDJ")), activeSectionKey === "setbuilder" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("curve"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "curve" ? "bg-fuchsia-500 text-black" : "bg-black/70 text-fuchsia-300 border border-fuchsia-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Curva B\xE9zier & Pistas"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("dag"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "dag" ? "bg-amber-500 text-black" : "bg-black/70 text-amber-300 border border-amber-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Rama DAG DJOID")), activeSectionKey === "map" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("zoomtrack"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "zoomtrack" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Zoom a Pista"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("minimap"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "minimap" ? "bg-teal-500 text-black" : "bg-black/70 text-teal-300 border border-teal-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Mini-Map & Camelot")), activeSectionKey === "spotify" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("pipeline"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "pipeline" ? "bg-emerald-500 text-black" : "bg-black/70 text-emerald-300 border border-emerald-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Pipeline SuperFLAC"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("ab"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "ab" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Comparador A/B")), activeSectionKey === "crates" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("tree"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "tree" ? "bg-orange-500 text-black" : "bg-black/70 text-orange-300 border border-orange-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " \xC1rbol Timbral"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("passport"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "passport" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Pasaporte DJ USB")), activeSectionKey === "radar" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("scan"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "scan" ? "bg-indigo-500 text-black" : "bg-black/70 text-indigo-300 border border-indigo-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Barrido 360\xB0"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("genres"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "genres" ? "bg-purple-500 text-black" : "bg-black/70 text-purple-300 border border-purple-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Micro-G\xE9neros")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-300 font-mono ml-auto truncate max-w-[220px]" }, stepInfo.desc))));
+      ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-[250px] rounded-2xl bg-[#060712] border-2 border-djzinc-750 relative overflow-hidden flex flex-col justify-between p-3 shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full pointer-events-none" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, className: "w-full h-full" })), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between w-full pointer-events-none" }, /* @__PURE__ */ React.createElement("div", { className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/85 border border-pink-500/80 text-white font-mono text-[10.5px] font-black shadow-md" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-pink-500 animate-ping" }), /* @__PURE__ */ React.createElement("span", null, stepInfo.label)), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-black/85 border border-cyan-500/70 text-cyan-300 font-mono text-[10px] font-bold" }, "60 FPS LIVE SIMULATOR")), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex flex-wrap items-center justify-between gap-2 mt-auto px-3 py-2 bg-[#060814]/92 backdrop-blur-md border-t border-djzinc-800 -mx-3 -mb-3 rounded-b-xl" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1.5 shrink-0" }, activeSectionKey === "copilot" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("deck"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "deck" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Decks Master/Cue"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("dsp"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "dsp" ? "bg-pink-500 text-black" : "bg-black/70 text-pink-300 border border-pink-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Anti-Muddy Radar")), activeSectionKey === "audit" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("dna"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "dna" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " DNA Ac\xFAstico & Mood"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("fft"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "fft" ? "bg-emerald-500 text-black" : "bg-black/70 text-emerald-300 border border-emerald-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " FFT Anti-Fake 16k")), activeSectionKey === "hotcues" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("phrase"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "phrase" ? "bg-amber-500 text-black" : "bg-black/70 text-amber-300 border border-amber-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Fraseo 32 Beats"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("pads"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "pads" ? "bg-rose-500 text-black" : "bg-black/70 text-rose-300 border border-rose-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " 8 Pads RGB CDJ")), activeSectionKey === "setbuilder" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("curve"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "curve" ? "bg-fuchsia-500 text-black" : "bg-black/70 text-fuchsia-300 border border-fuchsia-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Curva B\xE9zier & Pistas"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("dag"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "dag" ? "bg-amber-500 text-black" : "bg-black/70 text-amber-300 border border-amber-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Rama DAG DJOID")), activeSectionKey === "map" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("zoomtrack"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "zoomtrack" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Zoom a Pista"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("minimap"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "minimap" ? "bg-teal-500 text-black" : "bg-black/70 text-teal-300 border border-teal-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Mini-Map & Camelot")), activeSectionKey === "spotify" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("pipeline"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "pipeline" ? "bg-emerald-500 text-black" : "bg-black/70 text-emerald-300 border border-emerald-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Pipeline SuperFLAC"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("ab"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "ab" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Comparador A/B")), activeSectionKey === "crates" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("tree"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "tree" ? "bg-orange-500 text-black" : "bg-black/70 text-orange-300 border border-orange-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " \xC1rbol Timbral"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("passport"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "passport" ? "bg-cyan-500 text-black" : "bg-black/70 text-cyan-300 border border-cyan-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Pasaporte DJ USB")), activeSectionKey === "radar" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("scan"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "scan" ? "bg-indigo-500 text-black" : "bg-black/70 text-indigo-300 border border-indigo-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Barrido 360\xB0"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setZoomFocus("genres"), className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === "genres" ? "bg-purple-500 text-black" : "bg-black/70 text-purple-300 border border-purple-800"}` }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Micro-G\xE9neros"))), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] sm:text-[10.5px] text-gray-200 font-mono truncate max-w-[280px] sm:max-w-[420px] ml-auto bg-black/80 px-2.5 py-1 rounded-md border border-djzinc-700/80 shadow-sm text-right shrink-0" }, stepInfo.desc))));
     };
-    const renderSimulatorCard = () => /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2.5 bg-[#0a0c18] border border-djzinc-750 rounded-2xl p-3.5 sm:p-4 shadow-inner relative overflow-hidden h-[360px] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping" }), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-white tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "Simulaci\xF3n Interactiva en Vivo"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-gradient-to-r from-pink-600 to-rose-600 text-white px-2 py-0.5 rounded font-black shadow-sm" }, "60 FPS"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] font-mono text-gray-300 font-bold uppercase" }, "Paso ", simStep + 1, "/4")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-hidden" }, renderVisualSimulator()));
+    const renderSimulatorCard = () => /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2.5 bg-[#0a0c18] border border-djzinc-750 rounded-2xl p-3.5 sm:p-4 shadow-inner relative overflow-hidden h-[480px] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping" }), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-white tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, "Simulaci\xF3n Interactiva en Vivo"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-gradient-to-r from-pink-600 to-rose-600 text-white px-2 py-0.5 rounded font-black shadow-sm" }, "60 FPS"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] font-mono text-gray-300 font-bold uppercase" }, "Paso ", simStep + 1, "/4")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-hidden" }, renderVisualSimulator()));
     const renderControlsCatalog = () => /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black uppercase text-white tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Gu\xEDa Completa de Botones & Funcionalidades")), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] font-mono px-2.5 py-0.5 rounded bg-pink-950 text-pink-200 border border-pink-500/80 font-black" }, (activeSec.controls || []).length, " Controles")), /* @__PURE__ */ React.createElement("p", { className: "text-xs font-sans text-gray-300 leading-relaxed" }, "A continuaci\xF3n tienes el detalle meticuloso de cada bot\xF3n, selector y atajo disponible en ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, activeSec.badge), ":"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-2.5" }, (activeSec.controls || []).map((ctrl, cIdx) => /* @__PURE__ */ React.createElement("div", { key: cIdx, className: "p-3.5 rounded-2xl bg-[#0d0f1e] border border-djzinc-750 hover:border-pink-500/70 transition-all shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 mb-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs font-black text-pink-200 bg-pink-950/80 px-2.5 py-0.5 rounded border border-pink-600/60 shadow-sm" }, ctrl.btn), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 font-bold uppercase" }, "Control #", cIdx + 1)), /* @__PURE__ */ React.createElement("p", { className: "text-xs font-sans text-gray-200 leading-relaxed mb-2 font-medium" }, ctrl.desc), /* @__PURE__ */ React.createElement("div", { className: "p-2 rounded-xl bg-[#060710] border border-djzinc-800 text-[11px] font-sans text-amber-200 flex items-start gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Target, { size: 14, className: "inline-block align-[-2px] shrink-0 text-amber-400" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("strong", { className: "font-mono text-[10px] uppercase text-amber-400 mr-1" }, "En Cabina:"), /* @__PURE__ */ React.createElement("span", null, ctrl.when)))))));
     const renderSectionStoryAndDetails = () => /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded text-[11px] font-mono font-black text-white shadow-sm", style: { backgroundColor: activeSec.color } }, activeSec.badge), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-300 uppercase tracking-wider font-bold" }, activeSec.tag)), /* @__PURE__ */ React.createElement("h2", { className: "text-xl sm:text-2xl font-mono font-black text-white mt-1" }, activeSec.title), /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-pink-950/40 border border-pink-700/60 text-pink-200 font-sans text-xs italic font-semibold leading-relaxed mt-1" }, '"', activeSec.hook, '"')), /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-[#0d0f20] border border-djzinc-750 text-xs font-sans text-gray-200 leading-relaxed space-y-2" }, /* @__PURE__ */ React.createElement("p", null, activeSec.story)), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "inline-block align-[-2px]" }), " ", /* @__PURE__ */ React.createElement("span", null, "Conceptos Clave Explicados F\xE1cilmente")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-2" }, (activeSec.jargon || []).map((jg, jIdx) => /* @__PURE__ */ React.createElement("div", { key: jIdx, className: "p-3 rounded-xl bg-[#070814] border border-djzinc-750 text-xs font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "font-mono font-bold text-pink-300 mb-0.5 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-pink-400" }), /* @__PURE__ */ React.createElement("span", null, jg.term)), /* @__PURE__ */ React.createElement("p", { className: "text-gray-300 leading-relaxed text-[11.5px]" }, jg.desc))))), /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-[#0c0e1c] border border-djzinc-750 space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Gear, { size: 14, className: "inline-block align-[-2px]" }), " ", /* @__PURE__ */ React.createElement("span", null, "Flujo de Trabajo Paso a Paso")), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 text-xs font-sans text-gray-200" }, (activeSec.steps || []).map((st, sIdx) => /* @__PURE__ */ React.createElement("div", { key: sIdx, className: "flex items-start gap-2" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px] text-pink-400 font-bold shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "leading-snug" }, st))))), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/60 to-[#0e1022] border border-amber-600/60 text-xs font-sans text-amber-200 flex items-start gap-2.5 shadow-md" }, /* @__PURE__ */ React.createElement(Icons.Star, { size: 14, className: "inline-block align-[-2px] shrink-0" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("strong", { className: "font-mono uppercase tracking-wider text-amber-300 block text-[11px] mb-0.5" }, "Secreto Pro de Cabina"), /* @__PURE__ */ React.createElement("p", { className: "text-gray-200 leading-relaxed" }, activeSec.proTip))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 pb-4" }, /* @__PURE__ */ React.createElement(
       "button",
