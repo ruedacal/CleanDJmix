@@ -3,6 +3,7 @@ import { SideRail } from './shell/SideRail.jsx';
 import { TopBar } from './shell/TopBar.jsx';
 import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
 import { WsButton, ToolbarDivider, ExportMenu, FilterMenu, IngestDropzone, CamelotKeyBadge } from './shell/workspace-ui.jsx';
+import { PricingModal } from './shell/pricing-modal.jsx';
 import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from './shell/map-overlays.jsx';
 const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
 
@@ -27943,38 +27944,34 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
             <div 
-                className="relative w-full max-w-2xl bg-[#090913] border border-red-500/40 rounded-3xl p-6 sm:p-7 shadow-[0_0_50px_rgba(239,68,68,0.25)] flex flex-col gap-5 max-h-[88vh] overflow-y-auto custom-scrollbar"
+                className="ws-booth relative w-full max-w-2xl flex flex-col gap-5 p-5 sm:p-6 max-h-[88vh] overflow-y-auto custom-scrollbar" role="dialog" aria-modal="true" aria-labelledby="copilot-launch-title"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera */}
-                <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-                    <div className="flex items-center gap-3">
-                        <span className="w-3.5 h-3.5 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse"></span>
-                        <div>
-                            <h2 className="font-syne font-black text-xl sm:text-2xl text-white tracking-wide uppercase">
-                                BEATWAVE <span className="text-red-400">LIVE COPILOT</span>
-                            </h2>
-                            <p className="text-xs font-mono text-zinc-400">
-                                Monitor Táctico Multi-Plataforma en Tiempo Real (Anti-Muddy & Camelot DSP)
-                            </p>
+                <div className="flex items-start justify-between gap-3 pb-4 border-b border-[var(--bw-line)]">
+                    <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                            <span className="ws-badge-live"><span className="ws-dot ws-dot-alert" />LIVE</span>
+                            <span className="ws-glass-kicker">Booth monitor</span>
                         </div>
+                        <h2 id="copilot-launch-title" className="text-lg sm:text-xl font-semibold text-[var(--bw-white)] tracking-tight">Live Copilot</h2>
+                        <p className="text-xs text-[var(--bw-text-2)] leading-relaxed">Compatibilidad armónica Camelot y anti-muddy en tiempo real, sobre tu software de cabina.</p>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-9 h-9 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center border border-zinc-800 transition-colors cursor-pointer"
+                        aria-label="Cerrar"
+                        className="ws-glass-icon shrink-0"
                     >
                         <Icons.Close size={14} className="inline-block align-[-2px]" />
                     </button>
                 </div>
 
                 {/* SELECTOR DE PLATAFORMA DE CABINA CON LOGOS VECTORIALES */}
-                <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-[#0e0e1a] border border-zinc-800">
-                    <div className="flex items-center justify-between text-xs font-mono">
-                        <span className="text-zinc-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                            Software de Cabina Conectado:
-                        </span>
-                        <span className="text-zinc-500 text-[11px]">
+                <div className="flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                        <span className="ws-glass-kicker">Software de cabina</span>
+                        <span className="text-[var(--bw-text-3)] text-[11px]">
                             Selecciona tu suite o deja en Auto
                         </span>
                     </div>
@@ -27994,22 +27991,19 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                                     key={p.id}
                                     type="button"
                                     onClick={() => selectPlatform(p.id)}
-                                    className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer text-center ${
-                                        isSelected
-                                        ? 'bg-zinc-800/90 shadow-md border-zinc-500'
-                                        : 'bg-black/40 border-zinc-800/80 hover:border-zinc-700'
-                                    }`}
-                                    style={isSelected ? { borderColor: `${p.color}aa`, boxShadow: `0 0 15px ${p.color}33` } : {}}
+                                    className={`ws-plat ${isSelected ? 'is-on' : ''}`}
+                                    aria-pressed={isSelected}
+                                    style={isSelected ? { '--plat': p.color } : {}}
                                 >
                                     <div className="p-1 rounded-lg flex items-center justify-center">
                                         {renderPlatformLogo(p.id, 28)}
                                     </div>
-                                    <span className="font-syne font-bold text-xs text-white" style={isSelected ? { color: p.color } : {}}>
+                                    <span className="text-xs font-medium text-[var(--bw-white)]">
                                         {p.label}
                                     </span>
                                     <span className="font-mono text-[10px] flex items-center gap-1">
-                                        <span className={`w-1.5 h-1.5 rounded-full ${isDetected ? 'bg-emerald-400' : 'bg-zinc-600'}`}></span>
-                                        <span className={isDetected ? 'text-zinc-400' : 'text-zinc-600'}>
+                                        <span className={`ws-dot ${isDetected ? 'ws-dot-ok' : ''}`}></span>
+                                        <span className={isDetected ? 'text-[var(--bw-text-2)]' : 'text-[var(--bw-text-3)]'}>
                                             {p.id === 'auto' ? 'Auto Link' : isDetected ? 'Detectado' : 'Standby'}
                                         </span>
                                     </span>
@@ -28024,42 +28018,42 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                     {/* Tarjeta 1: Segundo Monitor / Pop-Out */}
                     <div 
                         onClick={launchPopOut}
-                        className="p-4 rounded-2xl bg-[#0e0e1a] border border-zinc-800 hover:border-red-500/70 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all cursor-pointer flex flex-col justify-between group"
+                        className="ws-card ws-card-action p-4 flex flex-col justify-between gap-4 cursor-pointer"
                     >
                         <div>
-                            <div className="text-2xl mb-2"><Icons.Grid size={14} className="inline-block align-[-2px]" /></div>
-                            <h3 className="font-syne font-bold text-sm text-white group-hover:text-red-400 transition-colors uppercase">
+                            <span className="ws-card-icon"><Icons.Grid size={16} /></span>
+                            <h3 className="mt-3 text-sm font-semibold text-[var(--bw-white)]">
                                 Segundo Monitor
                             </h3>
-                            <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                            <p className="text-xs text-[var(--bw-text-2)] mt-1 leading-relaxed">
                                 Ventana flotante limpia para arrastrar a tu pantalla secundaria o proyector con soporte F11.
                             </p>
                         </div>
                         <button
                             type="button"
-                            className="mt-4 w-full py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-mono text-[11px] font-black uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                            className="ws-btn ws-btn-outline w-full justify-center h-9"
                         >
-                            Lanzar Pop-Out ↗
+                            <Icons.External size={13} /> Lanzar Pop-Out
                         </button>
                     </div>
 
                     {/* Tarjeta 2: iPad / Tablet Companion */}
                     <div 
                         onClick={() => setQrShown(!qrShown)}
-                        className="p-4 rounded-2xl bg-[#0e0e1a] border border-zinc-800 hover:border-djcyan-500/70 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all cursor-pointer flex flex-col justify-between group"
+                        className="ws-card ws-card-action p-4 flex flex-col justify-between gap-4 cursor-pointer"
                     >
                         <div>
-                            <div className="text-2xl mb-2"><Icons.Grid size={14} className="inline-block align-[-2px]" /></div>
-                            <h3 className="font-syne font-bold text-sm text-white group-hover:text-djcyan-400 transition-colors uppercase">
+                            <span className="ws-card-icon"><Icons.Grid size={16} /></span>
+                            <h3 className="mt-3 text-sm font-semibold text-[var(--bw-white)]">
                                 iPad / Tablet
                             </h3>
-                            <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                            <p className="text-xs text-[var(--bw-text-2)] mt-1 leading-relaxed">
                                 Abre en el navegador de tu iPad sin cables. Enlace Wi-Fi directo para cabina.
                             </p>
                         </div>
                         <button
                             type="button"
-                            className="mt-4 w-full py-2 rounded-xl bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono text-[11px] font-black uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                            className="ws-btn ws-btn-outline w-full justify-center h-9"
                         >
                             {qrShown ? 'Ocultar QR' : 'Ver Código QR'}
                         </button>
@@ -28068,29 +28062,29 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                     {/* Tarjeta 3: Esta Pantalla (In-App) */}
                     <div 
                         onClick={onSelectEmbedded}
-                        className="p-4 rounded-2xl bg-[#0e0e1a] border border-zinc-800 hover:border-emerald-500/70 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all cursor-pointer flex flex-col justify-between group"
+                        className="ws-card ws-card-action p-4 flex flex-col justify-between gap-4 cursor-pointer"
                     >
                         <div>
-                            <div className="text-2xl mb-2"><Icons.Sliders size={14} className="inline-block align-[-2px]" /></div>
-                            <h3 className="font-syne font-bold text-sm text-white group-hover:text-emerald-400 transition-colors uppercase">
+                            <span className="ws-card-icon"><Icons.Sliders size={16} /></span>
+                            <h3 className="mt-3 text-sm font-semibold text-[var(--bw-white)]">
                                 Esta Pantalla
                             </h3>
-                            <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                            <p className="text-xs text-[var(--bw-text-2)] mt-1 leading-relaxed">
                                 Maximiza el HUD en esta misma ventana para preparar el set antes de la actuación.
                             </p>
                         </div>
                         <button
                             type="button"
-                            className="mt-4 w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono text-[11px] font-black uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                            className="ws-btn ws-btn-primary w-full justify-center h-9"
                         >
-                            Ver en la App ➔
+                            Ver en la App <Icons.ChevronRight size={13} />
                         </button>
                     </div>
                 </div>
 
                 {/* Desplegable QR & Enlace */}
                 {qrShown && (
-                    <div className="p-4 rounded-2xl bg-black border border-zinc-800 flex flex-col sm:flex-row items-center gap-4 animate-fadeIn">
+                    <div className="ws-card p-4 flex flex-col sm:flex-row items-center gap-4 animate-fadeIn">
                         <div className="p-2 bg-white rounded-xl shrink-0 shadow-lg">
                             <img 
                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(companionUrl)}`} 
@@ -28099,46 +28093,43 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                             />
                         </div>
                         <div className="flex-1 flex flex-col gap-2 min-w-0">
-                            <div className="text-xs font-mono text-zinc-400">
+                            <div className="ws-glass-kicker">
                                 Dirección local de cabina (misma red Wi-Fi):
                             </div>
-                            <div className="p-2 rounded-lg bg-zinc-900 border border-zinc-700 font-mono text-xs text-djcyan-400 font-bold break-all select-all">
+                            <div className="p-2 rounded-md bg-[var(--bw-black)] border border-[var(--bw-line)] font-mono text-xs text-[var(--bw-cyan)] break-all select-all">
                                 {companionUrl}
                             </div>
                             <button
                                 type="button"
                                 onClick={copyCompanionUrl}
-                                className="self-start px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-mono font-bold text-white transition-all cursor-pointer"
+                                className="ws-btn ws-btn-ghost self-start h-8"
                             >
-                                {copied ? '✓ ¡Enlace Copiado!' : '📋 Copiar Enlace'}
+                                {copied ? <><Icons.Check size={13} /> Enlace copiado</> : <><Icons.Copy size={13} /> Copiar enlace</>}
                             </button>
                         </div>
                     </div>
                 )}
 
                 {/* Barra de Estado y Simulación */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-800/80 text-xs font-mono">
-                    <div className="flex items-center gap-2 text-zinc-400">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-[var(--bw-line)] text-xs">
+                    <div className="flex items-center gap-2 text-[var(--bw-text-2)]">
+                        <span className="ws-dot ws-dot-ok"></span>
                         <div className="flex items-center gap-1.5">
                             <span>Motor Activo:</span>
                             {renderPlatformLogo(copilotInfo.active_platform || 'serato', 16)}
-                            <strong className="text-white">{activePlatObj.name}</strong>
+                            <strong className="text-[var(--bw-white)] font-medium">{activePlatObj.name}</strong>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-zinc-500">¿Sin software activo ahora?</span>
+                        <span className="text-[var(--bw-text-3)]">¿Sin software activo?</span>
                         <button
                             type="button"
                             onClick={toggleSimulation}
-                            className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                                copilotInfo.simulation_mode 
-                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50' 
-                                : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                            }`}
+                            className={`ws-btn h-8 ${copilotInfo.simulation_mode ? 'ws-btn-warn' : 'ws-btn-ghost'}`}
+                            aria-pressed={!!copilotInfo.simulation_mode}
                         >
-                            <Icons.Brain size={14} className="inline-block align-[-2px]" /> {copilotInfo.simulation_mode ? 'Simulación Activa' : 'Activar Simulación'}
+                            <Icons.Brain size={13} /> {copilotInfo.simulation_mode ? 'Simulación Activa' : 'Activar Simulación'}
                         </button>
                     </div>
                 </div>
@@ -28222,7 +28213,7 @@ const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
 // ==============================================================================
 // PRESENTACIÓN ESPECTACULAR A PANTALLA COMPLETA CON VÍDEO DE FONDO Y LÁSERES
 // ==============================================================================
-const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour }) => {
+const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
 
     const [phase, setPhase] = useState('video'); // 'video' | 'portal'
@@ -28332,6 +28323,9 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         } else if (action === 'tour') {
             onClose();
             if (onOpenTour) onOpenTour();
+        } else if (action === 'pricing') {
+            if (onOpenPricing) onOpenPricing();
+            onClose();
         } else {
             onClose();
         }
@@ -28481,8 +28475,16 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         <span className="bw-eyebrow hidden sm:inline">Precision Audio Intelligence</span>
                         <button
                             type="button"
-                            onClick={() => handleAction('cabin')}
+                            onClick={() => handleAction('pricing')}
                             className="bw-btn bw-btn-ghost ml-auto"
+                        >
+                            <Icons.Crown size={14} />
+                            <span>Planes y precios</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleAction('cabin')}
+                            className="bw-btn bw-btn-ghost"
                         >
                             <span>Entrar a la cabina</span>
                             <Icons.ChevronRight size={14} />
@@ -28545,6 +28547,7 @@ const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMod
 // Componente Principal de la Aplicación
 const App = () => {
     // Intro Espectacular a Pantalla Completa con Video de Fondo
+    const [pricingOpen, setPricingOpen] = useState(false);
     const [cinematicIntroOpen, setCinematicIntroOpen] = useState(() => {
         try {
             return !sessionStorage.getItem('bw_intro_viewed');
@@ -29417,6 +29420,7 @@ const App = () => {
         return (
             <AppCinematicIntro
                 isOpen={true}
+                onOpenPricing={() => setPricingOpen(true)}
                 onClose={() => {
                     setCinematicIntroOpen(false);
                     try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
@@ -29442,6 +29446,7 @@ const App = () => {
 
     const shellHelpItems = [
         { id: 'manual', label: 'Manual interactivo', description: 'Masterclass del módulo actual', icon: 'Knowledge', kbd: 'F1', onClick: () => handleOpenManual(activeTab) },
+        { id: 'pricing', label: 'Planes y precios', description: 'Free, DJ Pro y Founder Lifetime', icon: 'Crown', onClick: () => setPricingOpen(true) },
         { id: 'shortcuts', label: 'Atajos de teclado', description: 'Controles rápidos de cabina', icon: 'Keyboard', onClick: () => setShortcutsModalOpen(true) },
         { id: 'tutorial', label: 'Tutorial guiado', description: 'Recorrido por la interfaz', icon: 'Compass', onClick: () => setTutorialOpen(true) },
         { id: 'intro', label: 'Ver intro cinemática', description: 'Presentación a pantalla completa', icon: 'Film', onClick: () => setCinematicIntroOpen(true) },
@@ -29810,6 +29815,7 @@ const App = () => {
             />
 
             {/* MODAL LANZADOR BEATWAVE LIVE COPILOT */}
+            <PricingModal isOpen={pricingOpen} onClose={() => setPricingOpen(false)} onSelectPlan={(plan) => { setPricingOpen(false); if (plan === 'free') return; setUserModalOpen(true); }} />
             <CopilotLaunchModal 
                 isOpen={copilotModalOpen}
                 onClose={() => setCopilotModalOpen(false)}
@@ -29869,6 +29875,7 @@ const App = () => {
             {/* PRESENTACIÓN CINEMÁTICA A PANTALLA COMPLETA CON VÍDEO DE FONDO */}
             <AppCinematicIntro
                 isOpen={cinematicIntroOpen}
+                onOpenPricing={() => setPricingOpen(true)}
                 onClose={() => {
                     setCinematicIntroOpen(false);
                     try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}

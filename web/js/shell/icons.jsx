@@ -59,6 +59,7 @@ export const ShellIcons = {
     LogIn: makeIcon(<><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5" /><path d="M15 12H3" /></>),
     Compass: makeIcon(<><circle cx="12" cy="12" r="10" /><path d="m16.24 7.76-1.8 5.4a2 2 0 0 1-1.27 1.27l-5.41 1.8 1.8-5.4a2 2 0 0 1 1.27-1.27z" /></>),
     ChevronDown: makeIcon(<path d="m6 9 6 6 6-6" />, { defaultSize: 14 }),
+    External: makeIcon(<><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></>, { defaultSize: 14 }),
     ChevronRight: makeIcon(<path d="m9 18 6-6-6-6" />, { defaultSize: 14 }),
     ChevronUp: makeIcon(<path d="m18 15-6-6-6 6" />, { defaultSize: 14 }),
     ChevronLeft: makeIcon(<path d="m15 18-6-6 6-6" />, { defaultSize: 14 }),
