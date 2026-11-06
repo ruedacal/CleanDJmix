@@ -1,19 +1,19 @@
 """
-Pruebas exhaustivas para AudioAdapter y SpotifyDownloaderAdapter (>90% cobertura).
+Pruebas unitarias exhaustivas para AudioAdapter y SpotifyDownloaderAdapter (>90% de cobertura).
 """
 
 import os
-import json
+import io
 import pytest
 import numpy as np
 from unittest.mock import patch, MagicMock
 from infrastructure.adapters import AudioAdapter, SpotifyDownloaderAdapter
 
 # ==========================================
-# AUDIO ADAPTER
+# AUDIO ADAPTER TESTS
 # ==========================================
 
-def test_audio_obtener_metadatos_id3(tmp_path):
+def test_audio_metadatos_id3_ramas(tmp_path):
     p = tmp_path / "Tiesto - Adagio For Strings.mp3"
     p.touch()
     art, tit = AudioAdapter.obtener_metadatos_id3(str(p), p.name)
@@ -52,7 +52,6 @@ def test_audio_buscar_discogs():
         assert año == 2005
         assert "trance" in estilos
 
-    # Caso respuesta sin guión en title
     with patch("requests.get") as mock_get:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -63,7 +62,6 @@ def test_audio_buscar_discogs():
         año, estilos, art, tit = AudioAdapter.buscar_discogs("Artista", "Pista")
         assert art == "Artista"
 
-    # Excepción
     with patch("requests.get", side_effect=Exception("Timeout")):
         año, estilos, art, tit = AudioAdapter.buscar_discogs("A", "B")
         assert año == 2026
@@ -88,6 +86,19 @@ def test_audio_analizar_acustica(tmp_path):
         bpm_fb, _, _, _, _, _ = AudioAdapter.analizar_acustica(str(p))
         assert bpm_fb == 128.0
 
+def test_audio_obtener_perfil_onda(tmp_path):
+    p = tmp_path / "waveform.mp3"
+    p.touch()
+    dummy_y = np.ones(11025)
+    with patch("librosa.load", return_value=(dummy_y, 11025)):
+        puntos = AudioAdapter.obtener_perfil_onda(str(p), num_puntos=10)
+        assert len(puntos) == 10
+        assert puntos[0] == 1.0
+
+    with patch("librosa.load", side_effect=Exception("Fail")):
+        puntos_fb = AudioAdapter.obtener_perfil_onda(str(p), num_puntos=10)
+        assert len(puntos_fb) == 10
+
 def test_audio_rescate_shazam(tmp_path):
     p = tmp_path / "audio.mp3"
     p.touch()
@@ -103,42 +114,37 @@ def test_audio_rescate_shazam(tmp_path):
         art, tit = AudioAdapter.rescate_shazam(str(p))
         assert art == "VRC_MISSING"
 
-def test_audio_actualizar_fichero_y_reporte(tmp_path):
+def test_audio_actualizar_fichero_y_csv(tmp_path):
     p = tmp_path / "test.mp3"
     p.touch()
 
-    # Guardar con éxito
     with patch("infrastructure.adapters.MutagenFile") as mock_mf:
         mock_audio = MagicMock()
         mock_mf.return_value = mock_audio
         nombre = AudioAdapter.actualizar_fichero(str(p), "DJ Tiesto", "Traffic", 2003, 140, modo_seguro=False)
         assert "DJ Tiesto - Traffic.mp3" in nombre
 
-    # Excepción al guardar tags
     with patch("infrastructure.adapters.MutagenFile", side_effect=Exception("Write error")):
         nombre = AudioAdapter.actualizar_fichero(str(p), "DJ Tiesto", "Traffic", 2003, 140, modo_seguro=False)
         assert "DJ Tiesto - Traffic.mp3" in nombre
 
-    # Missing
     nombre_miss = AudioAdapter.actualizar_fichero(str(p), "VRC_MISSING", "VRC_MISSING", 2026, 130, modo_seguro=True)
     assert "VRC_Unidentified_Track_130BPM.mp3" in nombre_miss
 
-    # CSV éxito
     datos = [{"artista": "T", "titulo": "T", "bpm": 140, "anio": 2003, "genero": "Tr", "subgenero": "H", "ruta_final": str(p)}]
     csv_file = AudioAdapter.exportar_informe_csv(datos, str(tmp_path))
     assert os.path.exists(csv_file)
 
-    # CSV error
-    with patch("builtins.open", side_effect=Exception("Disk full")):
+    with patch("builtins.open", side_effect=Exception("Disk error")):
         assert AudioAdapter.exportar_informe_csv(datos, str(tmp_path)) is None
 
 # ==========================================
-# SPOTIFY DOWNLOADER ADAPTER
+# SPOTIFY DOWNLOADER ADAPTER TESTS
 # ==========================================
 
-def test_limpiar_url_variantes():
-    url1 = "https://open.spotify.com/intl-es/playlist/37i9dQZF1DXcBWIGoYBM5M?si=999"
-    assert SpotifyDownloaderAdapter._limpiar_url(url1) == "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M"
+def test_limpiar_url_spotify():
+    url = "https://open.spotify.com/intl-es/playlist/37i9dQZF1DXcBWIGoYBM5M?si=999"
+    assert SpotifyDownloaderAdapter._limpiar_url(url) == "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M"
     url_dup = "https://open.spotify.com/album/123https://open.spotify.com/album/123"
     assert SpotifyDownloaderAdapter._limpiar_url(url_dup) == "https://open.spotify.com/album/123"
 
@@ -149,13 +155,13 @@ def test_escanear_sin_credenciales():
         assert res == []
         cb.assert_called_once()
 
-def test_escanear_playlist_con_paginacion():
+def test_escanear_playlist_paginada():
     mock_sp = MagicMock()
     mock_sp.playlist_items.return_value = {
         "items": [{
             "track": {
-                "name": "Song 1",
-                "artists": [{"name": "Artist 1"}],
+                "name": "Pista 1",
+                "artists": [{"name": "Artista 1"}],
                 "album": {"name": "Album 1", "images": [{"url": "http://img.jpg"}], "release_date": "2024-05-01"},
                 "duration_ms": 120000
             }
@@ -165,26 +171,25 @@ def test_escanear_playlist_con_paginacion():
     mock_sp.next.return_value = {
         "items": [{
             "track": {
-                "name": "Song 2",
-                "artists": [{"name": "Artist 2"}],
+                "name": "Pista 2",
+                "artists": [{"name": "Artista 2"}],
                 "album": {"name": "Album 2", "images": []},
                 "duration_ms": 150000
             }
         }],
         "next": None
     }
-    cb = MagicMock()
     with patch.object(SpotifyDownloaderAdapter, '_obtener_cliente_spotify', return_value=mock_sp):
+        cb = MagicMock()
         res = SpotifyDownloaderAdapter.escanear_lista("https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M", callback_log=cb)
         assert len(res) == 2
-        assert res[0]["titulo"] == "Song 1"
-        assert res[1]["titulo"] == "Song 2"
+        assert res[0]["titulo"] == "Pista 1"
+        assert res[1]["titulo"] == "Pista 2"
 
 def test_escanear_artista_y_album():
     mock_sp = MagicMock()
-    # Artista
     mock_sp.artist_albums.return_value = {
-        "items": [{"id": "alb-1", "name": "Best Hits", "images": [{"url": "http://img.jpg"}], "release_date": "2025-01-01"}]
+        "items": [{"id": "alb-1", "name": "Best Hits", "images": [{"url": "http://img.jpg"}], "release_date": "2025"}]
     }
     mock_sp.album_tracks.return_value = {
         "items": [{"id": "trk-1", "name": "Hit", "artists": [{"name": "Star"}], "duration_ms": 180000}]
@@ -194,7 +199,6 @@ def test_escanear_artista_y_album():
         assert len(res_art) == 1
         assert res_art[0]["titulo"] == "Hit"
 
-    # Álbum
     mock_sp.album.return_value = {
         "name": "Album X", "release_date": "2023-01-01", "images": [],
         "tracks": {"items": [{"name": "Track A", "artists": [{"name": "Band"}], "duration_ms": 200000}]}
@@ -216,7 +220,7 @@ def test_escanear_track_individual():
         assert len(res) == 1
         assert res[0]["titulo"] == "Solo Track"
 
-def test_escanear_error_general():
+def test_escanear_error_excepcion():
     mock_sp = MagicMock()
     mock_sp.playlist_items.side_effect = Exception("Crash")
     cb = MagicMock()
@@ -224,8 +228,8 @@ def test_escanear_error_general():
         res = SpotifyDownloaderAdapter.escanear_lista("https://open.spotify.com/playlist/123", callback_log=cb)
         assert res == []
 
-def test_descargar_canciones(tmp_path):
-    destino = str(tmp_path / "musica")
+def test_descargar_canciones_seleccionadas(tmp_path):
+    destino = str(tmp_path / "mp3s")
     track_ok = {"artista": "A", "titulo": "B", "year": "2024", "cover_url": "http://img.jpg"}
     track_sin_cover = {"artista": "C", "titulo": "D", "year": "2024", "cover_url": ""}
     cb = MagicMock()
@@ -239,17 +243,16 @@ def test_descargar_canciones(tmp_path):
             os.makedirs(destino, exist_ok=True)
             for nombre in ["A - B.mp3", "C - D.mp3"]:
                 with open(os.path.join(destino, nombre), "w") as f:
-                    f.write("audio")
+                    f.write("audio_bytes")
 
         mock_ydl.return_value.__enter__.return_value.download.side_effect = side_dl
         mock_req.return_value.status_code = 200
-        mock_req.content = b"fake_img"
+        mock_req.content = b"fake_image_content"
 
         archivos = SpotifyDownloaderAdapter.descargar_canciones_seleccionadas([track_ok, track_sin_cover], destino, callback_log=cb)
         assert len(archivos) == 2
 
-    # Error en descarga
     with patch("yt_dlp.YoutubeDL") as mock_ydl2:
-        mock_ydl2.return_value.__enter__.return_value.download.side_effect = Exception("YT Down")
+        mock_ydl2.return_value.__enter__.return_value.download.side_effect = Exception("Download failed")
         res_fail = SpotifyDownloaderAdapter.descargar_canciones_seleccionadas([track_ok], destino, callback_log=cb)
         assert len(res_fail) == 0

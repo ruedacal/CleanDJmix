@@ -1,7 +1,45 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and logs
+*.log
+*.db
+.coverage
+.cache
+.cache/
+.pytest_cache/
+cache_preview/
+web/previews/
+
+# Environments and Secrets
+.env
+env/
+env_python37/
+venv/
+.cleandjmix_session.json
+config_ingest.json
+
+# Builds and packaging
 build/
 dist/
 *.spec
-.env
-CleanDJmix_crash.log
-.cleandjmix_session.json
+assets_extracted/
+CleanDJmix_PRO_Assets.zip
+*.xlsx
+*carpeta(s)*/
+
+# macOS metadata
+.DS_Store
+*.command
+
+# Scratch and manual tests
+/test_*.py
+scripts/manual_tests/
+
+node_modules/
+web/vendor/checksums.json
+web/css/tailwind.input.css
+tailwind.config.js
+*.cdn-backup
