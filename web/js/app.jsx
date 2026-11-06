@@ -2735,11 +2735,8 @@ const HotCueStudioModal = ({
                                     <div
                                         key={cueId}
                                         onClick={() => onSelectCue && onSelectCue(cueId)}
-                                        className={`p-3 rounded-xl border flex flex-col justify-between cursor-pointer transition-all select-none shadow-md ${
-                                            isSelected 
-                                                ? 'bg-djzinc-800 border-djcyan-400 ring-2 ring-djcyan-400/80 shadow-[0_0_15px_rgba(6,182,212,0.3)] scale-[1.02]' 
-                                                : `${c.bg || 'bg-djzinc-900'} ${c.border || 'border-djzinc-750'} hover:border-gray-500 hover:scale-[1.01]`
-                                        }`}
+                                        className={`ws-pad p-3 pt-3.5 cursor-pointer select-none group ${isSelected ? 'ws-pad-on' : (c.time !== undefined && c.time !== null ? 'ws-pad-set' : '')}`}
+                                        style={{ '--pad-color': c.color || '#22d3ee' }}
                                     >
                                         <div className="flex justify-between items-center mb-1.5">
                                             <div className="flex items-center gap-1.5">
@@ -12865,7 +12862,7 @@ const HotCuesWorkspace = ({
     );
 
     return (
-        <div className="flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200">
+        <div className="ws-module ws-mod-hotcues flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200">
             {/* BARRA SUPERIOR: RUTA DE CARPETA, SELECTOR DE PISTAS Y ACCIONES */}
             <header className="border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm">
                 {/* Directorio Actual & Botón Cambiar Carpeta (Versión Desktop) */}
@@ -13415,39 +13412,21 @@ const HotCuesWorkspace = ({
                                                     setSelectedCueId(padNum);
                                                     handleJumpToCue(cue);
                                                 }}
-                                                className={`p-2 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group min-h-[68px] ${
-                                                    isPlayingThisCue
-                                                        ? 'bg-[#1a1a2c] scale-[1.04] ring-2 ring-white/90 shadow-xl'
-                                                        : isSelected
-                                                            ? 'bg-[#141420] border-white shadow-lg'
-                                                            : 'bg-[#0e0e16] hover:bg-[#141420] border-djzinc-800'
-                                                }`}
+                                                className={`ws-pad p-2 pt-2.5 cursor-pointer select-none group min-h-[68px] ${isPlayingThisCue ? 'ws-pad-on ws-pad-live' : isSelected ? 'ws-pad-on' : 'ws-pad-set'}`}
                                                 style={{
-                                                    borderColor: isPlayingThisCue ? color : (isSelected ? '#ffffff' : `${color}75`),
                                                     animation: 'padHaloIgnite 0.65s cubic-bezier(0.16, 1, 0.3, 1) both',
                                                     animationDelay: staggerDelay,
-                                                    '--cue-color': color,
-                                                    '--cue-color-alpha': `${color}75`,
-                                                    '--cue-color-alpha2': `${color}35`,
-                                                    boxShadow: isPlayingThisCue 
-                                                        ? `0 0 28px ${color}, 0 0 10px #ffffff, inset 0 0 12px ${color}80` 
-                                                        : (isSelected ? `0 0 20px #ffffff, 0 0 10px ${color}` : `0 0 16px ${color}55, inset 0 0 8px ${color}20`)
+                                                    '--pad-color': color,
+                                                    '--cue-color': color
                                                 }}
                                             >
-                                                {/* Halo Superior de Iluminación LED del Pad */}
-                                                <div 
-                                                    className={`absolute top-0 left-0 right-0 h-1.5 transition-all ${isPlayingThisCue ? 'opacity-100 shadow-[0_0_12px_currentColor]' : 'opacity-75'}`}
-                                                    style={{ backgroundColor: color, color: color }}
-                                                ></div>
+                                                
 
                                                 {/* Resplandor ambiental de fondo del color del Cue */}
-                                                <div 
-                                                    className="absolute -top-4 -right-4 w-12 h-12 rounded-full pointer-events-none opacity-20 blur-md group-hover:opacity-40 transition-opacity"
-                                                    style={{ backgroundColor: color }}
-                                                ></div>
+                                                
 
                                                 <div className="flex items-center justify-between mt-0.5 relative z-10">
-                                                    <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded shadow ${isPlayingThisCue ? 'bg-white text-black' : 'bg-black/70 text-white'}`}>
+                                                    <span className={`ws-pad-num ${isPlayingThisCue ? 'ws-pad-num-on' : ''}`}>
                                                         PAD {padNum}
                                                     </span>
                                                     <span 
@@ -13969,17 +13948,11 @@ const HotCuesWorkspace = ({
                                         <div
                                             key={idx}
                                             onClick={() => setSelectedCueId(padNum)}
-                                            className={`p-2.5 rounded-lg border-2 flex flex-col justify-between cursor-pointer transition-all select-none relative overflow-hidden group min-h-[66px] ${
-                                                isSelected ? 'bg-[#181826] scale-105 shadow-xl' : 'bg-[#0f0f18] hover:bg-[#14141e]'
-                                            }`}
-                                            style={{
-                                                borderColor: isSelected ? '#ffffff' : `${color}80`,
-                                                boxShadow: isSelected ? `0 0 20px ${color}` : `0 0 8px ${color}30`
-                                            }}
+                                            className={`ws-pad p-2.5 pt-3 cursor-pointer select-none group min-h-[66px] ${isSelected ? 'ws-pad-on' : 'ws-pad-set'}`}
+                                            style={{ '--pad-color': color }}
                                         >
-                                            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: color }}></div>
                                             <div className="flex items-center justify-between mt-0.5">
-                                                <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${isSelected ? 'bg-white text-black' : 'bg-black/60 text-white'}`}>
+                                                <span className={`ws-pad-num ${isSelected ? 'ws-pad-num-on' : ''}`}>
                                                     PAD {padNum}
                                                 </span>
                                                 <span className="w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: color }}></span>
@@ -15341,7 +15314,7 @@ const SpotifyWorkspace = ({
     };
 
     return (
-        <div className="flex w-full h-full max-w-full bg-[#09090c] text-gray-300 font-sans select-none overflow-x-hidden">
+        <div className="ws-module ws-mod-spotify flex w-full h-full max-w-full bg-[#09090c] text-gray-300 font-sans select-none overflow-x-hidden">
             <div className="flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden">
                 <div className="p-3 border-b border-djzinc-800 bg-[#0c0c10] flex flex-col gap-2.5 shrink-0 w-full max-w-full">
                     {/* Fila 1: Barra de Búsqueda Prominente y Acciones Principales de Descarga */}
@@ -18202,7 +18175,7 @@ const TaxonomyWorkspace = ({
     };
 
     return (
-        <div className="flex flex-col h-full w-full overflow-hidden bg-djzinc-950 text-gray-200">
+        <div className="ws-module ws-mod-taxonomy flex flex-col h-full w-full overflow-hidden bg-djzinc-950 text-gray-200">
             {/* ENCABEZADO Y SELECTOR DE VISTAS TAXONÓMICAS */}
             <div className="px-5 pt-4 pb-3 border-b border-djzinc-800 bg-[#08080c] shrink-0 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -18340,7 +18313,7 @@ const TaxonomyWorkspace = ({
                                         }
                                     }}
                                     placeholder="Ej: tech house a 128 bpm en 8A, afro house para bailar, reggaeton retro para la previa, extended mix..."
-                                    className="w-full bg-[#040407] border-2 border-djzinc-750 focus:border-djcyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-xl pl-10 pr-12 py-3 text-sm font-medium text-white placeholder-gray-500 outline-none transition-all shadow-inner"
+                                    className="ws-search-input w-full pl-10 pr-12 py-3 text-sm"
                                 />
                                 {aiQuery && (
                                     <button
@@ -18948,16 +18921,16 @@ const TaxonomyWorkspace = ({
                                                     <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-xs">{trk.displayArtist}</td>
                                                     <td className="py-2 px-2.5 font-mono text-[11px] text-gray-300">{trk.displayGenre}</td>
                                                     <td className="py-2 px-2.5 font-mono text-[10px] text-djcyan-400 font-semibold">{trk.displaySubgenre}</td>
-                                                    <td className="py-2 px-2 text-center font-mono text-xs text-white font-bold">{trk.displayBpm}</td>
+                                                    <td className="py-2 px-2 text-center text-xs ws-bpm">{trk.displayBpm}</td>
                                                     <td className="py-2 px-2 text-center">
-                                                        <span 
-                                                            className="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] border cursor-pointer"
-                                                            style={{ backgroundColor: `${keyData.color}20`, borderColor: `${keyData.color}80`, color: keyData.color }}
+                                                        <button
+                                                            type="button"
+                                                            className="cursor-pointer"
                                                             onClick={() => setIsCamelotModalOpen(true)}
                                                             title={`Key ${trk.displayKey} (${keyData.classical})`}
                                                         >
-                                                            {trk.displayKey}
-                                                        </span>
+                                                            <CamelotKeyBadge value={trk.displayKey} />
+                                                        </button>
                                                     </td>
                                                     <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-400">{trk.displayVersion || 'Original Mix'}</td>
                                                     <td className="py-2 px-2.5 text-center">
@@ -20283,7 +20256,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     };
 
     return (
-        <div className="flex flex-col h-full w-full bg-[#040407] overflow-y-auto p-4 sm:p-6 text-gray-200 space-y-6">
+        <div className="ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#040407] overflow-y-auto p-4 sm:p-6 text-gray-200 space-y-6">
             {/* Header del Radar Shazam */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-djzinc-800 pb-4">
                 <div className="flex items-center gap-3">
@@ -20417,7 +20390,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                     </div>
 
                     {/* Selector de Fuente de Entrada */}
-                    <div className="flex items-center gap-1 my-2 bg-djzinc-950 p-1 rounded-xl border border-djzinc-800 text-[10px] font-mono">
+                    <div className="ws-seg">
                         <span className="text-gray-500 pl-1 text-[9px] uppercase tracking-wider">Entrada:</span>
                         <button
                             type="button"
@@ -20430,7 +20403,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         <button
                             type="button"
                             onClick={() => { setMicCaptureMode('browser'); setMicPermissionError(null); }}
-                            className={`px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === 'browser' ? 'bg-djcyan-500 text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                            className={`ws-seg-btn ${micCaptureMode === 'browser' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={micCaptureMode === 'browser'}
                             title="Micrófono Web (Navegador HTML5)"
                         >
                             Navegador
@@ -20438,7 +20412,8 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         <button
                             type="button"
                             onClick={() => { setMicCaptureMode('hardware'); setMicPermissionError(null); }}
-                            className={`px-2 py-0.5 rounded-lg cursor-pointer transition-all ${micCaptureMode === 'hardware' ? 'bg-djcyan-500 text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                            className={`ws-seg-btn ${micCaptureMode === 'hardware' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={micCaptureMode === 'hardware'}
                             title="Micrófono de Hardware (macOS / FFmpeg directo sin restricciones de navegador)"
                         >
                             Hardware (macOS)
@@ -20447,22 +20422,18 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
 
                     <div className="my-3 relative flex flex-col items-center justify-center">
                         <div className="relative flex items-center justify-center">
-                            {isListening && (
-                                <div className="absolute w-36 h-36 rounded-full bg-djcyan-500/20 animate-ping pointer-events-none"></div>
-                            )}
+                            <span className={`ws-radar-ring ${isListening ? 'ws-radar-ring-live' : ''}`} aria-hidden="true"></span>
+                            <span className={`ws-radar-ring ws-radar-ring-2 ${isListening ? 'ws-radar-ring-live' : ''}`} aria-hidden="true"></span>
                             <button
                                 type="button"
                                 onClick={startMicrophoneListening}
                                 disabled={isListening || isAnalyzing}
-                                className={`w-28 h-28 rounded-full flex flex-col items-center justify-center transition-all cursor-pointer shadow-2xl relative z-10 ${
-                                    isListening 
-                                        ? 'bg-gradient-to-tr from-red-600 to-pink-600 text-white scale-110 shadow-red-500/40' 
-                                        : 'bg-gradient-to-tr from-blue-600 to-djcyan-400 text-black hover:scale-105 shadow-djcyan-500/30'
-                                }`}
+                                className={`ws-radar ${isListening ? 'ws-radar-live' : ''}`}
+                                aria-label={isListening ? `Escuchando, ${countdown} segundos` : 'Escuchar y reconocer pista'}
                             >
                                 <Icons.Mic />
-                                <span className="text-xs font-mono font-black mt-1">
-                                    {isListening ? `${countdown}s...` : 'ESCUCHAR'}
+                                <span className="ws-radar-label">
+                                    {isListening ? `${countdown}s` : 'ESCUCHAR'}
                                 </span>
                             </button>
                         </div>
@@ -23670,7 +23641,7 @@ const SetBuilderWorkspace = ({
     };
 
     return (
-        <div data-tour="tour-setbuilder" className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8">
+        <div data-tour="tour-setbuilder" className="ws-module ws-mod-setbuilder flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8">
             {/* Header del Espacio de Set-Builder */}
             <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -25104,7 +25075,7 @@ const MapWorkspace = ({
         : 80;
 
     return (
-        <div className="w-full h-full flex flex-col bg-[#07070c] text-white overflow-hidden relative select-none">
+        <div className="ws-module ws-mod-map w-full h-full flex flex-col bg-[#07070c] text-white overflow-hidden relative select-none">
             {/* BARRA SUPERIOR DE HERRAMIENTAS Y CONTROLES DEL MAPA */}
             <div className="p-3 bg-djzinc-950/90 border-b border-djzinc-800/90 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20 backdrop-blur-md">
                 {/* LADO IZQUIERDO: TÍTULO Y SELECTOR DE PROYECCIÓN ESPACIAL */}
@@ -25154,8 +25125,8 @@ const MapWorkspace = ({
                 {/* CENTRO: MODO DE COLOR Y HERRAMIENTA ACTIVA (PAN / LASSO / BOX) */}
                 <div className="flex items-center gap-2">
                     {/* SELECTOR DE PALETA DE COLOR */}
-                    <div className="hidden lg:flex items-center bg-djzinc-900 px-2 py-1 rounded-xl border border-djzinc-800 gap-1.5 text-xs font-mono">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold">Color:</span>
+                    <div className="ws-seg hidden lg:inline-flex" role="group" aria-label="Métrica de color">
+                        <span className="ws-seg-label">Color</span>
                         {[
                             { id: 'genre', label: 'Género' },
                             { id: 'camelot', label: 'Camelot' },
@@ -25166,9 +25137,8 @@ const MapWorkspace = ({
                                 key={c.id}
                                 type="button"
                                 onClick={() => setColorMode(c.id)}
-                                className={`px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition-colors ${
-                                    colorMode === c.id ? 'bg-djzinc-750 text-djcyan-300' : 'text-gray-400 hover:text-white'
-                                }`}
+                                className={`ws-seg-btn ${colorMode === c.id ? 'ws-seg-on' : ''}`}
+                                aria-pressed={colorMode === c.id}
                             >
                                 {c.label}
                             </button>
@@ -25176,13 +25146,11 @@ const MapWorkspace = ({
                     </div>
 
                     {/* SELECTOR DE HERRAMIENTA: NAVEGAR vs LASSO SPATIAL COLLECT */}
-                    <div className="flex items-center bg-djzinc-900 p-0.5 rounded-xl border border-djzinc-800 text-xs font-mono font-bold">
+                    <div className="ws-seg">
                         <button
                             type="button"
                             onClick={() => setToolMode('pan')}
-                            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors ${
-                                toolMode === 'pan' ? 'bg-djzinc-750 text-white font-black' : 'text-gray-400 hover:text-white'
-                            }`}
+                            className={`ws-seg-btn ${toolMode === 'pan' ? 'ws-seg-on' : ''}`}
                             title="Modo Navegar: Arrastra el fondo para moverte y usa la rueda para hacer zoom"
                         >
                             <Icons.Target size={14} className="inline-block align-[-2px]" /> <span className="hidden sm:inline">Navegar</span>
@@ -25190,9 +25158,7 @@ const MapWorkspace = ({
                         <button
                             type="button"
                             onClick={() => setToolMode('lasso')}
-                            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors ${
-                                toolMode === 'lasso' ? 'bg-amber-500 text-black font-black shadow-md shadow-amber-500/20' : 'text-gray-400 hover:text-amber-300'
-                            }`}
+                            className={`ws-seg-btn ${toolMode === 'lasso' ? 'ws-seg-on' : ''}`}
                             title="Herramienta Lasso: Dibuja a mano alzada para capturar una zona de pistas"
                         >
                             <Icons.Pencil size={14} className="inline-block align-[-2px]" /> <span>Lasso</span>
@@ -25200,9 +25166,7 @@ const MapWorkspace = ({
                         <button
                             type="button"
                             onClick={() => setToolMode('box')}
-                            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors ${
-                                toolMode === 'box' ? 'bg-amber-500 text-black font-black shadow-md shadow-amber-500/20' : 'text-gray-400 hover:text-amber-300'
-                            }`}
+                            className={`ws-seg-btn ${toolMode === 'box' ? 'ws-seg-on' : ''}`}
                             title="Herramienta Caja: Haz clic y arrastra un rectángulo para seleccionar un grupo"
                         >
                             <span>⬚</span> <span className="hidden sm:inline">Caja</span>
