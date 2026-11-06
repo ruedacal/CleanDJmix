@@ -1,0 +1,84 @@
+import { ShellIcons } from './icons.jsx';
+import { NAV_GROUPS, COPILOT_ITEM, navLabel } from './navigation.js';
+
+const RailButton = ({ item, isActive, expanded, onSelect, t, badge }) => {
+    const Icon = ShellIcons[item.icon] || ShellIcons.Grid;
+    const label = navLabel(item, t);
+    return (
+        <button
+            type="button"
+            onClick={() => onSelect(item.id)}
+            aria-current={isActive ? 'page' : undefined}
+            title={expanded ? item.hint : `${label} — ${item.hint}`}
+            className={`bw-rail-item group ${isActive ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
+        >
+            <span className="bw-led" aria-hidden="true" />
+            <Icon size={18} />
+            <span className={expanded ? 'bw-rail-label' : 'bw-rail-caption'}>{label}</span>
+            {badge != null && expanded && <span className="bw-rail-badge">{badge}</span>}
+        </button>
+    );
+};
+
+export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, auditInfo, trackCount, onOpenCopilot }) => {
+    const copilotActive = activeTab === 'copilot';
+
+    return (
+        <nav
+            aria-label="Módulos principales"
+            className={`bw-rail hidden md:flex flex-col shrink-0 min-h-0 ${expanded ? 'xl:w-56' : ''}`}
+            data-expanded={expanded ? 'true' : 'false'}
+        >
+            <div className="flex flex-col gap-1 p-2">
+                <button
+                    type="button"
+                    onClick={onOpenCopilot}
+                    aria-current={copilotActive ? 'page' : undefined}
+                    title="Live Copilot — monitor táctico de cabina"
+                    className={`bw-rail-live ${copilotActive ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
+                >
+                    <span className="bw-live-dot" aria-hidden="true" />
+                    <span className={expanded ? 'bw-rail-label' : 'bw-rail-caption'}>{COPILOT_ITEM.fallback}</span>
+                    {expanded && <span className="bw-kbd ml-auto">LIVE</span>}
+                </button>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto bw-scroll-thin flex flex-col gap-4 px-2 pb-3">
+                {NAV_GROUPS.map((group) => (
+                    <div key={group.id} className="flex flex-col gap-0.5" role="group" aria-label={group.label}>
+                        <span className={`bw-eyebrow px-2 pb-1 pt-2 ${expanded ? 'hidden xl:block' : 'hidden'}`}>{group.label}</span>
+                        <span className={`mx-auto my-1 h-px w-6 bg-white/10 ${expanded ? 'xl:hidden' : ''}`} aria-hidden="true" />
+                        {group.items.map((item) => {
+                            let badge = null;
+                            if (item.id === 'audit' && auditInfo && auditInfo.isAuditing) badge = `${auditInfo.progress}%`;
+                            if (item.showTrackCount && trackCount > 0) badge = trackCount;
+                            return (
+                                <RailButton
+                                    key={item.id}
+                                    item={item}
+                                    isActive={activeTab === item.id}
+                                    expanded={expanded}
+                                    onSelect={onSelect}
+                                    t={t}
+                                    badge={badge}
+                                />
+                            );
+                        })}
+                    </div>
+                ))}
+            </div>
+
+            <div className={`hidden xl:flex p-2 border-t border-white/5 ${expanded ? 'justify-end' : 'justify-center'}`}>
+                <button
+                    type="button"
+                    onClick={onToggleExpanded}
+                    className="bw-icon-btn"
+                    aria-label={expanded ? 'Contraer navegación' : 'Expandir navegación'}
+                    aria-expanded={expanded}
+                >
+                    <ShellIcons.PanelLeft size={16} />
+                </button>
+            </div>
+        </nav>
+    );
+};

@@ -1,3 +1,7 @@
+import { ShellIcons } from './shell/icons.jsx';
+import { SideRail } from './shell/SideRail.jsx';
+import { TopBar } from './shell/TopBar.jsx';
+import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
 const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
 
 // ─── PERF: PlayerContext ──────────────────────────────────────────────────────
@@ -384,32 +388,8 @@ const I18N_TRANSLATIONS = {
     }
 };
 
-const Icons = {
-    Library: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
-    Cue: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>,
-    ZoomIn: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>,
-    ZoomOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>,
-    Spotify: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
-    Routing: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>,
-    Folder: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>,
-    Terminal: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>,
-    Play: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
-    Pause: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>,
-    Sliders: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>,
-    Gear: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
-    Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-    Warning: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
-    Excel: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>,
-    Radar: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle><line x1="12" y1="2" x2="12" y2="12"></line></svg>,
-    Mic: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>,
-    Trends: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>,
-        Flow: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>,
-    Knowledge: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>,
-    Menu: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
-    Map: () => <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="6" r="2.5" fill="currentColor" fillOpacity="0.3"></circle><circle cx="18" cy="8" r="2.5" fill="currentColor" fillOpacity="0.3"></circle><circle cx="12" cy="14" r="3" fill="currentColor" fillOpacity="0.5"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="19" cy="18" r="2"></circle><path d="M7 8l3.5 4.5M16 10l-2.5 3M8 17.5l2.5-1.5M17 16.5l-3-1.5" strokeOpacity="0.5" strokeDasharray="2 2"></path></svg>,
-    Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
-    Close: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-};
+// Unified icon system (Lucide geometry, consistent stroke) shared by every workspace.
+const Icons = ShellIcons;
 
 // Tooltip Flotante Educativo Desacoplado de Overflows mediante ReactDOM.createPortal
 const InfoTip = ({ text, title }) => {
@@ -29269,7 +29249,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 ctx.moveTo(startX, 0);
                 ctx.lineTo(startX + Math.tan(angle) * h, h);
                 const g = ctx.createLinearGradient(startX, 0, startX + Math.tan(angle) * h, h);
-                g.addColorStop(0, i % 2 === 0 ? 'rgba(6, 182, 212, 0.65)' : 'rgba(217, 70, 239, 0.60)');
+                g.addColorStop(0, i % 2 === 0 ? 'rgba(34, 211, 238, 0.55)' : 'rgba(250, 250, 250, 0.28)');
                 g.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 ctx.strokeStyle = g;
                 ctx.lineWidth = 2.5 + Math.sin(t * 2 + i) * 1.5;
@@ -29378,28 +29358,26 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 </div>
             )}
 
-            {/* FASE 2: ENTRADA ESPECTACULAR SUAVE EN 3D DE NUESTRO LOGO REAL Y BOTONES DE LUJO */}
+            {/* FASE 2: PUERTA DE ACCESO — rediseño Design System 3.0 (el logo permanece intacto) */}
             {phase === 'portal' && (
-                <div className="relative z-50 flex-1 flex flex-col justify-between p-6 sm:p-10 bg-[#000000] animate-fadeIn">
-                    <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-45" />
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.18),transparent_70%)] pointer-events-none" />
+                <div className="relative z-50 flex-1 flex flex-col bg-[#09090b] animate-fadeIn">
+                    <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-30" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(34,211,238,0.14),transparent_70%)] pointer-events-none" />
+                    <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_55%,#09090b)] pointer-events-none" />
 
-                    {/* Botón de cierre minimalista superior derecho (sin sonido al pulsar) */}
-                    <div className="relative z-10 flex items-center justify-end">
+                    <div className="relative z-10 flex items-center justify-between gap-4 px-5 sm:px-8 pt-5">
+                        <span className="bw-eyebrow hidden sm:inline">Precision Audio Intelligence</span>
                         <button
                             type="button"
                             onClick={() => handleAction('cabin')}
-                            className="text-gray-500 hover:text-white font-mono text-base cursor-pointer transition-colors p-2"
-                            title="Entrar a la cabina"
+                            className="bw-btn bw-btn-ghost ml-auto"
                         >
-                            ✕
+                            <span>Entrar a la cabina</span>
+                            <Icons.ChevronRight size={14} />
                         </button>
                     </div>
 
-                    {/* CENTRO: LOGOTIPO BEATWAVE PRO NATIVO VECTORIAL (HTML + CSS + SVG EN CIAN) */}
-                    <div 
-                        className="relative z-10 flex flex-col items-center justify-center my-auto text-center px-4"
-                    >
+                    <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-10 text-center">
                         {/* COMPOSICIÓN OFICIAL: ICONO MÁS CERCA DE LA TIPOGRAFÍA Y SUBTÍTULO QUE OCUPA TODO EL ANCHO */}
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group">
                             <BeatWaveLogoBadge size="lg" />
@@ -29409,54 +29387,38 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                 className="w-[280px] sm:w-[420px] md:w-[500px] h-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.7)] group-hover:brightness-110 transition-all duration-300"
                             />
                         </div>
+                        <p className="bw-gate-rise mt-7 max-w-lg text-pretty text-base leading-relaxed text-zinc-400" style={{ animationDelay: '120ms' }}>
+                            Auditoría FFT, 8 Hot Cues, radar acústico y sincronización con Rekordbox, Serato y Traktor en una sola cabina.
+                        </p>
 
-                        {/* BOTONES PRINCIPALES: "Log-In" / "Registrar" / "Tour" (DISEÑO HARDWARE LUXURY) */}
-                        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-9 w-full max-w-2xl">
-                            {/* Botón 1: Log-In */}
-                            <button
-                                type="button"
-                                onClick={() => handleAction('login')}
-                                className="group px-8 sm:px-10 py-4 rounded-2xl bg-gradient-to-b from-[#181c30] to-[#0b0d18] hover:from-[#222944] hover:to-[#121626] text-white border-2 border-cyan-500/70 hover:border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:shadow-[0_0_45px_rgba(6,182,212,0.8)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex flex-col items-center justify-center min-w-[170px]"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg text-cyan-300">🔐</span>
-                                    <span className="font-mono font-black text-sm uppercase tracking-wider">Log-In</span>
-                                </div>
-                                <span className="text-[10px] font-mono text-cyan-300/80 uppercase mt-0.5 tracking-wider">Acceso DJ & Sesión</span>
-                            </button>
-
-                            {/* Botón 2: Registrar */}
-                            <button
-                                type="button"
-                                onClick={() => handleAction('register')}
-                                className="group px-8 sm:px-10 py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border-2 border-fuchsia-400/90 shadow-[0_0_30px_rgba(217,70,239,0.5)] hover:shadow-[0_0_55px_rgba(217,70,239,0.9)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex flex-col items-center justify-center min-w-[170px]"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg">⚡</span>
-                                    <span className="font-mono font-black text-sm uppercase tracking-wider">Registrar</span>
-                                </div>
-                                <span className="text-[10px] font-mono text-pink-200/90 uppercase mt-0.5 tracking-wider">Nueva Licencia Club</span>
-                            </button>
-
-                            {/* Botón 3: Tour */}
-                            <button
-                                type="button"
-                                onClick={() => handleAction('tour')}
-                                className="group px-8 sm:px-10 py-4 rounded-2xl bg-gradient-to-b from-[#14232c] to-[#0a1218] hover:from-[#1b313d] hover:to-[#0e1a22] text-teal-200 border-2 border-teal-500/70 hover:border-teal-400 shadow-[0_0_25px_rgba(20,184,166,0.3)] hover:shadow-[0_0_45px_rgba(20,184,166,0.7)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex flex-col items-center justify-center min-w-[170px]"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg text-teal-300">🚀</span>
-                                    <span className="font-mono font-black text-sm uppercase tracking-wider text-white">Tour</span>
-                                </div>
-                                <span className="text-[10px] font-mono text-teal-300/80 uppercase mt-0.5 tracking-wider">Masterclass & Guías</span>
-                            </button>
+                        <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
+                            {[
+                                { id: 'login', title: 'Iniciar sesión', desc: 'Continúa tu sesión y tu biblioteca', Icon: Icons.LogIn, primary: true },
+                                { id: 'register', title: 'Crear cuenta', desc: 'Nueva licencia de club', Icon: Icons.UserPlus },
+                                { id: 'tour', title: 'Tour guiado', desc: 'Masterclass y guías rápidas', Icon: Icons.Compass },
+                            ].map((option, index) => (
+                                <button
+                                    key={option.id}
+                                    type="button"
+                                    onClick={() => handleAction(option.id)}
+                                    className={`bw-gate-card bw-gate-rise ${option.primary ? 'is-primary' : ''}`}
+                                    style={{ animationDelay: `${220 + index * 90}ms` }}
+                                >
+                                    <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${option.primary ? 'bg-black/10' : 'bg-white/5 text-cyan-300'}`}>
+                                        <option.Icon size={18} />
+                                    </span>
+                                    <span className="flex flex-col gap-0.5">
+                                        <span className={`text-base font-semibold ${option.primary ? '' : 'text-white'}`}>{option.title}</span>
+                                        <span className={`text-sm ${option.primary ? 'text-black/65' : 'text-zinc-500'}`}>{option.desc}</span>
+                                    </span>
+                                </button>
+                            ))}
                         </div>
-                    </div>
+                    </main>
 
-                    {/* Barra Inferior */}
-                    <div className="relative z-10 flex items-center justify-between text-xs font-mono text-gray-600 border-t border-zinc-900 pt-4">
-                        <span>Pioneer CDJ-3000 • Serato • Rekordbox • Traktor Compatible</span>
-                        <span>V2.4 STUDIO PRO</span>
+                    <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-1.5 border-t border-white/5 px-5 sm:px-8 py-4 font-mono text-[11px] text-zinc-600">
+                        <span>CDJ-3000 · Serato · Rekordbox · Traktor · VirtualDJ</span>
+                        <span>v2.4 Studio Pro</span>
                     </div>
                 </div>
             )}
@@ -29548,6 +29510,16 @@ const App = () => {
     const [tutorialOpen, setTutorialOpen] = useState(false);
     const [tutorialInitialMode, setTutorialInitialMode] = useState('launcher');
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+    const [railExpanded, setRailExpanded] = useState(() => {
+        try { return localStorage.getItem('bw_rail_expanded') !== '0'; } catch (e) { return true; }
+    });
+    const toggleRailExpanded = () => {
+        setRailExpanded((prev) => {
+            const next = !prev;
+            try { localStorage.setItem('bw_rail_expanded', next ? '1' : '0'); } catch (e) {}
+            return next;
+        });
+    };
     const [copilotModalOpen, setCopilotModalOpen] = useState(false);
 
     // MANUAL MAESTRO INTERACTIVO INDIVIDUALIZADO (Modal & Masterclass)
@@ -30356,12 +30328,17 @@ const App = () => {
         );
     }
 
+    const shellHelpItems = [
+        { id: 'manual', label: 'Manual interactivo', description: 'Masterclass del módulo actual', icon: 'Knowledge', kbd: 'F1', onClick: () => handleOpenManual(activeTab) },
+        { id: 'shortcuts', label: 'Atajos de teclado', description: 'Controles rápidos de cabina', icon: 'Keyboard', onClick: () => setShortcutsModalOpen(true) },
+        { id: 'tutorial', label: 'Tutorial guiado', description: 'Recorrido por la interfaz', icon: 'Compass', onClick: () => setTutorialOpen(true) },
+        { id: 'intro', label: 'Ver intro cinemática', description: 'Presentación a pantalla completa', icon: 'Film', onClick: () => setCinematicIntroOpen(true) },
+        { id: 'pdf', label: 'Manual técnico (PDF)', description: 'Documentación funcional completa', icon: 'FileText', href: '/api/manual/pdf', download: 'CleanDJmix_PRO_Manual_Funcional_y_Tecnico.pdf' },
+    ];
+
     return (
-        <div className={`flex flex-col h-screen w-full max-w-full bg-djzinc-950 text-gray-300 overflow-x-hidden overflow-y-hidden font-sans select-none ${clubMode ? 'club-mode' : ''}`}>
-            {/* TOP NAVIGATION BAR CON MÁXIMA JERARQUÍA VISUAL & CAPSULE DOCK */}
-            <header className="h-16 w-full max-w-full border-b border-djzinc-800/80 bg-[#06060c]/95 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between shrink-0 select-none z-30 relative shadow-md overflow-x-hidden">
-                {/* MOTOR DE DISTORSIÓN FRACTAL VERTICAL ULTRA-BRUTAL: SECUENCIA TECHNO 4/4 (2.0s) */}
-                <svg width="0" height="0" className="absolute pointer-events-none">
+        <div className={`bw-app flex flex-col h-screen h-[100dvh] w-full max-w-full bg-[#09090b] text-zinc-300 overflow-hidden font-sans select-none ${clubMode ? 'club-mode' : ''}`}>
+            <svg width="0" height="0" className="absolute pointer-events-none">
                     <defs>
                         {/* 1. DISTORSIÓN VERTICAL TEARING PARA LAS LETRAS BEATWAVE (BOMBO 4/4 + ROLLING RUMBLE + STUTTER) */}
                         <filter id="waveDistortion" x="-60%" y="-120%" width="220%" height="340%">
@@ -30411,7 +30388,8 @@ const App = () => {
                     </defs>
                 </svg>
 
-                <div className="flex items-center gap-2 shrink-0 min-w-max">
+            <TopBar
+                logo={(
                     <div 
                         onClick={triggerLogoTechno} 
                         className="flex items-center gap-1.5 sm:gap-2 select-none cursor-pointer group"
@@ -30429,237 +30407,33 @@ const App = () => {
                             />
                         </div>
                     </div>
-                </div>
-
-                {/* CENTRO: BARRA TÁCTICA DE CABINA (LIVE COPILOT + CAPSULE DOCK) */}
-                <div className="hidden xl:flex items-center justify-center gap-2 flex-1 min-w-0 px-1">
-                    {/* BOTÓN LIVE COPILOT PRO DJ */}
-                    <button
-                        type="button"
-                        onClick={() => setCopilotModalOpen(true)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-white shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95 group shrink-0 ${
-                            activeTab === 'copilot'
-                            ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-600 border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.7)]'
-                            : 'bg-gradient-to-r from-red-950/80 via-zinc-900 to-zinc-950 border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:border-red-400'
-                        }`}
-                        title="Abrir BeatWave Live Copilot: Monitor Táctico de Cabina (Serato Link & Anti-Muddy DSP)"
-                    >
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse shrink-0"></span>
-                        <span className="font-mono text-xs font-black uppercase tracking-wider text-red-200 group-hover:text-white whitespace-nowrap">
-                            COPILOT
-                        </span>
-                    </button>
-
-                    {/* CAPSULE DOCK DE PESTAÑAS: SEGMENTACIÓN FÍSICA HARDWARE (CABINA DJ PRO vs. STUDIO LAB & ACADEMIA) */}
-                    <nav className="flex items-center p-1 rounded-2xl bg-[#080811]/95 border border-djzinc-800/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
-                    {/* BAHÍA 1: CABINA PRO & FLUJO DE MEZCLA */}
-                    <div className="flex items-center gap-0.5">
-                        <button 
-                            type="button"
-                            onClick={() => setActiveTab('audit')} 
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
-                                activeTab === 'audit' 
-                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                            }`}
-                            title="Auditoría Acústica y Enriquecimiento de Tags"
-                        >
-                            <Icons.Library /> <span>{t('nav_tab_audit') || 'Auditar'}</span>
-                            {globalAuditInfo.isAuditing && (
-                                <span className="px-1.5 py-0.2 bg-amber-400 text-black rounded text-[9px] font-black animate-pulse shadow-sm">
-                                    {globalAuditInfo.progress}%
-                                </span>
-                            )}
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => setActiveTab('hotcues')} 
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
-                                activeTab === 'hotcues' 
-                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                            }`}
-                            title="Hot Cues y Puntos de Mezcla de Club"
-                        >
-                            <Icons.Cue /> <span>{t('nav_tab_cues') || 'Cues'}</span>
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => setActiveTab('setbuilder')} 
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
-                                activeTab === 'setbuilder' 
-                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                            }`}
-                            title="Set Builder y Flujo de Energía BPM"
-                        >
-                            <Icons.Flow /> <span>{t('nav_tab_sets') || 'Sets'}</span>
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => setActiveTab('map')} 
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
-                                activeTab === 'map' 
-                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                            }`}
-                            title="Scatter Map: Paisaje espacial 2D de compatibilidad musical de toda tu biblioteca"
-                        >
-                            <Icons.Map /> <span>{t('nav_tab_map') || 'Map'}</span>
-                            {auditTracks && auditTracks.length > 0 && (
-                                <span className={`px-1 py-0.2 rounded text-[9px] font-mono ${activeTab === 'map' ? 'bg-black/30 text-black font-black' : 'bg-djzinc-800 text-djcyan-300'}`}>
-                                    {auditTracks.length}
-                                </span>
-                            )}
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => setActiveTab('spotify')} 
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
-                                activeTab === 'spotify' 
-                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                            }`}
-                            title="Descargas y Record Pool Ingest"
-                        >
-                            <Icons.Spotify /> <span>{t('nav_tab_pool') || 'Pool'}</span>
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => setActiveTab('shazam')} 
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
-                                activeTab === 'shazam' 
-                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                            }`}
-                            title="Radar Acústico por Micrófono y Audio"
-                        >
-                            <Icons.Radar /> <span>{t('nav_tab_radar') || 'Radar'}</span>
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => setActiveTab('taxonomy')} 
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] 2xl:text-xs font-mono font-black uppercase tracking-wider cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
-                                activeTab === 'taxonomy' 
-                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-[0_0_18px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] font-black scale-[1.02]' 
-                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850/80 border border-transparent hover:border-djzinc-750 font-bold'
-                            }`}
-                            title="Taxonomía Musical y Subgéneros"
-                        >
-                            <Icons.Routing /> <span>{t('nav_tab_crates') || 'Crates'}</span>
-                        </button>
-                    </div>
-                </nav>
-            </div>
-
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                {/* Botón Live Copilot Compacto Móvil (< 1280px) */}
-                <button
-                    type="button"
-                    onClick={() => setCopilotModalOpen(true)}
-                    className="flex xl:hidden items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-500/60 cursor-pointer shadow-md active:scale-95 shrink-0"
-                    title="Abrir Live Copilot (Cabina)"
-                >
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    <span className="text-[10px] font-mono font-black uppercase text-white">LIVE</span>
-                </button>
-
-                {/* Botón Hamburger Móvil (< 1280px) */}
-                <button
-                    type="button"
-                    onClick={() => setMobileDrawerOpen(true)}
-                    className="flex xl:hidden p-1.5 sm:p-2 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-500/40 cursor-pointer shadow-md active:scale-95 shrink-0"
-                    title="Menú de Navegación y Módulos"
-                >
-                    <Icons.Menu />
-                </button>
-
-                {/* Banner de Auditoría Activa en Background */}
-                {globalAuditInfo.isAuditing && (
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded bg-djcyan-950/90 border border-djcyan-500/60 text-[10px] sm:text-[11px] font-mono text-djcyan-300 shadow-[0_0_12px_rgba(6,182,212,0.35)] animate-fadeIn shrink-0" title={globalAuditInfo.statusMsg || 'Auditoría en proceso'}>
-                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-djcyan-400 animate-ping"></span>
-                        <span className="font-bold">{globalAuditInfo.progress}%</span>
-                    </div>
                 )}
+                activeTab={activeTab}
+                t={t}
+                auditInfo={globalAuditInfo}
+                clubMode={clubMode}
+                onToggleClubMode={toggleClubMode}
+                onOpenCopilot={() => setCopilotModalOpen(true)}
+                helpItems={shellHelpItems}
+                onOpenBitacora={() => setBitacoraModalOpen(true)}
+                onOpenUser={() => setUserModalOpen(true)}
+                userProfile={userProfile}
+                lang={lang}
+                onToggleLang={() => changeLang(lang === 'es' ? 'en' : 'es')}
+            />
 
-                {/* Control Modo Cabina Oscura */}
-                <button
-                    type="button"
-                    onClick={toggleClubMode}
-                    className={`px-2 py-1 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                        clubMode
-                            ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                            : 'bg-djzinc-900 text-gray-400 border-djzinc-800 hover:text-white hover:border-djzinc-700'
-                    }`}
-                    title={clubMode ? "Modo Cabina Oscura Activo (Tecla L)" : "Activar Modo Cabina Oscura (Tecla L)"}
-                >
-                    <span>🕶️</span>
-                    <span className="hidden 2xl:inline text-[11px]">{clubMode ? (t('nav_club_mode') || 'Club') : (t('nav_normal_mode') || 'Normal')}</span>
-                    <kbd className="text-[9px] bg-black/40 px-1 py-0.2 rounded border border-djzinc-750">L</kbd>
-                </button>
-
-                {/* Botón Intro Espectacular a Pantalla Completa con Video */}
-                <button
-                    type="button"
-                    onClick={() => setCinematicIntroOpen(true)}
-                    className="px-2.5 py-1 rounded-lg bg-[#0e101f] hover:bg-[#161a33] text-cyan-300 hover:text-white border border-cyan-500/40 text-xs font-mono font-bold shadow-sm cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
-                    title="Ver presentación e intro espectacular a pantalla completa con video"
-                >
-                    <span>🎬</span>
-                    <span className="hidden xl:inline text-[11px]">Intro</span>
-                </button>
-
-                {/* Botón Maestro del Manual Interactivo BeatWave (Rosa Morado Vibrante de Cabina) */}
-                <button
-                    type="button"
-                    onClick={() => handleOpenManual(activeTab)}
-                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:via-fuchsia-500 hover:to-pink-500 text-white font-mono font-black text-xs shadow-[0_0_15px_rgba(168,85,247,0.45)] border border-purple-400/80 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
-                    title="Manual Interactivo & Masterclass BeatWave Pro (F1)"
-                >
-                    <span>📖</span>
-                    <span className="tracking-wider">{t('nav_manual') || 'MANUAL'}</span>
-                </button>
-
-                {/* Cuaderno de Bitácora & Historial de Cambios Exportable a Excel */}
-                <button
-                    type="button"
-                    onClick={() => setBitacoraModalOpen(true)}
-                    className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-amber-400 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/50 text-xs font-mono font-bold shadow-inner cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
-                    title="Cuaderno de Bitácora de Procesos & Exportar Excel (.xlsx)"
-                >
-                    <span>📓</span>
-                    <span className="hidden xl:inline text-[11px]">{t('nav_bitacora') || 'Bitácora'}</span>
-                </button>
-
-                {/* Cuenta de Usuario & Centro de Control DJ (Integra Atajos, Trends y Guías) */}
-                <button
-                    type="button"
-                    onClick={() => setUserModalOpen(true)}
-                    className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 text-cyan-300 hover:text-white border border-cyan-500/60 text-xs font-mono font-bold shadow-md cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
-                    title="Centro de Control DJ: Perfil, Atajos, Trends, Guías y Continuidad de Sesión"
-                >
-                    <div className="w-5 h-5 rounded-full overflow-hidden border border-cyan-400 bg-cyan-900 flex items-center justify-center shrink-0">
-                        {userProfile.avatarUrl ? (
-                            <img src={userProfile.avatarUrl} alt="DJ" className="w-full h-full object-cover" />
-                        ) : (
-                            <span className="text-[10px]">🎧</span>
-                        )}
-                    </div>
-                    <span className="hidden xl:inline text-[11px] truncate max-w-[95px] font-bold text-white">{userProfile.alias || 'DJ Alex'}</span>
-                    <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-950 text-cyan-400 border border-cyan-700/60 font-black hidden 2xl:inline">PRO</span>
-                </button>
-
-                {/* Selector de Idioma (Toggle compacto ES / EN) */}
-                <button
-                    type="button"
-                    onClick={() => changeLang(lang === 'es' ? 'en' : 'es')}
-                    className="px-2 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 border border-djzinc-800 hover:border-djzinc-700 text-xs font-mono font-bold text-gray-300 hover:text-white cursor-pointer transition-all flex items-center gap-1 shrink-0"
-                    title={lang === 'es' ? "Cambiar idioma a Inglés" : "Switch to Spanish"}
-                >
-                    <span>{lang === 'es' ? '🇪🇸 ES' : '🇬🇧 EN'}</span>
-                </button>
-            </div>
-            </header>
+            <div className="flex flex-1 min-h-0 w-full">
+                <SideRail
+                    activeTab={activeTab}
+                    onSelect={setActiveTab}
+                    t={t}
+                    expanded={railExpanded}
+                    onToggleExpanded={toggleRailExpanded}
+                    auditInfo={globalAuditInfo}
+                    trackCount={auditTracks ? auditTracks.length : 0}
+                    onOpenCopilot={() => setCopilotModalOpen(true)}
+                />
+                <div className="flex flex-1 min-w-0 min-h-0 flex-col">
 
             {/* MAIN WORKSPACES: Persistencia Total de Estado Manteniendo Todo Montado */}
             <main className="flex-1 min-h-0 w-full overflow-hidden relative">
@@ -30825,113 +30599,59 @@ const App = () => {
                 )}
             </main>
 
-            {/* GLOBAL DECK PLAYER (Footer) - Oculto en móvil si no hay pista sonando para ahorrar 64px */}
-            <footer className={`${!nowPlayingTrack ? 'hidden md:flex' : 'flex'} h-14 sm:h-16 bg-[#0a0a0e] border-t border-djzinc-800 px-2.5 sm:px-5 items-center justify-between shrink-0 glass-panel z-30 relative`}>
-                {/* Indicador de barra de progreso ultra-fina para móviles */}
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-djzinc-850 md:hidden overflow-hidden">
-                    <div 
-                        className="h-full bg-djcyan-400 transition-all duration-200"
-                        style={{ width: `${Math.min(100, Math.max(0, mobileProgress * 100))}%` }}
-                    ></div>
+            {/* DECK BAR GLOBAL — oculto en móvil sin pista para ahorrar altura */}
+            <footer className={`${!nowPlayingTrack ? 'hidden md:flex' : 'flex'} bw-deckbar relative z-30 h-16 shrink-0 items-center gap-3 px-3 sm:px-4`}>
+                <div className="absolute inset-x-0 top-0 h-0.5 overflow-hidden bg-white/5 md:hidden">
+                    <div className="h-full bg-cyan-400 transition-all duration-200" style={{ width: `${Math.min(100, Math.max(0, mobileProgress * 100))}%` }} />
                 </div>
 
                 {!nowPlayingTrack ? (
-                    <div className="flex items-center gap-3 min-w-0 flex-1 md:w-80 md:flex-initial shrink-0 opacity-50 select-none">
-                        <div className="w-10 h-10 md:w-11 md:h-11 rounded-md bg-[#0a0a0f] border border-djzinc-850 flex items-center justify-center text-gray-600 shadow-inner shrink-0">
-                            <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                <circle cx="12" cy="12" r="10" strokeDasharray="3 3"></circle>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
+                    <div className="flex items-center gap-3 min-w-0 md:w-72 shrink-0">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-white/15 text-zinc-600">
+                            <Icons.Disc size={20} />
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider">
-                                {t('deck_standby_label') || 'DECK 1 STANDBY'}
-                            </span>
-                            <span className="text-[10px] text-gray-500 font-mono truncate">
-                                💬 {t('deck_standby_comment_hint') || 'Comentario táctico visible al cargar pista'}
-                            </span>
+                            <span className="bw-eyebrow">{t('deck_standby_label') || 'DECK 1 STANDBY'}</span>
+                            <span className="text-xs text-zinc-500 truncate">{t('deck_standby_comment_hint') || 'Carga una pista para ver su comentario táctico'}</span>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex items-center gap-2.5 md:gap-3 min-w-0 flex-1 md:w-80 md:flex-initial pr-2">
-                        <img 
-                            src={getValidCover(nowPlayingTrack.cover || (nowPlayingTrack.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack.path)}` : (nowPlayingTrack.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack.f)}` : null)))} 
-                            alt="Deck Cover" 
-                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                            className="w-10 h-10 md:w-11 md:h-11 rounded-md object-cover border border-djzinc-700 shrink-0 shadow-md" 
+                    <div className="flex items-center gap-3 min-w-0 flex-1 md:w-72 md:flex-initial">
+                        <img
+                            src={getValidCover(nowPlayingTrack.cover || (nowPlayingTrack.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack.path)}` : (nowPlayingTrack.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack.f)}` : null)))}
+                            alt=""
+                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                            className="h-11 w-11 shrink-0 rounded-lg object-cover ring-1 ring-white/10"
                         />
-                        <div className="flex flex-col min-w-0 flex-1">
-                            <span className="text-xs font-bold text-white truncate" title={nowPlayingTrack.t || nowPlayingTrack.title}>
+                        <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                            <span className="text-sm font-semibold text-white truncate" title={nowPlayingTrack.t || nowPlayingTrack.title}>
                                 {nowPlayingTrack.t || nowPlayingTrack.title}
                             </span>
-                            <span className="text-[11px] text-djcyan-400 font-medium truncate" title={nowPlayingTrack.a || nowPlayingTrack.artist}>
-                                {nowPlayingTrack.a || nowPlayingTrack.artist}
-                            </span>
-                            <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-mono truncate">
-                                <span>{`${nowPlayingTrack.b || nowPlayingTrack.bpm || '--'} BPM • Key ${nowPlayingTrack.k || nowPlayingTrack.key || '--'}`}</span>
-                                {(nowPlayingTrack.comment || nowPlayingTrack.comentario) && (
-                                    <>
-                                        <span className="text-gray-600">•</span>
-                                        <span className="text-emerald-400 truncate max-w-[150px] sm:max-w-xs font-mono font-semibold" title={nowPlayingTrack.comment || nowPlayingTrack.comentario}>
-                                            💬 {nowPlayingTrack.comment || nowPlayingTrack.comentario}
-                                        </span>
-                                    </>
-                                )}
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs text-cyan-300 truncate" title={nowPlayingTrack.a || nowPlayingTrack.artist}>{nowPlayingTrack.a || nowPlayingTrack.artist}</span>
+                                <span className="font-mono text-xs text-white shrink-0">{nowPlayingTrack.b || nowPlayingTrack.bpm || '--'}<span className="text-zinc-500"> BPM</span></span>
+                                <span className="bw-key-chip shrink-0">{nowPlayingTrack.k || nowPlayingTrack.key || '--'}</span>
                             </div>
                         </div>
                     </div>
                 )}
 
-                <div className="flex items-center gap-2 md:gap-2.5 shrink-0">
-                    <button 
-                        type="button"
-                        disabled={!nowPlayingTrack}
-                        onClick={handleCue} 
-                        className={`px-2.5 md:px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${
-                            !nowPlayingTrack 
-                                ? 'bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none'
-                                : 'bg-[#16161d] hover:bg-[#20202a] text-gray-300 border-djzinc-700 active:translate-y-[1px] cursor-pointer'
-                        }`}
-                    >
-                        CUE
+                <div className="flex items-center gap-2 shrink-0">
+                    <button type="button" disabled={!nowPlayingTrack} onClick={handleCue} className="bw-deck-btn">CUE</button>
+                    <button type="button" disabled={!nowPlayingTrack} onClick={togglePlayPause} className="bw-deck-play" aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>
+                        {isPlaying ? <Icons.Pause size={18} /> : <Icons.Play size={18} />}
                     </button>
-                    <button 
-                        type="button"
-                        disabled={!nowPlayingTrack}
-                        onClick={togglePlayPause} 
-                        className={`w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-all ${
-                            !nowPlayingTrack
-                                ? 'bg-djzinc-900 border border-djzinc-800 text-gray-600 opacity-40 cursor-not-allowed pointer-events-none'
-                                : 'bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)] active:translate-y-[1px] cursor-pointer'
-                        }`}
-                    >
-                        {isPlaying ? <Icons.Pause /> : <Icons.Play />}
-                    </button>
-                    <button 
-                        type="button"
-                        disabled={!nowPlayingTrack}
-                        onClick={() => handleFooterSeek(0.22)} 
-                        className={`hidden sm:block px-3 py-1.5 rounded font-mono font-bold text-xs border transition-all ${
-                            !nowPlayingTrack 
-                                ? 'bg-[#101016] text-gray-600 border-djzinc-850 opacity-40 cursor-not-allowed pointer-events-none'
-                                : 'bg-[#16161d] hover:bg-[#20202a] text-gray-300 border-djzinc-700 active:translate-y-[1px] cursor-pointer'
-                        }`}
-                    >
-                        SYNC
-                    </button>
+                    <button type="button" disabled={!nowPlayingTrack} onClick={() => handleFooterSeek(0.22)} className="bw-deck-btn hidden sm:inline-flex">SYNC</button>
                 </div>
 
-                {/* BADGE DE COMENTARIO TÁCTICO EN BARRA GLOBAL */}
                 {(nowPlayingTrack && (nowPlayingTrack.comment || nowPlayingTrack.comentario)) && (
-                    <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0e0e18] border border-djzinc-750 text-xs font-mono text-gray-200 max-w-sm shadow-inner shrink-0" title={nowPlayingTrack.comment || nowPlayingTrack.comentario}>
-                        <span className="text-emerald-400 font-bold shrink-0">💬</span>
-                        <span className="text-[11px] text-gray-300 truncate font-mono">
-                            {nowPlayingTrack.comment || nowPlayingTrack.comentario}
-                        </span>
+                    <div className="hidden xl:flex items-center gap-2 max-w-xs shrink-0 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5" title={nowPlayingTrack.comment || nowPlayingTrack.comentario}>
+                        <Icons.MessageSquare size={14} className="text-cyan-300" />
+                        <span className="font-mono text-xs text-zinc-300 truncate">{nowPlayingTrack.comment || nowPlayingTrack.comentario}</span>
                     </div>
                 )}
 
-                <div className="hidden md:flex flex-1 max-w-2xl ml-4">
+                <div className="hidden md:flex flex-1 min-w-0">
                     <FooterMasterWaveform 
                         track={nowPlayingTrack} 
                         isPlaying={isPlaying} 
@@ -30942,274 +30662,31 @@ const App = () => {
                     />
                 </div>
             </footer>
-
-            {/* BARRA DE NAVEGACIÓN MÓVIL INFERIOR FIJA (< 768px) CON SOPORTE SAFE-AREA */}
-            <nav className="flex md:hidden h-14 bg-[#07070d]/95 backdrop-blur-md border-t border-djzinc-800 px-1 items-center justify-around shrink-0 z-40 select-none shadow-[0_-4px_16px_rgba(0,0,0,0.5)] safe-area-bottom">
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('audit')}
-                    className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
-                        activeTab === 'audit' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
-                    }`}
-                >
-                    <Icons.Library />
-                    <span className="text-[9.5px] font-mono mt-0.5">{t('nav_tab_audit') || 'Auditar'}</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('hotcues')}
-                    className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
-                        activeTab === 'hotcues' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
-                    }`}
-                >
-                    <Icons.Cue />
-                    <span className="text-[9.5px] font-mono mt-0.5">{t('nav_tab_cues') || 'Cues'}</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('setbuilder')}
-                    className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
-                        activeTab === 'setbuilder' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
-                    }`}
-                >
-                    <Icons.Flow />
-                    <span className="text-[9.5px] font-mono mt-0.5">{t('nav_tab_sets') || 'Sets'}</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('spotify')}
-                    className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
-                        activeTab === 'spotify' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
-                    }`}
-                >
-                    <Icons.Spotify />
-                    <span className="text-[9.5px] font-mono mt-0.5">{t('nav_tab_pool') || 'Pool'}</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('shazam')}
-                    className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
-                        activeTab === 'shazam' ? 'text-djcyan-400 font-bold scale-105' : 'text-gray-400 hover:text-white'
-                    }`}
-                >
-                    <Icons.Radar />
-                    <span className="text-[9.5px] font-mono mt-0.5">{t('nav_tab_radar') || 'Radar'}</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setMobileDrawerOpen(true)}
-                    className={`flex flex-col items-center justify-center flex-1 py-1 cursor-pointer transition-all ${
-                        ['taxonomy', 'trends', 'knowledge', 'copilot'].includes(activeTab)
-                            ? (activeTab === 'copilot'
-                                ? 'text-red-400 font-bold scale-105'
-                                : (activeTab === 'trends' || activeTab === 'knowledge'
-                                    ? 'text-indigo-400 font-bold scale-105'
-                                    : 'text-djcyan-400 font-bold scale-105'))
-                            : 'text-gray-400 hover:text-white'
-                    }`}
-                >
-                    <Icons.Menu />
-                    <span className="text-[9.5px] font-mono mt-0.5 truncate max-w-[64px]">
-                        {activeTab === 'copilot' ? 'Copilot' : (activeTab === 'taxonomy' ? 'Taxonomía' : (activeTab === 'trends' ? 'Tendencias' : (activeTab === 'knowledge' ? 'Conocimiento' : 'Más...')))}
-                    </span>
-                </button>
-            </nav>
-
-            {/* DRAWER LATERAL DESLIZANTE PARA MÓVIL */}
-            {mobileDrawerOpen && (
-                <div className="fixed inset-0 z-50 flex">
-                    {/* Backdrop */}
-                    <div 
-                        className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
-                        onClick={() => setMobileDrawerOpen(false)}
-                    ></div>
-
-                    {/* Panel lateral deslizable */}
-                    <div className="relative ml-auto w-4/5 max-w-sm h-full bg-[#0a0a10] border-l border-djzinc-800 flex flex-col p-5 shadow-2xl z-10 overflow-y-auto">
-                        {/* Cabecera del Drawer */}
-                        <div className="flex items-center justify-between pb-4 border-b border-djzinc-800">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-djcyan-400 to-djcyan-600 flex items-center justify-center text-black font-black text-xs shadow-md shadow-djcyan-500/30">
-                                    BW
-                                </div>
-                                <div>
-                                    <div className="text-base font-black tracking-wider uppercase" style={{ fontFamily: "'Syne', sans-serif" }}>
-                                        BEAT<span className="text-djcyan-400">WAVE</span> <span className="text-[10px] text-djcyan-300 font-mono px-1 border border-djcyan-400/60 rounded">PRO</span>
-                                    </div>
-                                    <div className="text-[9px] font-mono text-gray-500">Precision DJ Intelligence</div>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setMobileDrawerOpen(false)}
-                                className="w-8 h-8 rounded-full bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center cursor-pointer border border-djzinc-700 transition-colors"
-                            >
-                                <Icons.Close />
-                            </button>
-                        </div>
-
-                        {/* Módulos Agrupados Semánticamente en 2 Bahías */}
-                        <div className="flex flex-col gap-1 py-3 flex-1 overflow-y-auto">
-                            {/* BOTÓN PRIMARIO LIVE COPILOT */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setMobileDrawerOpen(false);
-                                    setCopilotModalOpen(true);
-                                }}
-                                className="flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] border border-red-400/50 mb-2 cursor-pointer hover:brightness-110 active:scale-98 transition-all"
-                            >
-                                <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse shadow-md"></span>
-                                <span className="flex-1">🔴 LIVE COPILOT (CABINA)</span>
-                                <span className="text-[9px] bg-black/40 px-2 py-0.5 rounded text-white font-mono">HUD</span>
-                            </button>
-
-                            {/* BLOQUE 1: CABINA PRO & PRODUCCIÓN DJ */}
-                            <div className="flex items-center gap-1.5 px-2 mt-1 mb-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
-                                <span className="text-[10px] font-mono uppercase tracking-widest text-djcyan-400 font-black">🎛️ CABINA PRO & FLUJO DJ</span>
-                            </div>
-                            
-                            {[
-                                { id: 'audit', icon: <Icons.Library />, label: 'Auditar' },
-                                { id: 'hotcues', icon: <Icons.Cue />, label: 'Cues' },
-                                { id: 'setbuilder', icon: <Icons.Flow />, label: 'Set Builder' },
-                                { id: 'map', icon: <Icons.Map />, label: 'Scatter Map' },
-                                { id: 'spotify', icon: <Icons.Spotify />, label: 'Pool' },
-                                { id: 'shazam', icon: <Icons.Radar />, label: 'Radar' },
-                                { id: 'taxonomy', icon: <Icons.Routing />, label: 'Taxonomia' },
-                            ].map(item => {
-                                const isActive = activeTab === item.id;
-                                return (
-                                    <button
-                                        key={item.id}
-                                        type="button"
-                                        onClick={() => {
-                                            setActiveTab(item.id);
-                                            setMobileDrawerOpen(false);
-                                        }}
-                                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-left transition-all cursor-pointer ${
-                                            isActive 
-                                                ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-lg shadow-djcyan-500/30 font-black scale-[1.01]' 
-                                                : 'text-gray-300 hover:bg-djzinc-900 border border-transparent hover:border-djzinc-800'
-                                        }`}
-                                    >
-                                        <span className={isActive ? 'text-black' : 'text-djcyan-400'}>{item.icon}</span>
-                                        <span className="flex-1">{item.label}</span>
-                                        {item.id === 'audit' && globalAuditInfo.isAuditing && (
-                                            <span className="px-1.5 py-0.5 rounded bg-amber-400 text-black text-[9px] font-black animate-pulse">
-                                                {globalAuditInfo.progress}%
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-
-                            {/* SEPARADOR FÍSICO */}
-                            <div className="h-px bg-gradient-to-r from-transparent via-djzinc-750 to-transparent my-2"></div>
-
-                            {/* BLOQUE 2: STUDIO LAB & ACADEMIA */}
-                            <div className="flex items-center justify-between px-2 mt-1 mb-1.5">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]"></span>
-                                    <span className="text-[10px] font-mono uppercase tracking-widest text-indigo-300 font-black">🎓 ESTUDIO & APRENDIZAJE</span>
-                                </div>
-                                <span className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded bg-indigo-950/80 border border-indigo-700/50 text-indigo-300 font-bold">
-                                    LAB / EDU
-                                </span>
-                            </div>
-
-                            {[
-                                { id: 'trends', icon: <Icons.Trends />, label: 'Tendencias', badge: 'LAB' },
-                                { id: 'knowledge', icon: <Icons.Knowledge />, label: 'Conocimiento', badge: 'EDU' },
-                            ].map(item => {
-                                const isActive = activeTab === item.id;
-                                return (
-                                    <button
-                                        key={item.id}
-                                        type="button"
-                                        onClick={() => {
-                                            setActiveTab(item.id);
-                                            setMobileDrawerOpen(false);
-                                        }}
-                                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider text-left transition-all cursor-pointer ${
-                                            isActive 
-                                                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 font-black scale-[1.01]' 
-                                                : 'text-indigo-200/80 hover:bg-indigo-950/50 border border-indigo-900/40 hover:border-indigo-700/60'
-                                        }`}
-                                    >
-                                        <span className={isActive ? 'text-white' : 'text-indigo-400'}>{item.icon}</span>
-                                        <span className="flex-1">{item.label}</span>
-                                        <span className={`text-[8px] font-mono uppercase px-1.5 py-0.5 rounded ${
-                                            isActive ? 'bg-black/30 text-white font-black' : 'bg-indigo-950 border border-indigo-800 text-indigo-300'
-                                        }`}>
-                                            {item.badge}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-
-                            <div className="border-t border-djzinc-800 my-2 pt-3 flex flex-col gap-2">
-                                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 px-2">Recursos & Ayuda</span>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setMobileDrawerOpen(false);
-                                        handleOpenManual(activeTab);
-                                    }}
-                                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-pink-950/70 text-xs font-mono text-pink-300 border border-pink-500/50 text-left hover:bg-pink-900/80 cursor-pointer shadow-[0_0_12px_rgba(236,72,153,0.3)] font-bold"
-                                >
-                                    <span>📖</span>
-                                    <span>Manual Interactivo (Masterclass)</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setMobileDrawerOpen(false);
-                                        setTutorialOpen(true);
-                                    }}
-                                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-djzinc-900 text-xs font-mono text-djcyan-400 border border-djcyan-500/30 text-left hover:bg-djzinc-850 cursor-pointer"
-                                >
-                                    <span>❓</span>
-                                    <span>Tutorial Interactivo</span>
-                                </button>
-                                <a
-                                    href="/api/manual/pdf"
-                                    download="CleanDJmix_PRO_Manual_Funcional_y_Tecnico.pdf"
-                                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-djzinc-900 text-xs font-mono text-emerald-400 border border-emerald-500/30 text-left hover:bg-djzinc-850 cursor-pointer"
-                                >
-                                    <span>📄</span>
-                                    <span>Descargar Manual PDF</span>
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* Pie del Drawer: Idioma y Estado */}
-                        <div className="pt-3 border-t border-djzinc-800 flex items-center justify-between">
-                            <div className="flex items-center gap-1 bg-djzinc-900 p-1 rounded-lg border border-djzinc-800">
-                                <button
-                                    type="button"
-                                    onClick={() => changeLang('es')}
-                                    className={`px-2 py-1 rounded text-xs font-mono font-bold ${lang === 'es' ? 'bg-djcyan-500 text-black' : 'text-gray-400'}`}
-                                >
-                                    🇪🇸 ES
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => changeLang('en')}
-                                    className={`px-2 py-1 rounded text-xs font-mono font-bold ${lang === 'en' ? 'bg-djcyan-500 text-black' : 'text-gray-400'}`}
-                                >
-                                    🇬🇧 EN
-                                </button>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-400">
-                                <span className="w-2 h-2 rounded-full bg-djgreen-400 animate-pulse"></span>
-                                <span>DSP ONLINE</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
-            )}
+            </div>
+
+            <MobileTabBar
+                activeTab={activeTab}
+                onSelect={setActiveTab}
+                onOpenMore={() => setMobileDrawerOpen(true)}
+                moreOpen={mobileDrawerOpen}
+                t={t}
+            />
+
+            <MoreSheet
+                open={mobileDrawerOpen}
+                onClose={() => setMobileDrawerOpen(false)}
+                activeTab={activeTab}
+                onSelect={setActiveTab}
+                onOpenCopilot={() => setCopilotModalOpen(true)}
+                helpItems={shellHelpItems}
+                clubMode={clubMode}
+                onToggleClubMode={toggleClubMode}
+                lang={lang}
+                onChangeLang={changeLang}
+                onOpenBitacora={() => setBitacoraModalOpen(true)}
+                t={t}
+            />
 
             {/* TUTORIAL & ASISTENTE INTERACTIVO DE BIENVENIDA */}
             <AppTutorialModal 

@@ -472,7 +472,9 @@ def build_js():
                     esbuild_bin,
                     str(entry),
                     f"--outfile={output}",
+                    "--bundle",
                     "--loader:.jsx=jsx",
+                    "--loader:.js=jsx",
                     "--target=es2019",
                     # React ya está disponible como global UMD desde vendor/
                     "--define:process.env.NODE_ENV=\"production\"",
