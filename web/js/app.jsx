@@ -2,6 +2,7 @@ import { ShellIcons } from './shell/icons.jsx';
 import { SideRail } from './shell/SideRail.jsx';
 import { TopBar } from './shell/TopBar.jsx';
 import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
+import { WsButton, ToolbarDivider, ExportMenu, FilterMenu, IngestDropzone, CamelotKeyBadge } from './shell/workspace-ui.jsx';
 const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
 
 // ─── PERF: PlayerContext ──────────────────────────────────────────────────────
@@ -1355,7 +1356,7 @@ const CompactHotCuesSummary = ({ track, cues = NV2_COLORS, onOpenStudio, onSelec
                         className="px-2 py-0.5 text-[9px] font-mono font-bold bg-djcyan-500/20 hover:bg-djcyan-500 text-djcyan-300 hover:text-black rounded border border-djcyan-500/40 cursor-pointer shadow transition-all flex items-center gap-1 active:scale-95 group"
                         title="Abrir en el Estudio Completo de Hot Cues con Waveform Ampliado y Scroll Horizontal"
                     >
-                        <span>🎛️ Abrir Estudio</span>
+                        <span><Icons.Sliders size={14} className="inline-block align-[-2px]" /> Abrir Estudio</span>
                         <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                     </button>
                 )}
@@ -2073,7 +2074,7 @@ const HotCueEditorPanel = ({
                     title="Abrir estudio completo de Hot Cues a pantalla completa con reproductor y guardado por pista"
                 >
                     <div className="flex items-center gap-2">
-                        <span className="text-sm">🎛️</span>
+                        <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                         <span>ESTUDIO COMPLETO DE HOT CUES</span>
                     </div>
                     <span className="text-[10px] font-mono bg-djcyan-500/20 text-djcyan-300 px-2 py-0.5 rounded border border-djcyan-500/40 group-hover:bg-djcyan-500 group-hover:text-black transition-colors">
@@ -2108,7 +2109,7 @@ const HotCueEditorPanel = ({
                         className="px-2 py-1 text-[9px] font-mono font-bold bg-djcyan-500/20 hover:bg-djcyan-500/30 text-djcyan-400 rounded border border-djcyan-500/40 cursor-pointer shadow active:scale-95 transition-all"
                         title="Auto-calcular 8 Hot Cues por frases musicales (16/32 compases) anclados al Beatgrid 1.0.0"
                     >
-                        ⚡ Auto-Frasear 16/32b
+                        <Icons.Zap size={14} className="inline-block align-[-2px]" /> Auto-Frasear 16/32b
                     </button>
                     {onGuardarTrack && (
                         <button
@@ -2117,7 +2118,7 @@ const HotCueEditorPanel = ({
                             className="px-2 py-1 text-[9px] font-mono font-bold bg-djgreen-950 hover:bg-djgreen-900 text-djgreen-400 rounded border border-djgreen-700/60 cursor-pointer shadow active:scale-95 transition-all"
                             title="Guardar cues modificados en archivo de disco"
                         >
-                            💾 Guardar
+                            <Icons.Save size={14} className="inline-block align-[-2px]" /> Guardar
                         </button>
                     )}
                 </div>
@@ -2127,7 +2128,7 @@ const HotCueEditorPanel = ({
             <div className="bg-[#040407] p-2 rounded border border-djzinc-800/80 space-y-1.5">
                 <div className="flex justify-between items-center text-[9px] font-mono font-bold text-gray-400">
                     <span className="text-gray-300 flex items-center gap-1">
-                        🎨 CÓDIGOS DE COLOR DE FORMA DE ONDA (FRECUENCIAS)
+                        <Icons.Wand size={14} className="inline-block align-[-2px]" /> CÓDIGOS DE COLOR DE FORMA DE ONDA (FRECUENCIAS)
                     </span>
                     <span className="text-[8px] text-gray-400">Pioneer DJ RGB Standard</span>
                 </div>
@@ -2160,11 +2161,8 @@ const HotCueEditorPanel = ({
                             <div
                                 key={cueId}
                                 onClick={() => onSelectCue && onSelectCue(cueId)}
-                                className={`p-2 rounded border flex flex-col justify-between cursor-pointer transition-all select-none relative group ${
-                                    isSelected 
-                                        ? 'bg-djzinc-800 border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)] ring-1 ring-djcyan-400' 
-                                        : `${c.bg || 'bg-djzinc-850'} ${c.border || 'border-djzinc-750'} hover:border-gray-500`
-                                }`}
+                                className={`ws-pad p-2 pt-2.5 cursor-pointer select-none group ${isSelected ? 'ws-pad-on' : (c.time !== undefined && c.time !== null ? 'ws-pad-set' : '')}`}
+                                style={{ '--pad-color': c.color || '#22d3ee' }}
                             >
                                 <div className="flex justify-between items-center mb-1">
                                     <div className="flex items-center gap-1">
@@ -2187,7 +2185,7 @@ const HotCueEditorPanel = ({
                                         className="w-4 h-4 rounded bg-djzinc-900 hover:bg-djcyan-500 hover:text-black text-djcyan-400 flex items-center justify-center text-[8px] font-bold border border-djzinc-700 transition-colors shadow"
                                         title={`Reproducir desde ${c.time || '00:00.0'}`}
                                     >
-                                        ▶
+                                        <Icons.Play size={14} className="inline-block align-[-2px]" />
                                     </button>
                                 </div>
                                 <span className={`text-[10px] font-bold truncate ${c.text || 'text-gray-200'}`}>
@@ -2227,7 +2225,7 @@ const HotCueEditorPanel = ({
                             className="px-2 py-0.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 text-[8px] font-mono rounded border border-djzinc-700 cursor-pointer shadow active:scale-95 transition-colors"
                             title="Mover este cue a la posición actual de reproducción"
                         >
-                            📍 Fijar en Playhead
+                            <Icons.Pin size={14} className="inline-block align-[-2px]" /> Fijar en Playhead
                         </button>
                         <button
                             type="button"
@@ -2235,7 +2233,7 @@ const HotCueEditorPanel = ({
                             className="px-2 py-0.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 text-[8px] font-mono rounded border border-emerald-800/60 cursor-pointer shadow active:scale-95 transition-colors"
                             title="Alinear magnéticamente al beatgrid más próximo"
                         >
-                            🧲 Snap a Beat
+                            <Icons.Link size={14} className="inline-block align-[-2px]" /> Snap a Beat
                         </button>
                     </div>
                 </div>
@@ -2264,7 +2262,7 @@ const HotCueEditorPanel = ({
                                 className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded cursor-pointer shadow shrink-0"
                                 title="Audicionar este punto de cue"
                             >
-                                ▶
+                                <Icons.Play size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
                     </div>
@@ -2607,7 +2605,7 @@ const HotCueStudioModal = ({
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-djgreen-950 hover:bg-djgreen-900 text-djgreen-400 hover:text-white border border-djgreen-700/80 rounded-lg font-mono font-bold text-xs cursor-pointer shadow-lg active:scale-95 transition-all"
                             title="Guardar metadatos, tags y cues directamente en el archivo en disco"
                         >
-                            <span>💾</span>
+                            <Icons.Save size={14} className="inline-block align-[-2px]" />
                             <span>{isSavingLocal ? 'Guardando...' : 'Guardar Pista en Disco'}</span>
                         </button>
 
@@ -2617,7 +2615,7 @@ const HotCueStudioModal = ({
                             className="w-8 h-8 rounded-lg bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center font-bold text-sm border border-djzinc-750 transition-colors cursor-pointer"
                             title="Cerrar estudio"
                         >
-                            ✕
+                            <Icons.Close size={14} className="inline-block align-[-2px]" />
                         </button>
                     </div>
                 </div>
@@ -2671,7 +2669,7 @@ const HotCueStudioModal = ({
                                 className="px-3 py-1.5 bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 border border-djcyan-700/60 rounded font-mono font-bold text-xs cursor-pointer shadow active:scale-95 transition-all"
                                 title="Fijar el cue seleccionado exactamente en la posición actual del playhead"
                             >
-                                📍 Posicionar Pad {currentCue.id || 1} en Playhead
+                                <Icons.Pin size={14} className="inline-block align-[-2px]" /> Posicionar Pad {currentCue.id || 1} en Playhead
                             </button>
                         </div>
                     </div>
@@ -2699,7 +2697,7 @@ const HotCueStudioModal = ({
                     <div className="bg-[#05050a] p-3 rounded-lg border border-djzinc-800 space-y-2">
                         <div className="flex justify-between items-center text-xs font-mono font-bold">
                             <span className="text-gray-300 flex items-center gap-1.5">
-                                <span>🎨</span>
+                                <Icons.Wand size={14} className="inline-block align-[-2px]" />
                                 <span>CÓDIGOS DE COLOR DE FORMA DE ONDA & BANDA ESPECTRAL</span>
                             </span>
                             <span className="text-[10px] text-gray-500">Pioneer DJ RGB Multi-Frequency Standard</span>
@@ -2764,7 +2762,7 @@ const HotCueStudioModal = ({
                                                 className="w-6 h-6 rounded-md bg-djzinc-950 hover:bg-djcyan-500 hover:text-black text-djcyan-400 flex items-center justify-center text-xs font-bold border border-djzinc-700 transition-colors shadow"
                                                 title={`Reproducir desde ${c.time || '00:00.0'}`}
                                             >
-                                                ▶
+                                                <Icons.Play size={14} className="inline-block align-[-2px]" />
                                             </button>
                                         </div>
                                         <span className={`text-xs font-bold truncate ${c.text || 'text-gray-100'}`}>
@@ -2805,7 +2803,7 @@ const HotCueStudioModal = ({
                                     className="px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-200 text-xs font-mono rounded border border-djzinc-700 cursor-pointer shadow active:scale-95 transition-colors"
                                     title="Mover este cue a la posición actual de reproducción"
                                 >
-                                    📍 Fijar en Playhead
+                                    <Icons.Pin size={14} className="inline-block align-[-2px]" /> Fijar en Playhead
                                 </button>
                                 <button
                                     type="button"
@@ -2813,7 +2811,7 @@ const HotCueStudioModal = ({
                                     className="px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-400 text-xs font-mono rounded border border-emerald-800 cursor-pointer shadow active:scale-95 transition-colors"
                                     title="Alinear al beatgrid más próximo"
                                 >
-                                    🧲 Snap a Beat
+                                    <Icons.Link size={14} className="inline-block align-[-2px]" /> Snap a Beat
                                 </button>
                             </div>
                         </div>
@@ -2842,7 +2840,7 @@ const HotCueStudioModal = ({
                                         className="px-3 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg cursor-pointer shadow shrink-0"
                                         title="Audicionar este punto de cue"
                                     >
-                                        ▶
+                                        <Icons.Play size={14} className="inline-block align-[-2px]" />
                                     </button>
                                 </div>
                             </div>
@@ -2997,7 +2995,7 @@ const HotCueStudioModal = ({
                             disabled={isSavingLocal}
                             className="px-4 py-2 bg-djgreen-950 hover:bg-djgreen-900 text-djgreen-400 hover:text-white border border-djgreen-700/80 rounded-lg font-mono font-bold text-xs cursor-pointer shadow-lg active:scale-95 transition-all flex items-center gap-1.5"
                         >
-                            <span>💾</span>
+                            <Icons.Save size={14} className="inline-block align-[-2px]" />
                             <span>{isSavingLocal ? 'Guardando en Archivo...' : 'Guardar Pista en Fichero'}</span>
                         </button>
                     </div>
@@ -3742,13 +3740,13 @@ const CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
             <div className="bg-djzinc-950 border border-djzinc-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col">
                 <div className="px-6 py-4 border-b border-djzinc-800 flex items-center justify-between bg-djzinc-900/70">
                     <div className="flex items-center gap-2.5">
-                        <span className="text-xl">🎡</span>
+                        <Icons.Disc size={14} className="inline-block align-[-2px]" />
                         <div>
                             <h3 className="font-bold text-sm uppercase tracking-wider text-white">Rueda Armónica Camelot (Circle of Fifths)</h3>
                             <p className="text-[11px] text-gray-400">Guía de compatibilidad para transiciones armónicas fluidas y mezclas sin disonancia</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs cursor-pointer">✕</button>
+                    <button onClick={onClose} className="w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs cursor-pointer"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                 </div>
 
                 <div className="p-6 space-y-5">
@@ -3901,7 +3899,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
                         <Icons.Sliders />
                         <h3 className="font-bold text-sm uppercase tracking-wider text-white">Configurar Acciones de Auditoría (Batch)</h3>
                     </div>
-                    <button onClick={onClose} className="w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs">✕</button>
+                    <button onClick={onClose} className="w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                 </div>
                 <div className="p-6 overflow-y-auto space-y-5">
                     {modules.map((group, gIdx) => (
@@ -3917,7 +3915,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
                                         <div key={item.key} onClick={() => toggle(item.key)} className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${active ? 'bg-djzinc-900/90 border-djcyan-500/40 shadow-sm' : 'bg-djzinc-950/40 border-djzinc-850 opacity-60 hover:opacity-90'}`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${active ? 'bg-djcyan-500 border-djcyan-400 text-black' : 'border-djzinc-700 bg-djzinc-900 text-transparent'}`}>
-                                                    ✓
+                                                    <Icons.Check size={14} className="inline-block align-[-2px]" />
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
@@ -3950,7 +3948,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
                         }} 
                         className="px-6 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black cursor-pointer shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all flex items-center gap-2"
                     >
-                        <span>✓</span>
+                        <Icons.Check size={14} className="inline-block align-[-2px]" />
                         <span>Guardar Ajustes ({activeCount} activas)</span>
                     </button>
                 </div>
@@ -4076,13 +4074,13 @@ const DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDe
             <div className="bg-[#0c0c12] border border-djzinc-800 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="px-6 py-4 border-b border-djzinc-800 bg-djzinc-950 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <span className="p-2 bg-amber-500/10 text-amber-400 rounded-lg text-lg border border-amber-500/20">⚖️</span>
+                        <Icons.Scale size={14} className="inline-block align-[-2px] p-2 bg-amber-500/10 text-amber-400 rounded-lg  border border-amber-500/20" />
                         <div>
                             <h3 className="font-bold text-sm uppercase tracking-wider text-white font-mono">Comparador & Deduplicador Acústico</h3>
                             <p className="text-[11px] text-gray-400">Compara duplicados cara a cara (FLAC vs MP3, Bitrate, Cutoff Nyquist FFT, tamaño) y conserva la máxima calidad.</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs cursor-pointer">✕</button>
+                    <button onClick={onClose} className="w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs cursor-pointer"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                 </div>
 
                 {dupData && (
@@ -4107,7 +4105,7 @@ const DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDe
                         </div>
                     ) : !dupData || dupData.grupos.length === 0 ? (
                         <div className="py-20 text-center space-y-3">
-                            <span className="text-4xl block">✨</span>
+                            <Icons.Sparkles size={14} className="inline-block align-[-2px] block" />
                             <h4 className="text-sm font-bold text-white">¡Biblioteca 100% Limpia de Duplicados!</h4>
                             <p className="text-xs text-gray-400 max-w-md mx-auto">No se encontraron versiones repetidas ni pistas con nombres duplicados en la biblioteca auditada.</p>
                         </div>
@@ -4115,7 +4113,7 @@ const DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDe
                         dupData.grupos.map((grupo, gIdx) => (
                             <div key={grupo.clave || gIdx} className="bg-[#101018] border border-djzinc-800 rounded-xl overflow-hidden shadow-sm">
                                 <div className="px-4 py-2.5 bg-djzinc-950/80 border-b border-djzinc-800/80 flex items-center justify-between">
-                                    <span className="text-xs font-bold text-djcyan-400 truncate font-mono">🎵 {grupo.display_name}</span>
+                                    <span className="text-xs font-bold text-djcyan-400 truncate font-mono"><Icons.Music size={14} className="inline-block align-[-2px]" /> {grupo.display_name}</span>
                                     <span className="text-[10px] font-mono text-gray-400 bg-djzinc-900 px-2 py-0.5 rounded border border-djzinc-800">{grupo.total_versiones} versiones detectadas</span>
                                 </div>
                                 <div className="divide-y divide-djzinc-850">
@@ -4365,7 +4363,7 @@ const UserAccountModal = ({
                                 {avatarUrl ? (
                                     <img src={avatarUrl} alt="Avatar DJ" className="w-full h-full object-cover" />
                                 ) : (
-                                    <span>🎧</span>
+                                    <Icons.Headphones size={14} className="inline-block align-[-2px]" />
                                 )}
                             </div>
 
@@ -4376,7 +4374,7 @@ const UserAccountModal = ({
                                 className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-cyan-400 hover:bg-cyan-300 text-black flex items-center justify-center text-[10px] font-black border-2 border-[#0d0e1c] shadow cursor-pointer transition-transform hover:scale-110"
                                 title="Cambiar imagen del círculo (Subir foto)"
                             >
-                                📷
+                                <Icons.Image size={14} className="inline-block align-[-2px]" />
                             </button>
                             <input 
                                 type="file" 
@@ -4412,7 +4410,7 @@ const UserAccountModal = ({
                         className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer shrink-0"
                         title="Cerrar (ESC)"
                     >
-                        ✕
+                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                     </button>
                 </div>
 
@@ -4427,7 +4425,7 @@ const UserAccountModal = ({
                         className="p-2.5 rounded-xl bg-[#141528] hover:bg-[#1c1e38] border border-indigo-700/60 text-indigo-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
                         title="Explorar Tendencias Musicales Globales y Festivales"
                     >
-                        <span className="text-base group-hover:scale-110 transition-transform">📈</span>
+                        <Icons.Trends size={14} className="inline-block align-[-2px] group-hover:scale-110 transition-transform" />
                         <span className="truncate">Trends</span>
                     </button>
 
@@ -4440,7 +4438,7 @@ const UserAccountModal = ({
                         className="p-2.5 rounded-xl bg-[#181329] hover:bg-[#231a3d] border border-purple-700/60 text-purple-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
                         title="Academia de Guías, Armonía y Teoría DJ"
                     >
-                        <span className="text-base group-hover:scale-110 transition-transform">🎓</span>
+                        <Icons.Knowledge size={14} className="inline-block align-[-2px] group-hover:scale-110 transition-transform" />
                         <span className="truncate">Guías</span>
                     </button>
 
@@ -4453,7 +4451,7 @@ const UserAccountModal = ({
                         className="p-2.5 rounded-xl bg-[#0f1d2a] hover:bg-[#14283b] border border-cyan-700/60 text-cyan-200 hover:text-white flex flex-col items-center justify-center gap-1 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95 group"
                         title="Ver Chuleta de Atajos de Teclado DJ"
                     >
-                        <span className="text-base group-hover:scale-110 transition-transform">⌨️</span>
+                        <Icons.Keyboard size={14} className="inline-block align-[-2px] group-hover:scale-110 transition-transform" />
                         <span className="truncate">Atajos</span>
                     </button>
                 </div>
@@ -4469,7 +4467,7 @@ const UserAccountModal = ({
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                         }`}
                     >
-                        <span>👤</span> <span>Datos & Seguridad</span>
+                        <Icons.User size={14} className="inline-block align-[-2px]" /> <span>Datos & Seguridad</span>
                     </button>
                     <button
                         type="button"
@@ -4480,7 +4478,7 @@ const UserAccountModal = ({
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                         }`}
                     >
-                        <span>💾</span> <span>Sesiones & Estados</span>
+                        <Icons.Save size={14} className="inline-block align-[-2px]" /> <span>Sesiones & Estados</span>
                     </button>
                     <button
                         type="button"
@@ -4491,14 +4489,14 @@ const UserAccountModal = ({
                                 : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                         }`}
                     >
-                        <span>🎛️</span> <span>Suite & Audio</span>
+                        <Icons.Sliders size={14} className="inline-block align-[-2px]" /> <span>Suite & Audio</span>
                     </button>
                 </div>
 
                 {/* Mensaje de Confirmación Global */}
                 {saveSuccessMsg && (
                     <div className="px-4 py-2 bg-emerald-950/90 border-b border-emerald-600/70 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0">
-                        <span>✨</span>
+                        <Icons.Sparkles size={14} className="inline-block align-[-2px]" />
                         <span>{saveSuccessMsg}</span>
                     </div>
                 )}
@@ -4544,7 +4542,7 @@ const UserAccountModal = ({
                             {/* Formulario de Datos Personales */}
                             <div className="space-y-3 p-4 rounded-2xl bg-[#0c0d18] border border-djzinc-800">
                                 <h4 className="text-xs font-mono font-black uppercase text-cyan-300 tracking-wider flex items-center gap-1.5">
-                                    <span>📋</span> <span>Datos Personales & Facturación</span>
+                                    <Icons.Copy size={14} className="inline-block align-[-2px]" /> <span>Datos Personales & Facturación</span>
                                 </h4>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -4632,14 +4630,14 @@ const UserAccountModal = ({
                                     onClick={handleSavePersonalData}
                                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md mt-2"
                                 >
-                                    💾 Guardar Datos Personales
+                                    <Icons.Save size={14} className="inline-block align-[-2px]" /> Guardar Datos Personales
                                 </button>
                             </div>
 
                             {/* Sección: Modificar Contraseña de Acceso */}
                             <form onSubmit={handleUpdatePassword} className="space-y-3 p-4 rounded-2xl bg-[#0c0d18] border border-djzinc-800">
                                 <h4 className="text-xs font-mono font-black uppercase text-pink-400 tracking-wider flex items-center gap-1.5">
-                                    <span>🔒</span> <span>Modificar Contraseña de Acceso</span>
+                                    <Icons.Lock size={14} className="inline-block align-[-2px]" /> <span>Modificar Contraseña de Acceso</span>
                                 </h4>
 
                                 {passwordMsg.text && (
@@ -4690,7 +4688,7 @@ const UserAccountModal = ({
                                     type="submit"
                                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md mt-2"
                                 >
-                                    🔑 Actualizar Contraseña
+                                    <Icons.Lock size={14} className="inline-block align-[-2px]" /> Actualizar Contraseña
                                 </button>
                             </form>
                         </div>
@@ -4731,7 +4729,7 @@ const UserAccountModal = ({
                                         type="submit"
                                         className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 whitespace-nowrap shadow-md"
                                     >
-                                        💾 Guardar Estado
+                                        <Icons.Save size={14} className="inline-block align-[-2px]" /> Guardar Estado
                                     </button>
                                 </form>
                             </div>
@@ -4756,8 +4754,8 @@ const UserAccountModal = ({
                                                         {sess.name}
                                                     </div>
                                                     <div className="flex items-center gap-3 text-[10px] font-mono text-gray-400 mt-0.5">
-                                                        <span>📅 {sess.date}</span>
-                                                        <span>🎵 {sess.tracksCount || 0} pistas</span>
+                                                        <span><Icons.Calendar size={14} className="inline-block align-[-2px]" /> {sess.date}</span>
+                                                        <span><Icons.Music size={14} className="inline-block align-[-2px]" /> {sess.tracksCount || 0} pistas</span>
                                                         <span className="text-cyan-400 uppercase">{sess.activeTab || 'audit'}</span>
                                                     </div>
                                                 </div>
@@ -4782,7 +4780,7 @@ const UserAccountModal = ({
                                                         className="p-1 rounded-lg bg-djzinc-900 hover:bg-rose-950 text-gray-500 hover:text-rose-400 text-xs transition-colors cursor-pointer"
                                                         title="Eliminar sesión guardada"
                                                     >
-                                                        ✕
+                                                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -5005,7 +5003,7 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                 <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0e0e18] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(245,158,11,0.5)] shrink-0">
-                            📓
+                            <Icons.Notebook size={14} className="inline-block align-[-2px]" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
@@ -5028,7 +5026,7 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                         className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
                         title="Cerrar (ESC)"
                     >
-                        ✕
+                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                     </button>
                 </div>
 
@@ -5074,7 +5072,7 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                             className="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-400/60 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
                             title="Descargar hoja de cálculo Excel con las filas seleccionadas"
                         >
-                            <span>📊</span>
+                            <Icons.Excel size={14} className="inline-block align-[-2px]" />
                             <span>Descargar Excel ({selectedIds.size})</span>
                         </button>
                     </div>
@@ -5232,7 +5230,7 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-djzinc-800 bg-[#0d0d14] flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <span className="text-xl">⌨️</span>
+                        <Icons.Keyboard size={14} className="inline-block align-[-2px]" />
                         <div>
                             <h3 className="text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
                                 ATAJOS DE TECLADO — CABINA PROFESIONAL
@@ -5249,7 +5247,7 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
                         onClick={onClose}
                         className="w-8 h-8 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors"
                     >
-                        ✕
+                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                     </button>
                 </div>
 
@@ -5976,7 +5974,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                                     : 'bg-djzinc-850 text-gray-300 border border-djzinc-700'
                             }`}
                         >
-                            <span>🔍</span>
+                            <Icons.Search size={14} className="inline-block align-[-2px]" />
                             <span>{zoomFocus ? 'Zoom 1.6x Activo' : 'Zoom Enfoque'}</span>
                         </button>
                     </div>
@@ -6004,32 +6002,32 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     <div className="relative z-10 flex flex-wrap items-center gap-1.5 mt-auto pt-2">
                         {activeSectionKey === 'copilot' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('deck')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'deck' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}>🔍 Zoom Decks</button>
-                                <button type="button" onClick={() => setZoomFocus('ai')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'ai' ? 'bg-pink-500 text-black' : 'bg-black/70 text-pink-300 border border-pink-800'}`}>🔍 Zoom Copilot AI</button>
+                                <button type="button" onClick={() => setZoomFocus('deck')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'deck' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Decks</button>
+                                <button type="button" onClick={() => setZoomFocus('ai')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'ai' ? 'bg-pink-500 text-black' : 'bg-black/70 text-pink-300 border border-pink-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Copilot AI</button>
                             </>
                         )}
                         {activeSectionKey === 'audit' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('spectrum')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'spectrum' ? 'bg-emerald-500 text-black' : 'bg-black/70 text-emerald-300 border border-emerald-800'}`}>🔍 Zoom Espectro FFT</button>
-                                <button type="button" onClick={() => setZoomFocus('transients')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'transients' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}>🔍 Zoom Transitorios</button>
+                                <button type="button" onClick={() => setZoomFocus('spectrum')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'spectrum' ? 'bg-emerald-500 text-black' : 'bg-black/70 text-emerald-300 border border-emerald-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Espectro FFT</button>
+                                <button type="button" onClick={() => setZoomFocus('transients')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'transients' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Transitorios</button>
                             </>
                         )}
                         {activeSectionKey === 'hotcues' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('pads')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'pads' ? 'bg-amber-500 text-black' : 'bg-black/70 text-amber-300 border border-amber-800'}`}>🔍 Zoom Pads 1-8</button>
-                                <button type="button" onClick={() => setZoomFocus('grid')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'grid' ? 'bg-purple-500 text-black' : 'bg-black/70 text-purple-300 border border-purple-800'}`}>🔍 Zoom Beatgrid</button>
+                                <button type="button" onClick={() => setZoomFocus('pads')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'pads' ? 'bg-amber-500 text-black' : 'bg-black/70 text-amber-300 border border-amber-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Pads 1-8</button>
+                                <button type="button" onClick={() => setZoomFocus('grid')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'grid' ? 'bg-purple-500 text-black' : 'bg-black/70 text-purple-300 border border-purple-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Beatgrid</button>
                             </>
                         )}
                         {activeSectionKey === 'setbuilder' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('graph')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'graph' ? 'bg-fuchsia-500 text-black' : 'bg-black/70 text-fuchsia-300 border border-fuchsia-800'}`}>🔍 Zoom Curva Energía</button>
-                                <button type="button" onClick={() => setZoomFocus('camelot')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'camelot' ? 'bg-blue-500 text-black' : 'bg-black/70 text-blue-300 border border-blue-800'}`}>🔍 Zoom Camelot Shift</button>
+                                <button type="button" onClick={() => setZoomFocus('graph')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'graph' ? 'bg-fuchsia-500 text-black' : 'bg-black/70 text-fuchsia-300 border border-fuchsia-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Curva Energía</button>
+                                <button type="button" onClick={() => setZoomFocus('camelot')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'camelot' ? 'bg-blue-500 text-black' : 'bg-black/70 text-blue-300 border border-blue-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Camelot Shift</button>
                             </>
                         )}
                         {activeSectionKey === 'map' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('wheel')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'wheel' ? 'bg-teal-500 text-black' : 'bg-black/70 text-teal-300 border border-teal-800'}`}>🔍 Zoom Rueda 60%</button>
-                                <button type="button" onClick={() => setZoomFocus('cluster')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'cluster' ? 'bg-indigo-500 text-black' : 'bg-black/70 text-indigo-300 border border-indigo-800'}`}>🔍 Zoom Cluster Tracks</button>
+                                <button type="button" onClick={() => setZoomFocus('wheel')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'wheel' ? 'bg-teal-500 text-black' : 'bg-black/70 text-teal-300 border border-teal-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Rueda 60%</button>
+                                <button type="button" onClick={() => setZoomFocus('cluster')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'cluster' ? 'bg-indigo-500 text-black' : 'bg-black/70 text-indigo-300 border border-indigo-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Cluster Tracks</button>
                             </>
                         )}
                         <span className="text-[10px] text-gray-300 font-mono ml-auto truncate max-w-[220px]">
@@ -6068,7 +6066,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <h4 className="text-xs font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
-                    <span>🎛️</span>
+                    <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                     <span>Guía Completa de Botones & Funcionalidades</span>
                 </h4>
                 <span className="text-[10.5px] font-mono px-2.5 py-0.5 rounded bg-pink-950 text-pink-200 border border-pink-500/80 font-black">
@@ -6095,7 +6093,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                             {ctrl.desc}
                         </p>
                         <div className="p-2 rounded-xl bg-[#060710] border border-djzinc-800 text-[11px] font-sans text-amber-200 flex items-start gap-1.5">
-                            <span className="shrink-0 text-amber-400">🎯</span>
+                            <Icons.Target size={14} className="inline-block align-[-2px] shrink-0 text-amber-400" />
                             <div>
                                 <strong className="font-mono text-[10px] uppercase text-amber-400 mr-1">En Cabina:</strong>
                                 <span>{ctrl.when}</span>
@@ -6135,7 +6133,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             {/* Tecnicismos Explicados */}
             <div className="space-y-2">
                 <h4 className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                    <span>💡</span> <span>Conceptos Clave Explicados Fácilmente</span>
+                    <Icons.Bulb size={14} className="inline-block align-[-2px]" /> <span>Conceptos Clave Explicados Fácilmente</span>
                 </h4>
                 <div className="grid grid-cols-1 gap-2">
                     {(activeSec.jargon || []).map((jg, jIdx) => (
@@ -6153,12 +6151,12 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             {/* Paso a Paso */}
             <div className="p-4 rounded-2xl bg-[#0c0e1c] border border-djzinc-750 space-y-2">
                 <h4 className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                    <span>🛠️</span> <span>Flujo de Trabajo Paso a Paso</span>
+                    <Icons.Gear size={14} className="inline-block align-[-2px]" /> <span>Flujo de Trabajo Paso a Paso</span>
                 </h4>
                 <div className="space-y-1.5 text-xs font-sans text-gray-200">
                     {(activeSec.steps || []).map((st, sIdx) => (
                         <div key={sIdx} className="flex items-start gap-2">
-                            <span className="text-pink-400 font-bold shrink-0">✓</span>
+                            <Icons.Check size={14} className="inline-block align-[-2px] text-pink-400 font-bold shrink-0" />
                             <span className="leading-snug">{st}</span>
                         </div>
                     ))}
@@ -6167,7 +6165,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
             {/* Pro DJ Tip */}
             <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/60 to-[#0e1022] border border-amber-600/60 text-xs font-sans text-amber-200 flex items-start gap-2.5 shadow-md">
-                <span className="text-lg shrink-0">👑</span>
+                <Icons.Star size={14} className="inline-block align-[-2px] shrink-0" />
                 <div>
                     <strong className="font-mono uppercase tracking-wider text-amber-300 block text-[11px] mb-0.5">Secreto Pro de Cabina</strong>
                     <p className="text-gray-200 leading-relaxed">{activeSec.proTip}</p>
@@ -6186,7 +6184,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     }}
                     className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 via-fuchsia-600 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.5)] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
-                    <span>🚀</span>
+                    <Icons.Rocket size={14} className="inline-block align-[-2px]" />
                     <span>Abrir e Ir a la Sección {activeSec.badge} Ahora</span>
                 </button>
             </div>
@@ -6234,7 +6232,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
             >
                 <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
                 <span className="font-black text-pink-200 [writing-mode:vertical-rl] tracking-wider uppercase text-xs rotate-180 flex items-center gap-1.5">
-                    📖 MANUAL • {activeSec.badge}
+                    <Icons.Knowledge size={14} className="inline-block align-[-2px]" /> MANUAL • {activeSec.badge}
                 </span>
                 <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-pink-950 text-pink-200 border border-pink-600 font-bold uppercase mt-1">
                     ◀ Desplegar
@@ -6265,7 +6263,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 <div className="px-5 py-3.5 border-b border-djzinc-750 bg-[#0d0f20] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0">
-                            📖
+                            <Icons.Knowledge size={14} className="inline-block align-[-2px]" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
@@ -6301,7 +6299,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                             className="w-8 h-8 rounded-xl bg-[#14162a] hover:bg-rose-950 text-gray-300 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
                             title="Cerrar manual (ESC)"
                         >
-                            ✕
+                            <Icons.Close size={14} className="inline-block align-[-2px]" />
                         </button>
                     </div>
                 </div>
@@ -6354,7 +6352,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 {/* Pie del Drawer */}
                 <div className="px-5 py-3 bg-[#0a0c18] border-t border-djzinc-750 flex items-center justify-between shrink-0 font-mono text-xs">
                     <span className="text-gray-300 text-[10.5px] flex items-center gap-1.5">
-                        <span>💡</span>
+                        <Icons.Bulb size={14} className="inline-block align-[-2px]" />
                         <span>Pulsa <strong>Plegar</strong> para usar la cabina visible al 40% detrás sin cerrar</span>
                     </span>
                     <button
@@ -6487,9 +6485,7 @@ const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayT
                 {/* Cabecera Mix Oracle */}
                 <div className="p-4 bg-gradient-to-r from-purple-950 via-[#10101f] to-indigo-950 border-b border-purple-900/50 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <span className="text-2xl p-2 rounded-xl bg-purple-900/60 border border-purple-500/50 text-purple-300">
-                            🔮
-                        </span>
+                        <Icons.Compass size={14} className="inline-block align-[-2px] p-2 rounded-xl bg-purple-900/60 border border-purple-500/50 text-purple-300" />
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="font-syne font-black text-white text-base tracking-wide">EL RADAR DE MEZCLA MÁGICA (MIX ORACLE)</h3>
@@ -6503,7 +6499,7 @@ const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayT
                         </div>
                     </div>
                     <button onClick={onClose} className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer">
-                        ✕
+                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                     </button>
                 </div>
 
@@ -6592,7 +6588,7 @@ const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayT
                                         className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-mono font-bold text-xs cursor-pointer shadow-md transition-all active:scale-95 flex items-center gap-1"
                                         title="Cargar y reproducir esta pista sugerida"
                                     >
-                                        <span>▶</span>
+                                        <Icons.Play size={14} className="inline-block align-[-2px]" />
                                         <span>Cargar</span>
                                     </button>
                                 </div>
@@ -6825,7 +6821,7 @@ const CustomLibraryModal = ({
                 {/* Cabecera */}
                 <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0c0e1e] to-[#080911] shrink-0">
                     <div className="flex items-center gap-3">
-                        <span className="text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner">📚</span>
+                        <Icons.Knowledge size={14} className="inline-block align-[-2px] p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" />
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
@@ -6853,7 +6849,7 @@ const CustomLibraryModal = ({
                             className="px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-rose-950 hover:text-rose-200 text-gray-300 border border-djzinc-700 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
                             title="Cerrar modal (ESC)"
                         >
-                            <span>✕</span>
+                            <Icons.Close size={14} className="inline-block align-[-2px]" />
                             <span>Cerrar</span>
                         </button>
                     </div>
@@ -6906,7 +6902,7 @@ const CustomLibraryModal = ({
                             className="px-3 py-1.5 rounded-xl bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
                             title="Crear una nueva biblioteca en blanco"
                         >
-                            <span>➕</span>
+                            <Icons.Plus size={14} className="inline-block align-[-2px]" />
                             <span>Nueva Biblioteca</span>
                         </button>
                     </div>
@@ -6919,7 +6915,7 @@ const CustomLibraryModal = ({
                     <div className="w-full md:w-5/12 p-4 flex flex-col gap-3 bg-[#080912] overflow-y-auto custom-scrollbar">
                         <div className="flex items-center justify-between">
                             <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-djcyan-400 flex items-center gap-1.5">
-                                <span>📁</span>
+                                <Icons.Folder size={14} className="inline-block align-[-2px]" />
                                 <span>Carpetas Creadas ({currentLib.folders?.length || 0})</span>
                             </h4>
                             <button
@@ -6928,7 +6924,7 @@ const CustomLibraryModal = ({
                                 className="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/60 text-[10px] font-mono font-bold cursor-pointer transition-colors"
                                 title="Crea carpetas automáticamente a partir de los géneros musicales de tus pistas cargadas"
                             >
-                                ⚡ Auto por Género
+                                <Icons.Zap size={14} className="inline-block align-[-2px]" /> Auto por Género
                             </button>
                         </div>
 
@@ -6994,7 +6990,7 @@ const CustomLibraryModal = ({
                                                     className="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer"
                                                     title="Eliminar carpeta"
                                                 >
-                                                    ✕
+                                                    <Icons.Close size={14} className="inline-block align-[-2px]" />
                                                 </button>
                                             </div>
                                         </div>
@@ -7009,7 +7005,7 @@ const CustomLibraryModal = ({
                         <div className="flex items-center justify-between shrink-0">
                             <div>
                                 <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                                    <span>🎵</span>
+                                    <Icons.Music size={14} className="inline-block align-[-2px]" />
                                     <span>Pistas en: <span className="text-djcyan-300">{activeFolder?.name || 'Ninguna carpeta'}</span></span>
                                 </h4>
                                 <span className="text-[10px] font-mono text-gray-400">
@@ -7043,7 +7039,7 @@ const CustomLibraryModal = ({
                         {/* Buscador de pistas en la carpeta */}
                         {folderTracks.length > 5 && (
                             <div className="relative shrink-0">
-                                <span className="absolute left-3 top-2 text-xs text-gray-500">🔍</span>
+                                <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3 top-2  text-gray-500" />
                                 <input 
                                     type="text"
                                     value={searchTrack}
@@ -7058,7 +7054,7 @@ const CustomLibraryModal = ({
                         <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 border border-djzinc-800/80 rounded-xl bg-[#070810] p-2">
                             {(!activeFolder || folderTracks.length === 0) ? (
                                 <div className="py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2">
-                                    <span className="text-2xl">📂</span>
+                                    <Icons.Folder size={14} className="inline-block align-[-2px]" />
                                     <span>Esta carpeta está vacía.</span>
                                     <span className="text-[11px] text-gray-600">
                                         Pulsa "+ Añadir Todas" o "+ Asignar Seleccionadas" para organizar pistas aquí.
@@ -7087,7 +7083,7 @@ const CustomLibraryModal = ({
                                                 className="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 text-xs transition-opacity cursor-pointer"
                                                 title="Quitar de esta carpeta"
                                             >
-                                                ✕
+                                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                                             </button>
                                         </div>
                                     );
@@ -7101,7 +7097,7 @@ const CustomLibraryModal = ({
                 <div className="px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex flex-wrap items-center justify-between gap-3 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="text-[11px] font-mono text-gray-400">
-                            🔒 Los cambios quedan guardados automáticamente para tu próxima sesión.
+                            <Icons.Lock size={14} className="inline-block align-[-2px]" /> Los cambios quedan guardados automáticamente para tu próxima sesión.
                         </span>
                     </div>
 
@@ -7114,7 +7110,7 @@ const CustomLibraryModal = ({
                             className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-black text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
                             title="Selecciona una carpeta o USB en disco para crear una copia física de tus pistas organizadas por carpetas"
                         >
-                            <span className="text-sm">💾</span>
+                            <Icons.Save size={14} className="inline-block align-[-2px]" />
                             <span>Crear en Disco (Copia Física Estructurada)</span>
                         </button>
 
@@ -9256,7 +9252,7 @@ const AuditWorkspace = ({
                         {tracks && tracks.length > 0 && (
                             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[280px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
                                 <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>
-                                <span className="text-gray-400 text-[11px] shrink-0">📁</span>
+                                <Icons.Folder size={14} className="inline-block align-[-2px] text-gray-400 text-[11px] shrink-0" />
                                 <span className="truncate">
                                     {typeof rutaOrigen === 'string' && rutaOrigen ? (rutaOrigen.split('/').pop() || rutaOrigen) : 'Colección Activa'}
                                 </span>
@@ -9273,7 +9269,7 @@ const AuditWorkspace = ({
                             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0"
                             title="Crear o gestionar biblioteca personalizada, estructurada en carpetas virtuales y copia física en disco"
                         >
-                            <span>📚</span>
+                            <Icons.Knowledge size={14} className="inline-block align-[-2px]" />
                             <span className="hidden sm:inline">Biblioteca:</span>
                             <span className="text-white font-black truncate max-w-[130px]">{activeCustomLib ? activeCustomLib.name : 'Crear Biblioteca'}</span>
                             <span className="px-1.5 py-0.2 rounded bg-djzinc-900 text-djcyan-300 text-[10px] font-bold border border-djzinc-750">
@@ -9303,7 +9299,7 @@ const AuditWorkspace = ({
                                 }`}
                                 title="Abrir Centro de Personalización de Columnas y Vistas"
                             >
-                                <span>⚙️</span>
+                                <Icons.Gear size={14} className="inline-block align-[-2px]" />
                                 <span>Columnas</span>
                                 <span className="text-[10px] text-djcyan-400 font-mono font-bold">
                                     ({Object.values(visibleColumns).filter(Boolean).length}/24)
@@ -9321,7 +9317,7 @@ const AuditWorkspace = ({
                                 }`}
                                 title={!metricsCollapsed ? "Plegar HUD de métricas completas (Tecla M)" : "Desplegar HUD analítico completo (Tecla M)"}
                             >
-                                <span>▤</span>
+                                <Icons.Activity size={14} aria-hidden="true" />
                                 <span className="hidden xl:inline">HUD</span>
                                 <kbd className="text-[9px] bg-black/50 px-1 rounded border border-djzinc-700">M</kbd>
                             </button>
@@ -9336,7 +9332,7 @@ const AuditWorkspace = ({
                                 }`}
                                 title={sidebarOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}
                             >
-                                <span>◨</span>
+                                <Icons.PanelLeft size={14} aria-hidden="true" className="rotate-180" />
                                 <span className="hidden sm:inline">{t('btn_inspector') || 'Inspector'}</span>
                             </button>
                         </div>
@@ -9348,403 +9344,60 @@ const AuditWorkspace = ({
                                 className="bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/60 px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer shadow-md transition-all active:scale-95 font-mono shrink-0"
                                 title="Detener el proceso actual inmediatamente"
                             >
-                                <span>✕</span>
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                                 <span className="hidden sm:inline">{t('btn_cancel') || 'Cancelar'}</span>
                             </button>
                         )}
                     </div>
                 </div>
 
-                {/* 2. RIBBON DE FLUJO DE TRABAJO PRO: PROPUESTA 2 (AGRUPACIONES CON MÉTRICAS INTEGRADAS) */}
-                {/* 2.A: VERSIÓN DESKTOP (md:flex) */}
-                <div className="hidden md:flex items-stretch bg-[#07070d] border-b border-djzinc-800/90 px-3.5 py-2.5 gap-4 overflow-x-auto no-scrollbar select-none z-10">
-                    
-                    {/* BLOQUE 1: ANALIZAR */}
-                    <div className="flex flex-col gap-1 shrink-0">
-                        <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-djzinc-400">
-                            <span className="flex items-center gap-1">
-                                <span className={`w-1.5 h-1.5 rounded-full ${batchConfigured ? 'bg-emerald-400' : 'bg-djcyan-400'}`}></span>
-                                <span>Analizar</span>
-                            </span>
-                            <span className="text-[9px] text-gray-500 font-normal">
-                                {batchConfigured ? '✓ Listo' : 'Ajustes'}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            {/* Paso 1: Cargar Biblioteca, Añadir más, Recargar y Vaciar */}
-                            <div className="flex items-center gap-1">
-                                <button 
-                                    type="button"
-                                    onClick={handleExplorar} 
-                                    className="bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black px-3 py-1.5 rounded-lg text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 font-mono shrink-0" 
-                                    title="Cargar carpetas completas o pistas para analizar lo guardado en la biblioteca"
-                                >
-                                    <span>▷</span>
-                                    <span>Cargar biblioteca</span>
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onClick={handleAnadirMas} 
-                                    className="px-2.5 py-1.5 bg-djzinc-900 hover:bg-djzinc-800 text-gray-200 hover:text-white rounded-lg border border-djzinc-750 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono flex items-center gap-1 font-bold" 
-                                    title="Añadir más carpetas o pistas a la biblioteca actual sin vaciar la selección existente"
-                                >
-                                    <span>➕</span>
-                                    <span className="hidden xl:inline">Añadir más</span>
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onClick={() => handleCargarDirectorio(resolveAuditTargets())} 
-                                    className="px-2 py-1.5 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white border border-djzinc-750 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono rounded-lg" 
-                                    title="Recargar selección actual"
-                                >
-                                    🔄
-                                </button>
-                                {tracks && tracks.length > 0 && (
-                                    <button 
-                                        type="button" 
-                                        onClick={handleClearAllTracks} 
-                                        className="px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 rounded-lg border border-red-800/40 cursor-pointer shadow transition-all shrink-0 active:scale-95 text-xs font-mono flex items-center gap-1" 
-                                        title="Vaciar la lista y eliminar todas las pistas del análisis actual"
-                                    >
-                                        <span>🗑️</span>
-                                        <span className="hidden xl:inline">Vaciar</span>
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Paso 2: Configurar */}
-                            <button 
-                                type="button"
-                                onClick={() => setBatchModalOpen(true)} 
-                                className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer active:scale-95 shrink-0 ${
-                                    batchConfigured 
-                                        ? 'bg-emerald-950/40 text-emerald-300 border-emerald-600/70 shadow-sm' 
-                                        : 'bg-djzinc-900 hover:bg-djzinc-850 text-gray-200 border-djzinc-750'
-                                }`}
-                                title="Abrir configuración de auditoría para elegir qué análisis y correcciones ejecutar"
-                            >
-                                <span>⚙️</span>
-                                <span>Configurar</span>
-                                {batchConfigured ? (
-                                    <span className="bg-emerald-900/80 text-emerald-200 border border-emerald-700 px-1 py-0.2 rounded text-[9px]">
-                                        ✓ Listo
-                                    </span>
-                                ) : (
-                                    <span className="bg-djzinc-800 text-gray-400 px-1 py-0.2 rounded text-[9px]">
-                                        Paso 2
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* Paso 3: Ejecutar */}
-                            <button 
-                                type="button"
-                                onClick={() => {
-                                    if (!batchConfigured) {
-                                        setBatchModalOpen(true);
-                                    } else {
-                                        handleEjecutarAuditoriaLote();
-                                    }
-                                }} 
-                                disabled={isAuditing || tracks.length === 0}
-                                className={`px-3 py-1.5 rounded-lg font-mono text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 shrink-0 border ${
-                                    batchConfigured 
-                                        ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-md shadow-djcyan-500/20 border-djcyan-300 cursor-pointer' 
-                                        : 'bg-djzinc-900 text-gray-500 border-djzinc-800 cursor-pointer hover:border-djzinc-700'
-                                }`}
-                                title={!batchConfigured ? "Primero configura las opciones de auditoría en el botón anterior" : "Ejecutar análisis y optimizaciones configuradas sobre las pistas cargadas"}
-                            >
-                                <span>▶</span>
-                                <span>{isAuditing ? 'Auditando...' : 'Ejecutar'}</span>
-                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${batchConfigured ? 'bg-black/20 text-black font-black' : 'bg-djzinc-800 text-gray-500'}`}>
-                                    {tracks.length}
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* SEPARADOR VERTICAL */}
-                    <div className="w-px bg-djzinc-800 self-stretch my-0.5 shrink-0"></div>
-
-                    {/* BLOQUE 2: EXPORTAR A CABINA & GUARDAR */}
-                    <div className="flex flex-col gap-1 shrink-0">
-                        <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400">
-                            <span className="flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                                <span>Exportar a Cabina & Metadatos</span>
-                            </span>
-                            <span className="text-[9px] text-gray-500 font-normal">Destinos Oficiales</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            {/* 1. Guardar Metadatos en Ficheros */}
-                            <button 
-                                type="button"
-                                onClick={handleGuardarTodoEnFicheros} 
-                                disabled={isInjecting || tracks.length === 0}
-                                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-40 text-black px-3 py-1.5 rounded-lg font-black text-xs shadow-md shadow-emerald-500/20 border border-emerald-300 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 font-mono shrink-0"
-                                title="Guardar metadatos ID3/FLAC directamente en los archivos de audio en disco"
-                            >
-                                <span>💾</span>
-                                <span>Metadatos</span>
-                            </button>
-
-                            {/* 2. Rekordbox con Logo Oficial en SVG sin fondo */}
-                            <button 
-                                type="button"
-                                onClick={handleExportarRekordboxXml}
-                                disabled={isExporting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-sky-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
-                                title="Rekordbox (.XML) - Exportar colección a Rekordbox XML v6 con Hot Cues A-H y Beatgrid"
-                            >
-                                <PlatformRekordboxLogo size={18} />
-                                <span className="bg-djzinc-800 text-sky-300 border border-sky-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">.XML</span>
-                            </button>
-
-                            {/* 3. Serato con Logo Oficial en SVG sin fondo */}
-                            <button 
-                                type="button"
-                                onClick={handleExportarSerato}
-                                disabled={isInjecting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-cyan-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
-                                title="Serato DJ Pro - Inyectar metadatos oficiales en las pistas (Hot Cues Markers2, BeatGrid, BPM, TKEY y agrupaciones)"
-                            >
-                                <PlatformSeratoLogo size={18} />
-                                <span className="bg-djzinc-800 text-cyan-300 border border-cyan-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">TAGS</span>
-                            </button>
-
-                            {/* 4. Traktor con Logo Oficial en SVG sin fondo */}
-                            <button 
-                                type="button"
-                                onClick={handleExportarTraktor}
-                                disabled={isExporting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-yellow-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
-                                title="Traktor Pro (.NML) - Exportar colección a Traktor Pro NML con Hot Cues 1-8"
-                            >
-                                <PlatformTraktorLogo size={18} />
-                                <span className="bg-djzinc-800 text-yellow-300 border border-yellow-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">.NML</span>
-                            </button>
-
-                            {/* 5. VirtualDJ con Logo Oficial en SVG sin fondo */}
-                            <button 
-                                type="button"
-                                onClick={handleExportarVirtualDJ}
-                                disabled={isExporting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:border-orange-500/60 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
-                                title="VirtualDJ (.M3U) - Exportar lista y tags optimizados para VirtualDJ"
-                            >
-                                <PlatformVirtualDjLogo size={18} />
-                                <span className="bg-djzinc-800 text-orange-300 border border-orange-500/30 px-1 py-0.2 rounded text-[9px] font-mono font-bold">.M3U</span>
-                            </button>
-
-                            {/* 6. Todos (Pasaporte Universal) */}
-                            <button 
-                                type="button"
-                                onClick={handleSincronizarPasaporteUniversal}
-                                disabled={isExporting || tracks.length === 0}
-                                className="bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/60 text-amber-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
-                                title="Exportar de una sola vez a Serato Crates, Rekordbox XML, Traktor NML y VirtualDJ M3U"
-                            >
-                                <span>🛂</span>
-                                <span>Todos</span>
-                                <span className="bg-amber-900/80 text-amber-300 border border-amber-700 px-1.5 py-0.2 rounded text-[9px] font-black">
-                                    ALL-IN-1
-                                </span>
-                            </button>
-
-                            {/* 7. Informe Excel Multidestino */}
-                            <button 
-                                type="button"
-                                onClick={handleExportarXLS}
-                                disabled={isExporting || tracks.length === 0}
-                                className="bg-djzinc-900/90 hover:bg-djzinc-850 hover:text-emerald-300 border border-djzinc-750 text-gray-200 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm shrink-0 active:scale-95"
-                                title="Generar libro Excel (.xlsx) multidestino con hojas dedicadas para Auditoría, Serato, Rekordbox, Traktor y VirtualDJ"
-                            >
-                                <span>📊</span>
-                                <span>Informe</span>
-                                <span className="bg-djzinc-800 text-gray-400 border border-djzinc-750 px-1 py-0.2 rounded text-[9px]">
-                                    .XLSX
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 2.B: VERSIÓN APP HÍBRIDA / MÓVIL (md:hidden) */}
-                <div className="flex md:hidden flex-col bg-[#07070d] border-b border-djzinc-800 select-none z-10">
-                    {/* Control Segmentado Táctil en 2 Pestañas */}
-                    <div className="flex p-1.5 bg-[#050508] gap-1.5 border-b border-djzinc-850">
-                        <button 
-                            type="button"
-                            onClick={() => setMobileWorkflowTab('analizar')}
-                            className={`flex-1 py-1.5 px-2 rounded-lg font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                                mobileWorkflowTab === 'analizar' 
-                                    ? 'bg-djcyan-500 text-black shadow-md font-black' 
-                                    : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
-                            }`}
-                        >
-                            <span>① Analizar</span>
-                            <span className="text-[9px] bg-black/30 px-1 rounded font-black">
-                                {tracks.length}
-                            </span>
-                        </button>
-
-                        <button 
-                            type="button"
-                            onClick={() => setMobileWorkflowTab('exportar')}
-                            className={`flex-1 py-1.5 px-2 rounded-lg font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                                mobileWorkflowTab === 'exportar' 
-                                    ? 'bg-purple-600 text-white shadow-md font-black' 
-                                    : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
-                            }`}
-                        >
-                            <span>② Exportar a Cabina</span>
-                            <span className="text-[9px] bg-black/30 px-1 rounded font-mono">DJ</span>
-                        </button>
-                    </div>
-
-                    {/* Contenido de la Fase Activa en Móvil */}
-                    <div className="p-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                        {mobileWorkflowTab === 'analizar' && (
-                            <>
-                                <button 
-                                    type="button"
-                                    onClick={handleExplorar}
-                                    className="h-10 px-3.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
-                                >
-                                    <span>▷</span>
-                                    <span>Cargar biblioteca</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleAnadirMas}
-                                    className="h-10 px-3 bg-djzinc-850 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0 active:scale-95"
-                                    title="Añadir más pistas o carpetas"
-                                >
-                                    <span>➕</span>
-                                    <span>Añadir</span>
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onClick={() => handleCargarDirectorio(resolveAuditTargets())} 
-                                    className="h-10 px-3 bg-djzinc-850 border border-djzinc-750 text-gray-300 font-mono text-xs rounded-xl flex items-center justify-center shrink-0 active:scale-95" 
-                                    title="Recargar"
-                                >
-                                    🔄
-                                </button>
-                                {tracks && tracks.length > 0 && (
-                                    <button 
-                                        type="button" 
-                                        onClick={handleClearAllTracks} 
-                                        className="h-10 px-3 bg-red-950/40 border border-red-800/50 text-red-400 font-mono text-xs font-bold rounded-xl flex items-center gap-1 shrink-0 active:scale-95" 
-                                        title="Vaciar lista"
-                                    >
-                                        <span>🗑️</span>
-                                        <span>Vaciar</span>
-                                    </button>
-                                )}
-                                <button 
-                                    type="button"
-                                    onClick={() => setBatchModalOpen(true)}
-                                    className={`h-10 px-3.5 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 border ${
-                                        batchConfigured ? 'bg-emerald-950/70 border-emerald-600 text-emerald-200' : 'bg-djzinc-900 border-djzinc-700 text-white'
-                                    }`}
-                                >
-                                    <span>⚙️</span>
-                                    <span>{batchConfigured ? 'Ajustes OK' : 'Configurar'}</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={() => {
-                                        if (!batchConfigured) setBatchModalOpen(true);
-                                        else handleEjecutarAuditoriaLote();
-                                    }} 
-                                    disabled={isAuditing || tracks.length === 0}
-                                    className="h-10 px-3.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-2 shrink-0 active:scale-95 shadow-md disabled:opacity-40"
-                                >
-                                    <span>▶</span>
-                                    <span>{isAuditing ? 'Auditando...' : 'Ejecutar'}</span>
-                                    <span className="bg-black/20 text-black px-1.5 py-0.2 rounded text-[10px]">
-                                        {tracks.length}
-                                    </span>
-                                </button>
-                            </>
+                {/* DS 3.0 · Barra de herramientas unificada de la biblioteca */}
+                <div className="ws-toolbar select-none" role="toolbar" aria-label="Acciones de biblioteca">
+                    <div className="ws-toolbar-group">
+                        <WsButton variant="primary" icon={Icons.Folder} label="Cargar biblioteca" onClick={handleExplorar} title="Cargar carpetas completas o pistas" />
+                        <WsButton icon={Icons.Plus} label="Añadir" onClick={handleAnadirMas} title="Añadir más carpetas o pistas sin vaciar la selección" />
+                        <WsButton compact icon={Icons.Refresh} label="Recargar selección" onClick={() => handleCargarDirectorio(resolveAuditTargets())} />
+                        {tracks && tracks.length > 0 && (
+                            <WsButton compact variant="danger" icon={Icons.Trash} label="Vaciar lista" onClick={handleClearAllTracks} />
                         )}
+                    </div>
 
-                        {mobileWorkflowTab === 'exportar' && (
-                            <>
-                                <button 
-                                    type="button"
-                                    onClick={handleGuardarTodoEnFicheros}
-                                    disabled={isInjecting || tracks.length === 0}
-                                    className="h-10 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
-                                    title="Guardar metadatos en archivos"
-                                >
-                                    <span>💾</span>
-                                    <span>Metadatos</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleExportarRekordboxXml}
-                                    disabled={tracks.length === 0}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-                                    title="Rekordbox (.XML)"
-                                >
-                                    <PlatformRekordboxLogo size={18} />
-                                    <span className="text-[10px] text-sky-300 font-mono font-bold">.XML</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleExportarSerato}
-                                    disabled={isInjecting || tracks.length === 0}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-                                    title="Serato DJ Pro - Inyectar metadatos oficiales en las pistas"
-                                >
-                                    <PlatformSeratoLogo size={18} />
-                                    <span className="text-[10px] text-cyan-300 font-mono font-bold">TAGS</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleExportarTraktor}
-                                    disabled={tracks.length === 0}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-                                    title="Traktor Pro (.NML)"
-                                >
-                                    <PlatformTraktorLogo size={18} />
-                                    <span className="text-[10px] text-yellow-300 font-mono font-bold">.NML</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleExportarVirtualDJ}
-                                    disabled={tracks.length === 0}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-                                    title="VirtualDJ (.M3U)"
-                                >
-                                    <PlatformVirtualDjLogo size={18} />
-                                    <span className="text-[10px] text-orange-300 font-mono font-bold">.M3U</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleSincronizarPasaporteUniversal}
-                                    disabled={tracks.length === 0}
-                                    className="h-10 px-3.5 bg-amber-600 text-black font-black font-mono text-xs rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
-                                    title="Exportar a todas las aplicaciones DJ"
-                                >
-                                    <span>🛂</span>
-                                    <span>Todos</span>
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleExportarXLS}
-                                    disabled={tracks.length === 0}
-                                    className="h-10 px-3 bg-djzinc-900 border border-djzinc-750 text-gray-200 font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 active:scale-95"
-                                    title="Informe Excel (.XLSX)"
-                                >
-                                    <span>📊</span>
-                                    <span className="text-xs font-bold text-gray-200">Informe</span>
-                                    <span className="text-[10px] text-emerald-300 font-mono font-bold">.XLSX</span>
-                                </button>
-                            </>
-                        )}
+                    <ToolbarDivider />
+
+                    <div className="ws-toolbar-group">
+                        <WsButton
+                            variant={batchConfigured ? 'active' : 'ghost'}
+                            icon={Icons.Sliders}
+                            label="Configurar"
+                            badge={batchConfigured ? 'Listo' : null}
+                            onClick={() => setBatchModalOpen(true)}
+                            title="Elegir qué análisis y correcciones ejecutar"
+                        />
+                        <WsButton
+                            variant={batchConfigured ? 'primary' : 'ghost'}
+                            icon={isAuditing ? Icons.Activity : Icons.Play}
+                            label={isAuditing ? 'Auditando...' : 'Analizar'}
+                            badge={tracks.length}
+                            disabled={isAuditing || tracks.length === 0}
+                            onClick={() => (batchConfigured ? handleEjecutarAuditoriaLote() : setBatchModalOpen(true))}
+                            title={batchConfigured ? 'Ejecutar el análisis configurado sobre las pistas cargadas' : 'Primero configura la auditoría'}
+                        />
+                    </div>
+
+                    <div className="ws-toolbar-group ml-auto">
+                        <ExportMenu
+                            disabled={tracks.length === 0}
+                            busy={isExporting || isInjecting}
+                            onSyncAll={handleSincronizarPasaporteUniversal}
+                            onSaveTags={handleGuardarTodoEnFicheros}
+                            targets={[
+                                { id: 'rekordbox', label: 'Rekordbox', ext: '.XML', desc: 'Hot Cues A–H y beatgrid', Logo: PlatformRekordboxLogo, onClick: handleExportarRekordboxXml },
+                                { id: 'serato', label: 'Serato DJ Pro', ext: 'CRATES', desc: 'Markers2, BPM y key en tags', Logo: PlatformSeratoLogo, onClick: handleExportarSerato },
+                                { id: 'traktor', label: 'Traktor Pro', ext: '.NML', desc: 'Colección con Hot Cues 1–8', Logo: PlatformTraktorLogo, onClick: handleExportarTraktor },
+                                { id: 'vdj', label: 'VirtualDJ', ext: '.M3U', desc: 'Lista y tags optimizados', Logo: PlatformVirtualDjLogo, onClick: handleExportarVirtualDJ },
+                                { id: 'xlsx', label: 'Informe Excel', ext: '.XLSX', desc: 'Hojas por destino y auditoría', Logo: null, onClick: handleExportarXLS },
+                            ]}
+                        />
                     </div>
                 </div>
 
@@ -9761,7 +9414,7 @@ const AuditWorkspace = ({
                                     onClick={handleCancelarProceso}
                                     className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 cursor-pointer transition-colors shadow flex items-center gap-1"
                                 >
-                                    <span>✕</span>
+                                    <Icons.Close size={14} className="inline-block align-[-2px]" />
                                     <span>{t('btn_cancel') || 'Cancelar'}</span>
                                 </button>
                             </div>
@@ -9981,7 +9634,7 @@ const AuditWorkspace = ({
                             return (
                                 <div className="px-4 py-2 bg-gradient-to-r from-red-950 via-red-900/60 to-red-950 border-b border-red-600/70 flex items-center justify-between text-xs font-mono shadow-lg animate-pulse shrink-0">
                                     <div className="flex items-center gap-2.5">
-                                        <span className="text-base">🚨</span>
+                                        <Icons.Alert size={14} className="inline-block align-[-2px]" />
                                         <span className="font-black text-red-200 uppercase tracking-wide">
                                             Anti-Muddy Live Guardian: ¡Conflicto de Sub-Graves Detectado!
                                         </span>
@@ -10003,7 +9656,7 @@ const AuditWorkspace = ({
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         {/* Buscador de Cabina con Soporte AI DJ Query */}
                         <div className="relative flex items-center flex-1 max-w-md">
-                            <span className="absolute left-3 text-gray-500 text-xs pointer-events-none">🔍</span>
+                            <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3 text-gray-500  pointer-events-none" />
                             <input 
                                 type="text" 
                                 value={busqueda} 
@@ -10016,7 +9669,7 @@ const AuditWorkspace = ({
                                     onClick={() => setBusqueda('')} 
                                     className="absolute right-2.5 text-gray-500 hover:text-gray-300 text-xs cursor-pointer"
                                 >
-                                    ✕
+                                    <Icons.Close size={14} className="inline-block align-[-2px]" />
                                 </button>
                             )}
                         </div>
@@ -10036,180 +9689,87 @@ const AuditWorkspace = ({
                             );
                         })()}
 
-                        {/* Píldoras de Filtro Rápido */}
-                        <div className="flex gap-1.5 overflow-x-auto scrollbar-none items-center pl-1">
-                            <button 
-                                onClick={() => setFiltro('todos')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
-                                    filtro === 'todos' 
-                                        ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm shadow-djcyan-500/20' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
-                                }`}
-                            >
-                                {t('filter_all_label') || 'Todos'} ({metrics.total || 0})
-                            </button>
+                        {/* DS 3.0 · Filtros consolidados */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            <FilterMenu
+                                value={filtro}
+                                onChange={setFiltro}
+                                allLabel={t('filter_all_label') || 'Todas las pistas'}
+                                allCount={metrics.total || 0}
+                                groups={[
+                                    {
+                                        label: 'Metadatos',
+                                        options: [
+                                            { id: 'missing', label: t('filter_missing_bpm_label') || 'Falta BPM / Key', count: metrics.missing || 0, tone: 'amber' },
+                                            { id: 'missing_meta', label: 'Sin artista / título', count: missingMetaTracks.length, tone: 'amber' },
+                                            { id: 'missing_cover', label: t('filter_missing_cover_label') || 'Sin portada', count: metrics.missing_cover || 0, tone: 'amber' },
+                                            { id: 'missing_cues', label: 'Faltan Hot Cues', count: missingCuesTracks.length, tone: 'amber' },
+                                        ],
+                                    },
+                                    {
+                                        label: 'Calidad de audio',
+                                        options: [
+                                            { id: 'bad_quality', label: 'Mala calidad / fakes', count: badQualityTracks.length, tone: 'rose' },
+                                            { id: 'excellent_quality', label: 'Calidad excelente', count: excellentQualityTracks.length, tone: 'emerald' },
+                                            { id: 'silences_trimmed', label: 'Silencios recortados', count: trimmedSilenceTracks.length, tone: 'cyan' },
+                                        ],
+                                    },
+                                    {
+                                        label: 'Pista de baile',
+                                        options: [
+                                            { id: 'high_energy', label: 'Alta energía', count: highEnergyTracks.length, tone: 'cyan' },
+                                        ],
+                                    },
+                                ]}
+                            />
 
-                            <button 
-                                onClick={() => setFiltro(filtro === 'excellent_quality' ? 'todos' : 'excellent_quality')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1 border shrink-0 ${
-                                    filtro === 'excellent_quality' 
-                                        ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow-sm' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-emerald-300 border-djzinc-800 hover:border-emerald-500/40'
-                                }`}
-                            >
-                                <span>💎</span>
-                                <span>Excelente ({excellentQualityTracks.length})</span>
-                            </button>
+                            <WsButton icon={Icons.Scale} label={t('filter_duplicates_label') || 'Duplicados'} badge={metrics.duplicates || 0} onClick={() => setDuplicateModalOpen(true)} title="Comparar y resolver duplicados" />
+                            <WsButton
+                                icon={Icons.Compass}
+                                label="Mix Oracle"
+                                disabled={tracks.length === 0}
+                                onClick={() => { setMixOracleTargetTrack(currentTrack || tracks[0]); setMixOracleOpen(true); }}
+                                title="Sugerir qué pista mezclar a continuación"
+                            />
 
-                            <button 
-                                onClick={() => setFiltro(filtro === 'bad_quality' ? 'todos' : 'bad_quality')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all flex items-center gap-1 border shrink-0 ${
-                                    filtro === 'bad_quality' 
-                                        ? 'bg-rose-500 text-black border-rose-400 font-black shadow-sm shadow-rose-500/20' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-rose-300 border-djzinc-800 hover:border-rose-500/40'
-                                }`}
-                            >
-                                <span>🚨</span>
-                                <span>Mala Calidad ({badQualityTracks.length})</span>
-                            </button>
-
-                            {badQualityTracks.length > 0 && (
-                                <button 
-                                    type="button"
-                                    onClick={() => handleBuscarReemplazosSpotify(badQualityTracks)}
-                                    disabled={isSearchingSpotifyHD || isAuditing}
-                                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-600/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm shrink-0"
-                                    title={t('tooltip_upgrade_quality') || "Buscar copias oficiales FLAC / Lossless en Descargas para pistas de baja calidad"}
-                                >
-                                    <span>⬇️</span>
-                                    <span>{t('btn_upgrade_quality') || 'Mejorar Calidad'} ({badQualityTracks.length})</span>
-                                </button>
-                            )}
-
-                            {badQualityTracks.length > 0 && (
-                                <label 
-                                    className={`px-2 py-1 rounded-lg text-[10.5px] font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all border shrink-0 select-none ${
-                                        deleteOriginalsOnUpgrade 
-                                            ? 'bg-rose-950/80 border-rose-500 text-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.3)]' 
-                                            : 'bg-djzinc-900 border-djzinc-750 text-gray-400 hover:text-gray-200'
-                                    }`}
-                                    title="Al descargar reemplazos para mejorar calidad, eliminar automáticamente el archivo original de baja calidad del disco duro"
-                                >
-                                    <input 
-                                        type="checkbox" 
-                                        checked={deleteOriginalsOnUpgrade} 
-                                        onChange={(e) => {
-                                            const val = e.target.checked;
-                                            setDeleteOriginalsOnUpgrade(val);
-                                            try { localStorage.setItem('dj_metatagger_delete_originals', val ? 'true' : 'false'); } catch (_) {}
-                                        }} 
-                                        className="w-3 h-3 accent-rose-500 cursor-pointer rounded"
+                            {(filtro === 'bad_quality' && badQualityTracks.length > 0) && (
+                                <>
+                                    <WsButton
+                                        variant="active"
+                                        icon={Icons.Download}
+                                        label={t('btn_upgrade_quality') || 'Mejorar calidad'}
+                                        badge={badQualityTracks.length}
+                                        disabled={isSearchingSpotifyHD || isAuditing}
+                                        onClick={() => handleBuscarReemplazosSpotify(badQualityTracks)}
+                                        title={t('tooltip_upgrade_quality') || 'Buscar copias lossless para las pistas de baja calidad'}
                                     />
-                                    <span>🗑️ Borrar malas al descargar</span>
-                                </label>
+                                    <label className="flex items-center gap-1.5 text-xs text-zinc-400 cursor-pointer select-none shrink-0" title="Eliminar del disco el archivo original al descargar su reemplazo">
+                                        <input
+                                            type="checkbox"
+                                            checked={deleteOriginalsOnUpgrade}
+                                            onChange={(e) => {
+                                                const val = e.target.checked;
+                                                setDeleteOriginalsOnUpgrade(val);
+                                                try { localStorage.setItem('dj_metatagger_delete_originals', val ? 'true' : 'false'); } catch (_) {}
+                                            }}
+                                            className="w-3.5 h-3.5 rounded"
+                                        />
+                                        <span className="hidden lg:inline">Borrar originales</span>
+                                    </label>
+                                </>
                             )}
 
                             {selectedAuditIds.size > 0 && (
-                                <button 
-                                    type="button"
-                                    onClick={() => handleBuscarReemplazosSpotify(tracks.filter(t => selectedAuditIds.has(t.id)))}
+                                <WsButton
+                                    variant="primary"
+                                    icon={Icons.Download}
+                                    label={t('btn_send_to_downloads') || 'Llevar a descargas'}
+                                    badge={selectedAuditIds.size}
                                     disabled={isSearchingSpotifyHD || isAuditing}
-                                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-500/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm animate-pulse shrink-0"
-                                    title={t('tooltip_send_downloads') || "Buscar y llevar a descargas las pistas seleccionadas en máxima calidad (FLAC/Lossless)"}
-                                >
-                                    <span>⬇️</span>
-                                    <span>{t('btn_send_to_downloads') || 'Llevar a Descargas'} ({selectedAuditIds.size})</span>
-                                </button>
+                                    onClick={() => handleBuscarReemplazosSpotify(tracks.filter(t => selectedAuditIds.has(t.id)))}
+                                    title={t('tooltip_send_downloads') || 'Buscar las pistas seleccionadas en máxima calidad'}
+                                />
                             )}
-
-                            <button 
-                                onClick={() => setFiltro(filtro === 'missing_meta' ? 'todos' : 'missing_meta')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
-                                    filtro === 'missing_meta' 
-                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
-                                }`}
-                            >
-                                Sin Artista/Título ({missingMetaTracks.length})
-                            </button>
-
-                            <button 
-                                onClick={() => setFiltro(filtro === 'missing' ? 'todos' : 'missing')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
-                                    filtro === 'missing' 
-                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
-                                }`}
-                            >
-                                {t('filter_missing_bpm_label') || 'Falta BPM/Key'} ({metrics.missing || 0})
-                            </button>
-
-                            <button 
-                                onClick={() => setFiltro(filtro === 'missing_cover' ? 'todos' : 'missing_cover')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
-                                    filtro === 'missing_cover' 
-                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm shadow-amber-500/20' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
-                                }`}
-                            >
-                                {t('filter_missing_cover_label') || 'Sin Cover'} ({metrics.missing_cover || 0})
-                            </button>
-
-                            <button 
-                                onClick={() => setFiltro(filtro === 'missing_cues' ? 'todos' : 'missing_cues')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
-                                    filtro === 'missing_cues' 
-                                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-sm' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
-                                }`}
-                            >
-                                Faltan Cues ({missingCuesTracks.length})
-                            </button>
-
-                            <button 
-                                onClick={() => setFiltro(filtro === 'silences_trimmed' ? 'todos' : 'silences_trimmed')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
-                                    filtro === 'silences_trimmed' 
-                                        ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-sm' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
-                                }`}
-                            >
-                                Silencios Trim ({trimmedSilenceTracks.length})
-                            </button>
-
-                            <button 
-                                onClick={() => setFiltro(filtro === 'high_energy' ? 'todos' : 'high_energy')} 
-                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all border shrink-0 ${
-                                    filtro === 'high_energy' 
-                                        ? 'bg-yellow-500 text-black border-yellow-400 font-black shadow-sm' 
-                                        : 'bg-djzinc-900 text-gray-400 hover:text-white border-djzinc-800 hover:border-djzinc-700'
-                                }`}
-                            >
-                                ⚡ Alta Energía ({highEnergyTracks.length})
-                            </button>
-
-                            {/* 🔮 MIX ORACLE BOTÓN DE FILTRO / RADAR */}
-                            <button 
-                                type="button"
-                                onClick={() => {
-                                    setMixOracleTargetTrack(currentTrack || tracks[0]);
-                                    setMixOracleOpen(true);
-                                }}
-                                disabled={tracks.length === 0}
-                                className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-gradient-to-r from-purple-950 to-indigo-950 hover:from-purple-900 hover:to-indigo-900 text-purple-300 border border-purple-600/50 flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 shrink-0"
-                                title="Abrir Mix Oracle para sugerir qué canción mezclar a continuación"
-                            >
-                                <span>🔮</span>
-                                <span>Mix Oracle</span>
-                            </button>
-
-                            <button 
-                                onClick={() => setDuplicateModalOpen(true)} 
-                                className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 hover:text-amber-300 border border-djzinc-800 hover:border-amber-500/40 cursor-pointer flex items-center gap-1 shadow transition-all active:scale-95 shrink-0"
-                            >
-                                <span>⚖️</span>
-                                <span>{t('filter_duplicates_label') || 'Duplicados'} ({metrics.duplicates || 0})</span>
-                            </button>
                         </div>
                     </div>
 
@@ -10218,77 +9778,13 @@ const AuditWorkspace = ({
 
                 <div ref={tableScrollRef} className="flex-1 overflow-auto bg-[#0f0f13] flex flex-col">
                     {tracks.length === 0 ? (
-                        /* EMPTY STATE TÁCTICO ONBOARDING (DROPZONE & GUÍA EN 3 PASOS) */
-                        <div 
+                        <IngestDropzone
+                            isDragOver={isDragOver}
                             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                             onDragLeave={() => setIsDragOver(false)}
-                            onDrop={(e) => { 
-                                e.preventDefault(); 
-                                setIsDragOver(false); 
-                                handleExplorar(); 
-                            }}
-                            className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none animate-fadeIn my-auto"
-                        >
-                            <div className={`max-w-2xl w-full p-8 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center gap-6 ${
-                                isDragOver 
-                                    ? 'border-djcyan-400 bg-djcyan-950/30 shadow-[0_0_40px_rgba(6,182,212,0.25)] scale-[1.01]' 
-                                    : 'border-djzinc-750 bg-[#0a0b12]/90 hover:border-djcyan-500/40 shadow-xl'
-                            }`}>
-                                {/* Emblema & Título */}
-                                <div className="flex flex-col items-center gap-2">
-                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-djcyan-500/20 to-blue-600/20 border border-djcyan-500/40 flex items-center justify-center text-3xl shadow-inner">
-                                        🎛️
-                                    </div>
-                                    <h2 className="font-syne font-black text-xl sm:text-2xl text-white uppercase tracking-wider mt-1">
-                                        Auditoría & Inteligencia Acústica <span className="text-djcyan-400">DJ</span>
-                                    </h2>
-                                    <p className="text-xs sm:text-sm text-gray-400 max-w-lg leading-relaxed font-sans">
-                                        Ingesta híbrida de alta velocidad. Arrastra carpetas completas o pistas sueltas para calcular BPM exacto, Hot Cues, Key Camelot y certificar archivos sin pérdidas reales.
-                                    </p>
-                                </div>
-
-                                {/* Botón Principal de Ingesta */}
-                                <div className="flex flex-col sm:flex-row items-center gap-3">
-                                    <button 
-                                        type="button"
-                                        onClick={handleExplorar}
-                                        className="bg-gradient-to-r from-djcyan-400 via-djcyan-500 to-blue-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-black font-mono px-6 py-3 rounded-xl text-sm shadow-lg shadow-djcyan-500/25 cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                    >
-                                        <span className="text-base">▷</span>
-                                        <span>Cargar Biblioteca o Pistas</span>
-                                    </button>
-                                </div>
-
-                                {/* Badges de Formatos de Audio Soportados */}
-                                <div className="flex items-center justify-center gap-2 flex-wrap text-[10px] font-mono text-gray-400">
-                                    <span className="text-gray-500">Formatos compatibles:</span>
-                                    {['FLAC 24-bit', 'WAV Studio', 'AIFF', 'MP3 320k', 'M4A / AAC', 'OGG'].map(fmt => (
-                                        <span key={fmt} className="px-2 py-0.5 rounded-md bg-djzinc-900 border border-djzinc-800 text-gray-300">
-                                            {fmt}
-                                        </span>
-                                    ))}
-                                </div>
-
-                                {/* 3 Pasos del Flujo de Trabajo */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-4 border-t border-djzinc-800/80 text-left">
-                                    <div className="p-3 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-1">
-                                        <span className="text-[10px] font-mono font-bold text-djcyan-400 uppercase">Paso 1 • Ingesta</span>
-                                        <strong className="text-xs text-white">Carpetas & Pistas</strong>
-                                        <p className="text-[11px] text-gray-400 font-sans leading-tight">Carga tu biblioteca completa o acumula pistas en la cesta sin sobreescribir.</p>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-1">
-                                        <span className="text-[10px] font-mono font-bold text-purple-400 uppercase">Paso 2 • Auditoría</span>
-                                        <strong className="text-xs text-white">Análisis FFT & Cues</strong>
-                                        <p className="text-[11px] text-gray-400 font-sans leading-tight">Zero-Crossing BPM, Camelot Key, 8 Hot Cues y detección de falsificaciones de bitrate.</p>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-djzinc-900/60 border border-djzinc-800 flex flex-col gap-1">
-                                        <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">Paso 3 • Cabina</span>
-                                        <strong className="text-xs text-white">Sincronización Total</strong>
-                                        <p className="text-[11px] text-gray-400 font-sans leading-tight">Exporta a Rekordbox XML, Serato Crates, Traktor NML, VirtualDJ M3U y Excel multidestino.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            onDrop={(e) => { e.preventDefault(); setIsDragOver(false); handleExplorar(); }}
+                            onBrowse={handleExplorar}
+                        />
                     ) : (
                         <>
                     <table className="w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table">
@@ -10391,12 +9887,12 @@ const AuditWorkspace = ({
                                 )}
                                 {visibleColumns.e && (
                                     <th onClick={() => handleSortAudit('e')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" title="Índice de energía acústica percibida (0% a 100%) según densidad de graves y transitorios rítmicos">
-                                        ⚡ {t('th_energy') || 'Energía'} {renderSortArrowAudit('e')}
+                                        <Icons.Zap size={14} className="inline-block align-[-2px]" /> {t('th_energy') || 'Energía'} {renderSortArrowAudit('e')}
                                     </th>
                                 )}
                                 {visibleColumns.dance && (
                                     <th onClick={() => handleSortAudit('dance')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" title="Índice de regularidad rítmica y cadencia bailable para la pista de baile">
-                                        🕺 {t('th_dance') || 'Dance'} {renderSortArrowAudit('dance')}
+                                        <Icons.Activity size={14} className="inline-block align-[-2px]" /> {t('th_dance') || 'Dance'} {renderSortArrowAudit('dance')}
                                     </th>
                                 )}
                                 {visibleColumns.fase_badge && (
@@ -10433,7 +9929,7 @@ const AuditWorkspace = ({
                                                 onClick={handleResetAllHeaderFilters}
                                                 title="Limpiar todos los filtros de cabecera"
                                                 className="text-amber-400 hover:text-white cursor-pointer font-bold px-1 py-0.5 rounded bg-amber-950/60 border border-amber-600/40"
-                                            >✕</button>
+                                            ><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                                         ) : (lang === 'en' ? 'filtro' : 'filtro')}
                                     </th>
                                 )}
@@ -10723,7 +10219,7 @@ const AuditWorkspace = ({
                                 <tr>
                                     <td colSpan={Math.max(1, Object.values(visibleColumns).filter(Boolean).length)} className="py-16 text-center text-gray-400 font-mono text-xs whitespace-normal px-4">
                                         <div className="flex flex-col items-center justify-center gap-2.5 max-w-md mx-auto">
-                                            <span className="text-3xl">🔍</span>
+                                            <Icons.Search size={14} className="inline-block align-[-2px]" />
                                             <strong className="text-white text-sm">Sin coincidencias con los filtros activos</strong>
                                             <p className="text-[11px] text-gray-400 font-sans leading-relaxed">
                                                 Hay {tracks.length} pista(s) cargadas en la biblioteca, pero los filtros de columna actuales ocultan todos los resultados.
@@ -10733,7 +10229,7 @@ const AuditWorkspace = ({
                                                 onClick={handleResetAllHeaderFilters}
                                                 className="mt-1 px-3 py-1.5 rounded-lg bg-djcyan-500/20 hover:bg-djcyan-500/30 text-djcyan-300 border border-djcyan-500/40 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95"
                                             >
-                                                ✕ Limpiar Filtros de Cabecera
+                                                <Icons.Close size={14} className="inline-block align-[-2px]" /> Limpiar Filtros de Cabecera
                                             </button>
                                         </div>
                                     </td>
@@ -10864,7 +10360,7 @@ const AuditWorkspace = ({
                                                             className="px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black bg-gradient-to-r from-cyan-950 to-purple-950 hover:from-cyan-900 hover:to-purple-900 text-cyan-300 border border-cyan-500/70 cursor-pointer shadow-sm flex items-center justify-center gap-1 transition-all active:scale-95"
                                                             title="FLAC no cumple estándares lossless o es de calidad media/fake. Buscar master oficial en Catálogo Global (SuperFLAC)"
                                                         >
-                                                            <span>💎</span>
+                                                            <Icons.Gem size={14} className="inline-block align-[-2px]" />
                                                             <span>SuperFLAC</span>
                                                         </button>
                                                     ) : isBadQualityTrack(row) ? (
@@ -10876,7 +10372,7 @@ const AuditWorkspace = ({
                                                             className="px-1.5 py-0.5 rounded text-[8px] font-mono font-black bg-amber-950/90 hover:bg-amber-900 text-amber-300 border border-amber-600/70 cursor-pointer shadow flex items-center justify-center gap-1 transition-all active:scale-95"
                                                             title="Buscar versión oficial en el Record Pool para sustituir este track"
                                                         >
-                                                            <span>🔄</span>
+                                                            <Icons.Refresh size={14} className="inline-block align-[-2px]" />
                                                             <span>Catálogo HD</span>
                                                         </button>
                                                     ) : null}
@@ -10889,7 +10385,7 @@ const AuditWorkspace = ({
                                             <td className="py-2 px-3 text-center">
                                                 {isFake ? (
                                                     <span className="text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800" title={`Corte espectral a ${row.cutoff_khz || '--'}kHz`}>
-                                                        ⚠️ Transcode ({row.perdida_pct || 0}%)
+                                                        <Icons.Warning size={14} className="inline-block align-[-2px]" /> Transcode ({row.perdida_pct || 0}%)
                                                     </span>
                                                 ) : row.perdida === 'Sin Pérdida' ? (
                                                     <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60">
@@ -10930,13 +10426,11 @@ const AuditWorkspace = ({
                                             <td className="py-2 px-1.5 text-center text-gray-400 font-mono">{row.duration}</td>
                                         )}
                                         {visibleColumns.bpm && (
-                                            <td className="py-2 px-1.5 text-center"><span className="bg-djzinc-850 text-gray-200 px-1.5 py-0.5 rounded font-mono border border-djzinc-750">{row.b}</span></td>
+                                            <td className="py-2 px-1.5 text-center"><span className="ws-bpm text-[13px]">{row.b || '--'}</span></td>
                                         )}
                                         {visibleColumns.key && (
-                                            <td className="py-2 px-1.5 text-center">
-                                                <span className="px-1.5 py-0.5 rounded font-mono font-bold bg-djcyan-950 text-djcyan-400 border border-djcyan-800/50" title={getHarmonicKeyDisplay(row.k)}>
-                                                    {getHarmonicKeyDisplay(row.k)}
-                                                </span>
+                                            <td className="py-2 px-1.5 text-center" title={getHarmonicKeyDisplay(row.k)}>
+                                                <CamelotKeyBadge value={row.k} />
                                             </td>
                                         )}
                                         {visibleColumns.cues && (
@@ -10955,7 +10449,7 @@ const AuditWorkspace = ({
                                                     className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-pink-950/80 hover:bg-pink-900 text-pink-300 border border-pink-800/60 transition-all shadow active:scale-95 cursor-pointer"
                                                     title="Abrir Estudio de Hot Cues a pantalla completa con reproductor"
                                                 >
-                                                    🎛️ 8 Cues
+                                                    <Icons.Sliders size={14} className="inline-block align-[-2px]" /> 8 Cues
                                                 </button>
                                                 <button
                                                     type="button"
@@ -10968,7 +10462,7 @@ const AuditWorkspace = ({
                                                     className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-800/60 transition-all shadow active:scale-95 cursor-pointer ml-1"
                                                     title="Añadir pista a Set-Builder & Energy Flow Canvas"
                                                 >
-                                                    ➕ Set
+                                                    <Icons.Plus size={14} className="inline-block align-[-2px]" /> Set
                                                 </button>
                                             </td>
                                         )}
@@ -10978,7 +10472,7 @@ const AuditWorkspace = ({
                                             <td className="py-2 px-2 text-center">
                                                 <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
                                                     <div className="flex items-center justify-between w-full text-[9px] font-mono">
-                                                        <span className="text-gray-400">⚡</span>
+                                                        <Icons.Zap size={14} className="inline-block align-[-2px] text-gray-400" />
                                                         <span className={`font-bold ${row.e >= 82 ? 'text-red-400' : row.e >= 68 ? 'text-amber-400' : 'text-djcyan-400'}`}>{row.e || 80}%</span>
                                                     </div>
                                                     <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
@@ -10996,7 +10490,7 @@ const AuditWorkspace = ({
                                             <td className="py-2 px-2 text-center">
                                                 <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
                                                     <div className="flex items-center justify-between w-full text-[9px] font-mono">
-                                                        <span className="text-gray-400">🕺</span>
+                                                        <Icons.Activity size={14} className="inline-block align-[-2px] text-gray-400" />
                                                         <span className="font-bold text-purple-300">{row.dance || row.danceability || 80}%</span>
                                                     </div>
                                                     <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
@@ -11062,13 +10556,13 @@ const AuditWorkspace = ({
                                                             if (isCurBass && isRowBass) {
                                                                 return (
                                                                     <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-red-950 text-red-300 border border-red-700/80 animate-pulse" title="Riesgo de colisión en subgraves 30-80 Hz">
-                                                                        ⚠️ Colisión Bass
+                                                                        <Icons.Warning size={14} className="inline-block align-[-2px]" /> Colisión Bass
                                                                     </span>
                                                                 );
                                                             } else if ((isCurBass && (row.acoustic_role === 'Vocal / Lead' || row.acoustic_role === 'Percussive Tool')) || (isRowBass && (currentTrack.acoustic_role === 'Vocal / Lead' || currentTrack.acoustic_role === 'Percussive Tool'))) {
                                                                 return (
                                                                     <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/80" title="Frecuencias complementarias: Mezcla limpia garantizada">
-                                                                        🟢 Anti-Muddy Compl.
+                                                                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 " aria-hidden="true" /> Anti-Muddy Compl.
                                                                     </span>
                                                                 );
                                                             }
@@ -11083,7 +10577,7 @@ const AuditWorkspace = ({
                                         {visibleColumns.comment && (
                                             <td className="py-2 px-2 text-left">
                                                 <div className="flex items-center gap-1.5 max-w-[260px]">
-                                                    <span className="text-emerald-400 text-xs shrink-0">💬</span>
+                                                    <Icons.MessageSquare size={14} className="inline-block align-[-2px] text-emerald-400  shrink-0" />
                                                     <span className="text-[10.5px] font-mono text-gray-200 truncate" title={row.comment || `[${row.b || '--'} BPM | ${row.k || '--'}] Intro limpia 32b • Drop contundente • Outro 64b`}>
                                                         {row.comment || `[${row.b || '--'} BPM | ${row.k || '--'}] Intro limpia 32b • Drop contundente • Outro 64b`}
                                                     </span>
@@ -11121,7 +10615,7 @@ const AuditWorkspace = ({
                                                     className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-800/60 cursor-pointer transition-all active:scale-90"
                                                     title="Quitar pista del análisis (eliminar de la lista global)"
                                                 >
-                                                    <span className="text-xs">🗑️</span>
+                                                    <Icons.Trash size={14} className="inline-block align-[-2px]" />
                                                 </button>
                                             </td>
                                         )}
@@ -11137,7 +10631,7 @@ const AuditWorkspace = ({
                     <div className="block md:hidden p-2 space-y-2.5 pb-36">
                         {tracksFiltrados.length === 0 && !isAuditing && (
                             <div className="py-14 text-center text-gray-400 font-mono text-xs px-4 flex flex-col items-center gap-2">
-                                <span className="text-2xl">🔍</span>
+                                <Icons.Search size={14} className="inline-block align-[-2px]" />
                                 <span className="text-white font-bold">Sin coincidencias con los filtros</span>
                                 <button
                                     type="button"
@@ -11245,7 +10739,7 @@ const AuditWorkspace = ({
                                         )}
                                         {row.e && (
                                             <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-black bg-amber-950/60 text-amber-300 border border-amber-800/60">
-                                                ⚡ {row.e}%
+                                                <Icons.Zap size={14} className="inline-block align-[-2px]" /> {row.e}%
                                             </span>
                                         )}
                                         <div className="ml-auto flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -11257,7 +10751,7 @@ const AuditWorkspace = ({
                                                 }}
                                                 className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-pink-950/80 text-pink-300 border border-pink-800/60 cursor-pointer"
                                             >
-                                                🎛️ Cues
+                                                <Icons.Sliders size={14} className="inline-block align-[-2px]" /> Cues
                                             </button>
                                             <button
                                                 type="button"
@@ -11266,7 +10760,7 @@ const AuditWorkspace = ({
                                                 }}
                                                 className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950/80 text-djcyan-300 border border-djcyan-800/60 cursor-pointer"
                                             >
-                                                ➕ Set
+                                                <Icons.Plus size={14} className="inline-block align-[-2px]" /> Set
                                             </button>
                                             <button
                                                 type="button"
@@ -11274,7 +10768,7 @@ const AuditWorkspace = ({
                                                 className="p-1 rounded text-[11px] font-mono bg-red-950/60 hover:bg-red-900 text-red-400 hover:text-white border border-red-800/60 cursor-pointer transition-colors active:scale-90"
                                                 title="Quitar del análisis"
                                             >
-                                                🗑️
+                                                <Icons.Trash size={14} className="inline-block align-[-2px]" />
                                             </button>
                                         </div>
                                     </div>
@@ -11303,7 +10797,7 @@ const AuditWorkspace = ({
                                                 }}
                                                 className="px-2.5 py-1 rounded bg-gradient-to-r from-emerald-500 to-djcyan-500 hover:from-emerald-400 hover:to-djcyan-400 text-black text-[10px] font-mono font-black flex items-center gap-1 shadow cursor-pointer active:scale-95"
                                             >
-                                                <span>🔍</span>
+                                                <Icons.Search size={14} className="inline-block align-[-2px]" />
                                                 <span>SuperFLAC Lossless HD</span>
                                             </button>
                                         </div>
@@ -11328,7 +10822,7 @@ const AuditWorkspace = ({
                                 className="w-6 h-6 rounded-full bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-bold text-xs cursor-pointer border border-djzinc-700 transition-colors"
                                 title={t('btn_close_panel') || 'Cerrar Panel'}
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
                     </div>
@@ -11347,7 +10841,7 @@ const AuditWorkspace = ({
                             className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-pink-950/80 via-purple-950/80 to-djzinc-900 hover:from-pink-900/90 hover:via-purple-900/90 hover:to-djzinc-850 text-pink-300 hover:text-white border border-pink-700/60 font-mono text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-pink-950/40 transition-all active:scale-[0.98]"
                             title="Abrir este track en la pestaña Estudio Hot Cues a pantalla completa con Beatgrid ampliado"
                         >
-                            <span>🎛️</span>
+                            <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                             <span>{t('btn_edit_cues_studio') || 'Editar Hot Cues en Estudio →'}</span>
                         </button>
 
@@ -11388,7 +10882,7 @@ const AuditWorkspace = ({
                         <div className="p-3 bg-gradient-to-br from-cyan-950/60 via-purple-950/40 to-djzinc-900 border border-cyan-500/70 rounded-xl flex flex-col gap-2 shadow-lg shadow-cyan-950/30">
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] font-black text-cyan-300 flex items-center gap-1.5">
-                                    <span>💎</span> SuperFLAC: No Cumple Hi-Res
+                                    <Icons.Gem size={14} className="inline-block align-[-2px]" /> SuperFLAC: No Cumple Hi-Res
                                 </span>
                                 <span className="text-[9px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-700/60 font-bold">
                                     {currentTrack.es_fake ? 'FAKE / TRANSCODE' : (currentTrack.calidad || 'CALIDAD MEDIA')}
@@ -11411,7 +10905,7 @@ const AuditWorkspace = ({
                         <div className="p-3 bg-amber-950/40 border border-amber-600/70 rounded-lg flex flex-col gap-2">
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
-                                    <span>⚠️</span> Calidad Sub-óptima Detectada
+                                    <Icons.Warning size={14} className="inline-block align-[-2px]" /> Calidad Sub-óptima Detectada
                                 </span>
                                 <span className="text-[9px] font-mono text-red-400 bg-red-950 px-1.5 py-0.5 rounded border border-red-800 font-bold">
                                     {currentTrack.es_fake ? 'FLAC FAKE' : currentTrack.calidad || 'Baja Calidad'}
@@ -11426,7 +10920,7 @@ const AuditWorkspace = ({
                                 disabled={isSearchingSpotifyHD}
                                 className="w-full py-1.5 px-3 rounded bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-black font-black text-xs cursor-pointer shadow transition-all active:scale-95 flex items-center justify-center gap-1.5"
                             >
-                                <span>🔄</span>
+                                <Icons.Refresh size={14} className="inline-block align-[-2px]" />
                                 <span>{isSearchingSpotifyHD ? 'Buscando en Catálogo...' : 'Buscar Reemplazo HD en Catálogo'}</span>
                             </button>
                         </div>
@@ -11451,7 +10945,7 @@ const AuditWorkspace = ({
                     <div className="bg-djzinc-950 p-3 rounded-lg border border-djzinc-800 space-y-3">
                         <div className="flex items-center justify-between text-xs pb-2 border-b border-djzinc-850">
                             <span className="text-gray-300 font-bold flex items-center gap-1">
-                                <span>🔬 Pureza & Calidad Acústica</span>
+                                <span><Icons.ZoomIn size={14} className="inline-block align-[-2px]" /> Pureza & Calidad Acústica</span>
                                 <InfoTip title="Teorema de Nyquist y Pérdida" text="En audio sin pérdida (FLAC/WAV a 44.1kHz), la frecuencia máxima teórica es de 22.05kHz cubriendo todo el rango audible humano. Un corte abrupto a 16kHz o 20kHz evidencia transcode falso desde MP3 con pérdida." />
                             </span>
                             <button 
@@ -11490,7 +10984,7 @@ const AuditWorkspace = ({
                         {/* Veredicto de Integridad */}
                         {Boolean(currentTrack.es_fake || (currentTrack.format === 'FLAC' && String(currentTrack.status || '').includes('Fake'))) ? (
                             <div className="p-2 bg-red-950/80 border border-red-700/80 rounded text-[11px] font-mono text-red-300 flex items-center gap-2 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.3)]">
-                                <span>⚠️</span>
+                                <Icons.Warning size={14} className="inline-block align-[-2px]" />
                                 <div>
                                     <span className="font-bold block uppercase">FLAC FAKE DETECTADO</span>
                                     <span className="text-[10px] text-red-400">Corte a {currentTrack.cutoff_khz}kHz. Archivo inflado desde MP3 con pérdida.</span>
@@ -11498,7 +10992,7 @@ const AuditWorkspace = ({
                             </div>
                         ) : (
                             <div className="p-2 bg-emerald-950/50 border border-emerald-800/60 rounded text-[11px] font-mono text-emerald-300 flex items-center gap-2">
-                                <span>✓</span>
+                                <Icons.Check size={14} className="inline-block align-[-2px]" />
                                 <div>
                                     <span className="font-bold block uppercase">{currentTrack.status || 'Audio Auténtico'}</span>
                                     <span className="text-[10px] text-emerald-400/90">{currentTrack.perdida || 'Sin Pérdida (Rango audible 100% preservado)'}</span>
@@ -11510,7 +11004,7 @@ const AuditWorkspace = ({
                         <div className="bg-djzinc-900/80 p-2.5 rounded border border-djzinc-800 space-y-1.5">
                             <div className="flex items-center justify-between text-xs">
                                 <span className="text-gray-300 font-bold flex items-center gap-1">
-                                    <span>🔊 Sonoridad & Dinámica (EBU R128)</span>
+                                    <span><Icons.Volume size={14} className="inline-block align-[-2px]" /> Sonoridad & Dinámica (EBU R128)</span>
                                     <InfoTip title="Sonoridad LUFS y True Peak" text="Mide el volumen percibido para evitar saltos en cabina. -8 a -11 LUFS es el estándar de club moderno. True Peak > 0.0 dBFS indica clipping y distorsión." />
                                 </span>
                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${currentTrack.clipping ? 'bg-red-950 text-red-400 border border-red-700 animate-pulse' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'}`}>
@@ -11562,7 +11056,7 @@ const AuditWorkspace = ({
                                     className="px-2 py-0.5 text-[9px] font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 rounded border border-amber-800/80 cursor-pointer transition-colors"
                                     title="Preescucha directa desde el punto de recorte"
                                 >
-                                    ▶ Trim
+                                    <Icons.Play size={14} className="inline-block align-[-2px]" /> Trim
                                 </button>
                             </div>
                         </div>
@@ -11591,7 +11085,7 @@ const AuditWorkspace = ({
                                     className="px-2 py-0.5 text-[9px] font-bold bg-djcyan-950/70 hover:bg-djcyan-900 text-djcyan-300 rounded border border-djcyan-800/80 cursor-pointer transition-colors"
                                     title="Preescucha directa desde el primer golpe de bombo"
                                 >
-                                    ▶ Beat 1
+                                    <Icons.Play size={14} className="inline-block align-[-2px]" /> Beat 1
                                 </button>
                             </div>
                         </div>
@@ -11641,7 +11135,7 @@ const AuditWorkspace = ({
                                     className="text-[9px] font-mono font-bold text-djcyan-400 hover:text-djcyan-300 flex items-center gap-0.5 cursor-pointer"
                                     title="Abrir Rueda Armónica Camelot Interactiva"
                                 >
-                                    🎡 Rueda
+                                    <Icons.Disc size={14} className="inline-block align-[-2px]" /> Rueda
                                 </button>
                             </div>
                             <select 
@@ -11778,7 +11272,7 @@ const AuditWorkspace = ({
                         </div>
                         <div className="flex items-center justify-between pt-1 border-t border-djzinc-850 text-[10px]">
                             <span className="text-gray-400 font-mono truncate max-w-[210px]" title={`/${currentTrack.genre || 'Tech House'}/${currentTrack.subgenre || ''}/`}>
-                                📁 /{currentTrack.genre || 'Tech House'}/{currentTrack.subgenre || 'General'}/
+                                <Icons.Folder size={14} className="inline-block align-[-2px]" /> /{currentTrack.genre || 'Tech House'}/{currentTrack.subgenre || 'General'}/
                             </span>
                             <button
                                 type="button"
@@ -11786,7 +11280,7 @@ const AuditWorkspace = ({
                                 className="px-2 py-1 bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 border border-djcyan-700/60 rounded font-bold text-[9px] cursor-pointer transition-colors shadow active:scale-95"
                                 title="Enrutar y copiar/mover archivo a su carpeta física y crate Serato"
                             >
-                                🚚 Enrutar a Crate
+                                <Icons.Package size={14} className="inline-block align-[-2px]" /> Enrutar a Crate
                             </button>
                         </div>
                     </div>
@@ -11848,7 +11342,7 @@ const AuditWorkspace = ({
                         className="w-full py-2 bg-gradient-to-r from-purple-900 to-indigo-900 hover:from-purple-800 hover:to-indigo-800 text-purple-200 border border-purple-500/50 rounded font-mono font-bold text-xs shadow-md cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
                         title="Buscar en la biblioteca los tracks armónica y espectralmente compatibles con este tema"
                     >
-                        <span>🔮</span>
+                        <Icons.Compass size={14} className="inline-block align-[-2px]" />
                         <span>Buscar Parejas (Mix Oracle)</span>
                     </button>
 
@@ -11866,7 +11360,7 @@ const AuditWorkspace = ({
                         className="w-full py-1.5 bg-red-950/50 hover:bg-red-900/80 text-red-300 hover:text-white rounded border border-red-800/60 font-mono text-xs font-semibold cursor-pointer transition-colors flex items-center justify-center gap-1.5"
                         title="Quitar este archivo de la lista y del análisis global"
                     >
-                        <span>🗑️</span>
+                        <Icons.Trash size={14} className="inline-block align-[-2px]" />
                         <span>Quitar este track del análisis</span>
                     </button>
                 </div>
@@ -11894,7 +11388,7 @@ const AuditWorkspace = ({
                             className="px-3 py-1.5 rounded-xl text-xs font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-200 border border-djzinc-750 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
                             title="Buscar e incrustar carátulas 600x600 en las pistas seleccionadas"
                         >
-                            <span>🖼️</span>
+                            <Icons.Image size={14} className="inline-block align-[-2px]" />
                             <span>{t('batch_covers') || 'Carátulas'}</span>
                         </button>
 
@@ -11906,7 +11400,7 @@ const AuditWorkspace = ({
                             className="px-3 py-1.5 rounded-xl text-xs font-bold bg-djzinc-900 hover:bg-djzinc-850 text-gray-200 border border-djzinc-750 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
                             title="Eliminar spam y normalizar etiquetas de las pistas seleccionadas"
                         >
-                            <span>🧹</span>
+                            <Icons.Trash size={14} className="inline-block align-[-2px]" />
                             <span>{t('batch_clean') || 'Limpiar'}</span>
                         </button>
 
@@ -11918,7 +11412,7 @@ const AuditWorkspace = ({
                             className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-600/60 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-sm"
                             title={t('tooltip_send_downloads') || "Buscar y llevar a descargas las pistas seleccionadas en máxima calidad (FLAC/Lossless)"}
                         >
-                            <span>⬇️</span>
+                            <Icons.Download size={14} className="inline-block align-[-2px]" />
                             <span>{t('btn_send_to_downloads') || 'Llevar a Descargas'}</span>
                         </button>
 
@@ -11930,7 +11424,7 @@ const AuditWorkspace = ({
                             className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black flex items-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95"
                             title="Persistir cambios físicamente en disco"
                         >
-                            <span>💾</span>
+                            <Icons.Save size={14} className="inline-block align-[-2px]" />
                             <span>{t('batch_save') || 'Guardar'}</span>
                         </button>
 
@@ -11941,7 +11435,7 @@ const AuditWorkspace = ({
                             className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 flex items-center gap-1 cursor-pointer transition-all active:scale-95"
                             title="Quitar las pistas seleccionadas del análisis"
                         >
-                            <span>🗑️</span>
+                            <Icons.Trash size={14} className="inline-block align-[-2px]" />
                         </button>
 
                         <button 
@@ -11950,7 +11444,7 @@ const AuditWorkspace = ({
                             className="px-2 py-1.5 rounded-xl text-[11px] font-bold text-gray-400 hover:text-white transition-colors cursor-pointer"
                             title="Deseleccionar todas"
                         >
-                            ✕
+                            <Icons.Close size={14} className="inline-block align-[-2px]" />
                         </button>
                     </div>
                 </div>
@@ -12009,7 +11503,7 @@ const AuditWorkspace = ({
                                 onClick={() => setFftModalOpen(false)} 
                                 className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center font-bold text-xs cursor-pointer"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
 
@@ -12125,7 +11619,7 @@ const AuditWorkspace = ({
                                     <Icons.Library /> Explorador de Biblioteca & Selección de Archivos
                                 </span>
                             </div>
-                            <button onClick={() => setFsBrowserOpen(false)} className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer">✕</button>
+                            <button onClick={() => setFsBrowserOpen(false)} className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                         </div>
 
                         <div className="px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
@@ -12167,7 +11661,7 @@ const AuditWorkspace = ({
                                         : 'text-gray-400 hover:text-white'
                                 }`}
                             >
-                                <span>📁 Subcarpetas</span>
+                                <span><Icons.Folder size={14} className="inline-block align-[-2px]" /> Subcarpetas</span>
                                 <span className="px-1.5 py-0.2 bg-djzinc-800 text-[10px] rounded-full text-gray-300">{fsFolders.length}</span>
                                 {stagedFolders.length > 0 && (
                                     <span className="px-1.5 py-0.2 bg-emerald-500 text-black text-[10px] font-bold rounded-full">
@@ -12183,7 +11677,7 @@ const AuditWorkspace = ({
                                         : 'text-gray-400 hover:text-white'
                                 }`}
                             >
-                                <span>🎵 Pistas Sueltas</span>
+                                <span><Icons.Music size={14} className="inline-block align-[-2px]" /> Pistas Sueltas</span>
                                 <span className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
                                     stagedFiles.length > 0 ? 'bg-djcyan-500 text-black' : 'bg-djzinc-800 text-gray-300'
                                 }`}>
@@ -12217,7 +11711,7 @@ const AuditWorkspace = ({
                                                 }`}
                                             >
                                                 <div className="flex items-center gap-2.5 min-w-0">
-                                                    <span className="text-amber-400 text-base">📁</span>
+                                                    <Icons.Folder size={14} className="inline-block align-[-2px] text-amber-400" />
                                                     <span className="text-xs text-gray-200 group-hover:text-white font-medium truncate">{f.name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0">
@@ -12256,7 +11750,7 @@ const AuditWorkspace = ({
                                             </label>
                                             {stagedFiles.length > 0 && (
                                                 <span className="text-djcyan-400 text-[11px] font-bold">
-                                                    ✓ {stagedFiles.length} pista(s) acumuladas en cesta
+                                                    <Icons.Check size={14} className="inline-block align-[-2px]" /> {stagedFiles.length} pista(s) acumuladas en cesta
                                                 </span>
                                             )}
                                         </div>
@@ -12288,7 +11782,7 @@ const AuditWorkspace = ({
                                                             onChange={() => {}}
                                                             className="rounded bg-djzinc-950 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
                                                         />
-                                                        <span className="text-djcyan-400 text-sm">🎵</span>
+                                                        <Icons.Music size={14} className="inline-block align-[-2px] text-djcyan-400" />
                                                         <span className="text-xs truncate font-mono">{fileItem.name}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 shrink-0 text-[10px] font-mono">
@@ -12335,7 +11829,7 @@ const AuditWorkspace = ({
                                         onClick={handleConfirmarSeleccionLote}
                                         className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-djcyan-400 hover:from-emerald-400 hover:to-djcyan-300 text-black font-extrabold text-xs rounded-lg shadow-lg shadow-emerald-950/40 cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5 font-mono"
                                     >
-                                        <span>📥 Cargar Cesta Completa ({stagedFolders.length} carp., {stagedFiles.length} pistas)</span>
+                                        <span><Icons.Download size={14} className="inline-block align-[-2px]" /> Cargar Cesta Completa ({stagedFolders.length} carp., {stagedFiles.length} pistas)</span>
                                     </button>
                                 ) : (
                                     <button 
@@ -12343,7 +11837,7 @@ const AuditWorkspace = ({
                                         onClick={() => handleSeleccionarCarpetaUI(fsCurrentPath)} 
                                         className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded-lg shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5 font-mono"
                                     >
-                                        <span>📁 Cargar Toda la Carpeta Actual</span>
+                                        <span><Icons.Folder size={14} className="inline-block align-[-2px]" /> Cargar Toda la Carpeta Actual</span>
                                     </button>
                                 )}
                             </div>
@@ -12412,9 +11906,7 @@ const AuditWorkspace = ({
                         {/* Cabecera */}
                         <div className="p-4 bg-gradient-to-r from-red-950 via-[#180808] to-zinc-950 border-b border-red-900/40 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <span className="text-2xl p-2 rounded-xl bg-red-900/60 border border-red-500/50 text-red-300">
-                                    🗑️
-                                </span>
+                                <Icons.Trash size={14} className="inline-block align-[-2px] p-2 rounded-xl bg-red-900/60 border border-red-500/50 text-red-300" />
                                 <div>
                                     <h3 className="font-syne font-black text-white text-base tracking-wide flex items-center gap-2">
                                         <span>GESTIÓN DE ELIMINACIÓN DE PISTAS</span>
@@ -12431,7 +11923,7 @@ const AuditWorkspace = ({
                                 onClick={() => setDeleteModalState(prev => ({ ...prev, open: false }))}
                                 className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
 
@@ -12474,7 +11966,7 @@ const AuditWorkspace = ({
                                 />
                                 <div>
                                     <div className="text-sm font-bold text-white flex items-center gap-1.5">
-                                        <span>🗑️ Mover a la Papelera de reciclaje</span>
+                                        <span><Icons.Trash size={14} className="inline-block align-[-2px]" /> Mover a la Papelera de reciclaje</span>
                                         <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">Recomendado</span>
                                     </div>
                                     <p className="text-xs text-gray-400 mt-0.5">
@@ -12525,7 +12017,7 @@ const AuditWorkspace = ({
                                 />
                                 <div>
                                     <div className="text-sm font-bold text-red-400 flex items-center gap-1.5">
-                                        <span>⚠️ Eliminación física permanente</span>
+                                        <span><Icons.Warning size={14} className="inline-block align-[-2px]" /> Eliminación física permanente</span>
                                         <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-700 font-mono">Irreversible</span>
                                     </div>
                                     <p className="text-xs text-gray-400 mt-0.5">
@@ -12587,7 +12079,7 @@ const AuditWorkspace = ({
                         {/* Cabecera */}
                         <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0">
                             <div className="flex items-center gap-3">
-                                <span className="text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner">⚙️</span>
+                                <Icons.Gear size={14} className="inline-block align-[-2px] p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" />
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
@@ -12608,7 +12100,7 @@ const AuditWorkspace = ({
                                 className="w-9 h-9 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-750 flex items-center justify-center cursor-pointer transition-colors text-sm font-bold shadow-sm"
                                 title="Cerrar modal (Esc)"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
 
@@ -12616,7 +12108,7 @@ const AuditWorkspace = ({
                         <div className="p-4 border-b border-djzinc-800/80 bg-[#080910] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                             {/* Buscador en vivo */}
                             <div className="relative flex-1 max-w-md">
-                                <span className="absolute left-3 top-2.5 text-xs text-gray-400">🔍</span>
+                                <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3 top-2.5  text-gray-400" />
                                 <input 
                                     type="text" 
                                     value={columnSearchText}
@@ -12629,7 +12121,7 @@ const AuditWorkspace = ({
                                         type="button" 
                                         onClick={() => setColumnSearchText('')}
                                         className="absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-white cursor-pointer"
-                                    >✕</button>
+                                    ><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                                 )}
                             </div>
 
@@ -12641,28 +12133,28 @@ const AuditWorkspace = ({
                                     onClick={() => setColumnPreset('all')}
                                     className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    👁️ Ver Todas (24)
+                                    <Icons.Eye size={14} className="inline-block align-[-2px]" /> Ver Todas (24)
                                 </button>
                                 <button 
                                     type="button" 
                                     onClick={() => setColumnPreset('dj')}
                                     className="px-2.5 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    ⚡ Cabina DJ (8)
+                                    <Icons.Zap size={14} className="inline-block align-[-2px]" /> Cabina DJ (8)
                                 </button>
                                 <button 
                                     type="button" 
                                     onClick={() => setColumnPreset('audio')}
                                     className="px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    🔬 Auditoría Acústica (9)
+                                    <Icons.ZoomIn size={14} className="inline-block align-[-2px]" /> Auditoría Acústica (9)
                                 </button>
                                 <button 
                                     type="button" 
                                     onClick={() => setColumnPreset('tags')}
                                     className="px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    🏷️ Metadatos (7)
+                                    <Icons.Tag size={14} className="inline-block align-[-2px]" /> Metadatos (7)
                                 </button>
                             </div>
                         </div>
@@ -12780,7 +12272,7 @@ const AuditWorkspace = ({
                                 onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
                                 className="px-5 py-2 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95"
                             >
-                                ✓ Aplicar y Guardar ({Object.values(visibleColumns).filter(Boolean).length} Activas)
+                                <Icons.Check size={14} className="inline-block align-[-2px]" /> Aplicar y Guardar ({Object.values(visibleColumns).filter(Boolean).length} Activas)
                             </button>
                         </div>
                     </div>
@@ -13390,7 +12882,7 @@ const HotCuesWorkspace = ({
                         className="px-3 py-1.5 text-xs font-mono font-black bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg shadow-sm transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
                         title="Seleccionar carpeta de música"
                     >
-                        <span>📂</span>
+                        <Icons.Folder size={14} className="inline-block align-[-2px]" />
                         <span>{t('btn_change_dir') || 'Seleccionar'}</span>
                     </button>
                     <button
@@ -13399,7 +12891,7 @@ const HotCuesWorkspace = ({
                         className="px-2.5 py-1.5 text-xs font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all shrink-0 active:scale-95"
                         title="Recargar directorio actual"
                     >
-                        🔄
+                        <Icons.Refresh size={14} className="inline-block align-[-2px]" />
                     </button>
                 </div>
 
@@ -13438,7 +12930,7 @@ const HotCuesWorkspace = ({
                                 }`}
                                 title="Ver o esconder la tabla completa de pistas de la carpeta"
                             >
-                                <span>📋</span>
+                                <Icons.Copy size={14} className="inline-block align-[-2px]" />
                                 <span className="hidden sm:inline">{showTrackListDrawer ? 'Ocultar Lista' : `Ver Lista (${filteredTracks.length})`}</span>
                                 <span className="sm:hidden">{filteredTracks.length}</span>
                             </button>
@@ -13449,7 +12941,7 @@ const HotCuesWorkspace = ({
                                 className="flex md:hidden px-3 py-1.5 bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-black font-mono font-black text-xs rounded-xl shadow-[0_0_12px_rgba(16,185,129,0.4)] border border-emerald-300/60 cursor-pointer transition-all active:scale-95 items-center gap-1 shrink-0"
                                 title="Guardar pista en disco"
                             >
-                                <span>💾</span>
+                                <Icons.Save size={14} className="inline-block align-[-2px]" />
                                 <span className="text-[11px]">Guardar</span>
                             </button>
                         </>
@@ -13474,7 +12966,7 @@ const HotCuesWorkspace = ({
                         className="px-2.5 py-1 text-xs font-mono font-black bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg shadow-sm transition-all flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer"
                         title="Seleccionar carpeta de música"
                     >
-                        <span>📂</span>
+                        <Icons.Folder size={14} className="inline-block align-[-2px]" />
                         <span>{t('btn_change_dir') || 'Cambiar'}</span>
                     </button>
                     <button
@@ -13483,7 +12975,7 @@ const HotCuesWorkspace = ({
                         className="px-2 py-1 text-xs font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all shrink-0 active:scale-95"
                         title="Recargar directorio actual"
                     >
-                        🔄
+                        <Icons.Refresh size={14} className="inline-block align-[-2px]" />
                     </button>
                     <button
                         type="button"
@@ -13492,7 +12984,7 @@ const HotCuesWorkspace = ({
                         className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 hover:text-white border border-djzinc-700 font-mono font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1 shrink-0 disabled:opacity-50"
                         title="Inyectar y guardar todos los tracks del lote en disco"
                     >
-                        <span>📦</span>
+                        <Icons.Package size={14} className="inline-block align-[-2px]" />
                         <span>{t('save_all_disk') || 'Guardar Lote'}</span>
                     </button>
                     <button
@@ -13501,7 +12993,7 @@ const HotCuesWorkspace = ({
                         className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 font-mono font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1 shrink-0"
                         title="Auto-mapear los 8 pads con la Plantilla Club Extended"
                     >
-                        <span>⚡</span>
+                        <Icons.Zap size={14} className="inline-block align-[-2px]" />
                         <span>Auto-Cues Club</span>
                     </button>
                     {saveStatus && (
@@ -13524,7 +13016,7 @@ const HotCuesWorkspace = ({
                         className="px-4 py-1.5 bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-black font-mono font-black text-xs rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.45)] border border-emerald-300/60 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                         title="Guardar cues, downbeat y metadatos de esta pista en el archivo físico"
                     >
-                        <span>💾</span>
+                        <Icons.Save size={14} className="inline-block align-[-2px]" />
                         <span>{t('save_track_disk') || 'Guardar Pista'}</span>
                     </button>
                     <button
@@ -13534,7 +13026,7 @@ const HotCuesWorkspace = ({
                         className="px-3 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 hover:text-white border border-djzinc-700 font-mono font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-50"
                         title="Inyectar y guardar todos los tracks del lote en disco"
                     >
-                        <span>📦</span>
+                        <Icons.Package size={14} className="inline-block align-[-2px]" />
                         <span>{t('save_all_disk') || 'Guardar Lote'}</span>
                     </button>
                 </div>
@@ -13545,7 +13037,7 @@ const HotCuesWorkspace = ({
                 <div className="bg-[#08080d] border-b border-djzinc-800 p-4 shadow-2xl animate-fadeIn max-h-72 overflow-hidden flex flex-col shrink-0">
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-djzinc-800/80">
                         <div className="flex items-center gap-2">
-                            <span className="text-sm">🎵</span>
+                            <Icons.Music size={14} className="inline-block align-[-2px]" />
                             <h3 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
                                 Pistas en Carpeta: {filteredTracks.length} archivos
                             </h3>
@@ -13563,7 +13055,7 @@ const HotCuesWorkspace = ({
                                 onClick={() => setShowTrackListDrawer(false)}
                                 className="text-gray-400 hover:text-white text-xs font-mono px-2 py-1 bg-djzinc-900 rounded border border-djzinc-750 cursor-pointer"
                             >
-                                ✕ Cerrar
+                                <Icons.Close size={14} className="inline-block align-[-2px]" /> Cerrar
                             </button>
                         </div>
                     </div>
@@ -13639,7 +13131,7 @@ const HotCuesWorkspace = ({
                                                         }}
                                                         className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-mono font-bold rounded cursor-pointer shadow active:scale-95"
                                                     >
-                                                        ▶ Cargar
+                                                        <Icons.Play size={14} className="inline-block align-[-2px]" /> Cargar
                                                     </button>
                                                     <button
                                                         type="button"
@@ -13647,7 +13139,7 @@ const HotCuesWorkspace = ({
                                                         className="p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-950/50 border border-transparent hover:border-red-800/60 text-[11px] cursor-pointer transition-colors active:scale-90"
                                                         title="Quitar pista del análisis global"
                                                     >
-                                                        🗑️
+                                                        <Icons.Trash size={14} className="inline-block align-[-2px]" />
                                                     </button>
                                                 </div>
                                             </td>
@@ -13679,7 +13171,7 @@ const HotCuesWorkspace = ({
                                         : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                                 }`}
                             >
-                                🎛️ 8 PADS
+                                <Icons.Sliders size={14} className="inline-block align-[-2px]" /> 8 PADS
                             </button>
                             <button
                                 type="button"
@@ -13690,7 +13182,7 @@ const HotCuesWorkspace = ({
                                         : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                                 }`}
                             >
-                                🎚️ EQ & TEMPO
+                                <Icons.Sliders size={14} className="inline-block align-[-2px]" /> EQ & TEMPO
                             </button>
                             <button
                                 type="button"
@@ -13701,7 +13193,7 @@ const HotCuesWorkspace = ({
                                         : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                                 }`}
                             >
-                                💽 VINILO 12"
+                                <Icons.Disc size={14} className="inline-block align-[-2px]" /> VINILO 12"
                             </button>
                         </div>
 
@@ -13802,7 +13294,7 @@ const HotCuesWorkspace = ({
                                             {isCurrentPlayingThis ? (
                                                 <span className="text-black font-black text-base">❚❚</span>
                                             ) : (
-                                                <span className="text-emerald-400 font-black text-lg ml-0.5">▶</span>
+                                                <Icons.Play size={14} className="inline-block align-[-2px] text-emerald-400 font-black  ml-0.5" />
                                             )}
                                         </button>
 
@@ -13889,7 +13381,7 @@ const HotCuesWorkspace = ({
                                             className="px-2.5 sm:px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0"
                                             title="Auto-mapear los 8 pads con la Plantilla Club Extended (Intro, Beat, Break, Drop, Loops, Outro) cuantizados al beatgrid"
                                         >
-                                            <span>⚡</span>
+                                            <Icons.Zap size={14} className="inline-block align-[-2px]" />
                                             <span className="hidden sm:inline">Auto-Generate Cues (Club Template)</span>
                                             <span className="sm:hidden">Auto-Cues Club</span>
                                         </button>
@@ -13900,7 +13392,7 @@ const HotCuesWorkspace = ({
                                 </div>
                                 {autoMappingStatus && (
                                     <div className="mb-2 px-3 py-1 bg-emerald-950/80 border border-emerald-500/60 rounded text-[10px] font-mono text-emerald-300 font-bold flex items-center gap-2 animate-fadeIn">
-                                        <span>✓</span>
+                                        <Icons.Check size={14} className="inline-block align-[-2px]" />
                                         <span>{autoMappingStatus}</span>
                                     </div>
                                 )}
@@ -14104,7 +13596,7 @@ const HotCuesWorkspace = ({
                                 }`}
                                 title="Alinear marcadores automáticamente a los tiempos del compás"
                             >
-                                <span>🧲</span>
+                                <Icons.Link size={14} className="inline-block align-[-2px]" />
                                 <span>{snapToGrid ? 'Snap: ON' : 'Snap: OFF'}</span>
                             </button>
 
@@ -14118,7 +13610,7 @@ const HotCuesWorkspace = ({
                                 }`}
                                 title="Mostrar líneas de compás y frases de 16 compases"
                             >
-                                <span>🔲</span>
+                                <Icons.Grid size={14} className="inline-block align-[-2px]" />
                                 <span>{showBeatgrid ? 'Grid: ON' : 'Grid: OFF'}</span>
                             </button>
 
@@ -14132,7 +13624,7 @@ const HotCuesWorkspace = ({
                                 }`}
                                 title="Centrar automáticamente el scroll horizontal en la aguja de reproducción"
                             >
-                                <span>🎯</span>
+                                <Icons.Target size={14} className="inline-block align-[-2px]" />
                                 <span>{followPlayhead ? 'Seguir: ON' : 'Seguir: OFF'}</span>
                             </button>
 
@@ -14142,7 +13634,7 @@ const HotCuesWorkspace = ({
                                 className="px-2.5 sm:px-3.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 hover:text-white font-mono font-bold text-xs rounded-lg border border-djzinc-700 cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1 shrink-0"
                                 title="Calcular automáticamente 8 Hot Cues por frases musicales (16/32 compases)"
                             >
-                                <span>⚡</span>
+                                <Icons.Zap size={14} className="inline-block align-[-2px]" />
                                 <span>{t('auto_phrase') || 'Auto-Frasear 16/32b'}</span>
                             </button>
                         </div>
@@ -14171,10 +13663,10 @@ const HotCuesWorkspace = ({
                         {/* Leyenda Espectral de Frecuencias */}
                         <div className="flex items-center justify-between text-[10px] font-mono text-gray-400 pt-2 border-t border-djzinc-800/80 mt-2">
                             <div className="flex items-center gap-4">
-                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_6px_#2563eb]"></span> 🔴 Sub/Bass (&lt;150Hz)</span>
-                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_6px_#dc2626]"></span> 🟠 Low-Mid / Drums (150-800Hz)</span>
-                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]"></span> 🟢 Mid-High / Vocales (800-4kHz)</span>
-                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></span> 🔵 Treble / Platos (&gt;4kHz)</span>
+                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_6px_#2563eb]"></span> <span className="inline-block w-2 h-2 rounded-full bg-rose-500 " aria-hidden="true" /> Sub/Bass (&lt;150Hz)</span>
+                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_6px_#dc2626]"></span> <span className="inline-block w-2 h-2 rounded-full bg-orange-400 " aria-hidden="true" /> Low-Mid / Drums (150-800Hz)</span>
+                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]"></span> <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 " aria-hidden="true" /> Mid-High / Vocales (800-4kHz)</span>
+                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></span> <span className="inline-block w-2 h-2 rounded-full bg-sky-400 " aria-hidden="true" /> Treble / Platos (&gt;4kHz)</span>
                             </div>
                             <span className="text-gray-500 font-mono">Desplazamiento horizontal milimétrico • Rejilla Serato/Rekordbox</span>
                         </div>
@@ -14265,7 +13757,7 @@ const HotCuesWorkspace = ({
                             className="px-3 sm:px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
                             title="Fijar el Pad seleccionado en la posición actual de reproducción"
                         >
-                            <span>📍</span>
+                            <Icons.Pin size={14} className="inline-block align-[-2px]" />
                             <span className="hidden sm:inline">Fijar Pad {selectedCueId} en Playhead</span>
                             <span className="sm:hidden">Fijar en Playhead</span>
                         </button>
@@ -14370,7 +13862,7 @@ const HotCuesWorkspace = ({
                         {/* Encabezado Hardware Pioneer DJ */}
                         <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-djzinc-800 pb-4 mb-4 gap-3">
                             <div className="flex items-center gap-3">
-                                <span className="text-2xl">🎛️</span>
+                                <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                                 <div>
                                     <h2 className="text-base font-black text-white font-mono tracking-wider flex items-center gap-2">
                                         PIONEER DJ • HOT CUES STUDIO
@@ -14388,7 +13880,7 @@ const HotCuesWorkspace = ({
                                 onClick={() => handleAbrirNavegador(currentFolder)}
                                 className="px-4 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg shadow-lg hover:shadow-djcyan-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
                             >
-                                <span>📂</span>
+                                <Icons.Folder size={14} className="inline-block align-[-2px]" />
                                 <span>Cargar Carpeta de Música</span>
                             </button>
                         </div>
@@ -14398,7 +13890,7 @@ const HotCuesWorkspace = ({
                             <div className="w-full bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner my-2">
                                 <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3">
                                     <span className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2">
-                                        <span>🎵</span> Pistas disponibles en la carpeta ({tracks.length})
+                                        <Icons.Music size={14} className="inline-block align-[-2px]" /> Pistas disponibles en la carpeta ({tracks.length})
                                     </span>
                                     <span className="text-xs font-mono text-gray-400">
                                         Haz clic en cualquier pista para cargarla en el Deck
@@ -14439,7 +13931,7 @@ const HotCuesWorkspace = ({
                                                     }}
                                                     className="px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-bold rounded cursor-pointer shadow active:scale-95"
                                                 >
-                                                    ▶ Cargar
+                                                    <Icons.Play size={14} className="inline-block align-[-2px]" /> Cargar
                                                 </button>
                                                 <button
                                                     type="button"
@@ -14447,7 +13939,7 @@ const HotCuesWorkspace = ({
                                                     className="p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-950/50 border border-transparent hover:border-red-800/60 text-[11px] cursor-pointer transition-colors active:scale-90"
                                                     title="Quitar pista del análisis global"
                                                 >
-                                                    🗑️
+                                                    <Icons.Trash size={14} className="inline-block align-[-2px]" />
                                                 </button>
                                             </div>
                                         </div>
@@ -14511,7 +14003,7 @@ const HotCuesWorkspace = ({
                                 onClick={() => handleAbrirNavegador(currentFolder)}
                                 className="px-5 py-2.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg shadow-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2"
                             >
-                                <span>📂</span>
+                                <Icons.Folder size={14} className="inline-block align-[-2px]" />
                                 <span>Explorar y Cargar Carpeta</span>
                             </button>
                             <button
@@ -14519,7 +14011,7 @@ const HotCuesWorkspace = ({
                                 onClick={() => onNavigateTab && onNavigateTab('auditoria')}
                                 className="px-5 py-2.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-2"
                             >
-                                <span>📋</span>
+                                <Icons.Copy size={14} className="inline-block align-[-2px]" />
                                 <span>Ir a Auditoría de Archivos</span>
                             </button>
                         </div>
@@ -14533,14 +14025,14 @@ const HotCuesWorkspace = ({
                     <div className="bg-[#0e0e16] border border-djzinc-700 rounded-xl max-w-xl w-full p-4 shadow-2xl flex flex-col max-h-[80vh]">
                         <div className="flex items-center justify-between border-b border-djzinc-800 pb-3 mb-3">
                             <div className="flex items-center gap-2">
-                                <span className="text-base">📂</span>
+                                <Icons.Folder size={14} className="inline-block align-[-2px]" />
                                 <h3 className="text-sm font-bold text-white font-mono">Seleccionar Carpeta para Hot Cues</h3>
                             </div>
                             <button
                                 onClick={() => setFsBrowserOpen(false)}
                                 className="text-gray-400 hover:text-white text-sm cursor-pointer"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
 
@@ -14556,7 +14048,7 @@ const HotCuesWorkspace = ({
                                     className="p-2 hover:bg-djzinc-900 cursor-pointer flex items-center justify-between text-xs font-mono text-gray-300 transition-colors"
                                 >
                                     <div className="flex items-center gap-2 truncate">
-                                        <span>📁</span>
+                                        <Icons.Folder size={14} className="inline-block align-[-2px]" />
                                         <span className="truncate">{folder.name}</span>
                                     </div>
                                     <span className="text-[10px] text-gray-500">Subir / Entrar →</span>
@@ -14578,7 +14070,7 @@ const HotCuesWorkspace = ({
                                 }}
                                 className="px-3 py-1.5 bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 text-xs font-mono rounded border border-djzinc-800 cursor-pointer"
                             >
-                                ⬆ Carpeta Superior
+                                <Icons.Upload size={14} className="inline-block align-[-2px]" /> Carpeta Superior
                             </button>
                             <div className="flex items-center gap-2">
                                 <button
@@ -14593,7 +14085,7 @@ const HotCuesWorkspace = ({
                                     onClick={() => handleCargarDirectorio(rutaNavegacion)}
                                     className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-mono font-bold rounded shadow cursor-pointer transition-transform active:scale-95"
                                 >
-                                    ✓ Cargar Esta Carpeta
+                                    <Icons.Check size={14} className="inline-block align-[-2px]" /> Cargar Esta Carpeta
                                 </button>
                             </div>
                         </div>
@@ -15858,7 +15350,7 @@ const SpotifyWorkspace = ({
                         <div className="flex items-center gap-2 flex-1 min-w-[320px] max-w-full lg:max-w-2xl">
                             <div className="flex-1 min-w-0 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded-lg flex items-center overflow-hidden shadow-inner">
                                 <span className="px-3 py-1.5 text-xs font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-bold shrink-0 flex items-center gap-1.5">
-                                    <span>🔍</span>
+                                    <Icons.Search size={14} className="inline-block align-[-2px]" />
                                     <span>BÚSQUEDA</span>
                                 </span>
                                 <input 
@@ -15880,7 +15372,7 @@ const SpotifyWorkspace = ({
                                         className="px-2.5 text-gray-500 hover:text-white text-xs cursor-pointer"
                                         title="Borrar texto"
                                     >
-                                        ✕
+                                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                                     </button>
                                 )}
                             </div>
@@ -15899,7 +15391,7 @@ const SpotifyWorkspace = ({
                                     className="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 rounded-lg font-bold font-mono text-xs flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 shrink-0"
                                     title="Detener y cancelar la búsqueda o descarga activa inmediatamente"
                                 >
-                                    <span>✕</span>
+                                    <Icons.Close size={14} className="inline-block align-[-2px]" />
                                     <span>{lang === 'en' ? 'Cancel' : 'Cancelar'}</span>
                                 </button>
                             )}
@@ -15916,7 +15408,7 @@ const SpotifyWorkspace = ({
                                         : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                                 }`}
                             >
-                                <span>🔍</span>
+                                <Icons.Search size={14} className="inline-block align-[-2px]" />
                                 <span>Catálogo</span>
                                 <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${spSubView === 'catalog' ? 'bg-black/20 text-black' : 'bg-djzinc-800 text-djcyan-400'}`}>
                                     {tracks.length}
@@ -15931,7 +15423,7 @@ const SpotifyWorkspace = ({
                                         : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                                 }`}
                             >
-                                <span>📥</span>
+                                <Icons.Download size={14} className="inline-block align-[-2px]" />
                                 <span>Descargadas & FFT</span>
                                 <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${spSubView === 'downloaded' ? 'bg-black/20 text-black' : 'bg-djzinc-800 text-emerald-400'}`}>
                                     {downloadSession.downloaded.length}
@@ -15967,7 +15459,7 @@ const SpotifyWorkspace = ({
                                         : 'bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-700'
                                 }`}
                             >
-                                <span>⬇ Descargar ({selectedCount})</span>
+                                <span><Icons.Download size={14} className="inline-block align-[-2px]" /> Descargar ({selectedCount})</span>
                             </button>
 
                             {tracks.length > 0 && (
@@ -15981,7 +15473,7 @@ const SpotifyWorkspace = ({
                                     className="px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-300 hover:text-white border border-djcyan-700/60 flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 shrink-0"
                                     title="Marcar automáticamente solo las pistas con Master Hi-Res 24b o Lossless 16b y desmarcar las que no merecen la pena"
                                 >
-                                    <span>⭐</span>
+                                    <Icons.Star size={14} className="inline-block align-[-2px]" />
                                     <span>Recomendadas ({tracks.filter(t => t.pre_worth_it !== false).length})</span>
                                 </button>
                             )}
@@ -15993,7 +15485,7 @@ const SpotifyWorkspace = ({
                                     className="px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 shrink-0"
                                     title="Reintentar descarga de todas las pistas pendientes/fallidas restantes"
                                 >
-                                    <span>🔄 Reintentar ({tracks.length})</span>
+                                    <span><Icons.Refresh size={14} className="inline-block align-[-2px]" /> Reintentar ({tracks.length})</span>
                                 </button>
                             )}
 
@@ -16007,7 +15499,7 @@ const SpotifyWorkspace = ({
                                 }`}
                                 title="Descargar informe Excel con las pistas descargadas con certificación FFT y las que fallaron"
                             >
-                                <span>📊</span>
+                                <Icons.Excel size={14} className="inline-block align-[-2px]" />
                                 <span>
                                     {isExportingXls 
                                         ? 'Generando...' 
@@ -16030,7 +15522,7 @@ const SpotifyWorkspace = ({
                                     }`}
                                     title="Ordenar tabla por fidelidad de coincidencia (Match %)"
                                 >
-                                    <span>🎯</span>
+                                    <Icons.Target size={14} className="inline-block align-[-2px]" />
                                     <span>Match {spSortField === 'match_score' ? (spSortDir === 'desc' ? '▼ (100%→0%)' : '▲ (0%→100%)') : '↕'}</span>
                                 </button>
                             )}
@@ -16051,7 +15543,7 @@ const SpotifyWorkspace = ({
                                     className="w-3.5 h-3.5 accent-rose-500 cursor-pointer rounded"
                                 />
                                 <span className="flex items-center gap-1">
-                                    <span>🗑️</span>
+                                    <Icons.Trash size={14} className="inline-block align-[-2px]" />
                                     <span>Borrar malas del disco</span>
                                 </span>
                                 {deleteOriginalsOnUpgrade && (
@@ -16131,7 +15623,7 @@ const SpotifyWorkspace = ({
                                 }`}
                                 title="Personalizar columnas visibles de la tabla de Pool / Catálogo"
                             >
-                                <span>⚙️</span>
+                                <Icons.Gear size={14} className="inline-block align-[-2px]" />
                                 <span>Columnas</span>
                                 <span className="text-[10px] text-djcyan-400 font-mono font-bold">
                                     ({Object.values(poolVisibleColumns).filter(Boolean).length}/20)
@@ -16147,7 +15639,7 @@ const SpotifyWorkspace = ({
                                 }`}
                                 title={spInspectorOpen ? "Ocultar panel inspector" : "Mostrar panel inspector"}
                             >
-                                <span>◨</span>
+                                <Icons.PanelLeft size={14} aria-hidden="true" className="rotate-180" />
                                 <span>{t('btn_inspector') || 'Inspector'}</span>
                             </button>
                         </div>
@@ -16158,10 +15650,10 @@ const SpotifyWorkspace = ({
                 {xlsToast && (
                     <div className="mx-4 mt-2 p-2.5 bg-emerald-950/80 border border-emerald-500/60 rounded-lg text-emerald-300 text-xs font-mono flex items-center justify-between shadow-lg animate-fadeIn">
                         <div className="flex items-center gap-2">
-                            <span>📊</span>
+                            <Icons.Excel size={14} className="inline-block align-[-2px]" />
                             <span>{xlsToast}</span>
                         </div>
-                        <button onClick={() => setXlsToast('')} className="text-emerald-400 hover:text-white px-2 py-0.5 rounded bg-emerald-900/60 border border-emerald-700 text-[10px] cursor-pointer">✕</button>
+                        <button onClick={() => setXlsToast('')} className="text-emerald-400 hover:text-white px-2 py-0.5 rounded bg-emerald-900/60 border border-emerald-700 text-[10px] cursor-pointer"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                     </div>
                 )}
 
@@ -16184,7 +15676,7 @@ const SpotifyWorkspace = ({
                                         className="px-2 py-0.5 rounded bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 text-[10px] font-mono font-bold cursor-pointer transition-colors shadow flex items-center gap-1"
                                         title="Cancelar búsqueda, descarga y procesos activos"
                                     >
-                                        <span>✕</span>
+                                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                                         <span>{t('btn_cancel') || 'Cancelar'}</span>
                                     </button>
                                 )}
@@ -16236,7 +15728,7 @@ const SpotifyWorkspace = ({
                 {tracks.some(t => t.origin === 'audit_upgrade') && (
                     <div className="px-4 py-2 bg-gradient-to-r from-amber-950/70 via-emerald-950/40 to-djzinc-950 border-b border-amber-600/40 flex flex-wrap items-center justify-between gap-2 text-xs">
                         <div className="flex items-center gap-2">
-                            <span className="text-amber-400 font-bold text-sm">🔄</span>
+                            <Icons.Refresh size={14} className="inline-block align-[-2px] text-amber-400 font-bold" />
                             <span className="text-gray-200">
                                 <strong className="text-amber-300 font-semibold">{tracks.filter(t => t.origin === 'audit_upgrade').length} reemplazo(s) HD</strong> importado(s) desde Auditoría para sustituir pistas de baja calidad.
                             </span>
@@ -16257,7 +15749,7 @@ const SpotifyWorkspace = ({
                                     className="w-3.5 h-3.5 accent-rose-500 cursor-pointer rounded"
                                 />
                                 <span className="flex items-center gap-1.5">
-                                    <span>🗑️</span>
+                                    <Icons.Trash size={14} className="inline-block align-[-2px]" />
                                     <span>Borrar pistas malas del disco al descargar</span>
                                 </span>
                             </label>
@@ -16285,7 +15777,7 @@ const SpotifyWorkspace = ({
                                     } disabled:opacity-50`}
                                     title="Ejecutar análisis espectral FFT sobre las pistas seleccionadas o todas para certificar corte kHz y descartar falsos upsamples"
                                 >
-                                    <span>🔬</span>
+                                    <Icons.ZoomIn size={14} className="inline-block align-[-2px]" />
                                     <span>
                                         {selectedDownloadedIds.size > 0 && selectedDownloadedIds.size < downloadSession.downloaded.length 
                                             ? `Auditar Selección (${selectedDownloadedIds.size})` 
@@ -16303,7 +15795,7 @@ const SpotifyWorkspace = ({
                                     className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
                                     title="Descargar versión garantizada en MP3 320 kbps CBR para evitar peso artificial en CDJs"
                                 >
-                                    <span>⚡</span>
+                                    <Icons.Zap size={14} className="inline-block align-[-2px]" />
                                     <span>
                                         {selectedDownloadedIds.size > 0 && selectedDownloadedIds.size < downloadSession.downloaded.length 
                                             ? `Descargar Selección en MP3 320 (${selectedDownloadedIds.size})` 
@@ -16318,7 +15810,7 @@ const SpotifyWorkspace = ({
                                     className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#14141d] hover:bg-emerald-950 text-emerald-300 border border-emerald-600/60 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                                     title="Exportar informe Excel completo con cortes FFT y consejos de optimización"
                                 >
-                                    <span>📊</span>
+                                    <Icons.Excel size={14} className="inline-block align-[-2px]" />
                                     <span>Exportar Excel ({downloadSession.downloaded.length}✓)</span>
                                 </button>
                             </div>
@@ -16338,7 +15830,7 @@ const SpotifyWorkspace = ({
                                     className="px-2 py-1 rounded text-[10px] font-mono text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 border border-djzinc-800 transition-colors cursor-pointer"
                                     title="Vaciar listado de descargadas"
                                 >
-                                    🗑️ Limpiar
+                                    <Icons.Trash size={14} className="inline-block align-[-2px]" /> Limpiar
                                 </button>
                             </div>
                         </div>
@@ -16347,7 +15839,7 @@ const SpotifyWorkspace = ({
                             <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#08080b] select-none text-center">
                                 <div className="max-w-md w-full p-6 rounded-2xl bg-[#0c0c12] border border-djzinc-800 flex flex-col items-center gap-3 shadow-xl">
                                     <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-500/50 flex items-center justify-center text-emerald-400 text-xl">
-                                        📥
+                                        <Icons.Download size={14} className="inline-block align-[-2px]" />
                                     </div>
                                     <h4 className="text-sm font-bold text-white uppercase font-mono">Sin Descargas En Esta Sesión</h4>
                                     <p className="text-xs text-gray-400 leading-relaxed">
@@ -16411,7 +15903,7 @@ const SpotifyWorkspace = ({
                                                             className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djcyan-500 hover:text-black text-gray-300 flex items-center justify-center transition-all cursor-pointer text-xs"
                                                             title="Reproducir archivo descargado"
                                                         >
-                                                            ▶
+                                                            <Icons.Play size={14} className="inline-block align-[-2px]" />
                                                         </button>
                                                     </td>
                                                     <td className="py-2 px-3">
@@ -16433,7 +15925,7 @@ const SpotifyWorkspace = ({
                                                             row.es_fake ? (
                                                                 <div className="flex flex-col items-center gap-0.5">
                                                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-600 shadow-[0_0_8px_rgba(244,63,94,0.3)]">
-                                                                        ⚠️ Fake Upsample ({row.corte})
+                                                                        <Icons.Warning size={14} className="inline-block align-[-2px]" /> Fake Upsample ({row.corte})
                                                                     </span>
                                                                     <span className="text-[9.5px] text-gray-400">
                                                                         {row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : ''} • {row.perdida || 'Pérdida'}
@@ -16442,7 +15934,7 @@ const SpotifyWorkspace = ({
                                                             ) : (
                                                                 <div className="flex flex-col items-center gap-0.5">
                                                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-600">
-                                                                        ✓ Lossless Real ({row.corte})
+                                                                        <Icons.Check size={14} className="inline-block align-[-2px]" /> Lossless Real ({row.corte})
                                                                     </span>
                                                                     <span className="text-[9.5px] text-emerald-400/80">
                                                                         {row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : ''} • Sin Pérdida
@@ -16451,11 +15943,11 @@ const SpotifyWorkspace = ({
                                                             )
                                                         ) : isAuditingFft ? (
                                                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-700 animate-pulse">
-                                                                🔬 Analizando FFT...
+                                                                <Icons.ZoomIn size={14} className="inline-block align-[-2px]" /> Analizando FFT...
                                                             </span>
                                                         ) : (
                                                             <span className="px-2 py-0.5 rounded text-[10px] text-gray-400 bg-djzinc-850 border border-djzinc-750">
-                                                                ⏳ Pendiente de Auditoría
+                                                                <Icons.Clock size={14} className="inline-block align-[-2px]" /> Pendiente de Auditoría
                                                             </span>
                                                         )}
                                                     </td>
@@ -16498,7 +15990,7 @@ const SpotifyWorkspace = ({
                                                                 className="px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black transition-colors cursor-pointer shadow-sm disabled:opacity-50"
                                                                 title="Descargar versión garantizada en MP3 320 kbps CBR"
                                                             >
-                                                                ⬇ MP3 320
+                                                                <Icons.Download size={14} className="inline-block align-[-2px]" /> MP3 320
                                                             </button>
                                                         </div>
                                                     </td>
@@ -16544,7 +16036,7 @@ const SpotifyWorkspace = ({
                                         <th onClick={() => handleSortSp('title')} className="py-2.5 px-3 min-w-[260px] cursor-pointer hover:text-white transition-colors">{t('th_title') || 'TÍTULO'} / {t('th_album') || 'ÁLBUM'} {renderSortArrowSp('title')}</th>
                                     )}
                                     {poolVisibleColumns.match_score !== false && (
-                                        <th onClick={() => handleSortSp('match_score')} className="py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors" title="Ordenar por porcentaje de coincidencia acústica (Match %)">🎯 MATCH {renderSortArrowSp('match_score')}</th>
+                                        <th onClick={() => handleSortSp('match_score')} className="py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors" title="Ordenar por porcentaje de coincidencia acústica (Match %)"><Icons.Target size={14} className="inline-block align-[-2px]" /> MATCH {renderSortArrowSp('match_score')}</th>
                                     )}
                                     {poolVisibleColumns.artist !== false && (
                                         <th onClick={() => handleSortSp('artist')} className="py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors">{t('th_artist') || 'ARTISTA'} {renderSortArrowSp('artist')}</th>
@@ -16559,7 +16051,7 @@ const SpotifyWorkspace = ({
                                         <th onClick={() => handleSortSp('origin')} className="py-2.5 px-2.5 text-center min-w-[105px] cursor-pointer hover:text-white transition-colors">ORIGEN {renderSortArrowSp('origin')}</th>
                                     )}
                                     {poolVisibleColumns.pre_quality_tier !== false && (
-                                        <th onClick={() => handleSortSp('pre_quality_tier')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" title="Pre-Auditoría de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena">💎 PRE-AUDITORÍA (VALOR) {renderSortArrowSp('pre_quality_tier')}</th>
+                                        <th onClick={() => handleSortSp('pre_quality_tier')} className="py-2.5 px-3 text-center min-w-[170px] cursor-pointer hover:text-white transition-colors" title="Pre-Auditoría de calidad antes de descargar: determina si el release es Master 24-bit, Lossless 16-bit o Baja Calidad y aconseja si merece la pena"><Icons.Gem size={14} className="inline-block align-[-2px]" /> PRE-AUDITORÍA (VALOR) {renderSortArrowSp('pre_quality_tier')}</th>
                                     )}
                                     {poolVisibleColumns.format !== false && (
                                         <th onClick={() => handleSortSp('format')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">{t('th_format') || 'FORMATO'} {renderSortArrowSp('format')}</th>
@@ -16586,10 +16078,10 @@ const SpotifyWorkspace = ({
                                         <th onClick={() => handleSortSp('key')} className="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors">KEY {renderSortArrowSp('key')}</th>
                                     )}
                                     {poolVisibleColumns.energy !== false && (
-                                        <th onClick={() => handleSortSp('energy')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">⚡ ENERGÍA {renderSortArrowSp('energy')}</th>
+                                        <th onClick={() => handleSortSp('energy')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors"><Icons.Zap size={14} className="inline-block align-[-2px]" /> ENERGÍA {renderSortArrowSp('energy')}</th>
                                     )}
                                     {poolVisibleColumns.danceability !== false && (
-                                        <th onClick={() => handleSortSp('danceability')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors">🕺 DANCE {renderSortArrowSp('danceability')}</th>
+                                        <th onClick={() => handleSortSp('danceability')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors"><Icons.Activity size={14} className="inline-block align-[-2px]" /> DANCE {renderSortArrowSp('danceability')}</th>
                                     )}
                                     {poolVisibleColumns.status !== false && (
                                         <th onClick={() => handleSortSp('status')} className="py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'} {renderSortArrowSp('status')}</th>
@@ -16603,12 +16095,12 @@ const SpotifyWorkspace = ({
                                                     onClick={handleClearAllPoolFilters}
                                                     title="Limpiar todos los filtros de Pool"
                                                     className="text-amber-400 hover:text-white cursor-pointer font-bold px-1 py-0.5 rounded bg-amber-950/40 border border-amber-700/60"
-                                                >✕ Reset</button>
+                                                ><Icons.Close size={14} className="inline-block align-[-2px]" /> Reset</button>
                                             ) : 'filtro'}
                                         </th>
                                     )}
                                     {poolVisibleColumns.play !== false && (
-                                        <th className="p-1 text-center font-mono text-[9px] text-gray-600">▶</th>
+                                        <th className="p-1 text-center font-mono text-[9px] text-gray-600"><Icons.Play size={14} className="inline-block align-[-2px]" /></th>
                                     )}
                                     {poolVisibleColumns.title !== false && (
                                         <th className="p-1">
@@ -16953,7 +16445,7 @@ const SpotifyWorkspace = ({
                                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                                 {row.match_score >= 80 ? (
                                                                     <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-600/70 inline-flex items-center gap-1 shadow-sm">
-                                                                        <span>🎯</span> <span>{row.match_score}% Match Verificado</span>
+                                                                        <Icons.Target size={14} className="inline-block align-[-2px]" /> <span>{row.match_score}% Match Verificado</span>
                                                                     </span>
                                                                 ) : (
                                                                     <button
@@ -16962,7 +16454,7 @@ const SpotifyWorkspace = ({
                                                                         className="text-[9px] font-mono font-black px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-600/80 hover:bg-amber-900 inline-flex items-center gap-1 cursor-pointer shadow animate-pulse"
                                                                         title={row.match_recomendacion || "Coincidencia dudosa. Clic para cambiar versión o buscar manualmente"}
                                                                     >
-                                                                        <span>⚠️</span> <span>{row.match_score}% Match Dudoso • Cambiar</span>
+                                                                        <Icons.Warning size={14} className="inline-block align-[-2px]" /> <span>{row.match_score}% Match Dudoso • Cambiar</span>
                                                                     </button>
                                                                 )}
                                                                 {row.candidatos_alternativos && row.candidatos_alternativos.length > 0 && (
@@ -16992,7 +16484,7 @@ const SpotifyWorkspace = ({
                                                             onClick={() => handleAbrirVerificacionCandidatos(row)}
                                                             title={`Coincidencia alta (${row.match_score}%). Clic para abrir verificador de fidelidad.`}
                                                         >
-                                                            <span>🎯</span>
+                                                            <Icons.Target size={14} className="inline-block align-[-2px]" />
                                                             <span>{row.match_score}%</span>
                                                         </span>
                                                     ) : (
@@ -17002,7 +16494,7 @@ const SpotifyWorkspace = ({
                                                             className="px-2 py-0.5 rounded text-[10px] font-mono font-black bg-amber-950 text-amber-300 border border-amber-600 hover:bg-amber-900 inline-flex items-center gap-1 cursor-pointer shadow animate-pulse"
                                                             title={row.match_recomendacion || "Coincidencia dudosa (<80%). Clic para cambiar versión o buscar manualmente."}
                                                         >
-                                                            <span>⚠️</span>
+                                                            <Icons.Warning size={14} className="inline-block align-[-2px]" />
                                                             <span>{row.match_score}%</span>
                                                             <span className="text-[8px] underline">Cambiar</span>
                                                         </button>
@@ -17040,22 +16532,22 @@ const SpotifyWorkspace = ({
                                             <td className="py-2 px-2.5 text-center">
                                                 {row.origin === 'audit_upgrade' ? (
                                                     <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-600/80 shadow-[0_0_8px_rgba(245,158,11,0.35)] inline-flex items-center gap-1">
-                                                        <span>🔄</span>
+                                                        <Icons.Refresh size={14} className="inline-block align-[-2px]" />
                                                         <span>Reemplazo HD</span>
                                                     </span>
                                                 ) : row.origin === 'taxonomy' ? (
                                                     <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/80 shadow-[0_0_8px_rgba(16,185,129,0.35)] inline-flex items-center gap-1">
-                                                        <span>🏷️</span>
+                                                        <Icons.Tag size={14} className="inline-block align-[-2px]" />
                                                         <span>Taxonomía</span>
                                                     </span>
                                                 ) : row.origin === 'shazam' ? (
                                                     <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-blue-950 text-blue-300 border border-blue-600 inline-flex items-center gap-1">
-                                                        <span>⚡</span>
+                                                        <Icons.Zap size={14} className="inline-block align-[-2px]" />
                                                         <span>Radar</span>
                                                     </span>
                                                 ) : (
                                                     <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-djzinc-850 text-djcyan-300 border border-djzinc-750 inline-flex items-center gap-1">
-                                                        <span>🔍</span>
+                                                        <Icons.Search size={14} className="inline-block align-[-2px]" />
                                                         <span>Búsqueda</span>
                                                     </span>
                                                 )}
@@ -17132,7 +16624,7 @@ const SpotifyWorkspace = ({
                                                 {row.downloaded ? (
                                                     isFake ? (
                                                         <span className="text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800" title={`Corte espectral a ${row.cutoff_khz || '--'}kHz`}>
-                                                            ⚠️ Transcode ({row.perdida_pct || 0}%)
+                                                            <Icons.Warning size={14} className="inline-block align-[-2px]" /> Transcode ({row.perdida_pct || 0}%)
                                                         </span>
                                                     ) : (
                                                         <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60" title={`Corte a ${row.cutoff_khz || 22.05}kHz`}>
@@ -17160,7 +16652,7 @@ const SpotifyWorkspace = ({
                                             <td className="py-2 px-2 text-center">
                                                 <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
                                                     <div className="flex items-center justify-between w-full text-[9px] font-mono">
-                                                        <span className="text-gray-400">⚡</span>
+                                                        <Icons.Zap size={14} className="inline-block align-[-2px] text-gray-400" />
                                                         <span className={`font-bold ${(row.energy || row.e || 75) >= 82 ? 'text-red-400' : (row.energy || row.e || 75) >= 68 ? 'text-amber-400' : 'text-djcyan-400'}`}>
                                                             {row.energy || row.e || 75}%
                                                         </span>
@@ -17180,7 +16672,7 @@ const SpotifyWorkspace = ({
                                             <td className="py-2 px-2 text-center">
                                                 <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
                                                     <div className="flex items-center justify-between w-full text-[9px] font-mono">
-                                                        <span className="text-gray-400">🕺</span>
+                                                        <Icons.Activity size={14} className="inline-block align-[-2px] text-gray-400" />
                                                         <span className="font-bold text-purple-300">{row.danceability || row.dance || 82}%</span>
                                                     </div>
                                                     <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
@@ -17210,7 +16702,7 @@ const SpotifyWorkspace = ({
                                                     ) : row.download_error ? (
                                                         <div className="flex items-center justify-center gap-1.5">
                                                             <span className="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-rose-950 text-rose-300 border border-rose-800" title={row.download_error}>
-                                                                ⚠️ Error
+                                                                <Icons.Warning size={14} className="inline-block align-[-2px]" /> Error
                                                             </span>
                                                             <button 
                                                                 onClick={() => lanzarDescargaReal([row])} 
@@ -17225,7 +16717,7 @@ const SpotifyWorkspace = ({
                                                                 className="px-1.5 py-0.5 rounded text-[10px] font-mono text-gray-400 hover:text-white bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-750 cursor-pointer"
                                                                 title="Buscar versión alternativa"
                                                             >
-                                                                🔍
+                                                                <Icons.Search size={14} className="inline-block align-[-2px]" />
                                                             </button>
                                                         </div>
                                                     ) : (
@@ -17246,7 +16738,7 @@ const SpotifyWorkspace = ({
                                                                 className="px-2 py-1 rounded text-[10px] font-mono font-bold text-gray-400 hover:text-djcyan-300 bg-djzinc-850 hover:bg-djzinc-800 border border-djzinc-750 cursor-pointer transition-colors"
                                                                 title="Verificar candidatos o buscar versión alternativa manualmente"
                                                             >
-                                                                🔍 Versiones
+                                                                <Icons.Search size={14} className="inline-block align-[-2px]" /> Versiones
                                                             </button>
                                                         </div>
                                                     )}
@@ -17277,7 +16769,7 @@ const SpotifyWorkspace = ({
                                 title="Cerrar inspector"
                                 className="w-6 h-6 rounded-full bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-bold text-xs cursor-pointer border border-djzinc-700 transition-colors"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
                     </div>
@@ -17315,7 +16807,7 @@ const SpotifyWorkspace = ({
                         <div className="bg-[#050508] p-3 rounded-xl border border-djzinc-800 space-y-2 text-xs">
                             <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-1.5">
                                 <span className="font-mono font-bold text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>💎</span> Pre-Auditoría Acústica
+                                    <Icons.Gem size={14} className="inline-block align-[-2px]" /> Pre-Auditoría Acústica
                                 </span>
                                 <span className={`px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${
                                     (currentTrack.pre_quality_tier === 'HI_RES_24B' || (!currentTrack.pre_quality_tier && String(currentTrack.title || '').toLowerCase().includes('extended')))
@@ -17366,14 +16858,14 @@ const SpotifyWorkspace = ({
                                 <Icons.Library />
                                 <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Seleccionar Carpeta de Destino</h3>
                             </div>
-                            <button onClick={() => setFsBrowserOpen(false)} className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer">✕ Cerrar</button>
+                            <button onClick={() => setFsBrowserOpen(false)} className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer"><Icons.Close size={14} className="inline-block align-[-2px]" /> Cerrar</button>
                         </div>
                         <div className="px-4 py-2.5 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono">
                             <span className="text-gray-400 shrink-0">Ruta:</span>
                             <span className="text-djcyan-400 truncate flex-1">{fsCurrentPath || "/"}</span>
                             {fsParentPath && (
                                 <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 cursor-pointer text-xs">
-                                    ⬆ Subir nivel
+                                    <Icons.Upload size={14} className="inline-block align-[-2px]" /> Subir nivel
                                 </button>
                             )}
                         </div>
@@ -17386,7 +16878,7 @@ const SpotifyWorkspace = ({
                                 fsFolders.map((f, idx) => (
                                     <div key={idx} onDoubleClick={() => handleNavegarACarpeta(f.path)} className="flex items-center justify-between p-2 rounded hover:bg-djzinc-900 cursor-pointer border border-transparent hover:border-djzinc-800 transition-colors">
                                         <div onClick={() => handleNavegarACarpeta(f.path)} className="flex items-center gap-2.5 flex-1 min-w-0">
-                                            <span className="text-amber-400 text-sm">📁</span>
+                                            <Icons.Folder size={14} className="inline-block align-[-2px] text-amber-400" />
                                             <span className="text-xs font-mono text-gray-300 truncate">{f.name}</span>
                                         </div>
                                         <button onClick={() => handleSeleccionarCarpetaDestino(f.path)} className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] rounded cursor-pointer shrink-0">
@@ -17414,7 +16906,7 @@ const SpotifyWorkspace = ({
                         <div className="p-4 bg-djzinc-950/80 border-b border-djzinc-800 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-djcyan-500/20 to-emerald-500/20 border border-djcyan-500/40 flex items-center justify-center text-xl shadow-inner">
-                                    🎯
+                                    <Icons.Target size={14} className="inline-block align-[-2px]" />
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -17432,7 +16924,7 @@ const SpotifyWorkspace = ({
                                 onClick={() => setCandidateModal(prev => ({ ...prev, open: false }))}
                                 className="w-8 h-8 rounded-lg bg-djzinc-800 hover:bg-djzinc-700 text-gray-400 hover:text-white flex items-center justify-center text-sm transition-colors cursor-pointer"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
 
@@ -17441,7 +16933,7 @@ const SpotifyWorkspace = ({
                             <div className="p-3.5 bg-djzinc-950/70 border-b border-djzinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
                                 <div className="flex items-center gap-3 min-w-0">
                                     <span className="px-2 py-1 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40 text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 flex items-center gap-1">
-                                        <span>📁</span> <span>Tu Pista Local</span>
+                                        <Icons.Folder size={14} className="inline-block align-[-2px]" /> <span>Tu Pista Local</span>
                                     </span>
                                     <div className="min-w-0">
                                         <span className="font-bold text-white truncate inline-block max-w-[280px]">
@@ -17456,12 +16948,12 @@ const SpotifyWorkspace = ({
                                 <div className="flex items-center gap-2.5 shrink-0 text-[11px] font-mono text-gray-400">
                                     {candidateModal.targetTrack.bpm && (
                                         <span className="px-2 py-0.5 rounded bg-djzinc-800/80 text-gray-300">
-                                            🥁 {candidateModal.targetTrack.bpm} BPM
+                                            <Icons.Wave size={14} className="inline-block align-[-2px]" /> {candidateModal.targetTrack.bpm} BPM
                                         </span>
                                     )}
                                     {candidateModal.targetTrack.original_duration && (
                                         <span className="px-2 py-0.5 rounded bg-djzinc-800/80 text-gray-300">
-                                            ⏱️ {Math.floor(candidateModal.targetTrack.original_duration / 60)}:{(Math.floor(candidateModal.targetTrack.original_duration % 60)).toString().padStart(2, '0')}
+                                            <Icons.Clock size={14} className="inline-block align-[-2px]" /> {Math.floor(candidateModal.targetTrack.original_duration / 60)}:{(Math.floor(candidateModal.targetTrack.original_duration % 60)).toString().padStart(2, '0')}
                                         </span>
                                     )}
                                     {candidateModal.targetTrack.calidad && (
@@ -17523,7 +17015,7 @@ const SpotifyWorkspace = ({
                                     </button>
                                 </div>
                                 <div className="text-[10px] text-gray-500 hidden md:block">
-                                    💡 Compara A vs B para comprobar que intro, remix y mezcla sean exactamente iguales
+                                    <Icons.Bulb size={14} className="inline-block align-[-2px]" /> Compara A vs B para comprobar que intro, remix y mezcla sean exactamente iguales
                                 </div>
                             </div>
                         )}
@@ -17531,7 +17023,7 @@ const SpotifyWorkspace = ({
                         {/* Barra de Búsqueda Manual / Filtro de Candidatos */}
                         <div className="p-3 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2">
                             <div className="relative flex-1">
-                                <span className="absolute left-3 top-2.5 text-gray-500 text-xs">🔍</span>
+                                <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3 top-2.5 text-gray-500" />
                                 <input
                                     type="text"
                                     value={candidateModal.searchQuery}
@@ -17562,7 +17054,7 @@ const SpotifyWorkspace = ({
                         {/* Mensaje de estado de búsqueda */}
                         {candidateModal.searchMsg && (
                             <div className="px-4 py-1.5 bg-djzinc-950/70 border-b border-djzinc-800 text-[11px] font-mono text-gray-400 flex items-center gap-2">
-                                <span>ℹ️</span>
+                                <Icons.Info size={14} className="inline-block align-[-2px]" />
                                 <span>{candidateModal.searchMsg}</span>
                             </div>
                         )}
@@ -17602,7 +17094,7 @@ const SpotifyWorkspace = ({
                                                     {cand.cover ? (
                                                         <img src={cand.cover} alt="Cover" className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-lg text-gray-500">🎵</div>
+                                                        <div className="w-full h-full flex items-center justify-center text-lg text-gray-500"><Icons.Music size={14} className="inline-block align-[-2px]" /></div>
                                                     )}
                                                     <button
                                                         onClick={(e) => {
@@ -17636,12 +17128,12 @@ const SpotifyWorkspace = ({
                                                     <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400 font-mono flex-wrap">
                                                         {cand.album && (
                                                             <span className="truncate max-w-[200px]" title={cand.album}>
-                                                                💿 {cand.album}
+                                                                <Icons.Disc size={14} className="inline-block align-[-2px]" /> {cand.album}
                                                             </span>
                                                         )}
                                                         {cand.duration > 0 && (
                                                             <span className="text-gray-300">
-                                                                ⏱️ {Math.floor(cand.duration / 60)}:{(Math.floor(cand.duration % 60)).toString().padStart(2, '0')}
+                                                                <Icons.Clock size={14} className="inline-block align-[-2px]" /> {Math.floor(cand.duration / 60)}:{(Math.floor(cand.duration % 60)).toString().padStart(2, '0')}
                                                             </span>
                                                         )}
                                                         {targetDur > 0 && candDur > 0 && (
@@ -17656,7 +17148,7 @@ const SpotifyWorkspace = ({
                                                             </span>
                                                         )}
                                                         {cand.bpm && (
-                                                            <span>🥁 {cand.bpm} BPM</span>
+                                                            <span><Icons.Wave size={14} className="inline-block align-[-2px]" /> {cand.bpm} BPM</span>
                                                         )}
                                                         {cand.isrc && (
                                                             <span className="text-[10px] text-gray-500">ISRC: {cand.isrc}</span>
@@ -17666,7 +17158,7 @@ const SpotifyWorkspace = ({
                                                     {/* Alert / Warning badge */}
                                                     {hasAlert && (
                                                         <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded border border-rose-800/30">
-                                                            <span>⚠️</span>
+                                                            <Icons.Warning size={14} className="inline-block align-[-2px]" />
                                                             <span>{cand.alerta_version}</span>
                                                         </div>
                                                     )}
@@ -17730,7 +17222,7 @@ const SpotifyWorkspace = ({
                                 })
                             ) : (
                                 <div className="p-8 text-center text-gray-500 text-xs">
-                                    <span className="text-2xl block mb-2">🔍</span>
+                                    <Icons.Search size={14} className="inline-block align-[-2px] block mb-2" />
                                     No hay versiones alternativas precargadas. Utiliza el buscador superior para encontrar la versión exacta (ej. Extended Mix, Club Mix o Remix).
                                 </div>
                             )}
@@ -17739,7 +17231,7 @@ const SpotifyWorkspace = ({
                         {/* Footer */}
                         <div className="p-3.5 bg-djzinc-950/90 border-t border-djzinc-800 flex items-center justify-between">
                             <span className="text-[11px] text-gray-500">
-                                💡 Tip: Si la pista de tu biblioteca es una sesión de DJ o Extended Mix, asegúrate de que la duración coincida.
+                                <Icons.Bulb size={14} className="inline-block align-[-2px]" /> Tip: Si la pista de tu biblioteca es una sesión de DJ o Extended Mix, asegúrate de que la duración coincida.
                             </span>
                             <button
                                 onClick={() => setCandidateModal(prev => ({ ...prev, open: false }))}
@@ -17765,7 +17257,7 @@ const SpotifyWorkspace = ({
                         {/* Cabecera */}
                         <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0">
                             <div className="flex items-center gap-3">
-                                <span className="text-xl p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner">⚙️</span>
+                                <Icons.Gear size={14} className="inline-block align-[-2px] p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" />
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
@@ -17786,14 +17278,14 @@ const SpotifyWorkspace = ({
                                 className="w-9 h-9 rounded-xl bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-white border border-djzinc-750 flex items-center justify-center cursor-pointer transition-colors text-sm font-bold shadow-sm"
                                 title="Cerrar modal (Esc)"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
 
                         {/* Buscador & Presets */}
                         <div className="p-4 border-b border-djzinc-800/80 bg-[#080910] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                             <div className="relative flex-1 max-w-md">
-                                <span className="absolute left-3 top-2.5 text-xs text-gray-400">🔍</span>
+                                <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3 top-2.5  text-gray-400" />
                                 <input 
                                     type="text" 
                                     value={poolColumnSearchText}
@@ -17806,7 +17298,7 @@ const SpotifyWorkspace = ({
                                         type="button" 
                                         onClick={() => setPoolColumnSearchText('')}
                                         className="absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-white cursor-pointer"
-                                    >✕</button>
+                                    ><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                                 )}
                             </div>
 
@@ -17817,28 +17309,28 @@ const SpotifyWorkspace = ({
                                     onClick={() => setPoolColumnPreset('all')}
                                     className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    👁️ Ver Todas (20)
+                                    <Icons.Eye size={14} className="inline-block align-[-2px]" /> Ver Todas (20)
                                 </button>
                                 <button 
                                     type="button" 
                                     onClick={() => setPoolColumnPreset('dj')}
                                     className="px-2.5 py-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    ⚡ Cabina DJ
+                                    <Icons.Zap size={14} className="inline-block align-[-2px]" /> Cabina DJ
                                 </button>
                                 <button 
                                     type="button" 
                                     onClick={() => setPoolColumnPreset('quality')}
                                     className="px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    🔬 Pureza Sonora
+                                    <Icons.ZoomIn size={14} className="inline-block align-[-2px]" /> Pureza Sonora
                                 </button>
                                 <button 
                                     type="button" 
                                     onClick={() => setPoolColumnPreset('essential')}
                                     className="px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-700/60 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    🏷️ Esencial
+                                    <Icons.Tag size={14} className="inline-block align-[-2px]" /> Esencial
                                 </button>
                             </div>
                         </div>
@@ -17954,7 +17446,7 @@ const SpotifyWorkspace = ({
                                 onClick={() => { setPoolColumnSelectorOpen(false); setPoolColumnSearchText(''); }}
                                 className="px-5 py-2 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs shadow-md shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95"
                             >
-                                ✓ Aplicar y Guardar ({Object.values(poolVisibleColumns).filter(Boolean).length} Activas)
+                                <Icons.Check size={14} className="inline-block align-[-2px]" /> Aplicar y Guardar ({Object.values(poolVisibleColumns).filter(Boolean).length} Activas)
                             </button>
                         </div>
                     </div>
@@ -18716,7 +18208,7 @@ const TaxonomyWorkspace = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/40 flex items-center justify-center text-djcyan-400 font-bold shadow-[0_0_12px_rgba(6,182,212,0.25)]">
-                            ⚡
+                            <Icons.Zap size={14} className="inline-block align-[-2px]" />
                         </div>
                         <div>
                             <h2 className="text-lg font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
@@ -18739,7 +18231,7 @@ const TaxonomyWorkspace = ({
                                     : 'text-gray-400 hover:text-white'
                             }`}
                         >
-                            <span>🔍 Buscador IA</span>
+                            <span><Icons.Search size={14} className="inline-block align-[-2px]" /> Buscador IA</span>
                             <span className="text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black">
                                 {searchResults.length}
                             </span>
@@ -18753,7 +18245,7 @@ const TaxonomyWorkspace = ({
                                     : 'text-gray-400 hover:text-white'
                             }`}
                         >
-                            <span>🗂️ Serato Crates & Rekordbox</span>
+                            <span><Icons.Folder size={14} className="inline-block align-[-2px]" /> Serato Crates & Rekordbox</span>
                             <span className="text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black">
                                 {totalCratesCount}
                             </span>
@@ -18768,7 +18260,7 @@ const TaxonomyWorkspace = ({
                             <span className="animate-pulse">●</span>
                             <span>{feedbackMsg}</span>
                         </div>
-                        <button type="button" onClick={() => setFeedbackMsg('')} className="text-gray-400 hover:text-white cursor-pointer px-1">✕</button>
+                        <button type="button" onClick={() => setFeedbackMsg('')} className="text-gray-400 hover:text-white cursor-pointer px-1"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                     </div>
                 )}
             </div>
@@ -18793,7 +18285,7 @@ const TaxonomyWorkspace = ({
                                             : 'text-gray-400 hover:text-white'
                                     }`}
                                 >
-                                    <span>🌐 Todo (Híbrido)</span>
+                                    <span><Icons.Globe size={14} className="inline-block align-[-2px]" /> Todo (Híbrido)</span>
                                 </button>
                                 <button
                                     type="button"
@@ -18804,7 +18296,7 @@ const TaxonomyWorkspace = ({
                                             : 'text-gray-400 hover:text-white'
                                     }`}
                                 >
-                                    <span>📁 Mi Biblioteca</span>
+                                    <span><Icons.Folder size={14} className="inline-block align-[-2px]" /> Mi Biblioteca</span>
                                     <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/30 text-white font-mono">{localTracks.length}</span>
                                 </button>
                                 <button
@@ -18816,7 +18308,7 @@ const TaxonomyWorkspace = ({
                                             : 'text-gray-400 hover:text-white'
                                     }`}
                                 >
-                                    <span>☁️ Record Pool</span>
+                                    <span><Icons.Cloud size={14} className="inline-block align-[-2px]" /> Record Pool</span>
                                 </button>
                             </div>
 
@@ -18829,7 +18321,7 @@ const TaxonomyWorkspace = ({
                                         : 'bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white'
                                 }`}
                             >
-                                <span>🎚️ Filtros Manuales</span>
+                                <span><Icons.Sliders size={14} className="inline-block align-[-2px]" /> Filtros Manuales</span>
                                 <span>{showAdvancedFilters ? '▲' : '▼'}</span>
                             </button>
                         </div>
@@ -18837,7 +18329,7 @@ const TaxonomyWorkspace = ({
                         {/* INPUT PRINCIPAL CON GLOW CIAN Y BOTÓN BUSCAR DESTACADO */}
                         <div className="flex items-center gap-2.5">
                             <div className="relative flex-1 flex items-center">
-                                <span className="absolute left-3.5 text-gray-400 text-base pointer-events-none">🔍</span>
+                                <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3.5 text-gray-400  pointer-events-none" />
                                 <input
                                     type="text"
                                     value={aiQuery}
@@ -18857,7 +18349,7 @@ const TaxonomyWorkspace = ({
                                         className="absolute right-3.5 text-gray-400 hover:text-white text-xs font-bold cursor-pointer"
                                         title="Borrar texto"
                                     >
-                                        ✕
+                                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                                     </button>
                                 )}
                             </div>
@@ -18871,12 +18363,12 @@ const TaxonomyWorkspace = ({
                             >
                                 {isSearchingOnline ? (
                                     <>
-                                        <span className="animate-spin">⏳</span>
+                                        <Icons.Clock size={14} className="inline-block align-[-2px] animate-spin" />
                                         <span>Buscando...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>🔍</span>
+                                        <Icons.Search size={14} className="inline-block align-[-2px]" />
                                         <span>Buscar Temas</span>
                                     </>
                                 )}
@@ -18893,7 +18385,7 @@ const TaxonomyWorkspace = ({
                                             key={idx}
                                             className="text-[10.5px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-djcyan-950/90 text-djcyan-300 border border-djcyan-600/80 shadow-sm flex items-center gap-1.5 group"
                                         >
-                                            <span>✓</span>
+                                            <Icons.Check size={14} className="inline-block align-[-2px]" />
                                             <span>{tok.label}</span>
                                             <button
                                                 type="button"
@@ -18901,7 +18393,7 @@ const TaxonomyWorkspace = ({
                                                 className="w-3.5 h-3.5 rounded-full hover:bg-red-500 hover:text-white text-djcyan-400 flex items-center justify-center text-[9px] font-black cursor-pointer transition-colors ml-0.5"
                                                 title={`Eliminar filtro ${tok.label}`}
                                             >
-                                                ✕
+                                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                                             </button>
                                         </span>
                                     ))}
@@ -18930,7 +18422,7 @@ const TaxonomyWorkspace = ({
                                                 onClick={() => setIsAddTagMenuOpen(false)}
                                                 className="text-gray-400 hover:text-white text-xs font-bold cursor-pointer"
                                             >
-                                                ✕
+                                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                                             </button>
                                         </div>
 
@@ -19113,7 +18605,7 @@ const TaxonomyWorkspace = ({
                                             onClick={() => setIsCamelotModalOpen(true)}
                                             className="text-[9px] text-djcyan-400 hover:underline cursor-pointer"
                                         >
-                                            🎡 Rueda
+                                            <Icons.Disc size={14} className="inline-block align-[-2px]" /> Rueda
                                         </button>
                                     </div>
                                     <select
@@ -19145,7 +18637,7 @@ const TaxonomyWorkspace = ({
 
                                 {/* Energía */}
                                 <div className="flex flex-col gap-1">
-                                    <label className="text-gray-400 text-[10px]">⚡ Energía DJ:</label>
+                                    <label className="text-gray-400 text-[10px]"><Icons.Zap size={14} className="inline-block align-[-2px]" /> Energía DJ:</label>
                                     <select
                                         value={taxFilterEnergy}
                                         onChange={(e) => setTaxFilterEnergy(e.target.value)}
@@ -19160,7 +18652,7 @@ const TaxonomyWorkspace = ({
 
                                 {/* Danceability */}
                                 <div className="flex flex-col gap-1">
-                                    <label className="text-gray-400 text-[10px]">🕺 Danceability:</label>
+                                    <label className="text-gray-400 text-[10px]"><Icons.Activity size={14} className="inline-block align-[-2px]" /> Danceability:</label>
                                     <select
                                         value={taxFilterDance}
                                         onChange={(e) => setTaxFilterDance(e.target.value)}
@@ -19213,7 +18705,7 @@ const TaxonomyWorkspace = ({
                                         }`}
                                         title="Añadir pistas seleccionadas a la cola de descargas del Record Pool"
                                     >
-                                        <span>📥</span>
+                                        <Icons.Download size={14} className="inline-block align-[-2px]" />
                                         <span>Añadir Seleccionadas ({selectedTaxIds.size})</span>
                                     </button>
                                     <button
@@ -19223,7 +18715,7 @@ const TaxonomyWorkspace = ({
                                         className="px-3 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white border border-emerald-500 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                                         title="Añadir todas las pistas de esta búsqueda a la cola de descargas del Record Pool"
                                     >
-                                        <span>📥</span>
+                                        <Icons.Download size={14} className="inline-block align-[-2px]" />
                                         <span>Añadir Todas ({searchResults.length})</span>
                                     </button>
                                 </div>
@@ -19263,7 +18755,7 @@ const TaxonomyWorkspace = ({
 
                         {searchResults.length === 0 ? (
                             <div className="p-8 border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-900/30 text-center space-y-3">
-                                <span className="text-3xl">🔎</span>
+                                <Icons.Search size={14} className="inline-block align-[-2px]" />
                                 <h3 className="text-base font-bold text-white">No se encontraron temas coincidentes</h3>
                                 <p className="text-xs text-gray-400 max-w-md mx-auto">
                                     No hay pistas que cumplan los criterios de "{aiQuery}". Puedes pulsar <strong>Buscar Temas</strong> para rastrear en el Record Pool Online o descargarlas en SuperFLAC / Record Pool.
@@ -19284,7 +18776,7 @@ const TaxonomyWorkspace = ({
                                         }}
                                         className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer"
                                     >
-                                        ☁️ Buscar en Record Pool Online
+                                        <Icons.Cloud size={14} className="inline-block align-[-2px]" /> Buscar en Record Pool Online
                                     </button>
                                     {onSendToSpotify && (
                                         <button
@@ -19292,7 +18784,7 @@ const TaxonomyWorkspace = ({
                                             onClick={() => onSendToSpotify(aiQuery)}
                                             className="px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-bold shadow-md cursor-pointer"
                                         >
-                                            🌐 Ingestar desde SuperFLAC / Record Pool →
+                                            <Icons.Globe size={14} className="inline-block align-[-2px]" /> Ingestar desde SuperFLAC / Record Pool →
                                         </button>
                                     )}
                                 </div>
@@ -19322,8 +18814,8 @@ const TaxonomyWorkspace = ({
                                             <th onClick={() => handleSortTax('version')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">VERSIÓN {renderSortArrowTax('version')}</th>
                                             <th onClick={() => handleSortTax('origin')} className="py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors">ORIGEN {renderSortArrowTax('origin')}</th>
                                             <th onClick={() => handleSortTax('matchScore')} className="py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors">MATCH % {renderSortArrowTax('matchScore')}</th>
-                                            <th onClick={() => handleSortTax('energy')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">⚡ ENERGÍA {renderSortArrowTax('energy')}</th>
-                                            <th onClick={() => handleSortTax('danceability')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors">🕺 DANCE {renderSortArrowTax('danceability')}</th>
+                                            <th onClick={() => handleSortTax('energy')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors"><Icons.Zap size={14} className="inline-block align-[-2px]" /> ENERGÍA {renderSortArrowTax('energy')}</th>
+                                            <th onClick={() => handleSortTax('danceability')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors"><Icons.Activity size={14} className="inline-block align-[-2px]" /> DANCE {renderSortArrowTax('danceability')}</th>
                                             <th className="py-2.5 px-2 text-center">FASE DJ</th>
                                             <th className="py-2.5 px-2.5 text-left">COMENTARIO PRO</th>
                                             <th className="py-2.5 px-3 text-center min-w-[150px]">ACCIONES DJ</th>
@@ -19341,7 +18833,7 @@ const TaxonomyWorkspace = ({
                                                         }}
                                                         title="Limpiar filtros"
                                                         className="text-amber-400 hover:text-white cursor-pointer"
-                                                    >✕</button>
+                                                    ><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                                                 ) : 'filtro'}
                                             </th>
                                             <th className="p-1"></th>
@@ -19477,14 +18969,14 @@ const TaxonomyWorkspace = ({
                                                         </span>
                                                     </td>
                                                     <td className="py-2 px-2.5 text-center font-mono text-xs font-bold text-emerald-400">
-                                                        ⚡ {trk.matchScore}%
+                                                        <Icons.Zap size={14} className="inline-block align-[-2px]" /> {trk.matchScore}%
                                                     </td>
 
                                                     {/* ENERGÍA */}
                                                     <td className="py-2 px-2 text-center">
                                                         <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
                                                             <div className="flex items-center justify-between w-full text-[9px] font-mono">
-                                                                <span className="text-gray-400">⚡</span>
+                                                                <Icons.Zap size={14} className="inline-block align-[-2px] text-gray-400" />
                                                                 <span className={`font-bold ${(trk.energy || trk.e || 80) >= 82 ? 'text-red-400' : (trk.energy || trk.e || 80) >= 68 ? 'text-amber-400' : 'text-djcyan-400'}`}>
                                                                     {trk.energy || trk.e || 80}%
                                                                 </span>
@@ -19502,7 +18994,7 @@ const TaxonomyWorkspace = ({
                                                     <td className="py-2 px-2 text-center">
                                                         <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
                                                             <div className="flex items-center justify-between w-full text-[9px] font-mono">
-                                                                <span className="text-gray-400">🕺</span>
+                                                                <Icons.Activity size={14} className="inline-block align-[-2px] text-gray-400" />
                                                                 <span className="font-bold text-purple-300">{trk.danceability || trk.dance || 80}%</span>
                                                             </div>
                                                             <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
@@ -19546,7 +19038,7 @@ const TaxonomyWorkspace = ({
                                                     {/* COMENTARIO PRO */}
                                                     <td className="py-2 px-2.5 text-left">
                                                         <div className="flex items-center gap-1.5 max-w-[260px]">
-                                                            <span className="text-emerald-400 text-xs shrink-0">💬</span>
+                                                            <Icons.MessageSquare size={14} className="inline-block align-[-2px] text-emerald-400  shrink-0" />
                                                             <span className="text-[10.5px] font-mono text-gray-200 truncate" title={trk.comment || `[${trk.displayBpm} BPM | ${trk.displayKey}] Intro 32b • Drop contundente • Outro 64b`}>
                                                                 {trk.comment || `[${trk.displayBpm} BPM | ${trk.displayKey}] Intro 32b • Drop contundente • Outro 64b`}
                                                             </span>
@@ -19556,17 +19048,17 @@ const TaxonomyWorkspace = ({
                                                     <td className="py-2 px-3 text-center">
                                                         <div className="flex items-center justify-center gap-1.5">
                                                             <button onClick={() => handleCargarEnDeck(trk)} className="px-2 py-1 rounded bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] font-mono cursor-pointer" title="Cargar y Reproducir en Deck 1">
-                                                                ▶ Deck
+                                                                <Icons.Play size={14} className="inline-block align-[-2px]" /> Deck
                                                             </button>
                                                             <button onClick={() => handleAbrirEnHotCues(trk)} className="px-2 py-1 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 border border-djzinc-700 text-[10px] font-mono cursor-pointer" title="Hot Cues Studio">
-                                                                🎛️
+                                                                <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                                                             </button>
                                                             <button 
                                                                 onClick={() => handleAnadirADescargas(trk)} 
                                                                 className="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-[10px] cursor-pointer shadow flex items-center gap-1 transition-all active:scale-95" 
                                                                 title="Añadir pista a la cola de descargas del Record Pool"
                                                             >
-                                                                <span>📥</span>
+                                                                <Icons.Download size={14} className="inline-block align-[-2px]" />
                                                                 <span>Añadir a Descargas</span>
                                                             </button>
                                                             {isOnline ? (
@@ -19578,12 +19070,12 @@ const TaxonomyWorkspace = ({
                                                                     className="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer"
                                                                     title="Buscar en el Record Pool"
                                                                 >
-                                                                    🔍 Pool
+                                                                    <Icons.Search size={14} className="inline-block align-[-2px]" /> Pool
                                                                 </button>
                                                             ) : (
                                                                 <>
                                                                     <button onClick={() => handleAsignarACrateIndividual(trk)} className="px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer" title="Rutar a Crate">
-                                                                        📁 Crate
+                                                                        <Icons.Folder size={14} className="inline-block align-[-2px]" /> Crate
                                                                     </button>
                                                                     {isLocal && (
                                                                         <button 
@@ -19598,7 +19090,7 @@ const TaxonomyWorkspace = ({
                                                                             className="p-1 rounded bg-red-950/40 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90" 
                                                                             title="Quitar pista del análisis global"
                                                                         >
-                                                                            🗑️
+                                                                            <Icons.Trash size={14} className="inline-block align-[-2px]" />
                                                                         </button>
                                                                     )}
                                                                 </>
@@ -19668,7 +19160,7 @@ const TaxonomyWorkspace = ({
                                                             </span>
                                                         </div>
                                                         <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-700/60 px-1.5 py-0.2 rounded shadow-sm">
-                                                            ⚡ {trk.matchScore}% Match
+                                                            <Icons.Zap size={14} className="inline-block align-[-2px]" /> {trk.matchScore}% Match
                                                         </span>
                                                     </div>
 
@@ -19685,12 +19177,12 @@ const TaxonomyWorkspace = ({
                                             <div className="flex flex-wrap items-center gap-1.5 font-mono text-[9.5px]">
                                                 {/* Género & Subgénero */}
                                                 <span className="px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-gray-300 font-semibold">
-                                                    🎧 {trk.displaySubgenre || trk.displayGenre}
+                                                    <Icons.Headphones size={14} className="inline-block align-[-2px]" /> {trk.displaySubgenre || trk.displayGenre}
                                                 </span>
 
                                                 {/* BPM */}
                                                 <span className="px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-djcyan-300 font-bold">
-                                                    🎚️ {trk.displayBpm} BPM
+                                                    <Icons.Sliders size={14} className="inline-block align-[-2px]" /> {trk.displayBpm} BPM
                                                 </span>
 
                                                 {/* Key Camelot */}
@@ -19711,14 +19203,14 @@ const TaxonomyWorkspace = ({
                                                 {/* Versión */}
                                                 {trk.displayVersion && (
                                                     <span className="px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-600/50 text-amber-300">
-                                                        🎛️ {trk.displayVersion}
+                                                        <Icons.Sliders size={14} className="inline-block align-[-2px]" /> {trk.displayVersion}
                                                     </span>
                                                 )}
 
                                                 {/* Mood */}
                                                 {trk.displayMood && (
                                                     <span className="px-1.5 py-0.5 rounded bg-pink-950/40 border border-pink-600/50 text-pink-300">
-                                                        🔥 {trk.displayMood}
+                                                        <Icons.Flame size={14} className="inline-block align-[-2px]" /> {trk.displayMood}
                                                     </span>
                                                 )}
                                             </div>
@@ -19730,7 +19222,7 @@ const TaxonomyWorkspace = ({
                                                     onClick={() => handleCargarEnDeck(trk)}
                                                     className="flex-1 py-1 px-2 rounded bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] font-mono flex items-center justify-center gap-1 shadow cursor-pointer transition-transform active:scale-95"
                                                 >
-                                                    <span>▶</span>
+                                                    <Icons.Play size={14} className="inline-block align-[-2px]" />
                                                     <span>Cargar Deck</span>
                                                 </button>
 
@@ -19740,7 +19232,7 @@ const TaxonomyWorkspace = ({
                                                     className="py-1 px-2 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-200 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
                                                     title="Editar Hot Cues en el Estudio"
                                                 >
-                                                    <span>🎛️</span>
+                                                    <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                                                     <span>Cues</span>
                                                 </button>
 
@@ -19750,7 +19242,7 @@ const TaxonomyWorkspace = ({
                                                     className="py-1 px-2.5 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-transform active:scale-95 shadow"
                                                     title="Añadir a la cola de descargas del Record Pool"
                                                 >
-                                                    <span>📥</span>
+                                                    <Icons.Download size={14} className="inline-block align-[-2px]" />
                                                     <span>Añadir a Descargas</span>
                                                 </button>
 
@@ -19760,7 +19252,7 @@ const TaxonomyWorkspace = ({
                                                     className="py-1 px-2 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-200 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
                                                     title="Apuntar en Libreta Digital"
                                                 >
-                                                    <span>📋</span>
+                                                    <Icons.Copy size={14} className="inline-block align-[-2px]" />
                                                 </button>
 
                                                 {isOnline ? (
@@ -19773,7 +19265,7 @@ const TaxonomyWorkspace = ({
                                                         className="py-1 px-2 rounded bg-purple-950/80 hover:bg-purple-900 border border-purple-500/70 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors shadow"
                                                         title="Descargar versión HQ/FLAC en SuperFLAC / Record Pool"
                                                     >
-                                                        <span>📥</span>
+                                                        <Icons.Download size={14} className="inline-block align-[-2px]" />
                                                         <span>SuperFLAC</span>
                                                     </button>
                                                 ) : (
@@ -19784,7 +19276,7 @@ const TaxonomyWorkspace = ({
                                                             className="py-1 px-2 rounded bg-purple-950/60 hover:bg-purple-900 border border-purple-500/60 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
                                                             title="Rutar físicamente a Serato Crate"
                                                         >
-                                                            <span>📁</span>
+                                                            <Icons.Folder size={14} className="inline-block align-[-2px]" />
                                                         </button>
                                                         {isLocal && (
                                                             <button
@@ -19800,7 +19292,7 @@ const TaxonomyWorkspace = ({
                                                                 className="py-1 px-1.5 rounded bg-red-950/50 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90"
                                                                 title="Quitar pista del análisis global"
                                                             >
-                                                                <span>🗑️</span>
+                                                                <Icons.Trash size={14} className="inline-block align-[-2px]" />
                                                             </button>
                                                         )}
                                                     </div>
@@ -19815,7 +19307,7 @@ const TaxonomyWorkspace = ({
                         {/* BANNER INFERIOR DE INGESTA DESDE SUPERFLAC / SPOTIFY */}
                         <div className="p-4 bg-gradient-to-r from-djzinc-900 via-djzinc-900 to-djcyan-950/40 border border-djzinc-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
-                                <span className="text-2xl">🌐</span>
+                                <Icons.Globe size={14} className="inline-block align-[-2px]" />
                                 <div>
                                     <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                                         ¿Buscas canciones que no están en tu biblioteca local?
@@ -19912,7 +19404,7 @@ const TaxonomyWorkspace = ({
                         {/* CONFIGURACIÓN DE DESTINO Y MODO */}
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-djzinc-900/90 border border-djzinc-800 p-3 rounded-xl">
                             <div className="md:col-span-7 flex items-center gap-2">
-                                <span className="text-xs font-mono font-bold text-gray-400 shrink-0">📁 Destino Crates:</span>
+                                <span className="text-xs font-mono font-bold text-gray-400 shrink-0"><Icons.Folder size={14} className="inline-block align-[-2px]" /> Destino Crates:</span>
                                 <input
                                     type="text"
                                     value={rutaBase}
@@ -20002,7 +19494,7 @@ const TaxonomyWorkspace = ({
                                     onClick={() => setResultSummary(null)}
                                     className="text-gray-400 hover:text-white cursor-pointer px-2 py-0.5 rounded"
                                 >
-                                    ✕
+                                    <Icons.Close size={14} className="inline-block align-[-2px]" />
                                 </button>
                             </div>
                         )}
@@ -20088,7 +19580,7 @@ const TaxonomyWorkspace = ({
                                                         {genreTracksCount} pistas
                                                     </span>
                                                     <span className="text-gray-500 text-xs font-mono">
-                                                        📁 /{genre}/
+                                                        <Icons.Folder size={14} className="inline-block align-[-2px]" /> /{genre}/
                                                     </span>
                                                 </div>
                                             </div>
@@ -20122,7 +19614,7 @@ const TaxonomyWorkspace = ({
                                                                 </div>
 
                                                                 <div className="text-[10px] font-mono text-gray-400 truncate mb-2" title={`${rutaBase}/${genre}/${subg}/`}>
-                                                                    📁 /{genre}/{subg}/
+                                                                    <Icons.Folder size={14} className="inline-block align-[-2px]" /> /{genre}/{subg}/
                                                                 </div>
 
                                                                 {matchingTracks.length > 0 ? (
@@ -20841,7 +20333,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 }`}
                                 title="Combina escaneo espectral de drop con respaldo acústico automático para máxima precisión"
                             >
-                                <span>⚡</span>
+                                <Icons.Zap size={14} className="inline-block align-[-2px]" />
                                 <span>Híbrido Pro (Recomendado)</span>
                             </button>
                             <button
@@ -20854,7 +20346,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 }`}
                                 title="Escaneo multi-segmento de drops y breakdowns para pistas de DJ"
                             >
-                                <span>🔵</span>
+                                <span className="inline-block w-2 h-2 rounded-full bg-sky-400 " aria-hidden="true" />
                                 <span>Escaneo Espectral Smart Drop</span>
                             </button>
                             <button
@@ -20867,7 +20359,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 }`}
                                 title="Red de Identificación Acústica Pro (ISRC y Catálogo Global)"
                             >
-                                <span>🟣</span>
+                                <span className="inline-block w-2 h-2 rounded-full bg-violet-400 " aria-hidden="true" />
                                 <span>Identificación Acústica Pro</span>
                             </button>
                         </div>
@@ -20883,7 +20375,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         }`}
                         title="Configurar claves de API o token personalizado"
                     >
-                        <span>⚙️</span>
+                        <Icons.Gear size={14} className="inline-block align-[-2px]" />
                         <span>{showConfig ? 'Ocultar Opciones' : 'Opciones API'}</span>
                         {auddToken && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
                     </button>
@@ -20978,7 +20470,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         {micPermissionError && !isListening && (
                             <div className="mt-3 p-3 bg-amber-950/90 border border-amber-600/70 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn">
                                 <div className="flex items-center gap-1.5 font-bold text-amber-300">
-                                    <span>🔒</span>
+                                    <Icons.Lock size={14} className="inline-block align-[-2px]" />
                                     <span>Micrófono de navegador restringido</span>
                                 </div>
                                 <p className="text-[10px] text-gray-300 leading-tight">
@@ -20992,7 +20484,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                     onClick={startHardwareMicrophoneListening}
                                     className="mt-1 w-full py-1.5 px-2 bg-gradient-to-r from-djcyan-500 to-emerald-400 hover:from-djcyan-400 hover:to-emerald-300 text-black font-bold text-[11px] rounded-lg cursor-pointer transition-all shadow"
                                 >
-                                    🎛️ Usar Captura Hardware de Sistema
+                                    <Icons.Sliders size={14} className="inline-block align-[-2px]" /> Usar Captura Hardware de Sistema
                                 </button>
                             </div>
                         )}
@@ -21027,7 +20519,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                     className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-lg shadow-djcyan-500/20 cursor-pointer flex items-center gap-1 transition-all"
                                     title="Enviar grabación inmediatamente sin esperar al final de los 10 segundos"
                                 >
-                                    <span>⚡</span>
+                                    <Icons.Zap size={14} className="inline-block align-[-2px]" />
                                     <span>Identificar Ya</span>
                                 </button>
                                 <button
@@ -21036,7 +20528,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                     className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-djzinc-800 hover:bg-red-950 text-gray-300 hover:text-red-300 border border-djzinc-700 cursor-pointer transition-all"
                                     title="Cancelar la captura actual"
                                 >
-                                    ✕ Cancelar
+                                    <Icons.Close size={14} className="inline-block align-[-2px]" /> Cancelar
                                 </button>
                             </div>
                         )}
@@ -21094,7 +20586,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                     />
 
                     <div className="my-3 w-28 h-28 rounded-2xl border-2 border-dashed border-djzinc-700 hover:border-djcyan-400 flex flex-col items-center justify-center transition-colors bg-djzinc-950">
-                        <span className="text-3xl mb-1">📁</span>
+                        <Icons.Folder size={14} className="inline-block align-[-2px] mb-1" />
                         <span className="text-[10px] font-mono font-bold text-gray-300">ARRASTRAR AQUÍ</span>
                     </div>
 
@@ -21115,7 +20607,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                             </span>
                             {identifiedTrack.motor_usado && (
                                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gradient-to-r from-blue-950 to-indigo-950 text-djcyan-300 border border-djcyan-700/60 shadow">
-                                    ⚡ {identifiedTrack.motor_usado}
+                                    <Icons.Zap size={14} className="inline-block align-[-2px]" /> {identifiedTrack.motor_usado}
                                 </span>
                             )}
                         </div>
@@ -21131,7 +20623,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 className="w-6 h-6 rounded-full bg-djzinc-850 hover:bg-red-950 text-gray-400 hover:text-red-400 flex items-center justify-center text-xs font-bold border border-djzinc-750 cursor-pointer transition-colors"
                                 title="Descartar esta detección"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
                     </div>
@@ -21210,7 +20702,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                     <span className="text-gray-500 text-[10px]">Tag ID3 / Libreta</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-base">💬</span>
+                                    <Icons.MessageSquare size={14} className="inline-block align-[-2px]" />
                                     <input 
                                         type="text" 
                                         value={identifiedTrack.comment || identifiedTrack.comentario || ''} 
@@ -21250,7 +20742,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                     className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
                                     title="Añadir esta pista a tu Libreta Digital de Apuntes DJ"
                                 >
-                                    <span className="text-base">📝</span>
+                                    <Icons.FileText size={14} className="inline-block align-[-2px]" />
                                     <span>Apuntar en Lista</span>
                                 </button>
 
@@ -21260,7 +20752,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                     className="px-4 py-2.5 bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-800 font-mono font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                                     title="Descartar esta detección y dejar el radar listo"
                                 >
-                                    <span>🗑️</span>
+                                    <Icons.Trash size={14} className="inline-block align-[-2px]" />
                                     <span>Descartar</span>
                                 </button>
 
@@ -21272,7 +20764,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                     className="px-3.5 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-djgreen-400 border border-djgreen-800/80 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
                                     title="Enviar a la cola de descarga en FLAC"
                                 >
-                                    <span>📥</span>
+                                    <Icons.Download size={14} className="inline-block align-[-2px]" />
                                     <span>Record Pool</span>
                                 </button>
 
@@ -21282,7 +20774,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                     className="px-3.5 py-2 bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-400 border border-djcyan-800/80 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
                                     title="Añadir a la tabla de auditoría para análisis DSP"
                                 >
-                                    <span>📋</span>
+                                    <Icons.Copy size={14} className="inline-block align-[-2px]" />
                                     <span>Auditoría DJ</span>
                                 </button>
 
@@ -21305,7 +20797,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-djzinc-800 pb-3">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-bold text-sm shadow">
-                            📓
+                            <Icons.Notebook size={14} className="inline-block align-[-2px]" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
@@ -21336,7 +20828,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                             className="px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-djgreen-400 border border-djgreen-700/60 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-40"
                             title="Descargar listado en formato Excel (.xls / .xlsx)"
                         >
-                            <span>📊</span>
+                            <Icons.Excel size={14} className="inline-block align-[-2px]" />
                             <span>Descargar XLS</span>
                         </button>
 
@@ -21347,7 +20839,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                             className="px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-djcyan-400 border border-djcyan-700/60 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-40"
                             title="Descargar tracklist limpio en formato texto (.txt)"
                         >
-                            <span>📄</span>
+                            <Icons.FileText size={14} className="inline-block align-[-2px]" />
                             <span>Descargar TXT</span>
                         </button>
 
@@ -21358,7 +20850,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                 className="px-2.5 py-1.5 bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800/80 font-mono font-bold text-xs rounded-lg shadow cursor-pointer transition-colors"
                                 title="Vaciar todos los apuntes"
                             >
-                                🗑️ Vaciar
+                                <Icons.Trash size={14} className="inline-block align-[-2px]" /> Vaciar
                             </button>
                         )}
                     </div>
@@ -21367,7 +20859,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 {/* Lista / Tabla de Apuntes */}
                 {notebookTracks.length === 0 ? (
                     <div className="py-10 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-850 rounded-xl bg-djzinc-950/50">
-                        <span className="text-2xl block mb-1">📝</span>
+                        <Icons.FileText size={14} className="inline-block align-[-2px] block mb-1" />
                         Tu libreta de apuntes está vacía. Cuando identifiques un track en el Radar, pulsa <strong className="text-emerald-400">"Apuntar en Lista"</strong> para guardarlo aquí.
                     </div>
                 ) : (
@@ -21439,7 +20931,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                             <td className="py-2 px-2 text-center font-mono text-gray-400">{row.year || '--'}</td>
                                             <td className="py-2 px-3 text-left">
                                                 <div className="flex items-center gap-1.5 max-w-[260px]">
-                                                    <span className="text-emerald-400 text-xs shrink-0">💬</span>
+                                                    <Icons.MessageSquare size={14} className="inline-block align-[-2px] text-emerald-400  shrink-0" />
                                                     <input 
                                                         type="text" 
                                                         value={row.comment || row.comentario || ''} 
@@ -21462,7 +20954,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                                         className="px-2 py-0.5 bg-djzinc-850 hover:bg-djgreen-950 text-djgreen-400 border border-djzinc-700 hover:border-djgreen-700/60 rounded text-[10px] font-mono cursor-pointer transition-colors"
                                                         title="Enviar a Record Pool"
                                                     >
-                                                        📥 Pool
+                                                        <Icons.Download size={14} className="inline-block align-[-2px]" /> Pool
                                                     </button>
                                                     <button
                                                         type="button"
@@ -21470,7 +20962,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                                         className="px-2 py-0.5 bg-djzinc-850 hover:bg-djcyan-950 text-djcyan-400 border border-djzinc-700 hover:border-djcyan-700/60 rounded text-[10px] font-mono cursor-pointer transition-colors"
                                                         title="Añadir a Auditoría"
                                                     >
-                                                        📋 Auditar
+                                                        <Icons.Copy size={14} className="inline-block align-[-2px]" /> Auditar
                                                     </button>
                                                     <button
                                                         type="button"
@@ -21478,7 +20970,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                                         className="px-1.5 py-0.5 text-gray-500 hover:text-red-400 text-xs cursor-pointer transition-colors"
                                                         title="Eliminar de la libreta"
                                                     >
-                                                        ✕
+                                                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                                                     </button>
                                                 </div>
                                             </td>
@@ -21496,7 +20988,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 <div className="space-y-3">
                     <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
                         <h4 className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                            <span>🕒</span>
+                            <Icons.Clock size={14} className="inline-block align-[-2px]" />
                             <span>HISTORIAL DE PISTAS IDENTIFICADAS ({history.length})</span>
                         </h4>
                         <button
@@ -21538,7 +21030,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                             className="w-7 h-7 rounded bg-djzinc-900 hover:bg-djcyan-500 hover:text-black text-djcyan-400 flex items-center justify-center text-xs font-bold border border-djzinc-750 transition-colors shadow"
                                             title="Pre-escucha"
                                         >
-                                            ▶
+                                            <Icons.Play size={14} className="inline-block align-[-2px]" />
                                         </button>
                                     )}
                                     <button
@@ -21830,7 +21322,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                             className="px-3.5 py-1.5 bg-gradient-to-r from-djcyan-500 to-djcyan-400 hover:from-djcyan-400 hover:to-djcyan-300 disabled:opacity-50 text-black font-black text-xs rounded-lg shadow-md shadow-djcyan-500/30 flex items-center gap-2 cursor-pointer transition-transform active:scale-95 shrink-0"
                             title="Lanza el crawler para buscar noticias y tendencias de música electrónica en la web ahora mismo"
                         >
-                            <span className={isCrawling ? "animate-spin" : ""}>🔄</span>
+                            <span className={isCrawling ? "animate-spin" : ""}><Icons.Refresh size={14} className="inline-block align-[-2px]" /></span>
                             <span>{isCrawling ? "Rastreando la Web..." : "Sincronizar Crawler"}</span>
                         </button>
                     </div>
@@ -21878,7 +21370,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                         {/* Selector de Rango de Fecha */}
                         <div className="flex items-center gap-1.5 bg-[#0d0d15] border border-djzinc-800 rounded-lg px-2.5 py-1 text-xs font-mono">
-                            <span className="text-gray-400">📅</span>
+                            <Icons.Calendar size={14} className="inline-block align-[-2px] text-gray-400" />
                             <select
                                 value={dateFilter}
                                 onChange={(e) => setDateFilter(e.target.value)}
@@ -21901,14 +21393,14 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                 placeholder="Buscar noticias, artistas..."
                                 className="w-full bg-[#0d0d15] border border-djzinc-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 outline-none focus:border-djcyan-500 transition-colors font-mono"
                             />
-                            <span className="absolute left-2.5 top-2 text-gray-500 text-xs">🔍</span>
+                            <Icons.Search size={14} className="inline-block align-[-2px] absolute left-2.5 top-2 text-gray-500" />
                             {searchQuery && (
                                 <button
                                     type="button"
                                     onClick={() => setSearchQuery("")}
                                     className="absolute right-2.5 top-1.5 text-gray-500 hover:text-white text-xs cursor-pointer"
                                 >
-                                    ✕
+                                    <Icons.Close size={14} className="inline-block align-[-2px]" />
                                 </button>
                             )}
                         </div>
@@ -21922,7 +21414,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                     {/* Cabecera de Eventos */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-djzinc-800 pb-3 gap-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">🎪</span>
+                            <Icons.Star size={14} className="inline-block align-[-2px]" />
                             <div>
                                 <h2 className="text-base font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
                                     <span>Eventos & Clubs Time To House</span>
@@ -21943,7 +21435,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                     {/* Selector de Ciudades (Por defecto Madrid) */}
                     <div className="p-3 bg-[#0d0e1c] rounded-2xl border border-djzinc-800 flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-gray-300 mr-1 shrink-0">
-                            <span>📍 Seleccionar Ciudad:</span>
+                            <span><Icons.Pin size={14} className="inline-block align-[-2px]" /> Seleccionar Ciudad:</span>
                         </div>
                         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                             {["Madrid", "Barcelona", "Ibiza", "Valencia", "Sevilla", "Bilbao", "Ámsterdam", "Berlín", "Londres", "Miami", "Todas"].map(city => {
@@ -22034,7 +21526,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                         </div>
 
                                         <div className="absolute bottom-2.5 left-3 text-[11px] font-mono font-bold text-white bg-black/85 px-2.5 py-1 rounded-lg border border-djzinc-750 flex items-center gap-1.5">
-                                            <span>🏛️</span>
+                                            <Icons.Library size={14} className="inline-block align-[-2px]" />
                                             <span>{fest.venue}</span>
                                         </div>
                                     </div>
@@ -22059,11 +21551,11 @@ const TrendsWorkspace = ({ lang = "es" }) => {
 
                                             <div className="p-2.5 bg-[#121324] rounded-xl border border-djzinc-800 space-y-1 text-[11px] font-mono">
                                                 <div className="flex items-center justify-between text-gray-400">
-                                                    <span>🔊 Sound System:</span>
+                                                    <span><Icons.Volume size={14} className="inline-block align-[-2px]" /> Sound System:</span>
                                                     <span className="text-cyan-300 font-bold truncate max-w-[170px]" title={fest.sound_system}>{fest.sound_system}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between text-gray-400">
-                                                    <span>⏱️ Fechas / Horario:</span>
+                                                    <span><Icons.Clock size={14} className="inline-block align-[-2px]" /> Fechas / Horario:</span>
                                                     <span className="text-amber-300 font-bold">{fest.dates}</span>
                                                 </div>
                                             </div>
@@ -22073,7 +21565,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                                 <div className="flex flex-wrap gap-1">
                                                     {(fest.headliners || []).map((hl, i) => (
                                                         <span key={i} className="text-[9.5px] font-mono px-2 py-0.5 rounded-md bg-[#161729] text-gray-200 border border-djzinc-750 font-bold">
-                                                            ★ {hl}
+                                                            <Icons.Star size={14} className="inline-block align-[-2px]" /> {hl}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -22109,7 +21601,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 <div className="p-4 md:p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">🎛️</span>
+                            <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                             <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
                                 Controladoras DJ Profesionales & Sistemas Todo-en-Uno (2026)
                             </h2>
@@ -22167,7 +21659,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                         <div className="space-y-1 text-xs font-mono">
                                             {(item.key_features || []).map((feat, fIdx) => (
                                                 <div key={fIdx} className="flex items-center gap-1.5 text-gray-300 text-[11px]">
-                                                    <span className="text-cyan-400 font-bold">✓</span>
+                                                    <Icons.Check size={14} className="inline-block align-[-2px] text-cyan-400 font-bold" />
                                                     <span>{feat}</span>
                                                 </div>
                                             ))}
@@ -22193,7 +21685,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 <div className="p-4 md:p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">🔌</span>
+                            <Icons.Link size={14} className="inline-block align-[-2px]" />
                             <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
                                 Gadgets Indispensables de Cabina & Accesorios Pro
                             </h2>
@@ -22231,7 +21723,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                             {item.name}
                                         </h3>
                                         <div className="p-2.5 bg-[#121824] rounded-xl border border-emerald-900/50 text-xs font-mono text-emerald-200">
-                                            💡 {item.utility}
+                                            <Icons.Bulb size={14} className="inline-block align-[-2px]" /> {item.utility}
                                         </div>
 
                                         <div className="space-y-1 text-xs font-mono">
@@ -22263,7 +21755,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 <div className="p-4 md:p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">🎧</span>
+                            <Icons.Headphones size={14} className="inline-block align-[-2px]" />
                             <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
                                 Material DJ Profesional: Auriculares, Giradiscos & Cápsulas
                             </h2>
@@ -22307,7 +21799,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                         <div className="space-y-1 text-xs font-mono">
                                             {(item.specs || []).map((sp, sIdx) => (
                                                 <div key={sIdx} className="flex items-center gap-1.5 text-gray-300 text-[11px]">
-                                                    <span className="text-purple-400 font-bold">✓</span>
+                                                    <Icons.Check size={14} className="inline-block align-[-2px] text-purple-400 font-bold" />
                                                     <span>{sp}</span>
                                                 </div>
                                             ))}
@@ -22333,7 +21825,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 <div className="p-4 md:p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">🎛️</span>
+                            <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                             <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
                                 Desglose Técnico de Sesiones Históricas (Harmonic & Energy Flow)
                             </h2>
@@ -22377,7 +21869,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 text-[10px] font-mono text-purple-400 font-bold mb-1">
-                                            <span>⏱️ {sb.duration}</span>
+                                            <span><Icons.Clock size={14} className="inline-block align-[-2px]" /> {sb.duration}</span>
                                             <span>•</span>
                                             <span>{sb.event}</span>
                                         </div>
@@ -22410,12 +21902,12 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                 </div>
 
                                 <div className="p-2.5 bg-[#141420] rounded-xl border border-djzinc-800 text-xs">
-                                    <div className="text-[10px] font-mono text-gray-400 mb-0.5">⚡ Transición Maestra:</div>
+                                    <div className="text-[10px] font-mono text-gray-400 mb-0.5"><Icons.Zap size={14} className="inline-block align-[-2px]" /> Transición Maestra:</div>
                                     <p className="text-xs text-gray-200 italic font-medium">"{sb.key_transition}"</p>
                                 </div>
 
                                 <div className="pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400">
-                                    <span className="truncate max-w-xs">📚 Ref: {sb.reference}</span>
+                                    <span className="truncate max-w-xs"><Icons.Knowledge size={14} className="inline-block align-[-2px]" /> Ref: {sb.reference}</span>
                                     <span className="text-purple-400 font-bold group-hover:translate-x-1 transition-transform">Ver Desglose →</span>
                                 </div>
                             </div>
@@ -22429,7 +21921,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 <div className="p-4 md:p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">🎙️</span>
+                            <Icons.Mic size={14} className="inline-block align-[-2px]" />
                             <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
                                 Entrevistas de Cabina & Filosofía de Mezcla
                             </h2>
@@ -22491,7 +21983,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                     </div>
 
                                     <div className="pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400">
-                                        <span className="truncate max-w-[160px]" title={it.reference}>📖 {it.reference}</span>
+                                        <span className="truncate max-w-[160px]" title={it.reference}><Icons.Knowledge size={14} className="inline-block align-[-2px]" /> {it.reference}</span>
                                         <span className="text-rose-400 font-bold group-hover:translate-x-1 transition-transform">Leer Q&A →</span>
                                     </div>
                                 </div>
@@ -22506,7 +21998,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                 <div className="p-4 md:p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-djzinc-800 pb-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">📡</span>
+                            <Icons.Radar size={14} className="inline-block align-[-2px]" />
                             <h2 className="text-base font-black text-white uppercase tracking-wider font-mono">
                                 Radar Acústico & Nuevas Metodologías de Cabina
                             </h2>
@@ -22550,7 +22042,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                         </div>
                     ) : filteredItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-500">
-                            <span className="text-3xl">📡</span>
+                            <Icons.Radar size={14} className="inline-block align-[-2px]" />
                             <span className="text-xs font-mono font-bold text-gray-400">No se encontraron noticias con los filtros actuales</span>
                             <button
                                 type="button"
@@ -22586,7 +22078,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                             </span>
                                         </div>
                                         <div className="absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur border border-djzinc-800">
-                                            ⏱️ {item.read_time || "4 min"}
+                                            <Icons.Clock size={14} className="inline-block align-[-2px]" /> {item.read_time || "4 min"}
                                         </div>
                                     </div>
 
@@ -22641,7 +22133,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                             className="absolute top-3 right-3 z-50 text-white hover:text-white text-sm font-black font-mono cursor-pointer w-9 h-9 rounded-full bg-black/85 hover:bg-red-600 border border-white/30 shadow-2xl flex items-center justify-center transition-all active:scale-90"
                             title="Cerrar artículo"
                         >
-                            ✕
+                            <Icons.Close size={14} className="inline-block align-[-2px]" />
                         </button>
 
                         <div className="h-56 w-full rounded-xl overflow-hidden relative">
@@ -22678,13 +22170,13 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                         {readingArticle.takeaways && readingArticle.takeaways.length > 0 && (
                             <div className="p-3.5 bg-[#12121e] border border-djcyan-500/30 rounded-xl space-y-2">
                                 <h4 className="text-xs font-mono font-black text-djcyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>🎯</span>
+                                    <Icons.Target size={14} className="inline-block align-[-2px]" />
                                     <span>Puntos Clave & Especificaciones Técnicas:</span>
                                 </h4>
                                 <ul className="space-y-1.5 text-xs text-gray-300 font-mono">
                                     {readingArticle.takeaways.map((tk, idx) => (
                                         <li key={idx} className="flex items-start gap-2">
-                                            <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                                            <Icons.Check size={14} className="inline-block align-[-2px] text-emerald-400 font-bold shrink-0" />
                                             <span>{tk}</span>
                                         </li>
                                     ))}
@@ -22712,7 +22204,7 @@ const TrendsWorkspace = ({ lang = "es" }) => {
                                 <span>Redacción: {readingArticle.author || readingArticle.source}</span>
                                 {readingArticle.reference && (
                                     <span className="text-[10px] text-gray-500 italic mt-0.5">
-                                        📚 Ref: {readingArticle.reference}
+                                        <Icons.Knowledge size={14} className="inline-block align-[-2px]" /> Ref: {readingArticle.reference}
                                     </span>
                                 )}
                             </div>
@@ -23741,7 +23233,7 @@ const SetBuilderWorkspace = ({
             return (
                 <div className="flex-1 flex flex-col items-center justify-center py-20 text-center border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-950/40 p-6">
                     <div className="w-16 h-16 rounded-2xl bg-purple-950/50 border border-purple-800/60 flex items-center justify-center text-purple-400 mb-4 text-2xl">
-                        🕸️
+                        <Icons.Radar size={14} className="inline-block align-[-2px]" />
                     </div>
                     <h3 className="text-base font-mono font-bold text-gray-200 uppercase">Grafo No Lineal Vacío</h3>
                     <p className="text-xs text-gray-400 max-w-md mt-1 mb-6 font-sans">
@@ -23752,7 +23244,7 @@ const SetBuilderWorkspace = ({
                         onClick={handleLoadDemoSet}
                         className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700 cursor-pointer"
                     >
-                        🎵 Cargar Set de Demostración
+                        <Icons.Music size={14} className="inline-block align-[-2px]" /> Cargar Set de Demostración
                     </button>
                 </div>
             );
@@ -23767,7 +23259,7 @@ const SetBuilderWorkspace = ({
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-djzinc-900 to-[#0c0c14] border border-purple-800/40 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-purple-400 font-bold text-sm">🕸️ DJOID Graph Playlists</span>
+                            <span className="text-purple-400 font-bold text-sm"><Icons.Radar size={14} className="inline-block align-[-2px]" /> DJOID Graph Playlists</span>
                             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-900/80 text-purple-200 border border-purple-700">
                                 Grafo Dirigido Acíclico (DAG)
                             </span>
@@ -23784,7 +23276,7 @@ const SetBuilderWorkspace = ({
                             disabled={isLoadingGraph}
                             className="px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/30 flex items-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
                         >
-                            <span className={isLoadingGraph ? "animate-spin" : ""}>🔄</span>
+                            <span className={isLoadingGraph ? "animate-spin" : ""}><Icons.Refresh size={14} className="inline-block align-[-2px]" /></span>
                             <span>{isLoadingGraph ? "Calculando Grafo..." : "Regenerar Grafo"}</span>
                         </button>
                     </div>
@@ -23875,7 +23367,7 @@ const SetBuilderWorkspace = ({
                                         {stepAlts.length > 0 && (
                                             <div className="ml-6 sm:ml-12 pl-4 border-l-2 border-dashed border-purple-700/60 space-y-2 py-1">
                                                 <div className="text-[10px] font-mono text-purple-300 flex items-center gap-1.5 font-bold uppercase tracking-wider">
-                                                    <span>🌿 Ramas Alternativas ({stepAlts.length} opciones desde tu biblioteca):</span>
+                                                    <span><Icons.Sparkles size={14} className="inline-block align-[-2px]" /> Ramas Alternativas ({stepAlts.length} opciones desde tu biblioteca):</span>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -23951,7 +23443,7 @@ const SetBuilderWorkspace = ({
                                         {nextTrack && (
                                             <div className="flex items-center justify-center my-1">
                                                 <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#0a0a10] border border-purple-900/50 text-[10px] font-mono">
-                                                    <span className="text-purple-400 font-bold">⬇ Transición #{idx + 1} ➔ #{idx + 2}</span>
+                                                    <span className="text-purple-400 font-bold"><Icons.Download size={14} className="inline-block align-[-2px]" /> Transición #{idx + 1} ➔ #{idx + 2}</span>
                                                     {mainEdge ? (
                                                         <span className={`px-2 py-0.2 rounded-full font-bold ${
                                                             mainEdge.score >= 88 ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
@@ -23984,7 +23476,7 @@ const SetBuilderWorkspace = ({
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-teal-950/20 to-[#0a0f12] border border-emerald-800/40 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-emerald-400 font-bold text-base">🤖 Asesor AI de Sesión & Calidad Acústica</span>
+                            <span className="text-emerald-400 font-bold text-base"><Icons.Brain size={14} className="inline-block align-[-2px]" /> Asesor AI de Sesión & Calidad Acústica</span>
                             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-200 border border-emerald-700">
                                 Google Gemini 2.5 Flash + DSP Engine
                             </span>
@@ -24000,7 +23492,7 @@ const SetBuilderWorkspace = ({
                         disabled={isLoadingAiAudit || setTracks.length === 0}
                         className="px-4 py-2.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-black shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50 shrink-0"
                     >
-                        <span className={isLoadingAiAudit ? "animate-spin" : ""}>⚡</span>
+                        <span className={isLoadingAiAudit ? "animate-spin" : ""}><Icons.Zap size={14} className="inline-block align-[-2px]" /></span>
                         <span>{isLoadingAiAudit ? "Auditando con Gemini AI..." : "Auditar Calidad de Sesión"}</span>
                     </button>
                 </div>
@@ -24016,7 +23508,7 @@ const SetBuilderWorkspace = ({
                 ) : !aiAuditResult ? (
                     <div className="py-16 text-center border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-950/40 p-6 flex flex-col items-center justify-center">
                         <div className="w-14 h-14 rounded-2xl bg-emerald-950/60 border border-emerald-800/80 flex items-center justify-center text-emerald-400 mb-3 text-2xl">
-                            🎚️
+                            <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                         </div>
                         <h3 className="text-base font-mono font-bold text-gray-200">Auditoría no ejecutada aún</h3>
                         <p className="text-xs text-gray-400 max-w-md mt-1 mb-5 font-sans">
@@ -24051,7 +23543,7 @@ const SetBuilderWorkspace = ({
                                 <div>
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-2">
-                                            <span>🎛️ Diagnóstico Táctico Masterclass</span>
+                                            <span><Icons.Sliders size={14} className="inline-block align-[-2px]" /> Diagnóstico Táctico Masterclass</span>
                                             <span className="text-[9px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">
                                                 {aiAuditResult.ai_consejos ? aiAuditResult.ai_consejos.origen : 'Motor DSP Acústico'}
                                             </span>
@@ -24066,7 +23558,7 @@ const SetBuilderWorkspace = ({
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                                         {aiAuditResult.ai_consejos.puntos_clave.map((pt, pIdx) => (
                                             <div key={pIdx} className="text-[11px] font-mono text-gray-400 flex items-start gap-1.5 bg-djzinc-950/60 p-2 rounded-lg border border-djzinc-800">
-                                                <span className="text-emerald-400 shrink-0">✓</span>
+                                                <Icons.Check size={14} className="inline-block align-[-2px] text-emerald-400 shrink-0" />
                                                 <span>{pt}</span>
                                             </div>
                                         ))}
@@ -24079,7 +23571,7 @@ const SetBuilderWorkspace = ({
                         {aiAuditResult.puentes_recomendados && aiAuditResult.puentes_recomendados.length > 0 && (
                             <div className="p-4 rounded-2xl bg-rose-950/20 border border-rose-800/40 space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-rose-400 font-bold text-sm">⚠️ Choques Armónicos Detectados & Soluciones Puente</span>
+                                    <span className="text-rose-400 font-bold text-sm"><Icons.Warning size={14} className="inline-block align-[-2px]" /> Choques Armónicos Detectados & Soluciones Puente</span>
                                 </div>
                                 <p className="text-xs text-gray-400 font-sans">
                                     Hemos localizado pistas en tu biblioteca que pueden insertarse entre los temas con choque armónico para realizar una modulación limpia:
@@ -24103,7 +23595,7 @@ const SetBuilderWorkspace = ({
                                                 }}
                                                 className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700 cursor-pointer shadow shrink-0"
                                             >
-                                                ➕ Insertar Puente
+                                                <Icons.Plus size={14} className="inline-block align-[-2px]" /> Insertar Puente
                                             </button>
                                         </div>
                                     ))}
@@ -24116,7 +23608,7 @@ const SetBuilderWorkspace = ({
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-gray-300 flex items-center gap-2">
-                                        <span>⚡ Propuestas de Estructuración Automática ({aiAuditResult.propuestas.length})</span>
+                                        <span><Icons.Zap size={14} className="inline-block align-[-2px]" /> Propuestas de Estructuración Automática ({aiAuditResult.propuestas.length})</span>
                                         <span className="text-[10px] text-gray-500 font-normal">Reordena tu sesión según diferentes objetivos de club</span>
                                     </h4>
                                 </div>
@@ -24164,7 +23656,7 @@ const SetBuilderWorkspace = ({
                                                 onClick={() => handleAplicarPropuesta(prop)}
                                                 className="w-full py-2 rounded-xl text-xs font-mono font-bold bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700 cursor-pointer transition-all active:scale-95 shadow"
                                             >
-                                                ⚡ Aplicar Esta Propuesta al Set
+                                                <Icons.Zap size={14} className="inline-block align-[-2px]" /> Aplicar Esta Propuesta al Set
                                             </button>
                                         </div>
                                     ))}
@@ -24220,7 +23712,7 @@ const SetBuilderWorkspace = ({
                             className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.55)] border border-purple-400/80 transition-all active:scale-95 cursor-pointer shrink-0 animate-pulse"
                             title="Generar flujo no lineal de sesión estilo DJOID Graph Playlists con alternativas y compatibilidad armónica"
                         >
-                            <span>🕸️</span>
+                            <Icons.Radar size={14} className="inline-block align-[-2px]" />
                             <span>GENERAR FLUJO DE SESIÓN</span>
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/40 text-purple-200 border border-purple-400/50">
                                 GRAPH DAG
@@ -24235,7 +23727,7 @@ const SetBuilderWorkspace = ({
                                 className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition-all active:scale-95 disabled:opacity-40 cursor-pointer animate-pulse shrink-0"
                                 title="Calcula BPM exacto, Tonalidad Camelot, LUFS y Roles Espectrales para las pistas del set sin auditar"
                             >
-                                <span>⚡</span>
+                                <Icons.Zap size={14} className="inline-block align-[-2px]" />
                                 <span>{isAuditingSet ? 'Auditando...' : `Auditar (${stats.pendingAuditCount})`}</span>
                             </button>
                         )}
@@ -24247,7 +23739,7 @@ const SetBuilderWorkspace = ({
                             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
                             title="Reordena automáticamente las pistas para maximizar la compatibilidad armónica Camelot y progresión de BPM"
                         >
-                            <span>⚡</span>
+                            <Icons.Zap size={14} className="inline-block align-[-2px]" />
                             <span className="hidden sm:inline">Auto-Optimizar Pro (Flow Armónico)</span>
                             <span className="sm:hidden">Auto-Optimizar</span>
                         </button>
@@ -24259,7 +23751,7 @@ const SetBuilderWorkspace = ({
                             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.35)] border border-djcyan-300/50 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
                             title="Exportar archivo M3U8 para Pioneer Rekordbox, Serato DJ Pro, Traktor Pro y VirtualDJ"
                         >
-                            <span>💾</span>
+                            <Icons.Save size={14} className="inline-block align-[-2px]" />
                             <span>{isExporting ? 'Exportando...' : 'Exportar (.M3U8)'}</span>
                         </button>
 
@@ -24268,7 +23760,7 @@ const SetBuilderWorkspace = ({
                             onClick={() => setIsAddDrawerOpen(true)}
                             className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 transition-all cursor-pointer shrink-0"
                         >
-                            <span>➕ Añadir</span>
+                            <span><Icons.Plus size={14} className="inline-block align-[-2px]" /> Añadir</span>
                         </button>
 
                         {/* Botón Añadir Carpeta Completa de Música */}
@@ -24278,7 +23770,7 @@ const SetBuilderWorkspace = ({
                             className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
                             title="Seleccionar y añadir una carpeta completa de música a este set"
                         >
-                            <span>📁 Añadir Carpeta</span>
+                            <span><Icons.Folder size={14} className="inline-block align-[-2px]" /> Añadir Carpeta</span>
                         </button>
 
                         {setTracks.length > 0 && (
@@ -24288,7 +23780,7 @@ const SetBuilderWorkspace = ({
                                 className="px-2.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono text-rose-400 hover:bg-rose-950/50 border border-rose-900/40 transition-all cursor-pointer shrink-0"
                                 title="Vaciar set"
                             >
-                                🗑️
+                                <Icons.Trash size={14} className="inline-block align-[-2px]" />
                             </button>
                         )}
                     </div>
@@ -24304,10 +23796,10 @@ const SetBuilderWorkspace = ({
                                 : 'bg-djcyan-950/80 border-djcyan-700 text-djcyan-300'
                     }`}>
                         <div className="flex items-center gap-2">
-                            {exportStatus.type === 'loading' && <span className="animate-spin text-base">⚙</span>}
+                            {exportStatus.type === 'loading' && <Icons.Gear size={14} className="inline-block align-[-2px] animate-spin" />}
                             <span>{exportStatus.msg}</span>
                         </div>
-                        <button type="button" onClick={() => setExportStatus(null)} className="text-gray-400 hover:text-white">✕</button>
+                        <button type="button" onClick={() => setExportStatus(null)} className="text-gray-400 hover:text-white"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                     </div>
                 )}
 
@@ -24375,7 +23867,7 @@ const SetBuilderWorkspace = ({
                             : 'bg-djzinc-900 text-gray-400 hover:text-white hover:bg-djzinc-850'
                     }`}
                 >
-                    <span>🕸️</span>
+                    <Icons.Radar size={14} className="inline-block align-[-2px]" />
                     <span>Graph Playlists (DJOID)</span>
                     <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-800">
                         DAG
@@ -24396,7 +23888,7 @@ const SetBuilderWorkspace = ({
                             : 'bg-djzinc-900 text-gray-400 hover:text-white hover:bg-djzinc-850'
                     }`}
                 >
-                    <span>🤖</span>
+                    <Icons.Brain size={14} className="inline-block align-[-2px]" />
                     <span>Asesor AI & Calidad (Gemini)</span>
                     <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
                         PRO
@@ -24431,14 +23923,14 @@ const SetBuilderWorkspace = ({
                                         onClick={handleLoadDemoSet}
                                         className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-700/60 transition-all cursor-pointer shadow"
                                     >
-                                        🎵 Cargar Set de Demostración
+                                        <Icons.Music size={14} className="inline-block align-[-2px]" /> Cargar Set de Demostración
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setIsAddDrawerOpen(true)}
                                         className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 transition-all cursor-pointer"
                                     >
-                                        ➕ Añadir desde Biblioteca
+                                        <Icons.Plus size={14} className="inline-block align-[-2px]" /> Añadir desde Biblioteca
                                     </button>
                                 </div>
                             </div>
@@ -24594,7 +24086,7 @@ const SetBuilderWorkspace = ({
                                                             className="px-2 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 text-[10px] font-mono font-bold cursor-pointer transition-all shadow"
                                                             title="Auditar acústicamente esta pista ahora para detectar BPM y Key"
                                                         >
-                                                            ⚡ Auditar
+                                                            <Icons.Zap size={14} className="inline-block align-[-2px]" /> Auditar
                                                         </button>
                                                     )}
 
@@ -24605,7 +24097,7 @@ const SetBuilderWorkspace = ({
                                                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-rose-400 hover:bg-rose-950/30 transition-all cursor-pointer ml-1"
                                                         title="Quitar pista del set"
                                                     >
-                                                        ✕
+                                                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -24638,19 +24130,19 @@ const SetBuilderWorkspace = ({
                                                     <div className="text-[9.5px] font-mono text-gray-400 flex items-center gap-2">
                                                         {harmTrans.type === 'UNKNOWN' ? (
                                                             <span className="text-amber-400 font-bold flex items-center gap-1">
-                                                                <span>⚠️</span> <span>Tonalidad pendiente de auditoría</span>
+                                                                <Icons.Warning size={14} className="inline-block align-[-2px]" /> <span>Tonalidad pendiente de auditoría</span>
                                                             </span>
                                                         ) : antiMuddyTrans.isCollision ? (
                                                             <span className="text-red-400 font-bold flex items-center gap-1">
-                                                                <span>⚠️</span> <span>Cortar EQ Low canal saliente</span>
+                                                                <Icons.Warning size={14} className="inline-block align-[-2px]" /> <span>Cortar EQ Low canal saliente</span>
                                                             </span>
                                                         ) : lufsTrans.isAlert ? (
                                                             <span className="text-amber-400 font-bold flex items-center gap-1">
-                                                                <span>🎚️</span> <span>{lufsTrans.delta > 0 ? `Bajar Trim ~${Math.abs(lufsTrans.delta)}dB` : `Subir Trim ~${Math.abs(lufsTrans.delta)}dB`}</span>
+                                                                <Icons.Sliders size={14} className="inline-block align-[-2px]" /> <span>{lufsTrans.delta > 0 ? `Bajar Trim ~${Math.abs(lufsTrans.delta)}dB` : `Subir Trim ~${Math.abs(lufsTrans.delta)}dB`}</span>
                                                             </span>
                                                         ) : (
                                                             <span className="text-emerald-400">
-                                                                ✨ Mezcla fluida garantizada
+                                                                <Icons.Sparkles size={14} className="inline-block align-[-2px]" /> Mezcla fluida garantizada
                                                             </span>
                                                         )}
                                                     </div>
@@ -24671,7 +24163,7 @@ const SetBuilderWorkspace = ({
                     <div className="bg-[#0e0e16] border border-djzinc-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
                         <div className="p-4 border-b border-djzinc-800 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <span className="text-djcyan-400">➕</span>
+                                <Icons.Plus size={14} className="inline-block align-[-2px] text-djcyan-400" />
                                 <h3 className="text-sm font-mono font-bold text-white uppercase">Añadir Pistas al Set</h3>
                             </div>
                             <div className="flex items-center gap-2">
@@ -24681,14 +24173,14 @@ const SetBuilderWorkspace = ({
                                     className="px-2.5 py-1 rounded-xl text-xs font-mono font-bold bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 cursor-pointer shadow-sm transition-all"
                                     title="Seleccionar y cargar una carpeta completa externa de música"
                                 >
-                                    📁 Cargar Carpeta...
+                                    <Icons.Folder size={14} className="inline-block align-[-2px]" /> Cargar Carpeta...
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setIsAddDrawerOpen(false)}
                                     className="text-gray-400 hover:text-white text-sm"
                                 >
-                                    ✕
+                                    <Icons.Close size={14} className="inline-block align-[-2px]" />
                                 </button>
                             </div>
                         </div>
@@ -24729,7 +24221,7 @@ const SetBuilderWorkspace = ({
                                         }}
                                         className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-djcyan-600 to-blue-600 hover:from-djcyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition-all cursor-pointer"
                                     >
-                                        📂 Cargar Pistas de "mi musica"
+                                        <Icons.Folder size={14} className="inline-block align-[-2px]" /> Cargar Pistas de "mi musica"
                                     </button>
                                 </div>
                             ) : (
@@ -25693,7 +25185,7 @@ const MapWorkspace = ({
                             }`}
                             title="Modo Navegar: Arrastra el fondo para moverte y usa la rueda para hacer zoom"
                         >
-                            <span>🖐️</span> <span className="hidden sm:inline">Navegar</span>
+                            <Icons.Target size={14} className="inline-block align-[-2px]" /> <span className="hidden sm:inline">Navegar</span>
                         </button>
                         <button
                             type="button"
@@ -25703,7 +25195,7 @@ const MapWorkspace = ({
                             }`}
                             title="Herramienta Lasso: Dibuja a mano alzada para capturar una zona de pistas"
                         >
-                            <span>✏️</span> <span>Lasso</span>
+                            <Icons.Pencil size={14} className="inline-block align-[-2px]" /> <span>Lasso</span>
                         </button>
                         <button
                             type="button"
@@ -25728,7 +25220,7 @@ const MapWorkspace = ({
                         className="bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-200 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow shrink-0"
                         title="Ir a Set Builder para generar el flujo de sesión en Grafo DAG (DJOID Graph Playlists)"
                     >
-                        <span>🕸️</span>
+                        <Icons.Radar size={14} className="inline-block align-[-2px]" />
                         <span className="hidden md:inline">Graph Playlists</span>
                     </button>
                     {/* BUSCADOR: Limpio, sin artefactos, con icono SVG */}
@@ -25750,7 +25242,7 @@ const MapWorkspace = ({
                                 className="absolute right-2 text-xs text-gray-400 hover:text-white cursor-pointer px-1"
                                 title="Borrar búsqueda"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         )}
                     </div>
@@ -25764,7 +25256,7 @@ const MapWorkspace = ({
                         }`}
                         title={showHarmonicPaths ? "Ocultar líneas de mezcla armónica" : "Mostrar enlaces armónicos entre pistas compatibles"}
                     >
-                        ⚡
+                        <Icons.Zap size={14} className="inline-block align-[-2px]" />
                     </button>
                 </div>
             </div>
@@ -25790,7 +25282,7 @@ const MapWorkspace = ({
                     <div className="bg-[#0b0c16]/95 border border-djzinc-750/90 rounded-2xl p-3 shadow-2xl backdrop-blur-xl transition-all w-[264px]">
                         <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-djzinc-800/80">
                             <div className="flex items-center gap-2">
-                                <span className="text-sm">🎡</span>
+                                <Icons.Disc size={14} className="inline-block align-[-2px]" />
                                 <span className="text-xs font-bold text-white tracking-wide">Rueda Camelot</span>
                                 {selectedTrack && (
                                     <span 
@@ -26010,7 +25502,7 @@ const MapWorkspace = ({
                         {/* Cabecera del Módulo */}
                         <div className="flex items-center justify-between w-full pb-1.5 border-b border-djzinc-800/80">
                             <span className="text-[10px] font-bold tracking-wider uppercase text-djcyan-400 flex items-center gap-1">
-                                <span>🎛️</span>
+                                <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                                 <span>PAN / ZOOM</span>
                             </span>
                             <span className="text-[9px] text-white font-black bg-djzinc-900 px-1.5 py-0.2 rounded border border-djzinc-800">
@@ -26060,7 +25552,7 @@ const MapWorkspace = ({
                                     className="w-8 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all"
                                     title="Mover mapa a la derecha"
                                 >
-                                    ▶
+                                    <Icons.Play size={14} className="inline-block align-[-2px]" />
                                 </button>
                             </div>
 
@@ -26132,7 +25624,7 @@ const MapWorkspace = ({
                     <div className="absolute inset-0 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm z-30">
                         <div className="max-w-md w-full bg-djzinc-950 border border-djzinc-800 p-6 rounded-2xl shadow-2xl text-center">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-djcyan-500 to-indigo-600 flex items-center justify-center text-black text-2xl mx-auto mb-4 shadow-[0_0_25px_rgba(6,182,212,0.4)]">
-                                🌌
+                                <Icons.Star size={14} className="inline-block align-[-2px]" />
                             </div>
                             <h3 className="font-syne font-black text-lg text-white mb-2">
                                 Explora tu Biblioteca como un Paisaje Espacial
@@ -26146,7 +25638,7 @@ const MapWorkspace = ({
                                     onClick={() => setUseDemo(true)}
                                     className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all"
                                 >
-                                    ⚡ Cargar Demo Electrónica (16 Tracks)
+                                    <Icons.Zap size={14} className="inline-block align-[-2px]" /> Cargar Demo Electrónica (16 Tracks)
                                 </button>
                                 {onSelectDirectory && (
                                     <button
@@ -26154,7 +25646,7 @@ const MapWorkspace = ({
                                         onClick={onSelectDirectory}
                                         className="w-full py-2.5 px-4 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs cursor-pointer active:scale-95 transition-all"
                                     >
-                                        📂 Abrir Carpeta de Música Local
+                                        <Icons.Folder size={14} className="inline-block align-[-2px]" /> Abrir Carpeta de Música Local
                                     </button>
                                 )}
                             </div>
@@ -26176,7 +25668,7 @@ const MapWorkspace = ({
                                 {hoveredTrack.cover ? (
                                     <img src={hoveredTrack.cover} alt="Cover" className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">🎵</div>
+                                    <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs"><Icons.Music size={14} className="inline-block align-[-2px]" /></div>
                                 )}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -26203,7 +25695,7 @@ const MapWorkspace = ({
 
                         <div className="space-y-1 mb-2">
                             <div className="flex items-center justify-between text-[9px]">
-                                <span className="text-gray-400">⚡ Energía</span>
+                                <span className="text-gray-400"><Icons.Zap size={14} className="inline-block align-[-2px]" /> Energía</span>
                                 <span className="text-amber-400 font-bold">{hoveredTrack.energy !== undefined ? hoveredTrack.energy : 80}%</span>
                             </div>
                             <div className="w-full h-1 bg-djzinc-800 rounded-full overflow-hidden">
@@ -26231,7 +25723,7 @@ const MapWorkspace = ({
                                 className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-djzinc-800 cursor-pointer"
                                 title="Cerrar detalles"
                             >
-                                ✕
+                                <Icons.Close size={14} className="inline-block align-[-2px]" />
                             </button>
                         </div>
 
@@ -26244,7 +25736,7 @@ const MapWorkspace = ({
                                         className="w-full h-full object-cover" 
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">🎵</div>
+                                    <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm"><Icons.Music size={14} className="inline-block align-[-2px]" /></div>
                                 )}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -26308,7 +25800,7 @@ const MapWorkspace = ({
                                 className="py-2 px-3 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 font-mono font-bold text-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
                                 title="Añadir esta pista al Set Builder"
                             >
-                                <span>➕ Set</span>
+                                <span><Icons.Plus size={14} className="inline-block align-[-2px]" /> Set</span>
                             </button>
                         </div>
                     </div>
@@ -26329,14 +25821,14 @@ const MapWorkspace = ({
                                 onClick={() => setSelectedMapTracks([])}
                                 className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-djzinc-800 cursor-pointer"
                             >
-                                ✕ Deseleccionar
+                                <Icons.Close size={14} className="inline-block align-[-2px]" /> Deseleccionar
                             </button>
                         </div>
 
                         <div className="flex items-center justify-between gap-3 flex-wrap">
                             <div className="flex items-center gap-3 text-[11px] text-gray-400">
-                                <span>🥁 Promedio: <strong className="text-white">{selBpmAvg} BPM</strong></span>
-                                <span>⚡ Energía: <strong className="text-amber-300">{selEnergyAvg}%</strong></span>
+                                <span><Icons.Wave size={14} className="inline-block align-[-2px]" /> Promedio: <strong className="text-white">{selBpmAvg} BPM</strong></span>
+                                <span><Icons.Zap size={14} className="inline-block align-[-2px]" /> Energía: <strong className="text-amber-300">{selEnergyAvg}%</strong></span>
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -26350,7 +25842,7 @@ const MapWorkspace = ({
                                     className="px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-800 text-white text-xs font-bold border border-djzinc-700 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                                     title="Reproducir primer tema de la zona capturada"
                                 >
-                                    <span>▶</span> <span>Reproducir Zona</span>
+                                    <Icons.Play size={14} className="inline-block align-[-2px]" /> <span>Reproducir Zona</span>
                                 </button>
                                 <button
                                     type="button"
@@ -26362,7 +25854,7 @@ const MapWorkspace = ({
                                     className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer active:scale-95 transition-all"
                                     title="Enviar pistas capturadas en esta zona directamente al Set Builder"
                                 >
-                                    <span>⚡</span> <span>Enviar a Set</span>
+                                    <Icons.Zap size={14} className="inline-block align-[-2px]" /> <span>Enviar a Set</span>
                                 </button>
                                 <button
                                     type="button"
@@ -26377,7 +25869,7 @@ const MapWorkspace = ({
                                     className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-500/30 cursor-pointer active:scale-95 transition-all"
                                     title="Enviar pistas capturadas y generar Flujo de Sesión (Graph Playlists)"
                                 >
-                                    <span>🕸️</span> <span>Flujo Sesión (DAG)</span>
+                                    <Icons.Radar size={14} className="inline-block align-[-2px]" /> <span>Flujo Sesión (DAG)</span>
                                 </button>
                             </div>
                         </div>
@@ -26469,7 +25961,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                             className="px-3.5 py-2 bg-purple-950/80 hover:bg-purple-900 border border-purple-500/60 text-purple-200 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md font-mono"
                             title="Ver Teaser Comercial de 60 segundos"
                         >
-                            <span>🎬</span>
+                            <Icons.Film size={14} className="inline-block align-[-2px]" />
                             <span>Ver Teaser (60s)</span>
                         </button>
                         <button
@@ -26478,7 +25970,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                             className="px-3.5 py-2 bg-djcyan-950/80 hover:bg-djcyan-900 border border-djcyan-500/60 text-djcyan-300 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md font-mono"
                             title="Lanzar el Tour Guiado Spotlight por la cabina"
                         >
-                            <span>🔦</span>
+                            <Icons.Search size={14} className="inline-block align-[-2px]" />
                             <span>Tour Guiado Cabina</span>
                         </button>
                         <a
@@ -26487,7 +25979,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                             className="px-3.5 py-2 bg-gradient-to-r from-djcyan-500 to-purple-600 hover:from-djcyan-400 hover:to-purple-500 text-black font-black text-xs rounded-xl shadow-lg shadow-djcyan-500/20 flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95 font-mono"
                             title="Descargar el manual completo en formato PDF con capturas de la aplicación y arquitectura de código"
                         >
-                            <span>📄</span>
+                            <Icons.FileText size={14} className="inline-block align-[-2px]" />
                             <span>Manual PDF</span>
                         </a>
                     </div>
@@ -26504,7 +25996,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                 : "border-transparent text-gray-400 hover:text-white"
                         }`}
                     >
-                        <span>🎓 Cursos Estructurados</span>
+                        <span><Icons.Knowledge size={14} className="inline-block align-[-2px]" /> Cursos Estructurados</span>
                         <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-djzinc-800 text-gray-300">
                             {(knowledgeData.courses || []).length}
                         </span>
@@ -26518,7 +26010,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                 : "border-transparent text-gray-400 hover:text-white"
                         }`}
                     >
-                        <span>📺 Vídeos & Masterclasses</span>
+                        <span><Icons.Film size={14} className="inline-block align-[-2px]" /> Vídeos & Masterclasses</span>
                         <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-djzinc-800 text-gray-300">
                             {(knowledgeData.videos || []).length}
                         </span>
@@ -26532,7 +26024,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                 : "border-transparent text-gray-400 hover:text-white"
                         }`}
                     >
-                        <span>📄 Manuales & Guías Técnicas</span>
+                        <span><Icons.FileText size={14} className="inline-block align-[-2px]" /> Manuales & Guías Técnicas</span>
                         <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-djzinc-800 text-gray-300">
                             {(knowledgeData.manuals || []).length}
                         </span>
@@ -26546,7 +26038,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                 : "border-transparent text-gray-400 hover:text-white"
                         }`}
                     >
-                        <span>⚡ Hacks & Curiosidades Acústicas</span>
+                        <span><Icons.Zap size={14} className="inline-block align-[-2px]" /> Hacks & Curiosidades Acústicas</span>
                         <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-djzinc-800 text-gray-300">
                             {(knowledgeData.tricks || []).length}
                         </span>
@@ -26560,7 +26052,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                 : "border-transparent text-gray-400 hover:text-white"
                         }`}
                     >
-                        <span>📖 Glosario Acústico DJ</span>
+                        <span><Icons.Knowledge size={14} className="inline-block align-[-2px]" /> Glosario Acústico DJ</span>
                         <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-djzinc-800 text-gray-300">
                             {(knowledgeData.glossary || []).length}
                         </span>
@@ -26594,7 +26086,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                                 </span>
                                             </div>
                                             <div className="absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur">
-                                                ⏱️ {course.duration} • {course.lessons_count} lecciones
+                                                <Icons.Clock size={14} className="inline-block align-[-2px]" /> {course.duration} • {course.lessons_count} lecciones
                                             </div>
                                         </div>
 
@@ -26667,7 +26159,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                     />
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition-colors">
                                         <div className="w-10 h-10 rounded-full bg-djcyan-500/90 text-black flex items-center justify-center font-bold pl-0.5 shadow-lg group-hover:scale-110 transition-transform">
-                                            ▶
+                                            <Icons.Play size={14} className="inline-block align-[-2px]" />
                                         </div>
                                     </div>
                                     <div className="absolute bottom-2 right-2 text-[10px] font-mono text-white bg-black/80 px-1.5 py-0.2 rounded backdrop-blur">
@@ -26728,11 +26220,11 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                     8 páginas de ingeniería que cubren la arquitectura limpia del sistema, el mapa exhaustivo de código en <code>services/</code> y <code>web/</code>, física de tornamesa directa, ecualizador Web Audio API de 3 vías, detección SuperFLAC, endpoints REST y resultados de la suite Pytest (117 tests superados).
                                 </p>
                                 <div className="flex items-center gap-4 text-xs font-mono text-gray-400">
-                                    <span>📄 Formato: PDF Corporativo A4</span>
+                                    <span><Icons.FileText size={14} className="inline-block align-[-2px]" /> Formato: PDF Corporativo A4</span>
                                     <span>•</span>
-                                    <span>📊 8 Páginas Ilustradas</span>
+                                    <span><Icons.Excel size={14} className="inline-block align-[-2px]" /> 8 Páginas Ilustradas</span>
                                     <span>•</span>
-                                    <span>💾 ~2.1 MB</span>
+                                    <span><Icons.Save size={14} className="inline-block align-[-2px]" /> ~2.1 MB</span>
                                 </div>
                             </div>
 
@@ -26741,7 +26233,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                 download="CleanDJmix_PRO_Manual_Funcional_y_Tecnico.pdf"
                                 className="px-6 py-3 bg-gradient-to-r from-djcyan-400 via-sky-400 to-purple-500 hover:from-djcyan-300 hover:to-purple-400 text-black font-black text-sm rounded-xl shadow-lg shadow-djcyan-500/30 flex items-center gap-2.5 cursor-pointer transition-transform active:scale-95 shrink-0"
                             >
-                                <span className="text-base">📥</span>
+                                <Icons.Download size={14} className="inline-block align-[-2px]" />
                                 <span>Descargar Manual PDF</span>
                             </a>
                         </div>
@@ -26782,7 +26274,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                         <div className="p-4 bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-cyan-950/40 border border-amber-500/40 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
                             <div className="space-y-1">
                                 <h3 className="text-base font-black text-amber-300 font-mono flex items-center gap-2">
-                                    <span>⚡</span> <span>Hacks Creativos de Cabina & Secretos Psicoacústicos</span>
+                                    <Icons.Zap size={14} className="inline-block align-[-2px]" /> <span>Hacks Creativos de Cabina & Secretos Psicoacústicos</span>
                                 </h3>
                                 <p className="text-xs text-gray-300">
                                     Técnicas no convencionales aplicadas por DJs internacionales: polirritmias métricas, trucos de pads, transiciones wordplay y secretos de sonido de salas icónicas como Berghain.
@@ -26836,7 +26328,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                         {/* Pro Tip */}
                                         {trick.pro_tip && (
                                             <div className="p-2.5 bg-purple-950/40 rounded-xl border border-purple-500/40 text-xs font-mono text-purple-200 flex items-center gap-2">
-                                                <span>💡</span>
+                                                <Icons.Bulb size={14} className="inline-block align-[-2px]" />
                                                 <span className="text-[11px] leading-tight font-medium"><strong>Pro Tip:</strong> {trick.pro_tip}</span>
                                             </div>
                                         )}
@@ -27250,7 +26742,7 @@ const CommercialTeaserModal = ({ isOpen, onClose, onOpenTour }) => {
                             className="p-1.5 rounded-lg bg-djzinc-800 hover:bg-djzinc-700 text-gray-400 hover:text-white cursor-pointer transition-colors"
                             title="Cerrar reproductor"
                         >
-                            ✕
+                            <Icons.Close size={14} className="inline-block align-[-2px]" />
                         </button>
                     </div>
                 </div>
@@ -27283,7 +26775,7 @@ const CommercialTeaserModal = ({ isOpen, onClose, onOpenTour }) => {
                         </div>
 
                         <div className="px-3 py-1 rounded-full bg-djzinc-900 border border-djzinc-800 text-xs font-mono font-bold text-djcyan-300 flex items-center gap-1.5 shadow-sm">
-                            <span>⏱️</span>
+                            <Icons.Clock size={14} className="inline-block align-[-2px]" />
                             <span>{Math.floor(currentTime)}s / 60s</span>
                         </div>
                     </div>
@@ -27299,7 +26791,7 @@ const CommercialTeaserModal = ({ isOpen, onClose, onOpenTour }) => {
                         </h1>
 
                         <p className="text-xs sm:text-sm font-mono font-bold text-djcyan-300 flex items-center gap-2">
-                            <span>⚡</span>
+                            <Icons.Zap size={14} className="inline-block align-[-2px]" />
                             <span>{currentScene.hook}</span>
                         </p>
 
@@ -27385,7 +26877,7 @@ const CommercialTeaserModal = ({ isOpen, onClose, onOpenTour }) => {
                                     }}
                                     className="px-4 py-2 rounded-xl bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 font-black text-xs cursor-pointer flex items-center gap-1.5 transition-all"
                                 >
-                                    <span>🎯</span>
+                                    <Icons.Target size={14} className="inline-block align-[-2px]" />
                                     <span>Hacer Tour Paso a Paso en Cabina</span>
                                 </button>
 
@@ -27394,7 +26886,7 @@ const CommercialTeaserModal = ({ isOpen, onClose, onOpenTour }) => {
                                     onClick={onClose}
                                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black font-black text-xs cursor-pointer shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
                                 >
-                                    🎧 Entrar a la Aplicación
+                                    <Icons.Headphones size={14} className="inline-block align-[-2px]" /> Entrar a la Aplicación
                                 </button>
                             </div>
                         </div>
@@ -27573,7 +27065,7 @@ const SpotlightTourOverlay = ({ isOpen, onClose, activeTab, setActiveTab, onOpen
                         className="text-gray-400 hover:text-white text-xs font-mono cursor-pointer p-1"
                         title="Salir del tour"
                     >
-                        ✕
+                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                     </button>
                 </div>
 
@@ -27584,7 +27076,7 @@ const SpotlightTourOverlay = ({ isOpen, onClose, activeTab, setActiveTab, onOpen
 
                 {/* Tip de Cabina */}
                 <div className="p-2.5 bg-djzinc-950 rounded-xl border border-djzinc-800/90 text-xs text-djcyan-300 font-mono flex items-start gap-2 shadow-inner">
-                    <span className="text-djcyan-400 font-bold shrink-0">💡</span>
+                    <Icons.Bulb size={14} className="inline-block align-[-2px] text-djcyan-400 font-bold shrink-0" />
                     <span>{curStep.tip}</span>
                 </div>
 
@@ -27612,7 +27104,7 @@ const SpotlightTourOverlay = ({ isOpen, onClose, activeTab, setActiveTab, onOpen
                         className="text-[11px] font-mono text-gray-400 hover:text-djcyan-300 cursor-pointer flex items-center gap-1"
                         title="Ver vídeo teaser comercial de 60 segundos"
                     >
-                        <span>🎬</span>
+                        <Icons.Film size={14} className="inline-block align-[-2px]" />
                         <span>Ver Teaser 60s</span>
                     </button>
 
@@ -27666,7 +27158,7 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
             <div className="bg-[#0c0d16] border border-djcyan-500/50 rounded-2xl max-w-lg w-full p-6 shadow-[0_0_60px_rgba(6,182,212,0.3)] flex flex-col gap-5 text-gray-200">
                 <div className="flex items-center justify-between border-b border-djzinc-800 pb-3">
                     <div className="flex items-center gap-2.5">
-                        <span className="text-2xl">🎛️</span>
+                        <Icons.Sliders size={14} className="inline-block align-[-2px]" />
                         <div>
                             <span className="text-[10px] font-mono tracking-widest text-djcyan-400 font-black uppercase">
                                 BIENVENIDO A CLEANDJMIX PRO
@@ -27674,7 +27166,7 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
                             <h2 className="text-lg font-black text-white">¿Cómo prefieres descubrir la cabina?</h2>
                         </div>
                     </div>
-                    <button onClick={handleSkip} className="text-gray-400 hover:text-white cursor-pointer p-1">✕</button>
+                    <button onClick={handleSkip} className="text-gray-400 hover:text-white cursor-pointer p-1"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -27684,7 +27176,7 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
                         className="p-4 rounded-xl bg-gradient-to-b from-[#141524] to-[#0c0d16] border border-djcyan-500/40 hover:border-djcyan-400 cursor-pointer transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between group"
                     >
                         <div className="space-y-2">
-                            <span className="text-2xl block group-hover:scale-110 transition-transform">🎬</span>
+                            <Icons.Film size={14} className="inline-block align-[-2px] block group-hover:scale-110 transition-transform" />
                             <h3 className="text-sm font-black text-white uppercase group-hover:text-djcyan-300">
                                 Vídeo Teaser (60s)
                             </h3>
@@ -27693,7 +27185,7 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
                             </p>
                         </div>
                         <span className="mt-3 text-[11px] font-mono font-bold text-djcyan-400 flex items-center gap-1">
-                            ▶ Ver Vídeo 60s →
+                            <Icons.Play size={14} className="inline-block align-[-2px]" /> Ver Vídeo 60s →
                         </span>
                     </div>
 
@@ -27703,7 +27195,7 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
                         className="p-4 rounded-xl bg-gradient-to-b from-[#141524] to-[#0c0d16] border border-djzinc-750 hover:border-djcyan-400 cursor-pointer transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between group"
                     >
                         <div className="space-y-2">
-                            <span className="text-2xl block group-hover:scale-110 transition-transform">🎯</span>
+                            <Icons.Target size={14} className="inline-block align-[-2px] block group-hover:scale-110 transition-transform" />
                             <h3 className="text-sm font-black text-white uppercase group-hover:text-djcyan-300">
                                 Tour en Cabina (Spotlight)
                             </h3>
@@ -27712,7 +27204,7 @@ const TutorialLauncherModal = ({ isOpen, onClose, onLaunchTeaser, onLaunchTour }
                             </p>
                         </div>
                         <span className="mt-3 text-[11px] font-mono font-bold text-djcyan-400 flex items-center gap-1">
-                            🔍 Iniciar Tour Guiado →
+                            <Icons.Search size={14} className="inline-block align-[-2px]" /> Iniciar Tour Guiado →
                         </span>
                     </div>
                 </div>
@@ -28297,7 +27789,7 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                     </span>
                     {deck.phase && (
                         <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 uppercase">
-                            ✨ {deck.phase}
+                            <Icons.Sparkles size={14} className="inline-block align-[-2px]" /> {deck.phase}
                         </span>
                     )}
                 </div>
@@ -28382,14 +27874,14 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                 {/* Energía & Danceability */}
                 <div className="col-span-2 sm:col-span-1 p-2 rounded-2xl bg-black/40 border border-zinc-800/80 flex flex-col justify-center gap-1">
                     <div className="flex items-center justify-between text-[10px] font-mono">
-                        <span className="text-amber-400 font-bold flex items-center gap-1">⚡ ENERGÍA</span>
+                        <span className="text-amber-400 font-bold flex items-center gap-1"><Icons.Zap size={14} className="inline-block align-[-2px]" /> ENERGÍA</span>
                         <span className="text-white font-bold">{deck.energy || 90}%</span>
                     </div>
                     <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${deck.energy || 90}%` }}></div>
                     </div>
                     <div className="flex items-center justify-between text-[10px] font-mono pt-0.5">
-                        <span className="text-purple-400 font-bold flex items-center gap-1">🕺 GROOVE</span>
+                        <span className="text-purple-400 font-bold flex items-center gap-1"><Icons.Activity size={14} className="inline-block align-[-2px]" /> GROOVE</span>
                         <span className="text-white font-bold">{deck.danceability || 88}%</span>
                     </div>
                 </div>
@@ -28464,7 +27956,7 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
 
             {/* Comentario Táctico DJ */}
             <div className="mt-2.5 p-2.5 rounded-2xl bg-black/50 border border-zinc-800/80 flex items-start gap-2.5">
-                <span className="text-emerald-400 text-sm shrink-0">💬</span>
+                <Icons.MessageSquare size={14} className="inline-block align-[-2px] text-emerald-400  shrink-0" />
                 <div className="min-w-0 flex-1">
                     <div className="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ (Tag ID3)</div>
                     <div className="font-mono text-xs text-zinc-200 truncate" title={deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}>
@@ -28646,7 +28138,7 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                         }`}
                         title="Alternar simulación"
                     >
-                        🧪 {state.source === 'SIMULATION_MODE' ? 'Simulando' : 'Simular'}
+                        <Icons.Brain size={14} className="inline-block align-[-2px]" /> {state.source === 'SIMULATION_MODE' ? 'Simulando' : 'Simular'}
                     </button>
                     {onOpenPopOut && (
                         <button
@@ -28655,7 +28147,7 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-white bg-red-600 hover:bg-red-500 uppercase transition-all cursor-pointer shadow-md flex items-center gap-1.5"
                             title="Abrir en ventana independiente Pop-Out para segundo monitor"
                         >
-                            <span>🖥️</span>
+                            <Icons.Grid size={14} className="inline-block align-[-2px]" />
                             <span>Pop-Out ↗</span>
                         </button>
                     )}
@@ -28696,7 +28188,7 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
 
                     <div className="mt-3 pt-3 border-t border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
                         <div className="flex items-center gap-2 text-zinc-300">
-                            <span className="text-djcyan-400 font-bold">👉 ACCIÓN TÁCTICA:</span>
+                            <span className="text-djcyan-400 font-bold"><Icons.ChevronRight size={14} className="inline-block align-[-2px]" /> ACCIÓN TÁCTICA:</span>
                             <span>{anti_muddy.action}</span>
                         </div>
                         <div className="flex items-center gap-3 text-zinc-400">
@@ -28711,7 +28203,7 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             <section className="mt-auto">
                 <div className="flex items-center justify-between mb-3">
                     <h4 className="font-syne font-bold text-sm text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                        <span>💡 PRÓXIMAS PISTAS SUGERIDAS (RESCATE & PROGRESIÓN)</span>
+                        <span><Icons.Bulb size={14} className="inline-block align-[-2px]" /> PRÓXIMAS PISTAS SUGERIDAS (RESCATE & PROGRESIÓN)</span>
                     </h4>
                     <span className="text-xs font-mono text-zinc-500">Filtrado por Rueda Camelot & Anti-Muddy DSP</span>
                 </div>
@@ -28740,7 +28232,7 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                     <div className="flex items-center gap-2 mt-1 text-[10px] font-mono">
                                         <span className="text-djcyan-400 font-bold">{rec.bpm} BPM</span>
                                         {rec.genre && <span className="text-zinc-500 truncate">• {rec.genre}</span>}
-                                        {rec.energy && <span className="text-amber-400 font-bold shrink-0">⚡{rec.energy}%</span>}
+                                        {rec.energy && <span className="text-amber-400 font-bold shrink-0"><Icons.Zap size={14} className="inline-block align-[-2px]" />{rec.energy}%</span>}
                                     </div>
                                 </div>
                             </div>
@@ -28852,7 +28344,7 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                         onClick={onClose}
                         className="w-9 h-9 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center border border-zinc-800 transition-colors cursor-pointer"
                     >
-                        ✕
+                        <Icons.Close size={14} className="inline-block align-[-2px]" />
                     </button>
                 </div>
 
@@ -28915,7 +28407,7 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                         className="p-4 rounded-2xl bg-[#0e0e1a] border border-zinc-800 hover:border-red-500/70 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all cursor-pointer flex flex-col justify-between group"
                     >
                         <div>
-                            <div className="text-2xl mb-2">🖥️</div>
+                            <div className="text-2xl mb-2"><Icons.Grid size={14} className="inline-block align-[-2px]" /></div>
                             <h3 className="font-syne font-bold text-sm text-white group-hover:text-red-400 transition-colors uppercase">
                                 Segundo Monitor
                             </h3>
@@ -28937,7 +28429,7 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                         className="p-4 rounded-2xl bg-[#0e0e1a] border border-zinc-800 hover:border-djcyan-500/70 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all cursor-pointer flex flex-col justify-between group"
                     >
                         <div>
-                            <div className="text-2xl mb-2">📱</div>
+                            <div className="text-2xl mb-2"><Icons.Grid size={14} className="inline-block align-[-2px]" /></div>
                             <h3 className="font-syne font-bold text-sm text-white group-hover:text-djcyan-400 transition-colors uppercase">
                                 iPad / Tablet
                             </h3>
@@ -28959,7 +28451,7 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                         className="p-4 rounded-2xl bg-[#0e0e1a] border border-zinc-800 hover:border-emerald-500/70 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all cursor-pointer flex flex-col justify-between group"
                     >
                         <div>
-                            <div className="text-2xl mb-2">🎛️</div>
+                            <div className="text-2xl mb-2"><Icons.Sliders size={14} className="inline-block align-[-2px]" /></div>
                             <h3 className="font-syne font-bold text-sm text-white group-hover:text-emerald-400 transition-colors uppercase">
                                 Esta Pantalla
                             </h3>
@@ -29026,7 +28518,7 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                                 : 'bg-zinc-800 text-zinc-400 hover:text-white'
                             }`}
                         >
-                            🧪 {copilotInfo.simulation_mode ? 'Simulación Activa' : 'Activar Simulación'}
+                            <Icons.Brain size={14} className="inline-block align-[-2px]" /> {copilotInfo.simulation_mode ? 'Simulación Activa' : 'Activar Simulación'}
                         </button>
                     </div>
                 </div>
