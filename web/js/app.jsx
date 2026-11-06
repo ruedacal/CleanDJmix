@@ -3,6 +3,7 @@ import { SideRail } from './shell/SideRail.jsx';
 import { TopBar } from './shell/TopBar.jsx';
 import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
 import { WsButton, ToolbarDivider, ExportMenu, FilterMenu, IngestDropzone, CamelotKeyBadge } from './shell/workspace-ui.jsx';
+import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from './shell/map-overlays.jsx';
 const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
 
 // ─── PERF: PlayerContext ──────────────────────────────────────────────────────
@@ -763,51 +764,20 @@ const TableHarmonicWaveform = React.memo(
         }
         const ctx = offscreen.getContext('2d');
         const centerY = HEIGHT / 2;
-        ctx.fillStyle = "#030408";
+        ctx.fillStyle = "#07080b";
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-        // Rayas corporativas con ancho reducido y paleta en la gama de azules y cian
-        const barWidth = 1.2;
-        const barStep = 2.0;
-
-        for (let x = 0; x <= WIDTH - barWidth; x += barStep) {
-            const xNorm = x / WIDTH;
-            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
-            
-            // Altura de barra con amplio rango dinámico y contraste visual entre canciones
-            const barEnergy = Math.min(1.0, (bass * 0.46 + drums * 0.32 + vocals * 0.20 + treble * 0.18) * 1.6);
-            const h = Math.max(1.6, (HEIGHT * 0.45) * barEnergy);
-
-            // Gradiente vertical corporativo: extremos azul cobalto, núcleo cian brillante
-            const grad = ctx.createLinearGradient(0, centerY - h, 0, centerY + h);
-            if (isBreak) {
-                grad.addColorStop(0, "rgba(30, 58, 138, 0.40)");   // Azul cobalto tenue
-                grad.addColorStop(0.5, "rgba(6, 182, 212, 0.70)");  // Cian tenue
-                grad.addColorStop(1, "rgba(30, 58, 138, 0.40)");
-            } else if (barEnergy > 0.75) {
-                // Clímax / Drop: resplandor cian eléctrico con núcleo hielo
-                grad.addColorStop(0, "rgba(37, 99, 235, 0.90)");    // Azul real
-                grad.addColorStop(0.2, "rgba(14, 165, 233, 1.0)");   // Sky blue
-                grad.addColorStop(0.5, "rgba(207, 250, 254, 1.0)");  // Cian blanco núcleo
-                grad.addColorStop(0.8, "rgba(6, 182, 212, 1.0)");    // Cian puro
-                grad.addColorStop(1, "rgba(37, 99, 235, 0.90)");
-            } else {
-                // Secciones rítmicas estándar
-                grad.addColorStop(0, "rgba(30, 64, 175, 0.85)");    // Azul medio
-                grad.addColorStop(0.3, "rgba(2, 132, 199, 0.95)");
-                grad.addColorStop(0.5, "rgba(103, 232, 249, 0.95)"); // Cian luminoso
-                grad.addColorStop(0.7, "rgba(2, 132, 199, 0.95)");
-                grad.addColorStop(1, "rgba(30, 64, 175, 0.85)");
-            }
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            if (typeof ctx.roundRect === 'function') {
-                ctx.roundRect(x, centerY - h, barWidth, h * 2, 0.6);
-            } else {
-                ctx.rect(x, centerY - h, barWidth, h * 2);
-            }
-            ctx.fill();
+        // DS 3.0 three-band split (lows / mids / highs), mirrored around center.
+        const amp = HEIGHT * 0.47;
+        for (let x = 0; x < WIDTH; x += 2) {
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(x / WIDTH, seed, track);
+            const dim = isBreak ? 0.55 : 1;
+            const hl = Math.max(1, amp * Math.min(1, bass * 0.75 + drums * 0.35) * dim);
+            const hm = Math.max(0.5, amp * Math.min(1, vocals * 0.6 + drums * 0.3) * 0.78 * dim);
+            const hh = Math.max(0.5, amp * Math.min(1, treble * 0.9 + drums * 0.15) * 0.48 * dim);
+            ctx.fillStyle = "rgba(37, 99, 235, 0.95)";  ctx.fillRect(x, centerY - hl, 1.4, hl * 2);
+            ctx.fillStyle = "rgba(34, 211, 238, 0.95)"; ctx.fillRect(x, centerY - hm, 1.4, hm * 2);
+            ctx.fillStyle = "rgba(240, 253, 255, 0.92)"; ctx.fillRect(x, centerY - hh, 1.4, hh * 2);
         }
 
         // Línea central tenue en cian corporativo
@@ -848,8 +818,8 @@ const TableHarmonicWaveform = React.memo(
             ctx.drawImage(bgBitmapRef.current, 0, 0, WIDTH, HEIGHT);
             if (isCurrentPlaying) {
                 const px = WIDTH * Math.min(1, Math.max(0, progressRef.current));
-                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, HEIGHT); ctx.stroke();
+                ctx.fillStyle = "rgba(7, 8, 11, 0.55)"; ctx.fillRect(0, 0, px, HEIGHT);
+                ctx.fillStyle = "#ffffff"; ctx.fillRect(Math.round(px) - 0.5, 0, 1, HEIGHT);
             }
         };
         if (isCurrentPlaying) {
@@ -866,11 +836,11 @@ const TableHarmonicWaveform = React.memo(
     useEffect(() => { progressRef.current = playProgress; }, [playProgress]);
 
     return (
-        <div onClick={handleClickScrub} className="w-28 h-7 bg-[#040407] rounded border border-djzinc-800 relative overflow-hidden group cursor-pointer hover:border-djcyan-400 transition-colors flex items-center justify-center">
+        <div onClick={handleClickScrub} className="ws-wave w-28 h-7 relative overflow-hidden group cursor-pointer flex items-center justify-center">
             <canvas ref={canvasRef} style={{ width: "112px", height: "28px", display: "block" }} />
-            <span className="absolute bottom-0.5 right-1 text-[8px] font-mono text-gray-400 opacity-60 group-hover:opacity-100">{duration}</span>
+            <span className="absolute bottom-0.5 right-1 text-[9px] font-mono tabular-nums text-[var(--bw-text-2)] opacity-70 group-hover:opacity-100">{duration}</span>
             {isCurrentPlaying && (
-                <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></div>
+                <span className="absolute top-1 left-1 ws-dot ws-dot-live" aria-hidden="true"></span>
             )}
         </div>
     );
@@ -3025,55 +2995,29 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues 
         }
         const ctx = offscreen.getContext("2d");
         const centerY = height / 2;
-        ctx.fillStyle = "#05060a";
+        ctx.fillStyle = "#07080b";
         ctx.fillRect(0, 0, width, height);
 
-        // Rayas corporativas con ancho reducido y gama de azules y cian
-        const barWidth = 1.4;
-        const barStep = 2.4;
-
-        for (let x = 0; x <= width - barWidth; x += barStep) {
-            const xNorm = x / width;
-            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
-            
-            const barEnergy = Math.min(1.0, (bass * 0.46 + drums * 0.32 + vocals * 0.20 + treble * 0.18) * 1.6);
-            const h = Math.max(2.0, (height * 0.45) * barEnergy);
-
-            // Gradiente vertical estilo ecualizador corporativo BeatWave Pro
-            const grad = ctx.createLinearGradient(0, centerY - h, 0, centerY + h);
-            if (isBreak) {
-                grad.addColorStop(0, "rgba(30, 58, 138, 0.40)");   // Azul cobalto tenue
-                grad.addColorStop(0.5, "rgba(6, 182, 212, 0.65)");  // Cian tenue
-                grad.addColorStop(1, "rgba(30, 58, 138, 0.40)");
-            } else if (barEnergy > 0.75) {
-                // Clímax / Drop: resplandor cian eléctrico con núcleo hielo
-                grad.addColorStop(0, "rgba(37, 99, 235, 0.90)");    // Azul real
-                grad.addColorStop(0.2, "rgba(14, 165, 233, 1.0)");   // Sky blue
-                grad.addColorStop(0.5, "rgba(207, 250, 254, 1.0)");  // Cian blanco núcleo
-                grad.addColorStop(0.8, "rgba(6, 182, 212, 1.0)");    // Cian puro
-                grad.addColorStop(1, "rgba(37, 99, 235, 0.90)");
-            } else {
-                // Secciones rítmicas estándar
-                grad.addColorStop(0, "rgba(30, 64, 175, 0.85)");    // Azul medio
-                grad.addColorStop(0.3, "rgba(2, 132, 199, 0.95)");
-                grad.addColorStop(0.5, "rgba(103, 232, 249, 0.95)"); // Cian luminoso
-                grad.addColorStop(0.7, "rgba(2, 132, 199, 0.95)");
-                grad.addColorStop(1, "rgba(30, 64, 175, 0.85)");
-            }
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            if (typeof ctx.roundRect === "function") {
-                ctx.roundRect(x, centerY - h, barWidth, h * 2, 0.7);
-            } else {
-                ctx.rect(x, centerY - h, barWidth, h * 2);
-            }
-            ctx.fill();
+        // DS 3.0 three-band split: lows (deep blue) → mids (cyan) → highs (white core), mirrored around center.
+        const barStep = 2;
+        const amp = height * 0.47;
+        for (let x = 0; x < width; x += barStep) {
+            const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(x / width, seed, track);
+            const dim = isBreak ? 0.55 : 1;
+            const low  = Math.min(1, (bass * 0.75 + drums * 0.35)) * dim;
+            const mid  = Math.min(1, (vocals * 0.6 + drums * 0.3)) * 0.78 * dim;
+            const high = Math.min(1, treble * 0.9 + drums * 0.15) * 0.48 * dim;
+            const hl = Math.max(1, amp * low), hm = Math.max(0.5, amp * mid), hh = Math.max(0.5, amp * high);
+            ctx.fillStyle = "rgba(37, 99, 235, 0.95)";
+            ctx.fillRect(x, centerY - hl, barStep - 0.6, hl * 2);
+            ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
+            ctx.fillRect(x, centerY - hm, barStep - 0.6, hm * 2);
+            ctx.fillStyle = "rgba(240, 253, 255, 0.92)";
+            ctx.fillRect(x, centerY - hh, barStep - 0.6, hh * 2);
         }
 
-        // Línea central de referencia en cian corporativo sutil
-        ctx.strokeStyle = "rgba(6, 182, 212, 0.20)";
-        ctx.lineWidth = 0.75;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, centerY);
         ctx.lineTo(width, centerY);
@@ -3134,13 +3078,14 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues 
             if (bitmap.width && bitmap.height) {
                 ctx.drawImage(bitmap, 0, 0, width, height);
             }
-            // Playhead (única línea que se actualiza continuamente)
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth   = 2;
-            ctx.shadowColor = "#ffffff";
-            ctx.shadowBlur  = 4;
-            ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, height); ctx.stroke();
-            ctx.shadowBlur  = 0;
+            // Played region dims back so the unplayed side reads as "ahead".
+            ctx.fillStyle = "rgba(7, 8, 11, 0.55)";
+            ctx.fillRect(0, 0, px, height);
+            // Sharp 1px playhead with cap triangles, no blur.
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(px - 0.5, 0, 1, height);
+            ctx.beginPath(); ctx.moveTo(px - 4, 0); ctx.lineTo(px + 4, 0); ctx.lineTo(px, 4); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(px - 4, height); ctx.lineTo(px + 4, height); ctx.lineTo(px, height - 4); ctx.closePath(); ctx.fill();
             ctx.restore();
         };
         rafRef.current = requestAnimationFrame(loop);
@@ -3168,7 +3113,7 @@ const FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues 
     };
 
     return (
-        <div ref={containerRef} onClick={handleScrub} className="flex-1 h-11 bg-[#060609] rounded-lg border border-djzinc-800/90 relative overflow-hidden group cursor-pointer hover:border-djcyan-500/70 transition-colors shadow-inner flex items-center mx-6">
+        <div ref={containerRef} onClick={handleScrub} className="ws-wave flex-1 h-11 relative overflow-hidden group cursor-pointer flex items-center mx-6">
             <canvas ref={canvasRef} style={{ width: "100%", height: "42px", display: "block" }} />
             {cues.map((cue, idx) => {
                 const leftPos = cue.pct !== undefined ? (cue.pct * 100) : Math.min(96, Math.max(3, (idx * 12.4) + 2.5));
@@ -10809,14 +10754,15 @@ const AuditWorkspace = ({
             </div>
 
             {sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && (
-                <aside key={currentTrack ? currentTrack.id : "none"} className="w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl">
-                    <div className="p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
-                        <div className="flex items-center gap-2"><Icons.Gear /><span className="font-bold text-xs uppercase tracking-wider text-gray-200">Inspector DJ Granular</span></div>
+                <aside key={currentTrack ? currentTrack.id : "none"} className="ws-inspector w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-[var(--bw-surface-1)] border-l border-[var(--bw-line-strong)] flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl">
+                    <div className="h-12 px-3 border-b border-[var(--bw-line)] bg-[var(--bw-surface-2)] flex justify-between items-center">
+                        <div className="ws-glass-title"><Icons.Sliders size={14} /><span>Inspector</span></div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded">Track #{currentTrack.id || '--'}</span>
+                            <span className="ws-glass-readout">#{currentTrack.id || '--'}</span>
                             <button 
                                 onClick={() => setSidebarOpen(false)} 
-                                className="w-6 h-6 rounded-full bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-bold text-xs cursor-pointer border border-djzinc-700 transition-colors"
+                                className="ws-glass-icon"
+                                aria-label={t('btn_close_panel') || 'Cerrar Panel'}
                                 title={t('btn_close_panel') || 'Cerrar Panel'}
                             >
                                 <Icons.Close size={14} className="inline-block align-[-2px]" />
@@ -10835,11 +10781,11 @@ const AuditWorkspace = ({
                                     onNavigateTab('hotcues');
                                 }
                             }}
-                            className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-pink-950/80 via-purple-950/80 to-djzinc-900 hover:from-pink-900/90 hover:via-purple-900/90 hover:to-djzinc-850 text-pink-300 hover:text-white border border-pink-700/60 font-mono text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-pink-950/40 transition-all active:scale-[0.98]"
+                            className="ws-btn ws-btn-outline w-full justify-center h-9"
                             title="Abrir este track en la pestaña Estudio Hot Cues a pantalla completa con Beatgrid ampliado"
                         >
                             <Icons.Sliders size={14} className="inline-block align-[-2px]" />
-                            <span>{t('btn_edit_cues_studio') || 'Editar Hot Cues en Estudio →'}</span>
+                            <span>{t('btn_edit_cues_studio') || 'Editar Hot Cues en Estudio'}</span>
                         </button>
 
                         {/* Carátula Replicada en el Inspector */}
@@ -10870,7 +10816,7 @@ const AuditWorkspace = ({
                             }} 
                             className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0 transition-colors"
                         >
-                            {nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) && isPlaying ? '❚❚ PAUSE' : '▶ PLAY'}
+                            {nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) && isPlaying ? <span className="inline-flex items-center gap-1.5"><Icons.Pause size={12} />PAUSE</span> : <span className="inline-flex items-center gap-1.5"><Icons.Play size={12} />PLAY</span>}
                         </button>
                     </div>
 
@@ -10894,7 +10840,7 @@ const AuditWorkspace = ({
                                 disabled={isSearchingSpotifyHD}
                                 className="w-full py-1.5 px-3 rounded bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 text-black font-black text-xs cursor-pointer shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
                             >
-                                <span>{isSearchingSpotifyHD ? '⏳' : '💎'}</span>
+                                {isSearchingSpotifyHD ? <Icons.Clock size={13} /> : <Icons.Sparkles size={13} />}
                                 <span>{isSearchingSpotifyHD ? 'Buscando en Catálogo...' : 'Buscar SuperFLAC Lossless en Catálogo'}</span>
                             </button>
                         </div>
@@ -10950,7 +10896,7 @@ const AuditWorkspace = ({
                                 className="px-2 py-0.5 bg-djzinc-800 hover:bg-djzinc-700 text-djcyan-400 text-[10px] font-mono font-bold rounded border border-djzinc-650 cursor-pointer transition-colors"
                                 title="Abrir análisis espectral FFT en detalle"
                             >
-                                VER FFT 📊
+                                <Icons.Activity size={13} /> VER FFT
                             </button>
                         </div>
 
@@ -11005,7 +10951,7 @@ const AuditWorkspace = ({
                                     <InfoTip title="Sonoridad LUFS y True Peak" text="Mide el volumen percibido para evitar saltos en cabina. -8 a -11 LUFS es el estándar de club moderno. True Peak > 0.0 dBFS indica clipping y distorsión." />
                                 </span>
                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${currentTrack.clipping ? 'bg-red-950 text-red-400 border border-red-700 animate-pulse' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'}`}>
-                                    {currentTrack.clipping ? '⚠️ CLIPPING' : '✓ CLEAN PEAK'}
+                                    {currentTrack.clipping ? <span className="inline-flex items-center gap-1"><Icons.Alert size={12} />CLIPPING</span> : <span className="inline-flex items-center gap-1"><Icons.Check size={12} />CLEAN PEAK</span>}
                                 </span>
                             </div>
                             <div className="grid grid-cols-3 gap-1.5 text-center font-mono">
@@ -11234,7 +11180,7 @@ const AuditWorkspace = ({
                     <div className="bg-djzinc-950 p-2.5 rounded border border-djzinc-800 space-y-2">
                         <div className="flex items-center justify-between text-[11px] text-gray-400">
                             <span className="font-bold">Taxonomía Serato Crate</span>
-                            <InfoTip title="Género y Taxonomía" text="Clasificación en dos niveles (Género Raíz ➡ Subgénero Estilo) que determina el etiquetado TCON y el ruteo físico a carpetas y crates de Serato / Rekordbox." />
+                            <InfoTip title="Género y Taxonomía" text="Clasificación en dos niveles (Género raíz > Subgénero) que determina el etiquetado TCON y el ruteo físico a carpetas y crates de Serato / Rekordbox." />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div>
@@ -11304,10 +11250,10 @@ const AuditWorkspace = ({
                         </div>
                         <div className="flex flex-wrap gap-1 mb-1.5">
                             {[
-                                { label: '🔥 Peak Time', text: 'Peak Time • Drop Contundente • Outro Rápido 32b' },
-                                { label: '🎧 Warm Up', text: 'Warm Up • Groovy 64b • Entrada Progresiva' },
-                                { label: '🎤 Breakdown', text: 'Breakdown Vocal Intenso • Mezcla Larga con Bajos' },
-                                { label: '⚡ After', text: 'Afterhours • Dark Hypnotic • Bombo Pesado' }
+                                { label: 'Peak Time', text: 'Peak Time • Drop Contundente • Outro Rápido 32b' },
+                                { label: 'Warm Up', text: 'Warm Up • Groovy 64b • Entrada Progresiva' },
+                                { label: 'Breakdown', text: 'Breakdown Vocal Intenso • Mezcla Larga con Bajos' },
+                                { label: 'After', text: 'Afterhours • Dark Hypnotic • Bombo Pesado' }
                             ].map((tpl, tIdx) => (
                                 <button
                                     key={tIdx}
@@ -19322,7 +19268,7 @@ const TaxonomyWorkspace = ({
                                     </span>
                                 </div>
                                 <p className="text-gray-400 text-xs">
-                                    Clasificación jerárquica en dos niveles (Género Raíz ➡ Subgénero Estilo) con ruteo físico a carpetas y crates de Serato DJ Pro y Rekordbox.
+                                    Clasificación jerárquica en dos niveles (Género raíz > Subgénero) con ruteo físico a carpetas y crates de Serato DJ Pro y Rekordbox.
                                 </p>
                             </div>
 
@@ -20441,19 +20387,21 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         )}
 
                         {isListening && (
-                            <div className="w-52 mt-3.5 flex flex-col items-center gap-1.5 animate-fadeIn">
-                                <div className="flex items-center justify-between w-full text-[10px] font-mono">
-                                    <span className="text-zinc-400">SEÑAL DE MICRÓFONO</span>
-                                    <span className={micLevel > 15 ? "text-cyan-400 font-bold" : "text-amber-400"}>{micLevel}%</span>
+                            <div className="w-60 mt-3.5 flex flex-col gap-1.5 animate-fadeIn" role="meter" aria-label="Señal de micrófono" aria-valuemin={0} aria-valuemax={100} aria-valuenow={micLevel}>
+                                <div className="flex items-center justify-between w-full">
+                                    <span className="ws-glass-kicker flex items-center gap-1.5"><span className="ws-dot ws-dot-live" />Input</span>
+                                    <span className={`font-mono text-[11px] font-semibold tabular-nums ${micLevel > 85 ? 'text-rose-400' : micLevel > 15 ? 'text-[var(--bw-cyan)]' : 'text-amber-400'}`}>{micLevel}%</span>
                                 </div>
-                                <div className="w-full h-2 bg-[var(--bw-surface-3)] rounded-full overflow-hidden border border-[var(--bw-line)] p-0.5">
-                                    <div 
-                                        className="h-full transition-all duration-75 rounded-full bg-cyan-400"
-                                        style={{ width: `${Math.max(4, micLevel)}%` }}
-                                    />
+                                <div className="ws-vu" aria-hidden="true">
+                                    {Array.from({ length: 24 }, (_, i) => {
+                                        const thr = ((i + 1) / 24) * 100;
+                                        const on = micLevel >= thr - 2;
+                                        const zone = i >= 21 ? 'peak' : i >= 16 ? 'hot' : 'ok';
+                                        return <span key={i} className={`ws-vu-seg ws-vu-${zone} ${on ? 'is-on' : ''}`} />;
+                                    })}
                                 </div>
-                                <span className="text-[10px] font-mono text-zinc-500">
-                                    {micLevel > 10 ? "✓ Captando audio ambiental" : "Acerca el altavoz o sube el volumen"}
+                                <span className="text-[10px] font-mono text-[var(--bw-text-3)] flex items-center gap-1.5">
+                                    {micLevel > 10 ? <><Icons.Check size={12} className="text-emerald-400" />Captando audio ambiental</> : 'Acerca el altavoz o sube el volumen'}
                                 </span>
                             </div>
                         )}
@@ -20809,74 +20757,69 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
-                            <thead className="bg-[var(--bw-surface-2)] border-b border-[var(--bw-line-strong)] text-[10px] font-mono uppercase text-zinc-400">
+                        <table className="ws-grid w-full text-left border-collapse text-xs whitespace-nowrap">
+                            <thead>
                                 <tr>
-                                    <th className="py-2.5 px-2 text-center w-8">#</th>
-                                    <th className="py-2.5 px-2 w-10 text-center">PLAY</th>
-                                    <th className="py-2.5 px-3 min-w-[220px]">PISTA / ÁLBUM</th>
-                                    <th className="py-2.5 px-3 min-w-[150px]">ARTISTA</th>
-                                    <th className="py-2.5 px-2 text-center w-24">GÉNERO</th>
-                                    <th className="py-2.5 px-2 text-center w-28">SUBGÉNERO</th>
-                                    <th className="py-2.5 px-2 text-center w-16">AÑO</th>
-                                    <th className="py-2.5 px-3 min-w-[220px] text-left text-cyan-400">COMENTARIO / NOTA DJ</th>
-                                    <th className="py-2.5 px-3 text-center w-28">HORA APUNTE</th>
-                                    <th className="py-2.5 px-3 text-center w-36">ACCIONES</th>
+                                    <th className="w-8 text-center">#</th>
+                                    <th className="w-10 text-center"><span className="sr-only">Reproducir</span></th>
+                                    <th className="min-w-[220px]">Pista</th>
+                                    <th className="min-w-[150px]">Artista</th>
+                                    <th className="w-28">Género</th>
+                                    <th className="w-28">Subgénero</th>
+                                    <th className="w-14 text-center">Año</th>
+                                    <th className="min-w-[220px]">Nota DJ</th>
+                                    <th className="w-20 text-center">Hora</th>
+                                    <th className="w-32 text-right">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-[var(--bw-line)] font-sans">
+                            <tbody>
                                 {notebookTracks.map((row, idx) => {
                                     const isRowPlaying = previewPlaying && audioRef.current.src === row.preview_url;
                                     return (
-                                        <tr key={row.notebook_id || idx} className="hover:bg-[#12121a] transition-colors">
-                                            <td className="py-2 px-2 text-center text-gray-500 font-mono">{idx + 1}</td>
+                                        <tr key={row.notebook_id || idx} className={isRowPlaying ? 'is-playing' : ''}>
+                                            <td className="text-center ws-num">{idx + 1}</td>
                                             <td className="py-2 px-2 text-center">
                                                 {row.preview_url ? (
                                                     <button
                                                         type="button"
                                                         onClick={() => togglePlayPreview(row.preview_url)}
-                                                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                                                            isRowPlaying 
-                                                                ? 'bg-emerald-500 text-black font-bold shadow-[0_0_8px_rgba(16,185,129,0.8)]' 
-                                                                : 'bg-djzinc-850 hover:bg-djcyan-500 hover:text-black text-djcyan-400'
-                                                        }`}
-                                                        title="Reproducir pre-escucha"
+                                                        className={`ws-play ${isRowPlaying ? 'is-on' : ''}`}
+                                                        aria-label={isRowPlaying ? 'Pausar pre-escucha' : 'Reproducir pre-escucha'}
                                                     >
-                                                        {isRowPlaying ? '❚❚' : '▶'}
+                                                        {isRowPlaying ? <Icons.Pause size={12} /> : <Icons.Play size={12} />}
                                                     </button>
                                                 ) : (
-                                                    <span className="text-gray-600 text-[10px] font-mono">--</span>
+                                                    <span className="ws-num">--</span>
                                                 )}
                                             </td>
                                             <td className="py-2 px-3">
                                                 <div className="flex items-center gap-2.5">
                                                     <img
                                                         src={getValidCover(row.cover)}
-                                                        alt="Cover"
+                                                        alt=""
                                                         onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
-                                                        className="w-8 h-8 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm"
+                                                        className="w-8 h-8 rounded-md object-cover border border-[var(--bw-line-strong)] shrink-0"
                                                     />
                                                     <div className="flex flex-col min-w-0">
-                                                        <span className="font-semibold text-white text-xs truncate max-w-xs" title={row.title}>
+                                                        <span className="font-medium text-[var(--bw-white)] text-[13px] truncate max-w-xs" title={row.title}>
                                                             {row.title}
                                                         </span>
-                                                        <span className="text-[10px] text-gray-400 font-mono truncate max-w-xs" title={row.album}>
+                                                        <span className="text-[11px] text-[var(--bw-text-3)] truncate max-w-xs" title={row.album}>
                                                             {row.album || '--'}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="py-2 px-3 text-gray-300 font-medium truncate max-w-xs">{row.artist}</td>
-                                            <td className="py-2 px-2 text-center font-mono text-[10px] text-emerald-400">{row.genre || 'Electronic'}</td>
-                                            <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
-                                                <span className="px-1.5 py-0.5 rounded bg-djzinc-850 border border-djzinc-750">
+                                            <td className="text-[var(--bw-text-2)] truncate max-w-xs">{row.artist}</td>
+                                            <td><span className="ws-tag">{row.genre || 'Electronic'}</span></td>
+                                            <td>
+                                                <span className="ws-tag ws-tag-muted">
                                                     {row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Club')}
                                                 </span>
                                             </td>
-                                            <td className="py-2 px-2 text-center font-mono text-gray-400">{row.year || '--'}</td>
-                                            <td className="py-2 px-3 text-left">
+                                            <td className="text-center ws-num">{row.year || '--'}</td>
+                                            <td>
                                                 <div className="flex items-center gap-1.5 max-w-[260px]">
-                                                    <Icons.MessageSquare size={14} className="inline-block align-[-2px] text-emerald-400  shrink-0" />
                                                     <input 
                                                         type="text" 
                                                         value={row.comment || row.comentario || ''} 
@@ -20885,35 +20828,26 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                                             setNotebookTracks(prev => prev.map((t, i) => i === idx ? { ...t, comment: val, comentario: val } : t));
                                                         }}
                                                         placeholder="Añadir nota DJ..."
-                                                        className="w-full bg-[#050508] border border-djzinc-800 hover:border-djzinc-700 focus:border-djcyan-400 rounded px-2 py-1 text-[11px] font-mono text-gray-200 outline-none transition-colors"
+                                                        aria-label={`Nota DJ para ${row.title}`}
+                                                        className="ws-inline-input"
                                                         title={row.comment || row.comentario || 'Nota o comentario táctico DJ'}
                                                     />
                                                 </div>
                                             </td>
-                                            <td className="py-2 px-3 text-center font-mono text-[10px] text-gray-400">{row.added_at || '--'}</td>
-                                            <td className="py-2 px-3 text-center">
-                                                <div className="flex items-center justify-center gap-1.5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleSendToSpotifyInternal(row)}
-                                                        className="px-2 py-0.5 bg-djzinc-850 hover:bg-djgreen-950 text-djgreen-400 border border-djzinc-700 hover:border-djgreen-700/60 rounded text-[10px] font-mono cursor-pointer transition-colors"
-                                                        title="Enviar a Record Pool"
-                                                    >
-                                                        <Icons.Download size={14} className="inline-block align-[-2px]" /> Pool
+                                            <td className="text-center ws-num">{row.added_at || '--'}</td>
+                                            <td>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button type="button" onClick={() => handleSendToSpotifyInternal(row)} className="ws-btn ws-btn-ghost h-7 px-2" title="Enviar a Record Pool">
+                                                        <Icons.Download size={13} /> Pool
                                                     </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleSendToAuditInternal(row)}
-                                                        className="px-2 py-0.5 bg-djzinc-850 hover:bg-djcyan-950 text-djcyan-400 border border-djzinc-700 hover:border-djcyan-700/60 rounded text-[10px] font-mono cursor-pointer transition-colors"
-                                                        title="Añadir a Auditoría"
-                                                    >
-                                                        <Icons.Copy size={14} className="inline-block align-[-2px]" /> Auditar
+                                                    <button type="button" onClick={() => handleSendToAuditInternal(row)} className="ws-btn ws-btn-ghost h-7 px-2" title="Añadir a Auditoría">
+                                                        <Icons.Copy size={13} /> Auditar
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleEliminarDeNotebook(row.notebook_id)}
-                                                        className="px-1.5 py-0.5 text-gray-500 hover:text-red-400 text-xs cursor-pointer transition-colors"
-                                                        title="Eliminar de la libreta"
+                                                        className="ws-btn ws-btn-ghost h-7 w-7 px-0 justify-center hover:!text-rose-400"
+                                                        aria-label="Eliminar de la libreta"
                                                     >
                                                         <Icons.Close size={14} className="inline-block align-[-2px]" />
                                                     </button>
@@ -20949,22 +20883,22 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                         {history.map((trk, hIdx) => (
                             <div 
                                 key={hIdx} 
-                                className="p-3 bg-[#07070b] rounded-xl border border-djzinc-850 flex items-center gap-3 hover:border-djcyan-500/30 transition-all group"
+                                className="ws-card p-3 flex items-center gap-3"
                             >
                                 <img 
                                     src={getValidCover(trk.cover)} 
-                                    alt="Cover" 
-                                    className="w-12 h-12 rounded-lg object-cover border border-djzinc-800 shrink-0 shadow"
+                                    alt="" 
+                                    className="w-12 h-12 rounded-lg object-cover border border-[var(--bw-line-strong)] shrink-0"
                                 />
                                 <div className="min-w-0 flex-1">
-                                    <h5 className="text-xs font-bold text-white truncate" title={trk.title}>
+                                    <h5 className="text-[13px] font-medium text-[var(--bw-white)] truncate" title={trk.title}>
                                         {trk.title}
                                     </h5>
-                                    <p className="text-[11px] text-djcyan-400 truncate" title={trk.artist}>
+                                    <p className="text-xs text-[var(--bw-text-2)] truncate" title={trk.artist}>
                                         {trk.artist}
                                     </p>
-                                    <span className="text-[9px] font-mono text-gray-500">
-                                        {trk.genre || 'Electronic'} {trk.year ? `• ${trk.year}` : ''}
+                                    <span className="text-[10px] font-mono text-[var(--bw-text-3)]">
+                                        {trk.genre || 'Electronic'} {trk.year ? `· ${trk.year}` : ''}
                                     </span>
                                 </div>
                                 <div className="flex flex-col gap-1 shrink-0">
@@ -20972,19 +20906,19 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                         <button
                                             type="button"
                                             onClick={() => togglePlayPreview(trk.preview_url)}
-                                            className="w-7 h-7 rounded bg-djzinc-900 hover:bg-djcyan-500 hover:text-black text-djcyan-400 flex items-center justify-center text-xs font-bold border border-djzinc-750 transition-colors shadow"
-                                            title="Pre-escucha"
+                                            className="ws-play"
+                                            aria-label="Pre-escucha"
                                         >
-                                            <Icons.Play size={14} className="inline-block align-[-2px]" />
+                                            <Icons.Play size={12} />
                                         </button>
                                     )}
                                     <button
                                         type="button"
                                         onClick={() => handleSendToAuditInternal(trk)}
-                                        className="w-7 h-7 rounded bg-djzinc-900 hover:bg-djgreen-500 hover:text-black text-djgreen-400 flex items-center justify-center text-xs font-bold border border-djzinc-750 transition-colors shadow"
-                                        title="Añadir a Auditoría"
+                                        className="ws-play"
+                                        aria-label="Añadir a Auditoría"
                                     >
-                                        +
+                                        <Icons.Plus size={12} />
                                     </button>
                                 </div>
                             </div>
@@ -24386,12 +24320,15 @@ const MapWorkspace = ({
     const [mouseScreenPos, setMouseScreenPos] = useState({ x: -100, y: -100 });
     const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState(true);
     const [zoomDisplay, setZoomDisplay] = useState(1.0);
+    const [isPanning, setIsPanning] = useState(false);
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const animRef = useRef(null);
     const imageCacheRef = useRef(new Map());
     const panTimerRef = useRef(null);
+
+    const radialView = projectionMode === 'camelot_wheel' || projectionMode === 'acoustic_clusters';
 
     // Transformación espacial cinemática (Pan & Zoom Lerp 60fps)
     const transformRef = useRef({
@@ -24427,8 +24364,12 @@ const MapWorkspace = ({
     const handleFaderZoom = (val) => {
         const parsed = parseFloat(val);
         if (!isNaN(parsed)) {
-            const clamped = Math.max(0.4, Math.min(4.0, parsed));
-            transformRef.current.targetScale = clamped;
+            const tr = transformRef.current;
+            const clamped = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, parsed));
+            const ratio = clamped / (tr.targetScale || 1);
+            tr.targetPanX *= ratio;
+            tr.targetPanY *= ratio;
+            tr.targetScale = clamped;
             setZoomDisplay(clamped);
         }
     };
@@ -24526,6 +24467,18 @@ const MapWorkspace = ({
             };
         });
 
+        if (!['camelot_wheel', 'acoustic_clusters'].includes(projectionMode) && updatedNodes.length > 1) {
+            const xs = updatedNodes.map(n => n.targetX);
+            const ys = updatedNodes.map(n => n.targetY);
+            const x0 = Math.min(...xs), x1 = Math.max(...xs);
+            const y0 = Math.min(...ys), y1 = Math.max(...ys);
+            const fit = (v, a, b) => (b - a < 0.02 ? 0.5 : 0.07 + 0.86 * ((v - a) / (b - a)));
+            updatedNodes.forEach(n => {
+                n.targetX = fit(n.targetX, x0, x1);
+                n.targetY = fit(n.targetY, y0, y1);
+            });
+        }
+
         nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
 
@@ -24556,8 +24509,8 @@ const MapWorkspace = ({
 
             // Fondo espacial oscuro con gradiente
             const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, Math.max(w, h));
-            bgGrad.addColorStop(0, '#090a14');
-            bgGrad.addColorStop(1, '#040408');
+            bgGrad.addColorStop(0, '#111114');
+            bgGrad.addColorStop(1, '#09090b');
             ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, w, h);
 
@@ -24578,8 +24531,8 @@ const MapWorkspace = ({
             const toScreen = (nx, ny) => {
                 const cx = w / 2 + panX;
                 const cy = h / 2 + panY;
-                const sx = cx + (nx - 0.5) * w * scale;
-                const sy = cy + (ny - 0.5) * h * scale;
+                const sx = cx + (nx - 0.5) * (radialView ? Math.min(w, h) : w) * scale;
+                const sy = cy + (ny - 0.5) * (radialView ? Math.min(w, h) : h) * scale;
                 return { x: sx, y: sy };
             };
 
@@ -24597,12 +24550,12 @@ const MapWorkspace = ({
                 ctx.stroke();
 
                 // Etiquetas sutiles de cuadrantes
-                ctx.font = '10px monospace';
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
-                ctx.fillText('MAINSTAGE / PEAK TIME (⚡ Alto • 🕺 Alto)', toScreen(0.60, 0.15).x, toScreen(0.60, 0.15).y);
-                ctx.fillText('WARMUP / INTRO (⚡ Bajo • 🕺 Moderado)', toScreen(0.12, 0.85).x, toScreen(0.12, 0.85).y);
-                ctx.fillText('STEADY GROOVE (⚡ Moderado • 🕺 Alto)', toScreen(0.12, 0.15).x, toScreen(0.12, 0.15).y);
-                ctx.fillText('DARK / HEAVY HITTERS (⚡ Alto • 🕺 Moderado)', toScreen(0.58, 0.85).x, toScreen(0.58, 0.85).y);
+                ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace';
+                ctx.fillStyle = 'rgba(250, 250, 250, 0.16)';
+                ctx.fillText('PEAK TIME  ·  E alta  ·  D alta', toScreen(0.60, 0.15).x, toScreen(0.60, 0.15).y);
+                ctx.fillText('WARM-UP  ·  E baja  ·  D media', toScreen(0.12, 0.85).x, toScreen(0.12, 0.85).y);
+                ctx.fillText('STEADY GROOVE  ·  E media  ·  D alta', toScreen(0.12, 0.15).x, toScreen(0.12, 0.15).y);
+                ctx.fillText('DARK / HEAVY  ·  E alta  ·  D media', toScreen(0.58, 0.85).x, toScreen(0.58, 0.85).y);
 
                 // Ejes
                 ctx.fillStyle = 'rgba(6, 182, 212, 0.4)';
@@ -24625,8 +24578,8 @@ const MapWorkspace = ({
                 const cCenter = toScreen(0.5, 0.5);
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
                 // Círculos concéntricos de anillos Minor (A) y Major (B)
-                const rInner = 0.32 * w * scale;
-                const rOuter = 0.44 * w * scale;
+                const rInner = 0.32 * Math.min(w, h) * scale;
+                const rOuter = 0.44 * Math.min(w, h) * scale;
                 ctx.beginPath();
                 ctx.arc(cCenter.x, cCenter.y, rInner, 0, Math.PI * 2);
                 ctx.stroke();
@@ -24693,7 +24646,7 @@ const MapWorkspace = ({
             nodes.forEach(node => {
                 const pt = toScreen(node.currX, node.currY);
                 // Culling fuera de vista de pantalla
-                if (pt.x < -30 || pt.x > w + 30 || pt.y < -30 || pt.y > h + 30) return;
+                if (pt.x < -60 || pt.x > w + 60 || pt.y < -60 || pt.y > h + 60) return;
 
                 const t = node.track;
                 const isNowPlaying = Boolean(nowPlayingTrack && (
@@ -24733,7 +24686,7 @@ const MapWorkspace = ({
                     nodeColor = isFakeOrBad ? '#ef4444' : '#10b981';
                 }
 
-                const baseRadius = 5 + (node.energy / 100.0) * 3;
+                const baseRadius = 8 + (node.energy / 100.0) * 6;
 
                 // Radar Sonar pulsante en la pista que está reproduciéndose
                 if (isNowPlaying) {
@@ -24767,7 +24720,18 @@ const MapWorkspace = ({
                 }
 
                 // Radio del círculo de la pista optimizado para visibilidad de carátulas
-                const nodeRadius = (isHovered || isSelectedNode) ? Math.max(10, (baseRadius + 5) * Math.min(1.8, Math.max(1.0, scale))) : Math.max(7, baseRadius * Math.min(1.6, Math.max(1.0, scale)));
+                const zoomGain = Math.min(2.4, Math.max(0.8, Math.sqrt(scale)));
+                const nodeRadius = (isHovered || isSelectedNode) ? (baseRadius + 5) * zoomGain : baseRadius * zoomGain;
+
+                if (opacity === 1 && nodes.length < 600) {
+                    const glow = ctx.createRadialGradient(pt.x, pt.y, nodeRadius * 0.6, pt.x, pt.y, nodeRadius * 2.4);
+                    glow.addColorStop(0, `${nodeColor}55`);
+                    glow.addColorStop(1, `${nodeColor}00`);
+                    ctx.fillStyle = glow;
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, nodeRadius * 2.4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
 
                 // Búsqueda y cacheo de carátula del track
                 const coverSrc = t.cover || t.cover_url || (t.path ? `/cover?path=${encodeURIComponent(t.path)}` : null);
@@ -24815,8 +24779,8 @@ const MapWorkspace = ({
 
                 // Rótulo de texto si hay zoom suficiente o está en hover/playing
                 if (isHovered || isNowPlaying || scale >= 1.5) {
-                    ctx.font = 'bold 9px monospace';
-                    ctx.fillStyle = isNowPlaying ? '#38bdf8' : (isHovered ? '#ffffff' : 'rgba(255, 255, 255, 0.65)');
+                    ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace';
+                    ctx.fillStyle = isNowPlaying ? '#22d3ee' : (isHovered ? '#fafafa' : 'rgba(250, 250, 250, 0.6)');
                     const labelText = `${t.artist ? t.artist.slice(0, 16) : ''} - ${t.title ? t.title.slice(0, 18) : ''}`;
                     ctx.fillText(labelText, pt.x + nodeRadius + 4, pt.y + 3);
                 }
@@ -24888,8 +24852,10 @@ const MapWorkspace = ({
 
         if (toolMode === 'pan') {
             transformRef.current.isDragging = true;
-            transformRef.current.dragStartX = mouseX - transformRef.current.panX;
-            transformRef.current.dragStartY = mouseY - transformRef.current.panY;
+            transformRef.current.isContinuousPanning = false;
+            transformRef.current.dragStartX = mouseX - transformRef.current.targetPanX;
+            transformRef.current.dragStartY = mouseY - transformRef.current.targetPanY;
+            setIsPanning(true);
         } else if (toolMode === 'lasso') {
             selectionRef.current.isSelecting = true;
             selectionRef.current.points = [{ x: mouseX, y: mouseY }];
@@ -24909,8 +24875,12 @@ const MapWorkspace = ({
         setMouseScreenPos({ x: e.clientX, y: e.clientY });
 
         if (toolMode === 'pan' && transformRef.current.isDragging) {
-            transformRef.current.panX = mouseX - transformRef.current.dragStartX;
-            transformRef.current.panY = mouseY - transformRef.current.dragStartY;
+            const nx = mouseX - transformRef.current.dragStartX;
+            const ny = mouseY - transformRef.current.dragStartY;
+            transformRef.current.targetPanX = nx;
+            transformRef.current.targetPanY = ny;
+            transformRef.current.panX = nx;
+            transformRef.current.panY = ny;
             return;
         }
 
@@ -24926,11 +24896,12 @@ const MapWorkspace = ({
         const toScreen = (nx, ny) => {
             const cx = w / 2 + panX;
             const cy = h / 2 + panY;
-            return { x: cx + (nx - 0.5) * w * scale, y: cy + (ny - 0.5) * h * scale };
+            const side = radialView ? Math.min(w, h) : null;
+            return { x: cx + (nx - 0.5) * (side || w) * scale, y: cy + (ny - 0.5) * (side || h) * scale };
         };
 
         let found = null;
-        let minDist = 18; // umbral de clic en px
+        let minDist = Math.max(16, 14 * Math.min(2.4, Math.max(0.8, Math.sqrt(scale)))); // umbral de clic en px
 
         const nodes = nodesRef.current;
         for (let i = 0; i < nodes.length; i++) {
@@ -24948,6 +24919,7 @@ const MapWorkspace = ({
     const handleMouseUp = () => {
         if (toolMode === 'pan') {
             transformRef.current.isDragging = false;
+            setIsPanning(false);
         } else if (selectionRef.current.isSelecting) {
             selectionRef.current.isSelecting = false;
             const canvas = canvasRef.current;
@@ -24959,7 +24931,8 @@ const MapWorkspace = ({
             const toScreen = (nx, ny) => {
                 const cx = w / 2 + panX;
                 const cy = h / 2 + panY;
-                return { x: cx + (nx - 0.5) * w * scale, y: cy + (ny - 0.5) * h * scale };
+                const side = radialView ? Math.min(w, h) : null;
+            return { x: cx + (nx - 0.5) * (side || w) * scale, y: cy + (ny - 0.5) * (side || h) * scale };
             };
 
             const selPoints = selectionRef.current.points;
@@ -25005,14 +24978,14 @@ const MapWorkspace = ({
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+        const zoomFactor = Math.exp(-Math.max(-60, Math.min(60, e.deltaY)) * 0.0025);
         const currentScale = transformRef.current.targetScale || transformRef.current.scale;
-        const newScale = Math.max(0.4, Math.min(5.0, currentScale * zoomFactor));
+        const newScale = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, currentScale * zoomFactor));
 
         const w = rect.width;
         const h = rect.height;
-        const cx = w / 2 + transformRef.current.panX;
-        const cy = h / 2 + transformRef.current.panY;
+        const cx = w / 2 + transformRef.current.targetPanX;
+        const cy = h / 2 + transformRef.current.targetPanY;
 
         transformRef.current.targetPanX = mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2;
         transformRef.current.targetPanY = mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2;
@@ -25038,6 +25011,24 @@ const MapWorkspace = ({
         transformRef.current.isDragging = false;
         setZoomDisplay(1.0);
     };
+
+    const mapStats = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        const vis = activeTracks.filter(t => {
+            const k = (t.key || t.k || '8A').toUpperCase();
+            if (selectedKeyFilter !== 'ALL' && k !== selectedKeyFilter) return false;
+            if (!q) return true;
+            return `${t.title} ${t.artist} ${t.genre || t.genero || ''} ${k}`.toLowerCase().includes(q);
+        });
+        const bpms = vis.map(t => parseFloat(t.bpm || t.b)).filter(b => b > 40 && b < 250);
+        const ens = vis.map(t => parseInt(t.energy !== undefined ? t.energy : (t.e || 75), 10)).filter(n => !isNaN(n));
+        return {
+            visible: vis.length,
+            avgBpm: bpms.length ? Math.round(bpms.reduce((a, b) => a + b, 0) / bpms.length) : 0,
+            avgEnergy: ens.length ? Math.round(ens.reduce((a, b) => a + b, 0) / ens.length) : 0,
+            keyCount: new Set(vis.map(t => (t.key || t.k || '').toUpperCase()).filter(Boolean)).size,
+        };
+    }, [activeTracks, searchQuery, selectedKeyFilter]);
 
     // Métricas del grupo seleccionado mediante Lasso / Caja
     const selBpmAvg = selectedMapTracks.length > 0
@@ -25201,356 +25192,50 @@ const MapWorkspace = ({
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
+                    onMouseLeave={() => { if (transformRef.current.isDragging) handleMouseUp(); setHoveredTrack(null); }}
                     onWheel={handleWheel}
                     onClick={handleClick}
                     className={`w-full h-full block ${
                         toolMode === 'pan'
-                            ? (transformRef.current.isDragging ? 'cursor-grabbing' : 'cursor-grab')
+                            ? (isPanning ? 'cursor-grabbing' : 'cursor-grab')
                             : 'cursor-crosshair'
                     }`}
                 />
 
-                {/* RUEDA DE CAMELOT INTERACTIVA EN LA ESQUINA SUPERIOR IZQUIERDA (ANCHO DE LOGO & 60% ALPHA) */}
-                <div className="absolute top-4 left-4 z-30 font-mono select-none">
-                    <div className="bg-[#0b0c16]/95 border border-djzinc-750/90 rounded-2xl p-3 shadow-2xl backdrop-blur-xl transition-all w-[264px]">
-                        <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-djzinc-800/80">
-                            <div className="flex items-center gap-2">
-                                <Icons.Disc size={14} className="inline-block align-[-2px]" />
-                                <span className="text-xs font-bold text-white tracking-wide">Rueda Camelot</span>
-                                {selectedTrack && (
-                                    <span 
-                                        className="px-2 py-0.5 rounded text-[10px] font-black text-black shadow-sm"
-                                        style={{ backgroundColor: MAP_CAMELOT_COLORS[(selectedTrack.key || '8A').toUpperCase()] || '#06b6d4' }}
-                                    >
-                                        {(selectedTrack.key || '8A').toUpperCase()}
-                                    </span>
-                                )}
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsCamelotWheelOpen(prev => !prev)}
-                                className="text-gray-400 hover:text-white text-xs px-1.5 py-0.5 rounded hover:bg-djzinc-800 cursor-pointer"
-                                title={isCamelotWheelOpen ? "Minimizar rueda" : "Expandir rueda"}
-                            >
-                                {isCamelotWheelOpen ? '−' : '+'}
-                            </button>
-                        </div>
-
-                        {isCamelotWheelOpen && (
-                            <div className="flex flex-col items-center">
-                                {/* Visualizador Circular SVG 24 Tonalidades con Sectores de Color Camelot al 60% Alpha */}
-                                <svg width="240" height="240" viewBox="0 0 240 240" className="overflow-visible select-none">
-                                    <defs>
-                                        <radialGradient id="camelotCenterGlow" cx="50%" cy="50%" r="50%">
-                                            <stop offset="0%" stopColor="#1a1c2e" />
-                                            <stop offset="100%" stopColor="#07080f" />
-                                        </radialGradient>
-                                    </defs>
-
-                                    {/* Círculo base de fondo */}
-                                    <circle cx="120" cy="120" r="116" fill="#06060c" stroke="#1f2438" strokeWidth="1.5" />
-
-                                    {/* 12 Sectores Donut: Anillo Exterior B (Mayor) e Interior A (Menor) con Alpha al 60% */}
-                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(num => {
-                                        const selKey = selectedTrack ? (selectedTrack.key || '8A').toUpperCase() : null;
-                                        const keyA = `${num}A`;
-                                        const keyB = `${num}B`;
-
-                                        const isMatchA = selKey ? calcHarmonicMixMatch(selKey, keyA).isMatch : false;
-                                        const isMatchB = selKey ? calcHarmonicMixMatch(selKey, keyB).isMatch : false;
-                                        const isSelectedA = selKey === keyA;
-                                        const isSelectedB = selKey === keyB;
-                                        const isFilteredA = selectedKeyFilter === keyA;
-                                        const isFilteredB = selectedKeyFilter === keyB;
-
-                                        const angDeg = (num - 1) * 30 - 90;
-                                        const deg1 = angDeg - 14.8;
-                                        const deg2 = angDeg + 14.8;
-                                        const a1 = (deg1 * Math.PI) / 180;
-                                        const a2 = (deg2 * Math.PI) / 180;
-                                        const aMid = (angDeg * Math.PI) / 180;
-
-                                        // Sector exterior B: Radio 74 a 114
-                                        const xo1 = 120 + 114 * Math.cos(a1);
-                                        const yo1 = 120 + 114 * Math.sin(a1);
-                                        const xo2 = 120 + 114 * Math.cos(a2);
-                                        const yo2 = 120 + 114 * Math.sin(a2);
-                                        const xm2 = 120 + 74 * Math.cos(a2);
-                                        const ym2 = 120 + 74 * Math.sin(a2);
-                                        const xm1 = 120 + 74 * Math.cos(a1);
-                                        const ym1 = 120 + 74 * Math.sin(a1);
-                                        const pathB = `M ${xo1} ${yo1} A 114 114 0 0 1 ${xo2} ${yo2} L ${xm2} ${ym2} A 74 74 0 0 0 ${xm1} ${ym1} Z`;
-
-                                        // Sector interior A: Radio 36 a 74
-                                        const xi2 = 120 + 36 * Math.cos(a2);
-                                        const yi2 = 120 + 36 * Math.sin(a2);
-                                        const xi1 = 120 + 36 * Math.cos(a1);
-                                        const yi1 = 120 + 36 * Math.sin(a1);
-                                        const pathA = `M ${xm1} ${ym1} A 74 74 0 0 1 ${xm2} ${ym2} L ${xi2} ${yi2} A 36 36 0 0 0 ${xi1} ${yi1} Z`;
-
-                                        // Coordenadas de etiquetas de texto
-                                        const bx = 120 + 94 * Math.cos(aMid);
-                                        const by = 120 + 94 * Math.sin(aMid) + 3.5;
-                                        const ax = 120 + 55 * Math.cos(aMid);
-                                        const ay = 120 + 55 * Math.sin(aMid) + 3.5;
-
-                                        return (
-                                            <g key={num}>
-                                                {/* Sector B (Outer - Major) con 60% Alpha */}
-                                                <g 
-                                                    onClick={() => setSelectedKeyFilter(prev => prev === keyB ? 'ALL' : keyB)}
-                                                    className="cursor-pointer group"
-                                                >
-                                                    <path
-                                                        d={pathB}
-                                                        fill={MAP_CAMELOT_COLORS[keyB] || '#06b6d4'}
-                                                        fillOpacity={isSelectedB ? 0.95 : (isFilteredB ? 0.90 : (isMatchB ? 0.85 : 0.60))}
-                                                        stroke={isSelectedB ? "#ffffff" : (isFilteredB ? "#38bdf8" : (isMatchB ? "#34d399" : "#080912"))}
-                                                        strokeWidth={isSelectedB ? "2.5" : (isFilteredB ? "2" : (isMatchB ? "1.5" : "1"))}
-                                                        className="transition-all duration-150 group-hover:fill-opacity-95"
-                                                    />
-                                                    <text
-                                                        x={bx}
-                                                        y={by}
-                                                        fill={isSelectedB || isFilteredB ? "#000000" : "#ffffff"}
-                                                        fontSize="9.5"
-                                                        fontWeight="900"
-                                                        fontFamily="monospace"
-                                                        textAnchor="middle"
-                                                        style={{ textShadow: isSelectedB || isFilteredB ? 'none' : '0 1px 3px rgba(0,0,0,0.9)' }}
-                                                    >
-                                                        {keyB}
-                                                    </text>
-                                                </g>
-
-                                                {/* Sector A (Inner - Minor) con 60% Alpha */}
-                                                <g 
-                                                    onClick={() => setSelectedKeyFilter(prev => prev === keyA ? 'ALL' : keyA)}
-                                                    className="cursor-pointer group"
-                                                >
-                                                    <path
-                                                        d={pathA}
-                                                        fill={MAP_CAMELOT_COLORS[keyA] || '#06b6d4'}
-                                                        fillOpacity={isSelectedA ? 0.95 : (isFilteredA ? 0.90 : (isMatchA ? 0.85 : 0.60))}
-                                                        stroke={isSelectedA ? "#ffffff" : (isFilteredA ? "#38bdf8" : (isMatchA ? "#22d3ee" : "#080912"))}
-                                                        strokeWidth={isSelectedA ? "2.5" : (isFilteredA ? "2" : (isMatchA ? "1.5" : "1"))}
-                                                        className="transition-all duration-150 group-hover:fill-opacity-95"
-                                                    />
-                                                    <text
-                                                        x={ax}
-                                                        y={ay}
-                                                        fill={isSelectedA || isFilteredA ? "#000000" : "#ffffff"}
-                                                        fontSize="9.5"
-                                                        fontWeight="900"
-                                                        fontFamily="monospace"
-                                                        textAnchor="middle"
-                                                        style={{ textShadow: isSelectedA || isFilteredA ? 'none' : '0 1px 3px rgba(0,0,0,0.9)' }}
-                                                    >
-                                                        {keyA}
-                                                    </text>
-                                                </g>
-                                            </g>
-                                        );
-                                    })}
-
-                                    {/* Centro Vinyl Hub */}
-                                    <circle cx="120" cy="120" r="34" fill="url(#camelotCenterGlow)" stroke="#272a3d" strokeWidth="2" />
-                                    <circle cx="120" cy="120" r="28" fill="none" stroke="#161826" strokeWidth="1" strokeDasharray="3 3" />
-                                    <circle cx="120" cy="120" r="4" fill="#06b6d4" />
-
-                                    {/* Texto central */}
-                                    {selectedTrack ? (
-                                        <>
-                                            <text x="120" y="113" fill="#ffffff" fontSize="12" fontWeight="900" fontFamily="monospace" textAnchor="middle">
-                                                {(selectedTrack.key || '8A').toUpperCase()}
-                                            </text>
-                                            <text x="120" y="127" fill="#06b6d4" fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
-                                                ACTUAL
-                                            </text>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <text x="120" y="113" fill="#9ca3af" fontSize="8.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
-                                                CAMELOT
-                                            </text>
-                                            <text x="120" y="126" fill="#6b7280" fontSize="7.5" fontFamily="monospace" textAnchor="middle">
-                                                {selectedKeyFilter !== 'ALL' ? selectedKeyFilter : '2D RADIAL'}
-                                            </text>
-                                        </>
-                                    )}
-                                </svg>
-
-                                {/* Información Armónica y Filtros Activos */}
-                                {selectedTrack ? (
-                                    <div className="w-full mt-2 pt-2 border-t border-djzinc-800 text-[10px] space-y-1">
-                                        <div className="flex items-center justify-between text-gray-400">
-                                            <span>Tonalidad Actual:</span>
-                                            <span 
-                                                className="px-2 py-0.5 rounded font-black text-black text-[10px]"
-                                                style={{ backgroundColor: MAP_CAMELOT_COLORS[(selectedTrack.key || '8A').toUpperCase()] || '#06b6d4' }}
-                                            >
-                                                {(selectedTrack.key || '8A').toUpperCase()}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-[9px] text-emerald-400">
-                                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                            <span>Compatibles iluminadas (+1, -1, Modo)</span>
-                                        </div>
-                                        {selectedKeyFilter !== 'ALL' && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedKeyFilter('ALL')}
-                                                className="w-full py-1 text-[9px] text-djcyan-400 hover:text-white bg-djzinc-850 rounded-lg cursor-pointer mt-1 border border-djzinc-750 font-bold"
-                                            >
-                                                Limpiar filtro de tonalidad ({selectedKeyFilter})
-                                            </button>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="w-full mt-2 pt-2 border-t border-djzinc-800 text-[10px] text-center text-gray-400">
-                                        {selectedKeyFilter !== 'ALL' ? (
-                                            <div className="flex items-center justify-between gap-1">
-                                                <span className="text-djcyan-300">Filtro: {selectedKeyFilter}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSelectedKeyFilter('ALL')}
-                                                    className="text-[9px] text-gray-400 hover:text-white underline cursor-pointer"
-                                                >
-                                                    Quitar
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <span>Haz clic en una tonalidad para filtrar</span>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                <div className="absolute top-3 left-3 z-30 select-none">
+                    <MapCamelotOverlay
+                        open={isCamelotWheelOpen}
+                        onToggle={() => setIsCamelotWheelOpen(prev => !prev)}
+                        selectedKey={selectedTrack ? (selectedTrack.key || selectedTrack.k || '8A').toUpperCase() : null}
+                        keyFilter={selectedKeyFilter}
+                        onFilter={(k) => setSelectedKeyFilter(prev => prev === k ? 'ALL' : k)}
+                        colors={MAP_CAMELOT_COLORS}
+                        isMatch={(a, b) => calcHarmonicMixMatch(a, b).isMatch}
+                    />
                 </div>
 
-                {/* CONSOLA DE NAVEGACIÓN D-PAD Y FADER DE ZOOM (EN EL LADO OPUESTO - TOP RIGHT) */}
-                <div className="absolute top-4 right-4 z-30 font-mono select-none">
-                    <div className="bg-[#0b0c16]/95 border border-djzinc-750/90 rounded-2xl p-3 shadow-2xl backdrop-blur-xl transition-all flex flex-col items-center gap-2.5 w-[142px]">
-                        {/* Cabecera del Módulo */}
-                        <div className="flex items-center justify-between w-full pb-1.5 border-b border-djzinc-800/80">
-                            <span className="text-[10px] font-bold tracking-wider uppercase text-djcyan-400 flex items-center gap-1">
-                                <Icons.Sliders size={14} className="inline-block align-[-2px]" />
-                                <span>PAN / ZOOM</span>
-                            </span>
-                            <span className="text-[9px] text-white font-black bg-djzinc-900 px-1.5 py-0.2 rounded border border-djzinc-800">
-                                {zoomDisplay.toFixed(1)}x
-                            </span>
-                        </div>
-
-                        {/* D-Pad de 4 Flechas estilo Hardware DJ (Beveled Zinc, Tacto Fader) */}
-                        <div className="flex flex-col items-center gap-1 p-1.5 bg-[#06060c] border border-djzinc-800/80 rounded-xl shadow-inner w-full">
-                            <button
-                                type="button"
-                                onMouseDown={() => startPan(0, 30)}
-                                onMouseUp={stopPan}
-                                onMouseLeave={stopPan}
-                                className="w-9 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all"
-                                title="Mover mapa arriba (mantener presionado para desplazamiento continuo)"
-                            >
-                                ▲
-                            </button>
-
-                            <div className="flex items-center justify-between w-full px-0.5">
-                                <button
-                                    type="button"
-                                    onMouseDown={() => startPan(30, 0)}
-                                    onMouseUp={stopPan}
-                                    onMouseLeave={stopPan}
-                                    className="w-8 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all"
-                                    title="Mover mapa a la izquierda"
-                                >
-                                    ◀
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={handleResetZoom}
-                                    className="w-8 h-7 rounded-md bg-djzinc-900 border border-djzinc-800 hover:border-gray-500 text-djcyan-400 hover:text-white flex items-center justify-center text-[10px] font-bold shadow-inner cursor-pointer"
-                                    title="Centrar y reajustar mapa (Fit)"
-                                >
-                                    ⊙
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onMouseDown={() => startPan(-30, 0)}
-                                    onMouseUp={stopPan}
-                                    onMouseLeave={stopPan}
-                                    className="w-8 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all"
-                                    title="Mover mapa a la derecha"
-                                >
-                                    <Icons.Play size={14} className="inline-block align-[-2px]" />
-                                </button>
-                            </div>
-
-                            <button
-                                type="button"
-                                onMouseDown={() => startPan(0, -30)}
-                                onMouseUp={stopPan}
-                                onMouseLeave={stopPan}
-                                className="w-9 h-7 rounded-md bg-gradient-to-b from-[#2a2c3e] to-[#151624] border border-djzinc-700/80 hover:border-djcyan-400 text-gray-300 hover:text-djcyan-300 flex items-center justify-center text-xs font-bold shadow active:translate-y-0.5 active:shadow-inner cursor-pointer transition-all"
-                                title="Mover mapa abajo"
-                            >
-                                ▼
-                            </button>
-                        </div>
-
-                        {/* Zoom estilo Fader de Pitch DJ con calibración */}
-                        <div className="flex flex-col items-center w-full pt-1.5 border-t border-djzinc-800/80">
-                            <div className="flex items-center justify-between w-full px-1 text-[9px] text-gray-400 font-bold mb-1">
-                                <span>FADER ZOOM</span>
-                                <button
-                                    type="button"
-                                    onClick={handleResetZoom}
-                                    className="text-djcyan-400 hover:text-white cursor-pointer"
-                                    title="Resetear zoom a 1.0x"
-                                >
-                                    1.0x
-                                </button>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 justify-center py-1 w-full">
-                                <button
-                                    type="button"
-                                    onClick={() => handleFaderZoom(Math.max(0.4, zoomDisplay - 0.25))}
-                                    className="w-6 h-6 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-300 flex items-center justify-center text-xs font-bold cursor-pointer"
-                                    title="Alejar (-)"
-                                >
-                                    −
-                                </button>
-
-                                {/* Track del Fader con estilo Pitch DJ */}
-                                <div className="relative flex-1 h-6 flex items-center">
-                                    <input
-                                        type="range"
-                                        min="0.4"
-                                        max="4.0"
-                                        step="0.05"
-                                        value={zoomDisplay}
-                                        onChange={(e) => handleFaderZoom(e.target.value)}
-                                        className="w-full accent-djcyan-400 cursor-pointer h-2 bg-[#06060c] border border-djzinc-800 rounded-lg shadow-inner"
-                                        title={`Zoom actual: ${zoomDisplay.toFixed(1)}x`}
-                                    />
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => handleFaderZoom(Math.min(4.0, zoomDisplay + 0.25))}
-                                    className="w-6 h-6 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-300 flex items-center justify-center text-xs font-bold cursor-pointer"
-                                    title="Acercar (+)"
-                                >
-                                    +
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div className="absolute top-3 right-3 z-30 select-none">
+                    <MapNavOverlay
+                        zoom={zoomDisplay}
+                        onZoom={handleFaderZoom}
+                        onReset={handleResetZoom}
+                        startPan={startPan}
+                        stopPan={stopPan}
+                    />
                 </div>
+
+                {activeTracks.length > 0 && (
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 select-none pointer-events-none">
+                        <MapStatsHud
+                            visible={mapStats.visible}
+                            total={activeTracks.length}
+                            avgBpm={mapStats.avgBpm}
+                            avgEnergy={mapStats.avgEnergy}
+                            keyCount={mapStats.keyCount}
+                            selected={selectedMapTracks.length}
+                        />
+                    </div>
+                )}
 
                 {/* BANNER INFORMATIVO SI LA BIBLIOTECA ESTÁ VACÍA */}
                 {activeTracks.length === 0 && (
