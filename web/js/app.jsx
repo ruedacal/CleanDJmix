@@ -5131,26 +5131,58 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
     );
 };
 
-// ─── UX CABINA: Modal de Atajos de Teclado Profesionales (DJ Cheatsheet) ─────
+// ─── UX CABINA: Detección Automática de Sistema Operativo ──────────────────
+const detectClientOS = () => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return 'mac';
+    const ua = (navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || '').toLowerCase();
+    if (ua.includes('mac') || ua.includes('darwin') || ua.includes('iphone') || ua.includes('ipad')) return 'mac';
+    if (ua.includes('win')) return 'windows';
+    if (ua.includes('linux')) return 'linux';
+    return 'mac';
+};
+
+// ─── UX CABINA: Modal de Atajos de Teclado Profesionales (DJ Cheatsheet Adaptada por SO) ─────
 const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
     if (!isOpen) return null;
+
+    const detectedOS = useMemo(() => detectClientOS(), []);
+    const [selectedOS, setSelectedOS] = useState(() => detectedOS);
+
+    const isMac = selectedOS === 'mac';
+    const modKey = isMac ? '⌘' : 'Ctrl';
+    const altKey = isMac ? '⌥' : 'Alt';
+    const shiftKey = isMac ? '⇧' : 'Shift';
+    const escKey = isMac ? '⎋ ESC' : 'ESC';
+    const spaceKey = isMac ? '␣ Espacio' : 'Espacio';
 
     const shortcutGroups = [
         {
             title: "Transporte & Mezcla",
             icon: "🎛️",
             items: [
-                { key: "Espacio", desc: "Play / Pausa del tema activo o seleccionado" },
-                { key: "C", desc: "CUE: Pausa y regresa al inicio (00:00)" },
+                { key: spaceKey, desc: "Play / Pausa del tema activo o seleccionado" },
+                { key: "C", desc: "CUE: Pausa y regresa al punto de inicio (00:00)" },
                 { key: "1 a 8", desc: "Salto directo a Hot Cue 1-8 (Intro, Drop, Break, Outro...)" },
+                { key: "← / →", desc: "Salto rápido de fraseo musical (32 compases)" },
             ]
         },
         {
-            title: "Navegación en Cabina",
+            title: "Navegación & Vistas",
             icon: "📋",
             items: [
                 { key: "↑ / ↓", desc: "Navegar hacia arriba o abajo en la tabla de temas" },
-                { key: "M", desc: "Plegar / Desplegar panel de métricas (más espacio vertical)" },
+                { key: `${modKey} + 1..7`, desc: "Cambio directo de pantalla (Auditar, Cues, Sets, Map, Pool, Radar, Crates)" },
+                { key: "M", desc: "Plegar / Desplegar panel superior de métricas" },
+                { key: `${modKey} + B`, desc: "Colapsar / Desplegar barra lateral (Side Rail)" },
+            ]
+        },
+        {
+            title: "Búsqueda & Acceso Rápido",
+            icon: "🔍",
+            items: [
+                { key: `${modKey} + F  /  ${modKey} + K`, desc: "Enfocar buscador rápido en cualquier espacio de trabajo" },
+                { key: `F1  /  ${modKey} + /`, desc: "Abrir o cerrar el Manual Maestro Interactivo" },
+                { key: "? / H", desc: "Abrir o cerrar esta guía de atajos de teclado" },
             ]
         },
         {
@@ -5158,8 +5190,7 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
             icon: "🕶️",
             items: [
                 { key: "L", desc: "Alternar Modo Cabina Oscura (High-Contrast Club Mode)" },
-                { key: "? / H", desc: "Abrir o cerrar esta guía de atajos" },
-                { key: "ESC", desc: "Cerrar cualquier ventana modal activa" },
+                { key: escKey, desc: "Cerrar cualquier ventana modal activa" },
             ]
         }
     ];
@@ -5167,18 +5198,18 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
             <div 
-                className="w-full max-w-2xl bg-[#09090f] border border-djcyan-500/50 rounded-2xl shadow-[0_0_40px_rgba(6,182,212,0.3)] overflow-hidden flex flex-col"
+                className="w-full max-w-3xl bg-[#09090f] border border-djcyan-500/50 rounded-2xl shadow-[0_0_40px_rgba(6,182,212,0.3)] overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-djzinc-800 bg-[#0d0d14] flex items-center justify-between">
+                <div className="px-6 py-4 border-b border-djzinc-800 bg-[#0d0d14] flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <Icons.Keyboard size={14} className="inline-block align-[-2px]" />
+                        <Icons.Keyboard size={16} className="text-djcyan-400" />
                         <div>
                             <h3 className="text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
                                 ATAJOS DE TECLADO — CABINA PROFESIONAL
-                                <span className="text-[10px] bg-djcyan-950 text-djcyan-400 border border-djcyan-500/40 px-2 py-0.5 rounded-full">
-                                    PRO DJ
+                                <span className="text-[10px] bg-djcyan-950 text-djcyan-400 border border-djcyan-500/40 px-2 py-0.5 rounded-full font-bold">
+                                    {isMac ? 'macOS NATIVO' : selectedOS === 'windows' ? 'WINDOWS' : 'LINUX'}
                                 </span>
                             </h3>
                             <p className="text-[11px] text-gray-400 font-mono">
@@ -5186,18 +5217,62 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
                             </p>
                         </div>
                     </div>
-                    <button 
-                        onClick={onClose}
-                        className="w-8 h-8 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors"
-                    >
-                        <Icons.Close size={14} className="inline-block align-[-2px]" />
-                    </button>
+
+                    {/* Selector Elegante de Sistema Operativo con Detección Automática */}
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-[#05060d] p-1 rounded-xl border border-djzinc-750">
+                            <span className="text-[10px] font-mono text-gray-400 px-1.5 hidden sm:inline">Teclado:</span>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedOS('mac')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                                    selectedOS === 'mac'
+                                        ? 'bg-gradient-to-r from-djcyan-500 to-cyan-600 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                                        : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                                }`}
+                                title="Atajos adaptados para Mac con tecla Command (⌘) y Option (⌥)"
+                            >
+                                <span></span> macOS {detectedOS === 'mac' && <span className="text-[9px] opacity-75 font-normal">(auto)</span>}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedOS('windows')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                                    selectedOS === 'windows'
+                                        ? 'bg-gradient-to-r from-djcyan-500 to-cyan-600 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                                        : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                                }`}
+                                title="Atajos adaptados para Windows con tecla Control (Ctrl) y Alt"
+                            >
+                                <span>⊞</span> Windows {detectedOS === 'windows' && <span className="text-[9px] opacity-75 font-normal">(auto)</span>}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedOS('linux')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                                    selectedOS === 'linux'
+                                        ? 'bg-gradient-to-r from-djcyan-500 to-cyan-600 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                                        : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                                }`}
+                                title="Atajos adaptados para Linux"
+                            >
+                                <span>🐧</span> Linux {detectedOS === 'linux' && <span className="text-[9px] opacity-75 font-normal">(auto)</span>}
+                            </button>
+                        </div>
+
+                        <button 
+                            onClick={onClose}
+                            className="w-8 h-8 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors"
+                        >
+                            <Icons.Close size={14} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body: Grupos de Atajos */}
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
                     {shortcutGroups.map((grp, gIdx) => (
-                        <div key={gIdx} className={`p-4 rounded-xl border border-djzinc-800 bg-[#0c0c14] flex flex-col gap-3 ${gIdx === 2 ? 'md:col-span-2' : ''}`}>
+                        <div key={gIdx} className="p-4 rounded-xl border border-djzinc-800 bg-[#0c0c14] flex flex-col gap-3">
                             <div className="flex items-center gap-2 text-xs font-mono font-bold text-djcyan-300 uppercase">
                                 <span>{grp.icon}</span>
                                 <span>{grp.title}</span>
@@ -5205,7 +5280,7 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
                             <div className="space-y-2">
                                 {grp.items.map((item, iIdx) => (
                                     <div key={iIdx} className="flex items-center justify-between gap-3 text-xs font-mono">
-                                        <span className="text-gray-300">{item.desc}</span>
+                                        <span className="text-gray-300 leading-tight">{item.desc}</span>
                                         <kbd className="px-2.5 py-1 bg-djzinc-900 border border-djzinc-700 rounded-md text-djcyan-400 font-bold text-[11px] shadow-inner shrink-0 tracking-wider">
                                             {item.key}
                                         </kbd>
@@ -5232,7 +5307,7 @@ const DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
                         onClick={onClose}
                         className="px-4 py-1.5 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-white font-mono text-xs font-bold transition-colors cursor-pointer"
                     >
-                        Entendido (ESC)
+                        Entendido ({escKey})
                     </button>
                 </div>
             </div>
@@ -5314,9 +5389,9 @@ const MANUAL_SECTIONS = {
             { btn: "[ 🔍 Espectrograma FFT ]", desc: "Visualizador interactivo de frecuencias que muestra la pendiente espectral en tiempo real.", when: "Al hacer clic en cualquier pista para verificar su techo de frecuencia." }
         ],
         simulationSteps: [
-            { label: "Ingesta de Pistas", desc: "Carga simultánea de 12 canciones locales con lectura de cabeceras ID3 y duración", focus: "ingest" },
-            { label: "Radiografía FFT", desc: "El motor acústico descompone el espectro de 20 Hz a 24.000 Hz en tiempo real", focus: "fft" },
-            { label: "Detección de Fake", desc: "Línea de corte detectada en 16 kHz: marcado automático como 'Pérdida Severa'", focus: "fake" },
+            { label: "Ingesta & DNA Acústico", desc: "Evaluación de Mood, Energía (88%), Danceability (74%) y Valencia", focus: "dna" },
+            { label: "Espectro FFT 24-Bit", desc: "Radiografía acústica de alta resolución con caída natural a 22.05 kHz", focus: "fft" },
+            { label: "Detección Fake Cutoff", desc: "Corte brickwall abrupto detectado en 16.0 kHz (Transcode MP3 falso)", focus: "fake" },
             { label: "Purga y Reemplazo", desc: "Un clic para enviar fakes a cuarentena o llevarlos a la cola de reemplazo SuperFLAC", focus: "purge" }
         ]
     },
@@ -5351,10 +5426,10 @@ const MANUAL_SECTIONS = {
             { btn: "[ 🔄 Resetear Cues ]", desc: "Borra todas las marcas para volver a calcular desde cero o redefinir puntos.", when: "Si deseas reestructurar una canción con otro perfil de fraseo." }
         ],
         simulationSteps: [
-            { label: "Detección de Downbeat", desc: "El analizador localiza el compás 1.1 exacto donde arranca la energía rítmica", focus: "downbeat" },
-            { label: "Mapeo de 32 Tiempos", desc: "Cálculo de la estructura musical en múltiplos de 8 compases (32 / 64 beats)", focus: "phrasing" },
-            { label: "Inyección de 8 Cues", desc: "Asignación de banderas con colores oficiales para Pioneer CDJ y Serato", focus: "cues" },
-            { label: "Exportación Directa", desc: "Guardado permanente en las etiquetas ID3 y metadatos de cabina", focus: "export" }
+            { label: "Fraseo de 32 Tiempos", desc: "Detección matemática de bloques de 8 compases (32 / 64 beats) y Downbeats", focus: "phrasing" },
+            { label: "Mapeo Transitorios & Cues", desc: "Colocación de marcas tácticas en Intro, Breakdown, Vocal y Drop", focus: "cues" },
+            { label: "8 Pads Iluminados RGB", desc: "Respuesta física retroiluminada según estándar Pioneer CDJ y Serato", focus: "pads" },
+            { label: "Exportación Directa", desc: "Inyección permanente en metadatos ID3 y bases de datos de cabina", focus: "export" }
         ]
     },
     setbuilder: {
@@ -5389,9 +5464,9 @@ const MANUAL_SECTIONS = {
             { btn: "[ 📈 Lienzo de Curva de BPM ]", desc: "Visualizador SVG interactivo con nodos clickeables para preescuchar cada punto del set.", when: "Para comprobar visualmente que la energía va en crescendo y no hay baches." }
         ],
         simulationSteps: [
-            { label: "Construcción de Secuencia", desc: "Curva continua de BPM y energía renderizada en lienzo interactivo sin saltos", focus: "curve" },
-            { label: "Bifurcaciones DAG", desc: "Alternativas armónicas desplegadas paso a paso con botones de sustitución rápida", focus: "dag" },
-            { label: "Auditoría Gemini AI", desc: "Google Gemini evalúa el flujo de la sesión generando un score del 0 al 100%", focus: "ai" },
+            { label: "Curva Bézier de Energía", desc: "Progresión armónica continua con información técnica por pista", focus: "curve" },
+            { label: "Bifurcaciones DAG DJOID", desc: "Caminos alternativos de sesión desplegados para improvisar en directo", focus: "dag" },
+            { label: "Auditoría Gemini AI", desc: "Google Gemini 2.5 Flash evalúa flujo y score armónico del set (0-100%)", focus: "ai" },
             { label: "Puentes Automáticos", desc: "Inserción con 1 clic de canciones intermedias para resolver choques tonales", focus: "bridges" }
         ]
     },
@@ -5427,10 +5502,10 @@ const MANUAL_SECTIONS = {
             { btn: "[ ▶ Escuchar Preview (0.8ms) ]", desc: "Reproductor de pre-escucha ultraveloz con audio precargado en memoria.", when: "Para escuchar fragmentos clave de las pistas sin cortes ni esperas." }
         ],
         simulationSteps: [
-            { label: "Constelación Espacial", desc: "Pistas proyectadas en 2D donde la cercanía física representa afinidad acústica", focus: "constellation" },
+            { label: "Universo Espacial 2D", desc: "Pistas proyectadas en 2D donde cercanía representa afinidad acústica", focus: "constellation" },
+            { label: "Zoom a Pista & Mini-Map", desc: "Ampliación de pista enfocada con ficha técnica y radar de contexto", focus: "zoom" },
             { label: "Rueda Camelot 60%", desc: "Sectores tonales iluminados con compatibilidad armónica adyacente (+1, -1, Modo)", focus: "camelot" },
-            { label: "Hardware Fader & D-Pad", desc: "Desplazamiento suave continuo mediante cruceta analógica y zoom de precisión", focus: "fader" },
-            { label: "Selección Lasso", desc: "Captura de racimos de temas con herramienta de dibujo libre y envío directo a Set", focus: "lasso" }
+            { label: "Selección Lasso Táctica", desc: "Captura de racimos de temas afines con dibujo libre y envío directo a Set", focus: "lasso" }
         ]
     },
     spotify: {
@@ -5464,10 +5539,10 @@ const MANUAL_SECTIONS = {
             { btn: "[ 📁 Cambiar Carpeta Destino ]", desc: "Configura el directorio local donde se guardan tus canciones descargadas.", when: "Para dirigir la música a tu disco duro externo o carpeta de Serato/Rekordbox." }
         ],
         simulationSteps: [
-            { label: "Búsqueda o Link", desc: "Resolución de catálogo con localización de máster de estudio en SuperFLAC", focus: "search" },
-            { label: "Streaming Lossless", desc: "Descarga segura en FLAC 24-bit / 16-bit con gestión dinámica de tokens CSRF", focus: "download" },
-            { label: "Auditoría FFT en Vuelo", desc: "Certificación espectral instantánea para garantizar 0% transcodificación falsa", focus: "cert" },
-            { label: "Comparativa Dual A/B", desc: "Pre-escucha en vivo alternando entre la copia local antigua y el nuevo máster HD", focus: "ab" }
+            { label: "Resolución de Catálogo", desc: "Extracción de ISRC y localización de máster original de estudio en alta resolución", focus: "search" },
+            { label: "Pipeline SuperFLAC", desc: "Descarga multihilo en FLAC 24-bit / 48kHz (2.304 kbps) con token dinámico", focus: "download" },
+            { label: "Comparativa Dual A/B", desc: "Pre-escucha en vivo alternando entre la copia local antigua y el nuevo máster", focus: "ab" },
+            { label: "Certificación FFT en Vuelo", desc: "Comprobación matemática espectral garantizando 100% fidelidad Lossless", focus: "cert" }
         ]
     },
     radar: {
@@ -5537,10 +5612,10 @@ const MANUAL_SECTIONS = {
             { btn: "[ 🎧 Exportar Rekordbox XML ]", desc: "Genera el archivo XML universal listo para importar en Rekordbox 6 y 7.", when: "Para usuarios de Pioneer CDJ-3000 / CDJ-2000NXS2." }
         ],
         simulationSteps: [
-            { label: "Árbol Jerárquico", desc: "Organización en dos capas: Género musical principal y Subgénero timbral", focus: "tree" },
-            { label: "Roles Acústicos", desc: "Clasificación espectral: Bass Driver, Vocal Lead, Percussive Tool, Balanced", focus: "roles" },
-            { label: "Pasaporte Universal", desc: "Traducción simultánea hacia Serato, Rekordbox XML, Traktor NML y VirtualDJ", focus: "passport" },
-            { label: "Cabina Ready", desc: "Pendrives USB y librerías de software listos para pinchar en cualquier club", focus: "ready" }
+            { label: "Taxonomía Timbral 2 Niveles", desc: "Organización por Género principal y Rol Acústico (Bass Driver, Tool, Vocal)", focus: "tree" },
+            { label: "Pasaporte Universal DJ", desc: "Traducción simultánea hacia Serato (.crate) y Rekordbox (XML)", focus: "passport" },
+            { label: "Traktor NML & VirtualDJ", desc: "Exportación multiplataforma sin recrear carpetas manualmente", focus: "multi" },
+            { label: "Cabina Ready USB", desc: "Pendrives USB listos para conectar a Pioneer CDJ-3000 o reproductores", focus: "ready" }
         ]
     }
 };
@@ -5597,6 +5672,23 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         let animId;
         let frame = 0;
 
+        const drawRoundRect = (c, x, y, width, height, radius, fill, stroke) => {
+            const r = Math.min(radius, width / 2, height / 2);
+            c.beginPath();
+            c.moveTo(x + r, y);
+            c.lineTo(x + width - r, y);
+            c.quadraticCurveTo(x + width, y, x + width, y + r);
+            c.lineTo(x + width, y + height - r);
+            c.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+            c.lineTo(x + r, y + height);
+            c.quadraticCurveTo(x, y + height, x, y + height - r);
+            c.lineTo(x, y + r);
+            c.quadraticCurveTo(x, y, x + r, y);
+            c.closePath();
+            if (fill) c.fill();
+            if (stroke) c.stroke();
+        };
+
         const render = () => {
             frame++;
             const t = frame * 0.04 * simSpeed;
@@ -5624,204 +5716,820 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 ctx.stroke();
             }
 
-            // SIMULACIÓN ESPECÍFICA POR SECCIÓN
-            if (activeSectionKey === 'copilot') {
-                // Deck 1 (Master) Waveform cyan
-                const mid1 = h * 0.28;
-                ctx.strokeStyle = '#06b6d4';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                for (let x = 0; x < w; x += 3) {
-                    const wave = Math.sin((x + t * 45) * 0.05) * 18 + Math.cos((x - t * 25) * 0.12) * 8;
-                    const y = mid1 + wave * (zoomFocus === 'deck' ? 1.4 : 1.0);
-                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                }
-                ctx.stroke();
+            // ─────────────────────────────────────────────────────────────────
+            // 1. MAP: Scatter Map 2D + Mini-Map + Zoom a Pista + Rueda Camelot
+            // ─────────────────────────────────────────────────────────────────
+            if (activeSectionKey === 'map') {
+                const mapW = w * 0.60;
 
-                // Deck 2 (Cue) Waveform magenta
-                const mid2 = h * 0.58;
-                ctx.strokeStyle = '#ec4899';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                for (let x = 0; x < w; x += 3) {
-                    const wave = Math.sin((x + t * 45) * 0.05) * 16 + Math.sin((x + t * 15) * 0.08) * 10;
-                    const y = mid2 + wave * (zoomFocus === 'deck' ? 1.4 : 1.0);
-                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                }
-                ctx.stroke();
+                // Ejes del Mapa
+                ctx.fillStyle = '#475569';
+                ctx.font = 'bold 8.5px monospace';
+                ctx.fillText('120 BPM ──────────────────────────────── 138 BPM', 24, h - 8);
 
-                // Playhead central
-                const playX = w * 0.45;
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(playX, 20);
-                ctx.lineTo(playX, h * 0.72);
-                ctx.stroke();
+                // Constelación de Pistas en el Universo 2D
+                const sampleTracks = [
+                    { x: 0.14, y: 0.68, col: '#f59e0b', k: '7A', bpm: 122 },
+                    { x: 0.20, y: 0.50, col: '#06b6d4', k: '8A', bpm: 126 },
+                    { x: 0.30, y: 0.42, col: '#06b6d4', k: '8A', bpm: 132, target: true },
+                    { x: 0.38, y: 0.32, col: '#0ea5e9', k: '9A', bpm: 134 },
+                    { x: 0.25, y: 0.78, col: '#10b981', k: '8B', bpm: 124 },
+                    { x: 0.46, y: 0.24, col: '#a855f7', k: '10A', bpm: 138 },
+                    { x: 0.48, y: 0.45, col: '#0ea5e9', k: '9A', bpm: 135 },
+                    { x: 0.16, y: 0.32, col: '#eab308', k: '7B', bpm: 125 },
+                    { x: 0.35, y: 0.62, col: '#06b6d4', k: '8A', bpm: 128 },
+                    { x: 0.52, y: 0.60, col: '#3b82f6', k: '9B', bpm: 130 },
+                    { x: 0.42, y: 0.72, col: '#10b981', k: '8B', bpm: 128 },
+                    { x: 0.55, y: 0.28, col: '#ec4899', k: '11A', bpm: 140 }
+                ];
 
-                // Jogwheel giratorio interactivo a la derecha
-                const jx = w - 46;
-                const jy = h * 0.42;
-                const jr = 32;
-                ctx.beginPath();
-                ctx.arc(jx, jy, jr, 0, Math.PI * 2);
-                ctx.fillStyle = '#0f1124';
-                ctx.fill();
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                sampleTracks.forEach((st, idx) => {
+                    const driftX = Math.sin(t * 0.8 + idx) * 1.5;
+                    const driftY = Math.cos(t * 0.6 + idx) * 1.5;
+                    const px = 20 + st.x * (mapW - 40) + driftX;
+                    const py = 20 + st.y * (h - 50) + driftY;
 
-                // Marcador de giro
-                const angle = t * 1.5;
-                ctx.beginPath();
-                ctx.moveTo(jx, jy);
-                ctx.lineTo(jx + Math.cos(angle) * (jr - 4), jy + Math.sin(angle) * (jr - 4));
-                ctx.strokeStyle = '#ec4899';
-                ctx.lineWidth = 3;
-                ctx.stroke();
+                    // Halo de nodo
+                    ctx.beginPath();
+                    ctx.arc(px, py, st.target ? 6 : 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = st.col;
+                    ctx.fill();
 
-            } else if (activeSectionKey === 'audit') {
-                // Barras FFT de Espectro en 32 bandas dinámicas
-                const numBars = 32;
-                const barW = (w - 40) / numBars;
-                for (let i = 0; i < numBars; i++) {
-                    const freqFrac = i / numBars;
-                    // Simular corte abrupto en MP3 fake (>16kHz) en paso 2 y 3
-                    const isFakeCut = simStep >= 2 && freqFrac > 0.72;
-                    let barH = isFakeCut ? 4 : (Math.sin(t * 3 + i * 0.45) * 0.5 + 0.5) * (h * 0.55) + 8;
-                    const bx = 20 + i * barW;
-                    const by = h - 35 - barH;
-
-                    const grad = ctx.createLinearGradient(0, by, 0, h - 35);
-                    if (isFakeCut) {
-                        grad.addColorStop(0, '#f43f5e');
-                        grad.addColorStop(1, '#881337');
-                    } else {
-                        grad.addColorStop(0, '#06b6d4');
-                        grad.addColorStop(0.5, '#10b981');
-                        grad.addColorStop(1, '#090a18');
+                    if (!st.target) {
+                        ctx.beginPath();
+                        ctx.arc(px, py, 6.5, 0, Math.PI * 2);
+                        ctx.strokeStyle = st.col + '44';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
                     }
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(bx, by, barW - 2, barH);
-                }
+                });
 
-                // Línea de corte de 16kHz y 22kHz
-                ctx.strokeStyle = '#f43f5e';
+                // Selección Lasso animada alrededor del cluster Peak-Time
+                const lassoX = 20 + 0.40 * (mapW - 40);
+                const lassoY = 20 + 0.34 * (h - 50);
                 ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
+                ctx.lineWidth = 1.5;
                 ctx.beginPath();
-                const cutX = 20 + numBars * 0.72 * barW;
-                ctx.moveTo(cutX, 30);
-                ctx.lineTo(cutX, h - 35);
+                ctx.ellipse(lassoX, lassoY, 44, 32, t * 0.2, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.setLineDash([]);
 
-            } else if (activeSectionKey === 'hotcues') {
-                // Waveform con marcadores Hot Cue y Playhead rebotando
-                const mid = h * 0.38;
-                ctx.strokeStyle = '#f59e0b';
-                ctx.lineWidth = 3;
+                // Pista Seleccionada: Mira Retículo + Zoom Loupe
+                const sel = sampleTracks.find(s => s.target);
+                const selX = 20 + sel.x * (mapW - 40) + Math.sin(t * 0.8 + 2) * 1.5;
+                const selY = 20 + sel.y * (h - 50) + Math.cos(t * 0.6 + 2) * 1.5;
+
+                // Retículo de Selección
                 ctx.beginPath();
-                for (let x = 0; x < w; x += 3) {
-                    const wave = Math.sin((x + t * 40) * 0.04) * 22 * Math.cos(x * 0.015);
-                    const y = mid + wave;
-                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                }
+                ctx.arc(selX, selY, 14 + Math.sin(t * 4) * 2, 0, Math.PI * 2);
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
 
-                // 8 Marcadores de Hot Cue flotantes
-                const cues = [
-                    { x: w * 0.12, col: '#10b981', label: '1 CUE' },
-                    { x: w * 0.32, col: '#06b6d4', label: '2 VOX' },
-                    { x: w * 0.55, col: '#a855f7', label: '3 BRK' },
-                    { x: w * 0.82, col: '#f43f5e', label: '4 DROP' }
-                ];
-                cues.forEach((c, idx) => {
-                    ctx.strokeStyle = c.col;
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(c.x, mid - 32);
-                    ctx.lineTo(c.x, mid + 32);
-                    ctx.stroke();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(selX - 18, selY); ctx.lineTo(selX - 8, selY);
+                ctx.moveTo(selX + 8, selY); ctx.lineTo(selX + 18, selY);
+                ctx.moveTo(selX, selY - 18); ctx.lineTo(selX, selY - 8);
+                ctx.moveTo(selX, selY + 8); ctx.lineTo(selX, selY + 18);
+                ctx.stroke();
 
-                    // Anillo de impacto animado
-                    const ring = (t * 2 + idx) % 2;
-                    ctx.beginPath();
-                    ctx.arc(c.x, mid, 8 + ring * 12, 0, Math.PI * 2);
-                    ctx.strokeStyle = c.col + '55';
-                    ctx.stroke();
+                // Zoom a la Pista Seleccionada (Card Flotante Detallada)
+                const cardW = 158;
+                const cardH = 64;
+                const cardX = Math.min(selX + 22, mapW - cardW - 5);
+                const cardY = Math.max(16, selY - 32);
+
+                // Línea conector líder
+                ctx.beginPath();
+                ctx.moveTo(selX, selY);
+                ctx.lineTo(cardX, cardY + cardH / 2);
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+
+                ctx.fillStyle = '#0a0e22f2';
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 1.2;
+                drawRoundRect(ctx, cardX, cardY, cardW, cardH, 8, true, true);
+
+                ctx.fillStyle = '#06b6d4';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('🔍 ZOOM PISTA ENFOCADA', cardX + 8, cardY + 13);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9.5px sans-serif';
+                ctx.fillText('Charlotte - Tales (8A)', cardX + 8, cardY + 27);
+
+                // Badges técnicos
+                ctx.fillStyle = '#083344';
+                ctx.strokeStyle = '#06b6d488';
+                drawRoundRect(ctx, cardX + 8, cardY + 33, 24, 13, 3, true, true);
+                ctx.fillStyle = '#22d3ee';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('8A', cardX + 13, cardY + 43);
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '8px monospace';
+                ctx.fillText('132 BPM • ⚡88% • 💃74%', cardX + 36, cardY + 43);
+
+                // Mini Waveform 3-Band dentro del Zoom Card
+                for (let wx = 0; wx < cardW - 16; wx += 3) {
+                    const wh = Math.sin((wx + t * 30) * 0.15) * 4 + 5;
+                    ctx.fillStyle = wx % 6 === 0 ? '#06b6d4' : '#f59e0b';
+                    ctx.fillRect(cardX + 8 + wx, cardY + 50, 2, wh);
+                }
+
+                // Mini-Map de Contexto en la Esquina Superior Izquierda
+                const mmX = 14;
+                const mmY = 12;
+                const mmW = 72;
+                const mmH = 44;
+                ctx.fillStyle = '#050714ee';
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+                drawRoundRect(ctx, mmX, mmY, mmW, mmH, 6, true, true);
+
+                ctx.fillStyle = '#22d3ee';
+                ctx.font = 'bold 7px monospace';
+                ctx.fillText('MINI-MAP [1:4]', mmX + 6, mmY + 10);
+
+                sampleTracks.forEach(st => {
+                    ctx.fillStyle = st.col + 'aa';
+                    ctx.fillRect(mmX + 6 + st.x * (mmW - 14), mmY + 12 + st.y * (mmH - 18), 2, 2);
                 });
 
-            } else if (activeSectionKey === 'setbuilder') {
-                // Curva de Energía Bézier estilo DJOID Graph Playlist
-                const p0 = { x: 30, y: h * 0.75 };
-                const p1 = { x: w * 0.28, y: h * 0.65 };
-                const p2 = { x: w * 0.55, y: h * 0.42 };
-                const p3 = { x: w * 0.88, y: h * 0.22 };
+                // Ventana Viewport móvil en el mini-map
+                const vpX = mmX + 16 + Math.sin(t * 0.4) * 6;
+                const vpY = mmY + 16 + Math.cos(t * 0.3) * 4;
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(vpX, vpY, 24, 16);
 
+                // Rueda Camelot en el Lado Derecho (60% alpha)
+                const cx = w * 0.81;
+                const cy = h * 0.50;
+                const rOuter = Math.min(w * 0.17, h * 0.38);
+                const rInner = rOuter * 0.55;
+
+                const camelotKeys = ['1A','2A','3A','4A','5A','6A','7A','8A','9A','10A','11A','12A'];
+                const colors = ['#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#10b981'];
+
+                for (let i = 0; i < 12; i++) {
+                    const startA = (i * Math.PI) / 6 - Math.PI / 2;
+                    const endA = ((i + 1) * Math.PI) / 6 - Math.PI / 2;
+                    const isKey8A = camelotKeys[i] === '8A';
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, isKey8A ? rOuter + 3 : rOuter, startA, endA);
+                    ctx.arc(cx, cy, rInner, endA, startA, true);
+                    ctx.closePath();
+                    ctx.fillStyle = colors[i] + (isKey8A ? 'ee' : '66');
+                    ctx.fill();
+                    ctx.strokeStyle = isKey8A ? '#ffffff' : '#05060f';
+                    ctx.lineWidth = isKey8A ? 2 : 1;
+                    ctx.stroke();
+
+                    // Etiqueta Camelot en el sector
+                    const midA = (startA + endA) / 2;
+                    const labelR = (rOuter + rInner) / 2;
+                    const lx = cx + Math.cos(midA) * labelR;
+                    const ly = cy + Math.sin(midA) * labelR;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = isKey8A ? 'bold 8.5px monospace' : '7px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(camelotKeys[i], lx, ly);
+                }
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+
+                // Rayo Armónico Conector: Une la pista 8A seleccionada con el sector 8A de la rueda
+                ctx.beginPath();
+                ctx.moveTo(cardX + cardW, cardY + cardH / 2);
+                ctx.quadraticCurveTo((cardX + cardW + cx) / 2, cy - 20, cx - rOuter, cy);
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.7)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([3, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // 2. SETBUILDER: Curva Bézier de Energía + Info Real en Puntos + DAG
+            // ─────────────────────────────────────────────────────────────────
+            else if (activeSectionKey === 'setbuilder') {
+                // Header Score AI
+                ctx.fillStyle = '#a855f7';
+                ctx.font = 'bold 9px monospace';
+                ctx.fillText('SCORE ARMÓNICO GEMINI AI: 96% ✨ (DJOID DAG Graph • Flujo Sin Choques Tonales)', 20, 18);
+
+                // Nodos de la Curva de Energía con Datos Reales
+                const setNodes = [
+                    { x: w * 0.12, y: h * 0.72, tag: '01 WARM-UP', title: 'Jon Hopkins - Singularity', bpm: '120 BPM', key: '7A', energy: '⚡61%', col: '#06b6d4' },
+                    { x: w * 0.35, y: h * 0.58, tag: '02 BUILD', title: 'Kölsch - Mirage', bpm: '126 BPM', key: '7A', energy: '⚡69%', col: '#3b82f6', match: 'Clave Idéntica ✨' },
+                    { x: w * 0.63, y: h * 0.36, tag: '03 PEAK MAIN', title: 'Charlotte - Tales', bpm: '132 BPM', key: '8A', energy: '⚡88%', col: '#a855f7', match: '+1 Armónico 🚀' },
+                    { x: w * 0.88, y: h * 0.22, tag: '04 CLIMAX', title: 'Chlär - Burning Sky', bpm: '138 BPM', key: '9A', energy: '⚡93%', col: '#f43f5e' }
+                ];
+
+                // Bifurcación Alternativa DAG (Rama hacia abajo)
+                const forkNode = { x: w * 0.63, y: h * 0.80, tag: '03b ALT GROOVE (DAG)', title: 'Drunken Kong - How Far', bpm: '130 BPM', key: '9B', energy: '⚡81%', col: '#f59e0b' };
+
+                // Curva Bézier Principal
                 ctx.strokeStyle = '#a855f7';
                 ctx.lineWidth = 3.5;
                 ctx.beginPath();
-                ctx.moveTo(p0.x, p0.y);
-                ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+                ctx.moveTo(setNodes[0].x, setNodes[0].y);
+                ctx.bezierCurveTo(setNodes[1].x, setNodes[1].y, setNodes[2].x, setNodes[2].y, setNodes[3].x, setNodes[3].y);
                 ctx.stroke();
 
-                // Nodos de Tracks
-                [p0, p1, p2, p3].forEach((p, idx) => {
+                // Rama DAG Alternativa (Punteada)
+                ctx.strokeStyle = 'rgba(245, 158, 11, 0.75)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(setNodes[1].x, setNodes[1].y);
+                ctx.quadraticCurveTo((setNodes[1].x + forkNode.x) / 2, setNodes[1].y + 20, forkNode.x, forkNode.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Pulso de Energía Viajero a lo largo de la curva
+                const flowProg = (t * 0.25) % 1;
+                const fx = setNodes[0].x + (setNodes[3].x - setNodes[0].x) * flowProg;
+                const fy = setNodes[0].y + (setNodes[3].y - setNodes[0].y) * flowProg;
+                ctx.beginPath();
+                ctx.arc(fx, fy, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = '#a855f7';
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Render de Nodos y Fichas Flotantes de Pista
+                [...setNodes, forkNode].forEach((node, nIdx) => {
+                    // Círculo del Punto
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, 10 + Math.sin(t * 3 + idx) * 2, 0, Math.PI * 2);
-                    ctx.fillStyle = idx === 0 ? '#06b6d4' : idx === 1 ? '#3b82f6' : idx === 2 ? '#a855f7' : '#ec4899';
+                    ctx.arc(node.x, node.y, 7 + Math.sin(t * 3 + nIdx) * 1.5, 0, Math.PI * 2);
+                    ctx.fillStyle = node.col;
                     ctx.fill();
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 2;
                     ctx.stroke();
+
+                    // Ficha Flotante de Pista Anclada al Punto
+                    const cardW = 120;
+                    const cardH = 34;
+                    const isFork = nIdx === 4;
+                    const isClimax = nIdx === 3;
+                    const cx = isClimax ? node.x - cardW + 8 : Math.max(8, node.x - cardW / 2);
+                    const cy = isFork ? node.y + 12 : Math.max(26, node.y - cardH - 10);
+
+                    ctx.fillStyle = '#0a0d1eeb';
+                    ctx.strokeStyle = node.col + 'aa';
+                    ctx.lineWidth = 1;
+                    drawRoundRect(ctx, cx, cy, cardW, cardH, 6, true, true);
+
+                    // Tag y Título
+                    ctx.fillStyle = node.col;
+                    ctx.font = 'bold 7px monospace';
+                    ctx.fillText(node.tag, cx + 5, cy + 9);
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 8px sans-serif';
+                    ctx.fillText(node.title, cx + 5, cy + 20);
+
+                    // Métricas
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '7.5px monospace';
+                    ctx.fillText(`${node.bpm} • ${node.key} • ${node.energy}`, cx + 5, cy + 30);
+                });
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // 3. CUES: Fraseo Musical 32 Beats + 8 Performance Pads RGB
+            // ─────────────────────────────────────────────────────────────────
+            else if (activeSectionKey === 'hotcues') {
+                const waveY = h * 0.28;
+                const waveH = 46;
+
+                // Bloques de Fraseo Musical de 32 Tiempos
+                const phraseBlocks = [
+                    { name: 'INTRO (32b)', w: w * 0.24, col: 'rgba(16, 185, 129, 0.15)', border: '#10b981' },
+                    { name: 'PERCUSSION (32b)', w: w * 0.24, col: 'rgba(6, 182, 212, 0.15)', border: '#06b6d4' },
+                    { name: 'BREAKDOWN (32b)', w: w * 0.24, col: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b' },
+                    { name: 'MAIN DROP (64b)', w: w * 0.28, col: 'rgba(239, 68, 68, 0.18)', border: '#ef4444' }
+                ];
+
+                let curX = 14;
+                phraseBlocks.forEach(pb => {
+                    ctx.fillStyle = pb.col;
+                    ctx.strokeStyle = pb.border + '55';
+                    ctx.lineWidth = 1;
+                    drawRoundRect(ctx, curX, waveY - 26, pb.w - 4, waveH + 32, 6, true, true);
+
+                    ctx.fillStyle = pb.border;
+                    ctx.font = 'bold 7.5px monospace';
+                    ctx.fillText(pb.name, curX + 6, waveY - 14);
+                    curX += pb.w;
                 });
 
-            } else if (activeSectionKey === 'map') {
-                // Rueda de Camelot concentric circular sectors al 60% alpha
-                const cx = w * 0.5;
-                const cy = h * 0.48;
-                const rOuter = Math.min(w, h) * 0.38;
-                const rInner = rOuter * 0.55;
+                // Forma de Onda Tricromática (Lows, Mids, Highs)
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#06b6d4';
+                ctx.beginPath();
+                for (let x = 16; x < w - 16; x += 3) {
+                    const wave = Math.sin((x + t * 40) * 0.04) * 16 * Math.cos(x * 0.015);
+                    const y = waveY + wave;
+                    if (x === 16) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
 
-                // 12 Sectores Camelot
-                const colors = ['#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#10b981'];
-                for (let i = 0; i < 12; i++) {
-                    const startA = (i * Math.PI) / 6;
-                    const endA = ((i + 1) * Math.PI) / 6;
+                // Playhead que avanza
+                const playX = 16 + ((t * 35) % (w - 32));
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(playX, waveY - 22);
+                ctx.lineTo(playX, waveY + 28);
+                ctx.stroke();
+
+                // 8 Performance Pads Hardware Iluminados
+                const padAreaY = h * 0.58;
+                const padW = (w - 36) / 8;
+                const padH = 46;
+
+                const padDefs = [
+                    { num: 1, label: 'INTRO', col: '#10b981' },
+                    { num: 2, label: 'PERC', col: '#06b6d4' },
+                    { num: 3, label: 'VOX', col: '#facc15' },
+                    { num: 4, label: 'BREAK', col: '#f97316' },
+                    { num: 5, label: 'DROP 1', col: '#ef4444' },
+                    { num: 6, label: 'DROP 2', col: '#a855f7' },
+                    { num: 7, label: 'BRIDGE', col: '#ec4899' },
+                    { num: 8, label: 'OUTRO', col: '#3b82f6' }
+                ];
+
+                const activePadIdx = Math.floor(((t * 35) % (w - 32)) / (padW));
+
+                padDefs.forEach((p, idx) => {
+                    const px = 18 + idx * padW;
+                    const isLit = idx === activePadIdx;
+
+                    ctx.fillStyle = isLit ? p.col + '44' : '#0c0f1e';
+                    ctx.strokeStyle = isLit ? p.col : '#1e2438';
+                    ctx.lineWidth = isLit ? 2 : 1;
+                    drawRoundRect(ctx, px, padAreaY, padW - 4, padH, 6, true, true);
+
+                    // Indicador LED en esquina del Pad
                     ctx.beginPath();
-                    ctx.arc(cx, cy, rOuter, startA, endA);
-                    ctx.arc(cx, cy, rInner, endA, startA, true);
-                    ctx.closePath();
-                    ctx.fillStyle = colors[i] + '99'; // 60% alpha
+                    ctx.arc(px + 6, padAreaY + 7, isLit ? 3 : 2, 0, Math.PI * 2);
+                    ctx.fillStyle = isLit ? p.col : '#334155';
                     ctx.fill();
-                    ctx.strokeStyle = '#05060f';
-                    ctx.lineWidth = 1.5;
+
+                    // Número del Cue
+                    ctx.fillStyle = isLit ? '#ffffff' : '#64748b';
+                    ctx.font = 'bold 11px monospace';
+                    ctx.fillText(String(p.num), px + padW / 2 - 6, padAreaY + 22);
+
+                    // Etiqueta del Pad
+                    ctx.fillStyle = isLit ? p.col : '#475569';
+                    ctx.font = 'bold 7px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(p.label, px + (padW - 4) / 2, padAreaY + 36);
+                    ctx.textAlign = 'left';
+                });
+
+                // Telemetría inferior
+                ctx.fillStyle = '#64748b';
+                ctx.font = '8px monospace';
+                ctx.fillText('QUANTIZE 1/4 BEAT • ALINEACIÓN AUTOMÁTICA A 32 TIEMPOS • REKORDBOX & SERATO SYNCED', 18, h - 8);
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // 4. AUDITAR: DNA Acústico (Mood, Energía, Dance) + FFT Anti-Fake
+            // ─────────────────────────────────────────────────────────────────
+            else if (activeSectionKey === 'audit') {
+                const radCX = w * 0.24;
+                const radCY = h * 0.52;
+                const radR = Math.min(w * 0.18, h * 0.36);
+
+                // 1. Radar Pentagonal de DNA Acústico (Izquierda)
+                const axes = [
+                    { name: 'Energía', val: 0.88, icon: '⚡88%' },
+                    { name: 'Dance', val: 0.74, icon: '💃74%' },
+                    { name: 'Mood', val: 0.65, icon: '🌊65%' },
+                    { name: 'Dinámica', val: 0.82, icon: '🔊-7.1' },
+                    { name: 'Pureza', val: 0.99, icon: '💎99%' }
+                ];
+
+                // Anillos concéntricos del radar
+                for (let rFrac of [0.33, 0.66, 1.0]) {
+                    ctx.beginPath();
+                    for (let a = 0; a < 5; a++) {
+                        const angle = (a * Math.PI * 2) / 5 - Math.PI / 2;
+                        const rx = radCX + Math.cos(angle) * (radR * rFrac);
+                        const ry = radCY + Math.sin(angle) * (radR * rFrac);
+                        if (a === 0) ctx.moveTo(rx, ry); else ctx.lineTo(rx, ry);
+                    }
+                    ctx.closePath();
+                    ctx.strokeStyle = '#182038';
+                    ctx.lineWidth = 1;
                     ctx.stroke();
                 }
 
-                // Puntos de Tracks en el mapa de dispersión
-                for (let k = 0; k < 18; k++) {
-                    const dotA = k * 0.45 + t * 0.2;
-                    const dotR = rInner + (k % 5) * 8;
-                    const dx = cx + Math.cos(dotA) * dotR;
-                    const dy = cy + Math.sin(dotA) * dotR;
+                // Polígono del DNA Acústico
+                ctx.beginPath();
+                for (let a = 0; a < 5; a++) {
+                    const angle = (a * Math.PI * 2) / 5 - Math.PI / 2;
+                    const breathe = 1 + Math.sin(t * 2.5 + a) * 0.03;
+                    const rDist = radR * axes[a].val * breathe;
+                    const rx = radCX + Math.cos(angle) * rDist;
+                    const ry = radCY + Math.sin(angle) * rDist;
+                    if (a === 0) ctx.moveTo(rx, ry); else ctx.lineTo(rx, ry);
+                }
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.28)';
+                ctx.fill();
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                // Etiquetas de los ejes
+                axes.forEach((ax, a) => {
+                    const angle = (a * Math.PI * 2) / 5 - Math.PI / 2;
+                    const lx = radCX + Math.cos(angle) * (radR + 14);
+                    const ly = radCY + Math.sin(angle) * (radR + 14);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.font = 'bold 7.5px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(ax.icon, lx, ly);
+                });
+                ctx.textAlign = 'left';
+
+                ctx.fillStyle = '#22d3ee';
+                ctx.font = 'bold 8.5px monospace';
+                ctx.fillText('DNA ACÚSTICO & MOOD', 18, 18);
+
+                ctx.fillStyle = '#64748b';
+                ctx.font = '7.5px monospace';
+                ctx.fillText('Peak-Time • Bass Driver', 18, h - 8);
+
+                // 2. Espectrograma FFT Quirúrgico (Derecha)
+                const fftX = w * 0.48;
+                const fftW = w - fftX - 16;
+                const fftH = h - 54;
+                const fftY = 24;
+
+                ctx.fillStyle = '#070914';
+                ctx.strokeStyle = '#1e243b';
+                drawRoundRect(ctx, fftX, fftY, fftW, fftH, 8, true, true);
+
+                // Eje Frecuencial
+                ctx.fillStyle = '#475569';
+                ctx.font = '7px monospace';
+                ctx.fillText('20Hz        500Hz        2kHz        8kHz      16kHz    22kHz', fftX + 8, fftY + fftH - 5);
+
+                const isFake = simStep >= 2;
+                const cutX = fftX + fftW * 0.72; // Corte de 16kHz
+
+                // Curva Espectral Real
+                ctx.beginPath();
+                ctx.moveTo(fftX + 8, fftY + fftH - 18);
+                for (let fx = fftX + 8; fx < fftX + fftW - 8; fx += 3) {
+                    const frac = (fx - fftX) / fftW;
+                    let drop = Math.pow(frac, 1.8) * (fftH - 25);
+                    if (isFake && fx >= cutX) {
+                        drop = fftH - 18; // Caída vertical muro en fake
+                    }
+                    const jitter = Math.sin(fx * 0.1 + t * 4) * 2;
+                    ctx.lineTo(fx, fftY + 12 + drop + jitter);
+                }
+                ctx.strokeStyle = isFake ? '#f43f5e' : '#10b981';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Zona de Alerta de Corte
+                if (isFake) {
+                    ctx.fillStyle = 'rgba(244, 63, 94, 0.12)';
+                    ctx.fillRect(cutX, fftY + 8, fftX + fftW - cutX - 8, fftH - 24);
+
+                    // Línea vertical tijera 16kHz
+                    ctx.setLineDash([3, 3]);
+                    ctx.strokeStyle = '#f43f5e';
                     ctx.beginPath();
-                    ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.shadowColor = '#06b6d4';
-                    ctx.shadowBlur = 8;
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
+                    ctx.moveTo(cutX, fftY + 8);
+                    ctx.lineTo(cutX, fftY + fftH - 16);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.font = 'bold 8px monospace';
+                    ctx.fillText('⚠️ FAKE 16kHz CUTOFF', cutX - 45, fftY + 22);
+
+                    ctx.fillStyle = '#fda4af';
+                    ctx.font = '7px monospace';
+                    ctx.fillText('MP3 128k inflado a FLAC', cutX - 45, fftY + 32);
+                } else {
+                    ctx.fillStyle = '#10b981';
+                    ctx.font = 'bold 8px monospace';
+                    ctx.fillText('✓ LOSSLESS REAL (22.05 kHz PASS)', fftX + 10, fftY + 20);
+                }
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // 5. COPILOT: Monitor Táctico de Cabina (Dual Decks + Anti-Muddy Radar)
+            // ─────────────────────────────────────────────────────────────────
+            else if (activeSectionKey === 'copilot') {
+                const deckW = (w - 44) / 2;
+                const deckH = h * 0.40;
+
+                // Deck 1 (Master / On Air)
+                ctx.fillStyle = '#080d1a';
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 1.2;
+                drawRoundRect(ctx, 16, 20, deckW, deckH, 8, true, true);
+
+                ctx.fillStyle = '#10b981';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('● DECK 1 [MASTER / ON AIR]', 24, 34);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillText('Tales of the Desert - Charlotte', 24, 46);
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '7.5px monospace';
+                ctx.fillText('8A • 132.0 BPM • Trim 0.0dB • LUFS -6.4', 24, 57);
+
+                // Forma de onda Deck 1
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let x = 0; x < deckW - 16; x += 3) {
+                    const wave = Math.sin((x + t * 40) * 0.06) * 8 + Math.cos((x - t * 20) * 0.12) * 4;
+                    const wy = 20 + deckH - 12 + wave;
+                    if (x === 0) ctx.moveTo(24 + x, wy); else ctx.lineTo(24 + x, wy);
+                }
+                ctx.stroke();
+
+                // Deck 2 (Incoming / Cue)
+                const d2X = 24 + deckW;
+                ctx.fillStyle = '#080d1a';
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 1.2;
+                drawRoundRect(ctx, d2X, 20, deckW, deckH, 8, true, true);
+
+                ctx.fillStyle = '#06b6d4';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('● DECK 2 [CUE / SYNC]', d2X + 8, 34);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillText('Burning Sky - Chlär', d2X + 8, 46);
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '7.5px monospace';
+                ctx.fillText('8A • 132.0 BPM (Sync) • Trim -1.8dB • LUFS -8.8', d2X + 8, 57);
+
+                // Forma de onda Deck 2
+                ctx.strokeStyle = '#ec4899';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let x = 0; x < deckW - 16; x += 3) {
+                    const wave = Math.sin((x + t * 40) * 0.06) * 7 + Math.sin((x + t * 15) * 0.08) * 4;
+                    const wy = 20 + deckH - 12 + wave;
+                    if (x === 0) ctx.moveTo(d2X + 8 + x, wy); else ctx.lineTo(d2X + 8 + x, wy);
+                }
+                ctx.stroke();
+
+                // Panel Central: Radar Anti-Muddy DSP (<100Hz)
+                const dspY = deckH + 30;
+                const dspH = h - dspY - 10;
+                const isClash = simStep < 2;
+
+                ctx.fillStyle = '#0a0d20';
+                ctx.strokeStyle = isClash ? '#ef4444' : '#10b981';
+                ctx.lineWidth = 1.2;
+                drawRoundRect(ctx, 16, dspY, w - 32, dspH, 8, true, true);
+
+                if (isClash) {
+                    // Alerta de Choque de Subgraves
+                    ctx.fillStyle = '#ef4444';
+                    ctx.font = 'bold 8.5px monospace';
+                    ctx.fillText('⚠️ CHOQUE DE SUBGRAVES (<100Hz) — Cancelación de fase -3.6 dB', 26, dspY + 16);
+
+                    ctx.fillStyle = '#fca5a5';
+                    ctx.font = '8px sans-serif';
+                    ctx.fillText('ACCIÓN RECOMENDADA: Corta el EQ Low de Deck 1 antes de abrir el fader', 26, dspY + 30);
+                } else {
+                    // Mezcla Limpia Optimizada
+                    ctx.fillStyle = '#10b981';
+                    ctx.font = 'bold 8.5px monospace';
+                    ctx.fillText('✨ MEZCLA LIMPIA Y CONTUNDENTE — Pegada 100% Preservada', 26, dspY + 16);
+
+                    ctx.fillStyle = '#86efac';
+                    ctx.font = '8px sans-serif';
+                    ctx.fillText('Frecuencias subgraves alineadas • Sin cancelación de pegada en club', 26, dspY + 30);
                 }
 
-            } else if (activeSectionKey === 'radar') {
-                // Radar Militar Giratorio a 360 grados
-                const rx = w * 0.5;
-                const ry = h * 0.48;
-                const rr = Math.min(w, h) * 0.4;
+                // Vúmetro de Diferencial LUFS a la derecha
+                const meterX = w - 120;
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 7.5px monospace';
+                ctx.fillText('Δ LUFS: +2.4 dB', meterX, dspY + 16);
+                ctx.fillStyle = '#64748b';
+                ctx.fillText('Sube Trim Deck 2', meterX, dspY + 28);
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // 6. POOL (Spotify / SuperFLAC): Pipeline de Descarga + A/B Dual
+            // ─────────────────────────────────────────────────────────────────
+            else if (activeSectionKey === 'spotify') {
+                ctx.fillStyle = '#10b981';
+                ctx.font = 'bold 9px monospace';
+                ctx.fillText('SUPERFLAC LOSSLESS INGEST & DUAL A/B ENGINE', 18, 16);
+
+                const colW = (w - 48) / 3;
+
+                // 1. Etapa de Búsqueda y Resolución ISRC (Izquierda)
+                ctx.fillStyle = '#080d1a';
+                ctx.strokeStyle = '#10b98166';
+                drawRoundRect(ctx, 16, 26, colW, h - 38, 8, true, true);
+
+                ctx.fillStyle = '#34d399';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('1. RESOLUCIÓN ISRC', 24, 40);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 8.5px sans-serif';
+                ctx.fillText('Charlotte - Tales', 24, 55);
+
+                ctx.fillStyle = '#64748b';
+                ctx.font = '7.5px monospace';
+                ctx.fillText('ISRC: BE-A12-24-00031', 24, 68);
+                ctx.fillText('Tidal / Qobuz Master', 24, 79);
+
+                // Scanning line
+                const scanY = 90 + ((t * 20) % 35);
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(24, scanY);
+                ctx.lineTo(24 + colW - 16, scanY);
+                ctx.stroke();
+
+                // 2. Pipeline Multihilo de Descarga (Centro)
+                const c2X = 20 + colW + 8;
+                ctx.fillStyle = '#080d1a';
+                ctx.strokeStyle = '#06b6d466';
+                drawRoundRect(ctx, c2X, 26, colW, h - 38, 8, true, true);
+
+                ctx.fillStyle = '#22d3ee';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('2. PIPELINE FLAC 24-BIT', c2X + 8, 40);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('2.304 kbps / 48kHz', c2X + 8, 55);
+
+                // 4 Canales de streaming
+                for (let ch = 0; ch < 4; ch++) {
+                    const chy = 68 + ch * 14;
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(c2X + 8, chy, colW - 16, 8);
+
+                    const packetX = c2X + 8 + ((t * 40 + ch * 25) % (colW - 24));
+                    ctx.fillStyle = '#06b6d4';
+                    ctx.fillRect(packetX, chy, 12, 8);
+                }
+
+                ctx.fillStyle = '#10b981';
+                ctx.font = 'bold 7.5px monospace';
+                ctx.fillText('✓ BUFFER 100% LOSSLESS', c2X + 8, h - 20);
+
+                // 3. Comparador Dual A/B & Certificación FFT (Derecha)
+                const c3X = c2X + colW + 8;
+                ctx.fillStyle = '#080d1a';
+                ctx.strokeStyle = '#a855f766';
+                drawRoundRect(ctx, c3X, 26, colW, h - 38, 8, true, true);
+
+                ctx.fillStyle = '#c084fc';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('3. AUDITORÍA A/B', c3X + 8, 40);
+
+                // Selector A/B
+                ctx.fillStyle = '#334155';
+                drawRoundRect(ctx, c3X + 8, 48, (colW - 18) / 2, 16, 4, true, false);
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = 'bold 7px monospace';
+                ctx.fillText('A: MP3 128k', c3X + 11, 59);
+
+                ctx.fillStyle = '#10b981';
+                drawRoundRect(ctx, c3X + 10 + (colW - 18) / 2, 48, (colW - 18) / 2, 16, 4, true, false);
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 7px monospace';
+                ctx.fillText('B: FLAC 24b', c3X + 13 + (colW - 18) / 2, 59);
+
+                // Sello de Certificación
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 1.2;
+                drawRoundRect(ctx, c3X + 8, 74, colW - 16, 32, 6, false, true);
+                ctx.fillStyle = '#10b981';
+                ctx.font = 'bold 7.5px monospace';
+                ctx.fillText('💎 SUPERFLAC PASS', c3X + 12, 88);
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '6.5px monospace';
+                ctx.fillText('Frecuencias hasta 22kHz', c3X + 12, 98);
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // 7. CRATES: Árbol Timbral 2 Niveles + Pasaporte Universal DJ
+            // ─────────────────────────────────────────────────────────────────
+            else if (activeSectionKey === 'crates') {
+                ctx.fillStyle = '#f97316';
+                ctx.font = 'bold 9px monospace';
+                ctx.fillText('TAXONOMÍA TIMBRAL DE 2 NIVELES & PASAPORTE UNIVERSAL DJ', 18, 16);
+
+                const treeW = w * 0.42;
+
+                // Árbol Jerárquico (Izquierda)
+                ctx.fillStyle = '#070918';
+                ctx.strokeStyle = '#f9731666';
+                drawRoundRect(ctx, 16, 26, treeW, h - 38, 8, true, true);
+
+                ctx.fillStyle = '#fb923c';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('ÁRBOL TIMBRAL DE GÉNERO', 24, 40);
+
+                const branches = [
+                    { name: '├─ Peak Time', role: '[Bass Driver]', count: '420 trk' },
+                    { name: '├─ Raw / Hypnotic', role: '[Percussive Tool]', count: '310 trk' },
+                    { name: '├─ Melodic', role: '[Vocal Lead]', count: '280 trk' },
+                    { name: '└─ Deep / Warmup', role: '[Atmospheric]', count: '230 trk' }
+                ];
+
+                branches.forEach((br, bIdx) => {
+                    const by = 55 + bIdx * 18;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '8px monospace';
+                    ctx.fillText(br.name, 24, by);
+
+                    ctx.fillStyle = '#f97316';
+                    ctx.font = 'bold 7px monospace';
+                    ctx.fillText(br.role, 24 + 86, by);
+
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = '7px monospace';
+                    ctx.fillText(br.count, treeW - 32, by);
+                });
+
+                // Pasaporte Universal DJ Translation Core (Derecha)
+                const coreX = 24 + treeW;
+                const coreW = w - coreX - 16;
+
+                ctx.fillStyle = '#070918';
+                ctx.strokeStyle = '#06b6d466';
+                drawRoundRect(ctx, coreX, 26, coreW, h - 38, 8, true, true);
+
+                ctx.fillStyle = '#22d3ee';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('PASAPORTE UNIVERSAL DJ', coreX + 8, 40);
+
+                const targets = [
+                    { name: '➔ SERATO DJ PRO', fmt: '.crate binario' },
+                    { name: '➔ PIONEER REKORDBOX', fmt: 'rekordbox.xml' },
+                    { name: '➔ NI TRAKTOR', fmt: 'collection.nml' },
+                    { name: '➔ VIRTUAL DJ', fmt: 'playlist.m3u8' }
+                ];
+
+                targets.forEach((tgt, tIdx) => {
+                    const ty = 56 + tIdx * 16;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 7.5px monospace';
+                    ctx.fillText(tgt.name, coreX + 8, ty);
+
+                    ctx.fillStyle = '#10b981';
+                    ctx.font = '7px monospace';
+                    ctx.fillText(tgt.fmt, coreX + coreW - 68, ty);
+                });
+
+                // USB Pendrive Status
+                ctx.fillStyle = '#10b981';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('✓ CABINA READY: Sincronizado a USB en 1 Clic', coreX + 8, h - 20);
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // 8. RADAR: Barrido Acústico 360° & Detección de Micro-Géneros
+            // ─────────────────────────────────────────────────────────────────
+            else if (activeSectionKey === 'radar') {
+                const rx = w * 0.40;
+                const ry = h * 0.52;
+                const rr = Math.min(w * 0.28, h * 0.38);
 
                 ctx.strokeStyle = '#4338ca';
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = 1.2;
                 ctx.beginPath();
                 ctx.arc(rx, ry, rr, 0, Math.PI * 2);
                 ctx.arc(rx, ry, rr * 0.66, 0, Math.PI * 2);
@@ -5831,7 +6539,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 // Haz de barrido giratorio
                 const sweepAngle = t * 2.2;
                 const sweepGrad = ctx.createRadialGradient(rx, ry, 0, rx, ry, rr);
-                sweepGrad.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+                sweepGrad.addColorStop(0, 'rgba(99, 102, 241, 0.45)');
                 sweepGrad.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
                 ctx.beginPath();
                 ctx.moveTo(rx, ry);
@@ -5840,15 +6548,48 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 ctx.fillStyle = sweepGrad;
                 ctx.fill();
 
-            } else {
-                // Default: Animación de Barras de Actividad & Ingesta
-                const bars = 24;
-                const bw = (w - 40) / bars;
-                for (let b = 0; b < bars; b++) {
-                    const bh = (Math.sin(t * 3.5 + b * 0.35) * 0.5 + 0.5) * (h * 0.6) + 10;
-                    ctx.fillStyle = b % 2 === 0 ? '#ec4899' : '#06b6d4';
-                    ctx.fillRect(20 + b * bw, h - 30 - bh, bw - 3, bh);
-                }
+                // Blips de Micro-Géneros Detectados
+                const blips = [
+                    { a: 0.8, r: 0.75, name: 'Hard Groove (138)' },
+                    { a: 2.2, r: 0.50, name: 'Afro-Melodic (124)' },
+                    { a: 3.9, r: 0.85, name: 'Raw Peak-Time (134)' },
+                    { a: 5.1, r: 0.40, name: 'Indie Dance (122)' }
+                ];
+
+                blips.forEach(b => {
+                    const bx = rx + Math.cos(b.a) * (rr * b.r);
+                    const by = ry + Math.sin(b.a) * (rr * b.r);
+                    ctx.beginPath();
+                    ctx.arc(bx, by, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = '#6366f1';
+                    ctx.shadowBlur = 8;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+
+                // Panel Lateral de Detección en Tiempo Real
+                const pX = rx + rr + 24;
+                const pW = w - pX - 16;
+                ctx.fillStyle = '#0a0d24';
+                ctx.strokeStyle = '#6366f1';
+                drawRoundRect(ctx, pX, 26, pW, h - 38, 8, true, true);
+
+                ctx.fillStyle = '#818cf8';
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText('1001TRACKLISTS SCAN', pX + 8, 40);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 8.5px sans-serif';
+                ctx.fillText('Tales of the Desert', pX + 8, 55);
+
+                ctx.fillStyle = '#a5b4fc';
+                ctx.font = '7.5px monospace';
+                ctx.fillText('Charlotte de Witte', pX + 8, 67);
+
+                ctx.fillStyle = '#10b981';
+                ctx.font = 'bold 7.5px monospace';
+                ctx.fillText('Match 98% con tu Maleta', pX + 8, 82);
             }
 
             animId = requestAnimationFrame(render);
@@ -5945,32 +6686,50 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     <div className="relative z-10 flex flex-wrap items-center gap-1.5 mt-auto pt-2">
                         {activeSectionKey === 'copilot' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('deck')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'deck' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Decks</button>
-                                <button type="button" onClick={() => setZoomFocus('ai')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'ai' ? 'bg-pink-500 text-black' : 'bg-black/70 text-pink-300 border border-pink-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Copilot AI</button>
+                                <button type="button" onClick={() => setZoomFocus('deck')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'deck' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Decks Master/Cue</button>
+                                <button type="button" onClick={() => setZoomFocus('dsp')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'dsp' ? 'bg-pink-500 text-black' : 'bg-black/70 text-pink-300 border border-pink-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Anti-Muddy Radar</button>
                             </>
                         )}
                         {activeSectionKey === 'audit' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('spectrum')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'spectrum' ? 'bg-emerald-500 text-black' : 'bg-black/70 text-emerald-300 border border-emerald-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Espectro FFT</button>
-                                <button type="button" onClick={() => setZoomFocus('transients')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'transients' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Transitorios</button>
+                                <button type="button" onClick={() => setZoomFocus('dna')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'dna' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> DNA Acústico & Mood</button>
+                                <button type="button" onClick={() => setZoomFocus('fft')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'fft' ? 'bg-emerald-500 text-black' : 'bg-black/70 text-emerald-300 border border-emerald-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> FFT Anti-Fake 16k</button>
                             </>
                         )}
                         {activeSectionKey === 'hotcues' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('pads')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'pads' ? 'bg-amber-500 text-black' : 'bg-black/70 text-amber-300 border border-amber-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Pads 1-8</button>
-                                <button type="button" onClick={() => setZoomFocus('grid')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'grid' ? 'bg-purple-500 text-black' : 'bg-black/70 text-purple-300 border border-purple-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Beatgrid</button>
+                                <button type="button" onClick={() => setZoomFocus('phrase')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'phrase' ? 'bg-amber-500 text-black' : 'bg-black/70 text-amber-300 border border-amber-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Fraseo 32 Beats</button>
+                                <button type="button" onClick={() => setZoomFocus('pads')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'pads' ? 'bg-rose-500 text-black' : 'bg-black/70 text-rose-300 border border-rose-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> 8 Pads RGB CDJ</button>
                             </>
                         )}
                         {activeSectionKey === 'setbuilder' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('graph')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'graph' ? 'bg-fuchsia-500 text-black' : 'bg-black/70 text-fuchsia-300 border border-fuchsia-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Curva Energía</button>
-                                <button type="button" onClick={() => setZoomFocus('camelot')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'camelot' ? 'bg-blue-500 text-black' : 'bg-black/70 text-blue-300 border border-blue-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Camelot Shift</button>
+                                <button type="button" onClick={() => setZoomFocus('curve')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'curve' ? 'bg-fuchsia-500 text-black' : 'bg-black/70 text-fuchsia-300 border border-fuchsia-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Curva Bézier & Pistas</button>
+                                <button type="button" onClick={() => setZoomFocus('dag')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'dag' ? 'bg-amber-500 text-black' : 'bg-black/70 text-amber-300 border border-amber-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Rama DAG DJOID</button>
                             </>
                         )}
                         {activeSectionKey === 'map' && (
                             <>
-                                <button type="button" onClick={() => setZoomFocus('wheel')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'wheel' ? 'bg-teal-500 text-black' : 'bg-black/70 text-teal-300 border border-teal-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Rueda 60%</button>
-                                <button type="button" onClick={() => setZoomFocus('cluster')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'cluster' ? 'bg-indigo-500 text-black' : 'bg-black/70 text-indigo-300 border border-indigo-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom Cluster Tracks</button>
+                                <button type="button" onClick={() => setZoomFocus('zoomtrack')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'zoomtrack' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Zoom a Pista</button>
+                                <button type="button" onClick={() => setZoomFocus('minimap')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'minimap' ? 'bg-teal-500 text-black' : 'bg-black/70 text-teal-300 border border-teal-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Mini-Map & Camelot</button>
+                            </>
+                        )}
+                        {activeSectionKey === 'spotify' && (
+                            <>
+                                <button type="button" onClick={() => setZoomFocus('pipeline')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'pipeline' ? 'bg-emerald-500 text-black' : 'bg-black/70 text-emerald-300 border border-emerald-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Pipeline SuperFLAC</button>
+                                <button type="button" onClick={() => setZoomFocus('ab')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'ab' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Comparador A/B</button>
+                            </>
+                        )}
+                        {activeSectionKey === 'crates' && (
+                            <>
+                                <button type="button" onClick={() => setZoomFocus('tree')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'tree' ? 'bg-orange-500 text-black' : 'bg-black/70 text-orange-300 border border-orange-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Árbol Timbral</button>
+                                <button type="button" onClick={() => setZoomFocus('passport')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'passport' ? 'bg-cyan-500 text-black' : 'bg-black/70 text-cyan-300 border border-cyan-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Pasaporte DJ USB</button>
+                            </>
+                        )}
+                        {activeSectionKey === 'radar' && (
+                            <>
+                                <button type="button" onClick={() => setZoomFocus('scan')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'scan' ? 'bg-indigo-500 text-black' : 'bg-black/70 text-indigo-300 border border-indigo-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Barrido 360°</button>
+                                <button type="button" onClick={() => setZoomFocus('genres')} className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${zoomFocus === 'genres' ? 'bg-purple-500 text-black' : 'bg-black/70 text-purple-300 border border-purple-800'}`}><Icons.Search size={14} className="inline-block align-[-2px]" /> Micro-Géneros</button>
                             </>
                         )}
                         <span className="text-[10px] text-gray-300 font-mono ml-auto truncate max-w-[220px]">
@@ -29210,20 +29969,20 @@ const App = () => {
         }
     };
 
-    // ─── UX CABINA: Atajos de Teclado Profesionales DJ en Vivo ────────────────
+    // ─── UX CABINA: Atajos de Teclado Profesionales DJ en Vivo (Adaptados por SO) ────
     useEffect(() => {
         const handleKeyDown = (e) => {
-            // 1. Ignorar atajos si el usuario está enfocado en un campo de texto o buscador
             const active = document.activeElement;
-            if (active) {
-                const tag = active.tagName.toLowerCase();
-                if (tag === 'input' || tag === 'textarea' || tag === 'select' || active.isContentEditable) {
+            const tag = active ? active.tagName.toLowerCase() : '';
+            const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (active && active.isContentEditable);
+
+            // 1. ESC: Cerrar cualquier modal abierto (funciona incluso mientras se escribe)
+            if (e.key === 'Escape') {
+                if (pricingOpen) {
+                    e.preventDefault();
+                    setPricingOpen(false);
                     return;
                 }
-            }
-
-            // 2. ESC: Cerrar modal de atajos, manual, bitácora o cuenta de usuario
-            if (e.key === 'Escape') {
                 if (userModalOpen) {
                     e.preventDefault();
                     setUserModalOpen(false);
@@ -29244,9 +30003,25 @@ const App = () => {
                     setShortcutsModalOpen(false);
                     return;
                 }
+                if (copilotModalOpen) {
+                    e.preventDefault();
+                    setCopilotModalOpen(false);
+                    return;
+                }
             }
 
-            // F1: Abrir / cerrar Manual Maestro Interactivo
+            // 2. Atajo de Búsqueda Global: ⌘+F / ⌘+K (Mac) o Ctrl+F / Ctrl+K (Windows/Linux)
+            if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.key === 'F' || e.key === 'k' || e.key === 'K')) {
+                e.preventDefault();
+                const searchInput = document.querySelector('input[placeholder*="Buscar"], input[type="search"], input[name="search"], input[data-search]');
+                if (searchInput) {
+                    searchInput.focus();
+                    if (searchInput.select) searchInput.select();
+                }
+                return;
+            }
+
+            // 3. F1 o ⌘+/ / Ctrl+/: Abrir/cerrar Manual Maestro o Atajos
             if (e.key === 'F1') {
                 e.preventDefault();
                 if (manualModalOpen) {
@@ -29256,15 +30031,43 @@ const App = () => {
                 }
                 return;
             }
+            if ((e.metaKey || e.ctrlKey) && (e.key === '/' || e.key === '?')) {
+                e.preventDefault();
+                setShortcutsModalOpen(prev => !prev);
+                return;
+            }
 
-            // 3. ? o H: Abrir / cerrar Cheatsheet de atajos
+            // 4. Cambio Directo de Espacio de Trabajo: ⌘+1..7 (Mac) o Ctrl+1..7 (Windows/Linux)
+            if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '7') {
+                e.preventDefault();
+                const tabs = ['audit', 'hotcues', 'setbuilder', 'map', 'spotify', 'shazam', 'taxonomy'];
+                const targetTab = tabs[parseInt(e.key, 10) - 1];
+                if (targetTab) {
+                    setActiveTab(targetTab);
+                }
+                return;
+            }
+
+            // 5. Colapsar/Expandir Barra Lateral (Side Rail): ⌘+B (Mac) o Ctrl+B (Windows/Linux)
+            if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'B')) {
+                e.preventDefault();
+                toggleRailExpanded();
+                return;
+            }
+
+            // Si está escribiendo texto en un input, ignorar atajos directos sin modificadores
+            if (isTyping) {
+                return;
+            }
+
+            // 6. ? o H: Abrir / cerrar Cheatsheet de atajos
             if (e.key === '?' || (e.key === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey)) {
                 e.preventDefault();
                 setShortcutsModalOpen(prev => !prev);
                 return;
             }
 
-            // 4. ESPACIO: Play / Pausa
+            // 7. ESPACIO: Play / Pausa
             if (e.code === 'Space' || e.key === ' ') {
                 e.preventDefault();
                 if (nowPlayingTrack) {
@@ -29275,14 +30078,14 @@ const App = () => {
                 return;
             }
 
-            // 5. C: Volver a CUE
+            // 8. C: Volver a CUE
             if (e.key === 'c' || e.key === 'C') {
                 e.preventDefault();
                 handleCue();
                 return;
             }
 
-            // 6. Teclas 1 a 8: Salto directo a Hot Cues
+            // 9. Teclas 1 a 8: Salto directo a Hot Cues
             if (e.key >= '1' && e.key <= '8' && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 const cueNum = parseInt(e.key, 10);
                 const targetTrack = nowPlayingTrack || currentTrack;
@@ -29297,7 +30100,7 @@ const App = () => {
                 return;
             }
 
-            // 7. ↑ / ↓: Navegar entre pistas en la tabla
+            // 10. ↑ / ↓: Navegar entre pistas en la tabla
             if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                 if (auditTracks && auditTracks.length > 0) {
                     e.preventDefault();
@@ -29316,14 +30119,14 @@ const App = () => {
                 return;
             }
 
-            // 8. M: Plegar / Desplegar panel de métricas
+            // 11. M: Plegar / Desplegar panel de métricas
             if (e.key === 'm' || e.key === 'M') {
                 e.preventDefault();
                 window.dispatchEvent(new CustomEvent('bw:toggle-metrics'));
                 return;
             }
 
-            // 9. L: Alternar Modo Cabina Oscura (High Contrast Club Mode)
+            // 12. L: Alternar Modo Cabina Oscura (High Contrast Club Mode)
             if (e.key === 'l' || e.key === 'L') {
                 e.preventDefault();
                 toggleClubMode();
@@ -29333,7 +30136,7 @@ const App = () => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [nowPlayingTrack, currentTrack, auditTracks, selectedTrack, shortcutsModalOpen, manualModalOpen, activeTab, togglePlayPause, handlePlayTrack, handleCue, handleFooterSeek, toggleClubMode]);
+    }, [nowPlayingTrack, currentTrack, auditTracks, selectedTrack, shortcutsModalOpen, manualModalOpen, userModalOpen, bitacoraModalOpen, pricingOpen, copilotModalOpen, activeTab, togglePlayPause, handlePlayTrack, handleCue, handleFooterSeek, toggleClubMode, toggleRailExpanded]);
 
     // Gestión Global de Eliminación de Pistas del Análisis
     const handleRemoveTrackGlobal = (trackId) => {
