@@ -19727,7 +19727,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     if (!isOpen) return null;
     const [phase, setPhase] = useState4("video");
     const [videoOpacity, setVideoOpacity] = useState4(0);
-    const [selectedAlpha, setSelectedAlpha] = useState4(0.8);
+    const [selectedAlpha, setSelectedAlpha] = useState4(0.85);
     const [isMuted, setIsMuted] = useState4(false);
     const [isBassShaking, setIsBassShaking] = useState4(false);
     const videoRef = useRef5(null);
@@ -19777,8 +19777,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       if (vid.currentTime >= 9.258 && !isBassShaking) {
         setIsBassShaking(true);
       }
-      if (selectedAlpha !== 0.8) {
-        setSelectedAlpha(0.8);
+      if (selectedAlpha !== 0.85) {
+        setSelectedAlpha(0.85);
       }
       const timeLeft = vid.duration - vid.currentTime;
       if (timeLeft <= 2 && videoOpacity > 0.02) {
@@ -19857,7 +19857,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }
         }
       },
-      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("svg", { className: "absolute w-0 h-0 pointer-events-none", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "trippy-vortex-filter", x: "-10%", y: "-10%", width: "120%", height: "120%" }, /* @__PURE__ */ React.createElement("feTurbulence", { type: "fractalNoise", baseFrequency: "0.010 0.018", numOctaves: "1", result: "vortexNoise" }), /* @__PURE__ */ React.createElement("feDisplacementMap", { in: "SourceGraphic", in2: "vortexNoise", scale: "14", xChannelSelector: "G", yChannelSelector: "R" })))), /* @__PURE__ */ React.createElement("div", { className: `relative w-full h-full overflow-hidden flex items-center justify-center trippy-distort-vortex ${isBassShaking ? "anim-bass-shake" : ""}` }, /* @__PURE__ */ React.createElement(
+      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement(
         "video",
         {
           ref: videoRef,
@@ -19871,45 +19871,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
           className: "w-full h-full object-cover pointer-events-none",
           style: {
             opacity: videoOpacity * selectedAlpha,
-            filter: "brightness(0.92) contrast(128%) saturate(155%)",
             transform: "translateZ(0)",
-            willChange: "opacity, transform",
+            willChange: "opacity",
             transition: videoOpacity === 0 ? "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)" : "opacity 300ms ease"
           }
         }
-      ), /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "absolute inset-0 pointer-events-none mix-blend-color",
-          style: {
-            background: "linear-gradient(135deg, rgba(6, 182, 212, 0.72) 0%, rgba(8, 145, 178, 0.82) 50%, rgba(14, 116, 144, 0.88) 100%)"
-          }
-        }
-      ), /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "absolute inset-0 pointer-events-none mix-blend-screen",
-          style: {
-            background: "radial-gradient(ellipse 75% 65% at 50% 45%, rgba(6, 182, 212, 0.35) 0%, rgba(8, 145, 178, 0.15) 55%, transparent 85%)"
-          }
-        }
-      ), /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "absolute inset-0 pointer-events-none mix-blend-multiply",
-          style: {
-            background: "rgba(3, 7, 18, 0.45)"
-          }
-        }
-      ), /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "absolute inset-0 pointer-events-none",
-          style: {
-            background: "radial-gradient(ellipse at center, transparent 35%, rgba(4, 7, 16, 0.50) 70%, rgba(0, 0, 0, 0.95) 100%)"
-          }
-        }
-      ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.14)_0%,transparent_75%)] pointer-events-none mix-blend-screen" })), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
+      ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",

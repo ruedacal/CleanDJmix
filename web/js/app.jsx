@@ -28980,7 +28980,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
     const [phase, setPhase] = useState('video'); // 'video' | 'portal'
     const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 1.0 (Fade-in 2s)
-    const [selectedAlpha, setSelectedAlpha] = useState(0.80); // Alpha 80% corporativo solicitado por el usuario
+    const [selectedAlpha, setSelectedAlpha] = useState(0.85); // Alpha 85% exacto solicitado por el usuario
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
 
@@ -29047,9 +29047,9 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
             setIsBassShaking(true);
         }
 
-        // Alpha fijo al 80% solicitado por el usuario para todas las etapas del vídeo
-        if (selectedAlpha !== 0.80) {
-            setSelectedAlpha(0.80);
+        // Alpha fijo al 85% solicitado por el usuario para todas las etapas del vídeo
+        if (selectedAlpha !== 0.85) {
+            setSelectedAlpha(0.85);
         }
 
         // SALIDA DEL VÍDEO: Fade-out suave de 2.0 segundos a negro absoluto
@@ -29141,78 +29141,27 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: VÍDEO CINEMÁTICO CORPORATIVO BEATWAVE (EFECTO VORTEX FLUIDO & CIAN SATURADO ALPHA 80%) */}
+            {/* FASE 1: VÍDEO CINEMÁTICO TAL COMO LO PASÓ EL USUARIO (ALPHA 85% SOLAMENTE) */}
             {phase === 'video' && (
                 <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
-                    
-                    {/* Filtro SVG Vortex Optimizado y Rebajado para GPU (Fluido en Desktop, Mobile, Tablet y Web) */}
-                    <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
-                        <defs>
-                            <filter id="trippy-vortex-filter" x="-10%" y="-10%" width="120%" height="120%">
-                                <feTurbulence type="fractalNoise" baseFrequency="0.010 0.018" numOctaves="1" result="vortexNoise" />
-                                <feDisplacementMap in="SourceGraphic" in2="vortexNoise" scale="14" xChannelSelector="G" yChannelSelector="R" />
-                            </filter>
-                        </defs>
-                    </svg>
-
-                    {/* Contenedor reactivo con efecto Vortex rebajado y pulsación de graves */}
-                    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center trippy-distort-vortex ${isBassShaking ? 'anim-bass-shake' : ''}`}>
-                        
-                        {/* Vídeo Nativo Saturado en Cian Eléctrico a Alpha 80% */}
-                        <video
-                            ref={videoRef}
-                            autoPlay
-                            playsInline
-                            preload="auto"
-                            muted={isMuted}
-                            onTimeUpdate={handleTimeUpdate}
-                            onEnded={handleVideoEnded}
-                            src="/assets/intro_cinematic.mp4"
-                            className="w-full h-full object-cover pointer-events-none"
-                            style={{ 
-                                opacity: videoOpacity * selectedAlpha, 
-                                filter: 'brightness(0.92) contrast(128%) saturate(155%)',
-                                transform: 'translateZ(0)',
-                                willChange: 'opacity, transform',
-                                transition: videoOpacity === 0 ? 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 300ms ease' 
-                            }}
-                        />
-
-                        {/* 1. Capa de Saturación Cian Eléctrico BeatWave (mix-blend-color) */}
-                        <div 
-                            className="absolute inset-0 pointer-events-none mix-blend-color"
-                            style={{
-                                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.72) 0%, rgba(8, 145, 178, 0.82) 50%, rgba(14, 116, 144, 0.88) 100%)'
-                            }}
-                        />
-
-                        {/* 2. Resplandor Cian Neón en Altas Luces y Pantallas (mix-blend-screen) */}
-                        <div 
-                            className="absolute inset-0 pointer-events-none mix-blend-screen"
-                            style={{
-                                background: 'radial-gradient(ellipse 75% 65% at 50% 45%, rgba(6, 182, 212, 0.35) 0%, rgba(8, 145, 178, 0.15) 55%, transparent 85%)'
-                            }}
-                        />
-
-                        {/* 3. Profundidad Oscura y Contraste de Cabina (mix-blend-multiply) */}
-                        <div 
-                            className="absolute inset-0 pointer-events-none mix-blend-multiply"
-                            style={{
-                                background: 'rgba(3, 7, 18, 0.45)'
-                            }}
-                        />
-
-                        {/* 4. Viñeteado Perimetral Profundo Cinematográfico */}
-                        <div 
-                            className="absolute inset-0 pointer-events-none"
-                            style={{
-                                background: 'radial-gradient(ellipse at center, transparent 35%, rgba(4, 7, 16, 0.50) 70%, rgba(0, 0, 0, 0.95) 100%)'
-                            }}
-                        />
-
-                        {/* 5. Aura Perimetral Suave de Cabina */}
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.14)_0%,transparent_75%)] pointer-events-none mix-blend-screen" />
-                    </div>
+                    {/* Vídeo Nativo a Alpha 85% Limpio */}
+                    <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        preload="auto"
+                        muted={isMuted}
+                        onTimeUpdate={handleTimeUpdate}
+                        onEnded={handleVideoEnded}
+                        src="/assets/intro_cinematic.mp4"
+                        className="w-full h-full object-cover pointer-events-none"
+                        style={{ 
+                            opacity: videoOpacity * selectedAlpha, 
+                            transform: 'translateZ(0)',
+                            willChange: 'opacity',
+                            transition: videoOpacity === 0 ? 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 300ms ease' 
+                        }}
+                    />
 
                     {/* Botón sutil en esquina inferior derecha para saltar si el usuario lo desea */}
                     <div className="absolute bottom-6 right-6 z-50">
