@@ -23,6 +23,7 @@ class MediaService:
         self._spotify_rate_limited_until = 0
         self._sp = self._inicializar_spotipy()
         self._cache_preescucha = {}
+        self._thumb_cache = {}
 
     def cancelar_busqueda(self):
         """Activa la bandera de cancelación para abortar búsquedas en curso."""
@@ -185,20 +186,61 @@ class MediaService:
             print(f"[MEDIA SERVICE] Error inicializando Spotipy: {e}")
         return None
 
-    def obtener_caratula_binaria(self, file_path: str):
-        if os.path.exists(file_path):
+    def obtener_caratula_binaria(self, file_path: str, thumbnail_size: int = None):
+        """Extrae la carátula binaria del archivo, opcionalmente generando una miniatura ultra-optimizada para la interfaz."""
+        if not file_path or not os.path.exists(file_path):
+            return None, None
+
+        cache_key = f"{file_path}_{thumbnail_size or 'full'}"
+        if cache_key in self._thumb_cache:
+            return self._thumb_cache[cache_key]
+
+        data = None
+        mime = None
+        try:
+            m = MutagenFile(file_path)
+            if m:
+                if hasattr(m, 'pictures') and m.pictures:
+                    data, mime = m.pictures[0].data, m.pictures[0].mime
+                elif hasattr(m, 'tags') and m.tags:
+                    for tag in m.tags.values():
+                        if getattr(tag, 'FrameID', None) == 'APIC':
+                            data, mime = tag.data, tag.mime
+                            break
+        except Exception:
+            pass
+
+        if not data:
+            folder = os.path.dirname(file_path)
+            for fname in ("cover.jpg", "folder.jpg", "cover.png", "folder.png", "front.jpg"):
+                cpath = os.path.join(folder, fname)
+                if os.path.isfile(cpath):
+                    try:
+                        with open(cpath, "rb") as f:
+                            data = f.read()
+                            mime = "image/png" if fname.endswith(".png") else "image/jpeg"
+                            break
+                    except Exception:
+                        pass
+
+        if data and thumbnail_size and thumbnail_size > 0:
             try:
-                m = MutagenFile(file_path)
-                if m:
-                    if hasattr(m, 'pictures') and m.pictures:
-                        return m.pictures[0].data, m.pictures[0].mime
-                    elif hasattr(m, 'tags') and m.tags:
-                        for tag in m.tags.values():
-                            if getattr(tag, 'FrameID', None) == 'APIC':
-                                return tag.data, tag.mime
+                import io
+                from PIL import Image
+                im = Image.open(io.BytesIO(data))
+                im.thumbnail((thumbnail_size, thumbnail_size), Image.LANCZOS)
+                out_io = io.BytesIO()
+                im.convert("RGB").save(out_io, format="JPEG", quality=82, optimize=True)
+                data = out_io.getvalue()
+                mime = "image/jpeg"
             except Exception:
                 pass
-        return None, None
+
+        if len(self._thumb_cache) > 2500:
+            self._thumb_cache.clear()
+        if data:
+            self._thumb_cache[cache_key] = (data, mime)
+        return data, mime
 
     def buscar_metadata_itunes(self, termino, limit=30):
         if self._cancelar_busqueda or not termino:

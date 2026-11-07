@@ -17817,6 +17817,52 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const panTimerRef = useRef5(null);
     const spatialGridRef = useRef5(/* @__PURE__ */ new Map());
     const mouseRafRef = useRef5(null);
+    const activeLoadingCountRef = useRef5(0);
+    const pendingLoadQueueRef = useRef5([]);
+    const processCoverQueue = () => {
+      const MAX_CONCURRENT = 8;
+      while (activeLoadingCountRef.current < MAX_CONCURRENT && pendingLoadQueueRef.current.length > 0) {
+        const coverSrc = pendingLoadQueueRef.current.shift();
+        if (!coverSrc || imageCacheRef.current.has(coverSrc)) continue;
+        imageCacheRef.current.set(coverSrc, "loading");
+        activeLoadingCountRef.current++;
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = coverSrc;
+        img.onload = () => {
+          try {
+            const size = 64;
+            const oc = document.createElement("canvas");
+            oc.width = size;
+            oc.height = size;
+            const octx = oc.getContext("2d");
+            octx.beginPath();
+            octx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            octx.clip();
+            octx.drawImage(img, 0, 0, size, size);
+            imageCacheRef.current.set(coverSrc, oc);
+          } catch (e) {
+            imageCacheRef.current.set(coverSrc, img);
+          }
+          activeLoadingCountRef.current = Math.max(0, activeLoadingCountRef.current - 1);
+          processCoverQueue();
+        };
+        img.onerror = () => {
+          imageCacheRef.current.set(coverSrc, false);
+          activeLoadingCountRef.current = Math.max(0, activeLoadingCountRef.current - 1);
+          processCoverQueue();
+        };
+      }
+    };
+    const requestCoverThumbnail = (src, priority = false) => {
+      if (!src || imageCacheRef.current.has(src)) return;
+      if (priority) {
+        pendingLoadQueueRef.current.unshift(src);
+      } else if (pendingLoadQueueRef.current.length < 400) {
+        pendingLoadQueueRef.current.push(src);
+      }
+      processCoverQueue();
+    };
     const radialView = projectionMode === "camelot_wheel" || projectionMode === "acoustic_clusters";
     const transformRef = useRef5({
       scale: 1,
@@ -18123,7 +18169,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
             const isFakeOrBad = t2.es_fake || t2.calidad && String(t2.calidad).includes("Baja");
             nodeColor = isFakeOrBad ? "#ef4444" : "#10b981";
           }
-          const baseRadius = 8 + node.energy / 100 * 6;
+          const baseRadius = 10 + node.energy / 100 * 7;
           if (isNowPlaying) {
             const pulseTime = Date.now() % 1400 / 1400;
             const pulseRadius = baseRadius + pulseTime * 28;
@@ -18149,47 +18195,32 @@ Respuesta: ${qa.a}`).join("\n\n"),
             ctx.lineWidth = 1.5;
             ctx.stroke();
           }
-          const zoomGain = Math.min(2.4, Math.max(0.8, Math.sqrt(scale)));
-          const nodeRadius = isHovered || isSelectedNode ? (baseRadius + 5) * zoomGain : baseRadius * zoomGain;
-          if (opacity === 1 && (isHovered || isSelectedNode || isNowPlaying || !isCrowded)) {
+          const zoomGain = Math.min(2.5, Math.max(0.85, Math.sqrt(scale)));
+          const nodeRadius = isHovered || isSelectedNode ? (baseRadius + 6) * zoomGain : baseRadius * zoomGain;
+          if (opacity === 1 && (isHovered || isSelectedNode || isNowPlaying || scale >= 1.5)) {
             const glow = ctx.createRadialGradient(pt.x, pt.y, nodeRadius * 0.6, pt.x, pt.y, nodeRadius * 2.2);
-            glow.addColorStop(0, `${nodeColor}44`);
+            glow.addColorStop(0, `${nodeColor}55`);
             glow.addColorStop(1, `${nodeColor}00`);
             ctx.fillStyle = glow;
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, nodeRadius * 2.2, 0, Math.PI * 2);
             ctx.fill();
           }
-          const shouldRenderCover = !isCrowded || isNowPlaying || isSelectedNode || isHovered;
-          const coverSrc = shouldRenderCover ? t2.cover || t2.cover_url || (t2.path ? `/cover?path=${encodeURIComponent(t2.path)}` : null) : null;
-          let coverImg = null;
-          if (coverSrc) {
-            if (imageCacheRef.current.has(coverSrc)) {
-              coverImg = imageCacheRef.current.get(coverSrc);
-            } else {
-              const img = new Image();
-              img.src = coverSrc;
-              img.onload = () => {
-                imageCacheRef.current.set(coverSrc, img);
-              };
-              img.onerror = () => {
-                imageCacheRef.current.set(coverSrc, false);
-              };
-              imageCacheRef.current.set(coverSrc, null);
-            }
+          const coverSrc = t2.cover || t2.cover_url || (t2.path ? `/cover?path=${encodeURIComponent(t2.path)}&thumb=96` : null);
+          if (coverSrc && !imageCacheRef.current.has(coverSrc)) {
+            requestCoverThumbnail(coverSrc, isNowPlaying || isSelectedNode || isHovered);
           }
-          if (coverImg && coverImg.complete && coverImg.naturalWidth > 0) {
+          const cachedAvatar = coverSrc ? imageCacheRef.current.get(coverSrc) : null;
+          const hasAvatar = cachedAvatar && (cachedAvatar.width > 0 || cachedAvatar.naturalWidth > 0);
+          if (hasAvatar) {
             ctx.save();
             ctx.globalAlpha = opacity;
-            ctx.beginPath();
-            ctx.arc(pt.x, pt.y, nodeRadius, 0, Math.PI * 2);
-            ctx.clip();
-            ctx.drawImage(coverImg, pt.x - nodeRadius, pt.y - nodeRadius, nodeRadius * 2, nodeRadius * 2);
+            ctx.drawImage(cachedAvatar, pt.x - nodeRadius, pt.y - nodeRadius, nodeRadius * 2, nodeRadius * 2);
             ctx.restore();
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, nodeRadius, 0, Math.PI * 2);
             ctx.strokeStyle = isNowPlaying ? "#38bdf8" : isSelectedNode ? "#fbbf24" : nodeColor;
-            ctx.lineWidth = isNowPlaying ? 2.5 : isSelectedNode ? 2.5 : 1.5;
+            ctx.lineWidth = isNowPlaying ? 2.8 : isSelectedNode ? 2.5 : 1.6;
             ctx.stroke();
           } else {
             ctx.beginPath();
@@ -18197,10 +18228,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
             ctx.fillStyle = nodeColor;
             ctx.globalAlpha = opacity;
             ctx.fill();
-            ctx.lineWidth = isNowPlaying ? 2.5 : isSelectedNode ? 2 : 1.2;
+            ctx.lineWidth = isNowPlaying ? 2.8 : isSelectedNode ? 2.5 : 1.4;
             ctx.strokeStyle = isNowPlaying ? "#ffffff" : isSelectedNode ? "#fbbf24" : "rgba(0, 0, 0, 0.6)";
             ctx.stroke();
             ctx.globalAlpha = 1;
+            if (nodeRadius >= 9) {
+              ctx.beginPath();
+              ctx.arc(pt.x, pt.y, nodeRadius * 0.35, 0, Math.PI * 2);
+              ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+              ctx.fill();
+            }
           }
           if (isNowPlaying || isSelectedNode) {
             ctx.font = "bold 10px ui-monospace, SFMono-Regular, Menlo, monospace";

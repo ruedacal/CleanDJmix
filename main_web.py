@@ -177,6 +177,8 @@ def get_cover():
         bottle.response.status = 204
         return ""
     raw_path = bottle.request.query.get('path', '')
+    thumb_str = bottle.request.query.get('thumb', '')
+    thumb_size = 96 if thumb_str in ('1', 'true', '96') else (int(thumb_str) if thumb_str.isdigit() else None)
     file_path = _decodificar_parametro_ruta(raw_path)
     real_path = audio_playback_svc._resolver_ruta(file_path) if file_path else ''
     target = real_path if real_path else file_path
@@ -193,9 +195,10 @@ def get_cover():
             bottle.response.status = 403
             return "Acceso denegado"
 
-    data, mime = media_svc.obtener_caratula_binaria(target)
+    data, mime = media_svc.obtener_caratula_binaria(target, thumbnail_size=thumb_size)
     if data and mime:
         bottle.response.content_type = mime
+        bottle.response.set_header("Cache-Control", "public, max-age=86400")
         return data
 
     # Fallback local SVG offline seguro (cero llamadas de red externas a placehold.co)
