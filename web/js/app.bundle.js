@@ -305,15 +305,16 @@
   }) => {
     const current = findNavItem(activeTab);
     const alias = userProfile && userProfile.alias || "DJ";
-    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-30 flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), auditInfo && auditInfo.isAuditing && /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-30 flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: "hidden sm:flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1",
+        className: "flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3 py-1 shadow-[0_0_12px_rgba(6,182,212,0.25)]",
         role: "status",
-        title: auditInfo.statusMsg || "Auditor\xEDa en proceso"
+        title: auditInfo.statusMsg || "Procesando archivos..."
       },
-      /* @__PURE__ */ React.createElement("span", { className: "relative flex h-1.5 w-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300 opacity-75" }), /* @__PURE__ */ React.createElement("span", { className: "relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-300" })),
-      /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs text-cyan-200 tabular-nums" }, "Auditando ", auditInfo.progress, "%")
+      /* @__PURE__ */ React.createElement("span", { className: "relative flex h-2 w-2" }, /* @__PURE__ */ React.createElement("span", { className: "absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" }), /* @__PURE__ */ React.createElement("span", { className: "relative inline-flex h-2 w-2 rounded-full bg-cyan-300" })),
+      /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs text-cyan-200 tabular-nums font-semibold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", null, auditInfo.isLoadingDir ? "Cargando carpeta" : auditInfo.isAuditing ? "Auditando" : "Procesando"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, auditInfo.progress || 0, "%")),
+      auditInfo.statusMsg && /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline text-[11px] text-zinc-400 max-w-[280px] truncate border-l border-white/10 pl-2 font-mono" }, auditInfo.statusMsg)
     ), /* @__PURE__ */ React.createElement("div", { className: "ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onOpenCopilot, className: "bw-btn bw-btn-live md:hidden", "aria-label": "Abrir Live Copilot" }, /* @__PURE__ */ React.createElement("span", { className: "bw-live-dot", "aria-hidden": "true" }), /* @__PURE__ */ React.createElement("span", null, "LIVE")), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -336,7 +337,13 @@
       },
       /* @__PURE__ */ React.createElement(ShellIcons.Globe, { size: 16 }),
       /* @__PURE__ */ React.createElement("span", { className: "uppercase" }, lang)
-    ), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onOpenUser, className: "bw-user-chip", title: "Centro de control DJ: perfil, sesiones y preferencias" }, /* @__PURE__ */ React.createElement("span", { className: "flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-1 ring-white/15" }, userProfile && userProfile.avatarUrl ? /* @__PURE__ */ React.createElement("img", { src: userProfile.avatarUrl, alt: "", className: "h-full w-full object-cover" }) : /* @__PURE__ */ React.createElement(ShellIcons.User, { size: 14, className: "text-zinc-300" })), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline max-w-[110px] truncate text-sm text-white" }, alias), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline bw-pro-tag" }, "PRO"))));
+    ), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onOpenUser, className: "bw-user-chip", title: "Centro de control DJ: perfil, sesiones y preferencias" }, /* @__PURE__ */ React.createElement("span", { className: "flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-1 ring-white/15" }, userProfile && userProfile.avatarUrl ? /* @__PURE__ */ React.createElement("img", { src: userProfile.avatarUrl, alt: "", className: "h-full w-full object-cover" }) : /* @__PURE__ */ React.createElement(ShellIcons.User, { size: 14, className: "text-zinc-300" })), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline max-w-[110px] truncate text-sm text-white" }, alias), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline bw-pro-tag" }, "PRO"))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-0 left-0 w-full h-[2px] bg-zinc-800/80 overflow-hidden pointer-events-none" }, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "h-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 transition-all duration-200 ease-out shadow-[0_0_8px_rgba(6,182,212,0.8)]",
+        style: { width: `${Math.min(100, Math.max(0, auditInfo.progress || 0))}%` }
+      }
+    )));
   };
 
   // web/js/shell/MobileNav.jsx
@@ -17808,6 +17815,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const animRef = useRef5(null);
     const imageCacheRef = useRef5(/* @__PURE__ */ new Map());
     const panTimerRef = useRef5(null);
+    const spatialGridRef = useRef5(/* @__PURE__ */ new Map());
+    const mouseRafRef = useRef5(null);
     const radialView = projectionMode === "camelot_wheel" || projectionMode === "acoustic_clusters";
     const transformRef = useRef5({
       scale: 1,
@@ -17935,6 +17944,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
           n.targetY = fit(n.targetY, y0, y1);
         });
       }
+      const grid = /* @__PURE__ */ new Map();
+      const GRID_DIVS = 32;
+      updatedNodes.forEach((node) => {
+        const gx = Math.max(0, Math.min(GRID_DIVS - 1, Math.floor(node.targetX * GRID_DIVS)));
+        const gy = Math.max(0, Math.min(GRID_DIVS - 1, Math.floor(node.targetY * GRID_DIVS)));
+        const key = `${gx}_${gy}`;
+        if (!grid.has(key)) grid.set(key, []);
+        grid.get(key).push(node);
+      });
+      spatialGridRef.current = grid;
       nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
     useEffect5(() => {
@@ -18048,11 +18067,15 @@ Respuesta: ${qa.a}`).join("\n\n"),
           const refNode = nodes.find((n) => n.id === activeRefTrack.id || n.track.id === activeRefTrack.id);
           if (refNode) {
             const pRef = toScreen(refNode.currX, refNode.currY);
-            nodes.forEach((n) => {
-              if (n.id === refNode.id) return;
+            let drawnCount = 0;
+            const maxPaths = nodes.length > 400 ? 30 : 60;
+            for (let i = 0; i < nodes.length; i++) {
+              const n = nodes[i];
+              if (n.id === refNode.id) continue;
               const match = calcHarmonicMixMatch(refNode.keyStr, n.keyStr, refNode.bpm, n.bpm);
               if (match.isMatch) {
                 const pTarget = toScreen(n.currX, n.currY);
+                if (pTarget.x < -40 || pTarget.x > w + 40 || pTarget.y < -40 || pTarget.y > h + 40) continue;
                 ctx.beginPath();
                 ctx.moveTo(pRef.x, pRef.y);
                 ctx.lineTo(pTarget.x, pTarget.y);
@@ -18061,16 +18084,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
                 ctx.setLineDash([4, 4]);
                 ctx.stroke();
                 ctx.setLineDash([]);
+                drawnCount++;
+                if (drawnCount >= maxPaths) break;
               }
-            });
+            }
           }
         }
         const nowPlayingId = nowPlayingTrack ? nowPlayingTrack.id || nowPlayingTrack.path || nowPlayingTrack.title : null;
         const searchLower = searchQuery.trim().toLowerCase();
         const selectedIdsSet = new Set(selectedMapTracks.map((t2) => t2.id || t2.path || t2.title));
+        const isCrowded = nodes.length > 100;
         nodes.forEach((node) => {
           const pt = toScreen(node.currX, node.currY);
-          if (pt.x < -60 || pt.x > w + 60 || pt.y < -60 || pt.y > h + 60) return;
+          if (pt.x < -30 || pt.x > w + 30 || pt.y < -30 || pt.y > h + 30) return;
           const t2 = node.track;
           const isNowPlaying = Boolean(nowPlayingTrack && (nowPlayingTrack.id === t2.id || nowPlayingTrack.path && t2.path && nowPlayingTrack.path === t2.path || nowPlayingTrack.title === t2.title && nowPlayingTrack.artist === t2.artist));
           const isHovered = hoveredTrack && (hoveredTrack.id === t2.id || hoveredTrack.title === t2.title);
@@ -18125,16 +18151,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }
           const zoomGain = Math.min(2.4, Math.max(0.8, Math.sqrt(scale)));
           const nodeRadius = isHovered || isSelectedNode ? (baseRadius + 5) * zoomGain : baseRadius * zoomGain;
-          if (opacity === 1 && nodes.length < 600) {
-            const glow = ctx.createRadialGradient(pt.x, pt.y, nodeRadius * 0.6, pt.x, pt.y, nodeRadius * 2.4);
-            glow.addColorStop(0, `${nodeColor}55`);
+          if (opacity === 1 && (isHovered || isSelectedNode || isNowPlaying || !isCrowded)) {
+            const glow = ctx.createRadialGradient(pt.x, pt.y, nodeRadius * 0.6, pt.x, pt.y, nodeRadius * 2.2);
+            glow.addColorStop(0, `${nodeColor}44`);
             glow.addColorStop(1, `${nodeColor}00`);
             ctx.fillStyle = glow;
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, nodeRadius * 2.4, 0, Math.PI * 2);
+            ctx.arc(pt.x, pt.y, nodeRadius * 2.2, 0, Math.PI * 2);
             ctx.fill();
           }
-          const coverSrc = t2.cover || t2.cover_url || (t2.path ? `/cover?path=${encodeURIComponent(t2.path)}` : null);
+          const shouldRenderCover = !isCrowded || isNowPlaying || isSelectedNode || isHovered;
+          const coverSrc = shouldRenderCover ? t2.cover || t2.cover_url || (t2.path ? `/cover?path=${encodeURIComponent(t2.path)}` : null) : null;
           let coverImg = null;
           if (coverSrc) {
             if (imageCacheRef.current.has(coverSrc)) {
@@ -18170,16 +18197,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
             ctx.fillStyle = nodeColor;
             ctx.globalAlpha = opacity;
             ctx.fill();
-            ctx.lineWidth = isNowPlaying ? 2.5 : isSelectedNode ? 2 : 1.5;
+            ctx.lineWidth = isNowPlaying ? 2.5 : isSelectedNode ? 2 : 1.2;
             ctx.strokeStyle = isNowPlaying ? "#ffffff" : isSelectedNode ? "#fbbf24" : "rgba(0, 0, 0, 0.6)";
             ctx.stroke();
             ctx.globalAlpha = 1;
           }
-          if (isHovered || isNowPlaying || scale >= 1.5) {
-            ctx.font = "600 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-            ctx.fillStyle = isNowPlaying ? "#22d3ee" : isHovered ? "#fafafa" : "rgba(250, 250, 250, 0.6)";
-            const labelText = `${t2.artist ? t2.artist.slice(0, 16) : ""} - ${t2.title ? t2.title.slice(0, 18) : ""}`;
-            ctx.fillText(labelText, pt.x + nodeRadius + 4, pt.y + 3);
+          if (isNowPlaying || isSelectedNode) {
+            ctx.font = "bold 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+            ctx.fillStyle = isNowPlaying ? "#22d3ee" : "#fbbf24";
+            const labelText = `${isNowPlaying ? "\u25B6 " : "\u2605 "}${t2.artist ? t2.artist.slice(0, 14) : ""} - ${t2.title ? t2.title.slice(0, 18) : ""}`;
+            ctx.fillText(labelText, pt.x + nodeRadius + 5, pt.y + 3);
           }
         });
         const sel = selectionRef.current;
@@ -18282,19 +18309,48 @@ Respuesta: ${qa.a}`).join("\n\n"),
         const side = radialView ? Math.min(w, h) : null;
         return { x: cx + (nx - 0.5) * (side || w) * scale, y: cy + (ny - 0.5) * (side || h) * scale };
       };
-      let found = null;
-      let minDist = Math.max(16, 14 * Math.min(2.4, Math.max(0.8, Math.sqrt(scale))));
-      const nodes = nodesRef.current;
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
-        const pt = toScreen(n.currX, n.currY);
-        const dist = Math.hypot(pt.x - mouseX, pt.y - mouseY);
-        if (dist < minDist) {
-          minDist = dist;
-          found = n.track;
+      if (mouseRafRef.current) cancelAnimationFrame(mouseRafRef.current);
+      mouseRafRef.current = requestAnimationFrame(() => {
+        let found = null;
+        let minDist = Math.max(16, 14 * Math.min(2.4, Math.max(0.8, Math.sqrt(scale))));
+        const nodes = nodesRef.current;
+        const grid = spatialGridRef.current;
+        if (grid && nodes.length > 100) {
+          const side = radialView ? Math.min(w, h) : null;
+          const normX = (mouseX - (w / 2 + panX)) / ((side || w) * scale) + 0.5;
+          const normY = (mouseY - (h / 2 + panY)) / ((side || h) * scale) + 0.5;
+          const GRID_DIVS = 32;
+          const gx = Math.floor(normX * GRID_DIVS);
+          const gy = Math.floor(normY * GRID_DIVS);
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              const cellNodes = grid.get(`${gx + dx}_${gy + dy}`);
+              if (cellNodes) {
+                for (let i = 0; i < cellNodes.length; i++) {
+                  const n = cellNodes[i];
+                  const pt = toScreen(n.currX, n.currY);
+                  const dist = Math.hypot(pt.x - mouseX, pt.y - mouseY);
+                  if (dist < minDist) {
+                    minDist = dist;
+                    found = n.track;
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          for (let i = 0; i < nodes.length; i++) {
+            const n = nodes[i];
+            const pt = toScreen(n.currX, n.currY);
+            const dist = Math.hypot(pt.x - mouseX, pt.y - mouseY);
+            if (dist < minDist) {
+              minDist = dist;
+              found = n.track;
+            }
+          }
         }
-      }
-      setHoveredTrack(found);
+        setHoveredTrack((prev) => (prev == null ? void 0 : prev.id) === (found == null ? void 0 : found.id) && (prev == null ? void 0 : prev.title) === (found == null ? void 0 : found.title) ? prev : found);
+      });
     };
     const handleMouseUp = () => {
       if (toolMode === "pan") {
@@ -20016,7 +20072,33 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [globalAuditInfo, setGlobalAuditInfo] = useState4({ isAuditing: false, progress: 0, statusMsg: "" });
+    const [globalAuditInfo, setGlobalAuditInfo] = useState4({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
+    useEffect5(() => {
+      if (window.eel && typeof window.eel.expose === "function") {
+        window.actualizar_progreso_batch = (pct, msg) => {
+          if (!msg || msg.includes("detenid") || msg.includes("cancelad")) {
+            setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
+            return;
+          }
+          const isLoading = msg.toLowerCase().includes("leyendo") || msg.toLowerCase().includes("carga") || msg.toLowerCase().includes("tags") || msg.toLowerCase().includes("archivo");
+          setGlobalAuditInfo({
+            isAuditing: !isLoading,
+            isLoadingDir: isLoading,
+            progress: pct,
+            statusMsg: msg
+          });
+          if (pct >= 100) {
+            setTimeout(() => {
+              setGlobalAuditInfo((prev) => ({ ...prev, isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" }));
+            }, 2500);
+          }
+        };
+        try {
+          window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
+        } catch (err) {
+        }
+      }
+    }, []);
     const [tutorialOpen, setTutorialOpen] = useState4(false);
     const [tutorialInitialMode, setTutorialInitialMode] = useState4("launcher");
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState4(false);
@@ -20789,7 +20871,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setCurrentFolder(target);
         setAuditTracks([]);
         setSelectedTrack(null);
-        setGlobalAuditInfo({ isAuditing: false, progress: 0, statusMsg: "" });
+        setGlobalAuditInfo({ isAuditing: false, isLoadingDir: true, progress: 3, statusMsg: "Iniciando lectura de archivos en carpeta..." });
         if (window.eel && window.eel.cargar_metadatos_directorio) {
           const res = await window.eel.cargar_metadatos_directorio(target)();
           if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {
@@ -20797,7 +20879,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
             if (res.tracks[0] && res.tracks[0].id) {
               setSelectedTrack(res.tracks[0].id);
             }
+            setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 100, statusMsg: `\u2713 ${res.tracks.length} pistas cargadas correctamente.` });
+            setTimeout(() => {
+              setGlobalAuditInfo((prev) => ({ ...prev, progress: 0, statusMsg: "" }));
+            }, 2500);
             return;
+          } else {
+            setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "No se encontraron pistas de audio en la carpeta." });
+            setTimeout(() => {
+              setGlobalAuditInfo((prev) => ({ ...prev, statusMsg: "" }));
+            }, 3e3);
           }
         }
       } catch (e) {

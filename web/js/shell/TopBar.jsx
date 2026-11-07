@@ -106,17 +106,25 @@ export const TopBar = ({
                 <h1 className="text-sm font-semibold text-white truncate">{navLabel(current, t)}</h1>
             </div>
 
-            {auditInfo && auditInfo.isAuditing && (
+            {auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && (
                 <div
-                    className="hidden sm:flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1"
+                    className="flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3 py-1 shadow-[0_0_12px_rgba(6,182,212,0.25)]"
                     role="status"
-                    title={auditInfo.statusMsg || 'Auditoría en proceso'}
+                    title={auditInfo.statusMsg || 'Procesando archivos...'}
                 >
-                    <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300 opacity-75" />
-                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-300" />
+                    <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
                     </span>
-                    <span className="font-mono text-xs text-cyan-200 tabular-nums">Auditando {auditInfo.progress}%</span>
+                    <span className="font-mono text-xs text-cyan-200 tabular-nums font-semibold flex items-center gap-1.5">
+                        <span>{auditInfo.isLoadingDir ? 'Cargando carpeta' : (auditInfo.isAuditing ? 'Auditando' : 'Procesando')}</span>
+                        <strong className="text-white">{auditInfo.progress || 0}%</strong>
+                    </span>
+                    {auditInfo.statusMsg && (
+                        <span className="hidden xl:inline text-[11px] text-zinc-400 max-w-[280px] truncate border-l border-white/10 pl-2 font-mono">
+                            {auditInfo.statusMsg}
+                        </span>
+                    )}
                 </div>
             )}
 
@@ -169,6 +177,15 @@ export const TopBar = ({
                     <span className="hidden xl:inline bw-pro-tag">PRO</span>
                 </button>
             </div>
+
+            {auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && (
+                <div className="absolute bottom-0 left-0 w-full h-[2px] bg-zinc-800/80 overflow-hidden pointer-events-none">
+                    <div 
+                        className="h-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 transition-all duration-200 ease-out shadow-[0_0_8px_rgba(6,182,212,0.8)]"
+                        style={{ width: `${Math.min(100, Math.max(0, auditInfo.progress || 0))}%` }}
+                    />
+                </div>
+            )}
         </header>
     );
 };

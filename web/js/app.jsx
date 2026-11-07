@@ -25135,6 +25135,8 @@ const MapWorkspace = ({
     const animRef = useRef(null);
     const imageCacheRef = useRef(new Map());
     const panTimerRef = useRef(null);
+    const spatialGridRef = useRef(new Map());
+    const mouseRafRef = useRef(null);
 
     const radialView = projectionMode === 'camelot_wheel' || projectionMode === 'acoustic_clusters';
 
@@ -25287,6 +25289,17 @@ const MapWorkspace = ({
             });
         }
 
+        // Construir cuadrícula de indexación espacial (Spatial Hash Grid) para Hit-Testing O(1) con 5.000+ pistas
+        const grid = new Map();
+        const GRID_DIVS = 32;
+        updatedNodes.forEach(node => {
+            const gx = Math.max(0, Math.min(GRID_DIVS - 1, Math.floor(node.targetX * GRID_DIVS)));
+            const gy = Math.max(0, Math.min(GRID_DIVS - 1, Math.floor(node.targetY * GRID_DIVS)));
+            const key = `${gx}_${gy}`;
+            if (!grid.has(key)) grid.set(key, []);
+            grid.get(key).push(node);
+        });
+        spatialGridRef.current = grid;
         nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
 
@@ -25428,11 +25441,16 @@ const MapWorkspace = ({
                 const refNode = nodes.find(n => n.id === activeRefTrack.id || n.track.id === activeRefTrack.id);
                 if (refNode) {
                     const pRef = toScreen(refNode.currX, refNode.currY);
-                    nodes.forEach(n => {
-                        if (n.id === refNode.id) return;
+                    let drawnCount = 0;
+                    const maxPaths = nodes.length > 400 ? 30 : 60;
+                    for (let i = 0; i < nodes.length; i++) {
+                        const n = nodes[i];
+                        if (n.id === refNode.id) continue;
                         const match = calcHarmonicMixMatch(refNode.keyStr, n.keyStr, refNode.bpm, n.bpm);
                         if (match.isMatch) {
                             const pTarget = toScreen(n.currX, n.currY);
+                            // Viewport culling de trayectoria
+                            if (pTarget.x < -40 || pTarget.x > w + 40 || pTarget.y < -40 || pTarget.y > h + 40) continue;
                             ctx.beginPath();
                             ctx.moveTo(pRef.x, pRef.y);
                             ctx.lineTo(pTarget.x, pTarget.y);
@@ -25441,20 +25459,23 @@ const MapWorkspace = ({
                             ctx.setLineDash([4, 4]);
                             ctx.stroke();
                             ctx.setLineDash([]);
+                            drawnCount++;
+                            if (drawnCount >= maxPaths) break;
                         }
-                    });
+                    }
                 }
             }
 
-            // DIBUJAR LOS NODOS (PISTAS)
+            // DIBUJAR LOS NODOS (PISTAS) - MOTOR OPTIMIZADO PARA 5.000+ PISTAS A 60 FPS
             const nowPlayingId = nowPlayingTrack ? (nowPlayingTrack.id || nowPlayingTrack.path || nowPlayingTrack.title) : null;
             const searchLower = searchQuery.trim().toLowerCase();
             const selectedIdsSet = new Set(selectedMapTracks.map(t => t.id || t.path || t.title));
+            const isCrowded = nodes.length > 100;
 
             nodes.forEach(node => {
                 const pt = toScreen(node.currX, node.currY);
-                // Culling fuera de vista de pantalla
-                if (pt.x < -60 || pt.x > w + 60 || pt.y < -60 || pt.y > h + 60) return;
+                // Viewport Culling estricto: descartar inmediatamente cualquier nodo fuera de la pantalla
+                if (pt.x < -30 || pt.x > w + 30 || pt.y < -30 || pt.y > h + 30) return;
 
                 const t = node.track;
                 const isNowPlaying = Boolean(nowPlayingTrack && (
@@ -25527,22 +25548,25 @@ const MapWorkspace = ({
                     ctx.stroke();
                 }
 
-                // Radio del círculo de la pista optimizado para visibilidad de carátulas
+                // Radio del círculo de la pista optimizado
                 const zoomGain = Math.min(2.4, Math.max(0.8, Math.sqrt(scale)));
                 const nodeRadius = (isHovered || isSelectedNode) ? (baseRadius + 5) * zoomGain : baseRadius * zoomGain;
 
-                if (opacity === 1 && nodes.length < 600) {
-                    const glow = ctx.createRadialGradient(pt.x, pt.y, nodeRadius * 0.6, pt.x, pt.y, nodeRadius * 2.4);
-                    glow.addColorStop(0, `${nodeColor}55`);
+                // Brillo radial enfocado solo en nodos prioritarios para preservar GPU a 60 FPS
+                if (opacity === 1 && (isHovered || isSelectedNode || isNowPlaying || !isCrowded)) {
+                    const glow = ctx.createRadialGradient(pt.x, pt.y, nodeRadius * 0.6, pt.x, pt.y, nodeRadius * 2.2);
+                    glow.addColorStop(0, `${nodeColor}44`);
                     glow.addColorStop(1, `${nodeColor}00`);
                     ctx.fillStyle = glow;
                     ctx.beginPath();
-                    ctx.arc(pt.x, pt.y, nodeRadius * 2.4, 0, Math.PI * 2);
+                    ctx.arc(pt.x, pt.y, nodeRadius * 2.2, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
-                // Búsqueda y cacheo de carátula del track
-                const coverSrc = t.cover || t.cover_url || (t.path ? `/cover?path=${encodeURIComponent(t.path)}` : null);
+                // Optimización crítica de carátulas: solo cargar imágenes para nodos activos o colecciones pequeñas (<80)
+                // Esto evita 5.000 peticiones HTTP simultáneas que colapsan el navegador
+                const shouldRenderCover = (!isCrowded || isNowPlaying || isSelectedNode || isHovered);
+                const coverSrc = shouldRenderCover ? (t.cover || t.cover_url || (t.path ? `/cover?path=${encodeURIComponent(t.path)}` : null)) : null;
                 let coverImg = null;
                 if (coverSrc) {
                     if (imageCacheRef.current.has(coverSrc)) {
@@ -25556,7 +25580,7 @@ const MapWorkspace = ({
                     }
                 }
 
-                // Renderizado de carátula circular recortada con ctx.clip
+                // Renderizado de carátula circular recortada con ctx.clip solo cuando corresponda
                 if (coverImg && coverImg.complete && coverImg.naturalWidth > 0) {
                     ctx.save();
                     ctx.globalAlpha = opacity;
@@ -25573,24 +25597,27 @@ const MapWorkspace = ({
                     ctx.lineWidth = isNowPlaying ? 2.5 : (isSelectedNode ? 2.5 : 1.5);
                     ctx.stroke();
                 } else {
-                    // Círculo sólido coloreado si aún no carga carátula o no tiene
+                    // Círculo vectorial de alta velocidad (instantáneo y nítido para 5.000+ pistas)
                     ctx.beginPath();
                     ctx.arc(pt.x, pt.y, nodeRadius, 0, Math.PI * 2);
                     ctx.fillStyle = nodeColor;
                     ctx.globalAlpha = opacity;
                     ctx.fill();
-                    ctx.lineWidth = isNowPlaying ? 2.5 : (isSelectedNode ? 2 : 1.5);
+                    ctx.lineWidth = isNowPlaying ? 2.5 : (isSelectedNode ? 2 : 1.2);
                     ctx.strokeStyle = isNowPlaying ? '#ffffff' : (isSelectedNode ? '#fbbf24' : 'rgba(0, 0, 0, 0.6)');
                     ctx.stroke();
                     ctx.globalAlpha = 1.0;
                 }
 
-                // Rótulo de texto si hay zoom suficiente o está en hover/playing
-                if (isHovered || isNowPlaying || scale >= 1.5) {
-                    ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace';
-                    ctx.fillStyle = isNowPlaying ? '#22d3ee' : (isHovered ? '#fafafa' : 'rgba(250, 250, 250, 0.6)');
-                    const labelText = `${t.artist ? t.artist.slice(0, 16) : ''} - ${t.title ? t.title.slice(0, 18) : ''}`;
-                    ctx.fillText(labelText, pt.x + nodeRadius + 4, pt.y + 3);
+                // DECLUTTERING RADICAL (Eliminación de la "sopa de texto"):
+                // En lugar de saturar el lienzo con 5.000 textos simultáneos a 60 FPS,
+                // solo renderizamos rótulo táctico para la pista en reproducción o seleccionada.
+                // El detalle completo de cualquier pista aparece en el HUD flotante instantáneo al pasar el ratón.
+                if (isNowPlaying || isSelectedNode) {
+                    ctx.font = 'bold 10px ui-monospace, SFMono-Regular, Menlo, monospace';
+                    ctx.fillStyle = isNowPlaying ? '#22d3ee' : '#fbbf24';
+                    const labelText = `${isNowPlaying ? '▶ ' : '★ '}${t.artist ? t.artist.slice(0, 14) : ''} - ${t.title ? t.title.slice(0, 18) : ''}`;
+                    ctx.fillText(labelText, pt.x + nodeRadius + 5, pt.y + 3);
                 }
             });
 
@@ -25697,7 +25724,7 @@ const MapWorkspace = ({
             return;
         }
 
-        // Búsqueda de nodo bajo el puntero (Hit-Testing)
+        // Búsqueda de nodo bajo el puntero (Hit-Testing de alto rendimiento con Spatial Grid O(1))
         const w = rect.width;
         const h = rect.height;
         const { scale, panX, panY } = transformRef.current;
@@ -25708,20 +25735,51 @@ const MapWorkspace = ({
             return { x: cx + (nx - 0.5) * (side || w) * scale, y: cy + (ny - 0.5) * (side || h) * scale };
         };
 
-        let found = null;
-        let minDist = Math.max(16, 14 * Math.min(2.4, Math.max(0.8, Math.sqrt(scale)))); // umbral de clic en px
+        if (mouseRafRef.current) cancelAnimationFrame(mouseRafRef.current);
+        mouseRafRef.current = requestAnimationFrame(() => {
+            let found = null;
+            let minDist = Math.max(16, 14 * Math.min(2.4, Math.max(0.8, Math.sqrt(scale))));
+            const nodes = nodesRef.current;
+            const grid = spatialGridRef.current;
 
-        const nodes = nodesRef.current;
-        for (let i = 0; i < nodes.length; i++) {
-            const n = nodes[i];
-            const pt = toScreen(n.currX, n.currY);
-            const dist = Math.hypot(pt.x - mouseX, pt.y - mouseY);
-            if (dist < minDist) {
-                minDist = dist;
-                found = n.track;
+            if (grid && nodes.length > 100) {
+                const side = radialView ? Math.min(w, h) : null;
+                const normX = (mouseX - (w / 2 + panX)) / ((side || w) * scale) + 0.5;
+                const normY = (mouseY - (h / 2 + panY)) / ((side || h) * scale) + 0.5;
+                const GRID_DIVS = 32;
+                const gx = Math.floor(normX * GRID_DIVS);
+                const gy = Math.floor(normY * GRID_DIVS);
+
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const cellNodes = grid.get(`${gx + dx}_${gy + dy}`);
+                        if (cellNodes) {
+                            for (let i = 0; i < cellNodes.length; i++) {
+                                const n = cellNodes[i];
+                                const pt = toScreen(n.currX, n.currY);
+                                const dist = Math.hypot(pt.x - mouseX, pt.y - mouseY);
+                                if (dist < minDist) {
+                                    minDist = dist;
+                                    found = n.track;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (let i = 0; i < nodes.length; i++) {
+                    const n = nodes[i];
+                    const pt = toScreen(n.currX, n.currY);
+                    const dist = Math.hypot(pt.x - mouseX, pt.y - mouseY);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        found = n.track;
+                    }
+                }
             }
-        }
-        setHoveredTrack(found);
+
+            setHoveredTrack(prev => (prev?.id === found?.id && prev?.title === found?.title ? prev : found));
+        });
     };
 
     const handleMouseUp = () => {
@@ -29378,7 +29436,34 @@ const App = () => {
     }, []);
 
     // Estado Global de Tareas en Background & Tutorial de Bienvenida (Deshabilitado a petición)
-    const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, progress: 0, statusMsg: '' });
+    const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' });
+
+    // Listener Global de Progreso de Carga y Auditoría para TopBar y Workspaces
+    useEffect(() => {
+        if (window.eel && typeof window.eel.expose === 'function') {
+            window.actualizar_progreso_batch = (pct, msg) => {
+                if (!msg || msg.includes('detenid') || msg.includes('cancelad')) {
+                    setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' });
+                    return;
+                }
+                const isLoading = msg.toLowerCase().includes('leyendo') || msg.toLowerCase().includes('carga') || msg.toLowerCase().includes('tags') || msg.toLowerCase().includes('archivo');
+                setGlobalAuditInfo({
+                    isAuditing: !isLoading,
+                    isLoadingDir: isLoading,
+                    progress: pct,
+                    statusMsg: msg
+                });
+                if (pct >= 100) {
+                    setTimeout(() => {
+                        setGlobalAuditInfo(prev => ({ ...prev, isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' }));
+                    }, 2500);
+                }
+            };
+            try {
+                window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
+            } catch (err) {}
+        }
+    }, []);
     const [tutorialOpen, setTutorialOpen] = useState(false);
     const [tutorialInitialMode, setTutorialInitialMode] = useState('launcher');
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -30200,7 +30285,7 @@ const App = () => {
             setCurrentFolder(target);
             setAuditTracks([]);
             setSelectedTrack(null);
-            setGlobalAuditInfo({ isAuditing: false, progress: 0, statusMsg: '' });
+            setGlobalAuditInfo({ isAuditing: false, isLoadingDir: true, progress: 3, statusMsg: 'Iniciando lectura de archivos en carpeta...' });
             if (window.eel && window.eel.cargar_metadatos_directorio) {
                 const res = await window.eel.cargar_metadatos_directorio(target)();
                 if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {
@@ -30208,7 +30293,16 @@ const App = () => {
                     if (res.tracks[0] && res.tracks[0].id) {
                         setSelectedTrack(res.tracks[0].id);
                     }
+                    setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 100, statusMsg: `✓ ${res.tracks.length} pistas cargadas correctamente.` });
+                    setTimeout(() => {
+                        setGlobalAuditInfo(prev => ({ ...prev, progress: 0, statusMsg: '' }));
+                    }, 2500);
                     return;
+                } else {
+                    setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: 'No se encontraron pistas de audio en la carpeta.' });
+                    setTimeout(() => {
+                        setGlobalAuditInfo(prev => ({ ...prev, statusMsg: '' }));
+                    }, 3000);
                 }
             }
         } catch (e) {

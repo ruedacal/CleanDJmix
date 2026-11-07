@@ -17,6 +17,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
 from infrastructure.audio_processor import AudioProcessorService
 from services.tag_sanitizer_service import TagSanitizerService
+from services.mood_intelligence_service import MoodIntelligenceService
 
 def _cooperative_yield():
     """Cede el control del bucle de eventos a gevent/hilos para procesar cancelaciones instantáneamente."""
@@ -1288,10 +1289,11 @@ return folderPath'''
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
         if progreso_cb:
-            progreso_cb(5, f"Leyendo metadatos locales ({total_files} pistas encontradas)...")
+            progreso_cb(3, f"Localizados {total_files} archivos en disco...")
 
         tracks_cargados = []
         sin_meta_count = 0
+        emit_interval = min(25, max(5, total_files // 50))
 
         for idx, (root, file) in enumerate(archivos, 1):
             _cooperative_yield()
@@ -1302,10 +1304,10 @@ return folderPath'''
                 break
 
             full_path = os.path.join(root, file)
-            pct = int(5 + (idx / total_files) * 90)
-            if total_files <= 30 or idx % max(1, total_files // 30) == 0 or idx == total_files:
+            pct = int(3 + (idx / total_files) * 94)
+            if idx == 1 or idx % emit_interval == 0 or idx == total_files:
                 if progreso_cb:
-                    progreso_cb(pct, f"Leyendo tags ({idx}/{total_files}): {file}")
+                    progreso_cb(pct, f"Leyendo metadatos ({idx}/{total_files}): {file}")
 
             filename = os.path.basename(full_path)
             ext = os.path.splitext(filename)[1].lower()
@@ -1320,6 +1322,18 @@ return folderPath'''
             subgenre_str = ""
             trim_start_ms = 0.0
             first_downbeat_ms = 0.0
+            has_cover = False
+            filesize = 0
+
+            try:
+                filesize = os.path.getsize(full_path)
+            except Exception:
+                pass
+
+            tech_sr = 44100
+            tech_depth = 16
+            tech_kbps = 0
+            tech_channels = 2
 
             try:
                 if ext == ".flac":
@@ -1340,6 +1354,11 @@ return folderPath'''
                             m = int(f.info.length) // 60
                             s = int(f.info.length) % 60
                             dur_str = f"{m}:{s:02d}"
+                            tech_sr = getattr(f.info, "sample_rate", 44100)
+                            tech_depth = getattr(f.info, "bits_per_sample", 16)
+                            tech_channels = getattr(f.info, "channels", 2)
+                            raw_br = getattr(f.info, "bitrate", 0)
+                            tech_kbps = round(raw_br / 1000) if raw_br else round((tech_sr * tech_depth * tech_channels) / 1000)
                         raw_trim = f.get("TRIM_START_MS", [""])[0]
                         if raw_trim:
                             try:
@@ -1358,6 +1377,8 @@ return folderPath'''
                             genre_str = str(raw_g)
                         if raw_sg:
                             subgenre_str = str(raw_sg)
+                        if getattr(f, "pictures", None):
+                            has_cover = True
                     except Exception:
                         m = MutagenFile(full_path, easy=True)
                         if m:
@@ -1366,7 +1387,11 @@ return folderPath'''
                             genre_str = str(m.get("genre", [""])[0])
                             if m.info and hasattr(m.info, "length"):
                                 dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
+                                tech_sr = getattr(m.info, "sample_rate", 44100)
+                                tech_depth = getattr(m.info, "bits_per_sample", 16)
+                                tech_kbps = round(getattr(m.info, "bitrate", 0) / 1000)
                 else:
+                    id3_tags = None
                     try:
                         id3_tags = ID3(full_path)
                         t_frame = id3_tags.get("TXXX:TRIM_START_MS")
@@ -1381,6 +1406,8 @@ return folderPath'''
                             trim_start_ms = float(t_frame.text[0])
                         if d_frame and d_frame.text:
                             first_downbeat_ms = float(d_frame.text[0])
+                        if any(k.startswith('APIC') for k in id3_tags.keys()):
+                            has_cover = True
                     except Exception:
                         pass
 
@@ -1401,6 +1428,8 @@ return folderPath'''
                             genre_str = str(m.get("genre", [""])[0])
                         if m.info and hasattr(m.info, "length"):
                             dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
+                            tech_sr = getattr(m.info, "sample_rate", 44100)
+                            tech_kbps = round(getattr(m.info, "bitrate", 0) / 1000)
             except Exception:
                 pass
 
@@ -1436,18 +1465,24 @@ return folderPath'''
                 except Exception:
                     pass
 
-            tech = self.extraer_info_tecnica_audio(full_path)
+            if tech_kbps == 0:
+                tech = self.extraer_info_tecnica_audio(full_path)
+                tech_sr = tech.get("samplerate", tech_sr)
+                tech_depth = tech.get("bit_depth", tech_depth)
+                tech_kbps = tech.get("bitrate_kbps", tech_kbps)
+
             diag = self.diagnosticar_calidad_audio(
                 filepath=full_path,
                 cutoff_khz=0.0,
-                samplerate=tech.get("samplerate", 44100),
-                bit_depth=tech.get("bit_depth", 16),
-                bitrate_kbps=tech.get("bitrate_kbps", 0),
-                fmt=tech.get("format", ext.replace(".", "").upper())
+                samplerate=tech_sr,
+                bit_depth=tech_depth,
+                bitrate_kbps=tech_kbps,
+                fmt=ext.replace(".", "").upper()
             )
 
-            # Detección ultrarrápida de carátula incrustada o en carpeta
-            has_cover = AudioProcessorService.tiene_caratula(full_path)
+            # Si no se detectó carátula en tags ID3/FLAC, consultar si existe cover local
+            if not has_cover:
+                has_cover = AudioProcessorService.tiene_caratula(full_path)
             track_cover = f"/cover?path={urllib.parse.quote(full_path)}" if has_cover else ""
 
             # Estimación inicial de energía, danceability y fase DJ
@@ -1465,7 +1500,6 @@ return folderPath'''
                 e_initial = 75
                 dance_initial = 75
 
-            from services.mood_intelligence_service import MoodIntelligenceService
             fase_init = MoodIntelligenceService.clasificar_fase_sesion_dj(
                 bpm=b_num,
                 key=key_str if key_str != "--" else "8A",
@@ -1523,6 +1557,7 @@ return folderPath'''
                 "cutoff_khz": 0.0,
                 "trim_start_ms": trim_start_ms,
                 "first_downbeat_ms": first_downbeat_ms,
+                "filesize": filesize,
                 "comment": initial_comment,
                 "cover": track_cover,
                 "cues": cues_frase
