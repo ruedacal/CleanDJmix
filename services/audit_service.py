@@ -1212,8 +1212,8 @@ return folderPath'''
         missing_artist_count = sum(1 for t in tracks_auditados if t.get("missing_artist"))
         missing_cover_count = sum(1 for t in tracks_auditados if t.get("missing_cover"))
 
-        # Detección inicial de duplicados para el resumen
-        dup_summary = self.detectar_duplicados_biblioteca(tracks_auditados)
+        # Detección inicial de duplicados para el resumen (protegiendo versiones hermanas DJ)
+        dup_summary = self.detectar_duplicados_biblioteca(tracks_auditados, proteger_versiones_hermanas=True)
         dup_count = dup_summary.get("total_duplicados", 0)
 
         if progreso_cb:
@@ -1569,7 +1569,7 @@ return folderPath'''
         missing_artist_count = sum(1 for t in tracks_cargados if t.get("missing_artist"))
         missing_cover_count = sum(1 for t in tracks_cargados if t.get("missing_cover"))
 
-        dup_summary = self.detectar_duplicados_biblioteca(tracks_cargados)
+        dup_summary = self.detectar_duplicados_biblioteca(tracks_cargados, proteger_versiones_hermanas=True)
         dup_count = dup_summary.get("total_duplicados", 0)
 
         if progreso_cb:
@@ -1919,29 +1919,37 @@ return folderPath'''
                 t_copy["size_bytes"] = size_bytes
 
                 # Detección inteligente de versión DJ (Extended vs Radio vs Dub vs Remix vs Acapella)
-                v_type = TagSanitizerService.extraer_tipo_version(
-                    f"{t.get('title', '')} {t.get('t', '')} {t.get('filename', '')} {t.get('f', '')} {path}"
-                )
+                search_v = f"{t.get('title', '')} {t.get('t', '')} {t.get('filename', '')} {t.get('f', '')} {path}"
+                v_type = TagSanitizerService.extraer_tipo_version(search_v)
+                v_key = TagSanitizerService.extraer_clave_version(search_v)
                 t_copy["version_type"] = v_type
+                t_copy["version_key"] = v_key
                 trks_evaluados.append(t_copy)
 
-            # Clasificación y marcado de duplicados
+            # Clasificación y marcado de duplicados (agrupando por clave de versión exacta para proteger remixes distintos)
             por_version = collections.defaultdict(list)
             for t_item in trks_evaluados:
-                por_version[t_item["version_type"]].append(t_item)
+                por_version[t_item["version_key"]].append(t_item)
 
             duplicados_en_este_grupo = 0
             tiene_hermanas = len(por_version) > 1
 
             if proteger_versiones_hermanas:
                 # Cada versión DJ (Original, Extended, Remix, Dub) tiene su propio ganador
-                # NUNCA se elimina un Extended Mix ni un Remix si no hay otra copia duplicada de esa versión
-                for v_tipo, trks_v in por_version.items():
+                # NUNCA se elimina un Extended Mix ni un Remix si no hay otra copia duplicada de esa misma versión
+                for v_key_item, trks_v in por_version.items():
                     trks_v.sort(key=lambda x: (x["quality_score"], x["size_bytes"]), reverse=True)
                     best_of_type = trks_v[0]
                     best_of_type["is_winner"] = True
 
-                    v_label = v_tipo.upper() if v_tipo != "standard" else "ORIGINAL"
+                    if v_key_item.startswith("remix_"):
+                        remix_name = v_key_item.replace("remix_", "").upper()
+                        v_label = f"REMIX {remix_name}" if len(remix_name) <= 12 else "REMIX"
+                    elif v_key_item != "standard":
+                        v_label = v_key_item.upper()
+                    else:
+                        v_label = "ORIGINAL"
+
                     if tiene_hermanas:
                         best_of_type["recommendation"] = f"CONSERVAR (Versión {v_label})"
                         best_of_type["badge_recommendation"] = f"🎧 VERSIÓN {v_label}"

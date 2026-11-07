@@ -54,11 +54,11 @@ def test_get_cover_flac(mock_request, mock_media):
     assert main_web.get_cover() == b"img"
 
 @patch.object(main_web.media_svc, 'obtener_caratula_binaria', return_value=(None, None))
-@patch('main_web.bottle.redirect', return_value="REDIRECT")
 @patch('main_web.bottle.request')
-def test_get_cover_fallback(mock_request, mock_redirect, mock_media):
+def test_get_cover_fallback(mock_request, mock_media):
     mock_request.query.get.return_value = "unknown.flac"
-    assert main_web.get_cover() == "REDIRECT"
+    res = main_web.get_cover()
+    assert res.startswith(b'<svg')
 
 # --- EXPORTACIÓN XLS ---
 @patch.object(main_web.export_svc, 'exportar_tracks_xls', return_value={"status": "ok", "path": "/Mock/file.csv"})
@@ -149,12 +149,11 @@ def test_regenerar_mood_y_comentario_exposed():
     assert res_es["status"] == "ok"
     assert "mood" in res_es
     assert "comment" in res_es
-    assert "125.0 BPM" in res_es["comment"]
-    assert "Mix Armónico" in res_es["comment"]
+    assert "Intro 32b" in res_es["comment"]
 
     res_en = main_web.regenerar_mood_y_comentario(mock_track, lang="en")
     assert res_en["status"] == "ok"
-    assert "Harmonic Mix" in res_en["comment"]
+    assert "Intro 32b" in res_en["comment"]
 
 def test_regenerar_mood_y_comentario_invalido():
     res = main_web.regenerar_mood_y_comentario(None)

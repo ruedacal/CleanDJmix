@@ -87,6 +87,71 @@ class TagSanitizerService:
         return "standard"
 
     @classmethod
+    def extraer_clave_version(cls, texto: str) -> str:
+        """
+        Genera una clave determinista única para la versión del track, distinguiendo entre
+        remixes/edits específicos (p. ej. 'remix_space92' vs 'remix_frankeysandrino').
+        """
+        if not texto:
+            return "standard"
+        s = str(texto).lower().strip()
+        
+        # 1. Acapella
+        if any(k in s for k in ["acapella", "a capella", "accapella"]):
+            return "acapella"
+        # 2. Instrumental
+        if "instrumental" in s:
+            return "instrumental"
+        # 3. Radio / Short edit
+        if any(k in s for k in ["radio edit", "radio mix", "short edit", "radio version"]):
+            return "radio"
+        # 4. Extended Mix / Version
+        if any(k in s for k in ["extended mix", "extended version", "extended edit"]) or re.search(r'\bextended\b', s):
+            return "extended"
+        # 5. Club Mix
+        if any(k in s for k in ["club mix", "club version"]):
+            return "club"
+        # 6. Dub Mix
+        if any(k in s for k in ["dub mix", "dub version"]) or re.search(r'\bdub\b', s):
+            return "dub"
+        # 7. VIP
+        if any(k in s for k in ["vip mix", "vip edit"]) or re.search(r'\bvip\b', s):
+            return "vip"
+        # 8. Bootleg
+        if "bootleg" in s:
+            return "bootleg"
+        # 9. Original Mix
+        if any(k in s for k in ["original mix", "original version"]):
+            return "original"
+        # 10. Intro / Outro / Live
+        if any(k in s for k in ["intro version", "intro edit", "intro mix", "intro"]):
+            return "intro"
+        if any(k in s for k in ["outro version", "outro edit", "outro mix"]):
+            return "outro"
+        if "live" in s and any(k in s for k in ["live version", "live mix", "[live]", "(live)"]):
+            return "live"
+
+        # 11. Remix o versión específica nombrada
+        m = re.search(r'[\(\[\{]([^\)\]\}]+)[\)\]\}]', texto)
+        if not m:
+            m = re.search(r'[-–—]\s*([^-\(\[\{]+)$', texto)
+
+        if m:
+            sub = m.group(1).strip()
+            sub_l = sub.lower()
+            if any(w in sub_l for w in ["remix", "re-edit", "reedit", "rework", "flip", "rmx", "version", "edit", "mix", "jam", "cut", "intro", "outro", "live", "dub"]):
+                norm_sub = re.sub(r'\b(remix|re-edit|reedit|rework|flip|rmx|version|edit|mix|jam|cut|intro|outro|live|dub)\b', '', sub_l)
+                norm_sub = re.sub(r'[^a-z0-9]', '', norm_sub)
+                if norm_sub:
+                    return f"remix_{norm_sub}"
+                return "remix"
+
+        if any(k in s for k in ["remix", "re-edit", "reedit", "rework", "flip"]):
+            return "remix"
+
+        return "standard"
+
+    @classmethod
     def extraer_titulo_base(cls, texto: str) -> str:
         """Extrae el título nuclear de una canción eliminando variantes, remixers, paréntesis y corchetes."""
         if not texto:

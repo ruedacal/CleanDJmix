@@ -202,3 +202,38 @@ def test_nunca_agrupar_canciones_diferentes():
     # Al ser versiones hermanas protegidas (Original vs Remix), ninguna se elimina
     assert res["total_duplicados"] == 0
 
+
+def test_proteger_remixes_distintos_con_nombres_diferentes():
+    from services.audit_service import AuditService
+    audit = AuditService()
+    # Dos remixes distintos del mismo tema jamás deben considerarse duplicados inferiores entre sí
+    tracks = [
+        {
+            "id": 1,
+            "title": "Merging Matters - Duss Version",
+            "artist": "Duss, Dennis Apec",
+            "format": "FLAC",
+            "sample_rate_khz": 44.1,
+            "bitrate_kbps": 1411,
+            "cutoff_khz": 22.0
+        },
+        {
+            "id": 2,
+            "title": "Merging Matters - Dennis Apec Version",
+            "artist": "Duss, Dennis Apec",
+            "format": "FLAC",
+            "sample_rate_khz": 44.1,
+            "bitrate_kbps": 1411,
+            "cutoff_khz": 22.0
+        }
+    ]
+    res = audit.detectar_duplicados_biblioteca(tracks, proteger_versiones_hermanas=True)
+    assert res["total_grupos"] == 1
+    assert res["total_duplicados"] == 0
+    grupo = res["grupos"][0]
+    assert grupo["duplicados_a_eliminar"] == 0
+    for t in grupo["tracks"]:
+        assert t["is_winner"] is True
+        assert t["delete_selected"] is False
+
+
