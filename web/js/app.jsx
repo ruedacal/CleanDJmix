@@ -10389,7 +10389,7 @@ const AuditWorkspace = ({
                                             Anti-Muddy Live Guardian: ¡Conflicto de Sub-Graves Detectado!
                                         </span>
                                         <span className="hidden md:inline text-red-300/90 font-normal">
-                                            Ambos temas ({nowPlayingTrack.t || nowPlayingTrack.title} & {currentTrack.t || currentTrack.title}) dominan el subgrave (>44%). Corta EQ Low -6dB en canal entrante para evitar empaste en la sala.
+                                            Ambos temas ({nowPlayingTrack.t || nowPlayingTrack.title} & {currentTrack.t || currentTrack.title}) dominan el subgrave ({'>'}44%). Corta EQ Low -6dB en canal entrante para evitar empaste en la sala.
                                         </span>
                                     </div>
                                     <span className="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px] shrink-0">
@@ -20076,7 +20076,7 @@ const TaxonomyWorkspace = ({
                                     </span>
                                 </div>
                                 <p className="text-gray-400 text-xs">
-                                    Clasificación jerárquica en dos niveles (Género raíz > Subgénero) con ruteo físico a carpetas y crates de Serato DJ Pro y Rekordbox.
+                                    Clasificación jerárquica en dos niveles (Género raíz {'\u2192'} Subgénero) con ruteo físico a carpetas y crates de Serato DJ Pro y Rekordbox.
                                 </p>
                             </div>
 
