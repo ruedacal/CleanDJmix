@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "outputDirectory": "web",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    }
+  ]
+}
