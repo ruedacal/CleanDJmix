@@ -278,17 +278,29 @@ def serve_previews(filename):
     previews_dir = os.path.join(BASE_DIR, "web", "previews")
     return bottle.static_file(clean_name, root=previews_dir)
 
+def _sanitize_for_json(data):
+    """Sanitiza recursivamente cualquier estructura de datos para asegurar UTF-8 estricto sin surrogates."""
+    if isinstance(data, str):
+        return data.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
+    elif isinstance(data, dict):
+        return {_sanitize_for_json(k): _sanitize_for_json(v) for k, v in data.items()}
+    elif isinstance(data, (list, tuple)):
+        return [_sanitize_for_json(item) for item in data]
+    return data
+
 def _emitir_log_ui(mensaje: str):
-    print(f"[CleanDJmix PRO] {mensaje}")
+    clean = str(mensaje).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
+    print(f"[CleanDJmix PRO] {clean}")
     try:
-        eel.log_to_console(mensaje)
+        eel.log_to_console(clean)
     except Exception:
         pass
 
 def _emitir_progreso_batch(pct: int, msg: str):
     try:
         if hasattr(eel, "actualizar_progreso_batch"):
-            eel.actualizar_progreso_batch(pct, msg)()
+            clean_msg = str(msg).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
+            eel.actualizar_progreso_batch(int(pct), clean_msg)()
     except Exception:
         pass
 
@@ -327,7 +339,27 @@ def cargar_metadatos_directorio(ruta_directorio):
     elif isinstance(ruta_directorio, str):
         audio_playback_svc.establecer_directorio(ruta_directorio)
         _registrar_directorio_autorizado(ruta_directorio)
-    return audit_svc.cargar_metadatos_directorio(ruta_directorio, _emitir_progreso_batch)
+    return _sanitize_for_json(audit_svc.cargar_metadatos_directorio(ruta_directorio, _emitir_progreso_batch))
+
+@bottle.route('/api/load_directory', method=['POST', 'OPTIONS'])
+def api_load_directory():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    data = bottle.request.json or {}
+    path = data.get("path", "")
+    if not path or not os.path.isdir(path):
+        ruta = audit_svc.seleccionar_directorio()
+        if isinstance(ruta, dict):
+            path = ruta.get("path") or ""
+        elif isinstance(ruta, str):
+            path = ruta.strip()
+    if not path or not os.path.isdir(path):
+        return {"status": "error", "msg": "Ruta inválida o cancelada", "tracks": []}
+    _registrar_directorio_autorizado(path)
+    res = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
+    return _sanitize_for_json(res)
 
 @eel.expose
 def iniciar_auditoria(ruta_directorio, opts=None):
@@ -881,18 +913,18 @@ def seleccionar_carpeta_para_set(ruta_override=None):
         if not path or not os.path.isdir(path):
             return {"status": "cancelado", "tracks": []}
         _registrar_directorio_autorizado(path)
-        tracks = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
-        return {"status": "ok", "path": path, "tracks": tracks}
+        res_dir = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
+        tracks_list = res_dir.get("tracks", []) if isinstance(res_dir, dict) else res_dir
+        return {"status": "ok", "path": path, "tracks": _sanitize_for_json(tracks_list)}
     except Exception as e:
         print(f"[SETBUILDER] Error cargando carpeta para set: {e}")
         return {"status": "error", "msg": str(e), "tracks": []}
 
 @bottle.route('/api/setbuilder/load_folder', method=['POST', 'OPTIONS'])
 def api_setbuilder_load_folder():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    _cors_localhost_only()
     if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
         return ""
     data = bottle.request.json or {}
     path = data.get("path", "")
@@ -905,8 +937,9 @@ def api_setbuilder_load_folder():
     if not path or not os.path.isdir(path):
         return {"status": "error", "msg": "Ruta inválida o cancelada", "tracks": []}
     _registrar_directorio_autorizado(path)
-    tracks = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
-    return {"status": "ok", "path": path, "tracks": tracks}
+    res_dir = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
+    tracks_list = res_dir.get("tracks", []) if isinstance(res_dir, dict) else res_dir
+    return {"status": "ok", "path": path, "tracks": _sanitize_for_json(tracks_list)}
 
 @eel.expose
 def generar_grafo_playlist(set_tracks, library_tracks=None):

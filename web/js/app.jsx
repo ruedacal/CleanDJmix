@@ -22976,6 +22976,22 @@ function getTrackLufs(t) {
     return -8.5;
 }
 
+function parseDurationSec(val) {
+    if (val === undefined || val === null || val === '') return 0;
+    if (typeof val === 'number') return (!isNaN(val) && val > 0) ? val : 0;
+    const str = String(val).trim();
+    if (str.includes(':')) {
+        const parts = str.split(':').map(p => parseFloat(p) || 0);
+        if (parts.length === 2) {
+            return parts[0] * 60 + parts[1];
+        } else if (parts.length === 3) {
+            return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+    }
+    const num = parseFloat(str);
+    return (!isNaN(num) && num > 0) ? num : 0;
+}
+
 function evaluateHarmonicTransition(keyA, keyB) {
     const kA = parseCamelotKey(keyA);
     const kB = parseCamelotKey(keyB);
@@ -23142,6 +23158,8 @@ const SetBuilderWorkspace = ({
     const [isExporting, setIsExporting] = useState(false);
     const [isAuditingSet, setIsAuditingSet] = useState(false);
     const [auditSetProgress, setAuditSetProgress] = useState(0);
+    const [folderLoading, setFolderLoading] = useState(false);
+    const [folderProgress, setFolderProgress] = useState({ pct: 0, msg: '' });
 
     // Nuevos Modos: 'list' (Secuencial) | 'graph' (Graph Playlists) | 'ai_advisor' (Asesor AI & Calidad)
     const [viewMode, setViewMode] = useState('list');
@@ -23203,7 +23221,8 @@ const SetBuilderWorkspace = ({
         let pendingAudit = 0;
 
         setTracks.forEach(t => {
-            const d = parseFloat(t.duration_sec || t.duration || 0);
+            const rawD = t.duration_sec || t.duration || t.duracion || 0;
+            const d = parseDurationSec(rawD);
             totalSec += (d > 0 ? d : 240);
 
             const b = getTrackBpm(t);
@@ -23285,35 +23304,117 @@ const SetBuilderWorkspace = ({
             low_ratio: track.low_ratio || 33.3,
             mid_ratio: track.mid_ratio || 33.3,
             high_ratio: track.high_ratio || 33.4,
-            duration_sec: track.duration_sec || track.duration || 240
+            duration_sec: parseDurationSec(track.duration_sec || track.duration) || 240
         };
         setSetTracks(prev => [...prev, normalized]);
     };
 
-    // Añadir una Carpeta Completa de Música directamente al Set
+    // Añadir todas las pistas disponibles desde la biblioteca de auditoría
+    const handleAddAllFromLibrary = () => {
+        if (!auditTracks || auditTracks.length === 0) {
+            setExportStatus({ type: 'error', msg: 'No hay pistas en la biblioteca de auditoría para añadir. Carga primero una carpeta.' });
+            setTimeout(() => setExportStatus(null), 3500);
+            return;
+        }
+        const formatted = auditTracks.map((t, idx) => ({
+            ...t,
+            id: t.id || `set_${Date.now()}_${idx}`,
+            path: t.path || t.filepath || t.f || '',
+            f: t.f || t.path || t.filepath || '',
+            title: t.title || t.t || t.filename || `Pista ${idx + 1}`,
+            t: t.title || t.t || t.filename || `Pista ${idx + 1}`,
+            artist: t.artist || t.a || 'Artista',
+            a: t.artist || t.a || 'Artista',
+            bpm: getTrackBpm(t) || t.bpm || t.b,
+            key: getTrackKey(t) || t.key || t.k,
+            lufs: getTrackLufs(t),
+            acoustic_role: t.acoustic_role || 'Balanced Full-Range',
+            low_ratio: t.low_ratio || 33.3,
+            mid_ratio: t.mid_ratio || 33.3,
+            high_ratio: t.high_ratio || 33.4,
+            duration_sec: parseDurationSec(t.duration_sec || t.duration) || 240
+        }));
+        setSetTracks(formatted);
+        setIsAddDrawerOpen(false);
+        setExportStatus({ type: 'success', msg: `✓ Se han añadido todas las ${formatted.length} pistas de la biblioteca al Set.` });
+        setTimeout(() => setExportStatus(null), 4000);
+    };
+
+    // Añadir 25 pistas aleatorias desde la biblioteca de auditoría
+    const handleAddRandom25 = () => {
+        if (!auditTracks || auditTracks.length === 0) {
+            setExportStatus({ type: 'error', msg: 'No hay pistas en la biblioteca de auditoría. Carga primero una carpeta de música.' });
+            setTimeout(() => setExportStatus(null), 3500);
+            return;
+        }
+        const shuffled = [...auditTracks].sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, Math.min(25, shuffled.length));
+        const formatted = selected.map((t, idx) => ({
+            ...t,
+            id: t.id || `set_rand_${Date.now()}_${idx}`,
+            path: t.path || t.filepath || t.f || '',
+            f: t.f || t.path || t.filepath || '',
+            title: t.title || t.t || t.filename || `Pista ${idx + 1}`,
+            t: t.title || t.t || t.filename || `Pista ${idx + 1}`,
+            artist: t.artist || t.a || 'Artista',
+            a: t.artist || t.a || 'Artista',
+            bpm: getTrackBpm(t) || t.bpm || t.b,
+            key: getTrackKey(t) || t.key || t.k,
+            lufs: getTrackLufs(t),
+            acoustic_role: t.acoustic_role || 'Balanced Full-Range',
+            low_ratio: t.low_ratio || 33.3,
+            mid_ratio: t.mid_ratio || 33.3,
+            high_ratio: t.high_ratio || 33.4,
+            duration_sec: parseDurationSec(t.duration_sec || t.duration) || 240
+        }));
+        setSetTracks(formatted);
+        setIsAddDrawerOpen(false);
+        setExportStatus({ type: 'success', msg: `✓ ${formatted.length} pistas aleatorias seleccionadas de tu biblioteca y añadidas al Set.` });
+        setTimeout(() => setExportStatus(null), 4000);
+    };
+
+    // Añadir una Carpeta Completa de Música directamente al Set con Barra de Progreso y REST Fallback
     const handleAddFolderToSet = async () => {
         try {
-            setExportStatus({ type: 'loading', msg: 'Seleccionando carpeta de música para el Set...' });
+            setFolderLoading(true);
+            setFolderProgress({ pct: 5, msg: 'Examinando carpeta de música en disco...' });
+
+            window.actualizar_progreso_batch = (pct, msg) => {
+                setFolderProgress({ pct: Math.min(100, Math.max(5, pct)), msg: msg || '' });
+            };
+
             let res = null;
-            if (window.eel && window.eel.seleccionar_carpeta_para_set) {
-                res = await window.eel.seleccionar_carpeta_para_set()();
-            } else {
+            // Priorizar REST API fetch para evitar fallos de socket
+            try {
                 const resp = await fetch('/api/setbuilder/load_folder', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
                 });
-                if (resp.ok) res = await resp.json();
+                if (resp.ok) {
+                    res = await resp.json();
+                }
+            } catch (fetchErr) {
+                console.warn("Fallo REST fetch, probando eel:", fetchErr);
             }
 
-            if (res && res.tracks && res.tracks.length > 0) {
-                const formattedTracks = res.tracks.map((t, idx) => ({
+            if (!res && window.eel && window.eel.seleccionar_carpeta_para_set) {
+                res = await window.eel.seleccionar_carpeta_para_set()();
+            }
+
+            const rawTracks = Array.isArray(res?.tracks) ? res.tracks : (res?.tracks?.tracks || []);
+
+            if (res && rawTracks && rawTracks.length > 0) {
+                setFolderProgress({ pct: 100, msg: `✓ ${rawTracks.length} pistas leídas correctamente.` });
+                const formattedTracks = rawTracks.map((t, idx) => ({
                     ...t,
                     id: t.id || `set_${Date.now()}_${idx}`,
                     path: t.path || t.filepath || t.f || '',
                     f: t.f || t.path || t.filepath || '',
                     title: t.title || t.t || t.filename || `Track ${idx + 1}`,
+                    t: t.title || t.t || t.filename || `Track ${idx + 1}`,
                     artist: t.artist || t.a || 'Artista',
+                    a: t.artist || t.a || 'Artista',
                     bpm: getTrackBpm(t) || t.bpm || t.b,
                     key: getTrackKey(t) || t.key || t.k,
                     lufs: getTrackLufs(t),
@@ -23321,7 +23422,7 @@ const SetBuilderWorkspace = ({
                     low_ratio: t.low_ratio || 33.3,
                     mid_ratio: t.mid_ratio || 33.3,
                     high_ratio: t.high_ratio || 33.4,
-                    duration_sec: t.duration_sec || t.duration || 240
+                    duration_sec: parseDurationSec(t.duration_sec || t.duration) || 240
                 }));
                 setSetTracks(prev => [...prev, ...formattedTracks]);
                 if (setAuditTracks) {
@@ -23344,7 +23445,10 @@ const SetBuilderWorkspace = ({
             console.error("Error al añadir carpeta al set:", err);
             setExportStatus({ type: 'error', msg: `Error: ${err.message || err}` });
         } finally {
-            setTimeout(() => setExportStatus(prev => (prev && prev.type === 'loading' ? null : prev)), 2500);
+            setTimeout(() => {
+                setFolderLoading(false);
+            }, 600);
+            setTimeout(() => setExportStatus(prev => (prev && prev.type === 'loading' ? null : prev)), 3500);
         }
     };
 
@@ -24378,8 +24482,8 @@ const SetBuilderWorkspace = ({
                         </p>
                     </div>
 
-                    {/* Acciones principales con Scroll Táctil */}
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap py-1 w-full lg:w-auto shrink-0">
+                    {/* Acciones principales del Set */}
+                    <div className="flex items-center gap-2 flex-wrap lg:justify-end py-1 shrink-0">
                         {/* BOTÓN PROMINENTE: GENERAR FLUJO DE SESIÓN (GRAPH PLAYLISTS ESTILO DJOID) */}
                         <button
                             type="button"
@@ -24396,22 +24500,23 @@ const SetBuilderWorkspace = ({
                                     handleCargarGrafo();
                                 }, 80);
                             }}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.55)] border border-purple-400/80 transition-all active:scale-95 cursor-pointer shrink-0 animate-pulse"
+                            className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.45)] border border-purple-400/80 transition-all active:scale-95 cursor-pointer shrink-0"
                             title="Generar flujo no lineal de sesión estilo DJOID Graph Playlists con alternativas y compatibilidad armónica"
                         >
                             <Icons.Radar size={14} className="inline-block align-[-2px]" />
-                            <span>GENERAR FLUJO DE SESIÓN</span>
+                            <span>GENERAR FLUJO</span>
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/40 text-purple-200 border border-purple-400/50">
                                 GRAPH DAG
                             </span>
                         </button>
+
                         {/* Botón Auditar Pistas del Set si hay pistas sin auditar */}
                         {stats.pendingAuditCount > 0 && (
                             <button
                                 type="button"
                                 onClick={handleAuditSetTracks}
                                 disabled={isAuditingSet}
-                                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition-all active:scale-95 disabled:opacity-40 cursor-pointer animate-pulse shrink-0"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/30 transition-all active:scale-95 disabled:opacity-40 cursor-pointer animate-pulse shrink-0"
                                 title="Calcula BPM exacto, Tonalidad Camelot, LUFS y Roles Espectrales para las pistas del set sin auditar"
                             >
                                 <Icons.Zap size={14} className="inline-block align-[-2px]" />
@@ -24423,48 +24528,62 @@ const SetBuilderWorkspace = ({
                             type="button"
                             onClick={handleOptimizeHarmonicFlow}
                             disabled={setTracks.length < 2 || isAuditingSet}
-                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/50 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.3)] border border-amber-300/50 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
                             title="Reordena automáticamente las pistas para maximizar la compatibilidad armónica Camelot y progresión de BPM"
                         >
                             <Icons.Zap size={14} className="inline-block align-[-2px]" />
-                            <span className="hidden sm:inline">Auto-Optimizar Pro (Flow Armónico)</span>
-                            <span className="sm:hidden">Auto-Optimizar</span>
+                            <span>Auto-Optimizar</span>
+                        </button>
+
+                        {/* Botón Acción Rápida: Random 25 */}
+                        <button
+                            type="button"
+                            onClick={handleAddRandom25}
+                            disabled={folderLoading}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-purple-950/70 hover:bg-purple-900/90 text-purple-300 border border-purple-700/60 shadow-sm transition-all active:scale-95 cursor-pointer shrink-0"
+                            title="Selecciona y añade automáticamente 25 pistas aleatorias de tu biblioteca al Set"
+                        >
+                            <span>🎲 Random 25</span>
+                        </button>
+
+                        {/* Botón Cargar Carpeta Completa de Música */}
+                        <button
+                            type="button"
+                            onClick={handleAddFolderToSet}
+                            disabled={folderLoading}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+                            title="Seleccionar y añadir una carpeta de música a este set con barra de estado"
+                        >
+                            <Icons.Folder size={14} className="inline-block align-[-2px]" />
+                            <span>Cargar Carpeta</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setIsAddDrawerOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 transition-all cursor-pointer shrink-0"
+                            title="Abrir panel para añadir o buscar pistas individuales"
+                        >
+                            <Icons.Plus size={14} className="inline-block align-[-2px]" />
+                            <span>Añadir Pistas</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={handleExportM3U}
                             disabled={isExporting || setTracks.length === 0}
-                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.35)] border border-djcyan-300/50 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
-                            title="Exportar archivo M3U8 para Pioneer Rekordbox, Serato DJ Pro, Traktor Pro y VirtualDJ"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.35)] border border-djcyan-300/50 transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
+                            title="Exportar archivo M3U8 para Rekordbox, Serato, Traktor o VirtualDJ"
                         >
                             <Icons.Save size={14} className="inline-block align-[-2px]" />
                             <span>{isExporting ? 'Exportando...' : 'Exportar (.M3U8)'}</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setIsAddDrawerOpen(true)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 transition-all cursor-pointer shrink-0"
-                        >
-                            <span><Icons.Plus size={14} className="inline-block align-[-2px]" /> Añadir</span>
-                        </button>
-
-                        {/* Botón Añadir Carpeta Completa de Música */}
-                        <button
-                            type="button"
-                            onClick={handleAddFolderToSet}
-                            className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
-                            title="Seleccionar y añadir una carpeta completa de música a este set"
-                        >
-                            <span><Icons.Folder size={14} className="inline-block align-[-2px]" /> Añadir Carpeta</span>
                         </button>
 
                         {setTracks.length > 0 && (
                             <button
                                 type="button"
                                 onClick={handleClearSet}
-                                className="px-2.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono text-rose-400 hover:bg-rose-950/50 border border-rose-900/40 transition-all cursor-pointer shrink-0"
+                                className="px-2.5 py-2 rounded-xl text-xs font-mono text-rose-400 hover:bg-rose-950/50 border border-rose-900/40 transition-all cursor-pointer shrink-0"
                                 title="Vaciar set"
                             >
                                 <Icons.Trash size={14} className="inline-block align-[-2px]" />
@@ -24472,6 +24591,25 @@ const SetBuilderWorkspace = ({
                         )}
                     </div>
                 </div>
+
+                {/* BARRA DE ESTADO / PROGRESO AL CARGAR CARPETA O AUDITAR */}
+                {folderLoading && (
+                    <div className="p-3.5 rounded-xl border border-djcyan-500/40 bg-djcyan-950/80 backdrop-blur-md text-xs font-mono shadow-[0_0_20px_rgba(6,182,212,0.25)] flex flex-col gap-2 animate-fadeIn">
+                        <div className="flex items-center justify-between text-djcyan-300 font-bold">
+                            <span className="flex items-center gap-2">
+                                <Icons.Gear size={15} className="animate-spin text-djcyan-400" />
+                                <span>{folderProgress.msg || 'Cargando y procesando pistas de la carpeta...'}</span>
+                            </span>
+                            <span className="font-mono text-xs text-djcyan-200">{Math.round(folderProgress.pct)}%</span>
+                        </div>
+                        <div className="w-full bg-djzinc-900 rounded-full h-2 overflow-hidden border border-djzinc-800">
+                            <div 
+                                className="bg-gradient-to-r from-djcyan-500 via-indigo-500 to-purple-500 h-full rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(6,182,212,0.8)]"
+                                style={{ width: `${Math.max(5, folderProgress.pct)}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Banner de Estado de Exportación y Auditoría */}
                 {exportStatus && (
@@ -24604,20 +24742,43 @@ const SetBuilderWorkspace = ({
                                 <p className="text-xs text-gray-500 max-w-md mt-1 mb-5 font-sans">
                                     Agrega pistas desde el botón superior o carga una demostración para explorar el análisis armónico Camelot, compensación LUFS y Anti-Muddy en transiciones.
                                 </p>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2.5 flex-wrap justify-center max-w-xl">
+                                    <button
+                                        type="button"
+                                        onClick={handleAddRandom25}
+                                        disabled={folderLoading}
+                                        className="px-4 py-2.5 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-600/30 transition-all active:scale-95 cursor-pointer"
+                                        title="Seleccionar 25 pistas al azar de la biblioteca y agregarlas al set"
+                                    >
+                                        <span>🎲 25 Pistas Aleatorias</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleAddAllFromLibrary}
+                                        disabled={folderLoading}
+                                        className="px-4 py-2.5 rounded-xl text-xs font-mono font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-700/60 transition-all active:scale-95 cursor-pointer"
+                                        title="Añadir todas las pistas disponibles en la biblioteca al set"
+                                    >
+                                        <span>✓ Añadir Todas de Biblioteca</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleAddFolderToSet}
+                                        disabled={folderLoading}
+                                        className="px-4 py-2.5 rounded-xl text-xs font-mono font-bold bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 transition-all active:scale-95 cursor-pointer"
+                                        title="Cargar carpeta completa de música desde disco"
+                                    >
+                                        <Icons.Folder size={14} className="inline-block align-[-2px]" /> Cargar Carpeta de Música
+                                    </button>
+
                                     <button
                                         type="button"
                                         onClick={handleLoadDemoSet}
-                                        className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-700/60 transition-all cursor-pointer shadow"
+                                        className="px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 border border-djzinc-700 transition-all cursor-pointer"
                                     >
-                                        <Icons.Music size={14} className="inline-block align-[-2px]" /> Cargar Set de Demostración
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsAddDrawerOpen(true)}
-                                        className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-djzinc-850 hover:bg-djzinc-800 text-gray-200 border border-djzinc-700 transition-all cursor-pointer"
-                                    >
-                                        <Icons.Plus size={14} className="inline-block align-[-2px]" /> Añadir desde Biblioteca
+                                        <Icons.Music size={14} className="inline-block align-[-2px]" /> Set de Demostración
                                     </button>
                                 </div>
                             </div>
@@ -24757,6 +24918,20 @@ const SetBuilderWorkspace = ({
                                                         </span>
                                                     </div>
 
+                                                    {/* Duración */}
+                                                    <div className="px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[50px]">
+                                                        <span className="text-gray-400 block text-[8px]">DUR</span>
+                                                        <span className="font-bold text-purple-300">
+                                                            {(() => {
+                                                                const sec = parseDurationSec(track.duration_sec || track.duration || track.duracion);
+                                                                if (!sec) return '--:--';
+                                                                const m = Math.floor(sec / 60);
+                                                                const s = Math.floor(sec % 60);
+                                                                return `${m}:${s < 10 ? '0' : ''}${s}`;
+                                                            })()}
+                                                        </span>
+                                                    </div>
+
                                                     {/* LUFS integrado */}
                                                     <div className="px-2 py-1 rounded-lg bg-djzinc-950 border border-djzinc-800 font-mono text-[11px] text-center min-w-[65px]">
                                                         <span className="text-gray-400 block text-[8px]">LUFS</span>
@@ -24872,15 +25047,33 @@ const SetBuilderWorkspace = ({
                             </div>
                         </div>
 
-                        {/* Barra de Búsqueda rápida */}
-                        <div className="p-3 border-b border-djzinc-800/80 bg-djzinc-950">
+                        {/* Barra de Búsqueda rápida y Acciones Rápidas */}
+                        <div className="p-3 border-b border-djzinc-800/80 bg-djzinc-950 flex flex-col sm:flex-row items-center gap-2.5">
                             <input
                                 type="text"
                                 value={searchAddQuery}
                                 onChange={(e) => setSearchAddQuery(e.target.value)}
                                 placeholder="Filtrar pistas por título, artista o BPM..."
-                                className="w-full bg-djzinc-900 border border-djzinc-750 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-djcyan-500 font-mono"
+                                className="w-full sm:flex-1 bg-djzinc-900 border border-djzinc-750 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-djcyan-500 font-mono"
                             />
+                            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                                <button
+                                    type="button"
+                                    onClick={handleAddRandom25}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-700/60 transition-all cursor-pointer shadow-sm active:scale-95"
+                                    title="Añadir 25 pistas aleatorias al set"
+                                >
+                                    🎲 Random 25
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleAddAllFromLibrary}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-700/60 transition-all cursor-pointer shadow-sm active:scale-95"
+                                    title="Añadir todas las pistas de la biblioteca al set"
+                                >
+                                    ✓ Añadir Todas ({auditTracks ? auditTracks.length : 0})
+                                </button>
+                            </div>
                         </div>
 
                         {/* Lista de Pistas Disponibles */}
