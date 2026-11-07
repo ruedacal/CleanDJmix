@@ -26,6 +26,11 @@ try:
         bottle.response.content_type = "application/json"
         return '{"status": "ok", "app": "BEATWAVE PRO", "version": "2.4", "runtime": "serverless"}'
 
+    @_base_app.route("/<filepath:path>")
+    def _static(filepath):
+        root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+        return bottle.static_file(filepath, root=root_dir)
+
     # Carga perezosa (lazy) de main_web para no bloquear la importación durante el build en Vercel
     _main_web_loaded = False
     _main_web_app = None
@@ -34,6 +39,10 @@ try:
         global _main_web_loaded, _main_web_app
         if not _main_web_loaded:
             _main_web_loaded = True
+            # En Vercel / serverless no cargamos el backend de audio de escritorio local
+            if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+                _main_web_app = None
+                return None
             try:
                 import main_web
                 _main_web_app = main_web.bottle.default_app()
