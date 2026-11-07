@@ -81,6 +81,7 @@ const HelpMenu = ({ items }) => {
 export const TopBar = ({
     logo,
     activeTab,
+    onSelectTab,
     t,
     auditInfo,
     clubMode,
@@ -105,6 +106,134 @@ export const TopBar = ({
                 <ShellIcons.ChevronRight size={12} className="text-zinc-600" />
                 <h1 className="text-sm font-semibold text-white truncate">{navLabel(current, t)}</h1>
             </div>
+
+            {/* Selector de Vistas / Switcher Multivista (Diseño y Figma) */}
+            {onSelectTab && (
+                <nav aria-label="Selector de Vistas" className="hidden lg:flex items-center gap-1 bg-black/50 border border-white/10 p-1 rounded-xl shrink-0 overflow-x-auto no-scrollbar">
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('all')}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                            activeTab === 'all'
+                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.45)]'
+                                : 'text-purple-300 hover:text-white hover:bg-white/5'
+                        }`}
+                        title="Ver todas las pantallas montadas simultáneamente en galería"
+                    >
+                        ▦ Todas las Vistas
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('audit')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'audit'
+                                ? 'bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Cabina
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('setbuilder')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'setbuilder'
+                                ? 'bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Sets
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('map')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'map'
+                                ? 'bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Mapa
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('hotcues')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'hotcues'
+                                ? 'bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Cues
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('taxonomy')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'taxonomy'
+                                ? 'bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Crates
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('spotify')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'spotify'
+                                ? 'bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Pool
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('shazam')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'shazam'
+                                ? 'bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Radar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('trends')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'trends'
+                                ? 'bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Trends
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('knowledge')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'knowledge'
+                                ? 'bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Conocimiento
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSelectTab('copilot')}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            activeTab === 'copilot'
+                                ? 'bg-rose-500 text-white font-bold shadow-[0_0_10px_rgba(244,63,94,0.4)]'
+                                : 'text-rose-300 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Copilot
+                    </button>
+                </nav>
+            )}
 
             {auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && (
                 <div

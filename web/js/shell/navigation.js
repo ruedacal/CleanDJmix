@@ -35,9 +35,14 @@ export const COPILOT_ITEM = { id: 'copilot', fallback: 'Copilot', icon: 'Activit
 
 export const MOBILE_PRIMARY_TABS = ['audit', 'hotcues', 'shazam', 'setbuilder'];
 
-const ALL_ITEMS = [...NAV_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))), { ...COPILOT_ITEM, group: 'En vivo' }];
+const BASE_ITEMS = [...NAV_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))), { ...COPILOT_ITEM, group: 'En vivo' }];
 
-export const findNavItem = (id) => ALL_ITEMS.find((item) => item.id === id) || ALL_ITEMS[0];
+export const ALL_ITEMS = [
+    { id: 'all', fallback: 'Galería Completa', icon: 'Library', group: 'Diseño', hint: 'Todas las pantallas montadas simultáneamente' },
+    ...BASE_ITEMS
+];
+
+export const findNavItem = (id) => ALL_ITEMS.find((item) => item.id === id) || ALL_ITEMS[1] || ALL_ITEMS[0];
 
 // t() returns the key itself when a translation is missing, so fall back explicitly.
 export const navLabel = (item, t) => {

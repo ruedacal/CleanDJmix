@@ -152,8 +152,12 @@
   ];
   var COPILOT_ITEM = { id: "copilot", fallback: "Copilot", icon: "Activity", hint: "Monitor en vivo de cabina" };
   var MOBILE_PRIMARY_TABS = ["audit", "hotcues", "shazam", "setbuilder"];
-  var ALL_ITEMS = [...NAV_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))), { ...COPILOT_ITEM, group: "En vivo" }];
-  var findNavItem = (id) => ALL_ITEMS.find((item) => item.id === id) || ALL_ITEMS[0];
+  var BASE_ITEMS = [...NAV_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))), { ...COPILOT_ITEM, group: "En vivo" }];
+  var ALL_ITEMS = [
+    { id: "all", fallback: "Galer\xEDa Completa", icon: "Library", group: "Dise\xF1o", hint: "Todas las pantallas montadas simult\xE1neamente" },
+    ...BASE_ITEMS
+  ];
+  var findNavItem = (id) => ALL_ITEMS.find((item) => item.id === id) || ALL_ITEMS[1] || ALL_ITEMS[0];
   var navLabel = (item, t) => {
     if (!item.labelKey || typeof t !== "function") return item.fallback;
     const translated = t(item.labelKey);
@@ -291,6 +295,7 @@
   var TopBar = ({
     logo,
     activeTab,
+    onSelectTab,
     t,
     auditInfo,
     clubMode,
@@ -305,7 +310,96 @@
   }) => {
     const current = findNavItem(activeTab);
     const alias = userProfile && userProfile.alias || "DJ";
-    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-30 flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-30 flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), onSelectTab && /* @__PURE__ */ React.createElement("nav", { "aria-label": "Selector de Vistas", className: "hidden lg:flex items-center gap-1 bg-black/50 border border-white/10 p-1 rounded-xl shrink-0 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("all"),
+        className: `px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer ${activeTab === "all" ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.45)]" : "text-purple-300 hover:text-white hover:bg-white/5"}`,
+        title: "Ver todas las pantallas montadas simult\xE1neamente en galer\xEDa"
+      },
+      "\u25A6 Todas las Vistas"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("audit"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "audit" ? "bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "text-zinc-400 hover:text-white hover:bg-white/5"}`
+      },
+      "Cabina"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("setbuilder"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "setbuilder" ? "bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "text-zinc-400 hover:text-white hover:bg-white/5"}`
+      },
+      "Sets"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("map"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "map" ? "bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "text-zinc-400 hover:text-white hover:bg-white/5"}`
+      },
+      "Mapa"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("hotcues"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "hotcues" ? "bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "text-zinc-400 hover:text-white hover:bg-white/5"}`
+      },
+      "Cues"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("taxonomy"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "taxonomy" ? "bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "text-zinc-400 hover:text-white hover:bg-white/5"}`
+      },
+      "Crates"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("spotify"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "spotify" ? "bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "text-zinc-400 hover:text-white hover:bg-white/5"}`
+      },
+      "Pool"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("shazam"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "shazam" ? "bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "text-zinc-400 hover:text-white hover:bg-white/5"}`
+      },
+      "Radar"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("trends"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "trends" ? "bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "text-zinc-400 hover:text-white hover:bg-white/5"}`
+      },
+      "Trends"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("knowledge"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "knowledge" ? "bg-djcyan-500 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "text-zinc-400 hover:text-white hover:bg-white/5"}`
+      },
+      "Conocimiento"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectTab("copilot"),
+        className: `px-2 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${activeTab === "copilot" ? "bg-rose-500 text-white font-bold shadow-[0_0_10px_rgba(244,63,94,0.4)]" : "text-rose-300 hover:text-white hover:bg-white/5"}`
+      },
+      "Copilot"
+    )), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3 py-1 shadow-[0_0_12px_rgba(6,182,212,0.25)]",
@@ -20235,12 +20329,51 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     const t = (k) => I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k] || I18N_TRANSLATIONS["es"][k] || k;
-    const [activeTab, setActiveTab] = useState4("audit");
+    const [activeTab, setActiveTab] = useState4(() => {
+      try {
+        const p = new URLSearchParams(window.location.search);
+        const q = p.get("tab") || window.BEATWAVE_TAB || window.location.hash.replace("#", "");
+        if (q) {
+          const map = {
+            "all": "all",
+            "todas": "all",
+            "galeria": "all",
+            "audit": "audit",
+            "cabina": "audit",
+            "cues": "hotcues",
+            "hotcues": "hotcues",
+            "sets": "setbuilder",
+            "setbuilder": "setbuilder",
+            "map": "map",
+            "mapa": "map",
+            "pool": "spotify",
+            "spotify": "spotify",
+            "radar": "shazam",
+            "shazam": "shazam",
+            "crates": "taxonomy",
+            "taxonomy": "taxonomy",
+            "trends": "trends",
+            "knowledge": "knowledge",
+            "conocimiento": "knowledge",
+            "copilot": "copilot"
+          };
+          if (map[q.toLowerCase()]) return map[q.toLowerCase()];
+        }
+      } catch (e) {
+      }
+      return "all";
+    });
     const [currentFolder, setCurrentFolder] = useState4("/Users/admin/Music/mi musica");
-    const [auditTracks, setAuditTracks] = useState4([]);
-    const [setBuilderTracks, setSetBuilderTracks] = useState4([]);
+    const [auditTracks, setAuditTracks] = useState4(() => {
+      return typeof DEMO_MAP_TRACKS !== "undefined" && Array.isArray(DEMO_MAP_TRACKS) ? [...DEMO_MAP_TRACKS] : [];
+    });
+    const [setBuilderTracks, setSetBuilderTracks] = useState4(() => {
+      return typeof DEMO_MAP_TRACKS !== "undefined" && Array.isArray(DEMO_MAP_TRACKS) ? [...DEMO_MAP_TRACKS.slice(0, 8)] : [];
+    });
     const [spotifyTracks, setSpotifyTracks] = useState4([]);
-    const [selectedTrack, setSelectedTrack] = useState4(null);
+    const [selectedTrack, setSelectedTrack] = useState4(() => {
+      return typeof DEMO_MAP_TRACKS !== "undefined" && DEMO_MAP_TRACKS[0] ? DEMO_MAP_TRACKS[0].id : null;
+    });
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState4(null);
     const [isPlaying, setIsPlaying] = useState4(false);
@@ -21199,6 +21332,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           ))
         ),
         activeTab,
+        onSelectTab: setActiveTab,
         t,
         auditInfo: globalAuditInfo,
         clubMode,
@@ -21223,7 +21357,255 @@ Respuesta: ${qa.a}`).join("\n\n"),
         trackCount: auditTracks ? auditTracks.length : 0,
         onOpenCopilot: () => setCopilotModalOpen(true)
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-1 min-w-0 min-h-0 flex-col" }, /* @__PURE__ */ React.createElement("main", { className: "flex-1 min-h-0 w-full overflow-hidden relative" }, /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "audit" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-1 min-w-0 min-h-0 flex-col" }, /* @__PURE__ */ React.createElement("main", { className: "flex-1 min-h-0 w-full overflow-hidden relative" }, activeTab === "all" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full overflow-y-auto bg-[#07070c] p-4 sm:p-6 lg:p-8 space-y-12" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800" }, "FIGMA MULTI-CANVAS"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-500" }, "10 Workspaces Integrados")), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-mono font-black text-white tracking-tight mt-1" }, "BEATWAVE PRO \u2014 GALER\xCDA MULTIVISTA"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-1 max-w-2xl font-sans" }, 'Todas las pantallas y vistas de la suite est\xE1n montadas a continuaci\xF3n en alta resoluci\xF3n. Haz clic en "Pantalla Completa \u2197" en cualquier secci\xF3n para aislarla y editar sus componentes al detalle.')), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("audit"),
+        className: "px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-700 hover:bg-djcyan-900 cursor-pointer shadow"
+      },
+      "Ir a Cabina"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("setbuilder"),
+        className: "px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-950 text-purple-300 border border-purple-700 hover:bg-purple-900 cursor-pointer shadow"
+      },
+      "Ir a Sets"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("map"),
+        className: "px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-indigo-950 text-indigo-300 border border-indigo-700 hover:bg-indigo-900 cursor-pointer shadow"
+      },
+      "Ir a Mapa"
+    ))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "1. Cabina & Auditor\xEDa de Biblioteca (Biblioteca DJ, FFT, Inspector y Cues)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("audit"),
+        className: "text-xs font-mono font-bold text-djcyan-400 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(
+      AuditWorkspace,
+      {
+        tracks: auditTracks,
+        setTracks: setAuditTracks,
+        selectedTrack,
+        setSelectedTrack,
+        onPlayTrack: handlePlayTrack,
+        onTogglePlay: togglePlayPause,
+        nowPlayingTrack,
+        isPlaying,
+        playProgress,
+        onNavigateTab: setActiveTab,
+        onSendToSpotify: handleAddTracksToSpotify,
+        onRemoveTrack: handleRemoveTrackGlobal,
+        onRemoveMultipleTracks: handleRemoveMultipleTracksGlobal,
+        onClearAllTracks: handleClearAllTracksGlobal,
+        lang,
+        t,
+        currentFolder,
+        setCurrentFolder,
+        audioRef,
+        onAuditProgressChange: setGlobalAuditInfo
+      }
+    ))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "2. Set-Builder & Energy Flow Canvas (Secuencia Arm\xF3nica, Curva de BPM y Asesor AI)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("setbuilder"),
+        className: "text-xs font-mono font-bold text-purple-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(
+      SetBuilderWorkspace,
+      {
+        setTracks: setBuilderTracks,
+        setSetTracks: setSetBuilderTracks,
+        auditTracks,
+        setAuditTracks,
+        onPlayTrack: handlePlayTrack,
+        nowPlayingTrack,
+        isPlaying,
+        onTogglePlay: togglePlayPause,
+        onNavigateTab: setActiveTab,
+        lang
+      }
+    ))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "3. Constelaci\xF3n Arm\xF3nica (Mapa 2D/3D con Nodos de Car\xE1tulas y Rueda Camelot)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("map"),
+        className: "text-xs font-mono font-bold text-indigo-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(
+      MapWorkspace,
+      {
+        tracks: auditTracks,
+        onPlayTrack: handlePlayTrack,
+        nowPlayingTrack,
+        isPlaying,
+        onTogglePlay: togglePlayPause,
+        onNavigateTab: setActiveTab,
+        onAddTracksToSet: (newTracks) => {
+          if (!newTracks || newTracks.length === 0) return;
+          setSetBuilderTracks((prev) => [...prev, ...newTracks]);
+          setActiveTab("setbuilder");
+        },
+        onSelectDirectory: () => handleCargarDirectorioGlobal(),
+        lang
+      }
+    ))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "4. Estudio de Hot Cues (8 Cues, Fraseo Musical 16/32/64 y Beat Grid)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("hotcues"),
+        className: "text-xs font-mono font-bold text-amber-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(
+      HotCuesWorkspace,
+      {
+        tracks: auditTracks,
+        setTracks: setAuditTracks,
+        selectedTrack,
+        setSelectedTrack,
+        onPlayTrack: handlePlayTrack,
+        onTogglePlay: togglePlayPause,
+        nowPlayingTrack,
+        isPlaying,
+        playProgress,
+        onNavigateTab: setActiveTab,
+        onSendToSpotify: handleAddTracksToSpotify,
+        onRemoveTrack: handleRemoveTrackGlobal,
+        onRemoveMultipleTracks: handleRemoveMultipleTracksGlobal,
+        lang,
+        t,
+        currentFolder,
+        setCurrentFolder,
+        audioRef
+      }
+    ))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "5. Crates & Taxonom\xEDa Electr\xF3nica (Clasificaci\xF3n por Subg\xE9neros y Claves)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("taxonomy"),
+        className: "text-xs font-mono font-bold text-emerald-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(
+      TaxonomyWorkspace,
+      {
+        tracks: auditTracks,
+        onTracksUpdated: setAuditTracks,
+        onNavigateTab: setActiveTab,
+        onPlayTrack: handlePlayTrack,
+        nowPlayingTrack,
+        isPlaying,
+        onTogglePlay: togglePlayPause,
+        onRemoveTrack: handleRemoveTrackGlobal,
+        onSelectTrackForCues: (trk) => {
+          if (!trk) return;
+          setSelectedTrack(trk.id);
+          setActiveTab("hotcues");
+        },
+        onSendToSpotify: () => setActiveTab("spotify"),
+        onAddTrackToSet: (track) => {
+          if (!track) return;
+          setSetBuilderTracks((prev) => [...prev, track]);
+          setActiveTab("setbuilder");
+        },
+        onAddTrackToSpotify: handleAddTracksToSpotify,
+        onAddTracksToSpotify: handleAddTracksToSpotify
+      }
+    ))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "6. Pool de Ingesta & Record Pool (B\xFAsqueda, Descargas y Conversi\xF3n FLAC)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("spotify"),
+        className: "text-xs font-mono font-bold text-green-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(
+      SpotifyWorkspace,
+      {
+        tracks: spotifyTracks,
+        setTracks: setSpotifyTracks,
+        onPlayTrack: handlePlayTrack,
+        nowPlayingTrack,
+        isPlaying,
+        onTogglePlay: togglePlayPause,
+        lang,
+        t
+      }
+    ))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "7. Radar Ac\xFAstico (Identificaci\xF3n en Vivo, Detecci\xF3n de Frecuencias y BPM)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("shazam"),
+        className: "text-xs font-mono font-bold text-pink-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(
+      ShazamWorkspace,
+      {
+        onSendToSpotify: (query) => {
+          handleAddTrackToSpotify(query, "shazam");
+        },
+        onSendToAudit: (trackData) => {
+          setAuditTracks((prev) => [trackData, ...prev]);
+          setSelectedTrack(trackData.id);
+          setActiveTab("audit");
+        },
+        onNavigateTab: setActiveTab
+      }
+    ))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "8. Live Copilot en Cabina (Monitor en Vivo, Detecci\xF3n de Decks y Transiciones)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("copilot"),
+        className: "text-xs font-mono font-bold text-rose-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(
+      CopilotWorkspace,
+      {
+        onOpenPopOut: () => {
+        },
+        onOpenQr: () => setCopilotModalOpen(true)
+      }
+    ))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "9. Trends & Inteligencia Global de G\xE9neros")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("trends"),
+        className: "text-xs font-mono font-bold text-blue-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(TrendsWorkspace, { lang }))), /* @__PURE__ */ React.createElement("section", { className: "flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-mono font-bold text-white uppercase tracking-wider" }, "10. Masterclass & Base de Conocimiento DJ")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("knowledge"),
+        className: "text-xs font-mono font-bold text-yellow-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Pantalla Completa"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    )), /* @__PURE__ */ React.createElement("div", { className: "h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })))), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "audit" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       AuditWorkspace,
       {
         tracks: auditTracks,

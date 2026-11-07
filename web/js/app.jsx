@@ -29625,12 +29625,40 @@ const App = () => {
 
     const t = (k) => (I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k]) || (I18N_TRANSLATIONS['es'][k]) || k;
 
-    const [activeTab, setActiveTab] = useState('audit');
+    const [activeTab, setActiveTab] = useState(() => {
+        try {
+            const p = new URLSearchParams(window.location.search);
+            const q = p.get('tab') || window.BEATWAVE_TAB || window.location.hash.replace('#', '');
+            if (q) {
+                const map = {
+                    'all': 'all', 'todas': 'all', 'galeria': 'all',
+                    'audit': 'audit', 'cabina': 'audit',
+                    'cues': 'hotcues', 'hotcues': 'hotcues',
+                    'sets': 'setbuilder', 'setbuilder': 'setbuilder',
+                    'map': 'map', 'mapa': 'map',
+                    'pool': 'spotify', 'spotify': 'spotify',
+                    'radar': 'shazam', 'shazam': 'shazam',
+                    'crates': 'taxonomy', 'taxonomy': 'taxonomy',
+                    'trends': 'trends',
+                    'knowledge': 'knowledge', 'conocimiento': 'knowledge',
+                    'copilot': 'copilot'
+                };
+                if (map[q.toLowerCase()]) return map[q.toLowerCase()];
+            }
+        } catch (e) {}
+        return 'all';
+    });
     const [currentFolder, setCurrentFolder] = useState('/Users/admin/Music/mi musica');
-    const [auditTracks, setAuditTracks] = useState([]);
-    const [setBuilderTracks, setSetBuilderTracks] = useState([]);
+    const [auditTracks, setAuditTracks] = useState(() => {
+        return (typeof DEMO_MAP_TRACKS !== 'undefined' && Array.isArray(DEMO_MAP_TRACKS)) ? [...DEMO_MAP_TRACKS] : [];
+    });
+    const [setBuilderTracks, setSetBuilderTracks] = useState(() => {
+        return (typeof DEMO_MAP_TRACKS !== 'undefined' && Array.isArray(DEMO_MAP_TRACKS)) ? [...DEMO_MAP_TRACKS.slice(0, 8)] : [];
+    });
     const [spotifyTracks, setSpotifyTracks] = useState([]);
-    const [selectedTrack, setSelectedTrack] = useState(null);
+    const [selectedTrack, setSelectedTrack] = useState(() => {
+        return (typeof DEMO_MAP_TRACKS !== 'undefined' && DEMO_MAP_TRACKS[0]) ? DEMO_MAP_TRACKS[0].id : null;
+    });
     const currentTrack = selectedTrack ? (auditTracks.find(t => t.id === selectedTrack) || null) : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -30658,6 +30686,7 @@ const App = () => {
                     </div>
                 )}
                 activeTab={activeTab}
+                onSelectTab={setActiveTab}
                 t={t}
                 auditInfo={globalAuditInfo}
                 clubMode={clubMode}
@@ -30686,6 +30715,391 @@ const App = () => {
 
             {/* MAIN WORKSPACES: Persistencia Total de Estado Manteniendo Todo Montado */}
             <main className="flex-1 min-h-0 w-full overflow-hidden relative">
+                {/* VISTA GALERÍA COMPLETA: TODAS LAS VISTAS DE LA APP SIMULTÁNEAMENTE */}
+                {activeTab === 'all' && (
+                    <div className="w-full h-full overflow-y-auto bg-[#07070c] p-4 sm:p-6 lg:p-8 space-y-12">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-djzinc-800">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+                                        FIGMA MULTI-CANVAS
+                                    </span>
+                                    <span className="text-xs font-mono text-gray-500">
+                                        10 Workspaces Integrados
+                                    </span>
+                                </div>
+                                <h2 className="text-2xl font-mono font-black text-white tracking-tight mt-1">
+                                    BEATWAVE PRO — GALERÍA MULTIVISTA
+                                </h2>
+                                <p className="text-xs text-gray-400 mt-1 max-w-2xl font-sans">
+                                    Todas las pantallas y vistas de la suite están montadas a continuación en alta resolución. Haz clic en "Pantalla Completa ↗" en cualquier sección para aislarla y editar sus componentes al detalle.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('audit')}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-700 hover:bg-djcyan-900 cursor-pointer shadow"
+                                >
+                                    Ir a Cabina
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('setbuilder')}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-950 text-purple-300 border border-purple-700 hover:bg-purple-900 cursor-pointer shadow"
+                                >
+                                    Ir a Sets
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('map')}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-indigo-950 text-indigo-300 border border-indigo-700 hover:bg-indigo-900 cursor-pointer shadow"
+                                >
+                                    Ir a Mapa
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 1. CABINA / AUDITORÍA */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        1. Cabina & Auditoría de Biblioteca (Biblioteca DJ, FFT, Inspector y Cues)
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('audit')}
+                                    className="text-xs font-mono font-bold text-djcyan-400 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <AuditWorkspace
+                                    tracks={auditTracks}
+                                    setTracks={setAuditTracks}
+                                    selectedTrack={selectedTrack}
+                                    setSelectedTrack={setSelectedTrack}
+                                    onPlayTrack={handlePlayTrack}
+                                    onTogglePlay={togglePlayPause}
+                                    nowPlayingTrack={nowPlayingTrack}
+                                    isPlaying={isPlaying}
+                                    playProgress={playProgress}
+                                    onNavigateTab={setActiveTab}
+                                    onSendToSpotify={handleAddTracksToSpotify}
+                                    onRemoveTrack={handleRemoveTrackGlobal}
+                                    onRemoveMultipleTracks={handleRemoveMultipleTracksGlobal}
+                                    onClearAllTracks={handleClearAllTracksGlobal}
+                                    lang={lang}
+                                    t={t}
+                                    currentFolder={currentFolder}
+                                    setCurrentFolder={setCurrentFolder}
+                                    audioRef={audioRef}
+                                    onAuditProgressChange={setGlobalAuditInfo}
+                                />
+                            </div>
+                        </section>
+
+                        {/* 2. SET-BUILDER & ENERGY FLOW */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        2. Set-Builder & Energy Flow Canvas (Secuencia Armónica, Curva de BPM y Asesor AI)
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('setbuilder')}
+                                    className="text-xs font-mono font-bold text-purple-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <SetBuilderWorkspace
+                                    setTracks={setBuilderTracks}
+                                    setSetTracks={setSetBuilderTracks}
+                                    auditTracks={auditTracks}
+                                    setAuditTracks={setAuditTracks}
+                                    onPlayTrack={handlePlayTrack}
+                                    nowPlayingTrack={nowPlayingTrack}
+                                    isPlaying={isPlaying}
+                                    onTogglePlay={togglePlayPause}
+                                    onNavigateTab={setActiveTab}
+                                    lang={lang}
+                                />
+                            </div>
+                        </section>
+
+                        {/* 3. CONSTELACIÓN ARMÓNICA (MAPA) */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        3. Constelación Armónica (Mapa 2D/3D con Nodos de Carátulas y Rueda Camelot)
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('map')}
+                                    className="text-xs font-mono font-bold text-indigo-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <MapWorkspace
+                                    tracks={auditTracks}
+                                    onPlayTrack={handlePlayTrack}
+                                    nowPlayingTrack={nowPlayingTrack}
+                                    isPlaying={isPlaying}
+                                    onTogglePlay={togglePlayPause}
+                                    onNavigateTab={setActiveTab}
+                                    onAddTracksToSet={(newTracks) => {
+                                        if (!newTracks || newTracks.length === 0) return;
+                                        setSetBuilderTracks(prev => [...prev, ...newTracks]);
+                                        setActiveTab('setbuilder');
+                                    }}
+                                    onSelectDirectory={() => handleCargarDirectorioGlobal()}
+                                    lang={lang}
+                                />
+                            </div>
+                        </section>
+
+                        {/* 4. HOT CUES & PHRASE GRID */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        4. Estudio de Hot Cues (8 Cues, Fraseo Musical 16/32/64 y Beat Grid)
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('hotcues')}
+                                    className="text-xs font-mono font-bold text-amber-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <HotCuesWorkspace
+                                    tracks={auditTracks}
+                                    setTracks={setAuditTracks}
+                                    selectedTrack={selectedTrack}
+                                    setSelectedTrack={setSelectedTrack}
+                                    onPlayTrack={handlePlayTrack}
+                                    onTogglePlay={togglePlayPause}
+                                    nowPlayingTrack={nowPlayingTrack}
+                                    isPlaying={isPlaying}
+                                    playProgress={playProgress}
+                                    onNavigateTab={setActiveTab}
+                                    onSendToSpotify={handleAddTracksToSpotify}
+                                    onRemoveTrack={handleRemoveTrackGlobal}
+                                    onRemoveMultipleTracks={handleRemoveMultipleTracksGlobal}
+                                    lang={lang}
+                                    t={t}
+                                    currentFolder={currentFolder}
+                                    setCurrentFolder={setCurrentFolder}
+                                    audioRef={audioRef}
+                                />
+                            </div>
+                        </section>
+
+                        {/* 5. CRATES & TAXONOMÍA */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        5. Crates & Taxonomía Electrónica (Clasificación por Subgéneros y Claves)
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('taxonomy')}
+                                    className="text-xs font-mono font-bold text-emerald-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <TaxonomyWorkspace
+                                    tracks={auditTracks}
+                                    onTracksUpdated={setAuditTracks}
+                                    onNavigateTab={setActiveTab}
+                                    onPlayTrack={handlePlayTrack}
+                                    nowPlayingTrack={nowPlayingTrack}
+                                    isPlaying={isPlaying}
+                                    onTogglePlay={togglePlayPause}
+                                    onRemoveTrack={handleRemoveTrackGlobal}
+                                    onSelectTrackForCues={(trk) => {
+                                        if (!trk) return;
+                                        setSelectedTrack(trk.id);
+                                        setActiveTab('hotcues');
+                                    }}
+                                    onSendToSpotify={() => setActiveTab('spotify')}
+                                    onAddTrackToSet={(track) => {
+                                        if (!track) return;
+                                        setSetBuilderTracks(prev => [...prev, track]);
+                                        setActiveTab('setbuilder');
+                                    }}
+                                    onAddTrackToSpotify={handleAddTracksToSpotify}
+                                    onAddTracksToSpotify={handleAddTracksToSpotify}
+                                />
+                            </div>
+                        </section>
+
+                        {/* 6. POOL DE INGESTA & SPOTIFY */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        6. Pool de Ingesta & Record Pool (Búsqueda, Descargas y Conversión FLAC)
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('spotify')}
+                                    className="text-xs font-mono font-bold text-green-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <SpotifyWorkspace
+                                    tracks={spotifyTracks}
+                                    setTracks={setSpotifyTracks}
+                                    onPlayTrack={handlePlayTrack}
+                                    nowPlayingTrack={nowPlayingTrack}
+                                    isPlaying={isPlaying}
+                                    onTogglePlay={togglePlayPause}
+                                    lang={lang}
+                                    t={t}
+                                />
+                            </div>
+                        </section>
+
+                        {/* 7. RADAR ACÚSTICO */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        7. Radar Acústico (Identificación en Vivo, Detección de Frecuencias y BPM)
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('shazam')}
+                                    className="text-xs font-mono font-bold text-pink-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <ShazamWorkspace
+                                    onSendToSpotify={(query) => {
+                                        handleAddTrackToSpotify(query, 'shazam');
+                                    }}
+                                    onSendToAudit={(trackData) => {
+                                        setAuditTracks(prev => [trackData, ...prev]);
+                                        setSelectedTrack(trackData.id);
+                                        setActiveTab('audit');
+                                    }}
+                                    onNavigateTab={setActiveTab}
+                                />
+                            </div>
+                        </section>
+
+                        {/* 8. LIVE COPILOT */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        8. Live Copilot en Cabina (Monitor en Vivo, Detección de Decks y Transiciones)
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('copilot')}
+                                    className="text-xs font-mono font-bold text-rose-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <CopilotWorkspace
+                                    onOpenPopOut={() => {}}
+                                    onOpenQr={() => setCopilotModalOpen(true)}
+                                />
+                            </div>
+                        </section>
+
+                        {/* 9. TRENDS & INTELLIGENCE */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        9. Trends & Inteligencia Global de Géneros
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('trends')}
+                                    className="text-xs font-mono font-bold text-blue-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <TrendsWorkspace lang={lang} />
+                            </div>
+                        </section>
+
+                        {/* 10. KNOWLEDGE / MASTERCLASS */}
+                        <section className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
+                                    <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                                        10. Masterclass & Base de Conocimiento DJ
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('knowledge')}
+                                    className="text-xs font-mono font-bold text-yellow-300 hover:text-white flex items-center gap-1 cursor-pointer bg-djzinc-900 px-3 py-1 rounded-lg border border-djzinc-800"
+                                >
+                                    <span>Abrir Pantalla Completa</span>
+                                    <span>↗</span>
+                                </button>
+                            </div>
+                            <div className="h-[750px] w-full rounded-2xl border border-djzinc-800/80 bg-[#09090b] overflow-hidden shadow-2xl relative">
+                                <KnowledgeWorkspace lang={lang} />
+                            </div>
+                        </section>
+                    </div>
+                )}
                 <div style={{ display: activeTab === 'audit' ? 'flex' : 'none' }} className="w-full h-full">
                     <AuditWorkspace 
                         tracks={auditTracks}
