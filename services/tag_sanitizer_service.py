@@ -61,27 +61,48 @@ class TagSanitizerService:
             return "acapella"
         if "instrumental" in s:
             return "instrumental"
+        if "radio edit" in s or "radio mix" in s or "short edit" in s or "radio version" in s:
+            return "radio"
+        if "extended mix" in s or "extended version" in s or "extended edit" in s or re.search(r'\bextended\b', s):
+            return "extended"
+        if "club mix" in s or "club version" in s:
+            return "club"
         if "dub mix" in s or "dub version" in s or re.search(r'\bdub\b', s):
             return "dub"
-        if "radio edit" in s or "radio mix" in s or "short edit" in s:
-            return "radio"
-        if "extended" in s:
-            return "extended"
-        if "club mix" in s:
-            return "club"
-        if "vip" in s:
+        if "vip mix" in s or "vip edit" in s or re.search(r'\bvip\b', s):
             return "vip"
         if "bootleg" in s:
             return "bootleg"
-        if "remix" in s:
-            return "remix"
-        if "original mix" in s:
+        if "original mix" in s or "original version" in s:
             return "original"
+        if "remix" in s or "re-edit" in s or "reedit" in s or "rework" in s or "flip" in s:
+            return "remix"
         if "clean" in s:
             return "clean"
         if "dirty" in s:
             return "dirty"
+        # Detectar mezclas con nombre específico: "Wavesong Mix", "Moonman Mix", "Airwave Club Mix", etc.
+        if re.search(r'[-–—\(\[\{]\s*[\w\s\.\']+\s+(?:mix|edit|version|dub|rmx)[\)\]\}]?', s):
+            return "remix"
         return "standard"
+
+    @classmethod
+    def extraer_titulo_base(cls, texto: str) -> str:
+        """Extrae el título nuclear de una canción eliminando variantes, remixers, paréntesis y corchetes."""
+        if not texto:
+            return ""
+        s = str(texto).strip()
+        # Eliminar contenido entre paréntesis, corchetes o llaves
+        s = re.sub(r'[\(\[\{].*?[\)\]\}]', '', s)
+        # Eliminar sufijos tras guión que sean remixes o versiones: ' - Chlär Remix', ' - Extended Mix', etc.
+        s = re.sub(r'\s*[-–—]\s*.*?(?:remix|re-?edit|rework|mix|dub|vip|bootleg|version|edit|flip|rmx).*$', '', s, flags=re.IGNORECASE)
+        # Eliminar palabras clave sueltas de versión
+        for w in ['original mix', 'extended mix', 'club mix', 'dub mix', 'radio edit', 'radio mix', 'vip mix', 'remix']:
+            s = re.sub(rf'\b{re.escape(w)}\b', '', s, flags=re.IGNORECASE)
+        # Eliminar caracteres no alfanuméricos excepto espacios
+        s = re.sub(r'[^a-zA-Z0-9\s]', '', s)
+        s = re.sub(r'\s+', ' ', s).strip()
+        return s
 
     @classmethod
     def limpiar_texto_promocional(cls, texto: str) -> str:

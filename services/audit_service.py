@@ -153,7 +153,7 @@ def calcular_huella_acustica(data, samplerate):
         freq_bins = np.logspace(np.log10(100), np.log10(5000), num=17)
         freqs = np.fft.rfftfreq(n_fft, 1.0 / 11025)
         band_energies = []
-        for i in range(min(num_frames, 40)):
+        for i in range(min(num_frames, 120)):
             window = segment[i * hop : i * hop + n_fft] * np.hanning(n_fft)
             spectrum = np.abs(np.fft.rfft(window))
             frame_bands = []
@@ -161,6 +161,8 @@ def calcular_huella_acustica(data, samplerate):
                 mask = (freqs >= freq_bins[b]) & (freqs < freq_bins[b+1])
                 band_energy = float(np.sum(spectrum[mask])) if np.any(mask) else 0.0
                 frame_bands.append(band_energy)
+            frame_sum = sum(frame_bands) or 1.0
+            frame_bands = [be / frame_sum for be in frame_bands]
             band_energies.append(frame_bands)
         band_energies = np.array(band_energies)
         bits = []
@@ -171,7 +173,7 @@ def calcular_huella_acustica(data, samplerate):
                 bits.append('1' if (diff_f + diff_t) > 0 else '0')
         bitstring = ''.join(bits)
         h = hashlib.sha256(bitstring.encode('utf-8')).hexdigest()[:32]
-        summary_hash = hashlib.md5(np.round(band_energies.mean(axis=0), 1).tobytes()).hexdigest()[:16]
+        summary_hash = hashlib.md5(np.round(band_energies.mean(axis=0), 3).tobytes()).hexdigest()[:16]
         return f"{h}_{summary_hash}"
     except Exception as e:
         print(f"[FINGERPRINT ERROR] {e}")
@@ -1678,6 +1680,32 @@ return folderPath'''
         s = re.sub(r'[^a-z0-9]', '', s)
         return s
 
+    @staticmethod
+    def _normalizar_artista_deduplicacion(artist: str) -> str:
+        """Normaliza el artista para deduplicación ignorando colaboraciones (feat, vs) y signos de puntuación."""
+        import re
+        if not artist:
+            return ""
+        s = str(artist).lower().strip()
+        s = re.sub(r'[\(\[\{].*?[\)\]\}]', '', s)
+        s = re.sub(r'\b(feat|ft|featuring|pres|presents|vs|and)\b\.?', '', s)
+        s = re.sub(r'[^a-z0-9]', '', s)
+        return s
+
+    @staticmethod
+    def _extraer_artista_titulo_de_ruta(filepath: str) -> tuple:
+        """Extrae de forma robusta artista y título a partir del nombre de archivo."""
+        import os, re
+        if not filepath:
+            return "", ""
+        fname = os.path.splitext(os.path.basename(filepath))[0]
+        # Quitar números de pista iniciales: '01. ', '01 - ', '01_ '
+        fname = re.sub(r'^\d+[\s\.\-_]+', '', fname).strip()
+        if " - " in fname:
+            partes = fname.split(" - ", 1)
+            return partes[0].strip(), partes[1].strip()
+        return "", fname
+
     def calcular_puntuacion_calidad_track(self, track: dict) -> float:
         """Calcula un índice técnico (0-100+) para dirimir con rigor acústico qué versión duplicada conservar."""
         fmt = str(track.get("format") or "").upper()
@@ -1796,22 +1824,32 @@ return folderPath'''
         grupos_dict = collections.defaultdict(list)
 
         for trk in tracks:
-            # Clave de agrupación primaria: artista normalizado + título normalizado
-            art_norm = self._normalizar_para_deduplicacion(trk.get("artist") or trk.get("a") or "")
-            tit_norm = self._normalizar_para_deduplicacion(trk.get("title") or trk.get("t") or "")
+            art_raw = trk.get("artist") or trk.get("a") or ""
+            tit_raw = trk.get("title") or trk.get("t") or ""
+            path_val = trk.get("path") or trk.get("f") or trk.get("filename") or ""
 
-            # Deduplicación por Huella Acústica (Acoustic Fingerprinting Chromaprint/AcoustID)
-            fp = str(trk.get("acoustic_fp") or "")
-            fp_prefix = fp.split("_")[0] if ("_" in fp and len(fp.split("_")[0]) >= 16) else ""
+            # Si faltan metadatos, extraer del nombre de archivo
+            if not art_raw or not tit_raw:
+                f_art, f_tit = self._extraer_artista_titulo_de_ruta(path_val)
+                if not art_raw:
+                    art_raw = f_art
+                if not tit_raw:
+                    tit_raw = f_tit
 
-            if fp_prefix:
-                clave = f"fp__{fp_prefix}"
-            elif not art_norm or not tit_norm:
-                fname = os.path.splitext(os.path.basename(trk.get("path") or trk.get("f") or ""))[0]
-                fname_norm = self._normalizar_para_deduplicacion(fname)
-                clave = fname_norm if fname_norm else f"track_{trk.get('id')}"
-            else:
+            art_norm = self._normalizar_artista_deduplicacion(art_raw)
+            tit_base = TagSanitizerService.extraer_titulo_base(tit_raw)
+            tit_norm = self._normalizar_para_deduplicacion(tit_base if tit_base else tit_raw)
+
+            # Clave de agrupación primaria segura: Artista normalizado + Título base nuclear
+            # DIFERENTES CANCIONES NUNCA SE AGRUPAN JUNTAS
+            if art_norm and tit_norm:
                 clave = f"{art_norm}__{tit_norm}"
+            elif tit_norm:
+                clave = f"tit__{tit_norm}"
+            else:
+                fname = os.path.splitext(os.path.basename(path_val))[0]
+                fname_norm = self._normalizar_para_deduplicacion(fname)
+                clave = f"file__{fname_norm}" if fname_norm else f"track_{trk.get('id', id(trk))}"
 
             grupos_dict[clave].append(trk)
 
@@ -1823,11 +1861,11 @@ return folderPath'''
             if len(trks_en_grupo) < 2:
                 continue
 
-            # Evaluar calidad de cada track del grupo
+            # Evaluar calidad técnica de cada track del grupo
             trks_evaluados = []
             for t in trks_en_grupo:
                 score = self.calcular_puntuacion_calidad_track(t)
-                path = t.get("path") or ""
+                path = t.get("path") or t.get("f") or ""
                 size_bytes = 0
                 size_mb = 0.0
                 if path and os.path.exists(path):
@@ -1836,31 +1874,40 @@ return folderPath'''
                         size_mb = round(size_bytes / (1024 * 1024), 2)
                     except Exception:
                         pass
+                elif t.get("filesize"):
+                    size_bytes = int(t["filesize"])
+                    size_mb = round(size_bytes / (1024 * 1024), 2)
 
                 t_copy = dict(t)
-                t_copy["quality_score"] = score
+                t_copy["quality_score"] = round(score, 2)
                 t_copy["size_mb"] = size_mb
                 t_copy["size_bytes"] = size_bytes
-                # Detección inteligente de versión DJ (Extended vs Radio vs Dub vs Acapella)
+
+                # Detección inteligente de versión DJ (Extended vs Radio vs Dub vs Remix vs Acapella)
                 v_type = TagSanitizerService.extraer_tipo_version(
-                    f"{t.get('title', '')} {t.get('t', '')} {t.get('filename', '')} {t.get('f', '')}"
+                    f"{t.get('title', '')} {t.get('t', '')} {t.get('filename', '')} {t.get('f', '')} {path}"
                 )
                 t_copy["version_type"] = v_type
                 trks_evaluados.append(t_copy)
 
-            if proteger_versiones_hermanas:
-                # Agrupación por tipo de versión DJ (evitar borrar versiones hermanas)
-                por_version = collections.defaultdict(list)
-                for t_item in trks_evaluados:
-                    por_version[t_item["version_type"]].append(t_item)
+            # Clasificación y marcado de duplicados
+            por_version = collections.defaultdict(list)
+            for t_item in trks_evaluados:
+                por_version[t_item["version_type"]].append(t_item)
 
+            duplicados_en_este_grupo = 0
+            tiene_hermanas = len(por_version) > 1
+
+            if proteger_versiones_hermanas:
+                # Cada versión DJ (Original, Extended, Remix, Dub) tiene su propio ganador
+                # NUNCA se elimina un Extended Mix ni un Remix si no hay otra copia duplicada de esa versión
                 for v_tipo, trks_v in por_version.items():
                     trks_v.sort(key=lambda x: (x["quality_score"], x["size_bytes"]), reverse=True)
                     best_of_type = trks_v[0]
                     best_of_type["is_winner"] = True
 
-                    if len(por_version) > 1:
-                        v_label = v_tipo.upper() if v_tipo != "standard" else "ORIGINAL"
+                    v_label = v_tipo.upper() if v_tipo != "standard" else "ORIGINAL"
+                    if tiene_hermanas:
                         best_of_type["recommendation"] = f"CONSERVAR (Versión {v_label})"
                         best_of_type["badge_recommendation"] = f"🎧 VERSIÓN {v_label}"
                         best_of_type["badge_color"] = "cyan"
@@ -1870,22 +1917,22 @@ return folderPath'''
                         best_of_type["badge_color"] = "green"
                     best_of_type["delete_selected"] = False
 
-                    # Duplicados reales del MISMO tipo de versión inferior
+                    # Duplicados reales del MISMO tipo de versión inferior (p. ej. MP3 cuando hay FLAC de esa versión)
                     for inf in trks_v[1:]:
                         inf["is_winner"] = False
-                        inf["recommendation"] = "ELIMINAR (Duplicado Inferior)"
+                        inf["recommendation"] = f"ELIMINAR (Duplicado Inferior {v_label})"
                         inf["badge_recommendation"] = "🗑️ DUPLICADO INFERIOR"
                         inf["badge_color"] = "red"
                         inf["delete_selected"] = True
+                        duplicados_en_este_grupo += 1
                         total_duplicados_inferiores += 1
                         espacio_recuperable_bytes += inf["size_bytes"]
 
-                # Ordenar presentación: conservados primero, luego duplicados para eliminar
+                # Ordenar visualización: conservados primero, luego duplicados para eliminar
                 trks_evaluados.sort(key=lambda x: (x["delete_selected"], -x["quality_score"]))
                 winner = trks_evaluados[0]
-                tiene_hermanas = len(por_version) > 1
             else:
-                # Comportamiento estándar estricto: 1 único ganador por grupo
+                # Modo estricto sin protección: sólo 1 único ganador por grupo
                 trks_evaluados.sort(key=lambda x: (x["quality_score"], x["size_bytes"]), reverse=True)
                 winner = trks_evaluados[0]
                 winner["is_winner"] = True
@@ -1900,18 +1947,27 @@ return folderPath'''
                     inf["badge_recommendation"] = "🗑️ DUPLICADO INFERIOR"
                     inf["badge_color"] = "red"
                     inf["delete_selected"] = True
+                    duplicados_en_este_grupo += 1
                     total_duplicados_inferiores += 1
                     espacio_recuperable_bytes += inf["size_bytes"]
-                tiene_hermanas = False
+
+            display_artist = winner.get('artist') or ''
+            raw_t = winner.get('title') or winner.get('filename') or ''
+            clean_display_title = TagSanitizerService.extraer_titulo_base(raw_t) or raw_t
+            display_name = f"{display_artist} - {clean_display_title}" if display_artist else clean_display_title
 
             grupos_resultado.append({
                 "clave": clave,
-                "display_name": f"{winner.get('artist') or 'Varios'} - {winner.get('title') or winner.get('filename')}",
+                "display_name": display_name,
                 "total_versiones": len(trks_evaluados),
                 "tiene_versiones_hermanas": tiene_hermanas,
+                "duplicados_a_eliminar": duplicados_en_este_grupo,
                 "winner": winner,
                 "tracks": trks_evaluados
             })
+
+        # Priorizar grupos que contienen duplicados reales a eliminar
+        grupos_resultado.sort(key=lambda g: (-g["duplicados_a_eliminar"], g["display_name"]))
 
         return {
             "total_grupos": len(grupos_resultado),

@@ -3626,35 +3626,37 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const [deleting, setDeleting] = useState4(false);
     const [selectedToDelete, setSelectedToDelete] = useState4({});
     const [statusMsg, setStatusMsg] = useState4("");
+    const [protectSisters, setProtectSisters] = useState4(true);
+    const [filterOnlyWithDups, setFilterOnlyWithDups] = useState4(false);
+    const loadDups = async (protect = true) => {
+      setLoading(true);
+      setStatusMsg("Analizando biblioteca en busca de duplicados y calculando \xEDndice de calidad ac\xFAstica...");
+      try {
+        if (window.eel && window.eel.detectar_duplicados_biblioteca) {
+          const res = await window.eel.detectar_duplicados_biblioteca(tracks, protect)();
+          setDupData(res);
+          const initialSel = {};
+          if (res && res.grupos) {
+            res.grupos.forEach((g) => {
+              g.tracks.forEach((t) => {
+                if (!t.is_winner && t.delete_selected && t.path) {
+                  initialSel[t.path] = true;
+                }
+              });
+            });
+          }
+          setSelectedToDelete(initialSel);
+        }
+      } catch (err) {
+        console.error("Error detectando duplicados:", err);
+      } finally {
+        setLoading(false);
+        setStatusMsg("");
+      }
+    };
     useEffect5(() => {
       if (!isOpen) return;
-      const loadDups = async () => {
-        setLoading(true);
-        setStatusMsg("Analizando biblioteca en busca de duplicados y calculando \xEDndice de calidad ac\xFAstica...");
-        try {
-          if (window.eel && window.eel.detectar_duplicados_biblioteca) {
-            const res = await window.eel.detectar_duplicados_biblioteca(tracks)();
-            setDupData(res);
-            const initialSel = {};
-            if (res && res.grupos) {
-              res.grupos.forEach((g) => {
-                g.tracks.forEach((t) => {
-                  if (!t.is_winner && t.path) {
-                    initialSel[t.path] = true;
-                  }
-                });
-              });
-            }
-            setSelectedToDelete(initialSel);
-          }
-        } catch (err) {
-          console.error("Error detectando duplicados:", err);
-        } finally {
-          setLoading(false);
-          setStatusMsg("");
-        }
-      };
-      loadDups();
+      loadDups(protectSisters);
     }, [isOpen, tracks]);
     if (!isOpen) return null;
     const toggleSelect = (path) => {
@@ -3668,7 +3670,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       const nxt = {};
       dupData.grupos.forEach((g) => {
         g.tracks.forEach((t) => {
-          if (!t.is_winner && t.path) {
+          if (!t.is_winner && t.delete_selected && t.path) {
             nxt[t.path] = true;
           }
         });
@@ -3723,7 +3725,27 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         setStatusMsg("");
       }
     };
-    return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-djzinc-800 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" }, /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 border-b border-djzinc-800 bg-djzinc-950 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.Scale, { size: 14, className: "inline-block align-[-2px] p-2 bg-amber-500/10 text-amber-400 rounded-lg  border border-amber-500/20" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-sm uppercase tracking-wider text-white font-mono" }, "Comparador & Deduplicador Ac\xFAstico"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, "Compara duplicados cara a cara (FLAC vs MP3, Bitrate, Cutoff Nyquist FFT, tama\xF1o) y conserva la m\xE1xima calidad."))), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs cursor-pointer" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }))), dupData && /* @__PURE__ */ React.createElement("div", { className: "px-6 py-3 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Grupos: ", /* @__PURE__ */ React.createElement("strong", { className: "text-djcyan-400" }, dupData.total_grupos)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Duplicados: ", /* @__PURE__ */ React.createElement("strong", { className: "text-amber-400" }, dupData.total_duplicados)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Espacio recuperable: ", /* @__PURE__ */ React.createElement("strong", { className: "text-emerald-400" }, dupData.espacio_recuperable_mb, " MB"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: handleSelectAllInferiors, className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 text-[11px] cursor-pointer" }, "Marcar Inferiores"), /* @__PURE__ */ React.createElement("button", { onClick: handleDeselectAll, className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 text-[11px] cursor-pointer" }, "Desmarcar"))), /* @__PURE__ */ React.createElement("div", { className: "p-6 overflow-y-auto space-y-4 flex-1" }, loading ? /* @__PURE__ */ React.createElement("div", { className: "py-20 text-center space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 border-2 border-djcyan-400 border-t-transparent rounded-full animate-spin mx-auto" }), /* @__PURE__ */ React.createElement("p", { className: "text-xs font-mono text-gray-400" }, statusMsg || "Comparando espectrogramas y pureza de audio...")) : !dupData || dupData.grupos.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-20 text-center space-y-3" }, /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 14, className: "inline-block align-[-2px] block" }), /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-bold text-white" }, "\xA1Biblioteca 100% Limpia de Duplicados!"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-md mx-auto" }, "No se encontraron versiones repetidas ni pistas con nombres duplicados en la biblioteca auditada.")) : dupData.grupos.map((grupo, gIdx) => /* @__PURE__ */ React.createElement("div", { key: grupo.clave || gIdx, className: "bg-[#101018] border border-djzinc-800 rounded-xl overflow-hidden shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-950/80 border-b border-djzinc-800/80 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-djcyan-400 truncate font-mono" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), " ", grupo.display_name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 bg-djzinc-900 px-2 py-0.5 rounded border border-djzinc-800" }, grupo.total_versiones, " versiones detectadas")), /* @__PURE__ */ React.createElement("div", { className: "divide-y divide-djzinc-850" }, grupo.tracks.map((t, tIdx) => {
+    const displayedGrupos = (dupData == null ? void 0 : dupData.grupos) ? filterOnlyWithDups ? dupData.grupos.filter((g) => (g.duplicados_a_eliminar || 0) > 0) : dupData.grupos : [];
+    return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-djzinc-800 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" }, /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 border-b border-djzinc-800 bg-djzinc-950 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.Scale, { size: 14, className: "inline-block align-[-2px] p-2 bg-amber-500/10 text-amber-400 rounded-lg  border border-amber-500/20" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-sm uppercase tracking-wider text-white font-mono" }, "Comparador & Deduplicador Ac\xFAstico"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, "Compara duplicados cara a cara (FLAC vs MP3, Bitrate, Cutoff Nyquist FFT, tama\xF1o) y conserva la m\xE1xima calidad protegiendo versiones DJ."))), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs cursor-pointer" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }))), dupData && /* @__PURE__ */ React.createElement("div", { className: "px-6 py-3 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between text-xs font-mono flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Grupos: ", /* @__PURE__ */ React.createElement("strong", { className: "text-djcyan-400" }, dupData.total_grupos)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Duplicados: ", /* @__PURE__ */ React.createElement("strong", { className: "text-amber-400" }, dupData.total_duplicados)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Espacio recuperable: ", /* @__PURE__ */ React.createElement("strong", { className: "text-emerald-400" }, dupData.espacio_recuperable_mb, " MB"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("label", { className: "flex items-center gap-1.5 text-[11px] text-gray-300 cursor-pointer select-none" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "checkbox",
+        checked: protectSisters,
+        onChange: (e) => {
+          const nxt = e.target.checked;
+          setProtectSisters(nxt);
+          loadDups(nxt);
+        },
+        className: "w-3.5 h-3.5 rounded text-djcyan-500 bg-djzinc-800 border-djzinc-700 focus:ring-0 cursor-pointer"
+      }
+    ), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, "Proteger versiones DJ")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setFilterOnlyWithDups(!filterOnlyWithDups),
+        className: `px-2 py-0.5 rounded border text-[11px] cursor-pointer transition-colors ${filterOnlyWithDups ? "bg-amber-950/60 text-amber-300 border-amber-700/80 font-semibold" : "bg-djzinc-800 text-gray-400 border-djzinc-700 hover:text-white"}`
+      },
+      "Solo a eliminar"
+    ), /* @__PURE__ */ React.createElement("button", { onClick: handleSelectAllInferiors, className: "px-2 py-0.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 text-[11px] cursor-pointer" }, "Marcar Inferiores"), /* @__PURE__ */ React.createElement("button", { onClick: handleDeselectAll, className: "px-2 py-0.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 text-[11px] cursor-pointer" }, "Desmarcar"))), /* @__PURE__ */ React.createElement("div", { className: "p-6 overflow-y-auto space-y-4 flex-1" }, loading ? /* @__PURE__ */ React.createElement("div", { className: "py-20 text-center space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 border-2 border-djcyan-400 border-t-transparent rounded-full animate-spin mx-auto" }), /* @__PURE__ */ React.createElement("p", { className: "text-xs font-mono text-gray-400" }, statusMsg || "Comparando espectrogramas y pureza de audio...")) : !dupData || displayedGrupos.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-20 text-center space-y-3" }, /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 14, className: "inline-block align-[-2px] block" }), /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-bold text-white" }, "\xA1Biblioteca 100% Limpia de Duplicados!"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-md mx-auto" }, filterOnlyWithDups ? "No hay duplicados inferiores pendientes de eliminar (las versiones hermanas est\xE1n protegidas)." : "No se encontraron versiones repetidas ni pistas con nombres duplicados en la biblioteca auditada.")) : displayedGrupos.map((grupo, gIdx) => /* @__PURE__ */ React.createElement("div", { key: grupo.clave || gIdx, className: "bg-[#101018] border border-djzinc-800 rounded-xl overflow-hidden shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-950/80 border-b border-djzinc-800/80 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-djcyan-400 truncate font-mono" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), " ", grupo.display_name), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, (grupo.duplicados_a_eliminar || 0) > 0 ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-red-400 bg-red-950/70 px-2 py-0.5 rounded border border-red-800/60 font-bold" }, "\u{1F5D1}\uFE0F ", grupo.duplicados_a_eliminar, " duplicado", grupo.duplicados_a_eliminar > 1 ? "s" : "", " a eliminar") : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60" }, "\u2713 Versiones conservadas (0 a eliminar)"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 bg-djzinc-900 px-2 py-0.5 rounded border border-djzinc-800" }, grupo.total_versiones, " archivos"))), /* @__PURE__ */ React.createElement("div", { className: "divide-y divide-djzinc-850" }, grupo.tracks.map((t, tIdx) => {
       const isSelected = Boolean(selectedToDelete[t.path]);
       return /* @__PURE__ */ React.createElement("div", { key: t.path || tIdx, className: `p-3.5 flex items-center justify-between transition-colors ${t.is_winner ? "bg-emerald-950/15" : isSelected ? "bg-red-950/20" : "bg-transparent"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement(
         "input",
@@ -3732,9 +3754,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           checked: isSelected,
           onChange: () => toggleSelect(t.path),
           className: "w-4 h-4 rounded border-djzinc-700 bg-djzinc-900 text-red-500 focus:ring-0 cursor-pointer shrink-0",
-          title: t.is_winner ? "\xA1Cuidado! Esta es la versi\xF3n de mayor calidad" : "Marcar para eliminar"
+          title: t.is_winner ? "\xA1Cuidado! Esta es una versi\xF3n protegida a conservar" : "Marcar para eliminar"
         }
-      ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-semibold text-white truncate max-w-[280px]", title: t.title || t.filename }, t.title || t.filename), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${t.is_winner ? "bg-emerald-950 text-emerald-400 border-emerald-800" : "bg-red-950/80 text-red-400 border-red-800"}` }, t.badge_recommendation), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono bg-djzinc-850 text-gray-300 px-1.5 py-0.5 rounded border border-djzinc-750" }, "Score: ", t.quality_score, " pts")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 text-[10px] font-mono text-gray-400 mt-1 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold uppercase" }, t.format), /* @__PURE__ */ React.createElement("span", null, t.sample_rate_khz || 44.1, " kHz"), /* @__PURE__ */ React.createElement("span", null, t.bitrate_kbps ? `${t.bitrate_kbps} kbps` : t.format === "MP3" ? "320 kbps" : "1411 kbps"), /* @__PURE__ */ React.createElement("span", null, "FFT: ", /* @__PURE__ */ React.createElement("strong", { className: t.cutoff_khz >= 20 ? "text-emerald-400" : "text-amber-400" }, t.cutoff_khz ? `${t.cutoff_khz}kHz` : "22kHz")), /* @__PURE__ */ React.createElement("span", null, "Peso: ", /* @__PURE__ */ React.createElement("strong", { className: "text-gray-300" }, t.size_mb || 0, " MB")), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 truncate max-w-[220px]", title: t.path }, t.path)))));
+      ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-semibold text-white truncate max-w-[280px]", title: t.title || t.filename }, t.title || t.filename), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${t.is_winner ? t.badge_color === "cyan" ? "bg-cyan-950 text-cyan-400 border-cyan-800" : "bg-emerald-950 text-emerald-400 border-emerald-800" : "bg-red-950/80 text-red-400 border-red-800"}` }, t.badge_recommendation), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono bg-djzinc-850 text-gray-300 px-1.5 py-0.5 rounded border border-djzinc-750" }, "Score: ", t.quality_score, " pts")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 text-[10px] font-mono text-gray-400 mt-1 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold uppercase" }, t.format), /* @__PURE__ */ React.createElement("span", null, t.sample_rate_khz || 44.1, " kHz"), /* @__PURE__ */ React.createElement("span", null, t.bitrate_kbps ? `${t.bitrate_kbps} kbps` : t.format === "MP3" ? "320 kbps" : "1411 kbps"), /* @__PURE__ */ React.createElement("span", null, "FFT: ", /* @__PURE__ */ React.createElement("strong", { className: t.cutoff_khz >= 20 ? "text-emerald-400" : "text-amber-400" }, t.cutoff_khz ? `${t.cutoff_khz}kHz` : "22kHz")), /* @__PURE__ */ React.createElement("span", null, "Peso: ", /* @__PURE__ */ React.createElement("strong", { className: "text-gray-300" }, t.size_mb || 0, " MB")), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 truncate max-w-[220px]", title: t.path }, t.path)))));
     }))))), /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 bg-djzinc-950 border-t border-djzinc-800 flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono text-gray-400" }, countSelected > 0 ? /* @__PURE__ */ React.createElement("span", null, "Seleccionadas para eliminar: ", /* @__PURE__ */ React.createElement("strong", { className: "text-red-400" }, countSelected, " pistas"), " (", totalMbSelected.toFixed(1), " MB)") : /* @__PURE__ */ React.createElement("span", null, "Ninguna pista seleccionada para eliminaci\xF3n")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-4 py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white bg-djzinc-850 border border-djzinc-750 cursor-pointer" }, "Cerrar"), /* @__PURE__ */ React.createElement(
       "button",
       {

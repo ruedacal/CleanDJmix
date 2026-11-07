@@ -110,3 +110,95 @@ def test_detectar_duplicados_y_calidad():
     assert grupo["tracks"][1]["format"] == "MP3"
     assert grupo["tracks"][1]["is_winner"] is False
     assert grupo["tracks"][1]["delete_selected"] is True
+
+
+def test_proteger_versiones_hermanas_dj():
+    from services.audit_service import AuditService
+    audit = AuditService()
+    # Crusy - Karma vs Karma (Extended Mix): ambas en FLAC
+    tracks = [
+        {
+            "id": 1,
+            "title": "Karma (Extended Mix)",
+            "artist": "Crusy",
+            "format": "FLAC",
+            "sample_rate_khz": 44.1,
+            "bitrate_kbps": 1040,
+            "cutoff_khz": 22.0,
+            "es_fake": False
+        },
+        {
+            "id": 2,
+            "title": "Karma",
+            "artist": "Crusy",
+            "format": "FLAC",
+            "sample_rate_khz": 44.1,
+            "bitrate_kbps": 1030,
+            "cutoff_khz": 22.0,
+            "es_fake": False
+        }
+    ]
+    # Con protección de versiones hermanas activa: ambas deben conservarse, 0 eliminadas
+    res = audit.detectar_duplicados_biblioteca(tracks, proteger_versiones_hermanas=True)
+    assert res["total_grupos"] == 1
+    assert res["total_duplicados"] == 0
+    grupo = res["grupos"][0]
+    assert grupo["tiene_versiones_hermanas"] is True
+    assert grupo["duplicados_a_eliminar"] == 0
+    for t in grupo["tracks"]:
+        assert t["is_winner"] is True
+        assert t["delete_selected"] is False
+
+
+def test_nunca_agrupar_canciones_diferentes():
+    from services.audit_service import AuditService
+    audit = AuditService()
+    # Chlär - Silver Skin vs Chlär - Fixated
+    # Aunque compartieran huella o bitrate, NUNCA deben agruparse juntas
+    tracks = [
+        {
+            "id": 10,
+            "title": "Silver Skin",
+            "artist": "Chlär",
+            "format": "FLAC",
+            "sample_rate_khz": 48.0,
+            "bitrate_kbps": 1798,
+            "cutoff_khz": 20.1,
+            "acoustic_fp": "b9a622009fc2bcca605f2a49bd635fe2_0bc70ad68cdb316b",
+            "es_fake": False
+        },
+        {
+            "id": 11,
+            "title": "Fixated",
+            "artist": "Chlär",
+            "format": "FLAC",
+            "sample_rate_khz": 48.0,
+            "bitrate_kbps": 1798,
+            "cutoff_khz": 20.1,
+            "acoustic_fp": "b9a622009fc2bcca605f2a49bd635fe2_0bc70ad68cdb316b",
+            "es_fake": False
+        },
+        {
+            "id": 12,
+            "title": "Fixated - Chlär Remix",
+            "artist": "Chlär",
+            "format": "FLAC",
+            "sample_rate_khz": 48.0,
+            "bitrate_kbps": 1798,
+            "cutoff_khz": 20.1,
+            "acoustic_fp": "b9a622009fc2bcca605f2a49bd635fe2_0bc70ad68cdb316b",
+            "es_fake": False
+        }
+    ]
+    res = audit.detectar_duplicados_biblioteca(tracks, proteger_versiones_hermanas=True)
+    # Silver Skin queda en su propio grupo de 1 pista (no forma grupo de duplicados)
+    # Fixated y Fixated - Chlär Remix forman grupo de versiones hermanas
+    assert res["total_grupos"] == 1
+    grupo = res["grupos"][0]
+    nombres_en_grupo = [t["title"] for t in grupo["tracks"]]
+    assert "Silver Skin" not in nombres_en_grupo
+    assert "Fixated" in nombres_en_grupo
+    assert "Fixated - Chlär Remix" in nombres_en_grupo
+    # Al ser versiones hermanas protegidas (Original vs Remix), ninguna se elimina
+    assert res["total_duplicados"] == 0
+

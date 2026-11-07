@@ -380,11 +380,11 @@ def inyectar_caratulas_lote(tracks):
     return audit_svc.inyectar_caratulas_lote(tracks, _emitir_progreso_batch)
 
 @eel.expose
-def detectar_duplicados_biblioteca(tracks=None):
+def detectar_duplicados_biblioteca(tracks=None, proteger_versiones_hermanas=True):
     if not tracks:
         res_dir = audit_svc.cargar_metadatos_directorio(audit_svc.directorio_actual)
         tracks = res_dir.get("tracks", [])
-    return audit_svc.detectar_duplicados_biblioteca(tracks)
+    return audit_svc.detectar_duplicados_biblioteca(tracks, proteger_versiones_hermanas=proteger_versiones_hermanas)
 
 @eel.expose
 def eliminar_pistas_duplicadas(paths):
