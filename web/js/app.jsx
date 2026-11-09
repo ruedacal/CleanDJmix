@@ -394,6 +394,26 @@ const I18N_TRANSLATIONS = {
 // Unified icon system (Lucide geometry, consistent stroke) shared by every workspace.
 const Icons = ShellIcons;
 
+const SECTION_TITLE_CLASS = "font-syne font-black text-lg sm:text-xl leading-tight text-white tracking-wide uppercase";
+
+const SectionTitle = ({ icon: Icon, title, accent, badge, className = "" }) => (
+    <div className={`flex items-center gap-2.5 min-w-0 shrink-0 ${className}`}>
+        {Icon && (
+            <span className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0">
+                <Icon size={16} />
+            </span>
+        )}
+        <h2 className={`${SECTION_TITLE_CLASS} truncate`}>
+            {title}{accent && <span className="text-djcyan-400"> {accent}</span>}
+        </h2>
+        {badge && (
+            <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-djcyan-950 text-djcyan-400 border border-djcyan-800 shrink-0">
+                {badge}
+            </span>
+        )}
+    </div>
+);
+
 // Tooltip Flotante Educativo Desacoplado de Overflows mediante ReactDOM.createPortal
 const InfoTip = ({ text, title }) => {
     const [coords, setCoords] = useState(null);
@@ -9998,7 +10018,8 @@ const AuditWorkspace = ({
                 {/* 1. TOP BAR TÁCTICA: Ingesta, Contexto de Colección, Crear Biblioteca & Vista y Herramientas */}
                 <div className="px-3.5 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-3 z-20">
                     {/* IZQUIERDA: Contexto Activo de Biblioteca & Crear Biblioteca */}
-                    <div data-tour="tour-audit-select" className="flex items-center gap-2 shrink-0">
+                    <div data-tour="tour-audit-select" className="flex items-center gap-3 shrink-0">
+                        <SectionTitle icon={Icons.Activity} title="Auditar" accent="Biblioteca" />
                         {tracks && tracks.length > 0 && (
                             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[280px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
                                 <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>
@@ -13619,6 +13640,7 @@ const HotCuesWorkspace = ({
         <div className="ws-module ws-mod-hotcues flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200">
             {/* BARRA SUPERIOR: RUTA DE CARPETA, SELECTOR DE PISTAS Y ACCIONES */}
             <header className="border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm">
+                <SectionTitle icon={Icons.Target} title="Cues" accent="Hot Cue Studio" />
                 {/* Directorio Actual & Botón Cambiar Carpeta (Versión Desktop) */}
                 <div className="hidden md:flex items-center gap-2 min-w-0 shrink-0">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]" title={currentFolder}>
@@ -23167,6 +23189,7 @@ const SetBuilderWorkspace = ({
     const [isLoadingGraph, setIsLoadingGraph] = useState(false);
     const [aiAuditResult, setAiAuditResult] = useState(null);
     const [isLoadingAiAudit, setIsLoadingAiAudit] = useState(false);
+    const [hoveredFlowIdx, setHoveredFlowIdx] = useState(null);
 
     // Sincronizar automáticamente metadatos si las pistas fueron auditadas en otra pestaña
     useEffect(() => {
@@ -23940,12 +23963,16 @@ const SetBuilderWorkspace = ({
                         {points.map((p, idx) => {
                             const isSelected = selectedTrackIdx === idx;
                             const isCurPlaying = isThisTrack(p.track) && isPlaying;
+                            const isHovered = hoveredFlowIdx === idx;
                             const keyStr = getTrackKey(p.track);
+                            const nodeRadius = isSelected || isCurPlaying ? 11 : (isHovered ? 8.5 : 6.5);
 
                             return (
                                 <g 
                                     key={idx} 
-                                    className="cursor-pointer group"
+                                    className="cursor-pointer"
+                                    onMouseEnter={() => setHoveredFlowIdx(idx)}
+                                    onMouseLeave={() => setHoveredFlowIdx(prev => (prev === idx ? null : prev))}
                                     onClick={() => {
                                         setSelectedTrackIdx(idx);
                                         if (isThisTrack(p.track)) {
@@ -23955,23 +23982,26 @@ const SetBuilderWorkspace = ({
                                         }
                                     }}
                                 >
-                                    {/* Halo resplandeciente en hover/select */}
+                                    {/* Área de impacto fija: el hover no depende del tamaño animado del nodo */}
+                                    <circle cx={p.x} cy={p.y} r="16" fill="transparent" />
+
+                                    {/* Nodo visual: solo cambia el radio (sin transform CSS) para evitar el parpadeo */}
                                     <circle
                                         cx={p.x}
                                         cy={p.y}
-                                        r={isSelected || isCurPlaying ? "11" : "6.5"}
+                                        r={nodeRadius}
                                         fill={isCurPlaying ? "#ec4899" : isSelected ? "#06b6d4" : (p.hasRealBpm ? "#18181b" : "#27272a")}
-                                        stroke={isCurPlaying ? "#ffffff" : isSelected ? "#38bdf8" : (p.hasRealBpm ? "#a855f7" : "#f59e0b")}
+                                        stroke={isCurPlaying ? "#ffffff" : (isSelected || isHovered) ? "#38bdf8" : (p.hasRealBpm ? "#a855f7" : "#f59e0b")}
                                         strokeWidth={isSelected || isCurPlaying ? "3" : (p.hasRealBpm ? "2" : "1.5")}
                                         strokeDasharray={p.hasRealBpm ? "none" : "2 2"}
-                                        className="transition-all duration-200 group-hover:scale-125"
-                                    >
-                                        <title>{`Track #${idx + 1}: ${p.track.title || p.track.t || 'Pista'} | BPM: ${p.hasRealBpm ? p.bpm : '-- (Sin auditar)'} | Key: ${keyStr || '--'} (Clic para reproducir/pausar)`}</title>
-                                    </circle>
+                                        pointerEvents="none"
+                                        style={{ transition: 'r 160ms ease, stroke 160ms ease' }}
+                                    />
 
                                     {/* Indicador de Play/Pause integrado en el nodo */}
                                     {(isSelected || isCurPlaying) && (
                                         <text
+                                            pointerEvents="none"
                                             x={p.x}
                                             y={p.y + 3}
                                             fill="#ffffff"
@@ -23986,6 +24016,7 @@ const SetBuilderWorkspace = ({
 
                                     {/* Etiqueta de Track # sobre el nodo */}
                                     <text
+                                        pointerEvents="none"
                                         x={p.x}
                                         y={p.y - 13}
                                         fill={isSelected ? "#38bdf8" : (p.hasRealBpm ? "#d4d4d8" : "#f59e0b")}
@@ -23999,6 +24030,7 @@ const SetBuilderWorkspace = ({
 
                                     {/* Badge de Tonalidad Camelot bajo el nodo */}
                                     <text
+                                        pointerEvents="none"
                                         x={p.x}
                                         y={height - padY + 14}
                                         fill={keyStr ? "#a855f7" : "#71717a"}
@@ -24012,6 +24044,29 @@ const SetBuilderWorkspace = ({
                                 </g>
                             );
                         })}
+
+                        {/* Tooltip estable: se dibuja encima y nunca captura el puntero */}
+                        {hoveredFlowIdx !== null && points[hoveredFlowIdx] && (() => {
+                            const hp = points[hoveredFlowIdx];
+                            const rawTitle = String(hp.track.title || hp.track.t || 'Pista');
+                            const title = rawTitle.length > 30 ? `${rawTitle.slice(0, 29)}…` : rawTitle;
+                            const tipW = 200;
+                            const tipH = 38;
+                            const tipX = Math.min(Math.max(hp.x - tipW / 2, 4), width - tipW - 4);
+                            const tipY = hp.y - tipH - 22 < 0 ? hp.y + 18 : hp.y - tipH - 22;
+                            const keyLabel = getTrackKey(hp.track) || '--';
+                            return (
+                                <g pointerEvents="none">
+                                    <rect x={tipX} y={tipY} width={tipW} height={tipH} rx="8" fill="#0e0e11" stroke="rgba(34,211,238,0.45)" />
+                                    <text x={tipX + 10} y={tipY + 15} fill="#fafafa" fontSize="10" fontWeight="bold" fontFamily="monospace">
+                                        {`#${hoveredFlowIdx + 1} ${title}`}
+                                    </text>
+                                    <text x={tipX + 10} y={tipY + 29} fill="#a1a1aa" fontSize="9" fontFamily="monospace">
+                                        {`BPM ${hp.hasRealBpm ? hp.bpm : '--'} · Key ${keyLabel} · Clic: reproducir`}
+                                    </text>
+                                </g>
+                            );
+                        })()}
                     </svg>
                 </div>
             </div>
@@ -24466,17 +24521,7 @@ const SetBuilderWorkspace = ({
             <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-2.5">
-                            <span className="p-1.5 rounded-lg bg-gradient-to-br from-djcyan-500/20 to-purple-500/20 text-djcyan-400 border border-djcyan-500/30">
-                                <Icons.Flow />
-                            </span>
-                            <h2 className="text-xl font-mono font-black tracking-tight text-white uppercase flex items-center gap-2">
-                                <span>Set-Builder & Energy Flow Canvas</span>
-                                <span className="text-[10px] bg-djcyan-950 text-djcyan-400 border border-djcyan-800 px-2 py-0.5 rounded-full font-mono font-normal">
-                                    PRO DJ SET ENGINE
-                                </span>
-                            </h2>
-                        </div>
+                        <SectionTitle icon={Icons.Flow} title="Sets" accent="Energy Flow" badge="PRO DJ SET ENGINE" />
                         <p className="text-xs text-gray-400 mt-1 max-w-2xl font-sans">
                             Estructura la progresión armónica de tu sesión en vivo. Visualiza curvas de BPM, transiciones Camelot (+1, -1, cambios modales), saltos de volumen LUFS y alertas Anti-Muddy en tiempo real.
                         </p>
@@ -26148,19 +26193,7 @@ const MapWorkspace = ({
             <div className="p-2.5 sm:px-4 bg-[var(--bw-surface-1)] border-b border-[var(--bw-line)] flex flex-wrap items-center justify-between gap-2.5 shrink-0 z-20 backdrop-blur-md">
                 {/* LADO IZQUIERDO: TÍTULO Y SELECTOR DE PROYECCIÓN ESPACIAL */}
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] shadow-sm">
-                            <Icons.Map size={15} />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-1.5">
-                                <span className="font-syne font-bold text-xs tracking-wider uppercase text-white">Scatter Map</span>
-                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 font-bold">
-                                    2D
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                    <SectionTitle icon={Icons.Map} title="Map" accent="Scatter" badge="2D" />
 
                     {/* SELECTOR DE PROYECCIÓN DE COORDENADAS CON DS 3.0 */}
                     <div className="ws-seg" role="group" aria-label="Proyección espacial">
@@ -26686,15 +26719,6 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                         >
                             <Icons.Film size={14} className="inline-block align-[-2px]" />
                             <span>Ver Teaser (60s)</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => window.abrirTutorial && window.abrirTutorial('tour')}
-                            className="px-3.5 py-2 bg-djcyan-950/80 hover:bg-djcyan-900 border border-djcyan-500/60 text-djcyan-300 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md font-mono"
-                            title="Lanzar el Tour Guiado Spotlight por la cabina"
-                        >
-                            <Icons.Search size={14} className="inline-block align-[-2px]" />
-                            <span>Tour Guiado Cabina</span>
                         </button>
                         <a
                             href="/api/manual/pdf"
@@ -27592,18 +27616,6 @@ const CommercialTeaserModal = ({ isOpen, onClose, onOpenTour }) => {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        onClose();
-                                        if (onOpenTour) onOpenTour();
-                                    }}
-                                    className="px-4 py-2 rounded-xl bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 font-black text-xs cursor-pointer flex items-center gap-1.5 transition-all"
-                                >
-                                    <Icons.Target size={14} className="inline-block align-[-2px]" />
-                                    <span>Hacer Tour Paso a Paso en Cabina</span>
-                                </button>
-
                                 <button
                                     type="button"
                                     onClick={onClose}
@@ -28798,8 +28810,8 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     }`}></span>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h2 className="font-syne font-black text-xl sm:text-2xl text-white tracking-wide uppercase">
-                                MONITOR TÁCTICO <span className="text-djcyan-400">CABINA DJ</span>
+                            <h2 className={SECTION_TITLE_CLASS}>
+                                Copilot <span className="text-djcyan-400">Cabina DJ</span>
                             </h2>
                             {/* BADGE DEL SOFTWARE ACTIVO CON LOGO VECTORIAL */}
                             <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[11px]">
@@ -29557,11 +29569,10 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                             Auditoría FFT, 8 Hot Cues, radar acústico y sincronización con Rekordbox, Serato y Traktor en una sola cabina.
                         </p>
 
-                        <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div className="mt-10 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
                             {[
                                 { id: 'login', title: 'Iniciar sesión', desc: 'Continúa tu sesión y tu biblioteca', Icon: Icons.LogIn, primary: true },
                                 { id: 'register', title: 'Crear cuenta', desc: 'Nueva licencia de club', Icon: Icons.UserPlus },
-                                { id: 'tour', title: 'Tour guiado', desc: 'Masterclass y guías rápidas', Icon: Icons.Compass },
                             ].map((option, index) => (
                                 <button
                                     key={option.id}
