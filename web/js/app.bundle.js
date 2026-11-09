@@ -20225,9 +20225,11 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [pricingOpen, setPricingOpen] = useState4(false);
     const [cinematicIntroOpen, setCinematicIntroOpen] = useState4(() => {
       try {
+        const p = new URLSearchParams(window.location.search);
+        if (p.get("skipintro") === "1" || p.get("nointro") === "1") return false;
         return !sessionStorage.getItem("bw_intro_viewed");
       } catch (e) {
-        return true;
+        return false;
       }
     });
     const [lang, setLang] = useState4(() => {
@@ -20245,12 +20247,51 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     const t = (k) => I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k] || I18N_TRANSLATIONS["es"][k] || k;
-    const [activeTab, setActiveTab] = useState4("audit");
+    const [activeTab, setActiveTab] = useState4(() => {
+      try {
+        const p = new URLSearchParams(window.location.search);
+        const q = p.get("tab") || window.location.hash.replace("#", "");
+        if (q) {
+          const map = {
+            "all": "all",
+            "todas": "all",
+            "galeria": "all",
+            "audit": "audit",
+            "cabina": "audit",
+            "cues": "hotcues",
+            "hotcues": "hotcues",
+            "sets": "setbuilder",
+            "setbuilder": "setbuilder",
+            "map": "map",
+            "mapa": "map",
+            "pool": "spotify",
+            "spotify": "spotify",
+            "radar": "shazam",
+            "shazam": "shazam",
+            "crates": "taxonomy",
+            "taxonomy": "taxonomy",
+            "trends": "trends",
+            "knowledge": "knowledge",
+            "conocimiento": "knowledge",
+            "copilot": "copilot"
+          };
+          if (map[q.toLowerCase()]) return map[q.toLowerCase()];
+        }
+      } catch (e) {
+      }
+      return "audit";
+    });
     const [currentFolder, setCurrentFolder] = useState4("/Users/admin/Music/mi musica");
-    const [auditTracks, setAuditTracks] = useState4([]);
-    const [setBuilderTracks, setSetBuilderTracks] = useState4([]);
+    const [auditTracks, setAuditTracks] = useState4(() => {
+      return typeof DEMO_MAP_TRACKS !== "undefined" && Array.isArray(DEMO_MAP_TRACKS) ? [...DEMO_MAP_TRACKS] : [];
+    });
+    const [setBuilderTracks, setSetBuilderTracks] = useState4(() => {
+      return typeof DEMO_MAP_TRACKS !== "undefined" && Array.isArray(DEMO_MAP_TRACKS) ? [...DEMO_MAP_TRACKS.slice(0, 8)] : [];
+    });
     const [spotifyTracks, setSpotifyTracks] = useState4([]);
-    const [selectedTrack, setSelectedTrack] = useState4(null);
+    const [selectedTrack, setSelectedTrack] = useState4(() => {
+      return typeof DEMO_MAP_TRACKS !== "undefined" && DEMO_MAP_TRACKS[0] ? DEMO_MAP_TRACKS[0].id : null;
+    });
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState4(null);
     const [isPlaying, setIsPlaying] = useState4(false);

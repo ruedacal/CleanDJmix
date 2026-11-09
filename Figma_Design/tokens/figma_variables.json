@@ -1,0 +1,180 @@
+{
+  "collections": [
+    {
+      "name": "BeatWave PRO - Colors",
+      "modes": [
+        "Dark (Club)"
+      ],
+      "variables": [
+        {
+          "name": "color/background",
+          "type": "COLOR",
+          "value": "#09090B",
+          "scopes": [
+            "FRAME_FILL"
+          ]
+        },
+        {
+          "name": "color/surface",
+          "type": "COLOR",
+          "value": "#121216",
+          "scopes": [
+            "FRAME_FILL"
+          ]
+        },
+        {
+          "name": "color/surface-2",
+          "type": "COLOR",
+          "value": "#18181F",
+          "scopes": [
+            "FRAME_FILL"
+          ]
+        },
+        {
+          "name": "color/border",
+          "type": "COLOR",
+          "value": "#2A2A35",
+          "scopes": [
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "name": "color/primary",
+          "type": "COLOR",
+          "value": "#22D3EE",
+          "scopes": [
+            "ALL_SCOPES"
+          ]
+        },
+        {
+          "name": "color/primary-hover",
+          "type": "COLOR",
+          "value": "#06B6D4",
+          "scopes": [
+            "ALL_SCOPES"
+          ]
+        },
+        {
+          "name": "color/success",
+          "type": "COLOR",
+          "value": "#4ADE80",
+          "scopes": [
+            "ALL_SCOPES"
+          ]
+        },
+        {
+          "name": "color/warning",
+          "type": "COLOR",
+          "value": "#FBBF24",
+          "scopes": [
+            "ALL_SCOPES"
+          ]
+        },
+        {
+          "name": "color/destructive",
+          "type": "COLOR",
+          "value": "#F87171",
+          "scopes": [
+            "ALL_SCOPES"
+          ]
+        },
+        {
+          "name": "dsp/sub-bass",
+          "type": "COLOR",
+          "value": "#3B82F6",
+          "scopes": [
+            "ALL_SCOPES"
+          ]
+        },
+        {
+          "name": "dsp/low-mid",
+          "type": "COLOR",
+          "value": "#EF4444",
+          "scopes": [
+            "ALL_SCOPES"
+          ]
+        },
+        {
+          "name": "dsp/mid-high",
+          "type": "COLOR",
+          "value": "#F59E0B",
+          "scopes": [
+            "ALL_SCOPES"
+          ]
+        },
+        {
+          "name": "dsp/treble",
+          "type": "COLOR",
+          "value": "#22D3EE",
+          "scopes": [
+            "ALL_SCOPES"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BeatWave PRO - Dimensions",
+      "modes": [
+        "Default"
+      ],
+      "variables": [
+        {
+          "name": "radius/sm",
+          "type": "FLOAT",
+          "value": 4,
+          "scopes": [
+            "CORNER_RADIUS"
+          ]
+        },
+        {
+          "name": "radius/md",
+          "type": "FLOAT",
+          "value": 8,
+          "scopes": [
+            "CORNER_RADIUS"
+          ]
+        },
+        {
+          "name": "radius/lg",
+          "type": "FLOAT",
+          "value": 12,
+          "scopes": [
+            "CORNER_RADIUS"
+          ]
+        },
+        {
+          "name": "radius/xl",
+          "type": "FLOAT",
+          "value": 16,
+          "scopes": [
+            "CORNER_RADIUS"
+          ]
+        },
+        {
+          "name": "spacing/sm",
+          "type": "FLOAT",
+          "value": 8,
+          "scopes": [
+            "GAP"
+          ]
+        },
+        {
+          "name": "spacing/md",
+          "type": "FLOAT",
+          "value": 16,
+          "scopes": [
+            "GAP"
+          ]
+        },
+        {
+          "name": "spacing/lg",
+          "type": "FLOAT",
+          "value": 24,
+          "scopes": [
+            "GAP"
+          ]
+        }
+      ]
+    }
+  ]
+}

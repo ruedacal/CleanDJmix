@@ -1,0 +1,764 @@
+/* --- BEATWAVE PRO: MOTOR DE SECUENCIA TECHNO 4/4 CON ROLLING RUMBLE Y STUTTER (2.0s) --- */
+
+/* 1. Retroceso de chasis por culatazo de cada bombo y tremor de graves */
+@keyframes technoChassisRecoil {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    4% {
+        /* Bombo 1 (Fuerte) */
+        transform: translate3d(-4px, 1.5px, 0) rotate(1.8deg);
+    }
+    14% {
+        /* Rolling rumble 1 */
+        transform: translate3d(1px, -0.4px, 0) rotate(-0.5deg);
+    }
+    25% {
+        /* Bombo 2 */
+        transform: translate3d(-3.5px, 1.2px, 0) rotate(1.5deg);
+    }
+    35% {
+        /* Rolling rumble 2 */
+        transform: translate3d(0.8px, -0.3px, 0) rotate(-0.4deg);
+    }
+    50% {
+        /* Bombo 3 (Peak) */
+        transform: translate3d(-4px, 1.5px, 0) rotate(1.8deg);
+    }
+    60% {
+        /* Rolling rumble 3 */
+        transform: translate3d(1px, -0.4px, 0) rotate(-0.5deg);
+    }
+    75% {
+        /* Bombo 4 */
+        transform: translate3d(-4.2px, 1.6px, 0) rotate(2.0deg);
+    }
+    83% {
+        /* Stutter Roll 1 */
+        transform: translate3d(-2.8px, 1px, 0) rotate(1.2deg);
+    }
+    92% {
+        /* Stutter Roll 2 */
+        transform: translate3d(-3.4px, 1.3px, 0) rotate(1.6deg);
+    }
+    97% {
+        transform: translate3d(0.5px, -0.2px, 0);
+    }
+}
+
+/* 2. Excursión y distorsión física de la membrana del subwoofer */
+@keyframes technoConeSequence {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(0.92);
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+    }
+    4% {
+        /* Bombo 1: Disparo explosivo de la membrana hacia el texto */
+        transform: translate3d(10.5px, -3.5px, 0) scaleX(1.78) scaleY(1.52) skewX(-9deg) skewY(3.5deg);
+        filter: url(#wooferMechanicalDistortion) drop-shadow(0 0 18px rgba(6, 182, 212, 1)) drop-shadow(0 0 36px rgba(6, 182, 212, 0.85));
+    }
+    8% {
+        /* Retroceso elástico */
+        transform: translate3d(-4.8px, 1.6px, 0) scaleX(0.72) scaleY(0.76) skewX(4deg);
+        filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.95));
+    }
+    14% {
+        /* Rolling sub-bass rumble 1: tremor sostenido */
+        transform: translate3d(3px, -1px, 0) scaleX(1.18) scaleY(1.12) skewX(-2deg);
+        filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.5));
+    }
+    19% {
+        transform: translate3d(0.8px, -0.2px, 0) scale(0.96);
+    }
+    25% {
+        /* Bombo 2 */
+        transform: translate3d(9.5px, -3px, 0) scaleX(1.72) scaleY(1.48) skewX(-8deg);
+        filter: url(#wooferMechanicalDistortion) drop-shadow(0 0 16px rgba(6, 182, 212, 0.95));
+    }
+    29% {
+        transform: translate3d(-4.2px, 1.4px, 0) scaleX(0.75) scaleY(0.78);
+    }
+    35% {
+        /* Rolling sub-bass rumble 2 */
+        transform: translate3d(2.8px, -0.9px, 0) scaleX(1.16) scaleY(1.10);
+        filter: drop-shadow(0 0 7px rgba(6, 182, 212, 0.45));
+    }
+    40% {
+        transform: translate3d(0.6px, -0.2px, 0) scale(0.97);
+    }
+    50% {
+        /* Bombo 3 (Peak) */
+        transform: translate3d(10.2px, -3.4px, 0) scaleX(1.76) scaleY(1.50) skewX(-8.5deg);
+        filter: url(#wooferMechanicalDistortion) drop-shadow(0 0 18px rgba(6, 182, 212, 1));
+    }
+    54% {
+        transform: translate3d(-4.5px, 1.5px, 0) scaleX(0.73) scaleY(0.76);
+    }
+    60% {
+        /* Rolling sub-bass rumble 3 */
+        transform: translate3d(3px, -1px, 0) scaleX(1.18) scaleY(1.12);
+        filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.5));
+    }
+    65% {
+        transform: translate3d(0.8px, -0.3px, 0) scale(0.96);
+    }
+    75% {
+        /* Bombo 4 */
+        transform: translate3d(10.5px, -3.5px, 0) scaleX(1.78) scaleY(1.52) skewX(-9deg);
+        filter: url(#wooferMechanicalDistortion) drop-shadow(0 0 18px rgba(6, 182, 212, 1));
+    }
+    79% {
+        transform: translate3d(-3.5px, 1.2px, 0) scale(0.80);
+    }
+    83% {
+        /* Stutter Techno 1 (Redoble 16th) */
+        transform: translate3d(7px, -2.2px, 0) scaleX(1.48) scaleY(1.36) skewX(-6deg);
+        filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.75));
+    }
+    88% {
+        transform: translate3d(-2.5px, 0.8px, 0) scale(0.84);
+    }
+    92% {
+        /* Stutter Techno 2 (Redoble final explosivo) */
+        transform: translate3d(8.5px, -2.8px, 0) scaleX(1.58) scaleY(1.42) skewX(-7deg);
+        filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.85));
+    }
+    97% {
+        transform: translate3d(-1px, 0.3px, 0) scale(0.92);
+    }
+}
+
+/* 3. Suspensión de goma sobredimensionada */
+@keyframes technoSurroundSequence {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(0.95);
+        opacity: 0.85;
+    }
+    4% {
+        transform: translate3d(6px, -2px, 0) scaleX(1.48) scaleY(1.34) skewX(-6deg);
+        opacity: 1;
+        filter: drop-shadow(0 0 14px rgba(6, 182, 212, 0.85));
+    }
+    8% {
+        transform: translate3d(-3px, 1px, 0) scaleX(0.82) scaleY(0.86);
+        opacity: 0.7;
+    }
+    14% {
+        transform: translate3d(1.8px, -0.6px, 0) scale(1.12);
+        opacity: 0.95;
+    }
+    25% {
+        transform: translate3d(5.5px, -1.8px, 0) scaleX(1.42) scaleY(1.30);
+        opacity: 1;
+    }
+    29% {
+        transform: translate3d(-2.8px, 0.9px, 0) scale(0.84);
+    }
+    35% {
+        transform: translate3d(1.6px, -0.5px, 0) scale(1.10);
+    }
+    50% {
+        transform: translate3d(5.8px, -1.9px, 0) scaleX(1.45) scaleY(1.32);
+        opacity: 1;
+    }
+    54% {
+        transform: translate3d(-2.9px, 0.9px, 0) scale(0.83);
+    }
+    60% {
+        transform: translate3d(1.8px, -0.6px, 0) scale(1.12);
+    }
+    75% {
+        transform: translate3d(6px, -2px, 0) scaleX(1.48) scaleY(1.34);
+        opacity: 1;
+    }
+    83% {
+        transform: translate3d(4px, -1.3px, 0) scale(1.28);
+    }
+    92% {
+        transform: translate3d(5px, -1.6px, 0) scale(1.36);
+    }
+    97% {
+        transform: translate3d(0, 0, 0) scale(0.95);
+    }
+}
+
+/* 4. Cúpula central (Dust Cap) */
+@keyframes technoDustCapSequence {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(0.90);
+    }
+    4% {
+        transform: translate3d(14px, -4.5px, 0) scale(1.95) skewX(-11deg);
+        filter: drop-shadow(0 0 22px rgba(6, 182, 212, 1));
+    }
+    8% {
+        transform: translate3d(-6px, 2px, 0) scale(0.65) skewX(6deg);
+    }
+    14% {
+        transform: translate3d(4px, -1.3px, 0) scale(1.24);
+    }
+    25% {
+        transform: translate3d(12.5px, -4px, 0) scale(1.85);
+        filter: drop-shadow(0 0 18px rgba(6, 182, 212, 0.9));
+    }
+    29% {
+        transform: translate3d(-5.5px, 1.8px, 0) scale(0.68);
+    }
+    35% {
+        transform: translate3d(3.8px, -1.2px, 0) scale(1.20);
+    }
+    50% {
+        transform: translate3d(13.5px, -4.2px, 0) scale(1.90);
+        filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.95));
+    }
+    54% {
+        transform: translate3d(-5.8px, 1.9px, 0) scale(0.66);
+    }
+    60% {
+        transform: translate3d(4px, -1.3px, 0) scale(1.24);
+    }
+    75% {
+        transform: translate3d(14px, -4.5px, 0) scale(1.95);
+        filter: drop-shadow(0 0 22px rgba(6, 182, 212, 1));
+    }
+    83% {
+        transform: translate3d(9px, -2.8px, 0) scale(1.58);
+    }
+    92% {
+        transform: translate3d(11px, -3.5px, 0) scale(1.75);
+    }
+    97% {
+        transform: translate3d(0, 0, 0) scale(0.90);
+    }
+}
+
+/* 5. Ondas de choque sónicas expansivas rítmicas */
+@keyframes technoBlastWaves {
+    0% {
+        transform: translate3d(0, 0, 0) scale(0.5);
+        opacity: 0;
+    }
+    4%, 25%, 50%, 75% {
+        transform: translate3d(7px, -1.8px, 0) scale(1.1);
+        opacity: 1;
+        stroke: #22d3ee;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 10px #06b6d4);
+    }
+    12%, 33%, 58%, 81% {
+        transform: translate3d(18px, -4px, 0) scale(1.9);
+        opacity: 0.6;
+        stroke: #06b6d4;
+    }
+    18%, 39%, 66%, 86% {
+        transform: translate3d(28px, -6px, 0) scale(2.4);
+        opacity: 0;
+    }
+    92% {
+        transform: translate3d(12px, -2.5px, 0) scale(1.4);
+        opacity: 0.8;
+        stroke: #67e8f9;
+    }
+    97%, 100% {
+        transform: translate3d(26px, -5.5px, 0) scale(2.2);
+        opacity: 0;
+    }
+}
+
+/* 6. Animación de las letras BEATWAVE con la secuencia techno */
+@keyframes technoTextSequence {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
+        text-shadow: 0 0 2px rgba(6, 182, 212, 0.2);
+    }
+    4% {
+        /* Bombo 1 */
+        transform: translate3d(6px, -1.2px, 0) scaleX(1.08) scaleY(1.30) skewX(-8deg);
+        text-shadow: -4px 0 0 rgba(236, 72, 153, 0.9), 4px 0 0 rgba(6, 182, 212, 1), 0 0 32px rgba(6, 182, 212, 0.95);
+    }
+    8% {
+        transform: translate3d(-3.5px, 0.6px, 0) scaleX(0.94) scaleY(0.88) skewX(5deg);
+        text-shadow: -2px 0 0 rgba(236, 72, 153, 0.5), 2px 0 0 rgba(6, 182, 212, 0.6), 0 0 16px rgba(6, 182, 212, 0.7);
+    }
+    14% {
+        /* Rolling sub-bass rumble 1 */
+        transform: translate3d(2.2px, -0.3px, 0) scaleX(1.03) scaleY(1.10) skewX(-2.5deg);
+        text-shadow: 0 0 14px rgba(6, 182, 212, 0.75);
+    }
+    19% {
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
+    }
+    25% {
+        /* Bombo 2 */
+        transform: translate3d(5.5px, -1px, 0) scaleX(1.06) scaleY(1.26) skewX(-7deg);
+        text-shadow: -3px 0 0 rgba(236, 72, 153, 0.8), 3px 0 0 rgba(6, 182, 212, 0.9), 0 0 26px rgba(6, 182, 212, 0.85);
+    }
+    29% {
+        transform: translate3d(-3px, 0.5px, 0) scaleX(0.95) scaleY(0.90) skewX(4deg);
+    }
+    35% {
+        /* Rolling sub-bass rumble 2 */
+        transform: translate3d(2px, -0.2px, 0) scaleY(1.08);
+        text-shadow: 0 0 12px rgba(6, 182, 212, 0.7);
+    }
+    40% {
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
+    }
+    50% {
+        /* Bombo 3 (Peak) */
+        transform: translate3d(5.8px, -1.1px, 0) scaleX(1.07) scaleY(1.28) skewX(-7.5deg);
+        text-shadow: -4px 0 0 rgba(236, 72, 153, 0.9), 4px 0 0 rgba(6, 182, 212, 1), 0 0 30px rgba(6, 182, 212, 0.9);
+    }
+    54% {
+        transform: translate3d(-3.2px, 0.5px, 0) scaleX(0.95) scaleY(0.89) skewX(4.5deg);
+    }
+    60% {
+        /* Rolling sub-bass rumble 3 */
+        transform: translate3d(2.2px, -0.3px, 0) scaleY(1.10);
+        text-shadow: 0 0 14px rgba(6, 182, 212, 0.75);
+    }
+    65% {
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
+    }
+    75% {
+        /* Bombo 4 */
+        transform: translate3d(6px, -1.2px, 0) scaleX(1.08) scaleY(1.30) skewX(-8deg);
+        text-shadow: -4px 0 0 rgba(236, 72, 153, 0.9), 4px 0 0 rgba(6, 182, 212, 1), 0 0 32px rgba(6, 182, 212, 0.95);
+    }
+    79% {
+        transform: translate3d(-2.8px, 0.4px, 0) scale(0.96);
+    }
+    83% {
+        /* Stutter Techno 1 */
+        transform: translate3d(4px, -0.8px, 0) scaleY(1.18) skewX(-5deg);
+        text-shadow: 0 0 18px rgba(6, 182, 212, 0.85);
+    }
+    88% {
+        transform: translate3d(-2px, 0.3px, 0) scale(0.98);
+    }
+    92% {
+        /* Stutter Techno 2 */
+        transform: translate3d(5px, -1px, 0) scaleY(1.24) skewX(-6deg);
+        text-shadow: -2px 0 0 rgba(236, 72, 153, 0.7), 2px 0 0 rgba(6, 182, 212, 0.8), 0 0 24px rgba(6, 182, 212, 0.9);
+    }
+    97% {
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
+        text-shadow: 0 0 2px rgba(6, 182, 212, 0.2);
+    }
+}
+
+/* 7. Resplandor neón pulsante en WAVE sincronizado con el bombo */
+@keyframes technoNeonPulse {
+    0%, 100% {
+        color: #06b6d4;
+        text-shadow: 0 0 4px rgba(6, 182, 212, 0.35);
+    }
+    4%, 25%, 50%, 75% {
+        color: #67e8f9;
+        text-shadow: 0 0 18px #06b6d4, 0 0 35px #06b6d4, 0 0 50px rgba(6, 182, 212, 0.9);
+    }
+    14%, 35%, 60% {
+        color: #22d3ee;
+        text-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+    }
+    83%, 92% {
+        color: #a5f3fc;
+        text-shadow: 0 0 22px #06b6d4, 0 0 40px rgba(6, 182, 212, 0.95);
+    }
+}
+
+/* Clases activas de la secuencia techno */
+.anim-woofer-chassis {
+    transform-origin: 14px 38px;
+    animation: technoChassisRecoil 2.0s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    will-change: transform;
+}
+
+.anim-woofer-cone,
+.anim-woofer-cone-3d {
+    transform-origin: 36px 28px;
+    animation: technoConeSequence 2.0s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    will-change: transform, filter;
+}
+
+.anim-woofer-surround,
+.anim-woofer-surround-3d {
+    transform-origin: 36px 28px;
+    animation: technoSurroundSequence 2.0s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    will-change: transform, opacity;
+}
+
+.anim-woofer-dustcap,
+.anim-woofer-dustcap-3d {
+    transform-origin: 36px 28px;
+    animation: technoDustCapSequence 2.0s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    will-change: transform, filter;
+}
+
+.anim-woofer-blastwave {
+    transform-origin: 36px 28px;
+    animation: technoBlastWaves 2.0s infinite cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
+}
+
+/* --- ANIMACIÓN DEL RÓTULO BEATWAVE CON DISTORSIÓN VERTICAL ULTRA-BRUTAL SINCRONIZADA --- */
+.anim-soundwave {
+    color: #ffffff;
+    display: inline-block;
+    filter: url(#waveDistortion);
+    animation: technoTextSequence 2.0s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    transform-origin: left center;
+    will-change: filter, transform;
+}
+
+.anim-wave-bass-pulse {
+    animation: technoNeonPulse 2.0s infinite cubic-bezier(0.12, 0.9, 0.18, 1);
+    display: inline-block;
+}
+
+/* CHROMATIC BARS (Barras de ecualizador para micro-widgets) */
+@keyframes chroma1 { 0%, 100% { fill: #22d3ee; } 50% { fill: #ffffff; } }
+@keyframes chroma2 { 0%, 100% { fill: #ffffff; } 50% { fill: #22d3ee; } }
+@keyframes chroma3 { 0%, 100% { fill: #22d3ee; } 50% { fill: #ffffff; } }
+@keyframes chroma4 { 0%, 100% { fill: #ffffff; } 50% { fill: #22d3ee; } }
+@keyframes chroma5 { 0%, 100% { fill: #22d3ee; } 50% { fill: #ffffff; } }
+
+@keyframes bounce1 { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(0.85); } }
+@keyframes bounce2 { 0%, 100% { transform: scaleY(0.6); } 50% { transform: scaleY(1.0); } }
+@keyframes bounce3 { 0%, 100% { transform: scaleY(0.9); } 50% { transform: scaleY(0.45); } }
+@keyframes bounce4 { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(0.95); } }
+@keyframes bounce5 { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(0.75); } }
+
+.svg-bar { transform-box: fill-box; transform-origin: bottom; }
+.b1-epic { animation: bounce1 0.85s infinite cubic-bezier(0.16,1,0.3,1), chroma1 2.4s infinite; }
+.b2-epic { animation: bounce2 0.72s infinite cubic-bezier(0.16,1,0.3,1), chroma2 1.8s infinite; filter: drop-shadow(0 0 6px rgba(255,255,255,0.8)); }
+.b3-epic { animation: bounce3 0.96s infinite cubic-bezier(0.16,1,0.3,1), chroma3 2.8s infinite; }
+.b4-epic { animation: bounce4 0.65s infinite cubic-bezier(0.16,1,0.3,1), chroma4 1.2s infinite; filter: drop-shadow(0 0 8px rgba(6,182,212,0.6)); }
+.b5-epic { animation: bounce5 0.88s infinite cubic-bezier(0.16,1,0.3,1), chroma5 2.6s infinite; }
+
+/* ─── HIGH-CONTRAST CLUB MODE (Modo Cabina Oscura) ────────────────────────── */
+/* Diseñado para visibilidad óptima en cabina con baja iluminación, humo y LEDs. */
+body.club-mode,
+.club-mode {
+    --bg-club-base: #000000;
+    --border-club-focus: #00f0ff;
+    background-color: #000000 !important;
+}
+
+.club-mode table,
+.club-mode .bg-\[\#0f0f13\],
+.club-mode .bg-djzinc-950,
+.club-mode .bg-\[\#06060c\],
+.club-mode .bg-\[\#0a0a0e\] {
+    background-color: #000000 !important;
+}
+
+.club-mode .border-djzinc-800,
+.club-mode .border-djzinc-850 {
+    border-color: #1a1a24 !important;
+}
+
+/* Tipografías e información táctica hiper-legible */
+.club-mode .font-mono {
+    letter-spacing: 0.04em;
+}
+
+.club-mode .text-djcyan-400,
+.club-mode .text-djcyan-300 {
+    color: #00f0ff !important;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.45);
+}
+
+.club-mode .text-amber-400,
+.club-mode .text-amber-300 {
+    color: #ffb700 !important;
+    text-shadow: 0 0 8px rgba(255, 183, 0, 0.45);
+}
+
+.club-mode .text-djgreen-400 {
+    color: #00ff66 !important;
+    text-shadow: 0 0 8px rgba(0, 255, 102, 0.45);
+}
+
+.club-mode tr:hover {
+    background-color: rgba(0, 240, 255, 0.08) !important;
+}
+
+.club-mode .bg-djcyan-950\/40 {
+    background-color: rgba(0, 240, 255, 0.16) !important;
+    border-left-color: #00f0ff !important;
+}
+
+/* ==============================================================================
+   ANIMACIONES INTRO CINEMÁTICA Y BASS DROP 140 BPM (DISTORSIÓN RÍTMICA TIPO LOGO)
+   ============================================================================== */
+@keyframes bassKickShake {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
+        filter: drop-shadow(0 0 0 transparent) contrast(100%);
+    }
+    14% {
+        /* Golpe de bombo / kick hit: ligero skew, scale y aberración cromática rosa/cian como el logo */
+        transform: translate3d(-3.5px, 2px, 0) scaleX(1.025) scaleY(1.035) skewX(-2deg);
+        filter: contrast(118%) saturate(125%) 
+                drop-shadow(-3px 0 0 rgba(236, 72, 153, 0.45)) 
+                drop-shadow(3px 0 0 rgba(6, 182, 212, 0.55));
+    }
+    28% {
+        /* Rebote sutil contra-fase */
+        transform: translate3d(2px, -1.5px, 0) scaleX(0.99) scaleY(0.985) skewX(1.2deg);
+        filter: contrast(110%) saturate(115%) 
+                drop-shadow(-1.5px 0 0 rgba(236, 72, 153, 0.25)) 
+                drop-shadow(1.5px 0 0 rgba(6, 182, 212, 0.35));
+    }
+    45% {
+        /* Desvanecimiento armónico del sub-grave */
+        transform: translate3d(-1px, 0.5px, 0) scale(1.006) skewX(-0.5deg);
+        filter: contrast(105%) saturate(108%) drop-shadow(0 0 12px rgba(6, 182, 212, 0.25));
+    }
+    70% {
+        transform: translate3d(0.5px, 0, 0) scale(1.002) skewX(0deg);
+        filter: contrast(102%) saturate(103%);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) scale(1) skewX(0deg);
+        filter: contrast(100%) saturate(100%);
+    }
+}
+
+.anim-bass-shake {
+    animation: bassKickShake 0.42857s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ==========================================================================
+   LOGOTIPO BEATWAVE PRO: ESTADO LIMPIO Y ESTÁTICO (SIN ANIMACIÓN DE ENTRADA)
+   ========================================================================== */
+
+.anim-smooth-logo-entrance {
+    opacity: 1;
+    transform: none;
+}
+
+/* ==========================================================================
+   TRIPPY EFFECTS (ENVATO TEMPLATE STYLE) - LIQUID WARP, ACID MELT & DISTORTION
+   ========================================================================== */
+
+@keyframes trippyHueCycle {
+    0% {
+        filter: hue-rotate(0deg) saturate(140%) contrast(110%);
+    }
+    25% {
+        filter: hue-rotate(90deg) saturate(180%) contrast(125%) brightness(1.05);
+    }
+    50% {
+        filter: hue-rotate(180deg) saturate(220%) contrast(140%) brightness(1.1);
+    }
+    75% {
+        filter: hue-rotate(270deg) saturate(180%) contrast(125%) brightness(1.05);
+    }
+    100% {
+        filter: hue-rotate(360deg) saturate(140%) contrast(110%);
+    }
+}
+
+@keyframes trippyWaveMotion {
+    0%, 100% {
+        transform: scale(1.09) translate3d(0, 0, 0) skewX(0deg);
+    }
+    25% {
+        transform: scale(1.12) translate3d(-6px, 4px, 0) skewX(-1.5deg) skewY(0.8deg);
+    }
+    50% {
+        transform: scale(1.10) translate3d(5px, -5px, 0) skewX(1.8deg) skewY(-1.2deg);
+    }
+    75% {
+        transform: scale(1.13) translate3d(-4px, -3px, 0) skewX(-1deg) skewY(1deg);
+    }
+}
+
+@keyframes trippyAcidMotion {
+    0%, 100% {
+        transform: scale(1.12) translate3d(0, 0, 0) rotate(0deg);
+    }
+    20% {
+        transform: scale(1.15) translate3d(-8px, 6px, 0) rotate(-1deg) skewX(2deg);
+    }
+    40% {
+        transform: scale(1.11) translate3d(7px, -6px, 0) rotate(1.2deg) skewY(-2deg);
+    }
+    60% {
+        transform: scale(1.16) translate3d(-6px, -5px, 0) rotate(-0.8deg) skewX(-1.5deg);
+    }
+    80% {
+        transform: scale(1.13) translate3d(8px, 5px, 0) rotate(1deg) skewY(1.5deg);
+    }
+}
+
+@keyframes trippyVortexMotion {
+    0% {
+        transform: scale(1.04) rotate(0deg) skewX(0deg);
+    }
+    50% {
+        transform: scale(1.08) rotate(1.5deg) skewX(-1.5deg);
+    }
+    100% {
+        transform: scale(1.04) rotate(0deg) skewX(0deg);
+    }
+}
+
+@keyframes trippyRgbSplitRed {
+    0%, 100% {
+        transform: translate3d(0, 0, 0);
+        opacity: 0.15;
+    }
+    20%, 80% {
+        transform: translate3d(-8px, 3px, 0) scale(1.02);
+        opacity: 0.70;
+    }
+    50% {
+        transform: translate3d(9px, -4px, 0) scale(1.03);
+        opacity: 0.85;
+    }
+}
+
+@keyframes trippyRgbSplitCyan {
+    0%, 100% {
+        transform: translate3d(0, 0, 0);
+        opacity: 0.15;
+    }
+    25%, 75% {
+        transform: translate3d(8px, -3px, 0) scale(1.02);
+        opacity: 0.70;
+    }
+    55% {
+        transform: translate3d(-9px, 4px, 0) scale(1.03);
+        opacity: 0.85;
+    }
+}
+
+.trippy-scanlines {
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0),
+        rgba(255, 255, 255, 0) 50%,
+        rgba(0, 0, 0, 0.4) 50%,
+        rgba(0, 0, 0, 0.4)
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+}
+
+@keyframes trippyPrismGlow {
+    0%, 100% {
+        opacity: 0.25;
+        background: radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.4), transparent 65%);
+    }
+    50% {
+        opacity: 0.6;
+        background: radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.55), transparent 70%);
+    }
+}
+
+.trippy-prism-glow {
+    animation: trippyPrismGlow 3s infinite ease-in-out;
+    pointer-events: none;
+}
+
+/* Modos de distorsión líquida y dibujo comic con SVG Displacement & Convolve Filters */
+.trippy-distort-comic {
+    filter: url(#trippy-comic-filter);
+    transform: scale(1.02);
+    will-change: transform, filter;
+}
+
+.trippy-distort-comic-warp {
+    filter: url(#trippy-comic-warp-filter);
+    animation: trippyHueCycle 10s infinite linear, trippyWaveMotion 5s infinite ease-in-out;
+    will-change: transform, filter;
+}
+
+.trippy-distort-liquid {
+    filter: url(#trippy-liquid-filter);
+    animation: trippyHueCycle 8s infinite linear, trippyWaveMotion 5s infinite ease-in-out;
+    will-change: transform, filter;
+}
+
+.trippy-distort-acid {
+    filter: url(#trippy-acid-filter) invert(8%) saturate(260%) contrast(140%);
+    animation: trippyHueCycle 3.5s infinite linear, trippyAcidMotion 2.2s infinite ease-in-out;
+    will-change: transform, filter;
+}
+
+.trippy-distort-vortex {
+    filter: url(#trippy-vortex-filter) brightness(0.85) contrast(125%) saturate(160%);
+    animation: trippyVortexMotion 7s infinite ease-in-out;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+/* ==============================================================================
+   BEATWAVE PRO — LOGOTIPO CORPORATIVO DE 5 BARRAS (BUCLE CONSTANTE DE 3 SEGUNDOS)
+   ============================================================================== */
+.bw-equalizer-bar-1,
+.bw-equalizer-bar-2,
+.bw-equalizer-bar-3,
+.bw-equalizer-bar-4,
+.bw-equalizer-bar-5 {
+    transform-box: fill-box;
+    transform-origin: center center;
+    animation-duration: 3s;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+    will-change: transform;
+}
+
+.bw-equalizer-bar-1 { animation-name: bwBarMotion1; }
+.bw-equalizer-bar-2 { animation-name: bwBarMotion2; }
+.bw-equalizer-bar-3 { animation-name: bwBarMotion3; }
+.bw-equalizer-bar-4 { animation-name: bwBarMotion4; }
+.bw-equalizer-bar-5 { animation-name: bwBarMotion5; }
+
+@keyframes bwBarMotion1 {
+    0%, 100% { transform: scaleY(1.0); }
+    18% { transform: scaleY(1.36); }
+    38% { transform: scaleY(0.70); }
+    58% { transform: scaleY(1.22); }
+    78% { transform: scaleY(0.82); }
+}
+
+@keyframes bwBarMotion2 {
+    0%, 100% { transform: scaleY(1.0); }
+    22% { transform: scaleY(0.76); }
+    44% { transform: scaleY(1.26); }
+    66% { transform: scaleY(0.72); }
+    86% { transform: scaleY(1.14); }
+}
+
+@keyframes bwBarMotion3 {
+    0%, 100% { transform: scaleY(1.0); }
+    16% { transform: scaleY(0.82); }
+    36% { transform: scaleY(1.18); }
+    54% { transform: scaleY(0.74); }
+    74% { transform: scaleY(1.22); }
+    88% { transform: scaleY(0.90); }
+}
+
+@keyframes bwBarMotion4 {
+    0%, 100% { transform: scaleY(1.0); }
+    24% { transform: scaleY(1.30); }
+    46% { transform: scaleY(0.70); }
+    68% { transform: scaleY(1.20); }
+    84% { transform: scaleY(0.80); }
+}
+
+@keyframes bwBarMotion5 {
+    0%, 100% { transform: scaleY(1.0); }
+    20% { transform: scaleY(0.72); }
+    40% { transform: scaleY(1.40); }
+    60% { transform: scaleY(0.68); }
+    80% { transform: scaleY(1.26); }
+}
+
+
+
+

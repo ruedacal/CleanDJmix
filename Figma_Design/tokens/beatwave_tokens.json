@@ -1,0 +1,279 @@
+{
+  "global": {
+    "color": {
+      "djcyan": {
+        "200": {
+          "value": "#A5F3FC",
+          "type": "color",
+          "description": "Cyan Light Tint"
+        },
+        "300": {
+          "value": "#67E8F9",
+          "type": "color",
+          "description": "Cyan Glow / Neon"
+        },
+        "400": {
+          "value": "#22D3EE",
+          "type": "color",
+          "description": "Primary Brand Cyan (Focus, Active)"
+        },
+        "500": {
+          "value": "#06B6D4",
+          "type": "color",
+          "description": "Cyan Core"
+        },
+        "600": {
+          "value": "#0891B2",
+          "type": "color",
+          "description": "Cyan Dark Accent"
+        },
+        "700": {
+          "value": "#0E7490",
+          "type": "color",
+          "description": "Cyan Deep Accent"
+        },
+        "800": {
+          "value": "#155E75",
+          "type": "color",
+          "description": "Cyan Border / Stroke"
+        },
+        "900": {
+          "value": "#164E63",
+          "type": "color",
+          "description": "Cyan Surface Deep"
+        },
+        "950": {
+          "value": "#082f49",
+          "type": "color",
+          "description": "Cyan Dark Container"
+        }
+      },
+      "djzinc": {
+        "950": {
+          "value": "#09090B",
+          "type": "color",
+          "description": "App Canvas Background"
+        },
+        "925": {
+          "value": "#101014",
+          "type": "color",
+          "description": "Deep Surface / Panel"
+        },
+        "900": {
+          "value": "#121216",
+          "type": "color",
+          "description": "Card & Deck Surface"
+        },
+        "850": {
+          "value": "#18181F",
+          "type": "color",
+          "description": "Nested Wells & Controls"
+        },
+        "800": {
+          "value": "#202028",
+          "type": "color",
+          "description": "Subtle Borders"
+        },
+        "750": {
+          "value": "#2A2A35",
+          "type": "color",
+          "description": "Default Border / Hairlines"
+        },
+        "700": {
+          "value": "#32323F",
+          "type": "color",
+          "description": "Active Borders"
+        },
+        "600": {
+          "value": "#484858",
+          "type": "color",
+          "description": "Muted Text & Icons"
+        }
+      },
+      "signals": {
+        "sub_bass": {
+          "value": "#3B82F6",
+          "type": "color",
+          "description": "DSP Band < 150 Hz"
+        },
+        "low_mid": {
+          "value": "#EF4444",
+          "type": "color",
+          "description": "DSP Band 150-800 Hz"
+        },
+        "mid_high": {
+          "value": "#F59E0B",
+          "type": "color",
+          "description": "DSP Band 800-4000 Hz"
+        },
+        "treble": {
+          "value": "#22D3EE",
+          "type": "color",
+          "description": "DSP Band > 4000 Hz"
+        }
+      },
+      "semantic": {
+        "background": {
+          "value": "{color.djzinc.950}",
+          "type": "color"
+        },
+        "surface": {
+          "value": "{color.djzinc.900}",
+          "type": "color"
+        },
+        "surface_secondary": {
+          "value": "{color.djzinc.850}",
+          "type": "color"
+        },
+        "border": {
+          "value": "{color.djzinc.750}",
+          "type": "color"
+        },
+        "primary": {
+          "value": "{color.djcyan.400}",
+          "type": "color"
+        },
+        "success": {
+          "value": "#4ADE80",
+          "type": "color"
+        },
+        "warning": {
+          "value": "#FBBF24",
+          "type": "color"
+        },
+        "destructive": {
+          "value": "#F87171",
+          "type": "color"
+        }
+      }
+    },
+    "fontFamilies": {
+      "title": {
+        "value": "Syne, sans-serif",
+        "type": "fontFamilies"
+      },
+      "mono": {
+        "value": "'JetBrains Mono', monospace",
+        "type": "fontFamilies"
+      },
+      "body": {
+        "value": "Inter, sans-serif",
+        "type": "fontFamilies"
+      }
+    },
+    "fontSize": {
+      "display": {
+        "value": "48px",
+        "type": "fontSizes"
+      },
+      "h1": {
+        "value": "36px",
+        "type": "fontSizes"
+      },
+      "h2": {
+        "value": "30px",
+        "type": "fontSizes"
+      },
+      "h3": {
+        "value": "24px",
+        "type": "fontSizes"
+      },
+      "h4": {
+        "value": "20px",
+        "type": "fontSizes"
+      },
+      "body_lg": {
+        "value": "18px",
+        "type": "fontSizes"
+      },
+      "body": {
+        "value": "16px",
+        "type": "fontSizes"
+      },
+      "small": {
+        "value": "14px",
+        "type": "fontSizes"
+      },
+      "label": {
+        "value": "12px",
+        "type": "fontSizes"
+      },
+      "micro": {
+        "value": "10px",
+        "type": "fontSizes"
+      }
+    },
+    "borderRadius": {
+      "sm": {
+        "value": "4px",
+        "type": "borderRadius"
+      },
+      "md": {
+        "value": "8px",
+        "type": "borderRadius"
+      },
+      "lg": {
+        "value": "12px",
+        "type": "borderRadius"
+      },
+      "xl": {
+        "value": "16px",
+        "type": "borderRadius"
+      },
+      "2xl": {
+        "value": "24px",
+        "type": "borderRadius"
+      },
+      "full": {
+        "value": "9999px",
+        "type": "borderRadius"
+      }
+    },
+    "spacing": {
+      "0": {
+        "value": "0px",
+        "type": "spacing"
+      },
+      "1": {
+        "value": "4px",
+        "type": "spacing"
+      },
+      "2": {
+        "value": "8px",
+        "type": "spacing"
+      },
+      "3": {
+        "value": "12px",
+        "type": "spacing"
+      },
+      "4": {
+        "value": "16px",
+        "type": "spacing"
+      },
+      "5": {
+        "value": "20px",
+        "type": "spacing"
+      },
+      "6": {
+        "value": "24px",
+        "type": "spacing"
+      },
+      "8": {
+        "value": "32px",
+        "type": "spacing"
+      },
+      "10": {
+        "value": "40px",
+        "type": "spacing"
+      },
+      "12": {
+        "value": "48px",
+        "type": "spacing"
+      },
+      "16": {
+        "value": "64px",
+        "type": "spacing"
+      }
+    }
+  }
+}

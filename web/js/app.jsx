@@ -29613,9 +29613,11 @@ const App = () => {
     const [pricingOpen, setPricingOpen] = useState(false);
     const [cinematicIntroOpen, setCinematicIntroOpen] = useState(() => {
         try {
+            const p = new URLSearchParams(window.location.search);
+            if (p.get('skipintro') === '1' || p.get('nointro') === '1') return false;
             return !sessionStorage.getItem('bw_intro_viewed');
         } catch (e) {
-            return true;
+            return false;
         }
     });
 
@@ -29636,12 +29638,40 @@ const App = () => {
 
     const t = (k) => (I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k]) || (I18N_TRANSLATIONS['es'][k]) || k;
 
-    const [activeTab, setActiveTab] = useState('audit');
+    const [activeTab, setActiveTab] = useState(() => {
+        try {
+            const p = new URLSearchParams(window.location.search);
+            const q = p.get('tab') || window.location.hash.replace('#', '');
+            if (q) {
+                const map = {
+                    'all': 'all', 'todas': 'all', 'galeria': 'all',
+                    'audit': 'audit', 'cabina': 'audit',
+                    'cues': 'hotcues', 'hotcues': 'hotcues',
+                    'sets': 'setbuilder', 'setbuilder': 'setbuilder',
+                    'map': 'map', 'mapa': 'map',
+                    'pool': 'spotify', 'spotify': 'spotify',
+                    'radar': 'shazam', 'shazam': 'shazam',
+                    'crates': 'taxonomy', 'taxonomy': 'taxonomy',
+                    'trends': 'trends',
+                    'knowledge': 'knowledge', 'conocimiento': 'knowledge',
+                    'copilot': 'copilot'
+                };
+                if (map[q.toLowerCase()]) return map[q.toLowerCase()];
+            }
+        } catch (e) {}
+        return 'audit';
+    });
     const [currentFolder, setCurrentFolder] = useState('/Users/admin/Music/mi musica');
-    const [auditTracks, setAuditTracks] = useState([]);
-    const [setBuilderTracks, setSetBuilderTracks] = useState([]);
+    const [auditTracks, setAuditTracks] = useState(() => {
+        return (typeof DEMO_MAP_TRACKS !== 'undefined' && Array.isArray(DEMO_MAP_TRACKS)) ? [...DEMO_MAP_TRACKS] : [];
+    });
+    const [setBuilderTracks, setSetBuilderTracks] = useState(() => {
+        return (typeof DEMO_MAP_TRACKS !== 'undefined' && Array.isArray(DEMO_MAP_TRACKS)) ? [...DEMO_MAP_TRACKS.slice(0, 8)] : [];
+    });
     const [spotifyTracks, setSpotifyTracks] = useState([]);
-    const [selectedTrack, setSelectedTrack] = useState(null);
+    const [selectedTrack, setSelectedTrack] = useState(() => {
+        return (typeof DEMO_MAP_TRACKS !== 'undefined' && DEMO_MAP_TRACKS[0]) ? DEMO_MAP_TRACKS[0].id : null;
+    });
     const currentTrack = selectedTrack ? (auditTracks.find(t => t.id === selectedTrack) || null) : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
