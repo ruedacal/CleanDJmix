@@ -394,6 +394,26 @@ const I18N_TRANSLATIONS = {
 // Unified icon system (Lucide geometry, consistent stroke) shared by every workspace.
 const Icons = ShellIcons;
 
+const SECTION_TITLE_CLASS = "font-syne font-black text-lg sm:text-xl leading-tight text-white tracking-wide uppercase";
+
+const SectionTitle = ({ icon: Icon, title, accent, badge, className = "" }) => (
+    <div className={`flex items-center gap-2.5 min-w-0 shrink-0 ${className}`}>
+        {Icon && (
+            <span className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0">
+                <Icon size={16} />
+            </span>
+        )}
+        <h2 className={`${SECTION_TITLE_CLASS} truncate`}>
+            {title}{accent && <span className="text-djcyan-400"> {accent}</span>}
+        </h2>
+        {badge && (
+            <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-djcyan-950 text-djcyan-400 border border-djcyan-800 shrink-0">
+                {badge}
+            </span>
+        )}
+    </div>
+);
+
 // Tooltip Flotante Educativo Desacoplado de Overflows mediante ReactDOM.createPortal
 const InfoTip = ({ text, title }) => {
     const [coords, setCoords] = useState(null);
@@ -9998,7 +10018,8 @@ const AuditWorkspace = ({
                 {/* 1. TOP BAR TÁCTICA: Ingesta, Contexto de Colección, Crear Biblioteca & Vista y Herramientas */}
                 <div className="px-3.5 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-3 z-20">
                     {/* IZQUIERDA: Contexto Activo de Biblioteca & Crear Biblioteca */}
-                    <div data-tour="tour-audit-select" className="flex items-center gap-2 shrink-0">
+                    <div data-tour="tour-audit-select" className="flex items-center gap-3 shrink-0">
+                        <SectionTitle icon={Icons.Activity} title="Auditar" accent="Biblioteca" />
                         {tracks && tracks.length > 0 && (
                             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[280px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
                                 <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>
@@ -13619,6 +13640,7 @@ const HotCuesWorkspace = ({
         <div className="ws-module ws-mod-hotcues flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200">
             {/* BARRA SUPERIOR: RUTA DE CARPETA, SELECTOR DE PISTAS Y ACCIONES */}
             <header className="border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm">
+                <SectionTitle icon={Icons.Target} title="Cues" accent="Hot Cue Studio" />
                 {/* Directorio Actual & Botón Cambiar Carpeta (Versión Desktop) */}
                 <div className="hidden md:flex items-center gap-2 min-w-0 shrink-0">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]" title={currentFolder}>
@@ -24499,17 +24521,7 @@ const SetBuilderWorkspace = ({
             <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-2.5">
-                            <span className="p-1.5 rounded-lg bg-gradient-to-br from-djcyan-500/20 to-purple-500/20 text-djcyan-400 border border-djcyan-500/30">
-                                <Icons.Flow />
-                            </span>
-                            <h2 className="text-xl font-mono font-black tracking-tight text-white uppercase flex items-center gap-2">
-                                <span>Set-Builder & Energy Flow Canvas</span>
-                                <span className="text-[10px] bg-djcyan-950 text-djcyan-400 border border-djcyan-800 px-2 py-0.5 rounded-full font-mono font-normal">
-                                    PRO DJ SET ENGINE
-                                </span>
-                            </h2>
-                        </div>
+                        <SectionTitle icon={Icons.Flow} title="Sets" accent="Energy Flow" badge="PRO DJ SET ENGINE" />
                         <p className="text-xs text-gray-400 mt-1 max-w-2xl font-sans">
                             Estructura la progresión armónica de tu sesión en vivo. Visualiza curvas de BPM, transiciones Camelot (+1, -1, cambios modales), saltos de volumen LUFS y alertas Anti-Muddy en tiempo real.
                         </p>
@@ -26181,19 +26193,7 @@ const MapWorkspace = ({
             <div className="p-2.5 sm:px-4 bg-[var(--bw-surface-1)] border-b border-[var(--bw-line)] flex flex-wrap items-center justify-between gap-2.5 shrink-0 z-20 backdrop-blur-md">
                 {/* LADO IZQUIERDO: TÍTULO Y SELECTOR DE PROYECCIÓN ESPACIAL */}
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] shadow-sm">
-                            <Icons.Map size={15} />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-1.5">
-                                <span className="font-syne font-bold text-xs tracking-wider uppercase text-white">Scatter Map</span>
-                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 font-bold">
-                                    2D
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                    <SectionTitle icon={Icons.Map} title="Map" accent="Scatter" badge="2D" />
 
                     {/* SELECTOR DE PROYECCIÓN DE COORDENADAS CON DS 3.0 */}
                     <div className="ws-seg" role="group" aria-label="Proyección espacial">
@@ -28810,8 +28810,8 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     }`}></span>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h2 className="font-syne font-black text-xl sm:text-2xl text-white tracking-wide uppercase">
-                                MONITOR TÁCTICO <span className="text-djcyan-400">CABINA DJ</span>
+                            <h2 className={SECTION_TITLE_CLASS}>
+                                Copilot <span className="text-djcyan-400">Cabina DJ</span>
                             </h2>
                             {/* BADGE DEL SOFTWARE ACTIVO CON LOGO VECTORIAL */}
                             <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[11px]">
