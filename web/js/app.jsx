@@ -23167,6 +23167,7 @@ const SetBuilderWorkspace = ({
     const [isLoadingGraph, setIsLoadingGraph] = useState(false);
     const [aiAuditResult, setAiAuditResult] = useState(null);
     const [isLoadingAiAudit, setIsLoadingAiAudit] = useState(false);
+    const [hoveredFlowIdx, setHoveredFlowIdx] = useState(null);
 
     // Sincronizar automáticamente metadatos si las pistas fueron auditadas en otra pestaña
     useEffect(() => {
@@ -23940,12 +23941,16 @@ const SetBuilderWorkspace = ({
                         {points.map((p, idx) => {
                             const isSelected = selectedTrackIdx === idx;
                             const isCurPlaying = isThisTrack(p.track) && isPlaying;
+                            const isHovered = hoveredFlowIdx === idx;
                             const keyStr = getTrackKey(p.track);
+                            const nodeRadius = isSelected || isCurPlaying ? 11 : (isHovered ? 8.5 : 6.5);
 
                             return (
                                 <g 
                                     key={idx} 
-                                    className="cursor-pointer group"
+                                    className="cursor-pointer"
+                                    onMouseEnter={() => setHoveredFlowIdx(idx)}
+                                    onMouseLeave={() => setHoveredFlowIdx(prev => (prev === idx ? null : prev))}
                                     onClick={() => {
                                         setSelectedTrackIdx(idx);
                                         if (isThisTrack(p.track)) {
@@ -23955,23 +23960,26 @@ const SetBuilderWorkspace = ({
                                         }
                                     }}
                                 >
-                                    {/* Halo resplandeciente en hover/select */}
+                                    {/* Área de impacto fija: el hover no depende del tamaño animado del nodo */}
+                                    <circle cx={p.x} cy={p.y} r="16" fill="transparent" />
+
+                                    {/* Nodo visual: solo cambia el radio (sin transform CSS) para evitar el parpadeo */}
                                     <circle
                                         cx={p.x}
                                         cy={p.y}
-                                        r={isSelected || isCurPlaying ? "11" : "6.5"}
+                                        r={nodeRadius}
                                         fill={isCurPlaying ? "#ec4899" : isSelected ? "#06b6d4" : (p.hasRealBpm ? "#18181b" : "#27272a")}
-                                        stroke={isCurPlaying ? "#ffffff" : isSelected ? "#38bdf8" : (p.hasRealBpm ? "#a855f7" : "#f59e0b")}
+                                        stroke={isCurPlaying ? "#ffffff" : (isSelected || isHovered) ? "#38bdf8" : (p.hasRealBpm ? "#a855f7" : "#f59e0b")}
                                         strokeWidth={isSelected || isCurPlaying ? "3" : (p.hasRealBpm ? "2" : "1.5")}
                                         strokeDasharray={p.hasRealBpm ? "none" : "2 2"}
-                                        className="transition-all duration-200 group-hover:scale-125"
-                                    >
-                                        <title>{`Track #${idx + 1}: ${p.track.title || p.track.t || 'Pista'} | BPM: ${p.hasRealBpm ? p.bpm : '-- (Sin auditar)'} | Key: ${keyStr || '--'} (Clic para reproducir/pausar)`}</title>
-                                    </circle>
+                                        pointerEvents="none"
+                                        style={{ transition: 'r 160ms ease, stroke 160ms ease' }}
+                                    />
 
                                     {/* Indicador de Play/Pause integrado en el nodo */}
                                     {(isSelected || isCurPlaying) && (
                                         <text
+                                            pointerEvents="none"
                                             x={p.x}
                                             y={p.y + 3}
                                             fill="#ffffff"
@@ -23986,6 +23994,7 @@ const SetBuilderWorkspace = ({
 
                                     {/* Etiqueta de Track # sobre el nodo */}
                                     <text
+                                        pointerEvents="none"
                                         x={p.x}
                                         y={p.y - 13}
                                         fill={isSelected ? "#38bdf8" : (p.hasRealBpm ? "#d4d4d8" : "#f59e0b")}
@@ -23999,6 +24008,7 @@ const SetBuilderWorkspace = ({
 
                                     {/* Badge de Tonalidad Camelot bajo el nodo */}
                                     <text
+                                        pointerEvents="none"
                                         x={p.x}
                                         y={height - padY + 14}
                                         fill={keyStr ? "#a855f7" : "#71717a"}
@@ -24012,6 +24022,29 @@ const SetBuilderWorkspace = ({
                                 </g>
                             );
                         })}
+
+                        {/* Tooltip estable: se dibuja encima y nunca captura el puntero */}
+                        {hoveredFlowIdx !== null && points[hoveredFlowIdx] && (() => {
+                            const hp = points[hoveredFlowIdx];
+                            const rawTitle = String(hp.track.title || hp.track.t || 'Pista');
+                            const title = rawTitle.length > 30 ? `${rawTitle.slice(0, 29)}…` : rawTitle;
+                            const tipW = 200;
+                            const tipH = 38;
+                            const tipX = Math.min(Math.max(hp.x - tipW / 2, 4), width - tipW - 4);
+                            const tipY = hp.y - tipH - 22 < 0 ? hp.y + 18 : hp.y - tipH - 22;
+                            const keyLabel = getTrackKey(hp.track) || '--';
+                            return (
+                                <g pointerEvents="none">
+                                    <rect x={tipX} y={tipY} width={tipW} height={tipH} rx="8" fill="#0e0e11" stroke="rgba(34,211,238,0.45)" />
+                                    <text x={tipX + 10} y={tipY + 15} fill="#fafafa" fontSize="10" fontWeight="bold" fontFamily="monospace">
+                                        {`#${hoveredFlowIdx + 1} ${title}`}
+                                    </text>
+                                    <text x={tipX + 10} y={tipY + 29} fill="#a1a1aa" fontSize="9" fontFamily="monospace">
+                                        {`BPM ${hp.hasRealBpm ? hp.bpm : '--'} · Key ${keyLabel} · Clic: reproducir`}
+                                    </text>
+                                </g>
+                            );
+                        })()}
                     </svg>
                 </div>
             </div>
@@ -26687,15 +26720,6 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                             <Icons.Film size={14} className="inline-block align-[-2px]" />
                             <span>Ver Teaser (60s)</span>
                         </button>
-                        <button
-                            type="button"
-                            onClick={() => window.abrirTutorial && window.abrirTutorial('tour')}
-                            className="px-3.5 py-2 bg-djcyan-950/80 hover:bg-djcyan-900 border border-djcyan-500/60 text-djcyan-300 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md font-mono"
-                            title="Lanzar el Tour Guiado Spotlight por la cabina"
-                        >
-                            <Icons.Search size={14} className="inline-block align-[-2px]" />
-                            <span>Tour Guiado Cabina</span>
-                        </button>
                         <a
                             href="/api/manual/pdf"
                             download="CleanDJmix_PRO_Manual_Funcional_y_Tecnico.pdf"
@@ -27592,18 +27616,6 @@ const CommercialTeaserModal = ({ isOpen, onClose, onOpenTour }) => {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        onClose();
-                                        if (onOpenTour) onOpenTour();
-                                    }}
-                                    className="px-4 py-2 rounded-xl bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 font-black text-xs cursor-pointer flex items-center gap-1.5 transition-all"
-                                >
-                                    <Icons.Target size={14} className="inline-block align-[-2px]" />
-                                    <span>Hacer Tour Paso a Paso en Cabina</span>
-                                </button>
-
                                 <button
                                     type="button"
                                     onClick={onClose}
@@ -29557,11 +29569,10 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                             Auditoría FFT, 8 Hot Cues, radar acústico y sincronización con Rekordbox, Serato y Traktor en una sola cabina.
                         </p>
 
-                        <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div className="mt-10 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
                             {[
                                 { id: 'login', title: 'Iniciar sesión', desc: 'Continúa tu sesión y tu biblioteca', Icon: Icons.LogIn, primary: true },
                                 { id: 'register', title: 'Crear cuenta', desc: 'Nueva licencia de club', Icon: Icons.UserPlus },
-                                { id: 'tour', title: 'Tour guiado', desc: 'Masterclass y guías rápidas', Icon: Icons.Compass },
                             ].map((option, index) => (
                                 <button
                                     key={option.id}

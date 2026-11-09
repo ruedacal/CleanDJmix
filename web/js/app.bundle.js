@@ -16565,6 +16565,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [isLoadingGraph, setIsLoadingGraph] = useState4(false);
     const [aiAuditResult, setAiAuditResult] = useState4(null);
     const [isLoadingAiAudit, setIsLoadingAiAudit] = useState4(false);
+    const [hoveredFlowIdx, setHoveredFlowIdx] = useState4(null);
     useEffect5(() => {
       if (!auditTracks || auditTracks.length === 0 || !setTracks || setTracks.length === 0) return;
       let hasChanges = false;
@@ -17200,12 +17201,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
       ), points.map((p, idx) => {
         const isSelected = selectedTrackIdx === idx;
         const isCurPlaying = isThisTrack(p.track) && isPlaying;
+        const isHovered = hoveredFlowIdx === idx;
         const keyStr = getTrackKey(p.track);
+        const nodeRadius = isSelected || isCurPlaying ? 11 : isHovered ? 8.5 : 6.5;
         return /* @__PURE__ */ React.createElement(
           "g",
           {
             key: idx,
-            className: "cursor-pointer group",
+            className: "cursor-pointer",
+            onMouseEnter: () => setHoveredFlowIdx(idx),
+            onMouseLeave: () => setHoveredFlowIdx((prev) => prev === idx ? null : prev),
             onClick: () => {
               setSelectedTrackIdx(idx);
               if (isThisTrack(p.track)) {
@@ -17215,23 +17220,25 @@ Respuesta: ${qa.a}`).join("\n\n"),
               }
             }
           },
+          /* @__PURE__ */ React.createElement("circle", { cx: p.x, cy: p.y, r: "16", fill: "transparent" }),
           /* @__PURE__ */ React.createElement(
             "circle",
             {
               cx: p.x,
               cy: p.y,
-              r: isSelected || isCurPlaying ? "11" : "6.5",
+              r: nodeRadius,
               fill: isCurPlaying ? "#ec4899" : isSelected ? "#06b6d4" : p.hasRealBpm ? "#18181b" : "#27272a",
-              stroke: isCurPlaying ? "#ffffff" : isSelected ? "#38bdf8" : p.hasRealBpm ? "#a855f7" : "#f59e0b",
+              stroke: isCurPlaying ? "#ffffff" : isSelected || isHovered ? "#38bdf8" : p.hasRealBpm ? "#a855f7" : "#f59e0b",
               strokeWidth: isSelected || isCurPlaying ? "3" : p.hasRealBpm ? "2" : "1.5",
               strokeDasharray: p.hasRealBpm ? "none" : "2 2",
-              className: "transition-all duration-200 group-hover:scale-125"
-            },
-            /* @__PURE__ */ React.createElement("title", null, `Track #${idx + 1}: ${p.track.title || p.track.t || "Pista"} | BPM: ${p.hasRealBpm ? p.bpm : "-- (Sin auditar)"} | Key: ${keyStr || "--"} (Clic para reproducir/pausar)`)
+              pointerEvents: "none",
+              style: { transition: "r 160ms ease, stroke 160ms ease" }
+            }
           ),
           (isSelected || isCurPlaying) && /* @__PURE__ */ React.createElement(
             "text",
             {
+              pointerEvents: "none",
               x: p.x,
               y: p.y + 3,
               fill: "#ffffff",
@@ -17245,6 +17252,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           /* @__PURE__ */ React.createElement(
             "text",
             {
+              pointerEvents: "none",
               x: p.x,
               y: p.y - 13,
               fill: isSelected ? "#38bdf8" : p.hasRealBpm ? "#d4d4d8" : "#f59e0b",
@@ -17259,6 +17267,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           /* @__PURE__ */ React.createElement(
             "text",
             {
+              pointerEvents: "none",
               x: p.x,
               y: height - padY + 14,
               fill: keyStr ? "#a855f7" : "#71717a",
@@ -17270,7 +17279,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
             keyStr || "--"
           )
         );
-      }))));
+      }), hoveredFlowIdx !== null && points[hoveredFlowIdx] && (() => {
+        const hp = points[hoveredFlowIdx];
+        const rawTitle = String(hp.track.title || hp.track.t || "Pista");
+        const title = rawTitle.length > 30 ? `${rawTitle.slice(0, 29)}\u2026` : rawTitle;
+        const tipW = 200;
+        const tipH = 38;
+        const tipX = Math.min(Math.max(hp.x - tipW / 2, 4), width - tipW - 4);
+        const tipY = hp.y - tipH - 22 < 0 ? hp.y + 18 : hp.y - tipH - 22;
+        const keyLabel = getTrackKey(hp.track) || "--";
+        return /* @__PURE__ */ React.createElement("g", { pointerEvents: "none" }, /* @__PURE__ */ React.createElement("rect", { x: tipX, y: tipY, width: tipW, height: tipH, rx: "8", fill: "#0e0e11", stroke: "rgba(34,211,238,0.45)" }), /* @__PURE__ */ React.createElement("text", { x: tipX + 10, y: tipY + 15, fill: "#fafafa", fontSize: "10", fontWeight: "bold", fontFamily: "monospace" }, `#${hoveredFlowIdx + 1} ${title}`), /* @__PURE__ */ React.createElement("text", { x: tipX + 10, y: tipY + 29, fill: "#a1a1aa", fontSize: "9", fontFamily: "monospace" }, `BPM ${hp.hasRealBpm ? hp.bpm : "--"} \xB7 Key ${keyLabel} \xB7 Clic: reproducir`));
+      })())));
     };
     const renderGraphPlaylists = () => {
       if (!setTracks || setTracks.length === 0) {
@@ -19000,16 +19019,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
       /* @__PURE__ */ React.createElement(Icons.Film, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, "Ver Teaser (60s)")
     ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => window.abrirTutorial && window.abrirTutorial("tour"),
-        className: "px-3.5 py-2 bg-djcyan-950/80 hover:bg-djcyan-900 border border-djcyan-500/60 text-djcyan-300 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md font-mono",
-        title: "Lanzar el Tour Guiado Spotlight por la cabina"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", null, "Tour Guiado Cabina")
-    ), /* @__PURE__ */ React.createElement(
       "a",
       {
         href: "/api/manual/pdf",
@@ -20190,10 +20199,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
           alt: "BEAT WAVE PRO \u2022 Precision Audio Intelligence",
           className: "w-[280px] sm:w-[420px] md:w-[500px] h-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.7)] group-hover:brightness-110 transition-all duration-300"
         }
-      )), /* @__PURE__ */ React.createElement("p", { className: "bw-gate-rise mt-7 max-w-lg text-pretty text-base leading-relaxed text-zinc-400", style: { animationDelay: "120ms" } }, "Auditor\xEDa FFT, 8 Hot Cues, radar ac\xFAstico y sincronizaci\xF3n con Rekordbox, Serato y Traktor en una sola cabina."), /* @__PURE__ */ React.createElement("div", { className: "mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3" }, [
+      )), /* @__PURE__ */ React.createElement("p", { className: "bw-gate-rise mt-7 max-w-lg text-pretty text-base leading-relaxed text-zinc-400", style: { animationDelay: "120ms" } }, "Auditor\xEDa FFT, 8 Hot Cues, radar ac\xFAstico y sincronizaci\xF3n con Rekordbox, Serato y Traktor en una sola cabina."), /* @__PURE__ */ React.createElement("div", { className: "mt-10 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2" }, [
         { id: "login", title: "Iniciar sesi\xF3n", desc: "Contin\xFAa tu sesi\xF3n y tu biblioteca", Icon: Icons.LogIn, primary: true },
-        { id: "register", title: "Crear cuenta", desc: "Nueva licencia de club", Icon: Icons.UserPlus },
-        { id: "tour", title: "Tour guiado", desc: "Masterclass y gu\xEDas r\xE1pidas", Icon: Icons.Compass }
+        { id: "register", title: "Crear cuenta", desc: "Nueva licencia de club", Icon: Icons.UserPlus }
       ].map((option, index) => /* @__PURE__ */ React.createElement(
         "button",
         {
