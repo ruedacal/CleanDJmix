@@ -8,7 +8,8 @@
     "build:js": "python3 scripts/build_offline.py --skip-vendor --skip-fonts --skip-css",
     "build:css": "python3 scripts/build_offline.py --skip-vendor --skip-fonts --skip-js",
     "build:vendor": "python3 scripts/build_offline.py --skip-fonts --skip-css --skip-js",
-    "dev": "python3 main_web.py"
+    "dev": "python3 scripts/dev_web.py",
+    "desktop": "python3 main_web.py"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",
