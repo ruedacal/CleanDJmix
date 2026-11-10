@@ -37,7 +37,7 @@ const HelpMenu = ({ items }) => {
                 <ShellIcons.ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
-                <div role="menu" className="bw-popover absolute right-0 top-full mt-2 w-72 p-1.5 z-50">
+                <div role="menu" className="bw-popover absolute right-0 top-full mt-2 w-72 p-1.5 z-[60]">
                     {items.map((item) => {
                         const Icon = ShellIcons[item.icon] || ShellIcons.Help;
                         const content = (
@@ -97,7 +97,7 @@ export const TopBar = ({
     const alias = (userProfile && userProfile.alias) || 'DJ';
 
     return (
-        <header className="bw-topbar relative z-30 flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4">
+        <header className="bw-topbar relative z-50 flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4">
             <div className="flex items-center shrink-0 min-w-0">{logo}</div>
 
             <div className="hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10">
