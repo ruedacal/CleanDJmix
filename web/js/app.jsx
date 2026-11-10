@@ -16615,7 +16615,7 @@ const SpotifyWorkspace = ({
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex-1 overflow-auto bg-[#08080b]">
+                            <div className="flex-1 overflow-auto bg-[#08080b] pb-36 md:pb-6">
                                 <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                                     <thead className="sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400">
                                         <tr>
@@ -16782,7 +16782,7 @@ const SpotifyWorkspace = ({
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 overflow-auto bg-[#08080b]">
+                    <div className="flex-1 overflow-auto bg-[#08080b] pb-36 md:pb-6">
                         <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                             <thead className="sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400">
                                 <tr>
@@ -18962,7 +18962,7 @@ const TaxonomyWorkspace = ({
     };
 
     return (
-        <div className="ws-module ws-mod-taxonomy flex flex-col h-full w-full overflow-hidden bg-djzinc-950 text-gray-200">
+        <div className="ws-module ws-mod-taxonomy flex flex-col h-full w-full overflow-y-auto pb-36 md:pb-8 bg-djzinc-950 text-gray-200">
             {/* ENCABEZADO Y SELECTOR DE VISTAS TAXONÓMICAS */}
             <div className="px-5 pt-4 pb-3 border-b border-djzinc-800 bg-[#08080c] shrink-0 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -28808,7 +28808,7 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     ];
 
     return (
-        <div className="flex flex-col w-full h-full p-4 sm:p-6 overflow-y-auto select-none bg-[#040407] text-gray-200">
+        <div className="flex flex-col w-full h-full p-4 sm:p-6 pb-36 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200">
             {/* Cabecera de la Pantalla Táctica */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-zinc-800 mb-6 gap-3">
                 <div className="flex items-center gap-3 flex-wrap">
