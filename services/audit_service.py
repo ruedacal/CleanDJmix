@@ -1100,7 +1100,7 @@ return folderPath'''
             e_num = int(info.get("energy") or 85)
             dance_num = int(info.get("danceability") or info.get("dance") or 85)
             from services.mood_intelligence_service import MoodIntelligenceService
-from services.genre_classifier_service import GenreClassifierDSP
+            from services.genre_classifier_service import GenreClassifierDSP
             fase_info = MoodIntelligenceService.clasificar_fase_sesion_dj(
                 bpm=bpm_num,
                 key=key_clean,
@@ -1966,10 +1966,10 @@ from services.genre_classifier_service import GenreClassifierDSP
                 track_sig = {}
 
             v_type = TagSanitizerService.extraer_tipo_version(search_v)
-                v_key = TagSanitizerService.extraer_clave_version(search_v)
-                t_copy["version_type"] = v_type
-                t_copy["version_key"] = v_key
-                trks_evaluados.append(t_copy)
+            v_key = TagSanitizerService.extraer_clave_version(search_v)
+            t_copy["version_type"] = v_type
+            t_copy["version_key"] = v_key
+            trks_evaluados.append(t_copy)
 
             # Clasificación y marcado de duplicados (agrupando por clave de versión exacta para proteger remixes distintos)
             por_version = collections.defaultdict(list)
