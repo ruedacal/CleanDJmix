@@ -22847,15 +22847,81 @@ Respuesta: ${qa.a}`).join("\n\n"),
       )
     );
   };
+  var CINEMATIC_HOOKS = [
+    {
+      id: "muddy-guard",
+      badge: "DSP EN DIRECTO \xB7 0 BARRO AC\xDASTICO",
+      color: "border-cyan-500/50 bg-cyan-950/80 text-cyan-300",
+      icon: Icons.Sliders,
+      headline: "\xBFPor qu\xE9 tus mezclas suenan sucias en el club y c\xF3mo erradicarlo al instante?",
+      body: "El algoritmo Anti-Muddy Guard analiza la densidad espectral FFT a 60fps y bloquea el empaste de subgraves antes de que toques el fader. Mezclas quir\xFArgicas garantizadas a 130+ dB.",
+      metric: "0% Empaste en Sala \xB7 130+ dB Cristalinos"
+    },
+    {
+      id: "hotcues",
+      badge: "8 HOT CUES \xB7 PREPARACI\xD3N EN 1 CLIC",
+      color: "border-emerald-500/50 bg-emerald-950/80 text-emerald-300",
+      icon: Icons.Cue,
+      headline: "Ahorra 200 horas de trabajo manual en cada festival o residencia",
+      body: "Detecci\xF3n instant\xE1nea de downbeats reales, ca\xEDdas masivas (drops) y transiciones perfectas inyectadas directamente en las etiquetas nativas Serato GEOB e ID3v2.4 sin tocar software lento.",
+      metric: "Etiquetado Serato GEOB & ID3v2.4 Nativo"
+    },
+    {
+      id: "copilot",
+      badge: "COPILOT IA \xB7 LATENCIA CERO (<25MS)",
+      color: "border-amber-500/50 bg-amber-950/80 text-amber-300",
+      icon: Icons.Brain,
+      headline: "Tu segundo cerebro en cabina: predice la reacci\xF3n de la pista antes de mezclar",
+      body: "Monitoreo en tiempo real de tus decks en Serato, Rekordbox o Traktor: previene choques arm\xF3nicos, calcula el delta de LUFS y te susurra el siguiente track ganador para romper la pista.",
+      metric: "Latencia <25ms \xB7 Serato \xB7 Rekordbox \xB7 Traktor"
+    },
+    {
+      id: "radar",
+      badge: "RADAR ESPECTRAL 3D & CONSTELACI\xD3N",
+      color: "border-purple-500/50 bg-purple-950/80 text-purple-300",
+      icon: Icons.Radar,
+      headline: "\xBFBloqueado buscando el siguiente tema? Encuentra la pareja perfecta en 0.2s",
+      body: "Navega toda tu colecci\xF3n como una galaxia espacial en 3D: agrupa temas por compatibilidad arm\xF3nica Camelot, densidad de graves y BPM para sets hipn\xF3ticos sin esfuerzo.",
+      metric: "Clustering 3D Espectral \xB7 Compatibilidad +1/-1"
+    },
+    {
+      id: "universal-sync",
+      badge: "1 USB UNIVERSAL \xB7 COMPATIBILIDAD TOTAL",
+      color: "border-blue-500/50 bg-blue-950/80 text-blue-300",
+      icon: Icons.Turntable,
+      headline: "Un solo USB. Cualquier cabina del mundo. Cero conversiones manuales",
+      body: "Exporta nativamente a Pioneer CDJ-3000, Rekordbox XML, Serato DJ Pro, Traktor Pro y VirtualDJ manteniendo la totalidad de cues, rejillas, notas y calificaciones intactas.",
+      metric: "1 USB Universal \xB7 Cero Bloqueo de Ecosistema"
+    },
+    {
+      id: "fake-detector",
+      badge: "DETECCI\xD3N REAL DE CALIDAD \xB7 ANTI-FAKE FLAC",
+      color: "border-rose-500/50 bg-rose-950/80 text-rose-300",
+      icon: Icons.Shield,
+      headline: "Desenmascara rips de YouTube y falsos MP3 antes de que rompan el sonido del club",
+      body: "Auditor\xEDa espectral por transformada r\xE1pida de Fourier que detecta cortes de agudos a 16kHz y 20kHz, certificando calidad de estudio profesional antes de pisar el escenario.",
+      metric: "Corte Real de Frecuencias \xB7 100% Calidad Club"
+    }
+  ];
   var AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
     const [phase, setPhase] = useState5("video");
     const [videoOpacity, setVideoOpacity] = useState5(1);
+    const [isTransitioning, setIsTransitioning] = useState5(false);
     const [selectedAlpha, setSelectedAlpha] = useState5(0.85);
     const [isMuted, setIsMuted] = useState5(false);
     const [isBassShaking, setIsBassShaking] = useState5(false);
+    const [activeHookIndex, setActiveHookIndex] = useState5(0);
+    const [isPausedHover, setIsPausedHover] = useState5(false);
     const videoRef = useRef6(null);
     const canvasRef = useRef6(null);
+    useEffect6(() => {
+      if (isPausedHover) return;
+      const interval = setInterval(() => {
+        setActiveHookIndex((prev) => (prev + 1) % CINEMATIC_HOOKS.length);
+      }, 4200);
+      return () => clearInterval(interval);
+    }, [isPausedHover]);
     useEffect6(() => {
       const timer = setTimeout(() => {
         setVideoOpacity(1);
@@ -22905,21 +22971,27 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setSelectedAlpha(0.85);
       }
       const timeLeft = vid.duration - vid.currentTime;
-      if (timeLeft <= 2 && videoOpacity > 0.02) {
+      if (timeLeft <= 1.8 && !isTransitioning) {
+        setIsTransitioning(true);
         setVideoOpacity(0);
+        setTimeout(() => {
+          setPhase("portal");
+        }, 1100);
       }
     };
     const handleVideoEnded = () => {
+      setIsTransitioning(true);
       setVideoOpacity(0);
       setTimeout(() => {
         setPhase("portal");
-      }, 300);
+      }, 1e3);
     };
     const handleSkip = () => {
+      setIsTransitioning(true);
       setVideoOpacity(0);
       setTimeout(() => {
         setPhase("portal");
-      }, 200);
+      }, 900);
     };
     const handleAction = (action) => {
       if (action === "login") {
@@ -22939,7 +23011,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     useEffect6(() => {
-      if (phase !== "portal") return;
+      if (phase !== "portal" && !isTransitioning) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -22968,11 +23040,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
       };
       render3D();
       return () => cancelAnimationFrame(animId);
-    }, [phase]);
+    }, [phase, isTransitioning]);
+    const currentHook = CINEMATIC_HOOKS[activeHookIndex] || CINEMATIC_HOOKS[0];
     return /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: "fixed inset-0 z-[99999] bg-[#000000] overflow-hidden flex flex-col justify-between font-sans text-white select-none",
+        className: "fixed inset-0 z-[99999] bg-[#09090b] overflow-hidden flex flex-col justify-between font-sans text-white select-none",
         onClick: () => {
           const vid = videoRef.current;
           if (vid && vid.muted) {
@@ -22981,79 +23054,134 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }
         }
       },
-      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "duotone-video-container absolute inset-0 w-full h-full bg-[#191414] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement(
-        "video",
+      /* @__PURE__ */ React.createElement(
+        "div",
         {
-          ref: videoRef,
-          autoPlay: true,
-          playsInline: true,
-          preload: "auto",
-          muted: isMuted,
-          onError: () => setPhase("portal"),
-          onTimeUpdate: handleTimeUpdate,
-          onEnded: handleVideoEnded,
-          src: "assets/intro_cinematic.mp4",
-          className: "duotone-video duotone-filter w-full h-full object-cover pointer-events-none",
+          className: "absolute inset-0 z-10 flex flex-col bg-[#09090b] overflow-y-auto custom-scrollbar",
+          style: {
+            opacity: phase === "portal" ? 1 : isTransitioning ? 1 : 0,
+            pointerEvents: phase === "portal" || isTransitioning ? "auto" : "none",
+            transform: phase === "portal" || isTransitioning ? "scale(1)" : "scale(0.98)",
+            transition: "opacity 1100ms cubic-bezier(0.16, 1, 0.3, 1), transform 1100ms cubic-bezier(0.16, 1, 0.3, 1)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none opacity-35" }),
+        /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(34,211,238,0.18),transparent_70%)] pointer-events-none" }),
+        /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,#09090b)] pointer-events-none" }),
+        /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between gap-4 px-5 sm:px-8 pt-5 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-ping" }), /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-cyan-300 font-mono text-[11px] font-black uppercase tracking-widest hidden sm:inline" }, "BeatWave Pro \xB7 Precision Audio Intelligence")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 ml-auto" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => handleAction("pricing"),
+            className: "bw-btn bw-btn-primary font-bold shadow-[0_0_20px_rgba(34,211,238,0.4)]"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Crown, { size: 14 }),
+          /* @__PURE__ */ React.createElement("span", null, "Desbloquear Licencia Pro")
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => handleAction("cabin"),
+            className: "bw-btn bw-btn-ghost hover:text-white"
+          },
+          /* @__PURE__ */ React.createElement("span", null, "Entrar a la cabina"),
+          /* @__PURE__ */ React.createElement(Icons.ChevronRight, { size: 14 })
+        ))),
+        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-950/90 via-blue-950/80 to-purple-950/90 border border-cyan-500/50 text-cyan-300 text-xs font-mono font-black tracking-wider uppercase mb-3 shadow-[0_0_25px_rgba(6,182,212,0.35)] animate-pulse" }, /* @__PURE__ */ React.createElement(Icons.Flame, { size: 14, className: "text-amber-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", null, "El arma definitiva que los promotores y headliners exigen en 2026")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-3 max-w-4xl select-none group mb-2" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement(
+          "img",
+          {
+            src: "assets/beatwave_text.png",
+            alt: "BEAT WAVE PRO",
+            className: "w-[280px] sm:w-[400px] md:w-[460px] h-auto object-contain drop-shadow-[0_0_40px_rgba(6,182,212,0.8)] group-hover:brightness-110 transition-all duration-300"
+          }
+        )), /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            onMouseEnter: () => setIsPausedHover(true),
+            onMouseLeave: () => setIsPausedHover(false),
+            className: "w-full max-w-3xl my-3 p-5 sm:p-6 rounded-2xl bg-[#0f101d]/90 border border-cyan-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(6,182,212,0.08)] backdrop-blur-xl relative overflow-hidden transition-all text-left group"
+          },
+          /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent" }),
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3 mb-2.5" }, /* @__PURE__ */ React.createElement("span", { className: `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-mono font-black tracking-wider uppercase border shadow-sm ${currentHook.color}` }, /* @__PURE__ */ React.createElement(currentHook.icon, { size: 13, className: "shrink-0" }), /* @__PURE__ */ React.createElement("span", null, currentHook.badge)), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono text-zinc-500 font-bold" }, activeHookIndex + 1, " de ", CINEMATIC_HOOKS.length)),
+          /* @__PURE__ */ React.createElement("h2", { className: "text-lg sm:text-2xl font-black text-white leading-snug tracking-tight mb-2" }, currentHook.headline),
+          /* @__PURE__ */ React.createElement("p", { className: "text-sm sm:text-base text-zinc-300 leading-relaxed font-sans mb-3" }, currentHook.body),
+          /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "text-emerald-400" }), currentHook.metric), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, CINEMATIC_HOOKS.map((h, idx) => /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              key: h.id,
+              type: "button",
+              onClick: () => setActiveHookIndex(idx),
+              className: `h-1.5 rounded-full transition-all cursor-pointer ${idx === activeHookIndex ? "w-6 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" : "w-1.5 bg-zinc-700 hover:bg-zinc-500"}`,
+              title: h.headline
+            }
+          ))))
+        ), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => handleAction("pricing"),
+            className: "bw-gate-card bw-gate-rise is-primary relative overflow-hidden group shadow-[0_15px_40px_rgba(34,211,238,0.45)] cursor-pointer"
+          },
+          /* @__PURE__ */ React.createElement("div", { className: "absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-black/20 text-[9.5px] font-mono font-black uppercase tracking-wider text-black" }, "M\xC1S ELEGIDO"),
+          /* @__PURE__ */ React.createElement("span", { className: "flex h-10 w-10 items-center justify-center rounded-xl bg-black/15 group-hover:scale-110 transition-transform text-black shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Crown, { size: 22 })),
+          /* @__PURE__ */ React.createElement("span", { className: "flex flex-col gap-0.5 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "text-base font-black tracking-tight text-black" }, "Desbloquear Licencia Pro"), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-black/75 font-medium leading-tight" }, "Acceso total e ilimitado al motor DSP y Hot Cues"))
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => handleAction("login"),
+            className: "bw-gate-card bw-gate-rise bg-[#141524]/90 hover:bg-[#1a1c30] border-cyan-500/30 hover:border-cyan-400 relative overflow-hidden group shadow-lg cursor-pointer"
+          },
+          /* @__PURE__ */ React.createElement("span", { className: "flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-cyan-300 group-hover:scale-110 transition-transform shrink-0" }, /* @__PURE__ */ React.createElement(Icons.LogIn, { size: 20 })),
+          /* @__PURE__ */ React.createElement("span", { className: "flex flex-col gap-0.5 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "text-base font-bold text-white tracking-tight" }, "Iniciar Sesi\xF3n en Cabina"), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-400 font-medium leading-tight" }, "Contin\xFAa tu sesi\xF3n, maleta y preferencias"))
+        )), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] font-mono text-zinc-500 mt-3 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 12, className: "text-emerald-400" }), "Garant\xEDa de rendimiento en directo \xB7 100% Offline tras activaci\xF3n \xB7 Sin cuelgues")),
+        /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex flex-col sm:flex-row items-center justify-between gap-1.5 border-t border-white/5 px-5 sm:px-8 py-3.5 font-mono text-[11px] text-zinc-500 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400 font-bold" }, "ECOSISTEMA UNIVERSAL:"), /* @__PURE__ */ React.createElement("span", null, "CDJ-3000 \xB7 Rekordbox \xB7 Serato DJ Pro \xB7 Traktor Pro 3 \xB7 VirtualDJ")), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400/80 font-bold" }, "v2.4 Studio Pro \xB7 Ready for Tour"))
+      ),
+      phase === "video" && /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "duotone-video-container absolute inset-0 z-20 w-full h-full bg-[#191414] overflow-hidden flex items-center justify-center transition-opacity duration-1000 ease-out",
           style: {
             opacity: videoOpacity * selectedAlpha,
-            transform: "translateZ(0)",
-            willChange: "opacity, filter",
-            transition: "opacity 300ms ease",
-            filter: "grayscale(100%) contrast(120%) sepia(100%) hue-rotate(145deg) saturate(200%)"
+            pointerEvents: videoOpacity < 0.1 ? "none" : "auto"
           }
-        }
-      ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: (e) => {
-            e.stopPropagation();
-            handleSkip();
+        },
+        /* @__PURE__ */ React.createElement(
+          "video",
+          {
+            ref: videoRef,
+            autoPlay: true,
+            playsInline: true,
+            preload: "auto",
+            muted: isMuted,
+            onError: () => {
+              setVideoOpacity(0);
+              setPhase("portal");
+            },
+            onTimeUpdate: handleTimeUpdate,
+            onEnded: handleVideoEnded,
+            src: "assets/intro_cinematic.mp4",
+            className: "duotone-video duotone-filter w-full h-full object-cover pointer-events-none",
+            style: {
+              transform: "translateZ(0)",
+              filter: "grayscale(100%) contrast(120%) sepia(100%) hue-rotate(145deg) saturate(200%)"
+            }
+          }
+        ),
+        /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              handleSkip();
+            },
+            className: "px-4 py-2 rounded-full bg-black/75 hover:bg-black/95 border border-white/20 hover:border-cyan-400 text-gray-300 hover:text-white text-xs font-mono font-bold tracking-wider transition-all cursor-pointer shadow-[0_0_15px_rgba(0,0,0,0.8)] backdrop-blur-md flex items-center gap-1.5"
           },
-          className: "px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 hover:border-cyan-400 text-gray-400 hover:text-white text-xs font-mono font-bold tracking-wider transition-all cursor-pointer shadow-lg backdrop-blur-md"
-        },
-        "Saltar \u2794"
-      ))),
-      phase === "portal" && /* @__PURE__ */ React.createElement("div", { className: "relative z-50 flex-1 flex flex-col bg-[#09090b] animate-fadeIn" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none opacity-30" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(34,211,238,0.14),transparent_70%)] pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-[linear-gradient(to_bottom,transparent_55%,#09090b)] pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between gap-4 px-5 sm:px-8 pt-5" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow hidden sm:inline" }, "Precision Audio Intelligence"), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => handleAction("pricing"),
-          className: "bw-btn bw-btn-ghost ml-auto"
-        },
-        /* @__PURE__ */ React.createElement(Icons.Crown, { size: 14 }),
-        /* @__PURE__ */ React.createElement("span", null, "Planes y precios")
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => handleAction("cabin"),
-          className: "bw-btn bw-btn-ghost"
-        },
-        /* @__PURE__ */ React.createElement("span", null, "Entrar a la cabina"),
-        /* @__PURE__ */ React.createElement(Icons.ChevronRight, { size: 14 })
-      )), /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-10 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: "assets/beatwave_text.png",
-          alt: "BEAT WAVE PRO \u2022 Precision Audio Intelligence",
-          className: "w-[280px] sm:w-[420px] md:w-[500px] h-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.7)] group-hover:brightness-110 transition-all duration-300"
-        }
-      )), /* @__PURE__ */ React.createElement("p", { className: "bw-gate-rise mt-7 max-w-lg text-pretty text-base leading-relaxed text-zinc-400", style: { animationDelay: "120ms" } }, "Auditor\xEDa FFT, 8 Hot Cues, radar ac\xFAstico y sincronizaci\xF3n con Rekordbox, Serato y Traktor en una sola cabina."), /* @__PURE__ */ React.createElement("div", { className: "mt-10 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2" }, [
-        { id: "login", title: "Iniciar sesi\xF3n", desc: "Contin\xFAa tu sesi\xF3n y tu biblioteca", Icon: Icons.LogIn, primary: true },
-        { id: "register", title: "Crear cuenta", desc: "Nueva licencia de club", Icon: Icons.UserPlus }
-      ].map((option, index) => /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          key: option.id,
-          type: "button",
-          onClick: () => handleAction(option.id),
-          className: `bw-gate-card bw-gate-rise ${option.primary ? "is-primary" : ""}`,
-          style: { animationDelay: `${220 + index * 90}ms` }
-        },
-        /* @__PURE__ */ React.createElement("span", { className: `flex h-9 w-9 items-center justify-center rounded-lg ${option.primary ? "bg-black/10" : "bg-white/5 text-cyan-300"}` }, /* @__PURE__ */ React.createElement(option.Icon, { size: 18 })),
-        /* @__PURE__ */ React.createElement("span", { className: "flex flex-col gap-0.5" }, /* @__PURE__ */ React.createElement("span", { className: `text-base font-semibold ${option.primary ? "" : "text-white"}` }, option.title), /* @__PURE__ */ React.createElement("span", { className: `text-sm ${option.primary ? "text-black/65" : "text-zinc-500"}` }, option.desc))
-      )))), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex flex-col sm:flex-row items-center justify-between gap-1.5 border-t border-white/5 px-5 sm:px-8 py-4 font-mono text-[11px] text-zinc-600" }, /* @__PURE__ */ React.createElement("span", null, "CDJ-3000 \xB7 Serato \xB7 Rekordbox \xB7 Traktor \xB7 VirtualDJ"), /* @__PURE__ */ React.createElement("span", null, "v2.4 Studio Pro")))
+          /* @__PURE__ */ React.createElement("span", null, "Saltar Intro"),
+          /* @__PURE__ */ React.createElement(Icons.ChevronRight, { size: 14 })
+        ))
+      )
     );
   };
   var AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = "launcher" }) => {

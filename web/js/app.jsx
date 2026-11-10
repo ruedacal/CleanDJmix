@@ -32227,19 +32227,90 @@ const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
 // ==============================================================================
 // PRESENTACIÓN ESPECTACULAR A PANTALLA COMPLETA CON VÍDEO DE FONDO Y LÁSERES
 // ==============================================================================
+
+// Superpoderes persuasivos y hooks de alta conversión para el rotador dinámico
+const CINEMATIC_HOOKS = [
+    {
+        id: "muddy-guard",
+        badge: "DSP EN DIRECTO · 0 BARRO ACÚSTICO",
+        color: "border-cyan-500/50 bg-cyan-950/80 text-cyan-300",
+        icon: Icons.Sliders,
+        headline: "¿Por qué tus mezclas suenan sucias en el club y cómo erradicarlo al instante?",
+        body: "El algoritmo Anti-Muddy Guard analiza la densidad espectral FFT a 60fps y bloquea el empaste de subgraves antes de que toques el fader. Mezclas quirúrgicas garantizadas a 130+ dB.",
+        metric: "0% Empaste en Sala · 130+ dB Cristalinos"
+    },
+    {
+        id: "hotcues",
+        badge: "8 HOT CUES · PREPARACIÓN EN 1 CLIC",
+        color: "border-emerald-500/50 bg-emerald-950/80 text-emerald-300",
+        icon: Icons.Cue,
+        headline: "Ahorra 200 horas de trabajo manual en cada festival o residencia",
+        body: "Detección instantánea de downbeats reales, caídas masivas (drops) y transiciones perfectas inyectadas directamente en las etiquetas nativas Serato GEOB e ID3v2.4 sin tocar software lento.",
+        metric: "Etiquetado Serato GEOB & ID3v2.4 Nativo"
+    },
+    {
+        id: "copilot",
+        badge: "COPILOT IA · LATENCIA CERO (<25MS)",
+        color: "border-amber-500/50 bg-amber-950/80 text-amber-300",
+        icon: Icons.Brain,
+        headline: "Tu segundo cerebro en cabina: predice la reacción de la pista antes de mezclar",
+        body: "Monitoreo en tiempo real de tus decks en Serato, Rekordbox o Traktor: previene choques armónicos, calcula el delta de LUFS y te susurra el siguiente track ganador para romper la pista.",
+        metric: "Latencia <25ms · Serato · Rekordbox · Traktor"
+    },
+    {
+        id: "radar",
+        badge: "RADAR ESPECTRAL 3D & CONSTELACIÓN",
+        color: "border-purple-500/50 bg-purple-950/80 text-purple-300",
+        icon: Icons.Radar,
+        headline: "¿Bloqueado buscando el siguiente tema? Encuentra la pareja perfecta en 0.2s",
+        body: "Navega toda tu colección como una galaxia espacial en 3D: agrupa temas por compatibilidad armónica Camelot, densidad de graves y BPM para sets hipnóticos sin esfuerzo.",
+        metric: "Clustering 3D Espectral · Compatibilidad +1/-1"
+    },
+    {
+        id: "universal-sync",
+        badge: "1 USB UNIVERSAL · COMPATIBILIDAD TOTAL",
+        color: "border-blue-500/50 bg-blue-950/80 text-blue-300",
+        icon: Icons.Turntable,
+        headline: "Un solo USB. Cualquier cabina del mundo. Cero conversiones manuales",
+        body: "Exporta nativamente a Pioneer CDJ-3000, Rekordbox XML, Serato DJ Pro, Traktor Pro y VirtualDJ manteniendo la totalidad de cues, rejillas, notas y calificaciones intactas.",
+        metric: "1 USB Universal · Cero Bloqueo de Ecosistema"
+    },
+    {
+        id: "fake-detector",
+        badge: "DETECCIÓN REAL DE CALIDAD · ANTI-FAKE FLAC",
+        color: "border-rose-500/50 bg-rose-950/80 text-rose-300",
+        icon: Icons.Shield,
+        headline: "Desenmascara rips de YouTube y falsos MP3 antes de que rompan el sonido del club",
+        body: "Auditoría espectral por transformada rápida de Fourier que detecta cortes de agudos a 16kHz y 20kHz, certificando calidad de estudio profesional antes de pisar el escenario.",
+        metric: "Corte Real de Frecuencias · 100% Calidad Club"
+    }
+];
+
 const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
 
     const [phase, setPhase] = useState('video'); // 'video' | 'portal'
     const [videoOpacity, setVideoOpacity] = useState(1.0); // Opacidad visible directa
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const [selectedAlpha, setSelectedAlpha] = useState(0.85); // Alpha 85% exacto solicitado por el usuario
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
+    const [activeHookIndex, setActiveHookIndex] = useState(0);
+    const [isPausedHover, setIsPausedHover] = useState(false);
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
-    // ENTRADA DEL VÍDEO: Fade-in suave de 2 segundos desde negro absoluto
+    // Rotación automática continua de ganchos persuasivos
+    useEffect(() => {
+        if (isPausedHover) return;
+        const interval = setInterval(() => {
+            setActiveHookIndex(prev => (prev + 1) % CINEMATIC_HOOKS.length);
+        }, 4200);
+        return () => clearInterval(interval);
+    }, [isPausedHover]);
+
+    // ENTRADA DEL VÍDEO: Suave aparición inicial
     useEffect(() => {
         const timer = setTimeout(() => {
             setVideoOpacity(1.0);
@@ -32270,8 +32341,6 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
             playPromise.then(() => {
                 setIsMuted(false);
             }).catch(() => {
-                // Si la política del navegador bloquea el audio en un inicio,
-                // desmutear en cuanto haya cualquier interacción o movimiento del ratón/puntero
                 vid.muted = true;
                 setIsMuted(true);
                 vid.play().catch(() => {});
@@ -32286,10 +32355,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         }
     }, []);
 
-    // SEGUIMIENTO DE TIEMPO:
-    // - Vibración de bajos en el drop (9.259s)
-    // - Curva de Alpha Definitiva: 90% hasta que aparecen las chicas (15.175s), bajando a 75% hasta el final
-    // - Fade-Out de salida de 2 segundos
+    // SEGUIMIENTO DE TIEMPO Y DISOLUCIÓN ULTRA-SUAVE
     const handleTimeUpdate = () => {
         const vid = videoRef.current;
         if (!vid || !vid.duration) return;
@@ -32304,28 +32370,34 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
             setSelectedAlpha(0.85);
         }
 
-        // SALIDA DEL VÍDEO: Fade-out suave de 2.0 segundos a negro absoluto
+        // SALIDA DEL VÍDEO: Disolución cruzada gradual en los últimos 1.8 segundos sin corte negro
         const timeLeft = vid.duration - vid.currentTime;
-        if (timeLeft <= 2.0 && videoOpacity > 0.02) {
+        if (timeLeft <= 1.8 && !isTransitioning) {
+            setIsTransitioning(true);
             setVideoOpacity(0.0);
+            setTimeout(() => {
+                setPhase('portal');
+            }, 1100);
         }
     };
 
     const handleVideoEnded = () => {
+        setIsTransitioning(true);
         setVideoOpacity(0.0);
         setTimeout(() => {
             setPhase('portal');
-        }, 300);
+        }, 1000);
     };
 
     const handleSkip = () => {
+        setIsTransitioning(true);
         setVideoOpacity(0.0);
         setTimeout(() => {
             setPhase('portal');
-        }, 200);
+        }, 900);
     };
 
-    // Acciones al pulsar los botones del portal (sin pitido ni sonido en la X / cierre)
+    // Acciones al pulsar los botones del portal
     const handleAction = (action) => {
         if (action === 'login') {
             onClose();
@@ -32346,7 +32418,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
     // Atmósfera 3D y Rayos Láser en Fase Portal
     useEffect(() => {
-        if (phase !== 'portal') return;
+        if (phase !== 'portal' && !isTransitioning) return;
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -32380,11 +32452,13 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
         render3D();
         return () => cancelAnimationFrame(animId);
-    }, [phase]);
+    }, [phase, isTransitioning]);
+
+    const currentHook = CINEMATIC_HOOKS[activeHookIndex] || CINEMATIC_HOOKS[0];
 
     return (
         <div 
-            className="fixed inset-0 z-[99999] bg-[#000000] overflow-hidden flex flex-col justify-between font-sans text-white select-none"
+            className="fixed inset-0 z-[99999] bg-[#09090b] overflow-hidden flex flex-col justify-between font-sans text-white select-none"
             onClick={() => {
                 const vid = videoRef.current;
                 if (vid && vid.muted) {
@@ -32393,26 +32467,188 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: VÍDEO CINEMÁTICO CON EFECTO DUOTONE SIN DEGRADADOS (#191414 Sombreado -> #00FFFF Iluminación) */}
+            {/* CAPA 1: PUERTA DE ACCESO Y PORTAL ESPECTACULAR (SIEMPRE DISPONIBLE EN EL FONDO) */}
+            <div 
+                className="absolute inset-0 z-10 flex flex-col bg-[#09090b] overflow-y-auto custom-scrollbar"
+                style={{
+                    opacity: phase === 'portal' ? 1.0 : (isTransitioning ? 1.0 : 0.0),
+                    pointerEvents: phase === 'portal' || isTransitioning ? 'auto' : 'none',
+                    transform: phase === 'portal' || isTransitioning ? 'scale(1)' : 'scale(0.98)',
+                    transition: 'opacity 1100ms cubic-bezier(0.16, 1, 0.3, 1), transform 1100ms cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+            >
+                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-35" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(34,211,238,0.18),transparent_70%)] pointer-events-none" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,#09090b)] pointer-events-none" />
+
+                {/* Topbar del Portal */}
+                <div className="relative z-10 flex items-center justify-between gap-4 px-5 sm:px-8 pt-5 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                        <span className="bw-eyebrow text-cyan-300 font-mono text-[11px] font-black uppercase tracking-widest hidden sm:inline">
+                            BeatWave Pro · Precision Audio Intelligence
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 ml-auto">
+                        <button
+                            type="button"
+                            onClick={() => handleAction('pricing')}
+                            className="bw-btn bw-btn-primary font-bold shadow-[0_0_20px_rgba(34,211,238,0.4)]"
+                        >
+                            <Icons.Crown size={14} />
+                            <span>Desbloquear Licencia Pro</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleAction('cabin')}
+                            className="bw-btn bw-btn-ghost hover:text-white"
+                        >
+                            <span>Entrar a la cabina</span>
+                            <Icons.ChevronRight size={14} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Contenido Principal con Logo y Rotador de Hooks Persuasivos */}
+                <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto">
+                    {/* Badge / Kicker Clickbait de Alto Impacto */}
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-950/90 via-blue-950/80 to-purple-950/90 border border-cyan-500/50 text-cyan-300 text-xs font-mono font-black tracking-wider uppercase mb-3 shadow-[0_0_25px_rgba(6,182,212,0.35)] animate-pulse">
+                        <Icons.Flame size={14} className="text-amber-400 shrink-0" />
+                        <span>El arma definitiva que los promotores y headliners exigen en 2026</span>
+                    </div>
+
+                    {/* Logo Oficial + Tipografía */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-4xl select-none group mb-2">
+                        <BeatWaveLogoBadge size="lg" />
+                        <img 
+                            src="assets/beatwave_text.png" 
+                            alt="BEAT WAVE PRO" 
+                            className="w-[280px] sm:w-[400px] md:w-[460px] h-auto object-contain drop-shadow-[0_0_40px_rgba(6,182,212,0.8)] group-hover:brightness-110 transition-all duration-300"
+                        />
+                    </div>
+
+                    {/* ROTADOR DINÁMICO DE PUNCHLINES Y SUPERPODERES DEL PRODUCTO */}
+                    <div 
+                        onMouseEnter={() => setIsPausedHover(true)}
+                        onMouseLeave={() => setIsPausedHover(false)}
+                        className="w-full max-w-3xl my-3 p-5 sm:p-6 rounded-2xl bg-[#0f101d]/90 border border-cyan-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(6,182,212,0.08)] backdrop-blur-xl relative overflow-hidden transition-all text-left group"
+                    >
+                        {/* Glow superior de acento */}
+                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
+
+                        <div className="flex items-center justify-between gap-3 mb-2.5">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-mono font-black tracking-wider uppercase border shadow-sm ${currentHook.color}`}>
+                                <currentHook.icon size={13} className="shrink-0" />
+                                <span>{currentHook.badge}</span>
+                            </span>
+                            <span className="text-[11px] font-mono text-zinc-500 font-bold">
+                                {activeHookIndex + 1} de {CINEMATIC_HOOKS.length}
+                            </span>
+                        </div>
+
+                        <h2 className="text-lg sm:text-2xl font-black text-white leading-snug tracking-tight mb-2">
+                            {currentHook.headline}
+                        </h2>
+
+                        <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans mb-3">
+                            {currentHook.body}
+                        </p>
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-white/10">
+                            <span className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5">
+                                <Icons.Check size={14} className="text-emerald-400" />
+                                {currentHook.metric}
+                            </span>
+
+                            {/* Indicadores Pills interactivos */}
+                            <div className="flex items-center gap-1.5">
+                                {CINEMATIC_HOOKS.map((h, idx) => (
+                                    <button
+                                        key={h.id}
+                                        type="button"
+                                        onClick={() => setActiveHookIndex(idx)}
+                                        className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                            idx === activeHookIndex ? 'w-6 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]' : 'w-1.5 bg-zinc-700 hover:bg-zinc-500'
+                                        }`}
+                                        title={h.headline}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* BOTONES DE CONVERSIÓN & ACCESO A LICENCIA */}
+                    <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2">
+                        <button
+                            type="button"
+                            onClick={() => handleAction('pricing')}
+                            className="bw-gate-card bw-gate-rise is-primary relative overflow-hidden group shadow-[0_15px_40px_rgba(34,211,238,0.45)] cursor-pointer"
+                        >
+                            <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-black/20 text-[9.5px] font-mono font-black uppercase tracking-wider text-black">
+                                MÁS ELEGIDO
+                            </div>
+                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/15 group-hover:scale-110 transition-transform text-black shrink-0">
+                                <Icons.Crown size={22} />
+                            </span>
+                            <span className="flex flex-col gap-0.5 text-left">
+                                <span className="text-base font-black tracking-tight text-black">Desbloquear Licencia Pro</span>
+                                <span className="text-xs text-black/75 font-medium leading-tight">Acceso total e ilimitado al motor DSP y Hot Cues</span>
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => handleAction('login')}
+                            className="bw-gate-card bw-gate-rise bg-[#141524]/90 hover:bg-[#1a1c30] border-cyan-500/30 hover:border-cyan-400 relative overflow-hidden group shadow-lg cursor-pointer"
+                        >
+                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-cyan-300 group-hover:scale-110 transition-transform shrink-0">
+                                <Icons.LogIn size={20} />
+                            </span>
+                            <span className="flex flex-col gap-0.5 text-left">
+                                <span className="text-base font-bold text-white tracking-tight">Iniciar Sesión en Cabina</span>
+                                <span className="text-xs text-zinc-400 font-medium leading-tight">Continúa tu sesión, maleta y preferencias</span>
+                            </span>
+                        </button>
+                    </div>
+
+                    <p className="text-[11px] font-mono text-zinc-500 mt-3 flex items-center gap-1.5">
+                        <Icons.Check size={12} className="text-emerald-400" />
+                        Garantía de rendimiento en directo · 100% Offline tras activación · Sin cuelgues
+                    </p>
+                </main>
+
+                {/* Footer del Portal */}
+                <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-1.5 border-t border-white/5 px-5 sm:px-8 py-3.5 font-mono text-[11px] text-zinc-500 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <span className="text-zinc-400 font-bold">ECOSISTEMA UNIVERSAL:</span>
+                        <span>CDJ-3000 · Rekordbox · Serato DJ Pro · Traktor Pro 3 · VirtualDJ</span>
+                    </div>
+                    <span className="text-cyan-400/80 font-bold">v2.4 Studio Pro · Ready for Tour</span>
+                </div>
+            </div>
+
+            {/* CAPA 2: VÍDEO CINEMÁTICO (SE DISUELVE SUAVEMENTE SIN CORTE NEGRO) */}
             {phase === 'video' && (
-                <div className="duotone-video-container absolute inset-0 w-full h-full bg-[#191414] overflow-hidden flex items-center justify-center">
-                    {/* Vídeo con Duotone Tonal Puro CSS (Sombras #191414, Luces #00FFFF, sin degradado ni filtros SVG) */}
+                <div 
+                    className="duotone-video-container absolute inset-0 z-20 w-full h-full bg-[#191414] overflow-hidden flex items-center justify-center transition-opacity duration-1000 ease-out"
+                    style={{ 
+                        opacity: videoOpacity * selectedAlpha,
+                        pointerEvents: videoOpacity < 0.1 ? 'none' : 'auto'
+                    }}
+                >
                     <video
                         ref={videoRef}
                         autoPlay
                         playsInline
                         preload="auto"
                         muted={isMuted}
-                        onError={() => setPhase('portal')}
+                        onError={() => { setVideoOpacity(0.0); setPhase('portal'); }}
                         onTimeUpdate={handleTimeUpdate}
                         onEnded={handleVideoEnded}
                         src="assets/intro_cinematic.mp4"
                         className="duotone-video duotone-filter w-full h-full object-cover pointer-events-none"
                         style={{ 
-                            opacity: videoOpacity * selectedAlpha, 
                             transform: 'translateZ(0)',
-                            willChange: 'opacity, filter',
-                            transition: 'opacity 300ms ease',
                             filter: 'grayscale(100%) contrast(120%) sepia(100%) hue-rotate(145deg) saturate(200%)'
                         }}
                     />
@@ -32422,82 +32658,11 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); handleSkip(); }}
-                            className="px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 hover:border-cyan-400 text-gray-400 hover:text-white text-xs font-mono font-bold tracking-wider transition-all cursor-pointer shadow-lg backdrop-blur-md"
+                            className="px-4 py-2 rounded-full bg-black/75 hover:bg-black/95 border border-white/20 hover:border-cyan-400 text-gray-300 hover:text-white text-xs font-mono font-bold tracking-wider transition-all cursor-pointer shadow-[0_0_15px_rgba(0,0,0,0.8)] backdrop-blur-md flex items-center gap-1.5"
                         >
-                            Saltar ➔
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* FASE 2: PUERTA DE ACCESO — rediseño Design System 3.0 (el logo permanece intacto) */}
-            {phase === 'portal' && (
-                <div className="relative z-50 flex-1 flex flex-col bg-[#09090b] animate-fadeIn">
-                    <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-30" />
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(34,211,238,0.14),transparent_70%)] pointer-events-none" />
-                    <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_55%,#09090b)] pointer-events-none" />
-
-                    <div className="relative z-10 flex items-center justify-between gap-4 px-5 sm:px-8 pt-5">
-                        <span className="bw-eyebrow hidden sm:inline">Precision Audio Intelligence</span>
-                        <button
-                            type="button"
-                            onClick={() => handleAction('pricing')}
-                            className="bw-btn bw-btn-ghost ml-auto"
-                        >
-                            <Icons.Crown size={14} />
-                            <span>Planes y precios</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleAction('cabin')}
-                            className="bw-btn bw-btn-ghost"
-                        >
-                            <span>Entrar a la cabina</span>
+                            <span>Saltar Intro</span>
                             <Icons.ChevronRight size={14} />
                         </button>
-                    </div>
-
-                    <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-10 text-center">
-                        {/* COMPOSICIÓN OFICIAL: ICONO MÁS CERCA DE LA TIPOGRAFÍA Y SUBTÍTULO QUE OCUPA TODO EL ANCHO */}
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group">
-                            <BeatWaveLogoBadge size="lg" />
-                            <img 
-                                src="assets/beatwave_text.png" 
-                                alt="BEAT WAVE PRO • Precision Audio Intelligence" 
-                                className="w-[280px] sm:w-[420px] md:w-[500px] h-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.7)] group-hover:brightness-110 transition-all duration-300"
-                            />
-                        </div>
-                        <p className="bw-gate-rise mt-7 max-w-lg text-pretty text-base leading-relaxed text-zinc-400" style={{ animationDelay: '120ms' }}>
-                            Auditoría FFT, 8 Hot Cues, radar acústico y sincronización con Rekordbox, Serato y Traktor en una sola cabina.
-                        </p>
-
-                        <div className="mt-10 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
-                            {[
-                                { id: 'login', title: 'Iniciar sesión', desc: 'Continúa tu sesión y tu biblioteca', Icon: Icons.LogIn, primary: true },
-                                { id: 'register', title: 'Crear cuenta', desc: 'Nueva licencia de club', Icon: Icons.UserPlus },
-                            ].map((option, index) => (
-                                <button
-                                    key={option.id}
-                                    type="button"
-                                    onClick={() => handleAction(option.id)}
-                                    className={`bw-gate-card bw-gate-rise ${option.primary ? 'is-primary' : ''}`}
-                                    style={{ animationDelay: `${220 + index * 90}ms` }}
-                                >
-                                    <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${option.primary ? 'bg-black/10' : 'bg-white/5 text-cyan-300'}`}>
-                                        <option.Icon size={18} />
-                                    </span>
-                                    <span className="flex flex-col gap-0.5">
-                                        <span className={`text-base font-semibold ${option.primary ? '' : 'text-white'}`}>{option.title}</span>
-                                        <span className={`text-sm ${option.primary ? 'text-black/65' : 'text-zinc-500'}`}>{option.desc}</span>
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </main>
-
-                    <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-1.5 border-t border-white/5 px-5 sm:px-8 py-4 font-mono text-[11px] text-zinc-600">
-                        <span>CDJ-3000 · Serato · Rekordbox · Traktor · VirtualDJ</span>
-                        <span>v2.4 Studio Pro</span>
                     </div>
                 </div>
             )}
