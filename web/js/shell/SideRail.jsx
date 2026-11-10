@@ -21,7 +21,19 @@ const RailButton = ({ item, isActive, expanded, onSelect, t, badge }) => {
     );
 };
 
-export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, auditInfo, trackCount, onOpenCopilot }) => {
+export const SideRail = ({ 
+    activeTab, 
+    onSelect, 
+    t, 
+    expanded, 
+    onToggleExpanded, 
+    auditInfo, 
+    trackCount, 
+    onOpenCopilot,
+    onOpenLibrary,
+    libraryCount = 0,
+    isLibraryOpen = false
+}) => {
     const copilotActive = activeTab === 'copilot';
 
     return (
@@ -30,7 +42,7 @@ export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, a
             className={`bw-rail hidden md:flex flex-col shrink-0 min-h-0 ${expanded ? 'w-56' : 'w-[76px]'}`}
             data-expanded={expanded ? 'true' : 'false'}
         >
-            <div className="flex flex-col gap-1 p-2">
+            <div className="flex flex-col gap-1.5 p-2">
                 <button
                     type="button"
                     onClick={onOpenCopilot}
@@ -43,6 +55,21 @@ export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, a
                     <span className="bw-rail-label">{COPILOT_ITEM.fallback}</span>
                     <span className="bw-rail-caption">{COPILOT_ITEM.fallback}</span>
                     {expanded && <span className="bw-kbd ml-auto">LIVE</span>}
+                </button>
+
+                {/* Sección de menú Librería debajo de Copilot */}
+                <button
+                    type="button"
+                    onClick={onOpenLibrary}
+                    aria-current={isLibraryOpen ? 'page' : undefined}
+                    title="Librería — Gestor y creador de bibliotecas persistentes"
+                    className={`bw-rail-item group ${isLibraryOpen ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
+                >
+                    <span className="bw-led" aria-hidden="true" />
+                    <ShellIcons.Library size={18} className={isLibraryOpen ? "text-cyan-400" : "text-gray-400 group-hover:text-white"} />
+                    <span className="bw-rail-label">Librería</span>
+                    <span className="bw-rail-caption">Librería</span>
+                    {libraryCount > 0 && <span className="bw-rail-badge">{libraryCount}</span>}
                 </button>
             </div>
 

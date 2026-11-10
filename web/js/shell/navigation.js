@@ -32,10 +32,11 @@ export const NAV_GROUPS = [
 ];
 
 export const COPILOT_ITEM = { id: 'copilot', fallback: 'Copilot', icon: 'Turntable', hint: 'Monitor en vivo de cabina' };
+export const LIBRARY_ITEM = { id: 'library', fallback: 'Librería', icon: 'Library', hint: 'Gestor y creador de librerías persistentes' };
 
 export const MOBILE_PRIMARY_TABS = ['audit', 'hotcues', 'shazam', 'setbuilder'];
 
-const ALL_ITEMS = [...NAV_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))), { ...COPILOT_ITEM, group: 'En vivo' }];
+const ALL_ITEMS = [...NAV_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))), { ...COPILOT_ITEM, group: 'En vivo' }, { ...LIBRARY_ITEM, group: 'Gestión' }];
 
 export const findNavItem = (id) => ALL_ITEMS.find((item) => item.id === id) || ALL_ITEMS[0];
 

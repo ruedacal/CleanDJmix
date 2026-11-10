@@ -5564,9 +5564,11 @@ const UserAccountModal = ({
     );
 };
 
-// ─── CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS CON EXPORTACIÓN EXCEL ────────
+// ─── CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS CON EXPORTACIÓN EXCEL (DRAWER LATERAL DERECHO) ────────
 const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
     if (!isOpen) return null;
+
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_bitacora_drawer_width', 540);
 
     const [filterCategory, setFilterCategory] = useState('all');
     const [selectedIds, setSelectedIds] = useState(() => new Set(entries.map(e => e.id)));
@@ -5675,28 +5677,44 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn" onClick={onClose}>
+        <div className="fixed inset-0 overflow-hidden select-none pointer-events-none" style={{ zIndex: 99998 }}>
             <div 
-                className="w-full max-w-5xl h-[88vh] bg-[#0a0a14] border border-amber-500/40 rounded-3xl shadow-[0_0_50px_rgba(245,158,11,0.2)] overflow-hidden flex flex-col font-sans text-gray-200"
+                className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto"
+                style={{ zIndex: 99998 }}
+                onClick={onClose}
+            />
+            <aside 
+                style={{ width: '100%', maxWidth: `${drawerWidth}px`, zIndex: 99999 }}
+                className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Manija táctil de redimensión (Drag to Resize) para Desktop */}
+                <div 
+                    onPointerDown={onResizeDown}
+                    onDoubleClick={onResetWidth}
+                    className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors"
+                    title="Arrastra para redimensionar (Doble clic para restablecer a 540px)"
+                >
+                    <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                </div>
+
                 {/* Cabecera de la Bitácora */}
                 <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0e0e18] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(245,158,11,0.5)] shrink-0">
-                            <Icons.Notebook size={14} className="inline-block align-[-2px]" />
+                        <div className="w-9 h-9 rounded-xl bg-djcyan-950/80 border border-djcyan-500/50 flex items-center justify-center text-djcyan-400 text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black">
+                            <Icons.Notebook size={18} />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
-                                    <span>CUADERNO DE BITÁCORA & CAMBIOS</span>
-                                    <span className="text-[9px] bg-amber-950 text-amber-300 border border-amber-600/60 px-2 py-0.5 rounded-full font-bold">
-                                        REGISTRO AUDITABLE
+                                <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider flex items-center gap-2">
+                                    <span>CUADERNO DE BITÁCORA</span>
+                                    <span className="text-[9px] bg-djcyan-950 text-djcyan-300 border border-djcyan-600/60 px-2 py-0.5 rounded-full font-bold">
+                                        {entries.length} REGISTROS
                                     </span>
                                 </h3>
                             </div>
-                            <p className="text-[11px] text-gray-400 font-sans hidden sm:block">
-                                Historial cronológico de diagnósticos DSP, inyección de cues y optimizaciones realizadas en tu biblioteca.
+                            <p className="text-[10.5px] text-gray-400 font-mono truncate max-w-[280px]">
+                                HISTORIAL DSP, TAGS & OPERACIONES
                             </p>
                         </div>
                     </div>
@@ -5719,16 +5737,16 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                             { id: 'all', label: 'Todos' },
                             { id: 'audit', label: 'Auditoría DSP' },
                             { id: 'cues', label: 'Hot Cues' },
-                            { id: 'download', label: 'FLAC Lossless' },
-                            { id: 'crates', label: 'Crates & Tags' },
+                            { id: 'download', label: 'FLAC' },
+                            { id: 'crates', label: 'Crates' },
                         ].map(cat => (
                             <button
                                 key={cat.id}
                                 type="button"
                                 onClick={() => setFilterCategory(cat.id)}
-                                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap text-[11px] ${
                                     filterCategory === cat.id
-                                        ? 'bg-amber-500 text-black font-black shadow-sm'
+                                        ? 'bg-djcyan-500 text-black font-black shadow-sm'
                                         : 'bg-djzinc-900 text-gray-400 hover:text-white border border-djzinc-800'
                                 }`}
                             >
@@ -5744,17 +5762,17 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                             placeholder="Buscar en bitácora..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-800 text-white placeholder-gray-500 text-[11px] outline-none focus:border-amber-400 w-36 sm:w-48"
+                            className="px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-800 text-white placeholder-gray-500 text-[11px] outline-none focus:border-djcyan-400 w-32 sm:w-40"
                         />
 
                         <button
                             type="button"
                             onClick={exportToExcel}
-                            className="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-400/60 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
-                            title="Descargar hoja de cálculo Excel con las filas seleccionadas"
+                            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-400/60 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
+                            title="Descargar hoja de cálculo Excel (.xls)"
                         >
-                            <Icons.Excel size={14} className="inline-block align-[-2px]" />
-                            <span>Descargar Excel ({selectedIds.size})</span>
+                            <Icons.Excel size={13} className="inline-block align-[-2px]" />
+                            <span>Excel ({selectedIds.size})</span>
                         </button>
                     </div>
                 </div>
@@ -5764,26 +5782,25 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                     <table className="w-full text-left font-mono text-xs border-collapse">
                         <thead className="sticky top-0 bg-[#0d0e1c] border-b border-djzinc-800 text-[10px] uppercase text-gray-400 font-bold z-10">
                             <tr>
-                                <th className="p-2.5 w-10 text-center">
+                                <th className="p-2 w-8 text-center">
                                     <input 
                                         type="checkbox" 
                                         checked={isAllSelected}
                                         onChange={toggleSelectAll}
-                                        className="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer"
+                                        className="w-3.5 h-3.5 accent-djcyan-400 rounded cursor-pointer"
                                         title="Seleccionar o deseleccionar todas las filas"
                                     />
                                 </th>
-                                <th className="p-2.5 w-28">Hora</th>
-                                <th className="p-2.5 w-36">Operación</th>
-                                <th className="p-2.5 w-56">Pista / Archivo</th>
-                                <th className="p-2.5">Detalle del Cambio (Antes ➔ Después)</th>
-                                <th className="p-2.5 w-24 text-center">Estado</th>
+                                <th className="p-2 w-20">Hora</th>
+                                <th className="p-2 w-28">Operación</th>
+                                <th className="p-2">Pista & Detalle (Antes ➔ Después)</th>
+                                <th className="p-2 w-16 text-center">Estado</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 text-[11px]">
                             {filteredEntries.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="p-8 text-center text-gray-500">
+                                    <td colSpan="5" className="p-8 text-center text-gray-500">
                                         No hay registros que coincidan con el filtro seleccionado.
                                     </td>
                                 </tr>
@@ -5794,40 +5811,40 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                                         <tr 
                                             key={row.id}
                                             className={`transition-colors cursor-pointer ${
-                                                isSelected ? 'bg-amber-950/20 hover:bg-amber-950/30' : 'hover:bg-djzinc-900/40'
+                                                isSelected ? 'bg-djcyan-950/20 hover:bg-djcyan-950/30' : 'hover:bg-djzinc-900/40'
                                             }`}
                                             onClick={() => toggleSelectRow(row.id)}
                                         >
-                                            <td className="p-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                                            <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
                                                 <input 
                                                     type="checkbox"
                                                     checked={isSelected}
                                                     onChange={() => toggleSelectRow(row.id)}
-                                                    className="w-3.5 h-3.5 accent-amber-400 rounded cursor-pointer"
+                                                    className="w-3.5 h-3.5 accent-djcyan-400 rounded cursor-pointer"
                                                 />
                                             </td>
-                                            <td className="p-2.5 text-gray-400 whitespace-nowrap">{row.timestamp}</td>
-                                            <td className="p-2.5">
-                                                <span className="px-1.5 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-amber-300 font-bold text-[10px]">
+                                            <td className="p-2 text-gray-400 whitespace-nowrap text-[10px]">{row.timestamp}</td>
+                                            <td className="p-2">
+                                                <span className="px-1.5 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-djcyan-300 font-bold text-[9.5px]">
                                                     {row.action}
                                                 </span>
                                             </td>
-                                            <td className="p-2.5 font-bold text-white max-w-[200px] truncate" title={row.filePath || row.trackTitle}>
-                                                {row.trackTitle}
-                                            </td>
-                                            <td className="p-2.5 text-gray-300 leading-snug">
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
-                                                    <span className="px-1.5 py-0.2 rounded bg-rose-950/70 border border-rose-800 text-rose-300 text-[10px]">
+                                            <td className="p-2">
+                                                <div className="font-bold text-white truncate max-w-[220px]" title={row.filePath || row.trackTitle}>
+                                                    {row.trackTitle}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 mt-0.5 text-[9.5px]">
+                                                    <span className="px-1 py-0.2 rounded bg-rose-950/70 border border-rose-800 text-rose-300 truncate max-w-[100px]">
                                                         {row.detailsBefore}
                                                     </span>
-                                                    <span className="text-gray-500 hidden sm:inline">➔</span>
-                                                    <span className="px-1.5 py-0.2 rounded bg-emerald-950/80 border border-emerald-700 text-emerald-300 text-[10px] font-bold">
+                                                    <span className="text-gray-500">➔</span>
+                                                    <span className="px-1 py-0.2 rounded bg-emerald-950/80 border border-emerald-700 text-emerald-300 font-bold truncate max-w-[100px]">
                                                         {row.detailsAfter}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="p-2.5 text-center whitespace-nowrap">
-                                                <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700/60 font-bold text-[10px]">
+                                            <td className="p-2 text-center whitespace-nowrap">
+                                                <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700/60 font-bold text-[9.5px]">
                                                     {row.status || 'OK'}
                                                 </span>
                                             </td>
@@ -5843,7 +5860,7 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                 <div className="px-5 py-3 bg-[#0a0a14] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
                     <div className="flex items-center gap-3">
                         <span className="text-gray-400 text-[11px]">
-                            {selectedIds.size} de {filteredEntries.length} entradas seleccionadas
+                            {selectedIds.size} de {filteredEntries.length} seleccionadas
                         </span>
                         {entries.length > 0 && (
                             <button
@@ -5859,12 +5876,12 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer"
+                        className="px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer text-xs"
                     >
                         Cerrar (ESC)
                     </button>
                 </div>
-            </div>
+            </aside>
         </div>
     );
 };
@@ -8085,7 +8102,7 @@ const MixOracleModal = ({ isOpen, onClose, currentTrack, allTracks = [], onPlayT
     );
 };
 
-// ─── MODAL GESTOR DE BIBLIOTECAS Y ESTRUCTURADOR DE CARPETAS VIRTUALES / EN DISCO ───
+// ─── GESTOR DE LIBRERÍAS Y BIBLIOTECAS (COLUMNA / DRAWER LATERAL DERECHO) ───
 const CustomLibraryModal = ({
     isOpen,
     onClose,
@@ -8098,6 +8115,8 @@ const CustomLibraryModal = ({
     onMaterializarEnDisco
 }) => {
     if (!isOpen) return null;
+
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_library_drawer_width', 540);
 
     const [activeLibId, setActiveLibId] = useState(activeLibraryId || (libraries[0] && libraries[0].id) || 'lib_default');
     const [libNameInput, setLibNameInput] = useState('');
@@ -8284,29 +8303,44 @@ const CustomLibraryModal = ({
     const totalTracksInLib = (currentLib.folders || []).reduce((acc, f) => acc + (f.tracks?.length || 0), 0);
 
     return ReactDOM.createPortal(
-        <div 
-            className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
-            onClick={onClose}
-        >
+        <div className="fixed inset-0 overflow-hidden select-none pointer-events-none" style={{ zIndex: 99998 }}>
             <div 
-                className="bg-[#0b0c16] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden text-gray-200 my-auto animate-fadeIn"
+                className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto"
+                style={{ zIndex: 99998 }}
+                onClick={onClose}
+            />
+            <aside 
+                style={{ width: '100%', maxWidth: `${drawerWidth}px`, zIndex: 99999 }}
+                className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Manija táctil de redimensión (Drag to Resize) para Desktop */}
+                <div 
+                    onPointerDown={onResizeDown}
+                    onDoubleClick={onResetWidth}
+                    className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors"
+                    title="Arrastra para redimensionar (Doble clic para restablecer a 540px)"
+                >
+                    <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                </div>
+
                 {/* Cabecera */}
-                <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0c0e1e] to-[#080911] shrink-0">
+                <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0e0e18] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
-                        <Icons.Knowledge size={14} className="inline-block align-[-2px] p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" />
+                        <div className="w-9 h-9 rounded-xl bg-djcyan-950/80 border border-djcyan-500/50 flex items-center justify-center text-djcyan-400 text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black">
+                            <Icons.Knowledge size={18} />
+                        </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
-                                    Gestor de Bibliotecas & Estructura de Carpetas
+                                <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
+                                    LIBRERÍA & BIBLIOTECAS
                                 </h3>
-                                <span className="px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black">
-                                    {totalTracksInLib} pistas organizadas
+                                <span className="text-[9px] bg-djcyan-950 text-djcyan-300 border border-djcyan-600/60 px-2 py-0.5 rounded-full font-bold">
+                                    {totalTracksInLib} PISTAS
                                 </span>
                             </div>
-                            <p className="text-[11px] text-gray-400 font-sans mt-0.5">
-                                Crea bibliotecas personalizadas con carpetas virtuales. Puedes materializarlas en disco cuando quieras conservando tus respaldos originales.
+                            <p className="text-[10.5px] text-gray-400 font-mono truncate max-w-[280px]">
+                                CARPETAS VIRTUALES Y EN DISCO
                             </p>
                         </div>
                     </div>
@@ -8320,11 +8354,10 @@ const CustomLibraryModal = ({
                         <button 
                             type="button" 
                             onClick={onClose}
-                            className="px-3 py-1.5 rounded-xl bg-djzinc-850 hover:bg-rose-950 hover:text-rose-200 text-gray-300 border border-djzinc-700 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
-                            title="Cerrar modal (ESC)"
+                            className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
+                            title="Cerrar panel (ESC)"
                         >
                             <Icons.Close size={14} className="inline-block align-[-2px]" />
-                            <span>Cerrar</span>
                         </button>
                     </div>
                 </div>
@@ -8597,7 +8630,7 @@ const CustomLibraryModal = ({
                         </button>
                     </div>
                 </div>
-            </div>
+            </aside>
         </div>,
         document.body
     );
@@ -8625,7 +8658,8 @@ const AuditWorkspace = ({
     currentFolder = "",
     setCurrentFolder,
     audioRef,
-    onAuditProgressChange
+    onAuditProgressChange,
+    onOpenLibrary
 }) => {
     const [localRutaOrigen, setLocalRutaOrigen] = useState('');
     const rutaOrigen = currentFolder || localRutaOrigen;
@@ -8646,6 +8680,7 @@ const AuditWorkspace = ({
     const [saveFeedback, setSaveFeedback] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize('bw_inspector_drawer_width', 540);
+    const { width: columnsDrawerWidth, onPointerDown: onColumnsResizeDown, resetWidth: onColumnsResetWidth } = useDrawerResize('bw_columns_drawer_width', 540);
     const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
     const [mobileWorkflowTab, setMobileWorkflowTab] = useState('analizar'); // 'analizar' | 'exportar'
     const [batchConfigured, setBatchConfigured] = useState(false);
@@ -10745,7 +10780,7 @@ const AuditWorkspace = ({
                         {/* Botón Gestor / Crear Biblioteca Persistente */}
                         <button
                             type="button"
-                            onClick={() => setIsLibraryModalOpen(true)}
+                            onClick={() => onOpenLibrary ? onOpenLibrary() : setIsLibraryModalOpen(true)}
                             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0"
                             title="Crear o gestionar biblioteca personalizada, estructurada en carpetas virtuales y copia física en disco"
                         >
@@ -13657,16 +13692,29 @@ const AuditWorkspace = ({
                 />
             )}
 
-            {/* Modal Pro Desacoplado con Portal: Centro de Columnas & Vistas */}
+            {/* Centro de Columnas & Vistas (Columna / Drawer Lateral Derecho) */}
             {columnSelectorOpen && ReactDOM.createPortal(
-                <div 
-                    className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
-                    onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
-                >
+                <div className="fixed inset-0 overflow-hidden select-none pointer-events-none" style={{ zIndex: 99998 }}>
                     <div 
-                        className="bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden text-gray-200"
+                        className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto"
+                        style={{ zIndex: 99998 }}
+                        onClick={() => { setColumnSelectorOpen(false); setColumnSearchText(''); }}
+                    />
+                    <aside 
+                        style={{ width: '100%', maxWidth: `${columnsDrawerWidth}px`, zIndex: 99999 }}
+                        className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* Manija táctil de redimensión para Desktop */}
+                        <div 
+                            onPointerDown={onColumnsResizeDown}
+                            onDoubleClick={onColumnsResetWidth}
+                            className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors"
+                            title="Arrastra para redimensionar (Doble clic para restablecer a 540px)"
+                        >
+                            <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                        </div>
+
                         {/* Cabecera */}
                         <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0">
                             <div className="flex items-center gap-3">
@@ -13868,7 +13916,7 @@ const AuditWorkspace = ({
                                 <Icons.Check size={14} className="inline-block align-[-2px]" /> Aplicar y Guardar ({Object.values(visibleColumns).filter(Boolean).length} Activas)
                             </button>
                         </div>
-                    </div>
+                    </aside>
                 </div>,
                 document.body
             )}
@@ -15790,6 +15838,7 @@ const SpotifyWorkspace = ({
     const [selectedId, setSelectedId] = useState(null);
     const [spInspectorOpen, setSpInspectorOpen] = useState(false);
     const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize('bw_sp_inspector_drawer_width', 540);
+    const { width: poolColumnsDrawerWidth, onPointerDown: onPoolColumnsResizeDown, resetWidth: onPoolColumnsResetWidth } = useDrawerResize('bw_pool_columns_drawer_width', 540);
     const [downloadSession, setDownloadSession] = useState({ downloaded: [], failed: [] });
     const [spSubView, setSpSubView] = useState('catalog'); // 'catalog' | 'downloaded'
     const [selectedDownloadedIds, setSelectedDownloadedIds] = useState(new Set());
@@ -18927,16 +18976,29 @@ const SpotifyWorkspace = ({
                 </div>
             )}
 
-            {/* Modal Pro Desacoplado con Portal: Centro de Columnas & Vistas de Record Pool */}
+            {/* Centro de Columnas & Vistas de Record Pool (Columna / Drawer Lateral Derecho) */}
             {poolColumnSelectorOpen && ReactDOM.createPortal(
-                <div 
-                    className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
-                    onClick={() => { setPoolColumnSelectorOpen(false); setPoolColumnSearchText(''); }}
-                >
+                <div className="fixed inset-0 overflow-hidden select-none pointer-events-none" style={{ zIndex: 99998 }}>
                     <div 
-                        className="bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden text-gray-200"
+                        className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto"
+                        style={{ zIndex: 99998 }}
+                        onClick={() => { setPoolColumnSelectorOpen(false); setPoolColumnSearchText(''); }}
+                    />
+                    <aside 
+                        style={{ width: '100%', maxWidth: `${poolColumnsDrawerWidth}px`, zIndex: 99999 }}
+                        className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* Manija táctil de redimensión para Desktop */}
+                        <div 
+                            onPointerDown={onPoolColumnsResizeDown}
+                            onDoubleClick={onPoolColumnsResetWidth}
+                            className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors"
+                            title="Arrastra para redimensionar (Doble clic para restablecer a 540px)"
+                        >
+                            <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                        </div>
+
                         {/* Cabecera */}
                         <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0">
                             <div className="flex items-center gap-3">
@@ -19134,7 +19196,7 @@ const SpotifyWorkspace = ({
                                 <Icons.Check size={14} className="inline-block align-[-2px]" /> Aplicar y Guardar ({Object.values(poolVisibleColumns).filter(Boolean).length} Activas)
                             </button>
                         </div>
-                    </div>
+                    </aside>
                 </div>,
                 document.body
             )}
@@ -32653,6 +32715,77 @@ const App = () => {
     }, [railExpanded]);
     const [copilotModalOpen, setCopilotModalOpen] = useState(false);
 
+    // GESTIÓN GLOBAL DE LIBRERÍAS PERSONALIZADAS Y PERSISTENTES (COLUMNA DERECHA)
+    const [customLibraries, setCustomLibraries] = useState(() => {
+        try {
+            const saved = localStorage.getItem('bw_user_custom_libraries');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (_) {}
+        return [
+            {
+                id: 'lib_default',
+                name: 'Mi Biblioteca Principal',
+                createdAt: new Date().toISOString(),
+                folders: [
+                    { id: 'f_default_1', name: '01 - Warm Up (120-124 BPM)', tracks: [] },
+                    { id: 'f_default_2', name: '02 - Peak Time (128-132 BPM)', tracks: [] },
+                    { id: 'f_default_3', name: '03 - Closing & Anthems', tracks: [] },
+                ]
+            }
+        ];
+    });
+
+    const [activeCustomLibId, setActiveCustomLibId] = useState(() => {
+        try {
+            return localStorage.getItem('bw_user_active_library_id') || 'lib_default';
+        } catch (_) {
+            return 'lib_default';
+        }
+    });
+
+    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState(false);
+
+    const saveCustomLibraries = (newLibs, newActiveId = null) => {
+        setCustomLibraries(newLibs);
+        try {
+            localStorage.setItem('bw_user_custom_libraries', JSON.stringify(newLibs));
+            if (newActiveId) {
+                setActiveCustomLibId(newActiveId);
+                localStorage.setItem('bw_user_active_library_id', newActiveId);
+            }
+        } catch (_) {}
+    };
+
+    const handleMaterializarBibliotecaEnDisco = async (lib) => {
+        if (!lib || !lib.folders || lib.folders.length === 0) {
+            alert("Crea al menos una carpeta y asigna pistas para materializar en disco.");
+            return;
+        }
+        if (window.eel && window.eel.seleccionar_directorio) {
+            try {
+                const destino = await window.eel.seleccionar_directorio(`Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`)();
+                if (!destino) return;
+                const estructura = lib.folders.map(f => ({
+                    folder_name: f.name,
+                    track_paths: (f.tracks || []).map(t => t.file_path || t.path || t.filepath).filter(Boolean)
+                }));
+                if (window.eel.exportar_biblioteca_a_disco) {
+                    const res = await window.eel.exportar_biblioteca_a_disco(destino, lib.name, estructura)();
+                    if (res && res.success) {
+                        alert(`✓ Biblioteca "${lib.name}" creada con éxito en:\n${res.path}`);
+                    } else {
+                        alert(`Atención: ${res?.error || 'No se pudo exportar a disco'}`);
+                    }
+                }
+            } catch (err) {
+                console.error("Error materializando biblioteca:", err);
+            }
+        }
+    };
+
     // MANUAL MAESTRO INTERACTIVO INDIVIDUALIZADO (Modal & Masterclass)
     const [manualModalOpen, setManualModalOpen] = useState(false);
     const [manualSection, setManualSection] = useState('audit');
@@ -33630,6 +33763,12 @@ const App = () => {
                         setRailExpanded(false);
                         try { localStorage.setItem('bw_rail_expanded', '0'); } catch (e) {}
                     }}
+                    onOpenLibrary={() => {
+                        setIsLibraryDrawerOpen(prev => !prev);
+                        setRailExpanded(false);
+                    }}
+                    libraryCount={customLibraries.length}
+                    isLibraryOpen={isLibraryDrawerOpen}
                 />
                 <div className="flex flex-1 min-w-0 min-h-0 flex-col">
 
@@ -33657,6 +33796,7 @@ const App = () => {
                         setCurrentFolder={setCurrentFolder}
                         audioRef={audioRef}
                         onAuditProgressChange={setGlobalAuditInfo}
+                        onOpenLibrary={() => setIsLibraryDrawerOpen(true)}
                     />
                 </div>
                 <div style={{ display: activeTab === 'hotcues' ? 'flex' : 'none' }} className="w-full h-full">
@@ -34049,12 +34189,25 @@ const App = () => {
                 }}
             />
 
-            {/* CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS AUDITABLE */}
+            {/* CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS AUDITABLE (DRAWER LATERAL DERECHO) */}
             <BitacoraModal 
                 isOpen={bitacoraModalOpen}
                 onClose={() => setBitacoraModalOpen(false)}
                 entries={bitacoraEntries}
                 onClearEntries={handleClearBitacora}
+            />
+
+            {/* GESTOR DE LIBRERÍAS Y BIBLIOTECAS (COLUMNA / DRAWER LATERAL DERECHO) */}
+            <CustomLibraryModal
+                isOpen={isLibraryDrawerOpen}
+                onClose={() => setIsLibraryDrawerOpen(false)}
+                libraries={customLibraries}
+                activeLibraryId={activeCustomLibId}
+                onSaveLibraries={(updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId)}
+                onSelectLibrary={(id) => saveCustomLibraries(customLibraries, id)}
+                currentTracks={auditTracks}
+                selectedTrackIds={new Set((auditTracks || []).filter(t => t.selected).map(t => t.id))}
+                onMaterializarEnDisco={handleMaterializarBibliotecaEnDisco}
             />
 
             {/* PRESENTACIÓN CINEMÁTICA A PANTALLA COMPLETA CON VÍDEO DE FONDO */}
