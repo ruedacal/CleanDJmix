@@ -28716,6 +28716,42 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                 </div>
             </div>
 
+            {/* MÉTRICAS PSICOACÚSTICAS DJ: POSITIVIDAD (VALENCE) E INTENSIDAD (AROUSAL) */}
+            <div className="grid grid-cols-2 gap-2 mb-2.5">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
+                    <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                        POSITIVIDAD (VALENCE)
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-xs font-bold text-djcyan-400">
+                            {deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%
+                        </span>
+                        <div className="flex-1 max-w-[120px] bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
+                            <div 
+                                className="h-full bg-djcyan-400 rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(6,182,212,0.8)]" 
+                                style={{ width: `${deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div className="p-2 sm:p-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
+                    <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                        INTENSIDAD (AROUSAL)
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-xs font-bold text-emerald-400">
+                            {deck.arousal != null ? deck.arousal : (side === '1' || side === 'A' ? 88 : 91)}%
+                        </span>
+                        <div className="flex-1 max-w-[120px] bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
+                            <div 
+                                className="h-full bg-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(16,185,129,0.8)]" 
+                                style={{ width: `${deck.arousal != null ? deck.arousal : (side === '1' || side === 'A' ? 88 : 91)}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Tira Visual de 8 Hot Cues de Cabina */}
             <div className="mb-2.5 p-2 rounded-2xl bg-black/60 border border-zinc-800/80">
                 <div className="flex items-center justify-between mb-1">
@@ -29027,6 +29063,8 @@ const DEFAULT_COPILOT_STATE = {
         "subgenre": "Club Master",
         "energy": 92,
         "danceability": 88,
+        "valence": 55,
+        "arousal": 88,
         "format": "FLAC 24-bit",
         "duration": "06:30",
         "duration_sec": 390.0,
@@ -29175,6 +29213,8 @@ const DEFAULT_COPILOT_STATE = {
         "subgenre": "Drumcode Core",
         "energy": 91,
         "danceability": 95,
+        "valence": 62,
+        "arousal": 91,
         "format": "FLAC 16-bit",
         "duration": "05:48",
         "duration_sec": 348.0,
@@ -30405,16 +30445,17 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
 // LOGOTIPO CORPORATIVO BEATWAVE PRO (5 BARRAS ANIMADAS EN BUCLE CONSTANTE DE 3S)
 // ==============================================================================
 const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
-    // Presets de tamaño: 'sm' (navbar: 36px), 'md' (44px), 'lg' (intro portal: 110px)
-    const sizeClasses = {
-        sm: 'w-8 h-8 sm:w-9 sm:h-9',
-        md: 'w-10 h-10 sm:w-11 sm:h-11',
-        lg: 'w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32'
-    }[size] || size;
+    // Presets de tamaño y grosor proporcional de borde blanco corporativo:
+    // 'sm' (navbar: 36px, borde 2px), 'md' (44px, borde 3px), 'lg' (intro portal: 112px, borde 6px proporcional)
+    const sizeConfig = {
+        sm: { dims: 'w-8 h-8 sm:w-9 sm:h-9', border: 'border-2' },
+        md: { dims: 'w-10 h-10 sm:w-11 sm:h-11', border: 'border-[3px]' },
+        lg: { dims: 'w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32', border: 'border-[5px] sm:border-[6px]' }
+    }[size] || { dims: size, border: 'border-2' };
 
     return (
         <div 
-            className={`relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_16px_rgba(6,182,212,0.85),inset_0_0_10px_rgba(6,182,212,0.35)] backdrop-blur-md select-none group-hover:border-cyan-300 group-hover:shadow-[0_0_24px_rgba(6,182,212,1),inset_0_0_14px_rgba(6,182,212,0.5)] transition-all duration-300 ${sizeClasses} ${className}`}
+            className={`relative rounded-full flex items-center justify-center shrink-0 ${sizeConfig.border} border-white bg-[#030712]/95 shadow-[0_0_24px_rgba(6,182,212,0.9),inset_0_0_12px_rgba(6,182,212,0.4)] backdrop-blur-md select-none group-hover:shadow-[0_0_32px_rgba(6,182,212,1),inset_0_0_16px_rgba(6,182,212,0.55)] transition-all duration-300 ${sizeConfig.dims} ${className}`}
         >
             {/* SVG Vectorial Nativo de 5 Barras Ecualizadoras Animadas en Cian Corporativo */}
             <svg 
@@ -31863,13 +31904,21 @@ const App = () => {
             <div className="flex flex-1 min-h-0 w-full">
                 <SideRail
                     activeTab={activeTab}
-                    onSelect={setActiveTab}
+                    onSelect={(tabId) => {
+                        setActiveTab(tabId);
+                        setRailExpanded(false);
+                        try { localStorage.setItem('bw_rail_expanded', '0'); } catch (e) {}
+                    }}
                     t={t}
                     expanded={railExpanded}
                     onToggleExpanded={toggleRailExpanded}
                     auditInfo={globalAuditInfo}
                     trackCount={auditTracks ? auditTracks.length : 0}
-                    onOpenCopilot={() => setCopilotModalOpen(true)}
+                    onOpenCopilot={() => {
+                        setActiveTab('copilot');
+                        setRailExpanded(false);
+                        try { localStorage.setItem('bw_rail_expanded', '0'); } catch (e) {}
+                    }}
                 />
                 <div className="flex flex-1 min-w-0 min-h-0 flex-col">
 

@@ -892,6 +892,8 @@ const DEFAULT_COPILOT_STATE = {
         "subgenre": "Club Master",
         "energy": 92,
         "danceability": 88,
+        "valence": 55,
+        "arousal": 88,
         "format": "FLAC 24-bit",
         "duration": "06:30",
         "duration_sec": 390.0,
@@ -1040,6 +1042,8 @@ const DEFAULT_COPILOT_STATE = {
         "subgenre": "Drumcode Core",
         "energy": 91,
         "danceability": 95,
+        "valence": 62,
+        "arousal": 91,
         "format": "FLAC 16-bit",
         "duration": "05:48",
         "duration_sec": 348.0,
@@ -2126,6 +2130,42 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                             <span className="px-1.5 py-0.2 rounded bg-purple-950/70 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300 truncate max-w-full" title={deck.mood || deck.phase || 'Peak Time Climax'}>
                                 ✨ {deck.mood || deck.phase || 'Peak Time Climax'}
                             </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* MÉTRICAS PSICOACÚSTICAS DJ: POSITIVIDAD (VALENCE) E INTENSIDAD (AROUSAL) */}
+            <div className="grid grid-cols-2 gap-2 mb-2.5">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
+                    <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                        POSITIVIDAD (VALENCE)
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-xs font-bold text-djcyan-400">
+                            {deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%
+                        </span>
+                        <div className="flex-1 max-w-[120px] bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
+                            <div 
+                                className="h-full bg-djcyan-400 rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(6,182,212,0.8)]" 
+                                style={{ width: `${deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div className="p-2 sm:p-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
+                    <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                        INTENSIDAD (AROUSAL)
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-xs font-bold text-emerald-400">
+                            {deck.arousal != null ? deck.arousal : (side === '1' || side === 'A' ? 88 : 91)}%
+                        </span>
+                        <div className="flex-1 max-w-[120px] bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
+                            <div 
+                                className="h-full bg-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(16,185,129,0.8)]" 
+                                style={{ width: `${deck.arousal != null ? deck.arousal : (side === '1' || side === 'A' ? 88 : 91)}%` }}
+                            />
                         </div>
                     </div>
                 </div>
