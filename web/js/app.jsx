@@ -29096,42 +29096,54 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                 <div className="flex flex-col gap-2.5">
                     <div className="flex items-center justify-between">
                         <span className="ws-glass-kicker">Software de cabina</span>
-                        <span className="text-[var(--bw-text-3)] text-[11px]">
-                            Selecciona tu suite o deja en Auto
-                        </span>
+                        <button 
+                            type="button" 
+                            onClick={() => selectPlatform('auto')} 
+                            className={`text-[11px] font-mono transition-colors cursor-pointer ${copilotInfo.platform_mode === 'auto' || !copilotInfo.platform_mode ? 'text-cyan-400 font-semibold' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            title="Alternar modo detección automática en cabina"
+                        >
+                            {copilotInfo.platform_mode === 'auto' || !copilotInfo.platform_mode ? '● Auto-detectar activo' : 'Modo Auto'}
+                        </button>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         {[
-                            { id: 'auto', label: 'Auto (Detectar)', color: '#a855f7' },
-                            { id: 'serato', label: 'Serato DJ Pro', color: '#00d1e8' },
                             { id: 'rekordbox', label: 'Rekordbox', color: '#38bdf8' },
-                            { id: 'virtualdj', label: 'VirtualDJ Pro', color: '#f97316' },
-                            { id: 'traktor', label: 'Traktor Pro', color: '#facc15' }
+                            { id: 'virtualdj', label: 'VirtualDJ', color: '#f97316' },
+                            { id: 'serato', label: 'Serato', color: '#00d1e8' },
+                            { id: 'traktor', label: 'Traktor', color: '#facc15' }
                         ].map(p => {
-                            const isSelected = (copilotInfo.platform_mode === p.id) || (!copilotInfo.platform_mode && p.id === 'auto');
+                            const isSelected = copilotInfo.platform_mode === p.id;
                             const platData = (copilotInfo.platforms || []).find(x => x.id === p.id);
-                            const isDetected = platData ? platData.detected : (p.id === 'auto');
+                            const isDetected = platData ? platData.detected : false;
                             return (
                                 <button
                                     key={p.id}
                                     type="button"
-                                    onClick={() => selectPlatform(p.id)}
-                                    className={`ws-plat ${isSelected ? 'is-on' : ''}`}
+                                    onClick={() => selectPlatform(isSelected ? 'auto' : p.id)}
+                                    className={`flex items-center justify-between h-10 px-3 rounded-xl border transition-all cursor-pointer select-none ${
+                                        isSelected 
+                                        ? 'bg-zinc-800/90 text-white shadow-md' 
+                                        : 'bg-zinc-950/70 hover:bg-zinc-900 text-zinc-300 hover:text-white border-zinc-800/90'
+                                    }`}
                                     aria-pressed={isSelected}
-                                    style={isSelected ? { '--plat': p.color } : {}}
+                                    style={isSelected ? { borderColor: p.color, boxShadow: `0 0 12px ${p.color}33` } : {}}
+                                    title={isDetected ? `${p.label} (Detectado en cabina)` : `${p.label} (Standby)`}
                                 >
-                                    <div className="p-1 rounded-lg flex items-center justify-center">
-                                        {renderPlatformLogo(p.id, 28)}
-                                    </div>
-                                    <span className="text-xs font-medium text-[var(--bw-white)]">
-                                        {p.label}
-                                    </span>
-                                    <span className="font-mono text-[10px] flex items-center gap-1">
-                                        <span className={`ws-dot ${isDetected ? 'ws-dot-ok' : ''}`}></span>
-                                        <span className={isDetected ? 'text-[var(--bw-text-2)]' : 'text-[var(--bw-text-3)]'}>
-                                            {p.id === 'auto' ? 'Auto Link' : isDetected ? 'Detectado' : 'Standby'}
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                                            {renderPlatformLogo(p.id, 20)}
+                                        </div>
+                                        <span className="text-xs font-mono font-semibold truncate tracking-tight text-white">
+                                            {p.label}
                                         </span>
-                                    </span>
+                                    </div>
+                                    <span 
+                                        className={`w-2 h-2 rounded-full shrink-0 ml-1.5 transition-all ${
+                                            isDetected 
+                                            ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] ring-1 ring-emerald-300' 
+                                            : 'bg-zinc-600'
+                                        }`} 
+                                    />
                                 </button>
                             );
                         })}
