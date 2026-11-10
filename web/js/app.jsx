@@ -4911,7 +4911,7 @@ const UserAccountModal = ({
                                     </span>
                                 </div>
                                 <div className="text-xs text-gray-300 space-y-1">
-                                    <div><strong>Carpeta:</strong> <span className="font-mono text-gray-400 text-[11px]">{currentSessionSnapshot.folder || '/Users/admin/Music/mi musica'}</span></div>
+                                    <div><strong>Carpeta:</strong> <span className="font-mono text-gray-400 text-[11px]">{currentSessionSnapshot.folder || 'Sin carpeta cargada'}</span></div>
                                     <div className="flex gap-4 text-[11px]">
                                         <span><strong>Pistas en Lote:</strong> {currentSessionSnapshot.tracksCount || 0}</span>
                                         <span><strong>Pestaña Activa:</strong> <span className="uppercase text-cyan-300 font-mono">{currentSessionSnapshot.activeTab || 'AUDIT'}</span></span>
@@ -8659,7 +8659,9 @@ const AuditWorkspace = ({
     setCurrentFolder,
     audioRef,
     onAuditProgressChange,
-    onOpenLibrary
+    onOpenLibrary,
+    isSimulationMode = false,
+    onToggleSimulation
 }) => {
     const [localRutaOrigen, setLocalRutaOrigen] = useState('');
     const rutaOrigen = currentFolder || localRutaOrigen;
@@ -10369,7 +10371,7 @@ const AuditWorkspace = ({
                 return null;
             }
         }
-        return rutaOrigen || "/Users/admin/Music/mi musica";
+        return rutaOrigen || "";
     };
 
     // Materializar biblioteca en disco preservando copias originales como respaldo
@@ -10872,6 +10874,16 @@ const AuditWorkspace = ({
                         <WsButton variant="primary" icon={Icons.Folder} label="Cargar biblioteca" onClick={handleExplorar} title="Cargar carpetas completas o pistas" />
                         <WsButton icon={Icons.Plus} label="Añadir" onClick={handleAnadirMas} title="Añadir más carpetas o pistas sin vaciar la selección" />
                         <WsButton compact icon={Icons.Refresh} label="Recargar selección" onClick={() => handleCargarDirectorio(resolveAuditTargets())} />
+                        {onToggleSimulation && (
+                            <WsButton 
+                                compact 
+                                variant={isSimulationMode ? 'active' : 'ghost'} 
+                                icon={Icons.Zap} 
+                                label={isSimulationMode ? 'Simulación Activa' : 'Simulación'} 
+                                onClick={() => onToggleSimulation()} 
+                                title={isSimulationMode ? 'Desactivar datos demo y vaciar cabina' : 'Cargar datos simulados demo'} 
+                            />
+                        )}
                         {tracks && tracks.length > 0 && (
                             <WsButton compact variant="danger" icon={Icons.Trash} label="Vaciar lista" onClick={handleClearAllTracks} />
                         )}
@@ -11746,7 +11758,43 @@ const AuditWorkspace = ({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 font-sans">
-                            {tracksFiltrados.length === 0 && !isAuditing && (
+                            {tracks.length === 0 && !isAuditing ? (
+                                <tr>
+                                    <td colSpan={Math.max(1, Object.values(visibleColumns).filter(Boolean).length)} className="py-20 text-center text-gray-400 font-mono text-xs whitespace-normal px-4">
+                                        <div className="flex flex-col items-center justify-center gap-3.5 max-w-lg mx-auto py-8">
+                                            <div className="w-14 h-14 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.25)]">
+                                                <Icons.Library size={28} />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <strong className="text-white text-base font-syne font-bold block">Cabina de Auditoría Vacía</strong>
+                                                <p className="text-xs text-gray-400 font-sans leading-relaxed max-w-md">
+                                                    Carga una carpeta de tu colección musical para auditar frecuencias, BPM, claves armónicas y 8 Hot Cues, o activa la simulación para explorar la cabina con pistas demo.
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap items-center justify-center gap-2.5 mt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleExplorar}
+                                                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-sans font-bold text-xs shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <Icons.Folder size={15} />
+                                                    <span>Cargar Carpeta de Música</span>
+                                                </button>
+                                                {onToggleSimulation && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onToggleSimulation(true)}
+                                                        className="px-4 py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/60 hover:border-purple-400 text-purple-200 hover:text-white font-sans font-bold text-xs shadow-lg shadow-purple-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                                                    >
+                                                        <Icons.Zap size={15} />
+                                                        <span>Cargar Simulación Demo</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : tracksFiltrados.length === 0 && !isAuditing ? (
                                 <tr>
                                     <td colSpan={Math.max(1, Object.values(visibleColumns).filter(Boolean).length)} className="py-16 text-center text-gray-400 font-mono text-xs whitespace-normal px-4">
                                         <div className="flex flex-col items-center justify-center gap-2.5 max-w-md mx-auto">
@@ -11765,7 +11813,7 @@ const AuditWorkspace = ({
                                         </div>
                                     </td>
                                 </tr>
-                            )}
+                            ) : null}
                             {/* PERF: Virtualización — espaciador superior */}
                             {virtualPaddingTop > 0 && <tr aria-hidden="true" style={{ height: virtualPaddingTop }}><td colSpan={Math.max(1, Object.values(visibleColumns).filter(Boolean).length)} /></tr>}
                             {virtualRows.map((row, i) => {
@@ -13942,7 +13990,7 @@ const HotCuesWorkspace = ({
     onRemoveMultipleTracks,
     lang = "es",
     t = (k) => k,
-    currentFolder = "/Users/admin/Music/mi musica",
+    currentFolder = "",
     setCurrentFolder,
     audioRef
 }) => {
@@ -13974,7 +14022,7 @@ const HotCuesWorkspace = ({
     const [filterQuery, setFilterQuery] = useState('');
     const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
     const [carpetasSistema, setCarpetasSistema] = useState([]);
-    const [rutaNavegacion, setRutaNavegacion] = useState(currentFolder || "/Users/admin/Music/mi musica");
+    const [rutaNavegacion, setRutaNavegacion] = useState(currentFolder || "");
     const [isLoadingDir, setIsLoadingDir] = useState(false);
     const [showTrackListDrawer, setShowTrackListDrawer] = useState(false);
 
@@ -14435,7 +14483,7 @@ const HotCuesWorkspace = ({
 
     // Navegador de Carpetas del Sistema
     const handleAbrirNavegador = async (dir) => {
-        const target = dir || currentFolder || "/Users/admin/Music/mi musica";
+        const target = dir || currentFolder || "";
         setRutaNavegacion(target);
         setFsBrowserOpen(true);
         if (window.eel && window.eel.listar_subcarpetas_sistema) {
@@ -32730,17 +32778,12 @@ const App = () => {
         } catch (e) {}
         return 'audit';
     });
-    const [currentFolder, setCurrentFolder] = useState('/Users/admin/Music/mi musica');
-    const [auditTracks, setAuditTracks] = useState(() => {
-        return (typeof DEMO_MAP_TRACKS !== 'undefined' && Array.isArray(DEMO_MAP_TRACKS)) ? [...DEMO_MAP_TRACKS] : [];
-    });
-    const [setBuilderTracks, setSetBuilderTracks] = useState(() => {
-        return (typeof DEMO_MAP_TRACKS !== 'undefined' && Array.isArray(DEMO_MAP_TRACKS)) ? [...DEMO_MAP_TRACKS.slice(0, 8)] : [];
-    });
+    const [isSimulationMode, setIsSimulationMode] = useState(false);
+    const [currentFolder, setCurrentFolder] = useState('');
+    const [auditTracks, setAuditTracks] = useState([]);
+    const [setBuilderTracks, setSetBuilderTracks] = useState([]);
     const [spotifyTracks, setSpotifyTracks] = useState([]);
-    const [selectedTrack, setSelectedTrack] = useState(() => {
-        return (typeof DEMO_MAP_TRACKS !== 'undefined' && DEMO_MAP_TRACKS[0]) ? DEMO_MAP_TRACKS[0].id : null;
-    });
+    const [selectedTrack, setSelectedTrack] = useState(null);
     const currentTrack = selectedTrack ? (auditTracks.find(t => t.id === selectedTrack) || null) : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -32995,21 +33038,23 @@ const App = () => {
         try { localStorage.setItem('bw_user_profile', JSON.stringify(newProfile)); } catch (e) {}
     };
 
+    const DEMO_SAVED_SESSIONS = [
+        {
+            id: 'sess-init-1',
+            name: '🌟 Sesión Club Ibiza - Warmup Melodic (12 pistas)',
+            date: '31/10/2026 20:30',
+            folder: 'Simulación Cabina BeatWave',
+            tracksCount: 12,
+            activeTab: 'audit'
+        }
+    ];
+
     const [savedSessions, setSavedSessions] = useState(() => {
         try {
             const saved = localStorage.getItem('bw_saved_sessions');
             if (saved) return JSON.parse(saved);
         } catch (e) {}
-        return [
-            {
-                id: 'sess-init-1',
-                name: '🌟 Sesión Club Ibiza - Warmup Melodic (12 pistas)',
-                date: '31/10/2026 20:30',
-                folder: '/Users/admin/Music/mi musica',
-                tracksCount: 12,
-                activeTab: 'audit'
-            }
-        ];
+        return [];
     });
 
     const handleSaveCurrentSession = (customName) => {
@@ -33058,58 +33103,60 @@ const App = () => {
     };
 
     // CUADERNO DE BITÁCORA DE PROCESOS (HISTORIAL DE CAMBIOS Y EXPORTACIÓN EXCEL)
+    const DEMO_BITACORA_ENTRIES = [
+        {
+            id: 'b-1',
+            timestamp: '31/10/2026 20:45',
+            category: 'audit',
+            action: 'Diagnóstico Espectral DSP & FFT',
+            trackTitle: 'Cascada - Everytime We Touch',
+            filePath: 'Cascada - Everytime We Touch.mp3',
+            detailsBefore: 'MP3 218 kbps • Corte en 18.5 kHz • Sin tags Serato',
+            detailsAfter: 'Certificado Media Calidad • BPM: 143.00 • Camelot: 8A • -9.0 LUFS',
+            status: '✓ Certificado'
+        },
+        {
+            id: 'b-2',
+            timestamp: '31/10/2026 20:46',
+            category: 'cues',
+            action: 'Inyección de 8 Hot Cues & Fraseo',
+            trackTitle: 'Kriss / New Limit - Tonight / Smile',
+            filePath: 'Tonight Smile.mp3',
+            detailsBefore: '0 Hot Cues en Serato',
+            detailsAfter: '8 Hot Cues (1: Intro, 3: Break, 5: Snare, 7: Drop) • Pioneer RGB',
+            status: '✓ Inyectado'
+        },
+        {
+            id: 'b-3',
+            timestamp: '31/10/2026 20:48',
+            category: 'download',
+            action: 'Sustitución SuperFLAC Lossless Ingest',
+            trackTitle: 'Plastikman, Richie Hawtin - Artifakts (BC)',
+            filePath: 'Plastikman - Artifakts.mp3',
+            detailsBefore: 'MP3 83 kbps (Pérdida Severa <16kHz Fake)',
+            detailsAfter: 'FLAC Lossless 24-bit Genuino (22.05 kHz) • Carátula 1400x1400',
+            status: '✓ Reemplazado'
+        },
+        {
+            id: 'b-4',
+            timestamp: '31/10/2026 20:51',
+            category: 'crates',
+            action: 'Exportación a Serato Crates & Rekordbox XML',
+            trackTitle: 'Lote Principal (12 pistas)',
+            filePath: 'Melodic_Techno.crate',
+            detailsBefore: 'Sin sincronización multisoftware',
+            detailsAfter: 'Crate binario Serato .crate generado + Rekordbox XML sincronizado',
+            status: '✓ Sincronizado'
+        }
+    ];
+
     const [bitacoraModalOpen, setBitacoraModalOpen] = useState(false);
     const [bitacoraEntries, setBitacoraEntries] = useState(() => {
         try {
             const saved = localStorage.getItem('bw_audit_bitacora');
             if (saved) return JSON.parse(saved);
         } catch (e) {}
-        return [
-            {
-                id: 'b-1',
-                timestamp: '31/10/2026 20:45',
-                category: 'audit',
-                action: 'Diagnóstico Espectral DSP & FFT',
-                trackTitle: 'Cascada - Everytime We Touch',
-                filePath: '/Users/admin/Music/mi musica/Cascada - Everytime We Touch.mp3',
-                detailsBefore: 'MP3 218 kbps • Corte en 18.5 kHz • Sin tags Serato',
-                detailsAfter: 'Certificado Media Calidad • BPM: 143.00 • Camelot: 8A • -9.0 LUFS',
-                status: '✓ Certificado'
-            },
-            {
-                id: 'b-2',
-                timestamp: '31/10/2026 20:46',
-                category: 'cues',
-                action: 'Inyección de 8 Hot Cues & Fraseo',
-                trackTitle: 'Kriss / New Limit - Tonight / Smile',
-                filePath: '/Users/admin/Music/mi musica/Tonight Smile.mp3',
-                detailsBefore: '0 Hot Cues en Serato',
-                detailsAfter: '8 Hot Cues (1: Intro, 3: Break, 5: Snare, 7: Drop) • Pioneer RGB',
-                status: '✓ Inyectado'
-            },
-            {
-                id: 'b-3',
-                timestamp: '31/10/2026 20:48',
-                category: 'download',
-                action: 'Sustitución SuperFLAC Lossless Ingest',
-                trackTitle: 'Plastikman, Richie Hawtin - Artifakts (BC)',
-                filePath: '/Users/admin/Music/mi musica/Plastikman - Artifakts.mp3',
-                detailsBefore: 'MP3 83 kbps (Pérdida Severa <16kHz Fake)',
-                detailsAfter: 'FLAC Lossless 24-bit Genuino (22.05 kHz) • Carátula 1400x1400',
-                status: '✓ Reemplazado'
-            },
-            {
-                id: 'b-4',
-                timestamp: '31/10/2026 20:51',
-                category: 'crates',
-                action: 'Exportación a Serato Crates & Rekordbox XML',
-                trackTitle: 'Lote Principal (12 pistas)',
-                filePath: '/Users/admin/Music/_Serato_/Subcrates/Melodic_Techno.crate',
-                detailsBefore: 'Sin sincronización multisoftware',
-                detailsAfter: 'Crate binario Serato .crate generado + Rekordbox XML sincronizado',
-                status: '✓ Sincronizado'
-            }
-        ];
+        return [];
     });
 
     const handleClearBitacora = () => {
@@ -33730,7 +33777,42 @@ const App = () => {
         }
     };
 
+    const handleToggleSimulation = (forceState) => {
+        setIsSimulationMode(prev => {
+            const next = forceState !== undefined ? forceState : !prev;
+            if (next) {
+                const demoList = (typeof DEMO_MAP_TRACKS !== 'undefined' && Array.isArray(DEMO_MAP_TRACKS)) ? [...DEMO_MAP_TRACKS] : [];
+                setAuditTracks(demoList);
+                setSetBuilderTracks(demoList.slice(0, 8));
+                if (demoList[0]) setSelectedTrack(demoList[0].id);
+                setCurrentFolder('Cabina Demo (Simulación)');
+                setBitacoraEntries(DEMO_BITACORA_ENTRIES);
+                setSavedSessions(DEMO_SAVED_SESSIONS);
+            } else {
+                setAuditTracks([]);
+                setSetBuilderTracks([]);
+                setSelectedTrack(null);
+                setCurrentFolder('');
+                setBitacoraEntries([]);
+                setSavedSessions([]);
+                if (nowPlayingTrack) {
+                    stopSynthPreview();
+                    const audio = audioRef.current;
+                    if (audio) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }
+                    setIsPlaying(false);
+                    setNowPlayingTrack(null);
+                    window.__bwCurrentTrack = null;
+                }
+            }
+            return next;
+        });
+    };
+
     const handleClearAllTracksGlobal = () => {
+        setIsSimulationMode(false);
         setAuditTracks([]);
         setSelectedTrack(null);
         stopSynthPreview();
@@ -33755,6 +33837,7 @@ const App = () => {
             if (!target || target === 'cancelado') {
                 return;
             }
+            setIsSimulationMode(false);
             setCurrentFolder(target);
             setAuditTracks([]);
             setSelectedTrack(null);
@@ -33963,6 +34046,8 @@ const App = () => {
                         audioRef={audioRef}
                         onAuditProgressChange={setGlobalAuditInfo}
                         onOpenLibrary={() => setIsLibraryDrawerOpen(true)}
+                        isSimulationMode={isSimulationMode}
+                        onToggleSimulation={handleToggleSimulation}
                     />
                 </div>
                 <div style={{ display: activeTab === 'hotcues' ? 'flex' : 'none' }} className="w-full h-full">

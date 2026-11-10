@@ -4845,7 +4845,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           },
           /* @__PURE__ */ React.createElement(Icons.Lock, { size: 14, className: "inline-block align-[-2px]" }),
           " Actualizar Contrase\xF1a"
-        ))), activeTab === "sessions" && /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-gradient-to-r from-cyan-950/40 to-djzinc-900 border border-cyan-500/40 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-ping" }), "ESTADO ACTUAL EN CABINA"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-[10px] font-bold" }, "Auto-Guardado Activo")), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-gray-300 space-y-1" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("strong", null, "Carpeta:"), " ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-400 text-[11px]" }, currentSessionSnapshot.folder || "/Users/admin/Music/mi musica")), /* @__PURE__ */ React.createElement("div", { className: "flex gap-4 text-[11px]" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, "Pistas en Lote:"), " ", currentSessionSnapshot.tracksCount || 0), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, "Pesta\xF1a Activa:"), " ", /* @__PURE__ */ React.createElement("span", { className: "uppercase text-cyan-300 font-mono" }, currentSessionSnapshot.activeTab || "AUDIT")))), /* @__PURE__ */ React.createElement("form", { onSubmit: handleCreateSnapshot, className: "pt-2 flex gap-2" }, /* @__PURE__ */ React.createElement(
+        ))), activeTab === "sessions" && /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-gradient-to-r from-cyan-950/40 to-djzinc-900 border border-cyan-500/40 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-ping" }), "ESTADO ACTUAL EN CABINA"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600 text-cyan-300 text-[10px] font-bold" }, "Auto-Guardado Activo")), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-gray-300 space-y-1" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("strong", null, "Carpeta:"), " ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-400 text-[11px]" }, currentSessionSnapshot.folder || "Sin carpeta cargada")), /* @__PURE__ */ React.createElement("div", { className: "flex gap-4 text-[11px]" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, "Pistas en Lote:"), " ", currentSessionSnapshot.tracksCount || 0), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, "Pesta\xF1a Activa:"), " ", /* @__PURE__ */ React.createElement("span", { className: "uppercase text-cyan-300 font-mono" }, currentSessionSnapshot.activeTab || "AUDIT")))), /* @__PURE__ */ React.createElement("form", { onSubmit: handleCreateSnapshot, className: "pt-2 flex gap-2" }, /* @__PURE__ */ React.createElement(
           "input",
           {
             type: "text",
@@ -7329,7 +7329,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     setCurrentFolder,
     audioRef,
     onAuditProgressChange,
-    onOpenLibrary
+    onOpenLibrary,
+    isSimulationMode = false,
+    onToggleSimulation
   }) => {
     var _a, _b;
     const [localRutaOrigen, setLocalRutaOrigen] = useState5("");
@@ -8889,7 +8891,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           return null;
         }
       }
-      return rutaOrigen || "/Users/admin/Music/mi musica";
+      return rutaOrigen || "";
     };
     const handleMaterializarBibliotecaEnDisco = async (lib) => {
       if (!lib || !lib.folders || lib.folders.length === 0) {
@@ -9304,7 +9306,17 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       },
       /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_cancel") || "Cancelar")
-    ))), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar select-none", role: "toolbar", "aria-label": "Acciones de biblioteca" }, /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group" }, /* @__PURE__ */ React.createElement(WsButton, { variant: "primary", icon: Icons.Folder, label: "Cargar biblioteca", onClick: handleExplorar, title: "Cargar carpetas completas o pistas" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Plus, label: "A\xF1adir", onClick: handleAnadirMas, title: "A\xF1adir m\xE1s carpetas o pistas sin vaciar la selecci\xF3n" }), /* @__PURE__ */ React.createElement(WsButton, { compact: true, icon: Icons.Refresh, label: "Recargar selecci\xF3n", onClick: () => handleCargarDirectorio(resolveAuditTargets()) }), tracks && tracks.length > 0 && /* @__PURE__ */ React.createElement(WsButton, { compact: true, variant: "danger", icon: Icons.Trash, label: "Vaciar lista", onClick: handleClearAllTracks })), /* @__PURE__ */ React.createElement(ToolbarDivider, null), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar select-none", role: "toolbar", "aria-label": "Acciones de biblioteca" }, /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group" }, /* @__PURE__ */ React.createElement(WsButton, { variant: "primary", icon: Icons.Folder, label: "Cargar biblioteca", onClick: handleExplorar, title: "Cargar carpetas completas o pistas" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Plus, label: "A\xF1adir", onClick: handleAnadirMas, title: "A\xF1adir m\xE1s carpetas o pistas sin vaciar la selecci\xF3n" }), /* @__PURE__ */ React.createElement(WsButton, { compact: true, icon: Icons.Refresh, label: "Recargar selecci\xF3n", onClick: () => handleCargarDirectorio(resolveAuditTargets()) }), onToggleSimulation && /* @__PURE__ */ React.createElement(
+      WsButton,
+      {
+        compact: true,
+        variant: isSimulationMode ? "active" : "ghost",
+        icon: Icons.Zap,
+        label: isSimulationMode ? "Simulaci\xF3n Activa" : "Simulaci\xF3n",
+        onClick: () => onToggleSimulation(),
+        title: isSimulationMode ? "Desactivar datos demo y vaciar cabina" : "Cargar datos simulados demo"
+      }
+    ), tracks && tracks.length > 0 && /* @__PURE__ */ React.createElement(WsButton, { compact: true, variant: "danger", icon: Icons.Trash, label: "Vaciar lista", onClick: handleClearAllTracks })), /* @__PURE__ */ React.createElement(ToolbarDivider, null), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group" }, /* @__PURE__ */ React.createElement(
       WsButton,
       {
         variant: batchConfigured ? "active" : "ghost",
@@ -9798,7 +9810,25 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       /* @__PURE__ */ React.createElement("option", { value: "LOSSLESS" }, "Lossless"),
       /* @__PURE__ */ React.createElement("option", { value: "MP3" }, "MP3"),
       /* @__PURE__ */ React.createElement("option", { value: "FAKE" }, "FLAC Fake")
-    )), visibleColumns.actions && /* @__PURE__ */ React.createElement("th", { className: "p-1" }))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length), className: "py-16 text-center text-gray-400 font-mono text-xs whitespace-normal px-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-2.5 max-w-md mx-auto" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("strong", { className: "text-white text-sm" }, "Sin coincidencias con los filtros activos"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans leading-relaxed" }, "Hay ", tracks.length, " pista(s) cargadas en la biblioteca, pero los filtros de columna actuales ocultan todos los resultados."), /* @__PURE__ */ React.createElement(
+    )), visibleColumns.actions && /* @__PURE__ */ React.createElement("th", { className: "p-1" }))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, tracks.length === 0 && !isAuditing ? /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length), className: "py-20 text-center text-gray-400 font-mono text-xs whitespace-normal px-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-3.5 max-w-lg mx-auto py-8" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 28 })), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("strong", { className: "text-white text-base font-syne font-bold block" }, "Cabina de Auditor\xEDa Vac\xEDa"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-sans leading-relaxed max-w-md" }, "Carga una carpeta de tu colecci\xF3n musical para auditar frecuencias, BPM, claves arm\xF3nicas y 8 Hot Cues, o activa la simulaci\xF3n para explorar la cabina con pistas demo.")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-2.5 mt-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleExplorar,
+        className: "px-4 py-2 rounded-xl bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-sans font-bold text-xs shadow-lg shadow-djcyan-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 15 }),
+      /* @__PURE__ */ React.createElement("span", null, "Cargar Carpeta de M\xFAsica")
+    ), onToggleSimulation && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onToggleSimulation(true),
+        className: "px-4 py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/60 hover:border-purple-400 text-purple-200 hover:text-white font-sans font-bold text-xs shadow-lg shadow-purple-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 15 }),
+      /* @__PURE__ */ React.createElement("span", null, "Cargar Simulaci\xF3n Demo")
+    ))))) : tracksFiltrados.length === 0 && !isAuditing ? /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length), className: "py-16 text-center text-gray-400 font-mono text-xs whitespace-normal px-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-2.5 max-w-md mx-auto" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("strong", { className: "text-white text-sm" }, "Sin coincidencias con los filtros activos"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans leading-relaxed" }, "Hay ", tracks.length, " pista(s) cargadas en la biblioteca, pero los filtros de columna actuales ocultan todos los resultados."), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -9807,7 +9837,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       },
       /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
       " Limpiar Filtros de Cabecera"
-    )))), virtualPaddingTop > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingTop } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })), virtualRows.map((row, i) => {
+    )))) : null, virtualPaddingTop > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingTop } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })), virtualRows.map((row, i) => {
       const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
       const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
       const isFake = Boolean(row.es_fake || row.format === "FLAC" && String(row.status || "").includes("Fake"));
@@ -11035,7 +11065,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     onRemoveMultipleTracks,
     lang = "es",
     t = (k) => k,
-    currentFolder = "/Users/admin/Music/mi musica",
+    currentFolder = "",
     setCurrentFolder,
     audioRef
   }) => {
@@ -11063,7 +11093,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     const [filterQuery, setFilterQuery] = useState5("");
     const [fsBrowserOpen, setFsBrowserOpen] = useState5(false);
     const [carpetasSistema, setCarpetasSistema] = useState5([]);
-    const [rutaNavegacion, setRutaNavegacion] = useState5(currentFolder || "/Users/admin/Music/mi musica");
+    const [rutaNavegacion, setRutaNavegacion] = useState5(currentFolder || "");
     const [isLoadingDir, setIsLoadingDir] = useState5(false);
     const [showTrackListDrawer, setShowTrackListDrawer] = useState5(false);
     const [pitchPercent, setPitchPercent] = useState5(0);
@@ -11458,7 +11488,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
     };
     const handleAbrirNavegador = async (dir) => {
-      const target = dir || currentFolder || "/Users/admin/Music/mi musica";
+      const target = dir || currentFolder || "";
       setRutaNavegacion(target);
       setFsBrowserOpen(true);
       if (window.eel && window.eel.listar_subcarpetas_sistema) {
@@ -23235,17 +23265,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return "audit";
     });
-    const [currentFolder, setCurrentFolder] = useState5("/Users/admin/Music/mi musica");
-    const [auditTracks, setAuditTracks] = useState5(() => {
-      return typeof DEMO_MAP_TRACKS !== "undefined" && Array.isArray(DEMO_MAP_TRACKS) ? [...DEMO_MAP_TRACKS] : [];
-    });
-    const [setBuilderTracks, setSetBuilderTracks] = useState5(() => {
-      return typeof DEMO_MAP_TRACKS !== "undefined" && Array.isArray(DEMO_MAP_TRACKS) ? [...DEMO_MAP_TRACKS.slice(0, 8)] : [];
-    });
+    const [isSimulationMode, setIsSimulationMode] = useState5(false);
+    const [currentFolder, setCurrentFolder] = useState5("");
+    const [auditTracks, setAuditTracks] = useState5([]);
+    const [setBuilderTracks, setSetBuilderTracks] = useState5([]);
     const [spotifyTracks, setSpotifyTracks] = useState5([]);
-    const [selectedTrack, setSelectedTrack] = useState5(() => {
-      return typeof DEMO_MAP_TRACKS !== "undefined" && DEMO_MAP_TRACKS[0] ? DEMO_MAP_TRACKS[0].id : null;
-    });
+    const [selectedTrack, setSelectedTrack] = useState5(null);
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState5(null);
     const [isPlaying, setIsPlaying] = useState5(false);
@@ -23487,22 +23512,23 @@ ${res.path}`);
       } catch (e) {
       }
     };
+    const DEMO_SAVED_SESSIONS = [
+      {
+        id: "sess-init-1",
+        name: "\u{1F31F} Sesi\xF3n Club Ibiza - Warmup Melodic (12 pistas)",
+        date: "31/10/2026 20:30",
+        folder: "Simulaci\xF3n Cabina BeatWave",
+        tracksCount: 12,
+        activeTab: "audit"
+      }
+    ];
     const [savedSessions, setSavedSessions] = useState5(() => {
       try {
         const saved = localStorage.getItem("bw_saved_sessions");
         if (saved) return JSON.parse(saved);
       } catch (e) {
       }
-      return [
-        {
-          id: "sess-init-1",
-          name: "\u{1F31F} Sesi\xF3n Club Ibiza - Warmup Melodic (12 pistas)",
-          date: "31/10/2026 20:30",
-          folder: "/Users/admin/Music/mi musica",
-          tracksCount: 12,
-          activeTab: "audit"
-        }
-      ];
+      return [];
     });
     const handleSaveCurrentSession = (customName) => {
       const sessionObj = {
@@ -23552,6 +23578,52 @@ ${res.path}`);
         return next;
       });
     };
+    const DEMO_BITACORA_ENTRIES = [
+      {
+        id: "b-1",
+        timestamp: "31/10/2026 20:45",
+        category: "audit",
+        action: "Diagn\xF3stico Espectral DSP & FFT",
+        trackTitle: "Cascada - Everytime We Touch",
+        filePath: "Cascada - Everytime We Touch.mp3",
+        detailsBefore: "MP3 218 kbps \u2022 Corte en 18.5 kHz \u2022 Sin tags Serato",
+        detailsAfter: "Certificado Media Calidad \u2022 BPM: 143.00 \u2022 Camelot: 8A \u2022 -9.0 LUFS",
+        status: "\u2713 Certificado"
+      },
+      {
+        id: "b-2",
+        timestamp: "31/10/2026 20:46",
+        category: "cues",
+        action: "Inyecci\xF3n de 8 Hot Cues & Fraseo",
+        trackTitle: "Kriss / New Limit - Tonight / Smile",
+        filePath: "Tonight Smile.mp3",
+        detailsBefore: "0 Hot Cues en Serato",
+        detailsAfter: "8 Hot Cues (1: Intro, 3: Break, 5: Snare, 7: Drop) \u2022 Pioneer RGB",
+        status: "\u2713 Inyectado"
+      },
+      {
+        id: "b-3",
+        timestamp: "31/10/2026 20:48",
+        category: "download",
+        action: "Sustituci\xF3n SuperFLAC Lossless Ingest",
+        trackTitle: "Plastikman, Richie Hawtin - Artifakts (BC)",
+        filePath: "Plastikman - Artifakts.mp3",
+        detailsBefore: "MP3 83 kbps (P\xE9rdida Severa <16kHz Fake)",
+        detailsAfter: "FLAC Lossless 24-bit Genuino (22.05 kHz) \u2022 Car\xE1tula 1400x1400",
+        status: "\u2713 Reemplazado"
+      },
+      {
+        id: "b-4",
+        timestamp: "31/10/2026 20:51",
+        category: "crates",
+        action: "Exportaci\xF3n a Serato Crates & Rekordbox XML",
+        trackTitle: "Lote Principal (12 pistas)",
+        filePath: "Melodic_Techno.crate",
+        detailsBefore: "Sin sincronizaci\xF3n multisoftware",
+        detailsAfter: "Crate binario Serato .crate generado + Rekordbox XML sincronizado",
+        status: "\u2713 Sincronizado"
+      }
+    ];
     const [bitacoraModalOpen, setBitacoraModalOpen] = useState5(false);
     const [bitacoraEntries, setBitacoraEntries] = useState5(() => {
       try {
@@ -23559,52 +23631,7 @@ ${res.path}`);
         if (saved) return JSON.parse(saved);
       } catch (e) {
       }
-      return [
-        {
-          id: "b-1",
-          timestamp: "31/10/2026 20:45",
-          category: "audit",
-          action: "Diagn\xF3stico Espectral DSP & FFT",
-          trackTitle: "Cascada - Everytime We Touch",
-          filePath: "/Users/admin/Music/mi musica/Cascada - Everytime We Touch.mp3",
-          detailsBefore: "MP3 218 kbps \u2022 Corte en 18.5 kHz \u2022 Sin tags Serato",
-          detailsAfter: "Certificado Media Calidad \u2022 BPM: 143.00 \u2022 Camelot: 8A \u2022 -9.0 LUFS",
-          status: "\u2713 Certificado"
-        },
-        {
-          id: "b-2",
-          timestamp: "31/10/2026 20:46",
-          category: "cues",
-          action: "Inyecci\xF3n de 8 Hot Cues & Fraseo",
-          trackTitle: "Kriss / New Limit - Tonight / Smile",
-          filePath: "/Users/admin/Music/mi musica/Tonight Smile.mp3",
-          detailsBefore: "0 Hot Cues en Serato",
-          detailsAfter: "8 Hot Cues (1: Intro, 3: Break, 5: Snare, 7: Drop) \u2022 Pioneer RGB",
-          status: "\u2713 Inyectado"
-        },
-        {
-          id: "b-3",
-          timestamp: "31/10/2026 20:48",
-          category: "download",
-          action: "Sustituci\xF3n SuperFLAC Lossless Ingest",
-          trackTitle: "Plastikman, Richie Hawtin - Artifakts (BC)",
-          filePath: "/Users/admin/Music/mi musica/Plastikman - Artifakts.mp3",
-          detailsBefore: "MP3 83 kbps (P\xE9rdida Severa <16kHz Fake)",
-          detailsAfter: "FLAC Lossless 24-bit Genuino (22.05 kHz) \u2022 Car\xE1tula 1400x1400",
-          status: "\u2713 Reemplazado"
-        },
-        {
-          id: "b-4",
-          timestamp: "31/10/2026 20:51",
-          category: "crates",
-          action: "Exportaci\xF3n a Serato Crates & Rekordbox XML",
-          trackTitle: "Lote Principal (12 pistas)",
-          filePath: "/Users/admin/Music/_Serato_/Subcrates/Melodic_Techno.crate",
-          detailsBefore: "Sin sincronizaci\xF3n multisoftware",
-          detailsAfter: "Crate binario Serato .crate generado + Rekordbox XML sincronizado",
-          status: "\u2713 Sincronizado"
-        }
-      ];
+      return [];
     });
     const handleClearBitacora = () => {
       setBitacoraEntries([]);
@@ -24160,7 +24187,41 @@ ${res.path}`);
         window.__bwCurrentTrack = null;
       }
     };
+    const handleToggleSimulation = (forceState) => {
+      setIsSimulationMode((prev) => {
+        const next = forceState !== void 0 ? forceState : !prev;
+        if (next) {
+          const demoList = typeof DEMO_MAP_TRACKS !== "undefined" && Array.isArray(DEMO_MAP_TRACKS) ? [...DEMO_MAP_TRACKS] : [];
+          setAuditTracks(demoList);
+          setSetBuilderTracks(demoList.slice(0, 8));
+          if (demoList[0]) setSelectedTrack(demoList[0].id);
+          setCurrentFolder("Cabina Demo (Simulaci\xF3n)");
+          setBitacoraEntries(DEMO_BITACORA_ENTRIES);
+          setSavedSessions(DEMO_SAVED_SESSIONS);
+        } else {
+          setAuditTracks([]);
+          setSetBuilderTracks([]);
+          setSelectedTrack(null);
+          setCurrentFolder("");
+          setBitacoraEntries([]);
+          setSavedSessions([]);
+          if (nowPlayingTrack) {
+            stopSynthPreview();
+            const audio = audioRef.current;
+            if (audio) {
+              audio.pause();
+              audio.currentTime = 0;
+            }
+            setIsPlaying(false);
+            setNowPlayingTrack(null);
+            window.__bwCurrentTrack = null;
+          }
+        }
+        return next;
+      });
+    };
     const handleClearAllTracksGlobal = () => {
+      setIsSimulationMode(false);
       setAuditTracks([]);
       setSelectedTrack(null);
       stopSynthPreview();
@@ -24184,6 +24245,7 @@ ${res.path}`);
         if (!target || target === "cancelado") {
           return;
         }
+        setIsSimulationMode(false);
         setCurrentFolder(target);
         setAuditTracks([]);
         setSelectedTrack(null);
@@ -24390,7 +24452,9 @@ ${res.path}`);
         setCurrentFolder,
         audioRef,
         onAuditProgressChange: setGlobalAuditInfo,
-        onOpenLibrary: () => setIsLibraryDrawerOpen(true)
+        onOpenLibrary: () => setIsLibraryDrawerOpen(true),
+        isSimulationMode,
+        onToggleSimulation: handleToggleSimulation
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "hotcues" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       HotCuesWorkspace,
