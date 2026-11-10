@@ -10781,13 +10781,13 @@ const AuditWorkspace = ({
                         <button
                             type="button"
                             onClick={() => onOpenLibrary ? onOpenLibrary() : setIsLibraryModalOpen(true)}
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap"
                             title="Crear o gestionar biblioteca personalizada, estructurada en carpetas virtuales y copia física en disco"
                         >
-                            <Icons.Knowledge size={14} className="inline-block align-[-2px]" />
-                            <span className="hidden sm:inline">Biblioteca:</span>
-                            <span className="text-white font-black truncate max-w-[130px]">{activeCustomLib ? activeCustomLib.name : 'Crear Biblioteca'}</span>
-                            <span className="px-1.5 py-0.2 rounded bg-djzinc-900 text-djcyan-300 text-[10px] font-bold border border-djzinc-750">
+                            <Icons.Knowledge size={14} className="inline-block align-[-2px] shrink-0" />
+                            <span className="hidden xl:inline">Biblioteca:</span>
+                            <span className="text-white font-black whitespace-nowrap">{activeCustomLib ? activeCustomLib.name : 'Crear Biblioteca'}</span>
+                            <span className="px-1.5 py-0.2 rounded bg-djzinc-900 text-djcyan-300 text-[10px] font-bold border border-djzinc-750 shrink-0">
                                 {activeCustomLib?.folders?.length || 0}
                             </span>
                         </button>
@@ -32231,7 +32231,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     if (!isOpen) return null;
 
     const [phase, setPhase] = useState('video'); // 'video' | 'portal'
-    const [videoOpacity, setVideoOpacity] = useState(0); // Entrada: 0 -> 1.0 (Fade-in 2s)
+    const [videoOpacity, setVideoOpacity] = useState(1.0); // Opacidad visible directa
     const [selectedAlpha, setSelectedAlpha] = useState(0.85); // Alpha 85% exacto solicitado por el usuario
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
@@ -32396,21 +32396,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
             {/* FASE 1: VÍDEO CINEMÁTICO CON EFECTO DUOTONE SIN DEGRADADOS (#191414 Sombreado -> #00FFFF Iluminación) */}
             {phase === 'video' && (
                 <div className="duotone-video-container absolute inset-0 w-full h-full bg-[#191414] overflow-hidden flex items-center justify-center">
-                    {/* Filtro SVG Duotone puro (mapeo tonal directo sin degradados espaciales) */}
-                    <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
-                        <defs>
-                            <filter id="bw-duotone" colorInterpolationFilters="sRGB">
-                                <feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0" />
-                                <feComponentTransfer colorInterpolationFilters="sRGB">
-                                    <feFuncR type="table" tableValues="0.098 0.0" />
-                                    <feFuncG type="table" tableValues="0.078 1.0" />
-                                    <feFuncB type="table" tableValues="0.078 1.0" />
-                                </feComponentTransfer>
-                            </filter>
-                        </defs>
-                    </svg>
-
-                    {/* Vídeo con Duotone Tonal (Sombras #191414, Luces #00FFFF, sin degradado) */}
+                    {/* Vídeo con Duotone Tonal Puro CSS (Sombras #191414, Luces #00FFFF, sin degradado ni filtros SVG) */}
                     <video
                         ref={videoRef}
                         autoPlay
@@ -32426,12 +32412,12 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                             opacity: videoOpacity * selectedAlpha, 
                             transform: 'translateZ(0)',
                             willChange: 'opacity, filter',
-                            transition: videoOpacity === 0 ? 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 300ms ease',
-                            filter: 'url(#bw-duotone) contrast(115%)'
+                            transition: 'opacity 300ms ease',
+                            filter: 'grayscale(100%) contrast(120%) sepia(100%) hue-rotate(145deg) saturate(200%)'
                         }}
                     />
 
-                    {/* Botón sutil en esquina inferior derecha para saltar si el usuario lo desea */}
+                    {/* Botón en esquina inferior derecha para saltar si el usuario lo desea */}
                     <div className="absolute bottom-6 right-6 z-50">
                         <button
                             type="button"

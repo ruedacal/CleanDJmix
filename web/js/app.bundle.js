@@ -357,7 +357,7 @@
       /* @__PURE__ */ React.createElement(ShellIcons.Moon, { size: 16 }),
       /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline" }, clubMode ? "Club" : "Normal"),
       /* @__PURE__ */ React.createElement("kbd", { className: "bw-kbd hidden xl:inline-flex" }, "L")
-    ), /* @__PURE__ */ React.createElement("div", { className: "hidden md:block" }, /* @__PURE__ */ React.createElement(HelpMenu, { items: helpItems })), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onOpenBitacora, className: "bw-btn bw-btn-ghost hidden md:inline-flex", title: "Bit\xE1cora de procesos y exportaci\xF3n Excel" }, /* @__PURE__ */ React.createElement(ShellIcons.Notebook, { size: 16 }), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline" }, "Bit\xE1cora")), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "hidden md:block" }, /* @__PURE__ */ React.createElement(HelpMenu, { items: helpItems })), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onOpenBitacora, className: "bw-btn bw-btn-ghost hidden md:inline-flex shrink-0 whitespace-nowrap", title: "Bit\xE1cora de procesos y exportaci\xF3n Excel" }, /* @__PURE__ */ React.createElement(ShellIcons.Notebook, { size: 16, className: "shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline whitespace-nowrap" }, "Bit\xE1cora")), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -9271,13 +9271,13 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       {
         type: "button",
         onClick: () => onOpenLibrary ? onOpenLibrary() : setIsLibraryModalOpen(true),
-        className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0",
+        className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap",
         title: "Crear o gestionar biblioteca personalizada, estructurada en carpetas virtuales y copia f\xEDsica en disco"
       },
-      /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "Biblioteca:"),
-      /* @__PURE__ */ React.createElement("span", { className: "text-white font-black truncate max-w-[130px]" }, activeCustomLib ? activeCustomLib.name : "Crear Biblioteca"),
-      /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-djzinc-900 text-djcyan-300 text-[10px] font-bold border border-djzinc-750" }, ((_a = activeCustomLib == null ? void 0 : activeCustomLib.folders) == null ? void 0 : _a.length) || 0)
+      /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 14, className: "inline-block align-[-2px] shrink-0" }),
+      /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline" }, "Biblioteca:"),
+      /* @__PURE__ */ React.createElement("span", { className: "text-white font-black whitespace-nowrap" }, activeCustomLib ? activeCustomLib.name : "Crear Biblioteca"),
+      /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-djzinc-900 text-djcyan-300 text-[10px] font-bold border border-djzinc-750 shrink-0" }, ((_a = activeCustomLib == null ? void 0 : activeCustomLib.folders) == null ? void 0 : _a.length) || 0)
     )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0 ml-auto" }, saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse hidden md:inline" }, saveFeedback), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-950/80 p-0.5 rounded-xl border border-djzinc-800 shrink-0" }, /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -22850,7 +22850,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   var AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
     const [phase, setPhase] = useState5("video");
-    const [videoOpacity, setVideoOpacity] = useState5(0);
+    const [videoOpacity, setVideoOpacity] = useState5(1);
     const [selectedAlpha, setSelectedAlpha] = useState5(0.85);
     const [isMuted, setIsMuted] = useState5(false);
     const [isBassShaking, setIsBassShaking] = useState5(false);
@@ -22981,7 +22981,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }
         }
       },
-      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "duotone-video-container absolute inset-0 w-full h-full bg-[#191414] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("svg", { className: "absolute w-0 h-0 pointer-events-none", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "bw-duotone", colorInterpolationFilters: "sRGB" }, /* @__PURE__ */ React.createElement("feColorMatrix", { type: "matrix", values: "0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0" }), /* @__PURE__ */ React.createElement("feComponentTransfer", { colorInterpolationFilters: "sRGB" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "table", tableValues: "0.098 0.0" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "table", tableValues: "0.078 1.0" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "table", tableValues: "0.078 1.0" }))))), /* @__PURE__ */ React.createElement(
+      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "duotone-video-container absolute inset-0 w-full h-full bg-[#191414] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement(
         "video",
         {
           ref: videoRef,
@@ -22998,8 +22998,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
             opacity: videoOpacity * selectedAlpha,
             transform: "translateZ(0)",
             willChange: "opacity, filter",
-            transition: videoOpacity === 0 ? "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)" : "opacity 300ms ease",
-            filter: "url(#bw-duotone) contrast(115%)"
+            transition: "opacity 300ms ease",
+            filter: "grayscale(100%) contrast(120%) sepia(100%) hue-rotate(145deg) saturate(200%)"
           }
         }
       ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(

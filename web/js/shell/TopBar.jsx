@@ -150,9 +150,9 @@ export const TopBar = ({
                     <HelpMenu items={helpItems} />
                 </div>
 
-                <button type="button" onClick={onOpenBitacora} className="bw-btn bw-btn-ghost hidden md:inline-flex" title="Bitácora de procesos y exportación Excel">
-                    <ShellIcons.Notebook size={16} />
-                    <span className="hidden xl:inline">Bitácora</span>
+                <button type="button" onClick={onOpenBitacora} className="bw-btn bw-btn-ghost hidden md:inline-flex shrink-0 whitespace-nowrap" title="Bitácora de procesos y exportación Excel">
+                    <ShellIcons.Notebook size={16} className="shrink-0" />
+                    <span className="hidden xl:inline whitespace-nowrap">Bitácora</span>
                 </button>
 
                 <button
