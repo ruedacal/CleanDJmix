@@ -311,12 +311,25 @@ class AudioProcessorService:
         missing_meta = (bpm <= 0.0 or not key)
 
         if bpm <= 0.0:
-            size_seed = os.path.getsize(ruta) % 25
-            bpm = round(120.0 + float(size_seed), 2)
+            try:
+                import librosa
+                y, sr = librosa.load(ruta, sr=22050, offset=25.0, duration=30.0)
+                if len(y) > 0:
+                    tempo, _ = librosa.beat.beat_track(y=y, sr=sr, start_bpm=128.0)
+                    t_val = float(tempo[0] if hasattr(tempo, '__len__') else tempo)
+                    if t_val > 0:
+                        bpm = round(t_val, 2)
+            except Exception:
+                pass
+            if bpm <= 0.0:
+                bpm = 128.0
 
         if not key:
             pool = ["8A", "9A", "10A", "11A", "12A", "5A", "6A", "7A", "8B", "9B"]
-            key = pool[os.path.getsize(ruta) % len(pool)]
+            try:
+                key = pool[os.path.getsize(ruta) % len(pool)]
+            except Exception:
+                key = "8A"
 
         if trim_start_ms <= 0.0 or first_downbeat_ms <= 0.0:
             det_trim, det_down = AudioProcessorService.detectar_trim_y_downbeat(ruta)
