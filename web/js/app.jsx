@@ -15438,6 +15438,8 @@ const DEFAULT_POOL_COLUMNS = {
     key: true,
     energy: true,
     danceability: true,
+    intensity: true,
+    valence: true,
     status: true
 };
 
@@ -15491,7 +15493,9 @@ const POOL_COLUMN_CATEGORIES = [
             { key: 'bpm', label: 'Tempo (BPM)', desc: 'Velocidad en pulsos por minuto' },
             { key: 'key', label: 'Tonalidad (Key)', desc: 'Rueda armónica Camelot' },
             { key: 'energy', label: 'Energía (⚡ %)', desc: 'Intensidad acústica percibida' },
-            { key: 'danceability', label: 'Bailabilidad (🕺 %)', desc: 'Regularidad rítmica para pista' }
+            { key: 'danceability', label: 'Bailabilidad (🕺 %)', desc: 'Regularidad rítmica para pista' },
+            { key: 'intensity', label: 'Intensidad (🔥 %)', desc: 'Nivel de excitación y pegada acústica (Arousal)' },
+            { key: 'valence', label: 'Positividad (✨ %)', desc: 'Valencia afectiva y brillo positivo (Valence)' }
         ]
     }
 ];
@@ -16108,7 +16112,7 @@ const SpotifyWorkspace = ({
             setSpSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
         } else {
             setSpSortField(field);
-            if (['match_score', 'match', 'bitrate_kbps', 'sample_rate_khz', 'energy', 'danceability'].includes(field)) {
+            if (['match_score', 'match', 'bitrate_kbps', 'sample_rate_khz', 'energy', 'danceability', 'intensity', 'valence'].includes(field)) {
                 setSpSortDir('desc');
             } else {
                 setSpSortDir('asc');
@@ -16227,6 +16231,12 @@ const SpotifyWorkspace = ({
             } else if (['id', 'sample_rate_khz', 'bitrate_kbps', 'cutoff_khz', 'bpm', 'energy', 'danceability'].includes(spSortField)) {
                 valA = Number(valA || a.energy || a.danceability) || 0;
                 valB = Number(valB || b.energy || b.danceability) || 0;
+            } else if (spSortField === 'intensity') {
+                valA = Number(a.arousal || a.intensity || Math.round((a.energy || a.e || 75) * 0.95)) || 0;
+                valB = Number(b.arousal || b.intensity || Math.round((b.energy || b.e || 75) * 0.95)) || 0;
+            } else if (spSortField === 'valence') {
+                valA = Number(a.valence != null ? a.valence : (a.key && a.key.includes('B') ? 65 : 45)) || 0;
+                valB = Number(b.valence != null ? b.valence : (b.key && b.key.includes('B') ? 65 : 45)) || 0;
             } else if (spSortField === 'origin') {
                 valA = a.origin || 'spotify';
                 valB = b.origin || 'spotify';
@@ -17412,6 +17422,16 @@ const SpotifyWorkspace = ({
                                     {poolVisibleColumns.danceability !== false && (
                                         <th onClick={() => handleSortSp('danceability')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors"><Icons.Activity size={14} className="inline-block align-[-2px]" /> DANCE {renderSortArrowSp('danceability')}</th>
                                     )}
+                                    {poolVisibleColumns.intensity !== false && (
+                                        <th onClick={() => handleSortSp('intensity')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors text-emerald-400" title="Intensidad y excitación acústica (Arousal)">
+                                            🔥 INTENSIDAD {renderSortArrowSp('intensity')}
+                                        </th>
+                                    )}
+                                    {poolVisibleColumns.valence !== false && (
+                                        <th onClick={() => handleSortSp('valence')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white transition-colors text-cyan-400" title="Positividad emocional (Valence)">
+                                            ✨ POSITIVIDAD {renderSortArrowSp('valence')}
+                                        </th>
+                                    )}
                                     {poolVisibleColumns.status !== false && (
                                         <th onClick={() => handleSortSp('status')} className="py-2.5 px-3 text-center min-w-[140px] cursor-pointer hover:text-white transition-colors">{t('th_status') || 'ESTADO'} / {t('download_btn') || 'ACCIÓN'} {renderSortArrowSp('status')}</th>
                                     )}
@@ -17654,6 +17674,12 @@ const SpotifyWorkspace = ({
                                                 <option value="LOW">&lt;65%</option>
                                             </select>
                                         </th>
+                                    )}
+                                    {poolVisibleColumns.intensity !== false && (
+                                        <th className="p-1 text-center font-mono text-[10px] text-emerald-400 font-bold" title="Filtro Intensidad">🔥</th>
+                                    )}
+                                    {poolVisibleColumns.valence !== false && (
+                                        <th className="p-1 text-center font-mono text-[10px] text-cyan-400 font-bold" title="Filtro Positividad">✨</th>
                                     )}
                                     {poolVisibleColumns.status !== false && (
                                         <th className="p-1 text-center">
@@ -18008,6 +18034,42 @@ const SpotifyWorkspace = ({
                                                         <div 
                                                             className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" 
                                                             style={{ width: `${Math.min(100, Math.max(10, row.danceability || row.dance || 82))}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        )}
+
+                                        {/* INTENSIDAD */}
+                                        {poolVisibleColumns.intensity !== false && (
+                                            <td className="py-2 px-2 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                    <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                        <span className="text-[10px]">🔥</span>
+                                                        <span className="font-bold text-emerald-400">{row.arousal || row.intensity || Math.round((row.energy || row.e || 75) * 0.95)}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                        <div 
+                                                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]" 
+                                                            style={{ width: `${Math.min(100, Math.max(10, row.arousal || row.intensity || Math.round((row.energy || row.e || 75) * 0.95)))}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        )}
+
+                                        {/* POSITIVIDAD */}
+                                        {poolVisibleColumns.valence !== false && (
+                                            <td className="py-2 px-2 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                    <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                        <span className="text-[10px]">✨</span>
+                                                        <span className="font-bold text-cyan-300">{row.valence != null ? row.valence : (row.key && row.key.includes('B') ? 65 : 45)}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                        <div 
+                                                            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]" 
+                                                            style={{ width: `${Math.min(100, Math.max(10, row.valence != null ? row.valence : (row.key && row.key.includes('B') ? 65 : 45)))}%` }}
                                                         ></div>
                                                     </div>
                                                 </div>
