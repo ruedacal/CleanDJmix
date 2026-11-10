@@ -21463,6 +21463,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           playsInline: true,
           preload: "auto",
           muted: isMuted,
+          onError: () => setPhase("portal"),
           onTimeUpdate: handleTimeUpdate,
           onEnded: handleVideoEnded,
           src: "/assets/intro_cinematic.mp4",
@@ -21605,6 +21606,48 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState4(null);
     const [isPlaying, setIsPlaying] = useState4(false);
+    const [isFooterDeckExpanded, setIsFooterDeckExpanded] = useState4(false);
+    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState4(false);
+    const localAudioInputRef = useRef5(null);
+    const handleLoadLocalAudioFile = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const objectUrl = URL.createObjectURL(file);
+      const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+      const localTrack = {
+        id: "local_" + Date.now(),
+        title: fileNameWithoutExt,
+        t: fileNameWithoutExt,
+        artist: "Archivo Local DJ",
+        a: "Archivo Local DJ",
+        bpm: 128,
+        b: 128,
+        key: "10A",
+        k: "10A",
+        raw_key: "Bm",
+        genre: "Audio Cabina",
+        cover: null,
+        f: file.name,
+        path: file.name,
+        url: objectUrl,
+        cues: NV2_COLORS
+      };
+      setSelectedTrack(localTrack.id);
+      setNowPlayingTrack(localTrack);
+      setIsPlaying(true);
+      setIsFooterDeckExpanded(true);
+      setLoadTrackMenuOpen(false);
+    };
+    const handleLoadFirstLibraryTrack = () => {
+      const candidate = auditTracks && auditTracks.length > 0 ? auditTracks[0] : null;
+      if (candidate) {
+        setSelectedTrack(candidate.id);
+        setNowPlayingTrack(candidate);
+        setIsPlaying(true);
+        setIsFooterDeckExpanded(true);
+      }
+      setLoadTrackMenuOpen(false);
+    };
     const playProgressRef = useRef5(0);
     const setPlayProgress = useCallback((pct) => {
       const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
@@ -22750,7 +22793,27 @@ Respuesta: ${qa.a}`).join("\n\n"),
         },
         onOpenQr: () => setCopilotModalOpen(true)
       }
-    ))), /* @__PURE__ */ React.createElement("footer", { className: `${!nowPlayingTrack ? "hidden md:flex" : "flex"} bw-deckbar relative z-30 h-16 shrink-0 items-center gap-3 px-3 sm:px-4` }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-x-0 top-0 h-0.5 overflow-hidden bg-white/5 md:hidden" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-cyan-400 transition-all duration-200", style: { width: `${Math.min(100, Math.max(0, mobileProgress * 100))}%` } })), !nowPlayingTrack ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 sm:gap-3 min-w-0 md:w-80 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-white/15 text-zinc-600" }, /* @__PURE__ */ React.createElement(Icons.Disc, { size: 20 })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow" }, t("deck_standby_label") || "DECK 1 STANDBY"), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500 truncate" }, t("deck_standby_comment_hint") || "Carga una pista para reproducir")), /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        ref: localAudioInputRef,
+        type: "file",
+        accept: "audio/*",
+        onChange: handleLoadLocalAudioFile,
+        className: "hidden"
+      }
+    ), !nowPlayingTrack && !isFooterDeckExpanded ? /* @__PURE__ */ React.createElement("div", { className: "fixed bottom-3 right-4 z-40 hidden md:block" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsFooterDeckExpanded(true),
+        className: "flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-950/90 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white font-mono text-xs font-bold transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] backdrop-blur-md cursor-pointer",
+        title: "Expandir Deck de Reproducci\xF3n DJ"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7}"),
+      /* @__PURE__ */ React.createElement("span", null, "Deck Cabina"),
+      /* @__PURE__ */ React.createElement(Icons.ChevronUp, { size: 14 })
+    )) : /* @__PURE__ */ React.createElement("footer", { className: "flex bw-deckbar relative z-30 h-16 shrink-0 items-center gap-3 px-3 sm:px-4" }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-x-0 top-0 h-0.5 overflow-hidden bg-white/5 md:hidden" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-cyan-400 transition-all duration-200", style: { width: `${Math.min(100, Math.max(0, mobileProgress * 100))}%` } })), !nowPlayingTrack ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 sm:gap-3 min-w-0 md:w-80 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-white/15 text-zinc-600" }, /* @__PURE__ */ React.createElement(Icons.Disc, { size: 20 })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow" }, t("deck_standby_label") || "DECK 1 STANDBY"), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500 truncate" }, t("deck_standby_comment_hint") || "Carga una pista para reproducir")), /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -22800,7 +22863,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
         cues: nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0 ? nowPlayingTrack.cues : currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
         t
       }
-    ))))), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsFooterDeckExpanded(false),
+        className: "p-1 rounded-md text-zinc-500 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0",
+        title: "Minimizar Deck"
+      },
+      /* @__PURE__ */ React.createElement(Icons.ChevronDown, { size: 16 })
+    )))), /* @__PURE__ */ React.createElement(
       MobileTabBar,
       {
         activeTab,

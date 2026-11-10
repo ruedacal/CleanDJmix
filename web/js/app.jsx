@@ -30996,6 +30996,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         playsInline
                         preload="auto"
                         muted={isMuted}
+                        onError={() => setPhase('portal')}
                         onTimeUpdate={handleTimeUpdate}
                         onEnded={handleVideoEnded}
                         src="/assets/intro_cinematic.mp4"
@@ -31168,6 +31169,50 @@ const App = () => {
     const currentTrack = selectedTrack ? (auditTracks.find(t => t.id === selectedTrack) || null) : null;
     const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isFooterDeckExpanded, setIsFooterDeckExpanded] = useState(false);
+    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState(false);
+    const localAudioInputRef = useRef(null);
+
+    const handleLoadLocalAudioFile = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const objectUrl = URL.createObjectURL(file);
+        const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+        const localTrack = {
+            id: 'local_' + Date.now(),
+            title: fileNameWithoutExt,
+            t: fileNameWithoutExt,
+            artist: 'Archivo Local DJ',
+            a: 'Archivo Local DJ',
+            bpm: 128.0,
+            b: 128.0,
+            key: '10A',
+            k: '10A',
+            raw_key: 'Bm',
+            genre: 'Audio Cabina',
+            cover: null,
+            f: file.name,
+            path: file.name,
+            url: objectUrl,
+            cues: NV2_COLORS
+        };
+        setSelectedTrack(localTrack.id);
+        setNowPlayingTrack(localTrack);
+        setIsPlaying(true);
+        setIsFooterDeckExpanded(true);
+        setLoadTrackMenuOpen(false);
+    };
+
+    const handleLoadFirstLibraryTrack = () => {
+        const candidate = (auditTracks && auditTracks.length > 0) ? auditTracks[0] : null;
+        if (candidate) {
+            setSelectedTrack(candidate.id);
+            setNowPlayingTrack(candidate);
+            setIsPlaying(true);
+            setIsFooterDeckExpanded(true);
+        }
+        setLoadTrackMenuOpen(false);
+    };
     // PERF A2: playProgress eliminado del estado React → ref mutable + CustomEvent.
     // Ningún re-render se dispara por ontimeupdate; solo FooterMasterWaveform y la
     // barra móvil (mobileProgress) reaccionan al avance de la reproducción.
@@ -32390,104 +32435,138 @@ const App = () => {
                 )}
             </main>
 
-            {/* DECK BAR GLOBAL — oculto en móvil sin pista para ahorrar altura */}
-            <footer className={`${!nowPlayingTrack ? 'hidden md:flex' : 'flex'} bw-deckbar relative z-30 h-16 shrink-0 items-center gap-3 px-3 sm:px-4`}>
-                <div className="absolute inset-x-0 top-0 h-0.5 overflow-hidden bg-white/5 md:hidden">
-                    <div className="h-full bg-cyan-400 transition-all duration-200" style={{ width: `${Math.min(100, Math.max(0, mobileProgress * 100))}%` }} />
+            {/* INPUT OCULTO PARA CARGA DE AUDIO LOCAL DESDE EL DISPOSITIVO DEL USUARIO */}
+            <input 
+                ref={localAudioInputRef} 
+                type="file" 
+                accept="audio/*" 
+                onChange={handleLoadLocalAudioFile} 
+                className="hidden" 
+            />
+
+            {/* DECK BAR GLOBAL — visible si hay pista reproduciéndose, seleccionada, o expandido manualmente */}
+            {!nowPlayingTrack && !isFooterDeckExpanded ? (
+                <div className="fixed bottom-3 right-4 z-40 hidden md:block">
+                    <button
+                        type="button"
+                        onClick={() => setIsFooterDeckExpanded(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-950/90 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white font-mono text-xs font-bold transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] backdrop-blur-md cursor-pointer"
+                        title="Expandir Deck de Reproducción DJ"
+                    >
+                        <span>🎧</span>
+                        <span>Deck Cabina</span>
+                        <Icons.ChevronUp size={14} />
+                    </button>
                 </div>
-
-                {!nowPlayingTrack ? (
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 md:w-80 shrink-0">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-white/15 text-zinc-600">
-                            <Icons.Disc size={20} />
-                        </div>
-                        <div className="flex flex-col min-w-0 flex-1">
-                            <span className="bw-eyebrow">{t('deck_standby_label') || 'DECK 1 STANDBY'}</span>
-                            <span className="text-xs text-zinc-500 truncate">{t('deck_standby_comment_hint') || 'Carga una pista para reproducir'}</span>
-                        </div>
-
-                        {/* SELECTOR DE CARGA DE PISTA: DESDE BIBLIOTECA O DISPOSITIVO */}
-                        <div className="relative">
-                            <button
-                                type="button"
-                                onClick={() => setLoadTrackMenuOpen(prev => !prev)}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/40 hover:bg-cyan-500/25 text-cyan-300 font-mono text-[11px] font-bold transition-all cursor-pointer shadow-sm"
-                            >
-                                <span>🎵 Cargar</span>
-                                <Icons.ChevronDown size={11} />
-                            </button>
-
-                            {loadTrackMenuOpen && (
-                                <div className="absolute left-0 bottom-full mb-2 z-50 w-52 rounded-xl bg-zinc-950/98 border border-zinc-700/80 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md text-xs font-mono">
-                                    <button
-                                        type="button"
-                                        onClick={handleLoadFirstLibraryTrack}
-                                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 hover:text-white transition-colors text-left cursor-pointer"
-                                    >
-                                        <span>📚</span>
-                                        <span>Desde Biblioteca DJ</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (localAudioInputRef.current) localAudioInputRef.current.click();
-                                        }}
-                                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-cyan-950/60 text-cyan-300 hover:text-white border border-transparent hover:border-cyan-500/30 transition-colors text-left cursor-pointer"
-                                    >
-                                        <span>📁</span>
-                                        <span>Desde tu Dispositivo</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+            ) : (
+                <footer className="flex bw-deckbar relative z-30 h-16 shrink-0 items-center gap-3 px-3 sm:px-4">
+                    <div className="absolute inset-x-0 top-0 h-0.5 overflow-hidden bg-white/5 md:hidden">
+                        <div className="h-full bg-cyan-400 transition-all duration-200" style={{ width: `${Math.min(100, Math.max(0, mobileProgress * 100))}%` }} />
                     </div>
-                ) : (
-                    <div className="flex items-center gap-3 min-w-0 flex-1 md:w-72 md:flex-initial">
-                        <img
-                            src={getValidCover(nowPlayingTrack.cover || (nowPlayingTrack.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack.path)}` : (nowPlayingTrack.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack.f)}` : null)))}
-                            alt=""
-                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
-                            className="h-11 w-11 shrink-0 rounded-lg object-cover ring-1 ring-white/10"
-                        />
-                        <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-                            <span className="text-sm font-semibold text-white truncate" title={nowPlayingTrack.t || nowPlayingTrack.title}>
-                                {nowPlayingTrack.t || nowPlayingTrack.title}
-                            </span>
-                            <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-xs text-cyan-300 truncate" title={nowPlayingTrack.a || nowPlayingTrack.artist}>{nowPlayingTrack.a || nowPlayingTrack.artist}</span>
-                                <span className="font-mono text-xs text-white shrink-0">{nowPlayingTrack.b || nowPlayingTrack.bpm || '--'}<span className="text-zinc-500"> BPM</span></span>
-                                <span className="bw-key-chip shrink-0">{nowPlayingTrack.k || nowPlayingTrack.key || '--'}</span>
+
+                    {!nowPlayingTrack ? (
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 md:w-80 shrink-0">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-white/15 text-zinc-600">
+                                <Icons.Disc size={20} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                                <span className="bw-eyebrow">{t('deck_standby_label') || 'DECK 1 STANDBY'}</span>
+                                <span className="text-xs text-zinc-500 truncate">{t('deck_standby_comment_hint') || 'Carga una pista para reproducir'}</span>
+                            </div>
+
+                            {/* SELECTOR DE CARGA DE PISTA: DESDE BIBLIOTECA O DISPOSITIVO */}
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setLoadTrackMenuOpen(prev => !prev)}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/40 hover:bg-cyan-500/25 text-cyan-300 font-mono text-[11px] font-bold transition-all cursor-pointer shadow-sm"
+                                >
+                                    <span>🎵 Cargar</span>
+                                    <Icons.ChevronDown size={11} />
+                                </button>
+
+                                {loadTrackMenuOpen && (
+                                    <div className="absolute left-0 bottom-full mb-2 z-50 w-52 rounded-xl bg-zinc-950/98 border border-zinc-700/80 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md text-xs font-mono">
+                                        <button
+                                            type="button"
+                                            onClick={handleLoadFirstLibraryTrack}
+                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 hover:text-white transition-colors text-left cursor-pointer"
+                                        >
+                                            <span>📚</span>
+                                            <span>Desde Biblioteca DJ</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (localAudioInputRef.current) localAudioInputRef.current.click();
+                                            }}
+                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-cyan-950/60 text-cyan-300 hover:text-white border border-transparent hover:border-cyan-500/30 transition-colors text-left cursor-pointer"
+                                        >
+                                            <span>📁</span>
+                                            <span>Desde tu Dispositivo</span>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div className="flex items-center gap-3 min-w-0 flex-1 md:w-72 md:flex-initial">
+                            <img
+                                src={getValidCover(nowPlayingTrack.cover || (nowPlayingTrack.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack.path)}` : (nowPlayingTrack.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack.f)}` : null)))}
+                                alt=""
+                                onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                className="h-11 w-11 shrink-0 rounded-lg object-cover ring-1 ring-white/10"
+                            />
+                            <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                                <span className="text-sm font-semibold text-white truncate" title={nowPlayingTrack.t || nowPlayingTrack.title}>
+                                    {nowPlayingTrack.t || nowPlayingTrack.title}
+                                </span>
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-xs text-cyan-300 truncate" title={nowPlayingTrack.a || nowPlayingTrack.artist}>{nowPlayingTrack.a || nowPlayingTrack.artist}</span>
+                                    <span className="font-mono text-xs text-white shrink-0">{nowPlayingTrack.b || nowPlayingTrack.bpm || '--'}<span className="text-zinc-500"> BPM</span></span>
+                                    <span className="bw-key-chip shrink-0">{nowPlayingTrack.k || nowPlayingTrack.key || '--'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                <div className="flex items-center gap-2 shrink-0">
-                    <button type="button" disabled={!nowPlayingTrack} onClick={handleCue} className="bw-deck-btn">CUE</button>
-                    <button type="button" disabled={!nowPlayingTrack} onClick={togglePlayPause} className="bw-deck-play" aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>
-                        {isPlaying ? <Icons.Pause size={18} /> : <Icons.Play size={18} />}
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button type="button" disabled={!nowPlayingTrack} onClick={handleCue} className="bw-deck-btn">CUE</button>
+                        <button type="button" disabled={!nowPlayingTrack} onClick={togglePlayPause} className="bw-deck-play" aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>
+                            {isPlaying ? <Icons.Pause size={18} /> : <Icons.Play size={18} />}
+                        </button>
+                        <button type="button" disabled={!nowPlayingTrack} onClick={() => handleFooterSeek(0.22)} className="bw-deck-btn hidden sm:inline-flex">SYNC</button>
+                    </div>
+
+                    {(nowPlayingTrack && (nowPlayingTrack.comment || nowPlayingTrack.comentario)) && (
+                        <div className="hidden xl:flex items-center gap-2 max-w-xs shrink-0 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5" title={nowPlayingTrack.comment || nowPlayingTrack.comentario}>
+                            <Icons.MessageSquare size={14} className="text-cyan-300" />
+                            <span className="font-mono text-xs text-zinc-300 truncate">{nowPlayingTrack.comment || nowPlayingTrack.comentario}</span>
+                        </div>
+                    )}
+
+                    <div className="hidden md:flex flex-1 min-w-0">
+                        <FooterMasterWaveform 
+                            track={nowPlayingTrack} 
+                            isPlaying={isPlaying} 
+                            playProgressRef={playProgressRef} 
+                            onSeek={handleFooterSeek} 
+                            cues={(nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0) ? nowPlayingTrack.cues : ((currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS)} 
+                            t={t}
+                        />
+                    </div>
+
+                    {/* BOTÓN MINIMIZAR DECK */}
+                    <button
+                        type="button"
+                        onClick={() => setIsFooterDeckExpanded(false)}
+                        className="p-1 rounded-md text-zinc-500 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                        title="Minimizar Deck"
+                    >
+                        <Icons.ChevronDown size={16} />
                     </button>
-                    <button type="button" disabled={!nowPlayingTrack} onClick={() => handleFooterSeek(0.22)} className="bw-deck-btn hidden sm:inline-flex">SYNC</button>
-                </div>
-
-                {(nowPlayingTrack && (nowPlayingTrack.comment || nowPlayingTrack.comentario)) && (
-                    <div className="hidden xl:flex items-center gap-2 max-w-xs shrink-0 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5" title={nowPlayingTrack.comment || nowPlayingTrack.comentario}>
-                        <Icons.MessageSquare size={14} className="text-cyan-300" />
-                        <span className="font-mono text-xs text-zinc-300 truncate">{nowPlayingTrack.comment || nowPlayingTrack.comentario}</span>
-                    </div>
-                )}
-
-                <div className="hidden md:flex flex-1 min-w-0">
-                    <FooterMasterWaveform 
-                        track={nowPlayingTrack} 
-                        isPlaying={isPlaying} 
-                        playProgressRef={playProgressRef} 
-                        onSeek={handleFooterSeek} 
-                        cues={(nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0) ? nowPlayingTrack.cues : ((currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS)} 
-                        t={t}
-                    />
-                </div>
-            </footer>
+                </footer>
+            )}
                 </div>
             </div>
 

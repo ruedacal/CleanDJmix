@@ -131,6 +131,24 @@ const CopilotTurntableLogo = ({ size = 20, className = "" }) => (
     </svg>
 );
 
+const ZapIcon = ({ size = 10, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+);
+
+const ActivityIcon = ({ size = 10, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+);
+
+const SparklesIcon = ({ size = 10, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+    </svg>
+);
+
 const PlatformLogos = {
     auto: PlatformAutoLogo,
     serato: PlatformSeratoLogo,
@@ -2075,10 +2093,10 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS VERTICALMENTE + ENERGÍA & INTENSIDAD (AROUSAL) */}
+                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS CON MOOD DEBAJO + ENERGÍA, INTENSIDAD Y POSITIVIDAD */}
                 <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3">
-                    {/* TONO Y TEMPO APILADOS EN UN SOLO BLOQUE DE MITAD DE ALTURA */}
-                    <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0">
+                    {/* BLOQUE TONO, TEMPO Y MOOD DEBAJO DE LOS BPM */}
+                    <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]">
                         {/* Fila Tono */}
                         <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
                             <div 
@@ -2090,7 +2108,8 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                             <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TONO</span>
                             <span className="font-syne font-bold text-[10px] text-white truncate">{deck.raw_key || deck.camelot}</span>
                         </div>
-                        {/* Fila Tempo */}
+
+                        {/* Fila Tempo (BPM) */}
                         <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
                             <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TEMPO</span>
                             <span className="font-orbitron font-black text-[10px] text-white">
@@ -2098,71 +2117,52 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                             </span>
                             <span className="text-[7px] text-zinc-400 font-mono">BPM</span>
                         </div>
+
+                        {/* Cuadro morado con el Mood ubicado debajo de los BPM */}
+                        <div className="px-1.5 py-0.5 rounded-lg bg-purple-950/70 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300 truncate max-w-full text-center" title={deck.mood || deck.phase || 'Peak Time Climax'}>
+                            ✨ {deck.mood || deck.phase || 'Peak Time Climax'}
+                        </div>
                     </div>
 
-                    {/* ENERGÍA (NARANJA) E INTENSIDAD / AROUSAL (MORADA) + MOOD */}
-                    <div className="flex-1 min-w-[125px] flex flex-col justify-center gap-1">
-                        {/* Fila 1: Energía con Barra Naranja */}
-                        <div className="flex items-center justify-between text-[8px] font-mono">
-                            <span className="text-amber-400 font-bold flex items-center gap-0.5">
-                                ⚡ ENERGÍA {deck.energy || 90}%
-                            </span>
-                        </div>
-                        <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                            <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${deck.energy || 90}%` }}></div>
-                        </div>
-
-                        {/* Fila 2: Intensidad (Arousal) con Barra Morada */}
-                        <div className="flex items-center justify-between text-[8px] font-mono mt-0.5">
-                            <span className="text-purple-400 font-bold flex items-center gap-0.5">
-                                〰️ INTENSIDAD (AROUSAL) {deck.arousal || deck.danceability || 88}%
-                            </span>
-                        </div>
-                        <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                            <div className="h-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 rounded-full" style={{ width: `${deck.arousal || deck.danceability || 88}%` }}></div>
+                    {/* COLUMNA PSICOMETRÍA: ENERGÍA, INTENSIDAD Y POSITIVIDAD APILADAS */}
+                    <div className="flex-1 min-w-[125px] flex flex-col justify-center gap-1.5">
+                        {/* Fila 1: Energía */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-amber-400 font-bold flex items-center gap-1">
+                                    <ZapIcon size={9} /> ENERGÍA
+                                </span>
+                                <span className="text-amber-400 font-bold">{deck.energy || 90}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${deck.energy || 90}%` }}></div>
+                            </div>
                         </div>
 
-                        {/* Mood Badge */}
-                        <div className="flex items-center justify-start mt-0.5">
-                            <span className="px-1.5 py-0.2 rounded bg-purple-950/70 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300 truncate max-w-full" title={deck.mood || deck.phase || 'Peak Time Climax'}>
-                                ✨ {deck.mood || deck.phase || 'Peak Time Climax'}
-                            </span>
+                        {/* Fila 2: Intensidad (sin paréntesis, con icono) */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                    <ActivityIcon size={9} /> INTENSIDAD
+                                </span>
+                                <span className="text-emerald-400 font-bold">{deck.arousal || deck.danceability || 88}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${deck.arousal || deck.danceability || 88}%` }}></div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            {/* MÉTRICAS PSICOACÚSTICAS DJ: POSITIVIDAD (VALENCE) E INTENSIDAD (AROUSAL) */}
-            <div className="grid grid-cols-2 gap-2 mb-2.5">
-                <div className="p-2 sm:p-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
-                    <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
-                        POSITIVIDAD (VALENCE)
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="font-mono text-xs font-bold text-djcyan-400">
-                            {deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%
-                        </span>
-                        <div className="flex-1 max-w-[120px] bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
-                            <div 
-                                className="h-full bg-djcyan-400 rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(6,182,212,0.8)]" 
-                                style={{ width: `${deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%` }}
-                            />
-                        </div>
-                    </div>
-                </div>
-                <div className="p-2 sm:p-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
-                    <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
-                        INTENSIDAD (AROUSAL)
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="font-mono text-xs font-bold text-emerald-400">
-                            {deck.arousal != null ? deck.arousal : (side === '1' || side === 'A' ? 88 : 91)}%
-                        </span>
-                        <div className="flex-1 max-w-[120px] bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
-                            <div 
-                                className="h-full bg-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(16,185,129,0.8)]" 
-                                style={{ width: `${deck.arousal != null ? deck.arousal : (side === '1' || side === 'A' ? 88 : 91)}%` }}
-                            />
+                        {/* Fila 3: Positividad (sin paréntesis, con icono) */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-djcyan-400 font-bold flex items-center gap-1">
+                                    <SparklesIcon size={9} /> POSITIVIDAD
+                                </span>
+                                <span className="text-djcyan-400 font-bold">{deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-djcyan-400 rounded-full shadow-[0_0_6px_rgba(6,182,212,0.8)]" style={{ width: `${deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%` }}></div>
+                            </div>
                         </div>
                     </div>
                 </div>
