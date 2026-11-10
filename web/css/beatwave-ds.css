@@ -814,3 +814,39 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 .ws-plan-features li { display: flex; gap: .6rem; font-size: .825rem; line-height: 1.45; color: #d4d4d8; }
 .ws-plan-check { flex: none; margin-top: .15rem; color: var(--bw-cyan); }
 .ws-pricing-foot { text-align: center; font-size: .72rem; color: #71717a; }
+
+/* ===== Duotone Effect CSS for Video ===== */
+.duotone-video-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.duotone-video {
+    filter: grayscale(100%);
+}
+
+.duotone-video-container::before,
+.duotone-overlay {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to right,
+        #191414 0%,
+        #00FFFF 100%
+    );
+    mix-blend-mode: color;
+    opacity: 1;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Alternative: CSS Filter approach */
+.duotone-filter {
+    filter: 
+        grayscale(100%) 
+        contrast(100%) 
+        sepia(100%) 
+        hue-rotate(0deg)
+        saturate(200%);
+}

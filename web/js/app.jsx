@@ -32393,10 +32393,10 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: VÍDEO CINEMÁTICO TAL COMO LO PASÓ EL USUARIO (ALPHA 85% SOLAMENTE) */}
+            {/* FASE 1: VÍDEO CINEMÁTICO CON EFECTO DUOTONE (#191414 -> #0FF) */}
             {phase === 'video' && (
-                <div className="absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
-                    {/* Vídeo Nativo a Alpha 85% Limpio */}
+                <div className="duotone-video-container absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
+                    {/* Vídeo con Grayscale y Duotone Effect */}
                     <video
                         ref={videoRef}
                         autoPlay
@@ -32407,12 +32407,27 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         onTimeUpdate={handleTimeUpdate}
                         onEnded={handleVideoEnded}
                         src="assets/intro_cinematic.mp4"
-                        className="w-full h-full object-cover pointer-events-none"
+                        className="duotone-video w-full h-full object-cover pointer-events-none"
                         style={{ 
                             opacity: videoOpacity * selectedAlpha, 
                             transform: 'translateZ(0)',
-                            willChange: 'opacity',
-                            transition: videoOpacity === 0 ? 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 300ms ease' 
+                            willChange: 'opacity, filter',
+                            transition: videoOpacity === 0 ? 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 300ms ease',
+                            filter: 'grayscale(100%)'
+                        }}
+                    />
+
+                    {/* Capa Duotone Gradient Mix-Blend-Mode (#191414 a #0FF) */}
+                    <div 
+                        className="duotone-overlay"
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'linear-gradient(to right, #191414 0%, #00FFFF 100%)',
+                            mixBlendMode: 'color',
+                            opacity: 1,
+                            pointerEvents: 'none',
+                            zIndex: 10
                         }}
                     />
 

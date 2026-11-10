@@ -22981,7 +22981,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }
         }
       },
-      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement(
+      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "duotone-video-container absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement(
         "video",
         {
           ref: videoRef,
@@ -22993,12 +22993,27 @@ Respuesta: ${qa.a}`).join("\n\n"),
           onTimeUpdate: handleTimeUpdate,
           onEnded: handleVideoEnded,
           src: "assets/intro_cinematic.mp4",
-          className: "w-full h-full object-cover pointer-events-none",
+          className: "duotone-video w-full h-full object-cover pointer-events-none",
           style: {
             opacity: videoOpacity * selectedAlpha,
             transform: "translateZ(0)",
-            willChange: "opacity",
-            transition: videoOpacity === 0 ? "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)" : "opacity 300ms ease"
+            willChange: "opacity, filter",
+            transition: videoOpacity === 0 ? "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)" : "opacity 300ms ease",
+            filter: "grayscale(100%)"
+          }
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "duotone-overlay",
+          style: {
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(to right, #191414 0%, #00FFFF 100%)",
+            mixBlendMode: "color",
+            opacity: 1,
+            pointerEvents: "none",
+            zIndex: 10
           }
         }
       ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(
