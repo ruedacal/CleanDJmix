@@ -108,6 +108,7 @@ from services.shazam_service import ShazamRecognitionService
 from services.tag_sanitizer_service import TagSanitizerService
 from services.trends_service import trends_service
 from services.knowledge_service import knowledge_service
+from services.genre_classifier_service import GenreClassifierDSP
 from services.copilot_service import copilot_service
 from services.session_graph_advisor_service import SessionGraphAdvisorService
 
@@ -1335,3 +1336,18 @@ if __name__ == "__main__":
         )
     except (SystemExit, KeyboardInterrupt):
         print("\n[CleanDJmix PRO] Servidor detenido.")
+
+@eel.expose
+def clasificar_genero_pista(filepath, bpm=0.0):
+    return GenreClassifierDSP.classify_track(filepath, known_bpm=float(bpm or 0.0))
+
+@bottle.route('/api/taxonomy/classify', method=['POST', 'GET', 'OPTIONS'])
+def api_taxonomy_classify():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    filepath = bottle.request.params.get('filepath') or (bottle.request.json or {}).get('filepath')
+    bpm = float(bottle.request.params.get('bpm') or (bottle.request.json or {}).get('bpm') or 0.0)
+    return GenreClassifierDSP.classify_track(filepath, known_bpm=bpm)

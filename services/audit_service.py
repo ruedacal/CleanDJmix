@@ -18,6 +18,7 @@ from mutagen.id3 import ID3
 from infrastructure.audio_processor import AudioProcessorService
 from services.tag_sanitizer_service import TagSanitizerService
 from services.mood_intelligence_service import MoodIntelligenceService
+from services.genre_classifier_service import GenreClassifierDSP
 
 def _cooperative_yield():
     """Cede el control del bucle de eventos a gevent/hilos para procesar cancelaciones instantáneamente."""
@@ -1099,6 +1100,7 @@ return folderPath'''
             e_num = int(info.get("energy") or 85)
             dance_num = int(info.get("danceability") or info.get("dance") or 85)
             from services.mood_intelligence_service import MoodIntelligenceService
+from services.genre_classifier_service import GenreClassifierDSP
             fase_info = MoodIntelligenceService.clasificar_fase_sesion_dj(
                 bpm=bpm_num,
                 key=key_clean,
@@ -1142,6 +1144,24 @@ return folderPath'''
                 is_clipping = lufs_data.get("clipping", False)
                 status_lufs = lufs_data.get("status_lufs", "Normal")
                 badge_lufs = lufs_data.get("badge_lufs", "green")
+
+                        # Clasificación Acústica de Género y Subgénero (GenreClassifierDSP MIR)
+            try:
+                bpm_float = float(bpm_val) if bpm_val and str(bpm_val) != "--" else 0.0
+                cls_data = GenreClassifierDSP.classify_track(full_path, known_bpm=bpm_float)
+                track_genre = cls_data.get("genre", "TECHNO")
+                track_subgenre = cls_data.get("subgenre", "Peak Time / Driving")
+                track_mood = cls_data.get("mood", "Peak Time Hypnotic")
+                track_crate = cls_data.get("crate_path", "")
+                track_confidence = cls_data.get("confidence", 85.0)
+                track_sig = cls_data.get("signature", {})
+            except Exception as e_cls:
+                track_genre = "TECHNO"
+                track_subgenre = "Peak Time / Driving"
+                track_mood = "Peak Time Hypnotic"
+                track_crate = "/Music/Serato/Techno/Peak Time / Driving/"
+                track_confidence = 75.0
+                track_sig = {}
 
             v_type = TagSanitizerService.extraer_tipo_version(f"{title_str} {file}")
 
@@ -1192,6 +1212,13 @@ return folderPath'''
                 "status_lufs": status_lufs,
                 "badge_lufs": badge_lufs,
                 "version_type": v_type,
+                "genre": track_genre,
+                "subgenre": track_subgenre,
+                "g": track_subgenre,
+                "mood": track_mood,
+                "crate_path": track_crate,
+                "confidence": track_confidence,
+                "acoustic_sig": track_sig,
                 "spectrum": spectrum_points,
                 "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
                 "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
@@ -1920,7 +1947,25 @@ return folderPath'''
 
                 # Detección inteligente de versión DJ (Extended vs Radio vs Dub vs Remix vs Acapella)
                 search_v = f"{t.get('title', '')} {t.get('t', '')} {t.get('filename', '')} {t.get('f', '')} {path}"
-                v_type = TagSanitizerService.extraer_tipo_version(search_v)
+                            # Clasificación Acústica de Género y Subgénero (GenreClassifierDSP MIR)
+            try:
+                bpm_float = float(bpm_val) if bpm_val and str(bpm_val) != "--" else 0.0
+                cls_data = GenreClassifierDSP.classify_track(full_path, known_bpm=bpm_float)
+                track_genre = cls_data.get("genre", "TECHNO")
+                track_subgenre = cls_data.get("subgenre", "Peak Time / Driving")
+                track_mood = cls_data.get("mood", "Peak Time Hypnotic")
+                track_crate = cls_data.get("crate_path", "")
+                track_confidence = cls_data.get("confidence", 85.0)
+                track_sig = cls_data.get("signature", {})
+            except Exception as e_cls:
+                track_genre = "TECHNO"
+                track_subgenre = "Peak Time / Driving"
+                track_mood = "Peak Time Hypnotic"
+                track_crate = "/Music/Serato/Techno/Peak Time / Driving/"
+                track_confidence = 75.0
+                track_sig = {}
+
+            v_type = TagSanitizerService.extraer_tipo_version(search_v)
                 v_key = TagSanitizerService.extraer_clave_version(search_v)
                 t_copy["version_type"] = v_type
                 t_copy["version_key"] = v_key
