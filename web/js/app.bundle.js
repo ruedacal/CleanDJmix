@@ -22981,7 +22981,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }
         }
       },
-      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "duotone-video-container absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement(
+      phase === "video" && /* @__PURE__ */ React.createElement("div", { className: "duotone-video-container absolute inset-0 w-full h-full bg-[#191414] overflow-hidden flex items-center justify-center" }, /* @__PURE__ */ React.createElement("svg", { className: "absolute w-0 h-0 pointer-events-none", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("filter", { id: "bw-duotone", colorInterpolationFilters: "sRGB" }, /* @__PURE__ */ React.createElement("feColorMatrix", { type: "matrix", values: "0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0" }), /* @__PURE__ */ React.createElement("feComponentTransfer", { colorInterpolationFilters: "sRGB" }, /* @__PURE__ */ React.createElement("feFuncR", { type: "table", tableValues: "0.098 0.0" }), /* @__PURE__ */ React.createElement("feFuncG", { type: "table", tableValues: "0.078 1.0" }), /* @__PURE__ */ React.createElement("feFuncB", { type: "table", tableValues: "0.078 1.0" }))))), /* @__PURE__ */ React.createElement(
         "video",
         {
           ref: videoRef,
@@ -22993,27 +22993,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
           onTimeUpdate: handleTimeUpdate,
           onEnded: handleVideoEnded,
           src: "assets/intro_cinematic.mp4",
-          className: "duotone-video w-full h-full object-cover pointer-events-none",
+          className: "duotone-video duotone-filter w-full h-full object-cover pointer-events-none",
           style: {
             opacity: videoOpacity * selectedAlpha,
             transform: "translateZ(0)",
             willChange: "opacity, filter",
             transition: videoOpacity === 0 ? "opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)" : "opacity 300ms ease",
-            filter: "grayscale(100%)"
-          }
-        }
-      ), /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "duotone-overlay",
-          style: {
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(to right, #191414 0%, #00FFFF 100%)",
-            mixBlendMode: "color",
-            opacity: 1,
-            pointerEvents: "none",
-            zIndex: 10
+            filter: "url(#bw-duotone) contrast(115%)"
           }
         }
       ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-6 right-6 z-50" }, /* @__PURE__ */ React.createElement(

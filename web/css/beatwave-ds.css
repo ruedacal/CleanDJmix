@@ -815,38 +815,23 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 .ws-plan-check { flex: none; margin-top: .15rem; color: var(--bw-cyan); }
 .ws-pricing-foot { text-align: center; font-size: .72rem; color: #71717a; }
 
-/* ===== Duotone Effect CSS for Video ===== */
+/* ===== Duotone Effect CSS for Video (Sin Degradados) ===== */
 .duotone-video-container {
     position: relative;
     overflow: hidden;
+    background: #191414;
 }
 
 .duotone-video {
-    filter: grayscale(100%);
+    filter: url(#bw-duotone) contrast(115%);
 }
 
-.duotone-video-container::before,
-.duotone-overlay {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        to right,
-        #191414 0%,
-        #00FFFF 100%
-    );
-    mix-blend-mode: color;
-    opacity: 1;
-    pointer-events: none;
-    z-index: 10;
-}
-
-/* Alternative: CSS Filter approach */
+/* Alternative: CSS Filter approach sin degradados espaciales */
 .duotone-filter {
     filter: 
         grayscale(100%) 
-        contrast(100%) 
+        contrast(120%) 
         sepia(100%) 
-        hue-rotate(0deg)
+        hue-rotate(145deg)
         saturate(200%);
 }

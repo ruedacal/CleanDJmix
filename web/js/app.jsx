@@ -32393,10 +32393,24 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 }
             }}
         >
-            {/* FASE 1: VÍDEO CINEMÁTICO CON EFECTO DUOTONE (#191414 -> #0FF) */}
+            {/* FASE 1: VÍDEO CINEMÁTICO CON EFECTO DUOTONE SIN DEGRADADOS (#191414 Sombreado -> #00FFFF Iluminación) */}
             {phase === 'video' && (
-                <div className="duotone-video-container absolute inset-0 w-full h-full bg-[#000000] overflow-hidden flex items-center justify-center">
-                    {/* Vídeo con Grayscale y Duotone Effect */}
+                <div className="duotone-video-container absolute inset-0 w-full h-full bg-[#191414] overflow-hidden flex items-center justify-center">
+                    {/* Filtro SVG Duotone puro (mapeo tonal directo sin degradados espaciales) */}
+                    <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
+                        <defs>
+                            <filter id="bw-duotone" colorInterpolationFilters="sRGB">
+                                <feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0" />
+                                <feComponentTransfer colorInterpolationFilters="sRGB">
+                                    <feFuncR type="table" tableValues="0.098 0.0" />
+                                    <feFuncG type="table" tableValues="0.078 1.0" />
+                                    <feFuncB type="table" tableValues="0.078 1.0" />
+                                </feComponentTransfer>
+                            </filter>
+                        </defs>
+                    </svg>
+
+                    {/* Vídeo con Duotone Tonal (Sombras #191414, Luces #00FFFF, sin degradado) */}
                     <video
                         ref={videoRef}
                         autoPlay
@@ -32407,27 +32421,13 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         onTimeUpdate={handleTimeUpdate}
                         onEnded={handleVideoEnded}
                         src="assets/intro_cinematic.mp4"
-                        className="duotone-video w-full h-full object-cover pointer-events-none"
+                        className="duotone-video duotone-filter w-full h-full object-cover pointer-events-none"
                         style={{ 
                             opacity: videoOpacity * selectedAlpha, 
                             transform: 'translateZ(0)',
                             willChange: 'opacity, filter',
                             transition: videoOpacity === 0 ? 'opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 300ms ease',
-                            filter: 'grayscale(100%)'
-                        }}
-                    />
-
-                    {/* Capa Duotone Gradient Mix-Blend-Mode (#191414 a #0FF) */}
-                    <div 
-                        className="duotone-overlay"
-                        style={{
-                            position: 'absolute',
-                            inset: 0,
-                            background: 'linear-gradient(to right, #191414 0%, #00FFFF 100%)',
-                            mixBlendMode: 'color',
-                            opacity: 1,
-                            pointerEvents: 'none',
-                            zIndex: 10
+                            filter: 'url(#bw-duotone) contrast(115%)'
                         }}
                     />
 
