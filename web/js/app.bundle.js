@@ -4314,6 +4314,68 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const paddingBottom = Math.max(0, (items.length - range.end) * rowHeight);
     return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
   }
+  function useDrawerResize(storageKey = "bw_drawer_width", defaultWidth = 500, minWidth = 380, maxWidth = 860) {
+    const [width, setWidth] = React.useState(() => {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = parseInt(saved, 10);
+          if (!isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+      }
+      return defaultWidth;
+    });
+    const isDraggingRef = React.useRef(false);
+    const startXRef = React.useRef(0);
+    const startWidthRef = React.useRef(width);
+    const onPointerDown = React.useCallback((e) => {
+      if (typeof window === "undefined" || window.innerWidth < 768) return;
+      e.preventDefault();
+      e.stopPropagation();
+      isDraggingRef.current = true;
+      startXRef.current = e.clientX;
+      startWidthRef.current = width;
+      document.body.style.cursor = "ew-resize";
+      document.body.style.userSelect = "none";
+      const onPointerMove = (moveEvent) => {
+        if (!isDraggingRef.current) return;
+        const delta = startXRef.current - moveEvent.clientX;
+        const maxW = typeof window !== "undefined" ? Math.min(maxWidth, window.innerWidth * 0.9) : maxWidth;
+        const newWidth = Math.max(minWidth, Math.min(maxW, startWidthRef.current + delta));
+        setWidth(newWidth);
+      };
+      const onPointerUp = () => {
+        if (!isDraggingRef.current) return;
+        isDraggingRef.current = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+        window.removeEventListener("pointercancel", onPointerUp);
+        try {
+          setWidth((currentW) => {
+            localStorage.setItem(storageKey, String(Math.round(currentW)));
+            return currentW;
+          });
+        } catch (e2) {
+        }
+      };
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("pointercancel", onPointerUp);
+    }, [width, storageKey, minWidth, maxWidth]);
+    const resetWidth = React.useCallback(() => {
+      setWidth(defaultWidth);
+      try {
+        localStorage.setItem(storageKey, String(defaultWidth));
+      } catch (e) {
+      }
+    }, [defaultWidth, storageKey]);
+    return { width, onPointerDown, resetWidth };
+  }
   var UserAccountModal = ({
     isOpen,
     onClose,
@@ -4330,6 +4392,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     onOpenRegister
   }) => {
     if (!isOpen) return null;
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_account_drawer_width", 500);
     const [activeTab, setActiveTab] = useState5("profile");
     const [alias, setAlias] = useState5(userProfile && userProfile.alias || "DJ Alex BeatWave");
     const [fullName, setFullName] = useState5(userProfile && userProfile.fullName || "Alejandro Rueda");
@@ -4472,10 +4535,20 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       ), /* @__PURE__ */ React.createElement(
         "aside",
         {
-          style: { width: "100%", maxWidth: "500px", zIndex: 99999 },
+          style: { width: "100%", maxWidth: `${drawerWidth}px`, zIndex: 99999 },
           className: "fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto",
           onClick: (e) => e.stopPropagation()
         },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            onPointerDown: onResizeDown,
+            onDoubleClick: onResetWidth,
+            className: "hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors",
+            title: "Arrastra para redimensionar el panel (Doble clic para restablecer a 500px)"
+          },
+          /* @__PURE__ */ React.createElement("div", { className: "w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" })
+        ),
         /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.User, { size: 16 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "CUENTA & SESI\xD3N DJ"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 px-2 py-0.5 rounded-full font-black" }, "PERFIL CABINA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, alias, " \u2022 ", email))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -5769,6 +5842,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
   var InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onNavigateTab, lang = "es" }) => {
     if (!isOpen) return null;
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_manual_drawer_width", 500);
     const [isFolded, setIsFolded] = useState5(false);
     const [activeSectionKey, setActiveSectionKey] = useState5(initialSection || "audit");
     const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
@@ -6631,10 +6705,20 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       ), /* @__PURE__ */ React.createElement(
         "aside",
         {
-          style: { width: "100%", maxWidth: "500px", zIndex: 99999 },
+          style: { width: "100%", maxWidth: `${drawerWidth}px`, zIndex: 99999 },
           className: "fixed top-0 bottom-0 right-0 h-full bg-[#080914] border-l-4 border-l-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto",
           onClick: (e) => e.stopPropagation()
         },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            onPointerDown: onResizeDown,
+            onDoubleClick: onResetWidth,
+            className: "hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-pink-500/10 transition-colors",
+            title: "Arrastra para redimensionar el manual (Doble clic para restablecer a 500px)"
+          },
+          /* @__PURE__ */ React.createElement("div", { className: "w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-pink-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(236,72,153,0.8)]" })
+        ),
         /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-750 bg-[#0d0f20] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "MANUAL MAESTRO DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-pink-950 text-pink-200 border border-pink-500 px-2 py-0.5 rounded-full font-black" }, "60% ANCHO \u2022 CABINA ACTIVA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-300 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, activeSec.tag))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -7221,6 +7305,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const [batchStatusMsg, setBatchStatusMsg] = useState5("");
     const [saveFeedback, setSaveFeedback] = useState5("");
     const [sidebarOpen, setSidebarOpen] = useState5(false);
+    const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize("bw_inspector_drawer_width", 500);
     const [exportDropdownOpen, setExportDropdownOpen] = useState5(false);
     const [mobileWorkflowTab, setMobileWorkflowTab] = useState5("analizar");
     const [batchConfigured, setBatchConfigured] = useState5(false);
@@ -9963,9 +10048,19 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       "aside",
       {
         key: currentTrack ? currentTrack.id : "none",
-        style: { width: "100%", maxWidth: "500px", zIndex: 99999 },
+        style: { width: "100%", maxWidth: `${inspectorWidth}px`, zIndex: 99999 },
         className: "ws-inspector fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
       },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          onPointerDown: onInspectorResizeDown,
+          onDoubleClick: onInspectorResetWidth,
+          className: "hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-amber-500/10 transition-colors",
+          title: "Arrastra para redimensionar el inspector (Doble clic para restablecer a 500px)"
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-amber-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(245,158,11,0.8)]" })
+      ),
       /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 16 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "TRACK INSPECTOR"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-amber-950/90 text-amber-300 border border-amber-500/60 px-2 py-0.5 rounded-full font-mono font-black" }, "ID #", currentTrack.id || "--")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, "AN\xC1LISIS AC\xDASTICO, TAGS & METADATOS"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
         "button",
         {
@@ -12200,6 +12295,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     const [fftMsg, setFftMsg] = useState5("");
     const [selectedId, setSelectedId] = useState5(null);
     const [spInspectorOpen, setSpInspectorOpen] = useState5(false);
+    const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize("bw_sp_inspector_drawer_width", 500);
     const [downloadSession, setDownloadSession] = useState5({ downloaded: [], failed: [] });
     const [spSubView, setSpSubView] = useState5("catalog");
     const [selectedDownloadedIds, setSelectedDownloadedIds] = useState5(/* @__PURE__ */ new Set());
@@ -14018,9 +14114,19 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       "aside",
       {
         key: currentTrack ? currentTrack.id : "sp_none",
-        style: { width: "100%", maxWidth: "500px", zIndex: 99999 },
+        style: { width: "100%", maxWidth: `${spInspectorWidth}px`, zIndex: 99999 },
         className: "fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
       },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          onPointerDown: onSpResizeDown,
+          onDoubleClick: onSpResetWidth,
+          className: "hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-amber-500/10 transition-colors",
+          title: "Arrastra para redimensionar el inspector (Doble clic para restablecer a 500px)"
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-amber-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(245,158,11,0.8)]" })
+      ),
       /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Spotify, { size: 16 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "RECORD POOL INSPECTOR"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-amber-950/90 text-amber-300 border border-amber-500/60 px-2 py-0.5 rounded-full font-mono font-black" }, "ID #", currentTrack.id || "--")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, "INSPECCI\xD3N DE PISTA & DESCARGA FLAC"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
         "button",
         {

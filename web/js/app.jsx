@@ -4224,6 +4224,73 @@ function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
     return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
 }
 
+// ─── HOOK DE REDIMENSIÓN CON ARRASTRE (DRAG & DROP) & PERSISTENCIA PARA DRAWERS LATERALES (DESKTOP) ───
+function useDrawerResize(storageKey = 'bw_drawer_width', defaultWidth = 500, minWidth = 380, maxWidth = 860) {
+    const [width, setWidth] = React.useState(() => {
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                const parsed = parseInt(saved, 10);
+                if (!isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) {
+                    return parsed;
+                }
+            }
+        } catch (e) {}
+        return defaultWidth;
+    });
+
+    const isDraggingRef = React.useRef(false);
+    const startXRef = React.useRef(0);
+    const startWidthRef = React.useRef(width);
+
+    const onPointerDown = React.useCallback((e) => {
+        if (typeof window === 'undefined' || window.innerWidth < 768) return;
+        e.preventDefault();
+        e.stopPropagation();
+        isDraggingRef.current = true;
+        startXRef.current = e.clientX;
+        startWidthRef.current = width;
+
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
+
+        const onPointerMove = (moveEvent) => {
+            if (!isDraggingRef.current) return;
+            const delta = startXRef.current - moveEvent.clientX;
+            const maxW = typeof window !== 'undefined' ? Math.min(maxWidth, window.innerWidth * 0.9) : maxWidth;
+            const newWidth = Math.max(minWidth, Math.min(maxW, startWidthRef.current + delta));
+            setWidth(newWidth);
+        };
+
+        const onPointerUp = () => {
+            if (!isDraggingRef.current) return;
+            isDraggingRef.current = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+            window.removeEventListener('pointercancel', onPointerUp);
+            try {
+                setWidth((currentW) => {
+                    localStorage.setItem(storageKey, String(Math.round(currentW)));
+                    return currentW;
+                });
+            } catch (e) {}
+        };
+
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerUp);
+    }, [width, storageKey, minWidth, maxWidth]);
+
+    const resetWidth = React.useCallback(() => {
+        setWidth(defaultWidth);
+        try { localStorage.setItem(storageKey, String(defaultWidth)); } catch (e) {}
+    }, [defaultWidth, storageKey]);
+
+    return { width, onPointerDown, resetWidth };
+}
+
 // ─── ESPACIO DE USUARIO, LOGIN & GESTIÓN DE SESIONES Y ESTADOS (DRAWER LATERAL DERECHO) ───
 const UserAccountModal = ({ 
     isOpen, 
@@ -4241,6 +4308,8 @@ const UserAccountModal = ({
     onOpenRegister
 }) => {
     if (!isOpen) return null;
+
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_account_drawer_width', 500);
 
     const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'sessions' | 'preferences' | 'billing'
     const [alias, setAlias] = useState((userProfile && userProfile.alias) || 'DJ Alex BeatWave');
@@ -4400,12 +4469,21 @@ const UserAccountModal = ({
                 onClick={onClose}
             />
 
-            {/* Columna Lateral Derecha (Slide-over Drawer) - Homogénea de 500px en Desktop, 100% en Móvil */}
+            {/* Columna Lateral Derecha (Slide-over Drawer) - Redimensionable en Desktop (Drag & Drop), 100% en Móvil */}
             <aside 
-                style={{ width: '100%', maxWidth: '500px', zIndex: 99999 }}
+                style={{ width: '100%', maxWidth: `${drawerWidth}px`, zIndex: 99999 }}
                 className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Manija táctil de redimensión (Drag to Resize) para Desktop */}
+                <div 
+                    onPointerDown={onResizeDown}
+                    onDoubleClick={onResetWidth}
+                    className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors"
+                    title="Arrastra para redimensionar el panel (Doble clic para restablecer a 500px)"
+                >
+                    <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                </div>
                 {/* Cabecera del Perfil con Look & Feel BeatWave */}
                 <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
@@ -6282,6 +6360,8 @@ const MANUAL_SECTIONS = {
 const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onNavigateTab, lang = 'es' }) => {
     if (!isOpen) return null;
 
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_manual_drawer_width', 500);
+
     // Estado de Plegado / Desplegado: Colapsa a pestaña vertical lateral para interactuar libremente con la app detrás
     const [isFolded, setIsFolded] = useState(false);
     const [activeSectionKey, setActiveSectionKey] = useState(initialSection || 'audit');
@@ -7629,12 +7709,21 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 title="Haz clic fuera para cerrar el manual y volver a la cabina"
             />
 
-            {/* Columna Lateral Derecha - Homogénea de 500px en Desktop, 100% en Móvil */}
+            {/* Columna Lateral Derecha - Redimensionable en Desktop (Drag & Drop), 100% en Móvil */}
             <aside 
-                style={{ width: '100%', maxWidth: '500px', zIndex: 99999 }}
+                style={{ width: '100%', maxWidth: `${drawerWidth}px`, zIndex: 99999 }}
                 className="fixed top-0 bottom-0 right-0 h-full bg-[#080914] border-l-4 border-l-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Manija táctil de redimensión (Drag to Resize) para Desktop */}
+                <div 
+                    onPointerDown={onResizeDown}
+                    onDoubleClick={onResetWidth}
+                    className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-pink-500/10 transition-colors"
+                    title="Arrastra para redimensionar el manual (Doble clic para restablecer a 500px)"
+                >
+                    <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-pink-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(236,72,153,0.8)]" />
+                </div>
                 {/* Cabecera del Drawer */}
                 <div className="px-5 py-3.5 border-b border-djzinc-750 bg-[#0d0f20] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
@@ -8555,6 +8644,7 @@ const AuditWorkspace = ({
     const [batchStatusMsg, setBatchStatusMsg] = useState('');
     const [saveFeedback, setSaveFeedback] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize('bw_inspector_drawer_width', 500);
     const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
     const [mobileWorkflowTab, setMobileWorkflowTab] = useState('analizar'); // 'analizar' | 'exportar'
     const [batchConfigured, setBatchConfigured] = useState(false);
@@ -12263,9 +12353,18 @@ const AuditWorkspace = ({
                     />
                     <aside 
                         key={currentTrack ? currentTrack.id : "none"} 
-                        style={{ width: '100%', maxWidth: '500px', zIndex: 99999 }}
+                        style={{ width: '100%', maxWidth: `${inspectorWidth}px`, zIndex: 99999 }}
                         className="ws-inspector fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                     >
+                    {/* Manija táctil de redimensión (Drag to Resize) para Desktop */}
+                    <div 
+                        onPointerDown={onInspectorResizeDown}
+                        onDoubleClick={onInspectorResetWidth}
+                        className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-amber-500/10 transition-colors"
+                        title="Arrastra para redimensionar el inspector (Doble clic para restablecer a 500px)"
+                    >
+                        <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-amber-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+                    </div>
                     {/* Cabecera del Inspector unificada con el Look & Feel de BeatWave */}
                     <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
@@ -15687,6 +15786,7 @@ const SpotifyWorkspace = ({
     const [fftMsg, setFftMsg] = useState('');
     const [selectedId, setSelectedId] = useState(null);
     const [spInspectorOpen, setSpInspectorOpen] = useState(false);
+    const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize('bw_sp_inspector_drawer_width', 500);
     const [downloadSession, setDownloadSession] = useState({ downloaded: [], failed: [] });
     const [spSubView, setSpSubView] = useState('catalog'); // 'catalog' | 'downloaded'
     const [selectedDownloadedIds, setSelectedDownloadedIds] = useState(new Set());
@@ -18303,9 +18403,18 @@ const SpotifyWorkspace = ({
                     />
                     <aside 
                         key={currentTrack ? currentTrack.id : "sp_none"} 
-                        style={{ width: '100%', maxWidth: '500px', zIndex: 99999 }}
+                        style={{ width: '100%', maxWidth: `${spInspectorWidth}px`, zIndex: 99999 }}
                         className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                     >
+                    {/* Manija táctil de redimensión (Drag to Resize) para Desktop */}
+                    <div 
+                        onPointerDown={onSpResizeDown}
+                        onDoubleClick={onSpResetWidth}
+                        className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-amber-500/10 transition-colors"
+                        title="Arrastra para redimensionar el inspector (Doble clic para restablecer a 500px)"
+                    >
+                        <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-amber-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+                    </div>
                     <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0 font-black">
