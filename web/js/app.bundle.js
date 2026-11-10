@@ -4342,10 +4342,12 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const paddingBottom = Math.max(0, (items.length - range.end) * rowHeight);
     return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
   }
-  function useDrawerResize(storageKey = "bw_drawer_width", defaultWidth = 540, minWidth = 380, maxWidth = 860) {
+  var MASTER_DRAWER_STORAGE_KEY = "bw_inspector_drawer_width";
+  function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 540, minWidth = 380, maxWidth = 860) {
+    const effectiveKey = MASTER_DRAWER_STORAGE_KEY;
     const [width, setWidth] = React.useState(() => {
       try {
-        const saved = localStorage.getItem(storageKey);
+        const saved = localStorage.getItem(effectiveKey) || localStorage.getItem(storageKey);
         if (saved) {
           const parsed = parseInt(saved, 10);
           if (!isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) {
@@ -4357,6 +4359,15 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       }
       return defaultWidth;
     });
+    React.useEffect(() => {
+      const handleSync = (ev) => {
+        if (ev && ev.detail && typeof ev.detail.width === "number") {
+          setWidth(ev.detail.width);
+        }
+      };
+      window.addEventListener("bw_drawer_width_synced", handleSync);
+      return () => window.removeEventListener("bw_drawer_width_synced", handleSync);
+    }, []);
     const isDraggingRef = React.useRef(false);
     const startXRef = React.useRef(0);
     const startWidthRef = React.useRef(width);
@@ -4375,6 +4386,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         const maxW = typeof window !== "undefined" ? Math.min(maxWidth, window.innerWidth * 0.9) : maxWidth;
         const newWidth = Math.max(minWidth, Math.min(maxW, startWidthRef.current + delta));
         setWidth(newWidth);
+        window.dispatchEvent(new CustomEvent("bw_drawer_width_synced", { detail: { width: newWidth } }));
       };
       const onPointerUp = () => {
         if (!isDraggingRef.current) return;
@@ -4386,7 +4398,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         window.removeEventListener("pointercancel", onPointerUp);
         try {
           setWidth((currentW) => {
-            localStorage.setItem(storageKey, String(Math.round(currentW)));
+            const rounded = Math.round(currentW);
+            localStorage.setItem(effectiveKey, String(rounded));
+            window.dispatchEvent(new CustomEvent("bw_drawer_width_synced", { detail: { width: rounded } }));
             return currentW;
           });
         } catch (e2) {
@@ -4395,14 +4409,15 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
       window.addEventListener("pointercancel", onPointerUp);
-    }, [width, storageKey, minWidth, maxWidth]);
+    }, [width, effectiveKey, minWidth, maxWidth]);
     const resetWidth = React.useCallback(() => {
       setWidth(defaultWidth);
       try {
-        localStorage.setItem(storageKey, String(defaultWidth));
+        localStorage.setItem(effectiveKey, String(defaultWidth));
+        window.dispatchEvent(new CustomEvent("bw_drawer_width_synced", { detail: { width: defaultWidth } }));
       } catch (e) {
       }
-    }, [defaultWidth, storageKey]);
+    }, [defaultWidth, effectiveKey]);
     return { width, onPointerDown, resetWidth };
   }
   var UserAccountModal = ({
@@ -6949,7 +6964,6 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   }) => {
     var _a;
     if (!isOpen) return null;
-    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_library_drawer_width", 540);
     const [activeLibId, setActiveLibId] = useState5(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
     const [libNameInput, setLibNameInput] = useState5("");
     const [newFolderName, setNewFolderName] = useState5("");
@@ -7111,213 +7125,185 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
     }, 0);
     return ReactDOM.createPortal(
-      /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 overflow-hidden select-none pointer-events-none", style: { zIndex: 99998 } }, /* @__PURE__ */ React.createElement(
-        "div",
+      /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[99998] flex flex-col bg-[#070812] text-gray-200 animate-fadeIn select-none overflow-hidden font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 border-b border-djzinc-800 bg-[#0e0e1a] flex items-center justify-between shrink-0 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-2xl bg-djcyan-950/90 border border-djcyan-500/60 flex items-center justify-center text-djcyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("h3", { className: "text-base sm:text-lg font-syne font-black uppercase text-white tracking-wider" }, "LIBRER\xCDA & BIBLIOTECAS PERSONALIZADAS"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-black" }, totalTracksInLib, " PISTAS EN CAT\xC1LOGO")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-mono mt-0.5" }, "GESTOR AVANZADO DE CARPETAS VIRTUALES, AGRUPACIONES POR G\xC9NERO Y MATERIALIZACI\xD3N F\xCDSICA EN DISCO / USB"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, feedbackMsg && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-emerald-400 font-bold animate-pulse hidden sm:inline px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60" }, feedbackMsg), /* @__PURE__ */ React.createElement(
+        "button",
         {
-          className: "fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto",
-          style: { zIndex: 99998 },
-          onClick: onClose
+          type: "button",
+          onClick: onClose,
+          className: "w-9 h-9 rounded-xl bg-djzinc-850 hover:bg-rose-950/80 text-gray-400 hover:text-rose-300 flex items-center justify-center font-mono text-sm border border-djzinc-700 hover:border-rose-700/60 transition-all cursor-pointer shadow-sm",
+          title: "Cerrar pantalla completa (ESC)"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Close, { size: 16 })
+      ))), /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 border-b border-djzinc-800 bg-[#070810] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap flex-1 min-w-[280px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono uppercase font-bold text-gray-400" }, "Biblioteca:"), /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: activeLibId,
+          onChange: (e) => {
+            const id = e.target.value;
+            setActiveLibId(id);
+            if (onSelectLibrary) onSelectLibrary(id);
+          },
+          className: "px-3 py-1.5 rounded-xl bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-white font-bold outline-none focus:border-djcyan-400"
+        },
+        libraries.map((lib) => {
+          var _a2;
+          return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a2 = lib.folders) == null ? void 0 : _a2.length) || 0, " carpetas)");
+        })
+      ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: libNameInput,
+          onChange: (e) => setLibNameInput(e.target.value),
+          placeholder: "Nombre de la biblioteca",
+          className: "px-3 py-1 bg-djzinc-950 border border-djzinc-750 rounded-lg text-xs font-mono text-white outline-none focus:border-djcyan-400 w-44"
         }
       ), /* @__PURE__ */ React.createElement(
-        "aside",
+        "button",
         {
-          style: { width: "100%", maxWidth: `${drawerWidth}px`, zIndex: 99999 },
-          className: "fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto",
-          onClick: (e) => e.stopPropagation()
+          type: "button",
+          onClick: handleUpdateLibraryName,
+          className: "px-2.5 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 text-xs font-mono font-bold cursor-pointer transition-colors",
+          title: "Guardar nombre"
         },
-        /* @__PURE__ */ React.createElement(
+        "Guardar"
+      ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleCreateNewLibrary,
+          className: "px-3 py-1.5 rounded-xl bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm",
+          title: "Crear una nueva biblioteca en blanco"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Plus, { size: 14, className: "inline-block align-[-2px]" }),
+        /* @__PURE__ */ React.createElement("span", null, "Nueva Biblioteca")
+      ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-djzinc-800 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "w-full md:w-80 lg:w-96 p-4 flex flex-col gap-3 bg-[#080914] overflow-y-auto custom-scrollbar shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-djcyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", ((_a = currentLib.folders) == null ? void 0 : _a.length) || 0, ")")), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleAutoGroupByGenre,
+          className: "px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/60 text-[10px] font-mono font-bold cursor-pointer transition-colors",
+          title: "Crea carpetas autom\xE1ticamente a partir de los g\xE9neros musicales de tus pistas cargadas"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
+        " Auto por G\xE9nero"
+      )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: newFolderName,
+          onChange: (e) => setNewFolderName(e.target.value),
+          onKeyDown: (e) => {
+            if (e.key === "Enter") handleAddFolder();
+          },
+          placeholder: "Nombre de nueva carpeta...",
+          className: "flex-1 px-3 py-1.5 bg-djzinc-950 border border-djzinc-750 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleAddFolder,
+          className: "px-3 py-1.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs rounded-xl cursor-pointer active:scale-95 shadow-sm"
+        },
+        "+ Crear"
+      )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 flex-1 overflow-y-auto pr-1" }, !currentLib.folders || currentLib.folders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl" }, 'No hay carpetas creadas. Crea una arriba o pulsa "Auto por G\xE9nero".') : currentLib.folders.map((f) => {
+        var _a2;
+        const isSelected = selectedFolderId === f.id;
+        const trCount = ((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0;
+        return /* @__PURE__ */ React.createElement(
           "div",
           {
-            onPointerDown: onResizeDown,
-            onDoubleClick: onResetWidth,
-            className: "hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors",
-            title: "Arrastra para redimensionar (Doble clic para restablecer a 540px)"
+            key: f.id,
+            onClick: () => setSelectedFolderId(f.id),
+            className: `p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? "bg-djcyan-950/40 border-djcyan-500/80 text-white shadow-md" : "bg-djzinc-900/50 border-djzinc-800 text-gray-300 hover:bg-djzinc-900 hover:border-djzinc-750"}`
           },
-          /* @__PURE__ */ React.createElement("div", { className: "w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" })
-        ),
-        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0e0e18] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-djcyan-950/80 border border-djcyan-500/50 flex items-center justify-center text-djcyan-400 text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 18 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "LIBRER\xCDA & BIBLIOTECAS"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-djcyan-950 text-djcyan-300 border border-djcyan-600/60 px-2 py-0.5 rounded-full font-bold" }, totalTracksInLib, " PISTAS")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px]" }, "CARPETAS VIRTUALES Y EN DISCO"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, feedbackMsg && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-emerald-400 font-bold animate-pulse hidden sm:inline" }, feedbackMsg), /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: onClose,
-            className: "w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer",
-            title: "Cerrar panel (ESC)"
-          },
-          /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
-        ))),
-        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 border-b border-djzinc-800 bg-[#070810] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap flex-1 min-w-[280px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono uppercase font-bold text-gray-400" }, "Biblioteca:"), /* @__PURE__ */ React.createElement(
-          "select",
-          {
-            value: activeLibId,
-            onChange: (e) => {
-              const id = e.target.value;
-              setActiveLibId(id);
-              if (onSelectLibrary) onSelectLibrary(id);
-            },
-            className: "px-3 py-1.5 rounded-xl bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-white font-bold outline-none focus:border-djcyan-400"
-          },
-          libraries.map((lib) => {
-            var _a2;
-            return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a2 = lib.folders) == null ? void 0 : _a2.length) || 0, " carpetas)");
-          })
-        ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
-          "input",
-          {
-            type: "text",
-            value: libNameInput,
-            onChange: (e) => setLibNameInput(e.target.value),
-            placeholder: "Nombre de la biblioteca",
-            className: "px-3 py-1 bg-djzinc-950 border border-djzinc-750 rounded-lg text-xs font-mono text-white outline-none focus:border-djcyan-400 w-44"
-          }
-        ), /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handleUpdateLibraryName,
-            className: "px-2.5 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 text-xs font-mono font-bold cursor-pointer transition-colors",
-            title: "Guardar nombre"
-          },
-          "Guardar"
-        ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handleCreateNewLibrary,
-            className: "px-3 py-1.5 rounded-xl bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm",
-            title: "Crear una nueva biblioteca en blanco"
-          },
-          /* @__PURE__ */ React.createElement(Icons.Plus, { size: 14, className: "inline-block align-[-2px]" }),
-          /* @__PURE__ */ React.createElement("span", null, "Nueva Biblioteca")
-        ))),
-        /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-djzinc-800 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "w-full md:w-5/12 p-4 flex flex-col gap-3 bg-[#080912] overflow-y-auto custom-scrollbar" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-djcyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", ((_a = currentLib.folders) == null ? void 0 : _a.length) || 0, ")")), /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handleAutoGroupByGenre,
-            className: "px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/60 text-[10px] font-mono font-bold cursor-pointer transition-colors",
-            title: "Crea carpetas autom\xE1ticamente a partir de los g\xE9neros musicales de tus pistas cargadas"
-          },
-          /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
-          " Auto por G\xE9nero"
-        )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
-          "input",
-          {
-            type: "text",
-            value: newFolderName,
-            onChange: (e) => setNewFolderName(e.target.value),
-            onKeyDown: (e) => {
-              if (e.key === "Enter") handleAddFolder();
-            },
-            placeholder: "Nombre de nueva carpeta...",
-            className: "flex-1 px-3 py-1.5 bg-djzinc-950 border border-djzinc-750 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
-          }
-        ), /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handleAddFolder,
-            className: "px-3 py-1.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs rounded-xl cursor-pointer active:scale-95 shadow-sm"
-          },
-          "+ Crear"
-        )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 flex-1 overflow-y-auto pr-1" }, !currentLib.folders || currentLib.folders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl" }, 'No hay carpetas creadas. Crea una arriba o pulsa "Auto por G\xE9nero".') : currentLib.folders.map((f) => {
-          var _a2;
-          const isSelected = selectedFolderId === f.id;
-          const trCount = ((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0;
-          return /* @__PURE__ */ React.createElement(
-            "div",
-            {
-              key: f.id,
-              onClick: () => setSelectedFolderId(f.id),
-              className: `p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? "bg-djcyan-950/40 border-djcyan-500/80 text-white shadow-md" : "bg-djzinc-900/50 border-djzinc-800 text-gray-300 hover:bg-djzinc-900 hover:border-djzinc-750"}`
-            },
-            /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, isSelected ? "\u{1F4C2}" : "\u{1F4C1}"), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold block truncate" }, f.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono" }, trCount, " pista(s) asignadas"))),
-            /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: () => handleAssignTracksToActiveFolder(f.id, false),
-                className: "px-2 py-0.5 rounded bg-djzinc-800 hover:bg-djcyan-950 hover:text-djcyan-300 text-gray-300 text-[10px] font-mono border border-djzinc-700 cursor-pointer",
-                title: `Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`
-              },
-              "+ Asignar (",
-              currentTracks.length,
-              ")"
-            ), /* @__PURE__ */ React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: () => handleDeleteFolder(f.id),
-                className: "w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer",
-                title: "Eliminar carpeta"
-              },
-              /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
-            ))
-          );
-        }))), /* @__PURE__ */ React.createElement("div", { className: "w-full md:w-7/12 p-4 flex flex-col gap-3 bg-[#0a0b16] overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, (activeFolder == null ? void 0 : activeFolder.name) || "Ninguna carpeta"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, folderTracks.length, " pista(s) en esta carpeta")), activeFolder && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, selectedTrackIds.size > 0 && /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: () => handleAssignTracksToActiveFolder(activeFolder.id, true),
-            className: "px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/70 text-[11px] font-mono font-bold cursor-pointer",
-            title: "Asignar solo las pistas seleccionadas con checkbox"
-          },
-          "+ Asignar Seleccionadas (",
-          selectedTrackIds.size,
-          ")"
-        ), /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: () => handleAssignTracksToActiveFolder(activeFolder.id, false),
-            className: "px-2.5 py-1 rounded-lg bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/70 text-[11px] font-mono font-bold cursor-pointer"
-          },
-          "+ A\xF1adir Todas (",
-          currentTracks.length,
-          ")"
-        ))), folderTracks.length > 5 && /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px] absolute left-3 top-2  text-gray-500" }), /* @__PURE__ */ React.createElement(
-          "input",
-          {
-            type: "text",
-            value: searchTrack,
-            onChange: (e) => setSearchTrack(e.target.value),
-            placeholder: "Buscar en esta carpeta por t\xEDtulo o artista...",
-            className: "w-full pl-8 pr-3 py-1.5 bg-djzinc-950 border border-djzinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
-          }
-        )), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 border border-djzinc-800/80 rounded-xl bg-[#070810] p-2" }, !activeFolder || folderTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Esta carpeta est\xE1 vac\xEDa."), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-600" }, 'Pulsa "+ A\xF1adir Todas" o "+ Asignar Seleccionadas" para organizar pistas aqu\xED.')) : filteredFolderTracks.map((tr, tIdx) => {
-          var _a2;
-          const trKey = tr.id || tr.file_path || tIdx;
-          return /* @__PURE__ */ React.createElement("div", { key: trKey, className: "py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-djzinc-900/60 rounded-lg group" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10px] text-gray-500 w-5" }, tIdx + 1), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white block truncate" }, tr.title || tr.filename || ((_a2 = tr.file_path) == null ? void 0 : _a2.split("/").pop()) || "Sin t\xEDtulo"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 block truncate" }, tr.artist || "Artista desconocido", " \u2022 ", tr.genre || tr.subgenre || "Electr\xF3nica", " \u2022 ", tr.bpm ? `${Math.round(tr.bpm)} BPM` : "", " ", tr.key || ""))), /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, isSelected ? "\u{1F4C2}" : "\u{1F4C1}"), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold block truncate" }, f.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono" }, trCount, " pista(s) asignadas"))),
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
             "button",
             {
               type: "button",
-              onClick: () => handleRemoveTrackFromFolder(activeFolder.id, trKey),
-              className: "opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 text-xs transition-opacity cursor-pointer",
-              title: "Quitar de esta carpeta"
+              onClick: () => handleAssignTracksToActiveFolder(f.id, false),
+              className: "px-2 py-0.5 rounded bg-djzinc-800 hover:bg-djcyan-950 hover:text-djcyan-300 text-gray-300 text-[10px] font-mono border border-djzinc-700 cursor-pointer",
+              title: `Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`
+            },
+            "+ Asignar (",
+            currentTracks.length,
+            ")"
+          ), /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => handleDeleteFolder(f.id),
+              className: "w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer",
+              title: "Eliminar carpeta"
             },
             /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
-          ));
-        })))),
-        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement(Icons.Lock, { size: 14, className: "inline-block align-[-2px]" }), " Los cambios quedan guardados autom\xE1ticamente para tu pr\xF3xima sesi\xF3n.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement(
+          ))
+        );
+      }))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 p-5 flex flex-col gap-3.5 bg-[#0a0b18] overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, (activeFolder == null ? void 0 : activeFolder.name) || "Ninguna carpeta"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, folderTracks.length, " pista(s) en esta carpeta")), activeFolder && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, selectedTrackIds.size > 0 && /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleAssignTracksToActiveFolder(activeFolder.id, true),
+          className: "px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/70 text-[11px] font-mono font-bold cursor-pointer",
+          title: "Asignar solo las pistas seleccionadas con checkbox"
+        },
+        "+ Asignar Seleccionadas (",
+        selectedTrackIds.size,
+        ")"
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleAssignTracksToActiveFolder(activeFolder.id, false),
+          className: "px-2.5 py-1 rounded-lg bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/70 text-[11px] font-mono font-bold cursor-pointer"
+        },
+        "+ A\xF1adir Todas (",
+        currentTracks.length,
+        ")"
+      ))), folderTracks.length > 5 && /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px] absolute left-3 top-2  text-gray-500" }), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: searchTrack,
+          onChange: (e) => setSearchTrack(e.target.value),
+          placeholder: "Buscar en esta carpeta por t\xEDtulo o artista...",
+          className: "w-full pl-8 pr-3 py-1.5 bg-djzinc-950 border border-djzinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 border border-djzinc-800/80 rounded-xl bg-[#070810] p-2" }, !activeFolder || folderTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Esta carpeta est\xE1 vac\xEDa."), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-600" }, 'Pulsa "+ A\xF1adir Todas" o "+ Asignar Seleccionadas" para organizar pistas aqu\xED.')) : filteredFolderTracks.map((tr, tIdx) => {
+        var _a2;
+        const trKey = tr.id || tr.file_path || tIdx;
+        return /* @__PURE__ */ React.createElement("div", { key: trKey, className: "py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-djzinc-900/60 rounded-lg group" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10px] text-gray-500 w-5" }, tIdx + 1), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white block truncate" }, tr.title || tr.filename || ((_a2 = tr.file_path) == null ? void 0 : _a2.split("/").pop()) || "Sin t\xEDtulo"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 block truncate" }, tr.artist || "Artista desconocido", " \u2022 ", tr.genre || tr.subgenre || "Electr\xF3nica", " \u2022 ", tr.bpm ? `${Math.round(tr.bpm)} BPM` : "", " ", tr.key || ""))), /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
-            onClick: () => onMaterializarEnDisco && onMaterializarEnDisco(currentLib),
-            disabled: !currentLib.folders || currentLib.folders.length === 0,
-            className: "px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-black text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95",
-            title: "Selecciona una carpeta o USB en disco para crear una copia f\xEDsica de tus pistas organizadas por carpetas"
+            onClick: () => handleRemoveTrackFromFolder(activeFolder.id, trKey),
+            className: "opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 text-xs transition-opacity cursor-pointer",
+            title: "Quitar de esta carpeta"
           },
-          /* @__PURE__ */ React.createElement(Icons.Save, { size: 14, className: "inline-block align-[-2px]" }),
-          /* @__PURE__ */ React.createElement("span", null, "Crear en Disco (Copia F\xEDsica Estructurada)")
-        ), /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: onClose,
-            className: "px-4 py-2 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-mono font-bold text-xs cursor-pointer transition-colors"
-          },
-          "Listo"
-        )))
-      )),
+          /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+        ));
+      })))), /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement(Icons.Lock, { size: 14, className: "inline-block align-[-2px]" }), " Los cambios quedan guardados autom\xE1ticamente para tu pr\xF3xima sesi\xF3n.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => onMaterializarEnDisco && onMaterializarEnDisco(currentLib),
+          disabled: !currentLib.folders || currentLib.folders.length === 0,
+          className: "px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-black text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95",
+          title: "Selecciona una carpeta o USB en disco para crear una copia f\xEDsica de tus pistas organizadas por carpetas"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Save, { size: 14, className: "inline-block align-[-2px]" }),
+        /* @__PURE__ */ React.createElement("span", null, "Crear en Disco (Copia F\xEDsica Estructurada)")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          className: "px-4 py-2 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-mono font-bold text-xs cursor-pointer transition-colors"
+        },
+        "Listo"
+      )))),
       document.body
     );
   };

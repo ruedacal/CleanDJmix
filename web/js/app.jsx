@@ -4225,10 +4225,16 @@ function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
 }
 
 // ─── HOOK DE REDIMENSIÓN CON ARRASTRE (DRAG & DROP) & PERSISTENCIA PARA DRAWERS LATERALES (DESKTOP) ───
-function useDrawerResize(storageKey = 'bw_drawer_width', defaultWidth = 540, minWidth = 380, maxWidth = 860) {
+// Unificamos el ancho de TODAS las columnas laterales al ancho maestro del Inspector (540px inicial)
+const MASTER_DRAWER_STORAGE_KEY = 'bw_inspector_drawer_width';
+
+function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 540, minWidth = 380, maxWidth = 860) {
+    // Todas las columnas laterales derechas comparten el ancho del Inspector
+    const effectiveKey = MASTER_DRAWER_STORAGE_KEY;
+
     const [width, setWidth] = React.useState(() => {
         try {
-            const saved = localStorage.getItem(storageKey);
+            const saved = localStorage.getItem(effectiveKey) || localStorage.getItem(storageKey);
             if (saved) {
                 const parsed = parseInt(saved, 10);
                 if (!isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) {
@@ -4239,6 +4245,17 @@ function useDrawerResize(storageKey = 'bw_drawer_width', defaultWidth = 540, min
         } catch (e) {}
         return defaultWidth;
     });
+
+    // Sincronización en tiempo real entre todos los drawers abiertos
+    React.useEffect(() => {
+        const handleSync = (ev) => {
+            if (ev && ev.detail && typeof ev.detail.width === 'number') {
+                setWidth(ev.detail.width);
+            }
+        };
+        window.addEventListener('bw_drawer_width_synced', handleSync);
+        return () => window.removeEventListener('bw_drawer_width_synced', handleSync);
+    }, []);
 
     const isDraggingRef = React.useRef(false);
     const startXRef = React.useRef(0);
@@ -4261,6 +4278,7 @@ function useDrawerResize(storageKey = 'bw_drawer_width', defaultWidth = 540, min
             const maxW = typeof window !== 'undefined' ? Math.min(maxWidth, window.innerWidth * 0.9) : maxWidth;
             const newWidth = Math.max(minWidth, Math.min(maxW, startWidthRef.current + delta));
             setWidth(newWidth);
+            window.dispatchEvent(new CustomEvent('bw_drawer_width_synced', { detail: { width: newWidth } }));
         };
 
         const onPointerUp = () => {
@@ -4273,7 +4291,9 @@ function useDrawerResize(storageKey = 'bw_drawer_width', defaultWidth = 540, min
             window.removeEventListener('pointercancel', onPointerUp);
             try {
                 setWidth((currentW) => {
-                    localStorage.setItem(storageKey, String(Math.round(currentW)));
+                    const rounded = Math.round(currentW);
+                    localStorage.setItem(effectiveKey, String(rounded));
+                    window.dispatchEvent(new CustomEvent('bw_drawer_width_synced', { detail: { width: rounded } }));
                     return currentW;
                 });
             } catch (e) {}
@@ -4282,12 +4302,15 @@ function useDrawerResize(storageKey = 'bw_drawer_width', defaultWidth = 540, min
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
         window.addEventListener('pointercancel', onPointerUp);
-    }, [width, storageKey, minWidth, maxWidth]);
+    }, [width, effectiveKey, minWidth, maxWidth]);
 
     const resetWidth = React.useCallback(() => {
         setWidth(defaultWidth);
-        try { localStorage.setItem(storageKey, String(defaultWidth)); } catch (e) {}
-    }, [defaultWidth, storageKey]);
+        try { 
+            localStorage.setItem(effectiveKey, String(defaultWidth));
+            window.dispatchEvent(new CustomEvent('bw_drawer_width_synced', { detail: { width: defaultWidth } }));
+        } catch (e) {}
+    }, [defaultWidth, effectiveKey]);
 
     return { width, onPointerDown, resetWidth };
 }
@@ -8116,8 +8139,6 @@ const CustomLibraryModal = ({
 }) => {
     if (!isOpen) return null;
 
-    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_library_drawer_width', 540);
-
     const [activeLibId, setActiveLibId] = useState(activeLibraryId || (libraries[0] && libraries[0].id) || 'lib_default');
     const [libNameInput, setLibNameInput] = useState('');
     const [newFolderName, setNewFolderName] = useState('');
@@ -8303,64 +8324,44 @@ const CustomLibraryModal = ({
     const totalTracksInLib = (currentLib.folders || []).reduce((acc, f) => acc + (f.tracks?.length || 0), 0);
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 overflow-hidden select-none pointer-events-none" style={{ zIndex: 99998 }}>
-            <div 
-                className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto"
-                style={{ zIndex: 99998 }}
-                onClick={onClose}
-            />
-            <aside 
-                style={{ width: '100%', maxWidth: `${drawerWidth}px`, zIndex: 99999 }}
-                className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Manija táctil de redimensión (Drag to Resize) para Desktop */}
-                <div 
-                    onPointerDown={onResizeDown}
-                    onDoubleClick={onResetWidth}
-                    className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors"
-                    title="Arrastra para redimensionar (Doble clic para restablecer a 540px)"
-                >
-                    <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
-                </div>
-
-                {/* Cabecera */}
-                <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0e0e18] flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-djcyan-950/80 border border-djcyan-500/50 flex items-center justify-center text-djcyan-400 text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black">
-                            <Icons.Knowledge size={18} />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
-                                    LIBRERÍA & BIBLIOTECAS
-                                </h3>
-                                <span className="text-[9px] bg-djcyan-950 text-djcyan-300 border border-djcyan-600/60 px-2 py-0.5 rounded-full font-bold">
-                                    {totalTracksInLib} PISTAS
-                                </span>
-                            </div>
-                            <p className="text-[10.5px] text-gray-400 font-mono truncate max-w-[280px]">
-                                CARPETAS VIRTUALES Y EN DISCO
-                            </p>
-                        </div>
+        <div className="fixed inset-0 z-[99998] flex flex-col bg-[#070812] text-gray-200 animate-fadeIn select-none overflow-hidden font-sans">
+            {/* Cabecera a Pantalla Completa */}
+            <div className="px-6 py-4 border-b border-djzinc-800 bg-[#0e0e1a] flex items-center justify-between shrink-0 shadow-lg">
+                <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-djcyan-950/90 border border-djcyan-500/60 flex items-center justify-center text-djcyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black">
+                        <Icons.Knowledge size={20} />
                     </div>
-
-                    <div className="flex items-center gap-2">
-                        {feedbackMsg && (
-                            <span className="text-xs font-mono text-emerald-400 font-bold animate-pulse hidden sm:inline">
-                                {feedbackMsg}
+                    <div>
+                        <div className="flex items-center gap-2.5">
+                            <h3 className="text-base sm:text-lg font-syne font-black uppercase text-white tracking-wider">
+                                LIBRERÍA & BIBLIOTECAS PERSONALIZADAS
+                            </h3>
+                            <span className="text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-black">
+                                {totalTracksInLib} PISTAS EN CATÁLOGO
                             </span>
-                        )}
-                        <button 
-                            type="button" 
-                            onClick={onClose}
-                            className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
-                            title="Cerrar panel (ESC)"
-                        >
-                            <Icons.Close size={14} className="inline-block align-[-2px]" />
-                        </button>
+                        </div>
+                        <p className="text-xs text-gray-400 font-mono mt-0.5">
+                            GESTOR AVANZADO DE CARPETAS VIRTUALES, AGRUPACIONES POR GÉNERO Y MATERIALIZACIÓN FÍSICA EN DISCO / USB
+                        </p>
                     </div>
                 </div>
+
+                <div className="flex items-center gap-3">
+                    {feedbackMsg && (
+                        <span className="text-xs font-mono text-emerald-400 font-bold animate-pulse hidden sm:inline px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60">
+                            {feedbackMsg}
+                        </span>
+                    )}
+                    <button 
+                        type="button" 
+                        onClick={onClose}
+                        className="w-9 h-9 rounded-xl bg-djzinc-850 hover:bg-rose-950/80 text-gray-400 hover:text-rose-300 flex items-center justify-center font-mono text-sm border border-djzinc-700 hover:border-rose-700/60 transition-all cursor-pointer shadow-sm"
+                        title="Cerrar pantalla completa (ESC)"
+                    >
+                        <Icons.Close size={16} />
+                    </button>
+                </div>
+            </div>
 
                 {/* Barra de Selección y Nombre de Biblioteca */}
                 <div className="px-5 py-3 border-b border-djzinc-800 bg-[#070810] flex flex-wrap items-center justify-between gap-3 shrink-0">
@@ -8415,11 +8416,11 @@ const CustomLibraryModal = ({
                     </div>
                 </div>
 
-                {/* Contenido Principal en 2 Paneles (Carpetas a la izquierda, Pistas a la derecha) */}
+                {/* Contenido Principal a Pantalla Completa: Carpetas a la izquierda y Pistas al centro/derecha */}
                 <div className="flex-1 min-h-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-djzinc-800 overflow-hidden">
                     
                     {/* PANEL IZQUIERDO: Estructura de Carpetas */}
-                    <div className="w-full md:w-5/12 p-4 flex flex-col gap-3 bg-[#080912] overflow-y-auto custom-scrollbar">
+                    <div className="w-full md:w-80 lg:w-96 p-4 flex flex-col gap-3 bg-[#080914] overflow-y-auto custom-scrollbar shrink-0">
                         <div className="flex items-center justify-between">
                             <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-djcyan-400 flex items-center gap-1.5">
                                 <Icons.Folder size={14} className="inline-block align-[-2px]" />
@@ -8507,8 +8508,8 @@ const CustomLibraryModal = ({
                         </div>
                     </div>
 
-                    {/* PANEL DERECHO: Pistas Dentro de la Carpeta Seleccionada */}
-                    <div className="w-full md:w-7/12 p-4 flex flex-col gap-3 bg-[#0a0b16] overflow-hidden">
+                    {/* PANEL DERECHO: Pistas Dentro de la Carpeta Seleccionada (Flex-1 Pantalla Completa) */}
+                    <div className="flex-1 p-5 flex flex-col gap-3.5 bg-[#0a0b18] overflow-hidden">
                         <div className="flex items-center justify-between shrink-0">
                             <div>
                                 <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
@@ -8630,7 +8631,6 @@ const CustomLibraryModal = ({
                         </button>
                     </div>
                 </div>
-            </aside>
         </div>,
         document.body
     );
