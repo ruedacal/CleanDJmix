@@ -85,6 +85,22 @@
 /* Fuentes locales cargadas desde /fonts/ para uso offline en cabina */
 
 @font-face {
+  font-family: 'Nimbus Mono PS';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Nimbus Mono PS'), local('NimbusMonoPS-Regular');
+}
+
+@font-face {
+  font-family: 'Nimbus Mono PS';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Nimbus Mono PS Bold'), local('NimbusMonoPS-Bold');
+}
+
+@font-face {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 300;
@@ -1092,6 +1108,8 @@ body.club-mode,
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
+    --font-mono: 'Nimbus Mono PS', 'JetBrains Mono', ui-monospace, monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --bw-black: #09090b;
     --bw-surface-1: #0e0e11;
     --bw-surface-2: #141418;
@@ -1124,6 +1142,7 @@ body {
 
 /* Tabular, slashed-zero digits for BPM, Camelot keys and timecodes. */
 .font-mono, code, kbd, .tabular-nums {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums slashed-zero;
     font-feature-settings: 'zero', 'tnum';
 }
@@ -1903,13 +1922,38 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 </head>
 <body>
 
+<!-- SHARED SVG DEFINITIONS FOR CORPORATE BRAND & FILTERS -->
+<svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+    <defs>
+        <linearGradient id="bw-bar-cyan-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#a5f3fc" />
+            <stop offset="25%" stop-color="#67e8f9" />
+            <stop offset="55%" stop-color="#22d3ee" />
+            <stop offset="100%" stop-color="#0891b2" />
+        </linearGradient>
+        <filter id="bw-bar-glow-fx" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#06b6d4" flood-opacity="0.95" />
+        </filter>
+    </defs>
+</svg>
+
 <div class="component-canvas">
 
     <!-- HEADER DE LA BIBLIOTECA -->
     <div style="background: linear-gradient(135deg, #09090b 0%, #0d1525 100%); border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 16px; padding: 32px; display: flex; justify-content: space-between; align-items: center;">
         <div>
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 12px #22d3ee;"></span>
+                <div class="relative rounded-full flex items-center justify-center shrink-0 border border-cyan-400 bg-[#030712]/95 shadow-[0_0_12px_rgba(6,182,212,0.85)]" style="width: 22px; height: 22px;">
+                    <svg viewBox="0 0 100 100" style="width: 74%; height: 74%;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#bw-bar-glow-fx)">
+                            <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-1"/>
+                            <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-2"/>
+                            <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-3"/>
+                            <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-4"/>
+                            <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-5"/>
+                        </g>
+                    </svg>
+                </div>
                 <span style="font-family: 'Nimbus Mono PS', monospace; font-size: 12px; color: #22d3ee; font-weight: bold; letter-spacing: 0.1em;">BEATWAVE PRO • DESIGN SYSTEM v1.0</span>
             </div>
             <h1 style="font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 900; color: #ffffff; margin: 0; letter-spacing: -0.02em;">
@@ -1924,6 +1968,141 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
             <div>STATUS: SINGLE SOURCE OF TRUTH (FIGMA ↔ REACT)</div>
         </div>
     </div>
+
+    <!-- DOMINIO 0: IDENTIDAD CORPORATIVA Y LOGOTIPO -->
+    <section>
+        <div class="section-header">
+            <span class="section-title">0. Identidad Corporativa y Logotipo</span>
+            <span class="section-tag">DOMINIO: BRAND</span>
+        </div>
+
+        <div class="component-card" style="margin-bottom: 24px;">
+            <div class="component-label">❖ 00. Corporate Brand Logo (BeatWave 5-Bar Equalizer & Lockups)</div>
+            <div style="font-size: 11px; font-family: 'Nimbus Mono PS', monospace; color: #9ca3af; margin: 6px 0 16px 0;">
+                Logotipo vectorial nativo BeatWave PRO con ecualizador paramétrico de 5 barras, degradado cyan corporativo (#a5f3fc → #0891b2) y halo electro-acústico.
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                <!-- Variante 1: Escalas de Badge (XS, SM, MD, LG) -->
+                <div style="border: 1px dashed #2a2a35; border-radius: 12px; padding: 16px; background: #07070a; display: flex; flex-direction: column; gap: 12px;">
+                    <div style="font-size: 10px; font-family: 'Nimbus Mono PS', monospace; color: #6b7280;">VARIANTE: Escalas de Badge Ecualizador (Bucle 3s)</div>
+                    <div style="display: flex; align-items: flex-end; gap: 20px; padding: 8px 0;">
+                        <!-- XS: 24px -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                            <div class="relative rounded-full flex items-center justify-center shrink-0 border border-cyan-400 bg-[#030712]/95 shadow-[0_0_10px_rgba(6,182,212,0.8)]" style="width: 24px; height: 24px;">
+                                <svg viewBox="0 0 100 100" style="width: 74%; height: 74%;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g filter="url(#bw-bar-glow-fx)">
+                                        <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-1"/>
+                                        <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-2"/>
+                                        <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-3"/>
+                                        <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-4"/>
+                                        <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-5"/>
+                                    </g>
+                                </svg>
+                            </div>
+                            <span style="font-size: 9px; font-family: 'Nimbus Mono PS', monospace; color: #9ca3af;">24px (XS)</span>
+                        </div>
+
+                        <!-- SM: 36px (TopBar) -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                            <div class="relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_16px_rgba(6,182,212,0.85),inset_0_0_10px_rgba(6,182,212,0.35)]" style="width: 36px; height: 36px;">
+                                <svg viewBox="0 0 100 100" style="width: 74%; height: 74%;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g filter="url(#bw-bar-glow-fx)">
+                                        <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-1"/>
+                                        <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-2"/>
+                                        <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-3"/>
+                                        <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-4"/>
+                                        <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-5"/>
+                                    </g>
+                                </svg>
+                            </div>
+                            <span style="font-size: 9px; font-family: 'Nimbus Mono PS', monospace; color: #9ca3af;">36px (SM)</span>
+                        </div>
+
+                        <!-- MD: 48px -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                            <div class="relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_20px_rgba(6,182,212,0.9),inset_0_0_12px_rgba(6,182,212,0.4)]" style="width: 48px; height: 48px;">
+                                <svg viewBox="0 0 100 100" style="width: 74%; height: 74%;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g filter="url(#bw-bar-glow-fx)">
+                                        <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-1"/>
+                                        <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-2"/>
+                                        <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-3"/>
+                                        <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-4"/>
+                                        <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-5"/>
+                                    </g>
+                                </svg>
+                            </div>
+                            <span style="font-size: 9px; font-family: 'Nimbus Mono PS', monospace; color: #9ca3af;">48px (MD)</span>
+                        </div>
+
+                        <!-- LG: 80px (Portal Intro) -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                            <div class="relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_30px_rgba(6,182,212,1),inset_0_0_18px_rgba(6,182,212,0.5)]" style="width: 80px; height: 80px;">
+                                <svg viewBox="0 0 100 100" style="width: 74%; height: 74%;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g filter="url(#bw-bar-glow-fx)">
+                                        <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-1"/>
+                                        <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-2"/>
+                                        <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-3"/>
+                                        <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-4"/>
+                                        <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-5"/>
+                                    </g>
+                                </svg>
+                            </div>
+                            <span style="font-size: 9px; font-family: 'Nimbus Mono PS', monospace; color: #9ca3af;">80px (LG)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Variante 2: Lockup Horizontal Completo -->
+                <div style="border: 1px dashed #2a2a35; border-radius: 12px; padding: 16px; background: #07070a; display: flex; flex-direction: column; gap: 12px; justify-content: center;">
+                    <div style="font-size: 10px; font-family: 'Nimbus Mono PS', monospace; color: #6b7280;">VARIANTE: Lockup Horizontal Maestro (TopBar / Cabina)</div>
+                    <div style="display: flex; align-items: center; gap: 14px; padding: 10px; background: rgba(9,9,11,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+                        <div class="relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_16px_rgba(6,182,212,0.85),inset_0_0_10px_rgba(6,182,212,0.35)]" style="width: 40px; height: 40px;">
+                            <svg viewBox="0 0 100 100" style="width: 74%; height: 74%;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <g filter="url(#bw-bar-glow-fx)">
+                                    <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-1"/>
+                                    <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-2"/>
+                                    <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-3"/>
+                                    <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-4"/>
+                                    <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-5"/>
+                                </g>
+                            </svg>
+                        </div>
+                        <div style="display: flex; flex-direction: column;">
+                            <div style="font-family:'Syne',sans-serif; font-weight:800; color:#fff; font-size:18px; letter-spacing:0.06em; line-height: 1.1;">
+                                BEATWAVE <span style="color:#22d3ee; text-shadow: 0 0 12px rgba(34,211,238,0.7);">PRO</span>
+                            </div>
+                            <div style="font-family:'Nimbus Mono PS', monospace; font-size:9px; color:#9ca3af; letter-spacing:0.22em; text-transform:uppercase; margin-top:3px;">
+                                AUDIO INTELLIGENCE SUITE
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Variante 3: Lockup Vertical & Modo Estático -->
+                <div style="border: 1px dashed #2a2a35; border-radius: 12px; padding: 16px; background: #07070a; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; text-align: center;">
+                    <div style="font-size: 10px; font-family: 'Nimbus Mono PS', monospace; color: #6b7280; width: 100%; text-align: left;">VARIANTE: Lockup Vertical Centrado (Splash / Cover)</div>
+                    <div class="relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_24px_rgba(6,182,212,0.9),inset_0_0_14px_rgba(6,182,212,0.45)]" style="width: 52px; height: 52px;">
+                        <svg viewBox="0 0 100 100" style="width: 74%; height: 74%;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g filter="url(#bw-bar-glow-fx)">
+                                <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-1"/>
+                                <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-2"/>
+                                <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-3"/>
+                                <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-4"/>
+                                <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-5"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div style="font-family:'Syne',sans-serif; font-weight:800; color:#fff; font-size:16px; letter-spacing:0.06em;">
+                        BEATWAVE <span style="color:#22d3ee;">PRO</span>
+                    </div>
+                    <div style="font-family:'Nimbus Mono PS', monospace; font-size:9px; color:#6b7280; letter-spacing:0.18em; text-transform:uppercase;">
+                        METADATA & SERATO ENGINE
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- DOMINIO 1: SHELL Y NAVEGACIÓN -->
     <section>
@@ -1940,9 +2119,17 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
                 <div style="border: 1px dashed #2a2a35; border-radius: 8px; padding: 8px; background: #07070a;">
                     <div style="font-size: 10px; font-family: 'Nimbus Mono PS', monospace; color: #6b7280; margin-bottom: 6px;">VARIANTE: Desktop (1512px)</div>
                     <header class="bw-topbar flex h-14 w-full items-center gap-3 px-4 bg-[#09090b] border-b border-white/10 rounded-lg">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full border-2 border-cyan-400 bg-black flex items-center justify-center shadow-[0_0_12px_rgba(34,211,238,0.5)]">
-                                <span style="color:#22d3ee; font-weight:900; font-size:12px;">BW</span>
+                        <div class="flex items-center gap-2.5">
+                            <div class="relative rounded-full flex items-center justify-center shrink-0 border-2 border-cyan-400 bg-[#030712]/95 shadow-[0_0_14px_rgba(6,182,212,0.85),inset_0_0_8px_rgba(6,182,212,0.3)]" style="width: 32px; height: 32px;">
+                                <svg viewBox="0 0 100 100" style="width: 74%; height: 74%;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g filter="url(#bw-bar-glow-fx)">
+                                        <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-1"/>
+                                        <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-2"/>
+                                        <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-3"/>
+                                        <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-4"/>
+                                        <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-5"/>
+                                    </g>
+                                </svg>
                             </div>
                             <span style="font-family:'Syne',sans-serif; font-weight:800; color:#fff; font-size:15px; letter-spacing:0.05em;">BEATWAVE <span style="color:#22d3ee;">PRO</span></span>
                         </div>
@@ -1967,6 +2154,17 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
                     <div style="font-size: 10px; font-family: 'Nimbus Mono PS', monospace; color: #6b7280; margin-bottom: 6px;">VARIANTE: Mobile (393px)</div>
                     <header class="flex h-12 w-full items-center justify-between px-3 bg-[#09090b] border-b border-white/10 rounded-lg">
                         <div class="flex items-center gap-2">
+                            <div class="relative rounded-full flex items-center justify-center shrink-0 border border-cyan-400 bg-[#030712]/95 shadow-[0_0_10px_rgba(6,182,212,0.8)]" style="width: 24px; height: 24px;">
+                                <svg viewBox="0 0 100 100" style="width: 74%; height: 74%;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g filter="url(#bw-bar-glow-fx)">
+                                        <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-1"/>
+                                        <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-2"/>
+                                        <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-3"/>
+                                        <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-4"/>
+                                        <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" fill="url(#bw-bar-cyan-grad)" class="bw-equalizer-bar-5"/>
+                                    </g>
+                                </svg>
+                            </div>
                             <span style="color:#22d3ee; font-weight:900; font-size:14px; font-family:'Syne',sans-serif;">BEATWAVE</span>
                             <span class="bw-pro-tag text-[9px] font-mono">PRO</span>
                         </div>
@@ -2619,10 +2817,63 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
             <span class="section-tag">DOMINIO: COPILOT</span>
         </div>
 
+        <!-- 27A: BoothPlatformSelector -->
+        <div class="component-card" style="margin-bottom: 24px;">
+            <div class="component-label">❖ 27. BoothPlatformSelector (Selector Software de Cabina)</div>
+            <div style="font-size: 11px; font-family: 'Nimbus Mono PS', monospace; color: #9ca3af; margin: 6px 0 16px 0;">
+                Selector ergonómico de 4 columnas para cabina DJ con logotipos oficiales vectoriales, etiquetas directas en una línea y LED circular de estado sin texto redundante.
+            </div>
+
+            <div style="background: #09090e; border: 1px solid #202028; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-family: 'Nimbus Mono PS', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #a1a1aa;">Software de cabina</span>
+                    <span style="font-family: 'Nimbus Mono PS', monospace; font-size: 11px; color: #22d3ee; font-weight: 600;">● Auto-detectar activo</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    <!-- Rekordbox (Activo) -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 12px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid #38bdf8; box-shadow: 0 0 12px rgba(56,189,248,0.25);">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6 3" stroke-linecap="round" opacity="0.85"/><circle cx="20" cy="20" r="13" stroke="#00e5ff" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="20" r="7.5" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="3 2"/><circle cx="20" cy="20" r="3.5" fill="#00e5ff"/><path d="M20 2V7M20 33V38M2 20H7M33 20H38" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round"/></svg>
+                            <span style="font-family: 'Nimbus Mono PS', monospace; font-size: 12px; font-weight: 700; color: #ffffff;">Rekordbox</span>
+                        </div>
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399;"></span>
+                    </div>
+
+                    <!-- VirtualDJ -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 12px; border-radius: 10px; background: #0c0c10; border: 1px solid #27272a;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/><path d="M12 12.5L20 28.5L28 12.5H23.5L20 20.5L16.5 12.5H12Z" fill="#ffedd5"/><path d="M14.5 12.5L20 24L25.5 12.5H23.5L20 19.5L16.5 12.5H14.5Z" fill="#f97316"/></svg>
+                            <span style="font-family: 'Nimbus Mono PS', monospace; font-size: 12px; font-weight: 600; color: #d4d4d8;">VirtualDJ</span>
+                        </div>
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #52525b;"></span>
+                    </div>
+
+                    <!-- Serato -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 12px; border-radius: 10px; background: #0c0c10; border: 1px solid #27272a;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 40 40" fill="none"><path d="M7 29L14.5 11H19.5L12 29H7Z" fill="#00d1e8"/><path d="M16 31L23.5 13H28.5L21 31H16Z" fill="#00e5ff"/><path d="M25 29L29.5 18H34L29.5 29H25Z" fill="#38bdf8"/><circle cx="32" cy="31" r="2.2" fill="#00e5ff"/></svg>
+                            <span style="font-family: 'Nimbus Mono PS', monospace; font-size: 12px; font-weight: 600; color: #d4d4d8;">Serato</span>
+                        </div>
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #52525b;"></span>
+                    </div>
+
+                    <!-- Traktor -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 12px; border-radius: 10px; background: #0c0c10; border: 1px solid #27272a;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 40 40" fill="none"><rect x="5" y="8" width="30" height="6.5" rx="2" fill="#facc15"/><path d="M16 14.5H24V29.5C24 30.88 22.88 32 21.5 32H18.5C17.12 32 16 30.88 16 29.5V14.5Z" fill="#facc15"/></svg>
+                            <span style="font-family: 'Nimbus Mono PS', monospace; font-size: 12px; font-weight: 600; color: #d4d4d8;">Traktor</span>
+                        </div>
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #52525b;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="grid-variants" style="grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));">
-            <!-- 27: MixTrafficLight -->
+            <!-- 28: MixTrafficLight -->
             <div class="component-card">
-                <div class="component-label">❖ 27. MixTrafficLight (Semáforo de Mezcla en Cabina)</div>
+                <div class="component-label">❖ 28. MixTrafficLight (Semáforo de Mezcla en Cabina)</div>
                 <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
                     <div class="flex items-center justify-between p-2.5 rounded-xl bg-[#091a14] border border-emerald-600 text-emerald-300 font-mono text-xs">
                         <div class="flex items-center gap-2">
@@ -2694,6 +2945,81 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
                         <span class="text-cyan-400 font-bold">TREBLE</span>
                         <div class="w-12 h-12 rounded-full border-2 border-cyan-400 bg-cyan-950/40 flex items-center justify-center text-white font-bold">12%</div>
                         <span class="text-zinc-500">&gt; 4k Hz</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 29B: CompactAntiMuddyBanner -->
+            <div class="component-card" style="grid-column: 1 / -1;">
+                <div class="component-label">❖ 29B. CompactAntiMuddyBanner (Guardián Táctico Compacto Sobre Decks)</div>
+                <div style="margin-top: 10px; padding: 10px 16px; border-radius: 12px; background: rgba(69,10,10,0.45); border: 1px solid rgba(239,68,68,0.8); display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 0 20px rgba(239,68,68,0.25);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 20px;">🛡️</span>
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: #ffffff;">CONFLICTO DE GRAVES (Anti-Muddy Guard)</span>
+                                <span style="background: #dc2626; color: #ffffff; padding: 2px 8px; border-radius: 9999px; font-family: 'Nimbus Mono PS', monospace; font-size: 9px; font-weight: 800; text-transform: uppercase;">BASS CLASH</span>
+                            </div>
+                            <span style="font-size: 11px; color: #d4d4d8;">Ambos tracks tienen sub-graves dominantes (&gt;44%). Solape creará distorsión en el sistema de sala.</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; font-family: 'Nimbus Mono PS', monospace; font-size: 11px;">
+                        <div style="background: rgba(0,0,0,0.6); border: 1px solid #27272a; padding: 4px 10px; border-radius: 8px;">
+                            <span style="color: #22d3ee; font-weight: 700;">ACCIÓN:</span> Corta la EQ de graves (-6dB a -12dB) en canal entrante.
+                        </div>
+                        <div style="color: #a1a1aa;">
+                            CAMELOT: <strong style="color: #ef4444;">HARMONIC CLASH</strong> · Δ LUFS: <strong style="color: #ffffff;">+0.3 dB</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 29C: DualColumnDeckHeader -->
+            <div class="component-card" style="grid-column: 1 / -1;">
+                <div class="component-label">❖ 29C. DualColumnDeckHeader (Cabecera 2 Columnas con Mood y Tipografía Optimizada)</div>
+                <div style="margin-top: 10px; background: #07070f; border: 1px solid #27272a; border-radius: 16px; padding: 14px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: rgba(0,0,0,0.4); border: 1px solid #202028; border-radius: 12px; padding: 12px; align-items: center;">
+                        <!-- Columna Izquierda -->
+                        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                            <div style="position: relative; width: 60px; height: 60px; border-radius: 10px; overflow: hidden; background: #000; border: 1px solid #3f3f46; flex-shrink: 0;">
+                                <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop" style="width: 100%; height: 100%; object-fit: cover;" />
+                                <span style="position: absolute; top: 2px; left: 4px; font-family: 'Nimbus Mono PS', monospace; font-size: 8px; color: #a1a1aa; background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px;">2024</span>
+                                <span style="position: absolute; bottom: 2px; right: 4px; font-family: 'Nimbus Mono PS', monospace; font-size: 8px; font-weight: 700; color: #fff; background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px;">05:12</span>
+                            </div>
+                            <div style="min-width: 0; flex: 1;">
+                                <div style="font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Old School</div>
+                                <div style="font-size: 12px; color: #a1a1aa; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Hertz</div>
+                                <div style="display: flex; gap: 6px; margin-top: 4px;">
+                                    <span style="background: rgba(8,145,178,0.25); border: 1px solid rgba(6,182,212,0.5); color: #67e8f9; font-family: 'Nimbus Mono PS', monospace; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px;">Hard Techno Industrial</span>
+                                    <span style="background: #18181b; border: 1px solid #27272a; color: #a1a1aa; font-family: 'Nimbus Mono PS', monospace; font-size: 9px; padding: 1px 6px; border-radius: 4px;">Sway Records</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Columna Derecha -->
+                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; border-left: 1px solid #27272a; padding-left: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px; background: rgba(9,9,11,0.8); border: 1px solid #27272a; padding: 6px 10px; border-radius: 10px;">
+                                <div style="width: 36px; height: 36px; border-radius: 8px; background: #ec4899; color: #000; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; display: flex; align-items: center; justify-content: center;">10A</div>
+                                <div>
+                                    <div style="font-family: 'Nimbus Mono PS', monospace; font-size: 8px; text-transform: uppercase; color: #71717a;">Tono</div>
+                                    <div style="font-size: 11px; font-weight: 700; color: #fff;">Bm</div>
+                                </div>
+                            </div>
+                            <div style="background: rgba(9,9,11,0.8); border: 1px solid #27272a; padding: 6px 12px; border-radius: 10px;">
+                                <div style="font-family: 'Nimbus Mono PS', monospace; font-size: 8px; text-transform: uppercase; color: #71717a;">Tempo</div>
+                                <div style="font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 900; color: #fff;">137.68 <span style="font-size: 8px; color: #71717a;">BPM</span></div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 4px; min-width: 110px;">
+                                <div style="display: flex; justify-content: space-between; font-family: 'Nimbus Mono PS', monospace; font-size: 9px;">
+                                    <span style="color: #fbbf24; font-weight: 700;">⚡ 94%</span>
+                                    <span style="color: #c084fc; font-weight: 700;">🕺 89%</span>
+                                </div>
+                                <div style="height: 4px; background: #18181b; border-radius: 9999px; overflow: hidden;">
+                                    <div style="width: 94%; height: 100%; background: linear-gradient(90deg, #f59e0b, #ef4444);"></div>
+                                </div>
+                                <span style="background: rgba(88,28,135,0.4); border: 1px solid rgba(168,85,247,0.4); color: #d8b4fe; font-family: 'Nimbus Mono PS', monospace; font-size: 8px; font-weight: 700; padding: 1px 6px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">✨ Peak Time Climax</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
