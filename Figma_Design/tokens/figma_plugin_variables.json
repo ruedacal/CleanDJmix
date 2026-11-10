@@ -1,0 +1,182 @@
+{
+  "collection": "BeatWave PRO",
+  "variables": [
+    {
+      "name": "djzinc-950",
+      "type": "COLOR",
+      "value": "#09090b",
+      "description": "Fondo app canvas"
+    },
+    {
+      "name": "djzinc-925",
+      "type": "COLOR",
+      "value": "#101014",
+      "description": "Superficie profunda"
+    },
+    {
+      "name": "djzinc-900",
+      "type": "COLOR",
+      "value": "#121216",
+      "description": "Fondo de tarjeta"
+    },
+    {
+      "name": "djzinc-850",
+      "type": "COLOR",
+      "value": "#18181f",
+      "description": "Panel anidado"
+    },
+    {
+      "name": "djzinc-800",
+      "type": "COLOR",
+      "value": "#202028",
+      "description": "Borde sutil"
+    },
+    {
+      "name": "djzinc-750",
+      "type": "COLOR",
+      "value": "#2a2a35",
+      "description": "Borde por defecto"
+    },
+    {
+      "name": "djzinc-700",
+      "type": "COLOR",
+      "value": "#32323f",
+      "description": "Borde activo"
+    },
+    {
+      "name": "djzinc-600",
+      "type": "COLOR",
+      "value": "#484858",
+      "description": "Texto e iconos atenuados"
+    },
+    {
+      "name": "djcyan-400",
+      "type": "COLOR",
+      "value": "#22d3ee",
+      "description": "Brand Cyan principal"
+    },
+    {
+      "name": "djcyan-500",
+      "type": "COLOR",
+      "value": "#06b6d4",
+      "description": "Cyan acento"
+    },
+    {
+      "name": "djcyan-600",
+      "type": "COLOR",
+      "value": "#0891b2",
+      "description": "Cyan profundo"
+    },
+    {
+      "name": "djcyan-950",
+      "type": "COLOR",
+      "value": "#0a1a1f",
+      "description": "Contenedor cyan oscuro"
+    },
+    {
+      "name": "djgreen-400",
+      "type": "COLOR",
+      "value": "#4ade80",
+      "description": "Lossless verificado"
+    },
+    {
+      "name": "djgreen-500",
+      "type": "COLOR",
+      "value": "#22c55e",
+      "description": "Deck activo play"
+    },
+    {
+      "name": "canvas",
+      "type": "COLOR",
+      "value": "#09090b",
+      "description": "Sem\u00e1ntico canvas"
+    },
+    {
+      "name": "surface",
+      "type": "COLOR",
+      "value": "#121216",
+      "description": "Sem\u00e1ntico superficie"
+    },
+    {
+      "name": "border",
+      "type": "COLOR",
+      "value": "#2a2a35",
+      "description": "Sem\u00e1ntico borde"
+    },
+    {
+      "name": "primary",
+      "type": "COLOR",
+      "value": "#22d3ee",
+      "description": "Sem\u00e1ntico primary"
+    },
+    {
+      "name": "dsp/sub-bass",
+      "type": "COLOR",
+      "value": "#3b82f6",
+      "description": "Audio sub-bass"
+    },
+    {
+      "name": "dsp/low-mid",
+      "type": "COLOR",
+      "value": "#ef4444",
+      "description": "Audio low-mid"
+    },
+    {
+      "name": "dsp/mid-high",
+      "type": "COLOR",
+      "value": "#f59e0b",
+      "description": "Audio mid-high"
+    },
+    {
+      "name": "dsp/treble",
+      "type": "COLOR",
+      "value": "#22d3ee",
+      "description": "Audio treble"
+    },
+    {
+      "name": "spacing/xs",
+      "type": "FLOAT",
+      "value": 4
+    },
+    {
+      "name": "spacing/sm",
+      "type": "FLOAT",
+      "value": 8
+    },
+    {
+      "name": "spacing/md",
+      "type": "FLOAT",
+      "value": 12
+    },
+    {
+      "name": "spacing/lg",
+      "type": "FLOAT",
+      "value": 16
+    },
+    {
+      "name": "spacing/xl",
+      "type": "FLOAT",
+      "value": 24
+    },
+    {
+      "name": "radius/sm",
+      "type": "FLOAT",
+      "value": 4
+    },
+    {
+      "name": "radius/md",
+      "type": "FLOAT",
+      "value": 8
+    },
+    {
+      "name": "radius/lg",
+      "type": "FLOAT",
+      "value": 12
+    },
+    {
+      "name": "radius/xl",
+      "type": "FLOAT",
+      "value": 16
+    }
+  ]
+}
