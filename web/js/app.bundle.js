@@ -256,7 +256,7 @@
         document.removeEventListener("keydown", handleKey);
       };
     }, [open]);
-    return /* @__PURE__ */ React.createElement("div", { ref: rootRef, className: "relative" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { ref: rootRef, className: "relative z-50" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -268,7 +268,7 @@
       /* @__PURE__ */ React.createElement(ShellIcons.Help, { size: 16 }),
       /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline" }, "Ayuda"),
       /* @__PURE__ */ React.createElement(ShellIcons.ChevronDown, { size: 14, className: `transition-transform ${open ? "rotate-180" : ""}` })
-    ), open && /* @__PURE__ */ React.createElement("div", { role: "menu", className: "bw-popover absolute right-0 top-full mt-2 w-72 p-1.5 z-[70]" }, items.map((item) => {
+    ), open && /* @__PURE__ */ React.createElement("div", { role: "menu", className: "bw-popover absolute right-0 top-full mt-2 w-72 p-1.5 z-50 shadow-2xl", style: { zIndex: 1100 } }, items.map((item) => {
       const Icon = ShellIcons[item.icon] || ShellIcons.Help;
       const content = /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Icon, { size: 16, className: "text-zinc-400" }), /* @__PURE__ */ React.createElement("span", { className: "flex flex-col min-w-0 flex-1 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm text-white" }, item.label), item.description && /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500 truncate" }, item.description)), item.kbd && /* @__PURE__ */ React.createElement("kbd", { className: "bw-kbd" }, item.kbd));
       if (item.href) {
@@ -307,7 +307,7 @@
   }) => {
     const current = findNavItem(activeTab);
     const alias = userProfile && userProfile.alias || "DJ";
-    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-[60] flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-50 flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4", style: { zIndex: 1e3 } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3 py-1 shadow-[0_0_12px_rgba(6,182,212,0.25)]",
