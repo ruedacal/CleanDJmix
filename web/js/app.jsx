@@ -30999,7 +30999,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         onError={() => setPhase('portal')}
                         onTimeUpdate={handleTimeUpdate}
                         onEnded={handleVideoEnded}
-                        src="/assets/intro_cinematic.mp4"
+                        src="assets/intro_cinematic.mp4"
                         className="w-full h-full object-cover pointer-events-none"
                         style={{ 
                             opacity: videoOpacity * selectedAlpha, 
@@ -31054,7 +31054,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group">
                             <BeatWaveLogoBadge size="lg" />
                             <img 
-                                src="/assets/beatwave_text.png" 
+                                src="assets/beatwave_text.png" 
                                 alt="BEAT WAVE PRO • Precision Audio Intelligence" 
                                 className="w-[280px] sm:w-[420px] md:w-[500px] h-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.7)] group-hover:brightness-110 transition-all duration-300"
                             />
@@ -32229,7 +32229,7 @@ const App = () => {
                         {/* LETRAS OFICIALES BEATWAVE PRO A LA DERECHA */}
                         <div className="flex items-center shrink-0">
                             <img 
-                                src="/assets/beatwave_text.png" 
+                                src="assets/beatwave_text.png" 
                                 alt="BEAT WAVE PRO • Precision Audio Intelligence" 
                                 className={`h-7 sm:h-8 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? 'anim-soundwave drop-shadow-[0_0_18px_rgba(6,182,212,0.85)]' : 'group-hover:brightness-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]'}`}
                             />
