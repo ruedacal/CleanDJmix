@@ -1234,6 +1234,11 @@ def route_copilot_page():
     root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
     return bottle.static_file("copilot.html", root=root_dir)
 
+@bottle.route('/admin.html')
+def route_admin_page():
+    root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+    return bottle.static_file("admin.html", root=root_dir)
+
 @eel.expose
 def eel_copilot_get_state():
     return copilot_service.get_live_state()

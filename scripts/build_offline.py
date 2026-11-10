@@ -372,7 +372,7 @@ def build_fonts():
         warn(f"No se descargaron: {', '.join(failed)} — se usará local() como fallback")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────���──────────────────────────────────────────
 # Paso 3: Tailwind CSS estático
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -454,6 +454,14 @@ def build_js():
             "entry":  copilot_js,
             "output": WEB / "js" / "copilot.bundle.js",
             "label":  "copilot.bundle.js",
+        })
+
+    admin_src = WEB / "js" / "admin.jsx"
+    if admin_src.exists():
+        bundles.append({
+            "entry":  admin_src,
+            "output": WEB / "js" / "admin.bundle.js",
+            "label":  "admin.bundle.js",
         })
 
     for bundle in bundles:
