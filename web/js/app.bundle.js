@@ -18935,8 +18935,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
         const clamped = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, parsed));
         tr.targetScale = clamped;
         const canvas = canvasRef.current;
-        const w = canvas ? canvas.width : 1e3;
-        const h = canvas ? canvas.height : 700;
+        const rect = canvas ? canvas.getBoundingClientRect() : null;
+        const w = rect ? rect.width : 1e3;
+        const h = rect ? rect.height : 700;
         const side = radialView ? Math.min(w, h) : null;
         const spanX = side || w;
         const spanY = side || h;
@@ -18947,16 +18948,20 @@ Respuesta: ${qa.a}`).join("\n\n"),
           const activeRef = hoveredTrack || selectedTrack;
           const refNode = activeRef ? nodes.find((n) => n.id === activeRef.id || n.track && n.track.id === activeRef.id) : null;
           if (refNode) {
-            focusX = refNode.currX || refNode.x || 0.5;
-            focusY = refNode.currY || refNode.y || 0.5;
+            focusX = refNode.currX || refNode.targetX || 0.5;
+            focusY = refNode.currY || refNode.targetY || 0.5;
           } else {
-            let sumX = 0, sumY = 0;
+            let minX = 1, maxX = 0, minY = 1, maxY = 0;
             nodes.forEach((n) => {
-              sumX += n.currX || n.x || 0.5;
-              sumY += n.currY || n.y || 0.5;
+              const nx = n.currX || n.targetX || 0.5;
+              const ny = n.currY || n.targetY || 0.5;
+              if (nx < minX) minX = nx;
+              if (nx > maxX) maxX = nx;
+              if (ny < minY) minY = ny;
+              if (ny > maxY) maxY = ny;
             });
-            focusX = sumX / nodes.length;
-            focusY = sumY / nodes.length;
+            focusX = (minX + maxX) / 2;
+            focusY = (minY + maxY) / 2;
           }
           tr.targetPanX = (0.5 - focusX) * spanX * clamped;
           tr.targetPanY = (0.5 - focusY) * spanY * clamped;
@@ -18967,6 +18972,69 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setZoomDisplay(clamped);
       }
     };
+    const handleAutoFrame = useCallback((targetZoom = null) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || 1e3;
+      const h = rect.height || 700;
+      const side = radialView ? Math.min(w, h) : null;
+      const spanX = side || w;
+      const spanY = side || h;
+      const nodes = nodesRef.current || [];
+      const visibleNodes = nodes.filter((n) => {
+        if (selectedKeyFilter !== "ALL" && n.keyStr !== selectedKeyFilter) return false;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const m = (n.track.title || "").toLowerCase().includes(q) || (n.track.artist || "").toLowerCase().includes(q);
+          if (!m) return false;
+        }
+        return true;
+      });
+      const targetList = visibleNodes.length > 0 ? visibleNodes : nodes;
+      if (targetList.length === 0) {
+        transformRef.current.targetScale = 1;
+        transformRef.current.targetPanX = 0;
+        transformRef.current.targetPanY = 0;
+        setZoomDisplay(1);
+        return;
+      }
+      const activeRef = hoveredTrack || selectedTrack;
+      const refNode = activeRef ? targetList.find((n) => n.id === activeRef.id || n.track && n.track.id === activeRef.id) : null;
+      let focusX = 0.5;
+      let focusY = 0.5;
+      let autoScale = targetZoom;
+      if (refNode) {
+        focusX = refNode.currX || refNode.targetX || 0.5;
+        focusY = refNode.currY || refNode.targetY || 0.5;
+      } else {
+        let minX = 1, maxX = 0, minY = 1, maxY = 0;
+        targetList.forEach((n) => {
+          const nx = n.currX || n.targetX || 0.5;
+          const ny = n.currY || n.targetY || 0.5;
+          if (nx < minX) minX = nx;
+          if (nx > maxX) maxX = nx;
+          if (ny < minY) minY = ny;
+          if (ny > maxY) maxY = ny;
+        });
+        focusX = (minX + maxX) / 2;
+        focusY = (minY + maxY) / 2;
+        if (autoScale === null) {
+          const rangeX = Math.max(0.1, maxX - minX);
+          const rangeY = Math.max(0.1, maxY - minY);
+          const fitScaleX = 0.72 / rangeX;
+          const fitScaleY = 0.72 / rangeY;
+          autoScale = Math.max(MAP_ZOOM_MIN, Math.min(2.5, Math.min(fitScaleX, fitScaleY)));
+        }
+      }
+      const finalScale = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, autoScale !== null ? autoScale : 1));
+      const tr = transformRef.current;
+      tr.targetScale = finalScale;
+      tr.targetPanX = (0.5 - focusX) * spanX * finalScale;
+      tr.targetPanY = (0.5 - focusY) * spanY * finalScale;
+      tr.isContinuousPanning = false;
+      setZoomDisplay(finalScale);
+    }, [radialView, selectedKeyFilter, searchQuery, hoveredTrack, selectedTrack]);
     const selectionRef = useRef6({
       isSelecting: false,
       points: [],
@@ -19536,16 +19604,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     const handleResetZoom = () => {
-      transformRef.current.scale = 1;
-      transformRef.current.panX = 0;
-      transformRef.current.panY = 0;
-      transformRef.current.targetScale = 1;
-      transformRef.current.targetPanX = 0;
-      transformRef.current.targetPanY = 0;
-      transformRef.current.isContinuousPanning = false;
-      transformRef.current.isDragging = false;
-      setZoomDisplay(1);
+      handleAutoFrame(1);
     };
+    useEffect6(() => {
+      const timer = setTimeout(() => {
+        handleAutoFrame();
+      }, 120);
+      return () => clearTimeout(timer);
+    }, [projectionMode, activeTracks.length, handleAutoFrame]);
     const mapStats = useMemo(() => {
       const q = searchQuery.trim().toLowerCase();
       const vis = activeTracks.filter((t) => {
@@ -19671,6 +19737,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
         title: showHarmonicPaths ? "Ocultar l\xEDneas de mezcla arm\xF3nica" : "Mostrar enlaces arm\xF3nicos entre pistas compatibles"
       },
       /* @__PURE__ */ React.createElement(Icons.Zap, { size: 13 })
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleAutoFrame(),
+        className: "ws-btn ws-btn-outline px-2.5 text-cyan-400 hover:text-white flex items-center gap-1.5 cursor-pointer",
+        title: "Recentrar y enmarcar todos los tracks activos en pantalla"
+      },
+      /* @__PURE__ */ React.createElement(ShellIcons.Target, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", { className: "hidden md:inline text-[11px] font-mono font-bold" }, "Enmarcar")
     ))), /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "flex-1 w-full h-full relative overflow-hidden bg-black" }, /* @__PURE__ */ React.createElement(
       "canvas",
       {
