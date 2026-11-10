@@ -4225,13 +4225,14 @@ function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
 }
 
 // ─── HOOK DE REDIMENSIÓN CON ARRASTRE (DRAG & DROP) & PERSISTENCIA PARA DRAWERS LATERALES (DESKTOP) ───
-function useDrawerResize(storageKey = 'bw_drawer_width', defaultWidth = 500, minWidth = 380, maxWidth = 860) {
+function useDrawerResize(storageKey = 'bw_drawer_width', defaultWidth = 540, minWidth = 380, maxWidth = 860) {
     const [width, setWidth] = React.useState(() => {
         try {
             const saved = localStorage.getItem(storageKey);
             if (saved) {
                 const parsed = parseInt(saved, 10);
                 if (!isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) {
+                    if (parsed === 500) return defaultWidth;
                     return parsed;
                 }
             }
@@ -4309,7 +4310,7 @@ const UserAccountModal = ({
 }) => {
     if (!isOpen) return null;
 
-    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_account_drawer_width', 500);
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_account_drawer_width', 540);
 
     const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'sessions' | 'preferences' | 'billing'
     const [alias, setAlias] = useState((userProfile && userProfile.alias) || 'DJ Alex BeatWave');
@@ -6360,7 +6361,7 @@ const MANUAL_SECTIONS = {
 const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onNavigateTab, lang = 'es' }) => {
     if (!isOpen) return null;
 
-    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_manual_drawer_width', 500);
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_manual_drawer_width', 540);
 
     // Estado de Plegado / Desplegado: Colapsa a pestaña vertical lateral para interactuar libremente con la app detrás
     const [isFolded, setIsFolded] = useState(false);
@@ -8644,7 +8645,7 @@ const AuditWorkspace = ({
     const [batchStatusMsg, setBatchStatusMsg] = useState('');
     const [saveFeedback, setSaveFeedback] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize('bw_inspector_drawer_width', 500);
+    const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize('bw_inspector_drawer_width', 540);
     const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
     const [mobileWorkflowTab, setMobileWorkflowTab] = useState('analizar'); // 'analizar' | 'exportar'
     const [batchConfigured, setBatchConfigured] = useState(false);
@@ -12354,29 +12355,29 @@ const AuditWorkspace = ({
                     <aside 
                         key={currentTrack ? currentTrack.id : "none"} 
                         style={{ width: '100%', maxWidth: `${inspectorWidth}px`, zIndex: 99999 }}
-                        className="ws-inspector fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+                        className="ws-inspector fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                     >
                     {/* Manija táctil de redimensión (Drag to Resize) para Desktop */}
                     <div 
                         onPointerDown={onInspectorResizeDown}
                         onDoubleClick={onInspectorResetWidth}
-                        className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-amber-500/10 transition-colors"
-                        title="Arrastra para redimensionar el inspector (Doble clic para restablecer a 500px)"
+                        className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors"
+                        title="Arrastra para redimensionar el inspector (Doble clic para restablecer a 540px)"
                     >
-                        <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-amber-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+                        <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
                     </div>
                     {/* Cabecera del Inspector unificada con el Look & Feel de BeatWave */}
                     <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0 font-black">
-                                <Icons.Sliders size={16} />
+                            <div className="w-9 h-9 rounded-xl bg-djcyan-950/80 border border-djcyan-500/50 flex items-center justify-center text-djcyan-400 text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black">
+                                <Icons.Sliders size={18} className="text-djcyan-400" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
                                         TRACK INSPECTOR
                                     </h3>
-                                    <span className="text-[9.5px] bg-amber-950/90 text-amber-300 border border-amber-500/60 px-2 py-0.5 rounded-full font-mono font-black">
+                                    <span className="text-[9.5px] bg-djcyan-950/90 text-djcyan-300 border border-djcyan-500/60 px-2 py-0.5 rounded-full font-mono font-black">
                                         ID #{currentTrack.id || '--'}
                                     </span>
                                 </div>
@@ -13669,7 +13670,9 @@ const AuditWorkspace = ({
                         {/* Cabecera */}
                         <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0">
                             <div className="flex items-center gap-3">
-                                <Icons.Gear size={14} className="inline-block align-[-2px] p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" />
+                                <div className="w-9 h-9 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-500/50 flex items-center justify-center shadow-inner shrink-0">
+                                    <Icons.Sliders size={18} />
+                                </div>
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
@@ -15786,7 +15789,7 @@ const SpotifyWorkspace = ({
     const [fftMsg, setFftMsg] = useState('');
     const [selectedId, setSelectedId] = useState(null);
     const [spInspectorOpen, setSpInspectorOpen] = useState(false);
-    const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize('bw_sp_inspector_drawer_width', 500);
+    const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize('bw_sp_inspector_drawer_width', 540);
     const [downloadSession, setDownloadSession] = useState({ downloaded: [], failed: [] });
     const [spSubView, setSpSubView] = useState('catalog'); // 'catalog' | 'downloaded'
     const [selectedDownloadedIds, setSelectedDownloadedIds] = useState(new Set());
@@ -18937,7 +18940,9 @@ const SpotifyWorkspace = ({
                         {/* Cabecera */}
                         <div className="px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0">
                             <div className="flex items-center gap-3">
-                                <Icons.Gear size={14} className="inline-block align-[-2px] p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" />
+                                <div className="w-9 h-9 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-500/50 flex items-center justify-center shadow-inner shrink-0">
+                                    <Icons.Sliders size={18} />
+                                </div>
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h3 className="font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider">
@@ -32625,16 +32630,27 @@ const App = () => {
     const [tutorialOpen, setTutorialOpen] = useState(false);
     const [tutorialInitialMode, setTutorialInitialMode] = useState('launcher');
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-    const [railExpanded, setRailExpanded] = useState(() => {
-        try { return localStorage.getItem('bw_rail_expanded') !== '0'; } catch (e) { return true; }
-    });
+    // Barra lateral de navegación: Al inicio siempre está desplegada hasta que el usuario interactúa (toca un menú u otro punto de la app)
+    const [railExpanded, setRailExpanded] = useState(true);
     const toggleRailExpanded = () => {
-        setRailExpanded((prev) => {
-            const next = !prev;
-            try { localStorage.setItem('bw_rail_expanded', next ? '1' : '0'); } catch (e) {}
-            return next;
-        });
+        setRailExpanded((prev) => !prev);
     };
+
+    useEffect(() => {
+        if (!railExpanded) return;
+        const handleAutoCollapse = (e) => {
+            const isToggleBtn = e.target && e.target.closest && e.target.closest('[data-rail-toggle="true"]');
+            if (isToggleBtn) return;
+            setRailExpanded(false);
+        };
+        const timer = setTimeout(() => {
+            window.addEventListener('pointerdown', handleAutoCollapse, true);
+        }, 120);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('pointerdown', handleAutoCollapse, true);
+        };
+    }, [railExpanded]);
     const [copilotModalOpen, setCopilotModalOpen] = useState(false);
 
     // MANUAL MAESTRO INTERACTIVO INDIVIDUALIZADO (Modal & Masterclass)

@@ -27,7 +27,7 @@ export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, a
     return (
         <nav
             aria-label="Módulos principales"
-            className={`bw-rail hidden md:flex flex-col shrink-0 min-h-0 ${expanded ? 'xl:w-56' : ''}`}
+            className={`bw-rail hidden md:flex flex-col shrink-0 min-h-0 ${expanded ? 'w-56' : 'w-[76px]'}`}
             data-expanded={expanded ? 'true' : 'false'}
         >
             <div className="flex flex-col gap-1 p-2">
@@ -49,8 +49,8 @@ export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, a
             <div className="flex-1 min-h-0 overflow-y-auto bw-scroll-thin flex flex-col gap-4 px-2 pb-3">
                 {NAV_GROUPS.map((group) => (
                     <div key={group.id} className="flex flex-col gap-0.5" role="group" aria-label={group.label}>
-                        <span className={`bw-eyebrow px-2 pb-1 pt-2 ${expanded ? 'hidden xl:block' : 'hidden'}`}>{group.label}</span>
-                        <span className={`mx-auto my-1 h-px w-6 bg-white/10 ${expanded ? 'xl:hidden' : ''}`} aria-hidden="true" />
+                        <span className={`bw-eyebrow px-2 pb-1 pt-2 ${expanded ? 'block' : 'hidden'}`}>{group.label}</span>
+                        <span className={`mx-auto my-1 h-px w-6 bg-white/10 ${expanded ? 'hidden' : ''}`} aria-hidden="true" />
                         {group.items.map((item) => {
                             let badge = null;
                             if (item.id === 'audit' && auditInfo && auditInfo.isAuditing) badge = `${auditInfo.progress}%`;
@@ -71,10 +71,11 @@ export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, a
                 ))}
             </div>
 
-            <div className={`hidden xl:flex p-2 border-t border-white/5 ${expanded ? 'justify-end' : 'justify-center'}`}>
+            <div className={`hidden md:flex p-2 border-t border-white/5 ${expanded ? 'justify-end' : 'justify-center'}`}>
                 <button
                     type="button"
                     onClick={onToggleExpanded}
+                    data-rail-toggle="true"
                     className="bw-icon-btn"
                     aria-label={expanded ? 'Contraer navegación' : 'Expandir navegación'}
                     aria-expanded={expanded}

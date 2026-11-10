@@ -187,7 +187,7 @@
       "nav",
       {
         "aria-label": "M\xF3dulos principales",
-        className: `bw-rail hidden md:flex flex-col shrink-0 min-h-0 ${expanded ? "xl:w-56" : ""}`,
+        className: `bw-rail hidden md:flex flex-col shrink-0 min-h-0 ${expanded ? "w-56" : "w-[76px]"}`,
         "data-expanded": expanded ? "true" : "false"
       },
       /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 p-2" }, /* @__PURE__ */ React.createElement(
@@ -205,7 +205,7 @@
         /* @__PURE__ */ React.createElement("span", { className: "bw-rail-caption" }, COPILOT_ITEM.fallback),
         expanded && /* @__PURE__ */ React.createElement("span", { className: "bw-kbd ml-auto" }, "LIVE")
       )),
-      /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto bw-scroll-thin flex flex-col gap-4 px-2 pb-3" }, NAV_GROUPS.map((group) => /* @__PURE__ */ React.createElement("div", { key: group.id, className: "flex flex-col gap-0.5", role: "group", "aria-label": group.label }, /* @__PURE__ */ React.createElement("span", { className: `bw-eyebrow px-2 pb-1 pt-2 ${expanded ? "hidden xl:block" : "hidden"}` }, group.label), /* @__PURE__ */ React.createElement("span", { className: `mx-auto my-1 h-px w-6 bg-white/10 ${expanded ? "xl:hidden" : ""}`, "aria-hidden": "true" }), group.items.map((item) => {
+      /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto bw-scroll-thin flex flex-col gap-4 px-2 pb-3" }, NAV_GROUPS.map((group) => /* @__PURE__ */ React.createElement("div", { key: group.id, className: "flex flex-col gap-0.5", role: "group", "aria-label": group.label }, /* @__PURE__ */ React.createElement("span", { className: `bw-eyebrow px-2 pb-1 pt-2 ${expanded ? "block" : "hidden"}` }, group.label), /* @__PURE__ */ React.createElement("span", { className: `mx-auto my-1 h-px w-6 bg-white/10 ${expanded ? "hidden" : ""}`, "aria-hidden": "true" }), group.items.map((item) => {
         let badge = null;
         if (item.id === "audit" && auditInfo && auditInfo.isAuditing) badge = `${auditInfo.progress}%`;
         if (item.showTrackCount && trackCount > 0) badge = trackCount;
@@ -222,11 +222,12 @@
           }
         );
       })))),
-      /* @__PURE__ */ React.createElement("div", { className: `hidden xl:flex p-2 border-t border-white/5 ${expanded ? "justify-end" : "justify-center"}` }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: `hidden md:flex p-2 border-t border-white/5 ${expanded ? "justify-end" : "justify-center"}` }, /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
           onClick: onToggleExpanded,
+          "data-rail-toggle": "true",
           className: "bw-icon-btn",
           "aria-label": expanded ? "Contraer navegaci\xF3n" : "Expandir navegaci\xF3n",
           "aria-expanded": expanded
@@ -4314,13 +4315,14 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const paddingBottom = Math.max(0, (items.length - range.end) * rowHeight);
     return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
   }
-  function useDrawerResize(storageKey = "bw_drawer_width", defaultWidth = 500, minWidth = 380, maxWidth = 860) {
+  function useDrawerResize(storageKey = "bw_drawer_width", defaultWidth = 540, minWidth = 380, maxWidth = 860) {
     const [width, setWidth] = React.useState(() => {
       try {
         const saved = localStorage.getItem(storageKey);
         if (saved) {
           const parsed = parseInt(saved, 10);
           if (!isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) {
+            if (parsed === 500) return defaultWidth;
             return parsed;
           }
         }
@@ -4392,7 +4394,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     onOpenRegister
   }) => {
     if (!isOpen) return null;
-    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_account_drawer_width", 500);
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_account_drawer_width", 540);
     const [activeTab, setActiveTab] = useState5("profile");
     const [alias, setAlias] = useState5(userProfile && userProfile.alias || "DJ Alex BeatWave");
     const [fullName, setFullName] = useState5(userProfile && userProfile.fullName || "Alejandro Rueda");
@@ -5842,7 +5844,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
   var InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onNavigateTab, lang = "es" }) => {
     if (!isOpen) return null;
-    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_manual_drawer_width", 500);
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_manual_drawer_width", 540);
     const [isFolded, setIsFolded] = useState5(false);
     const [activeSectionKey, setActiveSectionKey] = useState5(initialSection || "audit");
     const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
@@ -7305,7 +7307,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const [batchStatusMsg, setBatchStatusMsg] = useState5("");
     const [saveFeedback, setSaveFeedback] = useState5("");
     const [sidebarOpen, setSidebarOpen] = useState5(false);
-    const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize("bw_inspector_drawer_width", 500);
+    const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize("bw_inspector_drawer_width", 540);
     const [exportDropdownOpen, setExportDropdownOpen] = useState5(false);
     const [mobileWorkflowTab, setMobileWorkflowTab] = useState5("analizar");
     const [batchConfigured, setBatchConfigured] = useState5(false);
@@ -10049,19 +10051,19 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       {
         key: currentTrack ? currentTrack.id : "none",
         style: { width: "100%", maxWidth: `${inspectorWidth}px`, zIndex: 99999 },
-        className: "ws-inspector fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+        className: "ws-inspector fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
       },
       /* @__PURE__ */ React.createElement(
         "div",
         {
           onPointerDown: onInspectorResizeDown,
           onDoubleClick: onInspectorResetWidth,
-          className: "hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-amber-500/10 transition-colors",
-          title: "Arrastra para redimensionar el inspector (Doble clic para restablecer a 500px)"
+          className: "hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors",
+          title: "Arrastra para redimensionar el inspector (Doble clic para restablecer a 540px)"
         },
-        /* @__PURE__ */ React.createElement("div", { className: "w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-amber-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(245,158,11,0.8)]" })
+        /* @__PURE__ */ React.createElement("div", { className: "w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" })
       ),
-      /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 16 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "TRACK INSPECTOR"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-amber-950/90 text-amber-300 border border-amber-500/60 px-2 py-0.5 rounded-full font-mono font-black" }, "ID #", currentTrack.id || "--")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, "AN\xC1LISIS AC\xDASTICO, TAGS & METADATOS"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-djcyan-950/80 border border-djcyan-500/50 flex items-center justify-center text-djcyan-400 text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 18, className: "text-djcyan-400" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "TRACK INSPECTOR"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-djcyan-950/90 text-djcyan-300 border border-djcyan-500/60 px-2 py-0.5 rounded-full font-mono font-black" }, "ID #", currentTrack.id || "--")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, "AN\xC1LISIS AC\xDASTICO, TAGS & METADATOS"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: () => setSidebarOpen(false),
@@ -10795,7 +10797,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
             className: "bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden text-gray-200",
             onClick: (e) => e.stopPropagation()
           },
-          /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.Gear, { size: 14, className: "inline-block align-[-2px] p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider" }, "Centro de Columnas & Vistas"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black" }, Object.values(visibleColumns).filter(Boolean).length, " de 24 activas")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans mt-0.5" }, "Personaliza las columnas visibles en la tabla principal seg\xFAn tu flujo de trabajo de an\xE1lisis o preparaci\xF3n de cabina DJ."))), /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-500/50 flex items-center justify-center shadow-inner shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 18 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider" }, "Centro de Columnas & Vistas"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black" }, Object.values(visibleColumns).filter(Boolean).length, " de 24 activas")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans mt-0.5" }, "Personaliza las columnas visibles en la tabla principal seg\xFAn tu flujo de trabajo de an\xE1lisis o preparaci\xF3n de cabina DJ."))), /* @__PURE__ */ React.createElement(
             "button",
             {
               type: "button",
@@ -12295,7 +12297,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     const [fftMsg, setFftMsg] = useState5("");
     const [selectedId, setSelectedId] = useState5(null);
     const [spInspectorOpen, setSpInspectorOpen] = useState5(false);
-    const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize("bw_sp_inspector_drawer_width", 500);
+    const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize("bw_sp_inspector_drawer_width", 540);
     const [downloadSession, setDownloadSession] = useState5({ downloaded: [], failed: [] });
     const [spSubView, setSpSubView] = useState5("catalog");
     const [selectedDownloadedIds, setSelectedDownloadedIds] = useState5(/* @__PURE__ */ new Set());
@@ -14284,7 +14286,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
             className: "bg-[#0b0c14] border border-djzinc-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden text-gray-200",
             onClick: (e) => e.stopPropagation()
           },
-          /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.Gear, { size: 14, className: "inline-block align-[-2px] p-2 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-700/50 shadow-inner" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider" }, "Columnas de Record Pool & Cat\xE1logo"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black" }, Object.values(poolVisibleColumns).filter(Boolean).length, " de 20 activas")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans mt-0.5" }, "Personaliza las columnas visibles en la tabla del Record Pool seg\xFAn tu flujo de b\xFAsqueda, pre-auditor\xEDa o descarga DJ."))), /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 flex items-center justify-between bg-gradient-to-r from-[#0e0f1d] to-[#080910] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-djcyan-950/80 text-djcyan-400 border border-djcyan-500/50 flex items-center justify-center shadow-inner shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 18 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-base sm:text-lg text-white uppercase tracking-wider" }, "Columnas de Record Pool & Cat\xE1logo"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black" }, Object.values(poolVisibleColumns).filter(Boolean).length, " de 20 activas")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 font-sans mt-0.5" }, "Personaliza las columnas visibles en la tabla del Record Pool seg\xFAn tu flujo de b\xFAsqueda, pre-auditor\xEDa o descarga DJ."))), /* @__PURE__ */ React.createElement(
             "button",
             {
               type: "button",
@@ -23150,23 +23152,25 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [tutorialOpen, setTutorialOpen] = useState5(false);
     const [tutorialInitialMode, setTutorialInitialMode] = useState5("launcher");
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState5(false);
-    const [railExpanded, setRailExpanded] = useState5(() => {
-      try {
-        return localStorage.getItem("bw_rail_expanded") !== "0";
-      } catch (e) {
-        return true;
-      }
-    });
+    const [railExpanded, setRailExpanded] = useState5(true);
     const toggleRailExpanded = () => {
-      setRailExpanded((prev) => {
-        const next = !prev;
-        try {
-          localStorage.setItem("bw_rail_expanded", next ? "1" : "0");
-        } catch (e) {
-        }
-        return next;
-      });
+      setRailExpanded((prev) => !prev);
     };
+    useEffect6(() => {
+      if (!railExpanded) return;
+      const handleAutoCollapse = (e) => {
+        const isToggleBtn = e.target && e.target.closest && e.target.closest('[data-rail-toggle="true"]');
+        if (isToggleBtn) return;
+        setRailExpanded(false);
+      };
+      const timer = setTimeout(() => {
+        window.addEventListener("pointerdown", handleAutoCollapse, true);
+      }, 120);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener("pointerdown", handleAutoCollapse, true);
+      };
+    }, [railExpanded]);
     const [copilotModalOpen, setCopilotModalOpen] = useState5(false);
     const [manualModalOpen, setManualModalOpen] = useState5(false);
     const [manualSection, setManualSection] = useState5("audit");

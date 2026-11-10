@@ -336,7 +336,7 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 .bw-rail-live { border: 1px solid var(--bw-line); background: rgba(255, 255, 255, 0.02); }
 .bw-rail-live.is-active { border-color: rgba(244, 63, 94, 0.45); color: var(--bw-white); background: rgba(244, 63, 94, 0.08); }
 
-@media (min-width: 1280px) {
+@media (min-width: 768px) {
     .bw-rail[data-expanded='true'] {
         width: 224px;
     }
