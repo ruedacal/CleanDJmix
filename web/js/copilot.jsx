@@ -2048,30 +2048,30 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
             </div>
 
             {/* SECCIÓN PISTA EN 2 COLUMNAS (IZQUIERDA: COVER+INFO | DERECHA: CAMELOT+BPM+ENERGÍA+MOOD) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-center">
-                {/* COLUMNA IZQUIERDA: Carátula 1:1 + Título reducido + Artista + Taxonomía */}
-                <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch">
+                {/* COLUMNA IZQUIERDA: Carátula 1:1 Cuadrada Full Height + Título + Artista + Taxonomía */}
+                <div className="flex items-stretch gap-3 min-w-0">
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 aspect-square self-stretch rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none">
                         <img 
                             src={getValidCover(deck.cover)} 
                             alt="Carátula" 
                             onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                            className="w-full h-full object-cover aspect-square transition-transform group-hover:scale-105 duration-300"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
                         {deck.duration && (
-                            <span className="absolute bottom-0.5 right-1 px-1 py-0.2 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-300">
+                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-300">
                                 {deck.duration}
                             </span>
                         )}
                         {deck.year && (
-                            <span className="absolute top-0.5 left-1 px-1 py-0.2 rounded bg-black/75 text-[8px] font-mono text-zinc-400">
+                            <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-[8px] font-mono text-zinc-400">
                                 {deck.year}
                             </span>
                         )}
                     </div>
 
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 flex flex-col justify-center">
                         <h2 className="font-syne font-bold text-xs sm:text-sm text-white tracking-tight leading-tight truncate" title={deck.title}>
                             {deck.title}
                         </h2>
@@ -2093,7 +2093,7 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS CON MOOD DEBAJO + ENERGÍA, INTENSIDAD Y POSITIVIDAD */}
+                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS CON MOOD DEBAJO + ENERGÍA, INTENSIDAD, DANZABILIDAD Y POSITIVIDAD */}
                 <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3">
                     {/* BLOQUE TONO, TEMPO Y MOOD DEBAJO DE LOS BPM */}
                     <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]">
@@ -2124,8 +2124,8 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                         </div>
                     </div>
 
-                    {/* COLUMNA PSICOMETRÍA: ENERGÍA, INTENSIDAD Y POSITIVIDAD APILADAS */}
-                    <div className="flex-1 min-w-[125px] flex flex-col justify-center gap-1.5">
+                    {/* COLUMNA PSICOMETRÍA: ENERGÍA, INTENSIDAD, DANZABILIDAD Y POSITIVIDAD APILADAS */}
+                    <div className="flex-1 min-w-[130px] flex flex-col justify-center gap-1">
                         {/* Fila 1: Energía */}
                         <div>
                             <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
@@ -2139,20 +2139,33 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                             </div>
                         </div>
 
-                        {/* Fila 2: Intensidad (sin paréntesis, con icono) */}
+                        {/* Fila 2: Intensidad */}
                         <div>
                             <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
                                 <span className="text-emerald-400 font-bold flex items-center gap-1">
                                     <ActivityIcon size={9} /> INTENSIDAD
                                 </span>
-                                <span className="text-emerald-400 font-bold">{deck.arousal || deck.danceability || 88}%</span>
+                                <span className="text-emerald-400 font-bold">{deck.arousal || Math.round((deck.energy || 90) * 0.95)}%</span>
                             </div>
                             <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${deck.arousal || deck.danceability || 88}%` }}></div>
+                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${deck.arousal || Math.round((deck.energy || 90) * 0.95)}%` }}></div>
                             </div>
                         </div>
 
-                        {/* Fila 3: Positividad (sin paréntesis, con icono) */}
+                        {/* Fila 3: Danzabilidad */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-purple-300 font-bold flex items-center gap-1">
+                                    <SlidersIcon size={9} /> DANZABILIDAD
+                                </span>
+                                <span className="text-purple-300 font-bold">{deck.danceability || 85}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_6px_rgba(168,85,247,0.8)]" style={{ width: `${deck.danceability || 85}%` }}></div>
+                            </div>
+                        </div>
+
+                        {/* Fila 4: Positividad */}
                         <div>
                             <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
                                 <span className="text-djcyan-400 font-bold flex items-center gap-1">

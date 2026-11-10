@@ -18,15 +18,15 @@ const sectorPath = (cx, cy, rOuter, rInner, a1, a2) => {
 };
 
 export const MapCamelotOverlay = ({ open, onToggle, selectedKey, keyFilter, onFilter, colors, isMatch }) => {
-    const size = 208;
+    const size = 196;
     const c = size / 2;
-    const rOut = 100;
-    const rMid = 66;
-    const rIn = 34;
+    const rOut = 94;
+    const rMid = 62;
+    const rIn = 32;
 
     return (
-        <section className="ws-glass w-[232px]" aria-label="Rueda Camelot">
-            <header className="ws-glass-head">
+        <section className={`ws-glass w-[240px] flex flex-col transition-all overflow-hidden select-none ${open ? 'h-[285px]' : 'h-[38px]'}`} aria-label="Rueda Camelot">
+            <header className="ws-glass-head shrink-0 h-[38px] px-3">
                 <span className="ws-glass-title">
                     <ShellIcons.Disc size={13} />
                     Camelot
@@ -42,8 +42,8 @@ export const MapCamelotOverlay = ({ open, onToggle, selectedKey, keyFilter, onFi
             </header>
 
             {open && (
-                <div className="flex flex-col items-center gap-2 pt-2">
-                    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="group" aria-label="Selector de tonalidad">
+                <div className="flex-1 flex flex-col items-center justify-between p-2 pt-1 overflow-hidden">
+                    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="group" aria-label="Selector de tonalidad" className="shrink-0">
                         <circle cx={c} cy={c} r={rOut + 3} fill="var(--bw-surface-1)" stroke="var(--bw-line-strong)" />
                         {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => {
                             const mid = ((num - 1) * 30 - 90) * Math.PI / 180;
@@ -97,14 +97,14 @@ export const MapCamelotOverlay = ({ open, onToggle, selectedKey, keyFilter, onFi
                         </text>
                     </svg>
 
-                    <div className="ws-glass-foot">
+                    <div className="ws-glass-foot w-full shrink-0 text-center text-[10px]">
                         {keyFilter !== 'ALL' ? (
-                            <>
+                            <div className="flex items-center justify-between w-full">
                                 <span>Filtro <b className="text-[var(--bw-cyan)]">{keyFilter}</b></span>
                                 <button type="button" className="ws-glass-link" onClick={() => onFilter(keyFilter)}>Quitar</button>
-                            </>
+                            </div>
                         ) : selectedKey ? (
-                            <span className="flex items-center gap-1.5"><span className="ws-dot ws-dot-ok" />Compatibles: +1 / -1 / modo</span>
+                            <span className="flex items-center justify-center gap-1.5"><span className="ws-dot ws-dot-ok" />Compatibles: +1 / -1 / modo</span>
                         ) : (
                             <span>Pulsa una tonalidad para filtrar</span>
                         )}
@@ -133,11 +133,11 @@ export const MapNavOverlay = ({ open = true, onToggle, zoom, onZoom, onReset, st
     );
 
     return (
-        <section className="ws-glass w-[232px]" aria-label="Navegación y zoom">
-            <header className="ws-glass-head">
+        <section className={`ws-glass w-[240px] flex flex-col transition-all overflow-hidden select-none ${open ? 'h-[285px]' : 'h-[38px]'}`} aria-label="Navegación y zoom">
+            <header className="ws-glass-head shrink-0 h-[38px] px-3">
                 <span className="ws-glass-title">
                     <ShellIcons.Sliders size={13} />
-                    Navegación
+                    Navegación & Zoom
                 </span>
                 <span className="flex items-center gap-1.5">
                     <span className="ws-glass-readout font-mono font-bold text-cyan-400">
@@ -158,8 +158,8 @@ export const MapNavOverlay = ({ open = true, onToggle, zoom, onZoom, onReset, st
             </header>
 
             {open && (
-                <>
-                    <div className="grid grid-cols-3 gap-1 pt-2.5 place-items-center">
+                <div className="flex-1 flex flex-col justify-between p-3 pt-2 overflow-hidden">
+                    <div className="grid grid-cols-3 gap-1.5 place-items-center">
                         <span />
                         {pad(0, 30, 'Mover arriba', ShellIcons.ChevronUp)}
                         <span />
@@ -173,13 +173,18 @@ export const MapNavOverlay = ({ open = true, onToggle, zoom, onZoom, onReset, st
                         <span />
                     </div>
 
-                    <div className="flex flex-col gap-1.5 pt-3 mt-2.5 border-t border-[var(--bw-line)]">
+                    <div className="flex flex-col gap-1.5 pt-2 border-t border-[var(--bw-line)]">
                         <div className="flex items-center justify-between text-[11px] font-mono">
-                            <span className="ws-glass-kicker text-zinc-400 font-bold">Zoom Pro</span>
-                            <span className="text-[10px] text-cyan-400/80 font-bold">{MAP_ZOOM_MIN}x – {MAP_ZOOM_MAX}x</span>
+                            <span className="ws-glass-kicker text-zinc-400 font-bold">Zoom 20X Pro</span>
+                            <span className="text-[10px] text-cyan-400 font-bold">{zoom.toFixed(1)}x / {MAP_ZOOM_MAX}x</span>
                         </div>
-                        <div className="flex items-center gap-2 w-full px-0.5">
-                            <button type="button" className="ws-glass-icon shrink-0" onClick={() => step(-1)} aria-label="Alejar">
+                        <div 
+                            className="flex items-center gap-2 w-full px-0.5"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                        >
+                            <button type="button" className="ws-glass-icon shrink-0 cursor-pointer" onClick={() => step(-1)} aria-label="Alejar">
                                 <ShellIcons.Minus size={12} />
                             </button>
                             <input
@@ -188,17 +193,29 @@ export const MapNavOverlay = ({ open = true, onToggle, zoom, onZoom, onReset, st
                                 max="1"
                                 step="0.001"
                                 value={toSlider(zoom)}
-                                onChange={(e) => onZoom(fromSlider(parseFloat(e.target.value)))}
-                                className="ws-fader flex-1 min-w-0"
+                                onInput={(e) => {
+                                    e.stopPropagation();
+                                    onZoom(fromSlider(parseFloat(e.target.value)));
+                                }}
+                                onChange={(e) => {
+                                    e.stopPropagation();
+                                    onZoom(fromSlider(parseFloat(e.target.value)));
+                                }}
+                                className="ws-fader flex-1 min-w-0 cursor-pointer"
                                 aria-label="Nivel de zoom"
                                 aria-valuetext={`${zoom.toFixed(1)}x`}
                             />
-                            <button type="button" className="ws-glass-icon shrink-0" onClick={() => step(1)} aria-label="Acercar">
+                            <button type="button" className="ws-glass-icon shrink-0 cursor-pointer" onClick={() => step(1)} aria-label="Acercar">
                                 <ShellIcons.Plus size={12} />
                             </button>
                         </div>
+                        <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500 pt-0.5">
+                            <span>0.3x Min</span>
+                            <span>Auto-Centrado Activo</span>
+                            <span>20x Max</span>
+                        </div>
                     </div>
-                </>
+                </div>
             )}
         </section>
     );

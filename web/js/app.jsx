@@ -4390,11 +4390,43 @@ const UserAccountModal = ({
 
             {/* Columna Lateral Derecha (Slide-over Drawer) - Mismo ancho homogéneo que la columna de manual */}
             <aside 
-                className="fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+                className="fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Cabecera del Perfil con Avatar y Datos Rápidos */}
-                <div className="p-4 sm:p-5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
+                {/* Cabecera del Perfil con Look & Feel BeatWave */}
+                <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black">
+                            <Icons.User size={16} />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
+                                    CUENTA & SESIÓN DJ
+                                </h3>
+                                <span className="text-[9.5px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 px-2 py-0.5 rounded-full font-black">
+                                    PERFIL CABINA
+                                </span>
+                            </div>
+                            <p className="text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]">
+                                {alias} • {email}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button 
+                            type="button" 
+                            onClick={onClose} 
+                            className="w-8 h-8 rounded-xl bg-[#14162a] hover:bg-cyan-950/60 text-gray-400 hover:text-cyan-300 flex items-center justify-center border border-djzinc-700 hover:border-cyan-400/80 transition-colors cursor-pointer"
+                            title="Cerrar (ESC)"
+                        >
+                            <Icons.Close size={15} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Ficha Resumen del Usuario con Avatar */}
+                <div className="p-4 sm:p-5 border-b border-djzinc-800 bg-[#0a0b16] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3.5">
                         {/* Círculo de Perfil / Avatar con Botón de Cambio */}
                         <div className="relative group shrink-0">
@@ -4434,7 +4466,7 @@ const UserAccountModal = ({
                                 </span>
                             </div>
                             <p className="text-[11px] text-gray-400 font-mono truncate max-w-[240px]">
-                                {email}
+                                {fullName}
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5 text-[10px] font-mono text-emerald-400">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
@@ -7482,7 +7514,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
 
             {/* Columna Lateral Derecha */}
             <aside 
-                className="fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#080914] border-l-2 border-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
+                className="fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#080914] border-l-4 border-l-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Drawer */}
@@ -9934,6 +9966,8 @@ const AuditWorkspace = ({
         cues: true,
         e: true,
         dance: true,
+        intensity: true,
+        valence: true,
         fase_badge: true,
         acoustic_role: true,
         comment: true,
@@ -9993,6 +10027,8 @@ const AuditWorkspace = ({
                 { key: 'duration', label: 'Duración (Time)', desc: 'Tiempo total de reproducción MM:SS' },
                 { key: 'e', label: 'Energía (⚡ %)', desc: 'Intensidad acústica percibida de 0 a 100%' },
                 { key: 'dance', label: 'Bailabilidad (🕺 %)', desc: 'Regularidad rítmica para pista de baile' },
+                { key: 'intensity', label: 'Intensidad (🔥 %)', desc: 'Nivel de excitación y pegada acústica (Arousal)' },
+                { key: 'valence', label: 'Positividad (✨ %)', desc: 'Valencia emocional y brillo positivo (Valence)' },
                 { key: 'comment', label: 'Comentario Pro', desc: 'Tag táctico formateado para display CDJ' },
                 { key: 'status', label: 'Estado Global', desc: 'Veredicto de auditoría (Lossless, MP3, Fake)' },
                 { key: 'actions', label: 'Acción Quitar', desc: 'Botón rápido para retirar pista de lista' },
@@ -11122,6 +11158,16 @@ const AuditWorkspace = ({
                                         <Icons.Activity size={14} className="inline-block align-[-2px]" /> {t('th_dance') || 'Dance'} {renderSortArrowAudit('dance')}
                                     </th>
                                 )}
+                                {visibleColumns.intensity && (
+                                    <th onClick={() => handleSortAudit('arousal')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-emerald-400" title="Intensidad y excitación acústica percibida (Arousal) de 0% a 100%">
+                                        <Icons.Activity size={14} className="inline-block align-[-2px]" /> Intensidad {renderSortArrowAudit('arousal')}
+                                    </th>
+                                )}
+                                {visibleColumns.valence && (
+                                    <th onClick={() => handleSortAudit('valence')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Positividad emocional y brillo armónico (Valence) de 0% a 100%">
+                                        <Icons.Sparkles size={14} className="inline-block align-[-2px]" /> Positividad {renderSortArrowAudit('valence')}
+                                    </th>
+                                )}
                                 {visibleColumns.fase_badge && (
                                     <th onClick={() => handleSortAudit('fase_badge')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" title="Fase de la sesión DJ (Warm-Up, Build-Up, Caña / Clímax, Cierre, Calma)">
                                         {t('th_phase') || 'Fase DJ'} {renderSortArrowAudit('fase_badge')}
@@ -11379,6 +11425,12 @@ const AuditWorkspace = ({
                                             <option value="LOW">&lt;65%</option>
                                         </select>
                                     </th>
+                                )}
+                                {visibleColumns.intensity && (
+                                    <th className="p-1 text-center font-mono text-[10px] text-emerald-400 font-bold" title="Filtro Intensidad">🔥</th>
+                                )}
+                                {visibleColumns.valence && (
+                                    <th className="p-1 text-center font-mono text-[10px] text-cyan-400 font-bold" title="Filtro Positividad">✨</th>
                                 )}
                                 {visibleColumns.fase_badge && (
                                     <th className="p-1 text-center">
@@ -11730,6 +11782,42 @@ const AuditWorkspace = ({
                                             </td>
                                         )}
 
+                                        {/* INTENSIDAD (AROUSAL) */}
+                                        {visibleColumns.intensity && (
+                                            <td className="py-2 px-2 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                    <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                        <span className="text-[10px]">🔥</span>
+                                                        <span className="font-bold text-emerald-400">{row.arousal || row.intensity || Math.round((row.e || 80) * 0.95)}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                        <div 
+                                                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]" 
+                                                            style={{ width: `${Math.min(100, Math.max(10, row.arousal || row.intensity || Math.round((row.e || 80) * 0.95)))}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        )}
+
+                                        {/* POSITIVIDAD (VALENCE) */}
+                                        {visibleColumns.valence && (
+                                            <td className="py-2 px-2 text-center">
+                                                <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                    <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                        <span className="text-[10px]">✨</span>
+                                                        <span className="font-bold text-cyan-300">{row.valence != null ? row.valence : (row.key && row.key.includes('B') ? 65 : 45)}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                        <div 
+                                                            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]" 
+                                                            style={{ width: `${Math.min(100, Math.max(10, row.valence != null ? row.valence : (row.key && row.key.includes('B') ? 65 : 45)))}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        )}
+
                                         {/* FASE DJ / MOOD */}
                                         {visibleColumns.fase_badge && (
                                             <td className="py-2 px-2 text-center">
@@ -12040,27 +12128,44 @@ const AuditWorkspace = ({
 
             {sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && (
                 <>
-                    {/* Backdrop oscuro en móvil */}
+                    {/* Backdrop oscuro para móvil y desktop (cierra al hacer clic fuera y previene colisiones) */}
                     <div 
                         onClick={() => setSidebarOpen(false)} 
-                        className="md:hidden fixed inset-0 bg-black/75 backdrop-blur-xs z-40 transition-opacity animate-fadeIn" 
+                        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[55] transition-opacity animate-fadeIn" 
                         aria-hidden="true" 
                     />
                     <aside 
                         key={currentTrack ? currentTrack.id : "none"} 
-                        className="ws-inspector fixed inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl md:rounded-none md:static md:inset-auto md:max-h-none md:h-full w-full md:w-80 lg:w-96 md:border-l md:border-[var(--bw-line-strong)] bg-[var(--bw-surface-1)] flex flex-col shrink-0 z-50 overflow-hidden shadow-2xl border-t border-cyan-500/30 md:border-t-0"
+                        className="ws-inspector fixed top-0 bottom-0 right-0 z-[60] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                     >
-                    <div className="h-12 px-3 border-b border-[var(--bw-line)] bg-[var(--bw-surface-2)] flex justify-between items-center">
-                        <div className="ws-glass-title"><Icons.Sliders size={14} /><span>Inspector</span></div>
-                        <div className="flex items-center gap-2">
-                            <span className="ws-glass-readout">#{currentTrack.id || '--'}</span>
+                    {/* Cabecera del Inspector unificada con el Look & Feel de BeatWave */}
+                    <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0 font-black">
+                                <Icons.Sliders size={16} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
+                                        TRACK INSPECTOR
+                                    </h3>
+                                    <span className="text-[9.5px] bg-amber-950/90 text-amber-300 border border-amber-500/60 px-2 py-0.5 rounded-full font-mono font-black">
+                                        ID #{currentTrack.id || '--'}
+                                    </span>
+                                </div>
+                                <p className="text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]">
+                                    ANÁLISIS ACÚSTICO, TAGS & METADATOS
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
                             <button 
                                 onClick={() => setSidebarOpen(false)} 
-                                className="ws-glass-icon"
+                                className="w-8 h-8 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-400 hover:text-amber-300 flex items-center justify-center border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer"
                                 aria-label={t('btn_close_panel') || 'Cerrar Panel'}
                                 title={t('btn_close_panel') || 'Cerrar Panel'}
                             >
-                                <Icons.Close size={14} className="inline-block align-[-2px]" />
+                                <Icons.Close size={15} />
                             </button>
                         </div>
                     </div>
@@ -17980,20 +18085,42 @@ const SpotifyWorkspace = ({
             </div>
 
             {spInspectorOpen && currentTrack && (
-                <aside key={currentTrack ? currentTrack.id : "sp_none"} className="w-96 bg-djzinc-900 border-l border-djzinc-800 flex flex-col shrink-0 slide-in-right z-20 overflow-hidden shadow-2xl">
-                    <div className="p-3 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                            <Icons.Spotify />
-                            <span className="font-bold text-xs uppercase tracking-wider text-djcyan-400">Record Pool Inspector</span>
+                <>
+                    <div 
+                        onClick={() => setSpInspectorOpen(false)} 
+                        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[55] transition-opacity animate-fadeIn" 
+                        aria-hidden="true" 
+                    />
+                    <aside 
+                        key={currentTrack ? currentTrack.id : "sp_none"} 
+                        className="fixed top-0 bottom-0 right-0 z-[60] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+                    >
+                    <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0 font-black">
+                                <Icons.Spotify size={16} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider">
+                                        RECORD POOL INSPECTOR
+                                    </h3>
+                                    <span className="text-[9.5px] bg-amber-950/90 text-amber-300 border border-amber-500/60 px-2 py-0.5 rounded-full font-mono font-black">
+                                        ID #{currentTrack.id || '--'}
+                                    </span>
+                                </div>
+                                <p className="text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]">
+                                    INSPECCIÓN DE PISTA & DESCARGA FLAC
+                                </p>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono bg-djzinc-800 text-gray-400 px-2 py-0.5 rounded">ID #{currentTrack.id || '--'}</span>
+                        <div className="flex items-center gap-2 shrink-0">
                             <button 
                                 onClick={() => setSpInspectorOpen(false)}
                                 title="Cerrar inspector"
-                                className="w-6 h-6 rounded-full bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-bold text-xs cursor-pointer border border-djzinc-700 transition-colors"
+                                className="w-8 h-8 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-400 hover:text-amber-300 flex items-center justify-center border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer"
                             >
-                                <Icons.Close size={14} className="inline-block align-[-2px]" />
+                                <Icons.Close size={15} />
                             </button>
                         </div>
                     </div>
@@ -18070,7 +18197,8 @@ const SpotifyWorkspace = ({
                             Descargar {selectedCount > 1 ? `Seleccionadas (${selectedCount})` : 'Pista Actual'} .{selectedFormat.toUpperCase()}
                         </button>
                     </div>
-                        </aside>
+                    </aside>
+                </>
             )}
 
             {/* Modal Navegador de Carpetas Web Integrado para Destino */}
@@ -20033,6 +20161,8 @@ const TaxonomyWorkspace = ({
                                             <th onClick={() => handleSortTax('matchScore')} className="py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors">MATCH % {renderSortArrowTax('matchScore')}</th>
                                             <th onClick={() => handleSortTax('energy')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors"><Icons.Zap size={14} className="inline-block align-[-2px]" /> ENERGÍA {renderSortArrowTax('energy')}</th>
                                             <th onClick={() => handleSortTax('danceability')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors"><Icons.Activity size={14} className="inline-block align-[-2px]" /> DANCE {renderSortArrowTax('danceability')}</th>
+                                            <th onClick={() => handleSortTax('arousal')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-emerald-400" title="Intensidad (Arousal)">🔥 INTENSIDAD {renderSortArrowTax('arousal')}</th>
+                                            <th onClick={() => handleSortTax('valence')} className="py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400" title="Positividad (Valence)">✨ POSITIVIDAD {renderSortArrowTax('valence')}</th>
                                             <th className="py-2.5 px-2 text-center">FASE DJ</th>
                                             <th className="py-2.5 px-2.5 text-left">COMENTARIO PRO</th>
                                             <th className="py-2.5 px-3 text-center min-w-[150px]">ACCIONES DJ</th>
@@ -20119,6 +20249,8 @@ const TaxonomyWorkspace = ({
                                                     <option value="LOW">&lt;65% Baja</option>
                                                 </select>
                                             </th>
+                                            <th className="p-1 text-center font-mono text-[9px] text-emerald-400 font-bold" title="Filtro Intensidad">🔥</th>
+                                            <th className="p-1 text-center font-mono text-[9px] text-cyan-400 font-bold" title="Filtro Positividad">✨</th>
                                             <th className="p-1"></th>
                                             <th className="p-1"></th>
                                             <th className="p-1"></th>
@@ -20218,6 +20350,38 @@ const TaxonomyWorkspace = ({
                                                                 <div 
                                                                     className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" 
                                                                     style={{ width: `${Math.min(100, Math.max(10, trk.danceability || trk.dance || 80))}%` }}
+                                                                ></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    {/* INTENSIDAD */}
+                                                    <td className="py-2 px-2 text-center">
+                                                        <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                            <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                                <span className="text-[10px]">🔥</span>
+                                                                <span className="font-bold text-emerald-400">{trk.arousal || trk.intensity || Math.round((trk.energy || trk.e || 80) * 0.95)}%</span>
+                                                            </div>
+                                                            <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                                <div 
+                                                                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]" 
+                                                                    style={{ width: `${Math.min(100, Math.max(10, trk.arousal || trk.intensity || Math.round((trk.energy || trk.e || 80) * 0.95)))}%` }}
+                                                                ></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    {/* POSITIVIDAD */}
+                                                    <td className="py-2 px-2 text-center">
+                                                        <div className="flex flex-col items-center justify-center gap-0.5 w-16 mx-auto">
+                                                            <div className="flex items-center justify-between w-full text-[9px] font-mono">
+                                                                <span className="text-[10px]">✨</span>
+                                                                <span className="font-bold text-cyan-300">{trk.valence != null ? trk.valence : (trk.displayKey && trk.displayKey.includes('B') ? 65 : 45)}%</span>
+                                                            </div>
+                                                            <div className="w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750">
+                                                                <div 
+                                                                    className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]" 
+                                                                    style={{ width: `${Math.min(100, Math.max(10, trk.valence != null ? trk.valence : (trk.displayKey && trk.displayKey.includes('B') ? 65 : 45)))}%` }}
                                                                 ></div>
                                                             </div>
                                                         </div>
@@ -25922,16 +26086,33 @@ const MapWorkspace = ({
             const clamped = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, parsed));
             tr.targetScale = clamped;
             
-            // CENTRADO INTELIGENTE: Si hay nodos activos, recentrar suavemente hacia el centroide del clúster
+            const canvas = canvasRef.current;
+            const w = canvas ? canvas.width : 1000;
+            const h = canvas ? canvas.height : 700;
+            const side = radialView ? Math.min(w, h) : null;
+            const spanX = side || w;
+            const spanY = side || h;
+
+            // CENTRADO INTELIGENTE: Recentrar exactamente en el track seleccionado/hovered o en el centroide de todos los nodos
             const nodes = nodesRef.current || [];
             if (nodes.length > 0) {
-                let sumX = 0, sumY = 0;
-                nodes.forEach(n => { sumX += (n.x || 0.5); sumY += (n.y || 0.5); });
-                const avgNx = sumX / nodes.length;
-                const avgNy = sumY / nodes.length;
-                // Ajustar targetPan para que el centro del cluster quede exactamente en pantalla
-                tr.targetPanX = (0.5 - avgNx) * 320 * (clamped > 1 ? Math.min(clamped, 4) : 1);
-                tr.targetPanY = (0.5 - avgNy) * 260 * (clamped > 1 ? Math.min(clamped, 4) : 1);
+                let focusX = 0.5;
+                let focusY = 0.5;
+                const activeRef = hoveredTrack || selectedTrack;
+                const refNode = activeRef ? nodes.find(n => n.id === activeRef.id || (n.track && n.track.id === activeRef.id)) : null;
+                if (refNode) {
+                    focusX = refNode.currX || refNode.x || 0.5;
+                    focusY = refNode.currY || refNode.y || 0.5;
+                } else {
+                    let sumX = 0, sumY = 0;
+                    nodes.forEach(n => { sumX += (n.currX || n.x || 0.5); sumY += (n.currY || n.y || 0.5); });
+                    focusX = sumX / nodes.length;
+                    focusY = sumY / nodes.length;
+                }
+                
+                // Mantiene el punto de enfoque siempre en el centro de la pantalla sin importar el zoom (hasta 20X)
+                tr.targetPanX = (0.5 - focusX) * spanX * clamped;
+                tr.targetPanY = (0.5 - focusY) * spanY * clamped;
             } else {
                 tr.targetPanX = 0;
                 tr.targetPanY = 0;
@@ -26098,8 +26279,11 @@ const MapWorkspace = ({
                 t.targetPanY += t.continuousDy;
             }
             // Clamping cinemático estricto para que los nodos siempre estén en el viewport (pantalla nunca en blanco)
-            const maxAllowedPanX = Math.max(100, (w * 0.44) * (t.targetScale || 1));
-            const maxAllowedPanY = Math.max(100, (h * 0.44) * (t.targetScale || 1));
+            const side = radialView ? Math.min(w, h) : null;
+            const spanX = side || w;
+            const spanY = side || h;
+            const maxAllowedPanX = Math.max(120, (spanX * 0.5) * (t.targetScale || 1));
+            const maxAllowedPanY = Math.max(120, (spanY * 0.5) * (t.targetScale || 1));
             t.targetPanX = Math.max(-maxAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
             t.targetPanY = Math.max(-maxAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
 
@@ -27121,6 +27305,117 @@ const MapWorkspace = ({
 // GLOSARIO ACÚSTICO & TÉCNICO DJ INTEGRAL DE BEATWAVE PRO
 // ==============================================================================
 const BEATWAVE_MASTER_GLOSSARY = [
+    // DSP & ACÚSTICA AVANZADA (AUDIO INFORMATION RETRIEVAL)
+    {
+        term: "FFT (Fast Fourier Transform)",
+        category: "DSP & Acústica",
+        tag: "ESPECTRO",
+        color: "#06b6d4",
+        icon: "🔬",
+        definition: "Transformada Rápida de Fourier. Algoritmo matemático que descompone en tiempo real una forma de onda de audio del dominio temporal al espectro de frecuencias (magnitud y fase). Es la base del análisis espectral, la detección precisa de transitorios del bombo y la calibración armónica en BeatWave Pro.",
+        formula: "X[k] = ∑ x[n] · e^(-i 2π k n / N) (N=2048, Hop=512)",
+        impact: "Permite visualizar el espectro 3-band y aislar frecuencias para Beatgrid y tonalidad."
+    },
+    {
+        term: "Crest Factor (Factor de Cresta)",
+        category: "DSP & Acústica",
+        tag: "DINÁMICA",
+        color: "#f59e0b",
+        icon: "📊",
+        definition: "Relación en decibelios entre la amplitud pico máxima de la señal y su valor medio cuadrático (RMS). Cuantifica el grado de compresión y limitación en el mastering. Un Crest Factor bajo (< 7.5 dB) indica transitorios comprimidos y bombos saturados propios de Hard Techno o Schranz, mientras que valores altos (> 12 dB) reflejan dinámica orgánica.",
+        formula: "CF (dB) = 20 · log10( Peak / RMS )",
+        impact: "Diferencia de inmediato pistas ultracomprimidas de temas con dinámica natural para masterizar la ganancia del mixer."
+    },
+    {
+        term: "Zero-Crossing Rate (ZCR)",
+        category: "DSP & Acústica",
+        tag: "RUGOSIDAD",
+        color: "#ec4899",
+        icon: "⚡",
+        definition: "Tasa de cruces por cero. Mide la frecuencia con la que la onda de audio atraviesa el eje de amplitud cero por unidad de tiempo. En música electrónica revela el contenido de altas frecuencias, la aspereza de sintetizadores distorsionados y la presencia de componentes ruidosos o percusivos frente a tonos sinusoidales puros.",
+        formula: "ZCR = (1 / 2N) ∑ |sgn(x[n]) - sgn(x[n-1])|",
+        impact: "Identifica texturas industriales, bombos crujientes y saturación analógica en el Drop."
+    },
+    {
+        term: "Spectral Centroid (Centroide Espectral)",
+        category: "DSP & Acústica",
+        tag: "TIMBRE",
+        color: "#8b5cf6",
+        icon: "🌈",
+        definition: "Centro de gravedad del espectro de frecuencias ponderado por su magnitud. Correlaciona directamente con la percepción psicoacústica de 'brillo' u 'oscuridad' sonora. Un centroide bajo (< 1600 Hz) caracteriza al Raw y Hypnotic Techno; un centroide elevado (> 2600 Hz) define la estridencia de Acid, Industrial o Peak Time.",
+        formula: "fc = ∑ (f · |X(f)|) / ∑ |X(f)|",
+        impact: "Permite emparejar pistas por balance tímbrico para que la mezcla no suene ni opaca ni chillona."
+    },
+    {
+        term: "Spectral Flatness (Entropía de Wiener)",
+        category: "DSP & Acústica",
+        tag: "RUIDO / TONAL",
+        color: "#10b981",
+        icon: "📐",
+        definition: "Medida del aplanamiento espectral calculada como el cociente entre la media geométrica y la media aritmética del espectro de potencia. Valores cercanos a 0 indican presencia de tonos armónicos puros (sintetizadores de Melodic Techno), mientras que valores cercanos a 1 indican ruido blanco o percusiones metálicas (Hard Groove / Industrial).",
+        formula: "Flatness = exp( (1/N) ∑ ln(|X|^2) ) / ( (1/N) ∑ |X|^2 )",
+        impact: "Separa automáticamente tracks melódicos y armónicos de producciones percusivas y ruidosas."
+    },
+    {
+        term: "Drop Window MIR (Ventana de Clímax)",
+        category: "DSP & Acústica",
+        tag: "DETECCIÓN",
+        color: "#ef4444",
+        icon: "💥",
+        definition: "Algoritmo de perfilado energético por RMS que analiza la canción en bloques de 4 segundos para localizar la ventana de 12 segundos con máxima presión acústica (Drop 1 o Drop 2). Al omitir intros minimalistas y parones etéreos, la extracción de descriptores se realiza exclusivamente en el clímax sonoro.",
+        formula: "Ventana 12s @ Max RMS Energy Profile",
+        impact: "Evita falsos positivos de género derivados de introducciones desnudas o breakdowns ambientales."
+    },
+    {
+        term: "Rumble Sub-Bass Ratio (20–60 Hz vs 60–140 Hz)",
+        category: "DSP & Acústica",
+        tag: "SUB-GRAVES",
+        color: "#3b82f6",
+        icon: "🔊",
+        definition: "Cociente entre la energía sub-grave continua (cola de rumble generada con reverb/retraso filtrado) y el golpe seco del bombo (punch). Crucial en el Techno contemporáneo: permite discernir si un track tiene un subgrave rodante masivo (Hard/Raw Techno) o una línea de bajo corta y punteada (Tech House / Melodic).",
+        formula: "Ratio = E(20–60 Hz) / E(60–140 Hz)",
+        impact: "Previene saturación en el sistema de sonido del club al ecualizar los subgraves en la mezcla."
+    },
+    {
+        term: "Danzabilidad (Danceability)",
+        category: "DSP & Acústica",
+        tag: "PSICO-RITMO",
+        color: "#a855f7",
+        icon: "💃",
+        definition: "Descriptor psicoacústico que evalúa la regularidad rítmica, la estabilidad del pulso 4-on-the-floor, la fuerza de los transitorios percusivos y la consistencia del groove. Puntuación del 0% al 100% que predice la naturalidad con la que el público responde con movimiento corporal continuo en pista.",
+        formula: "Algoritmo Multi-Onsets + Regularidad de Fase",
+        impact: "Garantiza tracks con tracción física irresistible para mantener la pista de baile en movimiento."
+    },
+    {
+        term: "LUFS Integrado & True Peak",
+        category: "DSP & Acústica",
+        tag: "SONORIDAD",
+        color: "#14b8a6",
+        icon: "📏",
+        definition: "Loudness Units relative to Full Scale según norma internacional EBU R128 e ITU-R BS.1770. Mide el volumen percibido por el oído humano en lugar del pico eléctrico. El True Peak detecta picos inter-muestrales generados tras la conversión analógica, evitando distorsión en etapas de potencia.",
+        formula: "EBU R128 (-14 a -6 LUFS) • True Peak < -0.5 dBTP",
+        impact: "Nivelación matemática de ganancias entre temas para no tocar el trim del mezclador durante la sesión."
+    },
+    {
+        term: "Dynamic Range (DR / Rango Dinámico)",
+        category: "DSP & Acústica",
+        tag: "DINÁMICA",
+        color: "#f97316",
+        icon: "🎚️",
+        definition: "Diferencia de sonoridad entre los pasajes más enérgicos del track y el promedio RMS general (medición estilo DR Meter). Un rango dinámico adecuado preserva el impacto del kick y evita la fatiga auditiva en el público durante sesiones de más de tres horas.",
+        formula: "DR = Top 20% RMS - Media Acústica (dB)",
+        impact: "Mantiene la pegada física en el pecho sin emborronar las frecuencias medias del sintetizador."
+    },
+    {
+        term: "ID3v2.4 & Serato GEOB Tags",
+        category: "DSP & Acústica",
+        tag: "METADATOS",
+        color: "#0284c7",
+        icon: "💾",
+        definition: "Estructura binaria avanzada de encapsulación en formato ID3v2.4 UTF-8. Las etiquetas GEOB (General Encapsulated Object) almacenan Beatgrids milimétricos, puntos Hot Cue nombrados, colores RGB corporativos y mapas de tempo compatibles nativamente con Serato DJ Pro, Rekordbox y Traktor Pro.",
+        formula: "Trama GEOB: 'Serato Markers_V2' + 'BeatWave Pro Cues'",
+        impact: "Carga instantánea de Cues y BPM de alta fidelidad en cualquier reproductor o cabina sin reanálisis."
+    },
     // CABINA & HARDWARE
     {
         term: "Downbeat (Beat 1.0.0)",
@@ -27384,6 +27679,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
     const [loading, setLoading] = useState(true);
     const [expandedCourseId, setExpandedCourseId] = useState("course_01");
     const [glossarySearch, setGlossarySearch] = useState("");
+    const [glossaryCategory, setGlossaryCategory] = useState("all");
 
     const fetchKnowledge = async () => {
         try {
@@ -27418,16 +27714,21 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                 combined.push(d);
             }
         });
-        if (!glossarySearch.trim()) return combined;
-        const q = glossarySearch.toLowerCase();
-        return combined.filter(g => 
-            (g.term || "").toLowerCase().includes(q) || 
-            (g.definition || "").toLowerCase().includes(q) ||
-            (g.category || "").toLowerCase().includes(q) ||
-            (g.tag || "").toLowerCase().includes(q) ||
-            (g.impact || "").toLowerCase().includes(q)
-        );
-    }, [knowledgeData.glossary, glossarySearch]);
+        return combined.filter(g => {
+            if (glossaryCategory !== "all" && (g.category || "").toLowerCase() !== glossaryCategory.toLowerCase()) {
+                return false;
+            }
+            if (!glossarySearch.trim()) return true;
+            const q = glossarySearch.toLowerCase();
+            return (
+                (g.term || "").toLowerCase().includes(q) || 
+                (g.definition || "").toLowerCase().includes(q) ||
+                (g.category || "").toLowerCase().includes(q) ||
+                (g.tag || "").toLowerCase().includes(q) ||
+                (g.impact || "").toLowerCase().includes(q)
+            );
+        });
+    }, [knowledgeData.glossary, glossarySearch, glossaryCategory]);
 
     return (
         <div className="flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200">
@@ -27857,6 +28158,35 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                                 <span className="text-zinc-600">|</span>
                                 <span className="text-[11px] text-zinc-500">100% Definiciones Operativas</span>
                             </div>
+                        </div>
+
+                        {/* SELECTOR RÁPIDO DE CATEGORÍAS ACÚSTICAS Y TÉCNICAS */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none select-none">
+                            {[
+                                { id: 'all', label: 'Todos los Conceptos', icon: '🌐' },
+                                { id: 'DSP & Acústica', label: 'DSP & Acústica', icon: '🔬', color: 'border-cyan-400 text-cyan-300 bg-cyan-950/40' },
+                                { id: 'Cabina & Decks', label: 'Cabina & Decks', icon: '🎛️', color: 'border-sky-400 text-sky-300 bg-sky-950/40' },
+                                { id: 'Armonía & Camelot', label: 'Armonía & Camelot', icon: '🎡', color: 'border-pink-400 text-pink-300 bg-pink-950/40' },
+                                { id: 'Psicoacústica & IA', label: 'Psicoacústica & IA', icon: '⚡', color: 'border-amber-400 text-amber-300 bg-amber-950/40' },
+                                { id: 'Metadatos & Suites', label: 'Metadatos & Suites', icon: '💾', color: 'border-emerald-400 text-emerald-300 bg-emerald-950/40' }
+                            ].map(cat => {
+                                const isActive = glossaryCategory === cat.id;
+                                return (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        onClick={() => setGlossaryCategory(cat.id)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                                            isActive
+                                                ? (cat.color || 'border-cyan-400 text-cyan-300 bg-cyan-950/50 shadow-[0_0_12px_rgba(6,182,212,0.3)]')
+                                                : 'border-zinc-800/80 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-700'
+                                        }`}
+                                    >
+                                        <span>{cat.icon}</span>
+                                        <span>{cat.label}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {/* GRID DE TARJETAS VISUALES DEL GLOSARIO */}
@@ -29394,30 +29724,30 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
             </div>
 
             {/* SECCIÓN PISTA EN 2 COLUMNAS (IZQUIERDA: COVER+INFO | DERECHA: CAMELOT+BPM+ENERGÍA+MOOD) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-center">
-                {/* COLUMNA IZQUIERDA: Carátula 1:1 + Título reducido + Artista + Taxonomía */}
-                <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch">
+                {/* COLUMNA IZQUIERDA: Carátula 1:1 Cuadrada Full Height + Título + Artista + Taxonomía */}
+                <div className="flex items-stretch gap-3 min-w-0">
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 aspect-square self-stretch rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none">
                         <img 
                             src={getValidCover(deck.cover)} 
                             alt="Carátula" 
                             onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                            className="w-full h-full object-cover aspect-square transition-transform group-hover:scale-105 duration-300"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
                         {deck.duration && (
-                            <span className="absolute bottom-0.5 right-1 px-1 py-0.2 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-300">
+                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-300">
                                 {deck.duration}
                             </span>
                         )}
                         {deck.year && (
-                            <span className="absolute top-0.5 left-1 px-1 py-0.2 rounded bg-black/75 text-[8px] font-mono text-zinc-400">
+                            <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-[8px] font-mono text-zinc-400">
                                 {deck.year}
                             </span>
                         )}
                     </div>
 
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 flex flex-col justify-center">
                         <h2 className="font-syne font-bold text-xs sm:text-sm text-white tracking-tight leading-tight truncate" title={deck.title}>
                             {deck.title}
                         </h2>
@@ -29439,7 +29769,7 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS CON MOOD DEBAJO + ENERGÍA, INTENSIDAD Y POSITIVIDAD */}
+                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS CON MOOD DEBAJO + ENERGÍA, INTENSIDAD, DANZABILIDAD Y POSITIVIDAD */}
                 <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3">
                     {/* BLOQUE TONO, TEMPO Y MOOD DEBAJO DE LOS BPM */}
                     <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]">
@@ -29470,8 +29800,8 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                         </div>
                     </div>
 
-                    {/* COLUMNA PSICOMETRÍA: ENERGÍA, INTENSIDAD Y POSITIVIDAD APILADAS */}
-                    <div className="flex-1 min-w-[125px] flex flex-col justify-center gap-1.5">
+                    {/* COLUMNA PSICOMETRÍA: ENERGÍA, INTENSIDAD, DANZABILIDAD Y POSITIVIDAD APILADAS */}
+                    <div className="flex-1 min-w-[130px] flex flex-col justify-center gap-1">
                         {/* Fila 1: Energía */}
                         <div>
                             <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
@@ -29485,20 +29815,33 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                             </div>
                         </div>
 
-                        {/* Fila 2: Intensidad (sin paréntesis, con icono) */}
+                        {/* Fila 2: Intensidad */}
                         <div>
                             <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
                                 <span className="text-emerald-400 font-bold flex items-center gap-1">
                                     <Icons.Activity size={9} /> INTENSIDAD
                                 </span>
-                                <span className="text-emerald-400 font-bold">{deck.arousal || deck.danceability || 88}%</span>
+                                <span className="text-emerald-400 font-bold">{deck.arousal || Math.round((deck.energy || 90) * 0.95)}%</span>
                             </div>
                             <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${deck.arousal || deck.danceability || 88}%` }}></div>
+                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${deck.arousal || Math.round((deck.energy || 90) * 0.95)}%` }}></div>
                             </div>
                         </div>
 
-                        {/* Fila 3: Positividad (sin paréntesis, con icono) */}
+                        {/* Fila 3: Danzabilidad */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-purple-300 font-bold flex items-center gap-1">
+                                    <Icons.Sliders size={9} /> DANZABILIDAD
+                                </span>
+                                <span className="text-purple-300 font-bold">{deck.danceability || 85}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_6px_rgba(168,85,247,0.8)]" style={{ width: `${deck.danceability || 85}%` }}></div>
+                            </div>
+                        </div>
+
+                        {/* Fila 4: Positividad */}
                         <div>
                             <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
                                 <span className="text-djcyan-400 font-bold flex items-center gap-1">
