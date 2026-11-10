@@ -31,7 +31,7 @@ export const NAV_GROUPS = [
     },
 ];
 
-export const COPILOT_ITEM = { id: 'copilot', fallback: 'Copilot', icon: 'Activity', hint: 'Monitor en vivo de cabina' };
+export const COPILOT_ITEM = { id: 'copilot', fallback: 'Copilot', icon: 'Turntable', hint: 'Monitor en vivo de cabina' };
 
 export const MOBILE_PRIMARY_TABS = ['audit', 'hotcues', 'shazam', 'setbuilder'];
 

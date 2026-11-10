@@ -123,6 +123,17 @@ const PlatformAutoLogo = ({ size = 20, className = "" }) => (
     </svg>
 );
 
+const CopilotTurntableLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect x="2" y="3" width="20" height="18" rx="2.5" />
+        <circle cx="9.5" cy="12" r="6" />
+        <circle cx="9.5" cy="12" r="2.2" />
+        <path d="M9.5 6v3.8M9.5 14.2v3.8" />
+        <circle cx="17.5" cy="7" r="1" />
+        <path d="M17.5 8v6.5l-2.5 2.5" />
+    </svg>
+);
+
 const PlatformLogos = {
     auto: PlatformAutoLogo,
     serato: PlatformSeratoLogo,
@@ -1652,7 +1663,7 @@ function LiveCopilotApp() {
             {/* BARRA SUPERIOR DE CABINA HUD */}
             <header className="flex flex-col md:flex-row md:items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 gap-3">
                 <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                         <span className={`w-3.5 h-3.5 rounded-full ${
                             isLive 
                             ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' 
@@ -1660,6 +1671,9 @@ function LiveCopilotApp() {
                             ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
                             : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
                         }`}></span>
+                        <span className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
+                            <CopilotTurntableLogo size={18} />
+                        </span>
                         <h1 className="font-syne font-black text-lg sm:text-2xl text-white tracking-wider uppercase">
                             BEATWAVE <span className="text-djcyan-400">COPILOT</span>
                         </h1>

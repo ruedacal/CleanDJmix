@@ -1,10 +1,16 @@
 import { ShellIcons } from './icons.jsx';
 
 export const MAP_ZOOM_MIN = 0.3;
-export const MAP_ZOOM_MAX = 12;
+export const MAP_ZOOM_MAX = 20;
 
-const toSlider = (z) => Math.log(z / MAP_ZOOM_MIN) / Math.log(MAP_ZOOM_MAX / MAP_ZOOM_MIN);
-const fromSlider = (v) => MAP_ZOOM_MIN * Math.pow(MAP_ZOOM_MAX / MAP_ZOOM_MIN, v);
+const toSlider = (z) => {
+    const val = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, Number(z) || 1));
+    return Math.log(val / MAP_ZOOM_MIN) / Math.log(MAP_ZOOM_MAX / MAP_ZOOM_MIN);
+};
+const fromSlider = (v) => {
+    const clamped = Math.max(0, Math.min(1, Number(v) || 0));
+    return MAP_ZOOM_MIN * Math.pow(MAP_ZOOM_MAX / MAP_ZOOM_MIN, clamped);
+};
 
 const sectorPath = (cx, cy, rOuter, rInner, a1, a2) => {
     const p = (r, a) => `${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
@@ -109,8 +115,8 @@ export const MapCamelotOverlay = ({ open, onToggle, selectedKey, keyFilter, onFi
     );
 };
 
-export const MapNavOverlay = ({ zoom, onZoom, onReset, startPan, stopPan }) => {
-    const step = (dir) => onZoom(Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, zoom * (dir > 0 ? 1.35 : 1 / 1.35))));
+export const MapNavOverlay = ({ open = true, onToggle, zoom, onZoom, onReset, startPan, stopPan }) => {
+    const step = (dir) => onZoom(Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, zoom * (dir > 0 ? 1.4 : 1 / 1.4))));
     const pad = (dx, dy, label, Icon) => (
         <button
             type="button"
@@ -127,47 +133,73 @@ export const MapNavOverlay = ({ zoom, onZoom, onReset, startPan, stopPan }) => {
     );
 
     return (
-        <section className="ws-glass w-[148px]" aria-label="Navegación y zoom">
+        <section className="ws-glass w-[232px]" aria-label="Navegación y zoom">
             <header className="ws-glass-head">
-                <span className="ws-glass-title"><ShellIcons.Sliders size={13} />Nav</span>
-                <span className="ws-glass-readout">{zoom.toFixed(zoom < 10 ? 1 : 0)}x</span>
+                <span className="ws-glass-title">
+                    <ShellIcons.Sliders size={13} />
+                    Navegación
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <span className="ws-glass-readout font-mono font-bold text-cyan-400">
+                        {zoom.toFixed(zoom < 10 ? 1 : 0)}x
+                    </span>
+                    {onToggle && (
+                        <button 
+                            type="button" 
+                            className="ws-glass-icon" 
+                            onClick={onToggle} 
+                            aria-expanded={open} 
+                            aria-label={open ? 'Minimizar controles de navegación' : 'Expandir controles de navegación'}
+                        >
+                            {open ? <ShellIcons.Minus size={12} /> : <ShellIcons.Plus size={12} />}
+                        </button>
+                    )}
+                </span>
             </header>
 
-            <div className="grid grid-cols-3 gap-1 pt-2.5 place-items-center">
-                <span />
-                {pad(0, 30, 'Mover arriba', ShellIcons.ChevronUp)}
-                <span />
-                {pad(30, 0, 'Mover a la izquierda', ShellIcons.ChevronLeft)}
-                <button type="button" className="ws-pad-btn ws-pad-btn-center" onClick={onReset} aria-label="Centrar y reajustar" title="Centrar y reajustar">
-                    <ShellIcons.Target size={13} />
-                </button>
-                {pad(-30, 0, 'Mover a la derecha', ShellIcons.ChevronRight)}
-                <span />
-                {pad(0, -30, 'Mover abajo', ShellIcons.ChevronDown)}
-                <span />
-            </div>
+            {open && (
+                <>
+                    <div className="grid grid-cols-3 gap-1 pt-2.5 place-items-center">
+                        <span />
+                        {pad(0, 30, 'Mover arriba', ShellIcons.ChevronUp)}
+                        <span />
+                        {pad(30, 0, 'Mover a la izquierda', ShellIcons.ChevronLeft)}
+                        <button type="button" className="ws-pad-btn ws-pad-btn-center" onClick={onReset} aria-label="Centrar y reajustar mapa" title="Centrar y reajustar mapa">
+                            <ShellIcons.Target size={13} />
+                        </button>
+                        {pad(-30, 0, 'Mover a la derecha', ShellIcons.ChevronRight)}
+                        <span />
+                        {pad(0, -30, 'Mover abajo', ShellIcons.ChevronDown)}
+                        <span />
+                    </div>
 
-            <div className="flex flex-col gap-1.5 pt-3 mt-2.5 border-t border-[var(--bw-line)]">
-                <div className="flex items-center justify-between">
-                    <span className="ws-glass-kicker">Zoom</span>
-                    <span className="ws-glass-kicker">{MAP_ZOOM_MIN}–{MAP_ZOOM_MAX}x</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <button type="button" className="ws-glass-icon" onClick={() => step(-1)} aria-label="Alejar"><ShellIcons.Minus size={12} /></button>
-                    <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.001"
-                        value={toSlider(zoom)}
-                        onChange={(e) => onZoom(fromSlider(parseFloat(e.target.value)))}
-                        className="ws-fader flex-1"
-                        aria-label="Nivel de zoom"
-                        aria-valuetext={`${zoom.toFixed(1)}x`}
-                    />
-                    <button type="button" className="ws-glass-icon" onClick={() => step(1)} aria-label="Acercar"><ShellIcons.Plus size={12} /></button>
-                </div>
-            </div>
+                    <div className="flex flex-col gap-1.5 pt-3 mt-2.5 border-t border-[var(--bw-line)]">
+                        <div className="flex items-center justify-between text-[11px] font-mono">
+                            <span className="ws-glass-kicker text-zinc-400 font-bold">Zoom Pro</span>
+                            <span className="text-[10px] text-cyan-400/80 font-bold">{MAP_ZOOM_MIN}x – {MAP_ZOOM_MAX}x</span>
+                        </div>
+                        <div className="flex items-center gap-2 w-full px-0.5">
+                            <button type="button" className="ws-glass-icon shrink-0" onClick={() => step(-1)} aria-label="Alejar">
+                                <ShellIcons.Minus size={12} />
+                            </button>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.001"
+                                value={toSlider(zoom)}
+                                onChange={(e) => onZoom(fromSlider(parseFloat(e.target.value)))}
+                                className="ws-fader flex-1 min-w-0"
+                                aria-label="Nivel de zoom"
+                                aria-valuetext={`${zoom.toFixed(1)}x`}
+                            />
+                            <button type="button" className="ws-glass-icon shrink-0" onClick={() => step(1)} aria-label="Acercar">
+                                <ShellIcons.Plus size={12} />
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
         </section>
     );
 };

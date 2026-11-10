@@ -10019,7 +10019,7 @@ const AuditWorkspace = ({
                 <div className="px-3.5 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-3 z-20">
                     {/* IZQUIERDA: Contexto Activo de Biblioteca & Crear Biblioteca */}
                     <div data-tour="tour-audit-select" className="flex items-center gap-3 shrink-0">
-                        <SectionTitle icon={Icons.Activity} title="Auditar" accent="Biblioteca" />
+                        <SectionTitle icon={Icons.Library} title="Biblioteca" accent="Auditoría" />
                         {tracks && tracks.length > 0 && (
                             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[280px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
                                 <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>
@@ -13651,7 +13651,7 @@ const HotCuesWorkspace = ({
         <div className="ws-module ws-mod-hotcues flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200">
             {/* BARRA SUPERIOR: RUTA DE CARPETA, SELECTOR DE PISTAS Y ACCIONES */}
             <header className="border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm">
-                <SectionTitle icon={Icons.Target} title="Cues" accent="Hot Cue Studio" />
+                <SectionTitle icon={Icons.Cue} title="Hot Cues" accent="Studio" />
                 {/* Directorio Actual & Botón Cambiar Carpeta (Versión Desktop) */}
                 <div className="hidden md:flex items-center gap-2 min-w-0 shrink-0">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]" title={currentFolder}>
@@ -16104,6 +16104,14 @@ const SpotifyWorkspace = ({
         <div className="ws-module ws-mod-spotify flex w-full h-full max-w-full bg-[#09090c] text-gray-300 font-sans select-none overflow-x-hidden">
             <div className="flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden">
                 <div className="p-3 border-b border-djzinc-800 bg-[#0c0c10] flex flex-col gap-2.5 shrink-0 w-full max-w-full">
+                    {/* Header Institucional: Título y Contexto de Ingesta */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-zinc-800/60">
+                        <SectionTitle icon={Icons.Download} title="Record Pool" accent="& Ingesta" badge="AUDIO HQ" />
+                        <span className="text-xs text-zinc-400 font-sans hidden md:inline">
+                            Búsqueda, descarga de alta fidelidad y extracción automática de stems
+                        </span>
+                    </div>
+
                     {/* Fila 1: Barra de Búsqueda Prominente y Acciones Principales de Descarga */}
                     <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 w-full">
                         {/* Input de Búsqueda: Máxima prioridad y amplitud visual */}
@@ -18967,17 +18975,10 @@ const TaxonomyWorkspace = ({
             <div className="px-5 pt-4 pb-3 border-b border-djzinc-800 bg-[#08080c] shrink-0 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/40 flex items-center justify-center text-djcyan-400 font-bold shadow-[0_0_12px_rgba(6,182,212,0.25)]">
-                            <Icons.Zap size={14} className="inline-block align-[-2px]" />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
-                                Centro de Taxonomía Musical & Crates
-                            </h2>
-                            <p className="text-gray-400 text-xs">
-                                Buscador inteligente en lenguaje natural y ruteo jerárquico a crates de Serato / Rekordbox.
-                            </p>
-                        </div>
+                        <SectionTitle icon={Icons.Routing} title="Crates" accent="& Taxonomía" />
+                        <p className="text-gray-400 text-xs hidden md:inline">
+                            Buscador inteligente en lenguaje natural y ruteo jerárquico a crates de Serato / Rekordbox.
+                        </p>
                     </div>
 
                     {/* SELECTOR DE MODO: BUSCADOR IA VS RUTEO CRATES */}
@@ -21047,22 +21048,13 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             {/* Header del Radar Shazam */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-                        <Icons.Radar size={20} />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold tracking-wider text-white uppercase font-syne">
-                                Radar Acústico
-                            </h2>
-                            <span className="px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded">
-                                {selectedEngine === 'hybrid' ? 'Híbrido Pro (Smart Drop)' : selectedEngine === 'audd' ? 'Identificación Acústica Pro' : 'Escaneo Espectral'}
-                            </span>
-                        </div>
-                        <p className="text-xs text-zinc-400">
-                            Identifica pistas desconocidas al instante escuchando con el micrófono o cargando archivos de audio.
-                        </p>
-                    </div>
+                    <SectionTitle icon={Icons.Radar} title="Radar Acústico" accent="Drop Scanner" />
+                    <span className="hidden sm:inline-flex px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded">
+                        {selectedEngine === 'hybrid' ? 'Híbrido Pro (Smart Drop)' : selectedEngine === 'audd' ? 'Identificación Acústica Pro' : 'Escaneo Espectral'}
+                    </span>
+                    <p className="hidden md:inline text-xs text-zinc-400 font-sans">
+                        Identifica pistas desconocidas al instante escuchando con el micrófono o cargando archivos de audio.
+                    </p>
                 </div>
 
                 {statusMsg && (
@@ -25376,6 +25368,7 @@ const MapWorkspace = ({
     const [hoveredTrack, setHoveredTrack] = useState(null);
     const [mouseScreenPos, setMouseScreenPos] = useState({ x: -100, y: -100 });
     const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState(true);
+    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState(true);
     const [zoomDisplay, setZoomDisplay] = useState(1.0);
     const [isPanning, setIsPanning] = useState(false);
 
@@ -25475,10 +25468,10 @@ const MapWorkspace = ({
         if (!isNaN(parsed)) {
             const tr = transformRef.current;
             const clamped = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, parsed));
-            const ratio = clamped / (tr.targetScale || 1);
-            tr.targetPanX *= ratio;
-            tr.targetPanY *= ratio;
             tr.targetScale = clamped;
+            // Centrado cinemático progresivo al cambiar zoom para evitar que la pantalla quede en blanco
+            tr.targetPanX *= 0.65;
+            tr.targetPanY *= 0.65;
             setZoomDisplay(clamped);
         }
     };
@@ -25640,6 +25633,12 @@ const MapWorkspace = ({
                 t.targetPanX += t.continuousDx;
                 t.targetPanY += t.continuousDy;
             }
+            // Clamping cinemático estricto para que los nodos siempre estén en el viewport (pantalla nunca en blanco)
+            const maxAllowedPanX = Math.max(100, (w * 0.44) * (t.targetScale || 1));
+            const maxAllowedPanY = Math.max(100, (h * 0.44) * (t.targetScale || 1));
+            t.targetPanX = Math.max(-maxAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
+            t.targetPanY = Math.max(-maxAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
+
             t.panX += (t.targetPanX - t.panX) * 0.22;
             t.panY += (t.targetPanY - t.panY) * 0.22;
             t.scale += (t.targetScale - t.scale) * 0.22;
@@ -26146,8 +26145,10 @@ const MapWorkspace = ({
         const cx = w / 2 + transformRef.current.targetPanX;
         const cy = h / 2 + transformRef.current.targetPanY;
 
-        transformRef.current.targetPanX = mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2;
-        transformRef.current.targetPanY = mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2;
+        const maxPanX = Math.max(100, (w * 0.44) * newScale);
+        const maxPanY = Math.max(100, (h * 0.44) * newScale);
+        transformRef.current.targetPanX = Math.max(-maxPanX, Math.min(maxPanX, mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2));
+        transformRef.current.targetPanY = Math.max(-maxPanY, Math.min(maxPanY, mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2));
         transformRef.current.targetScale = newScale;
         setZoomDisplay(newScale);
     };
@@ -26363,6 +26364,8 @@ const MapWorkspace = ({
 
                 <div className="absolute top-3 right-3 z-30 select-none">
                     <MapNavOverlay
+                        open={isNavOverlayOpen}
+                        onToggle={() => setIsNavOverlayOpen(prev => !prev)}
                         zoom={zoomDisplay}
                         onZoom={handleFaderZoom}
                         onReset={handleResetZoom}
@@ -29764,6 +29767,9 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
                             : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
                         }`}></span>
+                        <span className="w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                            <Icons.Turntable size={16} />
+                        </span>
                         <h2 className="font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1">
                             Copilot <span className="text-djcyan-400">Cabina DJ</span>
                         </h2>

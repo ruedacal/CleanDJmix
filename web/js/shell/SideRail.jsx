@@ -39,6 +39,7 @@ export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, a
                     className={`bw-rail-live ${copilotActive ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
                 >
                     <span className="bw-live-dot" aria-hidden="true" />
+                    <ShellIcons.Turntable size={16} className="text-cyan-400" />
                     <span className="bw-rail-label">{COPILOT_ITEM.fallback}</span>
                     <span className="bw-rail-caption">{COPILOT_ITEM.fallback}</span>
                     {expanded && <span className="bw-kbd ml-auto">LIVE</span>}
