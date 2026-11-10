@@ -30160,7 +30160,7 @@ const CopilotSeratoWaveform = ({
 // =======================================================
 // SUB-COMPONENTE DECK HEADS-UP DISPLAY (CABINA PRO)
 // =======================================================
-const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }) => {
+const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null }) => {
     if (!deck) return null;
     return (
         <div className={`p-3.5 sm:p-4 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${
@@ -30172,11 +30172,16 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
             <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60">
                 <div className="flex items-center gap-2">
                     <span className="font-orbitron font-black text-sm sm:text-base text-zinc-400">DECK {side}</span>
-                    <span className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider ${
-                        isMaster ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300'
-                    }`}>
+                    <button
+                        type="button"
+                        onClick={() => onSetMaster && onSetMaster(side)}
+                        className={`px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${
+                            isMaster ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                        }`}
+                        title={`Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`}
+                    >
                         {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
-                    </span>
+                    </button>
                     {(deck.mood || deck.phase) && (
                         <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase">
                             <Icons.Sparkles size={12} className="inline-block align-[-1px] mr-1" /> {deck.mood || deck.phase}
@@ -31222,11 +31227,65 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             }
         };
         fetchStatus();
-        const interval = setInterval(fetchStatus, 1500);
+        const interval = setInterval(fetchStatus, 250); // Polling de alta velocidad (250ms) para respuesta en tiempo real
         return () => {
             isMounted = false;
             clearInterval(interval);
         };
+    }, []);
+
+    const setMasterDeck = async (deckTarget) => {
+        const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocalHost) {
+            try {
+                const res = await fetch('/api/copilot/set_master', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ master: deckTarget })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setState(data);
+                    return;
+                }
+            } catch (_) {}
+        }
+        // Fallback local:
+        setState(prev => {
+            if (!prev) return prev;
+            const cur1Master = prev.deck_1?.is_master;
+            const new1Master = deckTarget === '1' ? true : deckTarget === '2' ? false : !cur1Master;
+            return {
+                ...prev,
+                deck_1: {
+                    ...prev.deck_1,
+                    is_master: new1Master,
+                    status: new1Master ? 'ON AIR (MASTER)' : 'CUE / PREPARADO',
+                    is_playing: new1Master,
+                    elapsed_sec: new1Master ? prev.deck_1.elapsed_sec : 0.0
+                },
+                deck_2: {
+                    ...prev.deck_2,
+                    is_master: !new1Master,
+                    status: !new1Master ? 'ON AIR (MASTER)' : 'CUE / PREPARADO',
+                    is_playing: !new1Master,
+                    elapsed_sec: !new1Master ? prev.deck_2.elapsed_sec : 0.0
+                }
+            };
+        });
+    };
+
+    // Atajo de teclado global: 'M' para alternar Master entre Deck 1 y Deck 2
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
+            if (e.key === 'm' || e.key === 'M') {
+                e.preventDefault();
+                setMasterDeck('toggle');
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     const toggleSimulation = async () => {
@@ -31410,6 +31469,20 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                         <span className="text-zinc-400">🎛️</span>
                         <strong className="text-white">{controllerState.name}</strong>
                     </div>
+
+                    {/* SELECTOR RÁPIDO DE MASTER & LATENCIA */}
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/70 font-mono text-[10px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span className="text-zinc-400 font-bold">{latency}ms</span>
+                        <button
+                            type="button"
+                            onClick={() => setMasterDeck('toggle')}
+                            className="ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-djcyan-300 hover:text-white border border-djcyan-500/40 font-bold transition-all cursor-pointer active:scale-95"
+                            title="Intercambiar qué Deck es Master en vivo (Atajo de teclado: M)"
+                        >
+                            ⇄ MASTER: DECK {deck_1.is_master ? '1' : '2'} <span className="text-[9px] text-zinc-400">[M]</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* DERECHA: SELECTOR DE CABINA + RELOJ + SIMULADOR + POP-OUT EN LÍNEA COMPACTO */}
@@ -31522,8 +31595,8 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
 
             {/* DUAL DECK HEADS-UP DISPLAY ENRIQUECIDO */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
-                <CopilotDeckCard deck={deck_1} side="1" isMaster={deck_1.is_master} antiMuddy={anti_muddy} partnerDeck={deck_2} />
-                <CopilotDeckCard deck={deck_2} side="2" isMaster={deck_2.is_master} antiMuddy={anti_muddy} partnerDeck={deck_1} />
+                <CopilotDeckCard deck={deck_1} side="1" isMaster={deck_1.is_master} antiMuddy={anti_muddy} partnerDeck={deck_2} onSetMaster={setMasterDeck} />
+                <CopilotDeckCard deck={deck_2} side="2" isMaster={deck_2.is_master} antiMuddy={anti_muddy} partnerDeck={deck_1} onSetMaster={setMasterDeck} />
             </div>
 
             {/* PRÓXIMAS PISTAS (4 VISIBLES, CARGAR MÁS, DRAG & DROP Y ANÁLISIS DINÁMICO) */}

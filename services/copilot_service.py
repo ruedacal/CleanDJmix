@@ -112,6 +112,7 @@ class CopilotService:
         self._dsp_cache: Dict[str, Dict[str, Any]] = {}
         self._last_live_state_time: float = 0.0
         self._cached_live_state: Optional[Dict[str, Any]] = None
+        self.manual_master_deck: Optional[str] = None  # None = auto, '1' = Deck 1, '2' = Deck 2
 
     # =========================================================================
     # DETECCIÓN DE RUTAS DE SOFTWARE
@@ -384,7 +385,7 @@ class CopilotService:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played
+                SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
                 FROM history_entry
                 ORDER BY id DESC
                 LIMIT 15
@@ -393,6 +394,14 @@ class CopilotService:
             rows = cursor.fetchall()
             conn.close()
             for r in rows:
+                raw_path = r[6] or ""
+                fp = f"/{raw_path}" if raw_path and not raw_path.startswith("/") else raw_path
+                length_ms = r[10] or 0
+                dur_str = "06:00"
+                if length_ms > 0:
+                    tot_sec = int(length_ms // 1000)
+                    dur_str = f"{tot_sec // 60:02d}:{tot_sec % 60:02d}"
+
                 entries.append({
                     "id": r[0],
                     "deck": str(r[1]).strip() if r[1] else "1",
@@ -401,9 +410,15 @@ class CopilotService:
                     "bpm": round(float(r[4]), 2) if r[4] else 130.0,
                     "raw_key": r[5] or "",
                     "camelot": self.to_camelot(r[5] or ""),
-                    "file_path": r[6] or "",
+                    "file_path": fp,
                     "start_time": r[7] or int(time.time()),
-                    "played": bool(r[8])
+                    "played": bool(r[8]),
+                    "end_time": r[9] if r[9] is not None else -1,
+                    "length_ms": length_ms,
+                    "duration": dur_str,
+                    "genre": r[11] or "Tech House",
+                    "year": str(r[12] or ""),
+                    "phase": r[13] or ""
                 })
         except Exception:
             pass
@@ -1257,9 +1272,9 @@ class CopilotService:
         }
 
     def get_live_state(self) -> Dict[str, Any]:
-        """Obtiene el estado táctico consolidado de la cabina adaptado al software DJ seleccionado (con cache TTL)."""
+        """Obtiene el estado táctico consolidado de la cabina adaptado al software DJ seleccionado (con cache ultrarrápido 50ms)."""
         now = time.time()
-        if (now - self._last_live_state_time < 0.8) and (self._cached_live_state is not None):
+        if (now - self._last_live_state_time < 0.05) and (self._cached_live_state is not None):
             return self._cached_live_state
 
         active_plat = self.detect_active_platform()
@@ -1298,6 +1313,16 @@ class CopilotService:
         deck_1_raw = None
         deck_2_raw = None
 
+        # 1. Priorizar pistas activas actualmente en cabina (end_time == -1)
+        for entry in entries:
+            if entry.get("end_time") == -1:
+                d = str(entry.get("deck", "1")).strip()
+                if d in ("1", "A") and deck_1_raw is None:
+                    deck_1_raw = entry
+                elif d in ("2", "B") and deck_2_raw is None:
+                    deck_2_raw = entry
+
+        # 2. Fallback general para decks no cubiertos
         for entry in entries:
             d = str(entry.get("deck", "1")).strip()
             if d in ("1", "A") and deck_1_raw is None:
@@ -1323,18 +1348,41 @@ class CopilotService:
 
         t1_start = deck_1_raw.get("start_time", 0)
         t2_start = deck_2_raw.get("start_time", 0)
-        deck_1_is_master = t1_start >= t2_start
 
-        now = time.time()
-        dur_1_sec = self._parse_duration_sec(deck_1_raw.get("duration") or "06:30")
-        t1_st = float(t1_start) if t1_start else (now - 60.0)
-        elapsed_1 = round(max(0.0, now - t1_st) % dur_1_sec, 2)
-        prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
+        # DETERMINACIÓN DE MASTER (ON AIR) VS CUE (PREPARADO)
+        if self.manual_master_deck in ("1", "2"):
+            deck_1_is_master = (self.manual_master_deck == "1")
+        else:
+            # Heurística automática de cabina:
+            # La pista iniciada primero (menor start_time) es la que está en aire sonando en el club.
+            # La pista cargada después (mayor start_time) es la que el DJ acaba de cargar en CUE para mezclar.
+            if t1_start and t2_start:
+                deck_1_is_master = (t1_start <= t2_start)
+            elif t1_start:
+                deck_1_is_master = True
+            elif t2_start:
+                deck_1_is_master = False
+            else:
+                deck_1_is_master = True
 
-        dur_2_sec = self._parse_duration_sec(deck_2_raw.get("duration") or "05:48")
-        t2_st = float(t2_start) if t2_start else (now - 25.0)
-        elapsed_2 = round(max(0.0, now - t2_st) % dur_2_sec, 2)
-        prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
+        dur_1_sec = self._parse_duration_sec(deck_1_raw.get("duration") or "06:34")
+        dur_2_sec = self._parse_duration_sec(deck_2_raw.get("duration") or "06:03")
+
+        # CÁLCULO DE PROGRESIÓN Y TIEMPO TRANSCURRIDO (SOLO EL DECK MASTER AVANZA; CUE SE MANTIENE EN PARADA/CUE)
+        if deck_1_is_master:
+            t1_st = float(t1_start) if t1_start else (now - 60.0)
+            elapsed_1 = round(max(0.0, now - t1_st) % (dur_1_sec or 1), 2)
+            prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
+            # Deck 2 en CUE detenido
+            elapsed_2 = 0.0
+            prog_2 = 0.0
+        else:
+            t2_st = float(t2_start) if t2_start else (now - 60.0)
+            elapsed_2 = round(max(0.0, now - t2_st) % (dur_2_sec or 1), 2)
+            prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
+            # Deck 1 en CUE detenido
+            elapsed_1 = 0.0
+            prog_1 = 0.0
 
         deck_1_cues_list = deck_1_raw.get("cues") or [
             {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.04, "time": "00:00.25"},
@@ -1455,6 +1503,7 @@ class CopilotService:
             },
             "deck_1": deck_1,
             "deck_2": deck_2,
+            "manual_master_deck": self.manual_master_deck,
             "anti_muddy": anti_muddy,
             "harmonic": harmonic,
             "lufs_delta": lufs_delta,
@@ -1468,5 +1517,22 @@ class CopilotService:
         self._last_live_state_time = time.time()
         self._cached_live_state = res
         return res
+
+    def set_manual_master(self, deck: str) -> Dict[str, Any]:
+        """Fuerza manualmente qué deck es el MASTER (1, 2, 'toggle', o 'auto')."""
+        d_str = str(deck).strip().lower()
+        if d_str == "toggle":
+            cur = self.get_live_state()
+            d1_master = cur.get("deck_1", {}).get("is_master", True)
+            self.manual_master_deck = "2" if d1_master else "1"
+        elif d_str in ("1", "a"):
+            self.manual_master_deck = "1"
+        elif d_str in ("2", "b"):
+            self.manual_master_deck = "2"
+        elif d_str in ("auto", "none", ""):
+            self.manual_master_deck = None
+        self._last_live_state_time = 0.0
+        self._cached_live_state = None
+        return self.get_live_state()
 
 copilot_service = CopilotService()

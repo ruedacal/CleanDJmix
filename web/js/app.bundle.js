@@ -21276,9 +21276,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
       )
     ));
   };
-  var CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }) => {
+  var CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null }) => {
     if (!deck) return null;
-    return /* @__PURE__ */ React.createElement("div", { className: `p-3.5 sm:p-4 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_25px_rgba(6,182,212,0.2)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-sm sm:text-base text-zinc-400" }, "DECK ", side), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider ${isMaster ? "bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse" : "bg-zinc-800 text-zinc-300"}` }, isMaster ? "\u{1F50A} MASTER (ON AIR)" : "\u{1F3A7} EN CUE (PREPARADO)"), (deck.mood || deck.phase) && /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase" }, /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 12, className: "inline-block align-[-1px] mr-1" }), " ", deck.mood || deck.phase)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-[11px] text-zinc-500 uppercase" }, deck.format && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-bold text-zinc-300" }, deck.format), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: `p-3.5 sm:p-4 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_25px_rgba(6,182,212,0.2)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-sm sm:text-base text-zinc-400" }, "DECK ", side), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSetMaster && onSetMaster(side),
+        className: `px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${isMaster ? "bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"}`,
+        title: `Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`
+      },
+      isMaster ? "\u{1F50A} MASTER (ON AIR)" : "\u{1F3A7} EN CUE (PREPARADO)"
+    ), (deck.mood || deck.phase) && /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase" }, /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 12, className: "inline-block align-[-1px] mr-1" }), " ", deck.mood || deck.phase)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-[11px] text-zinc-500 uppercase" }, deck.format && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-bold text-zinc-300" }, deck.format), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "relative rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none",
@@ -22135,11 +22144,63 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       };
       fetchStatus();
-      const interval = setInterval(fetchStatus, 1500);
+      const interval = setInterval(fetchStatus, 250);
       return () => {
         isMounted = false;
         clearInterval(interval);
       };
+    }, []);
+    const setMasterDeck = async (deckTarget) => {
+      const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+      if (isLocalHost) {
+        try {
+          const res = await fetch("/api/copilot/set_master", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ master: deckTarget })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setState(data);
+            return;
+          }
+        } catch (_) {
+        }
+      }
+      setState((prev) => {
+        var _a;
+        if (!prev) return prev;
+        const cur1Master = (_a = prev.deck_1) == null ? void 0 : _a.is_master;
+        const new1Master = deckTarget === "1" ? true : deckTarget === "2" ? false : !cur1Master;
+        return {
+          ...prev,
+          deck_1: {
+            ...prev.deck_1,
+            is_master: new1Master,
+            status: new1Master ? "ON AIR (MASTER)" : "CUE / PREPARADO",
+            is_playing: new1Master,
+            elapsed_sec: new1Master ? prev.deck_1.elapsed_sec : 0
+          },
+          deck_2: {
+            ...prev.deck_2,
+            is_master: !new1Master,
+            status: !new1Master ? "ON AIR (MASTER)" : "CUE / PREPARADO",
+            is_playing: !new1Master,
+            elapsed_sec: !new1Master ? prev.deck_2.elapsed_sec : 0
+          }
+        };
+      });
+    };
+    useEffect6(() => {
+      const handleKeyDown = (e) => {
+        if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
+        if (e.key === "m" || e.key === "M") {
+          e.preventDefault();
+          setMasterDeck("toggle");
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
     const toggleSimulation = async () => {
       const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
@@ -22263,7 +22324,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
       { id: "virtualdj", label: "VirtualDJ", color: "#f97316" },
       { id: "traktor", label: "Traktor", color: "#facc15" }
     ];
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3 h-3 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-blue-400" : "text-amber-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-emerald-500/50 font-mono text-[10px] text-emerald-300" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, controllerState.name))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap justify-between lg:justify-end" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 bg-zinc-950/90 rounded-xl border border-zinc-800 shadow-inner" }, platformsList.map((p) => {
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3 h-3 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-blue-400" : "text-amber-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-emerald-500/50 font-mono text-[10px] text-emerald-300" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, controllerState.name)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/70 font-mono text-[10px]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400 font-bold" }, latency, "ms"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setMasterDeck("toggle"),
+        className: "ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-djcyan-300 hover:text-white border border-djcyan-500/40 font-bold transition-all cursor-pointer active:scale-95",
+        title: "Intercambiar qu\xE9 Deck es Master en vivo (Atajo de teclado: M)"
+      },
+      "\u21C4 MASTER: DECK ",
+      deck_1.is_master ? "1" : "2",
+      " ",
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-400" }, "[M]")
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap justify-between lg:justify-end" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 bg-zinc-950/90 rounded-xl border border-zinc-800 shadow-inner" }, platformsList.map((p) => {
       const isSelected = state.platform_mode === p.id || state.platform_mode === "auto" && p.id === "auto";
       return /* @__PURE__ */ React.createElement(
         "button",
@@ -22310,7 +22383,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       /* @__PURE__ */ React.createElement("span", null, lowEqApplied ? "\u2713" : "\u26A1"),
       /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-bold" }, "ACCI\xD3N:"),
       /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[260px]" }, lowEqApplied ? "Restablecer EQ (Deshacer)" : anti_muddy.action || "Corta Low EQ en Deck 2 (-10dB)")
-    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-zinc-400 text-[10px]" }, /* @__PURE__ */ React.createElement("span", null, "CAMELOT: ", /* @__PURE__ */ React.createElement("strong", { style: { color: harmonic.color } }, harmonic.badge)), /* @__PURE__ */ React.createElement("span", null, "\u0394 LUFS: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta, " dB")))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4" }, /* @__PURE__ */ React.createElement(CopilotDeckCard, { deck: deck_1, side: "1", isMaster: deck_1.is_master, antiMuddy: anti_muddy, partnerDeck: deck_2 }), /* @__PURE__ */ React.createElement(CopilotDeckCard, { deck: deck_2, side: "2", isMaster: deck_2.is_master, antiMuddy: anti_muddy, partnerDeck: deck_1 })), /* @__PURE__ */ React.createElement("section", { className: "mt-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h4", { className: "font-syne font-bold text-xs sm:text-sm text-zinc-300 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "text-amber-400 inline-block" }), /* @__PURE__ */ React.createElement("span", null, "PR\xD3XIMAS PISTAS SUGERIDAS (", displayRecommendations.length, ")")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-500 hidden sm:inline" }, "\u2022 Arrastra para reordenar la secuencia")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-zinc-400 text-[10px]" }, /* @__PURE__ */ React.createElement("span", null, "CAMELOT: ", /* @__PURE__ */ React.createElement("strong", { style: { color: harmonic.color } }, harmonic.badge)), /* @__PURE__ */ React.createElement("span", null, "\u0394 LUFS: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta, " dB")))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4" }, /* @__PURE__ */ React.createElement(CopilotDeckCard, { deck: deck_1, side: "1", isMaster: deck_1.is_master, antiMuddy: anti_muddy, partnerDeck: deck_2, onSetMaster: setMasterDeck }), /* @__PURE__ */ React.createElement(CopilotDeckCard, { deck: deck_2, side: "2", isMaster: deck_2.is_master, antiMuddy: anti_muddy, partnerDeck: deck_1, onSetMaster: setMasterDeck })), /* @__PURE__ */ React.createElement("section", { className: "mt-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h4", { className: "font-syne font-bold text-xs sm:text-sm text-zinc-300 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "text-amber-400 inline-block" }), /* @__PURE__ */ React.createElement("span", null, "PR\xD3XIMAS PISTAS SUGERIDAS (", displayRecommendations.length, ")")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-500 hidden sm:inline" }, "\u2022 Arrastra para reordenar la secuencia")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",

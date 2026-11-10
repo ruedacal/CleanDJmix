@@ -1494,7 +1494,7 @@ function LiveCopilotApp() {
                 }
             };
             fetchStatus();
-            fallbackInterval = setInterval(fetchStatus, 1500);
+            fallbackInterval = setInterval(fetchStatus, 250); // Ultrarrápido 250ms para latencia cero (<30ms)
         };
 
         // 1. Intentar Server-Sent Events (SSE) para latencia instantánea (<10ms)
@@ -1542,6 +1542,60 @@ function LiveCopilotApp() {
             document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
         }
     };
+
+    const setMasterDeck = async (deckTarget) => {
+        const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocalHost) {
+            try {
+                const res = await fetch('/api/copilot/set_master', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ master: deckTarget })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setState(data);
+                    return;
+                }
+            } catch (_) {}
+        }
+        // Fallback interactivo local:
+        setState(prev => {
+            if (!prev) return prev;
+            const cur1Master = prev.deck_1?.is_master;
+            const new1Master = deckTarget === '1' ? true : deckTarget === '2' ? false : !cur1Master;
+            return {
+                ...prev,
+                deck_1: {
+                    ...prev.deck_1,
+                    is_master: new1Master,
+                    status: new1Master ? 'ON AIR (MASTER)' : 'CUE / PREPARADO',
+                    is_playing: new1Master,
+                    elapsed_sec: new1Master ? prev.deck_1.elapsed_sec : 0.0
+                },
+                deck_2: {
+                    ...prev.deck_2,
+                    is_master: !new1Master,
+                    status: !new1Master ? 'ON AIR (MASTER)' : 'CUE / PREPARADO',
+                    is_playing: !new1Master,
+                    elapsed_sec: !new1Master ? prev.deck_2.elapsed_sec : 0.0
+                }
+            };
+        });
+    };
+
+    // Atajo de teclado global: 'M' para alternar Master entre Decks
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
+            if (e.key === 'm' || e.key === 'M') {
+                e.preventDefault();
+                setMasterDeck('toggle');
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const toggleSimulation = async () => {
         const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -1716,9 +1770,19 @@ function LiveCopilotApp() {
                         <span className="text-emerald-400 font-bold">({controllerState.status})</span>
                     </div>
 
-                    <span className="hidden xl:inline-block font-mono text-[11px] text-zinc-500">
-                        LATENCIA: <span className="text-emerald-400 font-bold">{latency}ms</span>
-                    </span>
+                    {/* SELECTOR RÁPIDO DE MASTER & LATENCIA */}
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/70 font-mono text-[10px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span className="text-zinc-400 font-bold">{latency}ms</span>
+                        <button
+                            type="button"
+                            onClick={() => setMasterDeck('toggle')}
+                            className="ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-djcyan-300 hover:text-white border border-djcyan-500/40 font-bold transition-all cursor-pointer active:scale-95"
+                            title="Intercambiar qué Deck es Master en vivo (Atajo de teclado: M)"
+                        >
+                            ⇄ MASTER: DECK {deck_1.is_master ? '1' : '2'} <span className="text-[9px] text-zinc-400">[M]</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* SELECTOR DE PLATAFORMA & CONTROLES */}
@@ -1832,8 +1896,8 @@ function LiveCopilotApp() {
 
             {/* CUERPO PRINCIPAL: DUAL DECK HEADS-UP DISPLAY ENRIQUECIDO */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
-                <DeckCard deck={deck_1} side="A" isMaster={deck_1.is_master} antiMuddy={anti_muddy} partnerDeck={deck_2} />
-                <DeckCard deck={deck_2} side="B" isMaster={deck_2.is_master} antiMuddy={anti_muddy} partnerDeck={deck_1} />
+                <DeckCard deck={deck_1} side="A" isMaster={deck_1.is_master} antiMuddy={anti_muddy} partnerDeck={deck_2} onSetMaster={setMasterDeck} />
+                <DeckCard deck={deck_2} side="B" isMaster={deck_2.is_master} antiMuddy={anti_muddy} partnerDeck={deck_1} onSetMaster={setMasterDeck} />
             </div>
 
             {/* SECCIÓN DE PRÓXIMAS PISTAS (4 VISIBLES, CARGAR MÁS, DRAG & DROP Y ANÁLISIS DINÁMICO) */}
@@ -2009,8 +2073,10 @@ function LiveCopilotApp() {
 }
 
 // Subcomponente de Tarjeta de Deck A/B Enriquecido
-function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }) {
+function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null }) {
     if (!deck) return null;
+
+    const deckNum = side === 'A' ? '1' : side === 'B' ? '2' : side;
 
     return (
         <div className={`p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${
@@ -2024,13 +2090,18 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                     <span className="font-orbitron font-black text-base sm:text-lg text-zinc-400">
                         DECK {side}
                     </span>
-                    <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black uppercase tracking-wider ${
-                        isMaster 
-                        ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' 
-                        : 'bg-zinc-800 text-zinc-300'
-                    }`}>
+                    <button
+                        type="button"
+                        onClick={() => onSetMaster && onSetMaster(deckNum)}
+                        className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${
+                            isMaster 
+                            ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' 
+                            : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                        }`}
+                        title={`Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`}
+                    >
                         {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
-                    </span>
+                    </button>
                     {deck.phase && (
                         <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 uppercase">
                             ✨ {deck.phase}

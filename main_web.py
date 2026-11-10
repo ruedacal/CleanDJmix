@@ -1196,6 +1196,22 @@ def api_copilot_set_platform():
     import json
     return json.dumps(new_state)
 
+@bottle.route('/api/copilot/set_master', method=['POST', 'OPTIONS'])
+def api_copilot_set_master():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    try:
+        data = bottle.request.json or {}
+    except Exception:
+        data = {}
+    master_val = data.get('master') or bottle.request.params.get('master', 'toggle')
+    import json
+    return json.dumps(copilot_service.set_manual_master(master_val))
+
 @bottle.route('/api/copilot/toggle_simulation', method=['POST', 'OPTIONS'])
 def api_copilot_toggle_simulation():
     bottle.response.set_header("Access-Control-Allow-Origin", "*")
