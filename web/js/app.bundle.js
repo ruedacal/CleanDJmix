@@ -708,6 +708,451 @@
     ));
   }
 
+  // web/js/shell/register-modal.jsx
+  var { useState: useState4, useEffect: useEffect5, useRef: useRef5 } = React;
+  function RegisterFlowModal({
+    isOpen,
+    onClose,
+    onSuccessRegister,
+    initialPlan = "pro",
+    initialBilling = "annual"
+  }) {
+    const [step, setStep] = useState4(1);
+    const [alias, setAlias] = useState4("");
+    const [fullName, setFullName] = useState4("");
+    const [email, setEmail] = useState4("");
+    const [password, setPassword] = useState4("");
+    const [software, setSoftware] = useState4("serato");
+    const [step1Error, setStep1Error] = useState4("");
+    const [selectedPlan, setSelectedPlan] = useState4(initialPlan || "pro");
+    const [billingCycle, setBillingCycle] = useState4(initialBilling || "annual");
+    const [paymentMethod, setPaymentMethod] = useState4("card");
+    const [cardNumber, setCardNumber] = useState4("");
+    const [cardExpiry, setCardExpiry] = useState4("");
+    const [cardCvc, setCardCvc] = useState4("");
+    const [cardHolder, setCardHolder] = useState4("");
+    const [billingAddress, setBillingAddress] = useState4("");
+    const [billingCity, setBillingCity] = useState4("");
+    const [billingZip, setBillingZip] = useState4("");
+    const [billingCountry, setBillingCountry] = useState4("Espa\xF1a");
+    const [taxId, setTaxId] = useState4("");
+    const [saveMethodForRenewals, setSaveMethodForRenewals] = useState4(true);
+    const [isProcessing, setIsProcessing] = useState4(false);
+    const [paymentError, setPaymentError] = useState4("");
+    const dialogRef = useRef5(null);
+    useEffect5(() => {
+      var _a;
+      if (!isOpen) return;
+      setStep(1);
+      setStep1Error("");
+      setPaymentError("");
+      setIsProcessing(false);
+      const onKey = (e) => {
+        if (e.key === "Escape" && !isProcessing) onClose == null ? void 0 : onClose();
+      };
+      document.addEventListener("keydown", onKey);
+      (_a = dialogRef.current) == null ? void 0 : _a.focus();
+      return () => document.removeEventListener("keydown", onKey);
+    }, [isOpen]);
+    if (!isOpen) return null;
+    const getPlanPrice = () => {
+      if (selectedPlan === "free") return 0;
+      if (selectedPlan === "lifetime") return 189;
+      return billingCycle === "annual" ? 89 : 9.99;
+    };
+    const price = getPlanPrice();
+    const vat = selectedPlan === "free" ? 0 : Number((price * 0.21).toFixed(2));
+    const total = selectedPlan === "free" ? 0 : Number((price + vat).toFixed(2));
+    const handleCardNumberChange = (e) => {
+      const val = e.target.value.replace(/\D/g, "").slice(0, 16);
+      const parts = val.match(/.{1,4}/g);
+      setCardNumber(parts ? parts.join(" ") : val);
+    };
+    const handleExpiryChange = (e) => {
+      let val = e.target.value.replace(/\D/g, "").slice(0, 4);
+      if (val.length >= 2) {
+        val = val.slice(0, 2) + "/" + val.slice(2);
+      }
+      setCardExpiry(val);
+    };
+    const handleValidateStep1 = (e) => {
+      e.preventDefault();
+      if (!alias.trim()) {
+        setStep1Error("Por favor introduce tu Nombre o Alias DJ.");
+        return;
+      }
+      if (!email.trim() || !email.includes("@")) {
+        setStep1Error("Introduce un correo electr\xF3nico profesional v\xE1lido.");
+        return;
+      }
+      if (!password || password.length < 6) {
+        setStep1Error("La contrase\xF1a debe tener al menos 6 caracteres.");
+        return;
+      }
+      setStep1Error("");
+      setCardHolder(fullName.trim() || alias.trim());
+      setStep(2);
+    };
+    const handlePlanSelected = (planId) => {
+      setSelectedPlan(planId);
+      if (planId === "free") {
+        setStep(4);
+        triggerSuccessRegistration({ planId: "free", billingCycle });
+      } else {
+        setStep(3);
+      }
+    };
+    const handleProcessPayment = () => {
+      setPaymentError("");
+      if (paymentMethod === "card") {
+        const rawCard = cardNumber.replace(/\s/g, "");
+        if (rawCard.length < 15) {
+          setPaymentError("Por favor introduce un n\xFAmero de tarjeta v\xE1lido (16 d\xEDgitos).");
+          return;
+        }
+        if (cardExpiry.length < 5) {
+          setPaymentError("Fecha de caducidad incompleta (MM/AA).");
+          return;
+        }
+        if (cardCvc.length < 3) {
+          setPaymentError("C\xF3digo CVC incompleto (3 d\xEDgitos).");
+          return;
+        }
+      }
+      setIsProcessing(true);
+      setTimeout(() => {
+        setIsProcessing(false);
+        setStep(4);
+        triggerSuccessRegistration({
+          planId: selectedPlan,
+          billingCycle,
+          paymentMethod,
+          cardLast4: paymentMethod === "card" ? cardNumber.replace(/\s/g, "").slice(-4) : "APPLE/GPAY"
+        });
+      }, 1200);
+    };
+    const triggerSuccessRegistration = (details) => {
+      const newProfile = {
+        alias: alias || "DJ Alex BeatWave",
+        fullName: fullName || alias || "DJ Alex",
+        email: email || "dj@beatwave.pro",
+        djSoftware: software === "serato" ? "Serato DJ Pro" : software === "rekordbox" ? "Rekordbox" : software === "traktor" ? "Traktor Pro" : "VirtualDJ Pro",
+        plan: details.planId === "free" ? "FREE STARTER" : details.planId === "lifetime" ? "FOUNDER LIFETIME" : "DJ PRO CLUB VIP",
+        billingCycle: details.billingCycle,
+        paymentMethod: details.paymentMethod || "card",
+        cardLast4: details.cardLast4 || "4242",
+        address: billingAddress,
+        city: billingCity,
+        country: billingCountry,
+        taxId
+      };
+      try {
+        localStorage.setItem("bw_user_profile", JSON.stringify(newProfile));
+      } catch (e) {
+      }
+      if (onSuccessRegister) onSuccessRegister(newProfile);
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[99999] overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 select-none animate-fadeIn" }, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        ref: dialogRef,
+        tabIndex: -1,
+        role: "dialog",
+        "aria-modal": "true",
+        className: "relative w-full max-w-2xl bg-[#090a16] border border-cyan-500/40 rounded-3xl shadow-[0_0_60px_rgba(6,182,212,0.25)] flex flex-col overflow-hidden text-gray-200 font-sans",
+        onClick: (e) => e.stopPropagation()
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "p-5 sm:p-6 border-b border-zinc-800/80 bg-[#0d0e20] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3 mb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-black text-sm shadow-[0_0_12px_rgba(6,182,212,0.3)]" }, "\u{1F3A7}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-base sm:text-lg font-mono font-black uppercase text-white tracking-wider flex items-center gap-2" }, "Registro de Cabina ", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 text-xs sm:text-sm" }, "BEATWAVE PRO")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 font-mono" }, "Alta de licencia profesional y pasarela de pago segura"))), !isProcessing && step < 4 && /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          className: "w-8 h-8 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-mono text-xs border border-zinc-700/60 transition-colors cursor-pointer",
+          title: "Cerrar registro (ESC)"
+        },
+        /* @__PURE__ */ React.createElement(ShellIcons.Close, { size: 14 })
+      )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-4 gap-2 text-center font-mono text-[10px] sm:text-xs" }, [
+        { num: 1, label: "1. Datos DJ" },
+        { num: 2, label: "2. Planes" },
+        { num: 3, label: "3. Pasarela" },
+        { num: 4, label: "4. Cabina" }
+      ].map((s) => /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: s.num,
+          className: `py-1.5 px-2 rounded-xl border transition-all ${step === s.num ? "bg-cyan-500 text-black border-cyan-400 font-black shadow-[0_0_12px_rgba(6,182,212,0.5)]" : step > s.num ? "bg-emerald-950/70 border-emerald-500/40 text-emerald-300 font-bold" : "bg-zinc-900/60 border-zinc-800 text-zinc-500"}`
+        },
+        /* @__PURE__ */ React.createElement("span", null, step > s.num ? `\u2713 ${s.label.split(". ")[1]}` : s.label)
+      )))),
+      /* @__PURE__ */ React.createElement("div", { className: "p-5 sm:p-7 overflow-y-auto max-h-[75vh]" }, step === 1 && /* @__PURE__ */ React.createElement("form", { onSubmit: handleValidateStep1, className: "flex flex-col gap-4" }, step1Error && /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement(ShellIcons.Warning, { size: 14, className: "shrink-0 text-red-400" }), /* @__PURE__ */ React.createElement("span", null, step1Error)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-mono uppercase text-zinc-400 font-bold mb-1.5" }, "Nombre Art\xEDstico / Alias DJ *"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          required: true,
+          placeholder: "Ej. DJ Alex BeatWave",
+          value: alias,
+          onChange: (e) => setAlias(e.target.value),
+          className: "w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/90 border border-zinc-700/80 focus:border-cyan-400 text-white font-mono text-xs outline-none transition-colors"
+        }
+      )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-mono uppercase text-zinc-400 font-bold mb-1.5" }, "Nombre Completo Titular"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          placeholder: "Ej. Alejandro Rueda",
+          value: fullName,
+          onChange: (e) => setFullName(e.target.value),
+          className: "w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/90 border border-zinc-700/80 focus:border-cyan-400 text-white font-mono text-xs outline-none transition-colors"
+        }
+      ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-mono uppercase text-zinc-400 font-bold mb-1.5" }, "Correo Electr\xF3nico DJ *"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "email",
+          required: true,
+          placeholder: "alex@beatwave.pro",
+          value: email,
+          onChange: (e) => setEmail(e.target.value),
+          className: "w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/90 border border-zinc-700/80 focus:border-cyan-400 text-white font-mono text-xs outline-none transition-colors"
+        }
+      )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-mono uppercase text-zinc-400 font-bold mb-1.5" }, "Contrase\xF1a de Acceso *"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "password",
+          required: true,
+          placeholder: "M\xEDnimo 6 caracteres",
+          value: password,
+          onChange: (e) => setPassword(e.target.value),
+          className: "w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/90 border border-zinc-700/80 focus:border-cyan-400 text-white font-mono text-xs outline-none transition-colors"
+        }
+      ))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-mono uppercase text-zinc-400 font-bold mb-1.5" }, "Software Principal de Cabina"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs" }, [
+        { id: "serato", label: "Serato DJ Pro", color: "#00d1e8" },
+        { id: "rekordbox", label: "Rekordbox", color: "#0052ff" },
+        { id: "traktor", label: "Traktor Pro", color: "#ff5500" },
+        { id: "virtualdj", label: "VirtualDJ Pro", color: "#10b981" }
+      ].map((s) => /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: s.id,
+          type: "button",
+          onClick: () => setSoftware(s.id),
+          className: `p-2.5 rounded-xl border text-center transition-all cursor-pointer font-bold ${software === s.id ? "bg-zinc-900 border-cyan-400 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-white"}`
+        },
+        /* @__PURE__ */ React.createElement("span", { style: { color: s.color } }, "\u25CF "),
+        /* @__PURE__ */ React.createElement("span", null, s.label)
+      )))), /* @__PURE__ */ React.createElement("div", { className: "pt-3 border-t border-zinc-800/80 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-zinc-500 font-mono" }, "Tus datos quedan cifrados en tu dispositivo bajo GDPR/LOPD."), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "submit",
+          className: "px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-black text-xs transition-all shadow-[0_0_15px_rgba(6,182,212,0.5)] cursor-pointer flex items-center gap-2"
+        },
+        /* @__PURE__ */ React.createElement("span", null, "Continuar a Selecci\xF3n de Plan"),
+        /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 14 })
+      ))), step === 2 && /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-mono font-black text-sm text-white uppercase" }, "Elige tu Nivel de Licencia"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 font-mono" }, "Cambia de plan o cancela en cualquier momento con un clic.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 p-1 rounded-xl bg-zinc-950 border border-zinc-800 font-mono text-xs" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setBillingCycle("monthly"),
+          className: `px-3 py-1 rounded-lg transition-all ${billingCycle === "monthly" ? "bg-cyan-500 text-black font-bold" : "text-zinc-400 hover:text-white"}`
+        },
+        "Mensual"
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setBillingCycle("annual"),
+          className: `px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${billingCycle === "annual" ? "bg-cyan-500 text-black font-bold" : "text-zinc-400 hover:text-white"}`
+        },
+        /* @__PURE__ */ React.createElement("span", null, "Anual"),
+        /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-black font-black" }, "-25%")
+      ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-3" }, /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          onClick: () => setSelectedPlan("free"),
+          className: `p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${selectedPlan === "free" ? "bg-zinc-900/90 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]" : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"}`
+        },
+        /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono uppercase text-zinc-500 font-bold" }, "Iniciaci\xF3n"), /* @__PURE__ */ React.createElement("h4", { className: "font-mono font-black text-sm text-white mt-0.5" }, "Free Demo"), /* @__PURE__ */ React.createElement("div", { className: "text-2xl font-mono font-black text-white my-2" }, "0 \u20AC"), /* @__PURE__ */ React.createElement("ul", { className: "text-[11px] font-mono text-zinc-400 flex flex-col gap-1.5 mt-2" }, /* @__PURE__ */ React.createElement("li", null, "\u2713 30 pistas por sesi\xF3n"), /* @__PURE__ */ React.createElement("li", null, "\u2713 Diagn\xF3stico FFT 16/18/20 kHz"), /* @__PURE__ */ React.createElement("li", null, "\u2713 Waveform b\xE1sico DJ"))),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => handlePlanSelected("free"),
+            className: "mt-4 w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-xs font-bold transition-colors"
+          },
+          "Comenzar Gratis"
+        )
+      ), /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          onClick: () => setSelectedPlan("pro"),
+          className: `p-4 rounded-2xl border relative transition-all cursor-pointer flex flex-col justify-between ${selectedPlan === "pro" ? "bg-[#0f142b] border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.4)]" : "bg-zinc-950/80 border-cyan-500/30 hover:border-cyan-500/60"}`
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-cyan-400 text-black text-[9px] font-mono font-black uppercase tracking-wider shadow" }, "Recomendado Club"),
+        /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono uppercase text-cyan-400 font-bold" }, "Profesional"), /* @__PURE__ */ React.createElement("h4", { className: "font-mono font-black text-sm text-white mt-0.5" }, "DJ Pro Club"), /* @__PURE__ */ React.createElement("div", { className: "text-2xl font-mono font-black text-cyan-300 my-2" }, billingCycle === "annual" ? "89 \u20AC" : "9,99 \u20AC", /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-400 font-normal" }, " / ", billingCycle === "annual" ? "a\xF1o" : "mes")), /* @__PURE__ */ React.createElement("ul", { className: "text-[11px] font-mono text-zinc-300 flex flex-col gap-1.5 mt-2" }, /* @__PURE__ */ React.createElement("li", null, "\u2713 Auditor\xEDa ilimitada en lote"), /* @__PURE__ */ React.createElement("li", null, "\u2713 Descargas SuperFLAC Lossless"), /* @__PURE__ */ React.createElement("li", null, "\u2713 8 Hot Cues autom\xE1ticos"), /* @__PURE__ */ React.createElement("li", null, "\u2713 Sincronizaci\xF3n Rekordbox & Serato"), /* @__PURE__ */ React.createElement("li", null, "\u2713 BeatWave Copilot en Vivo"))),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => handlePlanSelected("pro"),
+            className: "mt-4 w-full py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono text-xs font-black transition-all shadow-[0_0_12px_rgba(6,182,212,0.5)]"
+          },
+          "Elegir Plan Pro \u2794"
+        )
+      ), /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          onClick: () => setSelectedPlan("lifetime"),
+          className: `p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${selectedPlan === "lifetime" ? "bg-zinc-900/90 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.3)]" : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"}`
+        },
+        /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono uppercase text-purple-400 font-bold" }, "Pago \xDAnico"), /* @__PURE__ */ React.createElement("h4", { className: "font-mono font-black text-sm text-white mt-0.5" }, "Founder Lifetime"), /* @__PURE__ */ React.createElement("div", { className: "text-2xl font-mono font-black text-purple-300 my-2" }, "189 \u20AC", /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-400 font-normal" }, " vitalicio")), /* @__PURE__ */ React.createElement("ul", { className: "text-[11px] font-mono text-zinc-400 flex flex-col gap-1.5 mt-2" }, /* @__PURE__ */ React.createElement("li", null, "\u2713 Cero cuotas mensuales para siempre"), /* @__PURE__ */ React.createElement("li", null, "\u2713 Todas las funciones Pro incluidas"), /* @__PURE__ */ React.createElement("li", null, "\u2713 Soporte VIP prioritario"))),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => handlePlanSelected("lifetime"),
+            className: "mt-4 w-full py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-500/50 font-mono text-xs font-bold transition-colors"
+          },
+          "Licencia Vitalicia \u2794"
+        )
+      )), /* @__PURE__ */ React.createElement("div", { className: "pt-3 border-t border-zinc-800/80 flex items-center justify-between" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setStep(1),
+          className: "px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-mono text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+        },
+        /* @__PURE__ */ React.createElement(ShellIcons.ChevronLeft, { size: 14 }),
+        /* @__PURE__ */ React.createElement("span", null, "Atr\xE1s")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handlePlanSelected(selectedPlan),
+          className: "px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-black text-xs transition-all shadow-[0_0_15px_rgba(6,182,212,0.5)] cursor-pointer flex items-center gap-2"
+        },
+        /* @__PURE__ */ React.createElement("span", null, "Continuar con ", selectedPlan === "free" ? "Plan Free" : selectedPlan === "lifetime" ? "Lifetime" : "DJ Pro"),
+        /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 14 })
+      ))), step === 3 && /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-4" }, paymentError && /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement(ShellIcons.Warning, { size: 14, className: "shrink-0 text-red-400" }), /* @__PURE__ */ React.createElement("span", null, paymentError)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-mono uppercase text-zinc-400 font-bold mb-2" }, "Selecciona tu Pasarela de Pago"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setPaymentMethod("card"),
+          className: `p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${paymentMethod === "card" ? "bg-zinc-900 border-cyan-400 text-white shadow-[0_0_12px_rgba(6,182,212,0.3)]" : "bg-zinc-950/80 border-zinc-800 text-zinc-400 hover:text-white"}`
+        },
+        /* @__PURE__ */ React.createElement(ShellIcons.CreditCard, { size: 18, className: "text-cyan-400" }),
+        /* @__PURE__ */ React.createElement("span", { className: "font-bold text-[11px]" }, "Tarjeta Bancaria")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setPaymentMethod("gpay"),
+          className: `p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${paymentMethod === "gpay" ? "bg-zinc-900 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]" : "bg-zinc-950/80 border-zinc-800 text-zinc-400 hover:text-white"}`
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "text-base font-black" }, "\u{1F7E2} GPay"),
+        /* @__PURE__ */ React.createElement("span", { className: "font-bold text-[11px]" }, "Google Pay")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setPaymentMethod("applepay"),
+          className: `p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${paymentMethod === "applepay" ? "bg-zinc-900 border-white text-white shadow-[0_0_12px_rgba(255,255,255,0.3)]" : "bg-zinc-950/80 border-zinc-800 text-zinc-400 hover:text-white"}`
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "text-base font-black" }, "\uF8FF Pay"),
+        /* @__PURE__ */ React.createElement("span", { className: "font-bold text-[11px]" }, "Apple Pay")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setPaymentMethod("paypal"),
+          className: `p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${paymentMethod === "paypal" ? "bg-zinc-900 border-amber-400 text-white shadow-[0_0_12px_rgba(251,191,36,0.3)]" : "bg-zinc-950/80 border-zinc-800 text-zinc-400 hover:text-white"}`
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "text-base font-black text-amber-400" }, "\u{1F17F}\uFE0F PayPal"),
+        /* @__PURE__ */ React.createElement("span", { className: "font-bold text-[11px]" }, "PayPal")
+      ))), paymentMethod === "card" && /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-zinc-950/90 border border-zinc-800 flex flex-col gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[10px] uppercase text-zinc-400 font-bold mb-1" }, "N\xFAmero de Tarjeta (Visa / Mastercard / Amex) *"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          placeholder: "4242 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 4242",
+          value: cardNumber,
+          onChange: handleCardNumberChange,
+          className: "w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 focus:border-cyan-400 text-white text-xs outline-none tracking-widest"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[10px] uppercase text-zinc-400 font-bold mb-1" }, "Caducidad (MM/AA) *"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          placeholder: "08/28",
+          value: cardExpiry,
+          onChange: handleExpiryChange,
+          className: "w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 focus:border-cyan-400 text-white text-xs outline-none"
+        }
+      )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[10px] uppercase text-zinc-400 font-bold mb-1" }, "C\xF3digo CVC / CVV *"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "password",
+          maxLength: 4,
+          placeholder: "123",
+          value: cardCvc,
+          onChange: (e) => setCardCvc(e.target.value.replace(/\D/g, "")),
+          className: "w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 focus:border-cyan-400 text-white text-xs outline-none"
+        }
+      ))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[10px] uppercase text-zinc-400 font-bold mb-1" }, "Nombre del Titular"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          placeholder: "Nombre como figura en la tarjeta",
+          value: cardHolder,
+          onChange: (e) => setCardHolder(e.target.value),
+          className: "w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 focus:border-cyan-400 text-white text-xs outline-none"
+        }
+      ))), paymentMethod === "gpay" && /* @__PURE__ */ React.createElement("div", { className: "p-5 rounded-2xl bg-zinc-950/90 border border-emerald-500/30 flex flex-col items-center justify-center text-center gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "text-3xl" }, "\u{1F7E2}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-white text-sm" }, "Google Pay Express Checkout"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 mt-1" }, "Paga de forma r\xE1pida y segura con los m\xE9todos guardados en tu cuenta de Google Play / Google Pay.")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold" }, "\u2713 Cuentas bancarias y tarjetas protegidas con tokenizaci\xF3n Google")), paymentMethod === "applepay" && /* @__PURE__ */ React.createElement("div", { className: "p-5 rounded-2xl bg-zinc-950/90 border border-white/30 flex flex-col items-center justify-center text-center gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "text-3xl" }, "\uF8FF"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-white text-sm" }, "Apple Pay Instant\xE1neo"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 mt-1" }, "Autoriza el pago mediante Touch ID o Face ID desde tu dispositivo Mac, iPhone o iPad.")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 rounded-xl bg-zinc-900 border border-white/20 text-white text-xs font-bold" }, "\u2713 N\xFAmero de tarjeta privado y encriptado en el Secure Enclave")), paymentMethod === "paypal" && /* @__PURE__ */ React.createElement("div", { className: "p-5 rounded-2xl bg-zinc-950/90 border border-amber-500/30 flex flex-col items-center justify-center text-center gap-3 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "text-3xl text-amber-400" }, "\u{1F17F}\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-white text-sm" }, "PayPal Checkout Seguro"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 mt-1" }, "Conecta con tu cuenta PayPal o paga en 3 plazos sin intereses.")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 rounded-xl bg-amber-950/60 border border-amber-500/40 text-amber-300 text-xs font-bold" }, "\u2713 Protecci\xF3n del Comprador PayPal incluida")), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 font-mono text-xs flex flex-col gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold text-zinc-300 uppercase text-[10px]" }, "Datos de Facturaci\xF3n & Desglose"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          placeholder: "Direcci\xF3n fiscal",
+          value: billingAddress,
+          onChange: (e) => setBillingAddress(e.target.value),
+          className: "px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700/60 text-white text-[11px] outline-none"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          placeholder: "NIF / CIF / DNI (para factura)",
+          value: taxId,
+          onChange: (e) => setTaxId(e.target.value),
+          className: "px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700/60 text-white text-[11px] outline-none"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/40 flex items-center justify-between text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "text-zinc-400" }, /* @__PURE__ */ React.createElement("div", null, "Plan: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, selectedPlan === "lifetime" ? "Founder Lifetime" : "DJ Pro Club"), " (", billingCycle === "annual" ? "Anual" : "Mensual", ")"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-zinc-500" }, "Base ", price, " \u20AC + IVA 21% (", vat, " \u20AC)")), /* @__PURE__ */ React.createElement("div", { className: "text-right" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-zinc-400 block" }, "Total a pagar hoy:"), /* @__PURE__ */ React.createElement("span", { className: "text-base font-black text-cyan-300" }, total, " \u20AC")))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-zinc-800/80 flex items-center justify-between" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          disabled: isProcessing,
+          onClick: () => setStep(2),
+          className: "px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-mono text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+        },
+        /* @__PURE__ */ React.createElement(ShellIcons.ChevronLeft, { size: 14 }),
+        /* @__PURE__ */ React.createElement("span", null, "Atr\xE1s")
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          disabled: isProcessing,
+          onClick: handleProcessPayment,
+          className: "px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-black text-xs transition-all shadow-[0_0_20px_rgba(6,182,212,0.6)] cursor-pointer flex items-center gap-2"
+        },
+        isProcessing ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", null, "Procesando pago seguro...")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", null, "\u{1F512} Pagar ", total, " \u20AC y Activar Licencia"), /* @__PURE__ */ React.createElement(ShellIcons.Check, { size: 14 }))
+      ))), step === 4 && /* @__PURE__ */ React.createElement("div", { className: "p-6 sm:p-8 flex flex-col items-center justify-center text-center gap-4 font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-bounce" }, "\u2713"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/50 text-[10px] font-black uppercase tracking-wider" }, "Licencia Oficial Activada"), /* @__PURE__ */ React.createElement("h3", { className: "text-xl sm:text-2xl font-black text-white mt-2" }, "\xA1Bienvenido a la Cabina, ", alias || "DJ", "!"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 max-w-md mx-auto mt-1.5" }, "Tu cuenta ha sido creada y configurada con el plan ", /* @__PURE__ */ React.createElement("strong", { className: "text-cyan-300" }, selectedPlan === "free" ? "Free Starter" : selectedPlan === "lifetime" ? "Founder Lifetime" : "DJ Pro Club"), ". Hemos enviado la confirmaci\xF3n y recibo de compra a ", /* @__PURE__ */ React.createElement("span", { className: "text-white" }, email), ".")), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 w-full max-w-sm text-left text-xs text-zinc-300 flex flex-col gap-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500" }, "Software:"), /* @__PURE__ */ React.createElement("strong", { className: "text-white capitalize" }, software)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500" }, "M\xE9todo de pago:"), /* @__PURE__ */ React.createElement("strong", { className: "text-cyan-400 uppercase" }, paymentMethod === "card" ? "Tarjeta Bancaria" : paymentMethod)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500" }, "Estado de cabina:"), /* @__PURE__ */ React.createElement("strong", { className: "text-emerald-400" }, "\u25CF 100% OPERATIVA"))), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          className: "w-full max-w-sm py-3.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-black font-black text-sm tracking-wide transition-all shadow-[0_0_25px_rgba(6,182,212,0.6)] cursor-pointer flex items-center justify-center gap-2 mt-2"
+        },
+        /* @__PURE__ */ React.createElement("span", null, "\u{1F3A7} Entrar a BeatWave Cabina DJ"),
+        /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 16 })
+      )))
+    ));
+  }
+
   // web/js/shell/map-overlays.jsx
   var MAP_ZOOM_MIN = 0.3;
   var MAP_ZOOM_MAX = 20;
@@ -822,7 +1267,7 @@
   var MapStatsHud = ({ visible, total, avgBpm, avgEnergy, keyCount, selected }) => /* @__PURE__ */ React.createElement("div", { className: "ws-glass ws-hud", role: "status", "aria-live": "polite" }, /* @__PURE__ */ React.createElement("div", { className: "ws-hud-cell" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-kicker" }, "Visibles"), /* @__PURE__ */ React.createElement("span", { className: "ws-hud-val" }, visible, /* @__PURE__ */ React.createElement("span", { className: "ws-hud-unit" }, "/", total))), /* @__PURE__ */ React.createElement("div", { className: "ws-hud-cell" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-kicker" }, "BPM medio"), /* @__PURE__ */ React.createElement("span", { className: "ws-hud-val" }, avgBpm || "--")), /* @__PURE__ */ React.createElement("div", { className: "ws-hud-cell" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-kicker" }, "Energ\xEDa"), /* @__PURE__ */ React.createElement("span", { className: "ws-hud-val flex items-center gap-2" }, avgEnergy || "--", /* @__PURE__ */ React.createElement("span", { className: "ws-hud-bar", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("span", { style: { width: `${avgEnergy || 0}%` } })))), /* @__PURE__ */ React.createElement("div", { className: "ws-hud-cell hidden sm:flex" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-kicker" }, "Tonalidades"), /* @__PURE__ */ React.createElement("span", { className: "ws-hud-val" }, keyCount)), selected > 0 && /* @__PURE__ */ React.createElement("div", { className: "ws-hud-cell" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-kicker" }, "Selecci\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "ws-hud-val text-[var(--bw-cyan)]" }, selected)));
 
   // web/js/app.jsx
-  var { useState: useState4, useEffect: useEffect5, useRef: useRef5, useMemo, useCallback, createContext, useContext } = React;
+  var { useState: useState5, useEffect: useEffect6, useRef: useRef6, useMemo, useCallback, createContext, useContext } = React;
   var PlayerContext = createContext({
     playProgressRef: { current: 0 },
     isPlaying: false,
@@ -1204,8 +1649,8 @@
     return /* @__PURE__ */ React.createElement("div", { className: `flex items-center gap-2.5 min-w-0 shrink-0 ${className}` }, Icon && /* @__PURE__ */ React.createElement("span", { className: `w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}` }, /* @__PURE__ */ React.createElement(Icon, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: `${SECTION_TITLE_CLASS} truncate` }, title, accent && /* @__PURE__ */ React.createElement("span", { className: accentText }, " ", accent)), badge && /* @__PURE__ */ React.createElement("span", { className: `hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle}` }, badge));
   };
   var InfoTip = ({ text, title }) => {
-    const [coords, setCoords] = useState4(null);
-    const btnRef = useRef5(null);
+    const [coords, setCoords] = useState5(null);
+    const btnRef = useRef6(null);
     const handleEnter = () => {
       if (!btnRef.current) return;
       const rect = btnRef.current.getBoundingClientRect();
@@ -1462,10 +1907,10 @@
   };
   var TableHarmonicWaveform = React.memo(
     ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
-      const canvasRef = useRef5(null);
-      const bgBitmapRef = useRef5(null);
-      const rafRef = useRef5(null);
-      const progressRef = useRef5(playProgress);
+      const canvasRef = useRef6(null);
+      const bgBitmapRef = useRef6(null);
+      const rafRef = useRef6(null);
+      const progressRef = useRef6(playProgress);
       const WIDTH = 112, HEIGHT = 28;
       const seed = getTrackHash(track);
       const handleClickScrub = (e) => {
@@ -1479,7 +1924,7 @@
         const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
         onPlayTrack(track, pct, true);
       };
-      useEffect5(() => {
+      useEffect6(() => {
         let offscreen;
         try {
           offscreen = new OffscreenCanvas(WIDTH, HEIGHT);
@@ -1518,7 +1963,7 @@
           bgBitmapRef.current = offscreen;
         }
       }, [seed, track]);
-      useEffect5(() => {
+      useEffect6(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const dpr = window.devicePixelRatio || 1;
@@ -1527,7 +1972,7 @@
         const ctx = canvas.getContext("2d");
         ctx.scale(dpr, dpr);
       }, []);
-      useEffect5(() => {
+      useEffect6(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const draw = () => {
@@ -1562,7 +2007,7 @@
           }
         };
       }, [isCurrentPlaying, seed]);
-      useEffect5(() => {
+      useEffect6(() => {
         progressRef.current = playProgress;
       }, [playProgress]);
       return /* @__PURE__ */ React.createElement("div", { onClick: handleClickScrub, className: "ws-wave w-28 h-7 relative overflow-hidden group cursor-pointer flex items-center justify-center" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: "112px", height: "28px", display: "block" } }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-0.5 right-1 text-[9px] font-mono tabular-nums text-[var(--bw-text-2)] opacity-70 group-hover:opacity-100" }, duration), isCurrentPlaying && /* @__PURE__ */ React.createElement("span", { className: "absolute top-1 left-1 ws-dot ws-dot-live", "aria-hidden": "true" }));
@@ -1645,10 +2090,10 @@
     onToggleGrid
   }) => {
     var _a, _b;
-    const canvasRef = useRef5(null);
-    const containerRef = useRef5(null);
-    const [draggingCueIdx, setDraggingCueIdx] = useState4(null);
-    const [dragInfo, setDragInfo] = useState4(null);
+    const canvasRef = useRef6(null);
+    const containerRef = useRef6(null);
+    const [draggingCueIdx, setDraggingCueIdx] = useState5(null);
+    const [dragInfo, setDragInfo] = useState5(null);
     const rawId = track && track.id ? String(track.id) : "1";
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
     const durMs = parseDurationMs(duration);
@@ -1687,7 +2132,7 @@
         onSelectCue(activeCues[idx].id || idx + 1);
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (draggingCueIdx === null) return;
       const handleMouseMove = (e) => {
         if (!containerRef.current) return;
@@ -1739,7 +2184,7 @@
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }, [draggingCueIdx, durMs, downbeatMs, beatMs, barMs, snapToGrid, activeCues, onUpdateCues]);
-    useEffect5(() => {
+    useEffect6(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -1993,14 +2438,14 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     lang = "es"
   }) => {
     var _a, _b;
-    const scrollContainerRef = useRef5(null);
-    const canvasRef = useRef5(null);
-    const minimapCanvasRef = useRef5(null);
-    const [containerWidth, setContainerWidth] = useState4(900);
-    const [scrollLeft, setScrollLeft] = useState4(0);
-    const [draggingCueIdx, setDraggingCueIdx] = useState4(null);
-    const [dragInfo, setDragInfo] = useState4(null);
-    const isMinimapDraggingRef = useRef5(false);
+    const scrollContainerRef = useRef6(null);
+    const canvasRef = useRef6(null);
+    const minimapCanvasRef = useRef6(null);
+    const [containerWidth, setContainerWidth] = useState5(900);
+    const [scrollLeft, setScrollLeft] = useState5(0);
+    const [draggingCueIdx, setDraggingCueIdx] = useState5(null);
+    const [dragInfo, setDragInfo] = useState5(null);
+    const isMinimapDraggingRef = useRef6(false);
     const rawId = track && track.id ? String(track.id) : "1";
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
     const durMs = parseDurationMs(duration);
@@ -2024,7 +2469,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       return defaultPreset;
     });
     const totalWidth = Math.max(containerWidth, Math.round(containerWidth * Math.max(1, zoom)));
-    useEffect5(() => {
+    useEffect6(() => {
       const updateWidth = () => {
         if (scrollContainerRef.current) {
           const w = scrollContainerRef.current.clientWidth;
@@ -2038,7 +2483,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const handleScroll = (e) => {
       setScrollLeft(e.target.scrollLeft);
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (!isCurrentPlaying || !followPlayhead || !scrollContainerRef.current) return;
       const playheadPx = playProgress * totalWidth;
       const targetScroll = playheadPx - containerWidth / 2;
@@ -2052,7 +2497,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         onSelectCue(activeCues[idx].id !== void 0 ? activeCues[idx].id : idx + 1);
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (draggingCueIdx === null) return;
       const handleMouseMove = (e) => {
         if (!canvasRef.current) return;
@@ -2105,7 +2550,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }, [draggingCueIdx, durMs, downbeatMs, beatMs, barMs, snapToGrid, activeCues, onUpdateCues, totalWidth]);
-    const [isScrubbing, setIsScrubbing] = useState4(false);
+    const [isScrubbing, setIsScrubbing] = useState5(false);
     const handleSeekToX = (clientX) => {
       if (!canvasRef.current || !onSeekTrack) return;
       const rect = canvasRef.current.getBoundingClientRect();
@@ -2119,7 +2564,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       setIsScrubbing(true);
       handleSeekToX(e.clientX);
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (!isScrubbing) return;
       const handleMouseMove = (e) => {
         handleSeekToX(e.clientX);
@@ -2138,7 +2583,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       if (!canvasRef.current || !onSeekTrack || draggingCueIdx !== null) return;
       handleSeekToX(e.clientX);
     };
-    useEffect5(() => {
+    useEffect6(() => {
       const canvas = minimapCanvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -2178,7 +2623,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         onSeekTrack(track, pct, true, targetSec);
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -2467,13 +2912,13 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const barMs = beatMs * 4;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
-    const [snapToGrid, setSnapToGrid] = useState4(true);
-    const [showBeatgrid, setShowBeatgrid] = useState4(true);
-    const [timeInputValue, setTimeInputValue] = useState4(currentCue.time || "00:00.00");
-    const [nameInputValue, setNameInputValue] = useState4(currentCue.name || "");
-    const [isSavingLocal, setIsSavingLocal] = useState4(false);
-    const [saveSuccessMsg, setSaveSuccessMsg] = useState4("");
-    useEffect5(() => {
+    const [snapToGrid, setSnapToGrid] = useState5(true);
+    const [showBeatgrid, setShowBeatgrid] = useState5(true);
+    const [timeInputValue, setTimeInputValue] = useState5(currentCue.time || "00:00.00");
+    const [nameInputValue, setNameInputValue] = useState5(currentCue.name || "");
+    const [isSavingLocal, setIsSavingLocal] = useState5(false);
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState5("");
+    useEffect6(() => {
       setTimeInputValue(currentCue.time || "00:00.00");
       setNameInputValue(currentCue.name || currentCue.short_name || `Cue ${currentCue.id || 1}`);
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -2879,10 +3324,10 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     )))));
   };
   var FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS, t = (k) => k }) => {
-    const canvasRef = useRef5(null);
-    const containerRef = useRef5(null);
-    const bitmapRef = useRef5(null);
-    const rafRef = useRef5(null);
+    const canvasRef = useRef6(null);
+    const containerRef = useRef6(null);
+    const bitmapRef = useRef6(null);
+    const rafRef = useRef6(null);
     const seed = getTrackHash(track);
     const buildBitmap = useCallback((width) => {
       const height = 42;
@@ -2926,7 +3371,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         bitmapRef.current = offscreen;
       }
     }, [seed, track]);
-    useEffect5(() => {
+    useEffect6(() => {
       if (!track || !containerRef.current) {
         bitmapRef.current = null;
         return;
@@ -2942,7 +3387,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       ro.observe(el);
       return () => ro.disconnect();
     }, [track, buildBitmap]);
-    useEffect5(() => {
+    useEffect6(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       if (!track) {
@@ -3580,7 +4025,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     })))), /* @__PURE__ */ React.createElement("div", { className: "px-6 py-3.5 bg-djzinc-900/60 border-t border-djzinc-800 flex justify-end" }, /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-4 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 text-xs font-semibold rounded-lg cursor-pointer" }, "Cerrar"))));
   };
   var BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
-    const [opts, setOpts] = useState4({
+    const [opts, setOpts] = useState5({
       fftLossless: true,
       trimSilences: true,
       beatgrid: true,
@@ -3654,13 +4099,13 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     ))));
   };
   var DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDeleted }) => {
-    const [dupData, setDupData] = useState4(null);
-    const [loading, setLoading] = useState4(false);
-    const [deleting, setDeleting] = useState4(false);
-    const [selectedToDelete, setSelectedToDelete] = useState4({});
-    const [statusMsg, setStatusMsg] = useState4("");
-    const [protectSisters, setProtectSisters] = useState4(true);
-    const [filterOnlyWithDups, setFilterOnlyWithDups] = useState4(false);
+    const [dupData, setDupData] = useState5(null);
+    const [loading, setLoading] = useState5(false);
+    const [deleting, setDeleting] = useState5(false);
+    const [selectedToDelete, setSelectedToDelete] = useState5({});
+    const [statusMsg, setStatusMsg] = useState5("");
+    const [protectSisters, setProtectSisters] = useState5(true);
+    const [filterOnlyWithDups, setFilterOnlyWithDups] = useState5(false);
     const loadDups = async (protect = true) => {
       setLoading(true);
       setStatusMsg("Analizando biblioteca en busca de duplicados y calculando \xEDndice de calidad ac\xFAstica...");
@@ -3687,7 +4132,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         setStatusMsg("");
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (!isOpen) return;
       loadDups(protectSisters);
     }, [isOpen, tracks]);
@@ -3801,8 +4246,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     )))));
   };
   function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
-    const [range, setRange] = useState4({ start: 0, end: 60 });
-    useEffect5(() => {
+    const [range, setRange] = useState5({ start: 0, end: 60 });
+    useEffect6(() => {
       const el = containerRef.current;
       if (!el) return;
       const update = () => {
@@ -3837,28 +4282,48 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     onDeleteSession,
     currentSessionSnapshot = {},
     onNavigateTab,
-    onOpenShortcuts
+    onOpenShortcuts,
+    onOpenPricing,
+    onOpenRegister
   }) => {
     if (!isOpen) return null;
-    const [activeTab, setActiveTab] = useState4("profile");
-    const [alias, setAlias] = useState4(userProfile && userProfile.alias || "DJ Alex BeatWave");
-    const [fullName, setFullName] = useState4(userProfile && userProfile.fullName || "Alejandro Rueda");
-    const [email, setEmail] = useState4(userProfile && userProfile.email || "alex.dj@beatwave.pro");
-    const [address, setAddress] = useState4(userProfile && userProfile.address || "Gran V\xEDa 28, 4\xBA B");
-    const [city, setCity] = useState4(userProfile && userProfile.city || "Madrid");
-    const [country, setCountry] = useState4(userProfile && userProfile.country || "Espa\xF1a");
-    const [phone, setPhone] = useState4(userProfile && userProfile.phone || "+34 612 345 678");
-    const [avatarUrl, setAvatarUrl] = useState4(userProfile && userProfile.avatarUrl || "");
-    const [currentPassword, setCurrentPassword] = useState4("");
-    const [newPassword, setNewPassword] = useState4("");
-    const [confirmPassword, setConfirmPassword] = useState4("");
-    const [passwordMsg, setPasswordMsg] = useState4({ text: "", type: "" });
-    const [djSoftware, setDjSoftware] = useState4(userProfile && userProfile.djSoftware || "Serato DJ Pro");
-    const [audioInterface, setAudioInterface] = useState4(userProfile && userProfile.audioInterface || "Focusrite Scarlett 2i2 / Serato Club Kit");
-    const [targetLufs, setTargetLufs] = useState4(userProfile && userProfile.targetLufs || -9);
-    const [autoSaveEnabled, setAutoSaveEnabled] = useState4(userProfile ? userProfile.autoSave !== false : true);
-    const [sessionNameInput, setSessionNameInput] = useState4("");
-    const [saveSuccessMsg, setSaveSuccessMsg] = useState4("");
+    const [activeTab, setActiveTab] = useState5("profile");
+    const [alias, setAlias] = useState5(userProfile && userProfile.alias || "DJ Alex BeatWave");
+    const [fullName, setFullName] = useState5(userProfile && userProfile.fullName || "Alejandro Rueda");
+    const [email, setEmail] = useState5(userProfile && userProfile.email || "alex.dj@beatwave.pro");
+    const [address, setAddress] = useState5(userProfile && userProfile.address || "Gran V\xEDa 28, 4\xBA B");
+    const [city, setCity] = useState5(userProfile && userProfile.city || "Madrid");
+    const [country, setCountry] = useState5(userProfile && userProfile.country || "Espa\xF1a");
+    const [phone, setPhone] = useState5(userProfile && userProfile.phone || "+34 612 345 678");
+    const [avatarUrl, setAvatarUrl] = useState5(userProfile && userProfile.avatarUrl || "");
+    const [currentPassword, setCurrentPassword] = useState5("");
+    const [newPassword, setNewPassword] = useState5("");
+    const [confirmPassword, setConfirmPassword] = useState5("");
+    const [passwordMsg, setPasswordMsg] = useState5({ text: "", type: "" });
+    const [djSoftware, setDjSoftware] = useState5(userProfile && userProfile.djSoftware || "Serato DJ Pro");
+    const [audioInterface, setAudioInterface] = useState5(userProfile && userProfile.audioInterface || "Focusrite Scarlett 2i2 / Serato Club Kit");
+    const [targetLufs, setTargetLufs] = useState5(userProfile && userProfile.targetLufs || -9);
+    const [autoSaveEnabled, setAutoSaveEnabled] = useState5(userProfile ? userProfile.autoSave !== false : true);
+    const [sessionNameInput, setSessionNameInput] = useState5("");
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState5("");
+    const [savedPaymentMethods, setSavedPaymentMethods] = useState5([
+      { id: "pm_card_main", type: "card", brand: "Mastercard", last4: "4242", exp: "08/29", holder: "Alejandro Rueda", isDefault: true },
+      { id: "pm_applepay", type: "applepay", label: "Apple Pay (Wallet)", isDefault: false }
+    ]);
+    const [showAddPaymentForm, setShowAddPaymentForm] = useState5(false);
+    const [newMethodType, setNewMethodType] = useState5("card");
+    const [newCardNumber, setNewCardNumber] = useState5("");
+    const [newCardExpiry, setNewCardExpiry] = useState5("");
+    const [newCardCvc, setNewCardCvc] = useState5("");
+    const [newCardHolder, setNewCardHolder] = useState5("Alejandro Rueda");
+    const [paypalEmail, setPaypalEmail] = useState5("");
+    const [billingMsg, setBillingMsg] = useState5({ text: "", type: "" });
+    const [fiscalName, setFiscalName] = useState5(userProfile && userProfile.fiscalName || "Alejandro Rueda / BeatWave DJ");
+    const [fiscalTaxId, setFiscalTaxId] = useState5(userProfile && userProfile.taxId || "ES-48765432-W");
+    const [fiscalAddress, setFiscalAddress] = useState5(userProfile && userProfile.fiscalAddress || "Gran V\xEDa 28, 4\xBA B");
+    const [fiscalCity, setFiscalCity] = useState5(userProfile && userProfile.fiscalCity || "Madrid");
+    const [fiscalZip, setFiscalZip] = useState5(userProfile && userProfile.fiscalZip || "28013");
+    const [fiscalCountry, setFiscalCountry] = useState5(userProfile && userProfile.fiscalCountry || "Espa\xF1a");
     const fileInputRef = React.useRef(null);
     const handleAvatarUpload = (e) => {
       const file = e.target.files && e.target.files[0];
@@ -3934,7 +4399,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setSaveSuccessMsg(`\u2713 Sesi\xF3n "${name}" guardada con \xE9xito`);
       setTimeout(() => setSaveSuccessMsg(""), 3e3);
     };
-    useEffect5(() => {
+    useEffect6(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
@@ -3951,7 +4416,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       ), /* @__PURE__ */ React.createElement(
         "aside",
         {
-          className: "fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[500px] md:w-[540px] max-w-[95vw] h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight",
+          className: "fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight",
           onClick: (e) => e.stopPropagation()
         },
         /* @__PURE__ */ React.createElement("div", { className: "p-4 sm:p-5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-full overflow-hidden border-2 border-cyan-400 bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]" }, avatarUrl ? /* @__PURE__ */ React.createElement("img", { src: avatarUrl, alt: "Avatar DJ", className: "w-full h-full object-cover" }) : /* @__PURE__ */ React.createElement(Icons.Headphones, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement(
@@ -4036,6 +4501,16 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           "button",
           {
             type: "button",
+            onClick: () => setActiveTab("billing"),
+            className: `px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === "billing" ? "bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+          },
+          /* @__PURE__ */ React.createElement(Icons.CreditCard, { size: 14, className: "inline-block align-[-2px]" }),
+          " ",
+          /* @__PURE__ */ React.createElement("span", null, "Datos de Pago & Plan")
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
             onClick: () => setActiveTab("sessions"),
             className: `px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === "sessions" ? "bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
           },
@@ -4053,7 +4528,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           " ",
           /* @__PURE__ */ React.createElement("span", null, "Suite & Audio")
         )),
-        saveSuccessMsg && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-emerald-950/90 border-b border-emerald-600/70 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, saveSuccessMsg)),
+        (saveSuccessMsg || billingMsg.text) && /* @__PURE__ */ React.createElement("div", { className: `px-4 py-2 border-b text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0 ${billingMsg.type === "error" ? "bg-rose-950/90 border-rose-600/70 text-rose-300" : "bg-emerald-950/90 border-emerald-600/70 text-emerald-300"}` }, /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, saveSuccessMsg || billingMsg.text)),
         /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-5" }, activeTab === "profile" && /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("label", { className: "text-[11px] font-mono text-gray-400 uppercase font-bold block" }, "Avatares DJ de Cabina R\xE1pidos"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto py-1" }, [
           { label: "Cyber", icon: "\u{1F3A7}", bg: "from-cyan-500 to-blue-600" },
           { label: "Vinilo", icon: "\u{1F4BD}", bg: "from-purple-500 to-indigo-600" },
@@ -4272,7 +4747,239 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             className: "w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow-md"
           },
           "Guardar Preferencias de Cabina"
-        ))),
+        )), activeTab === "billing" && /* @__PURE__ */ React.createElement("div", { className: "space-y-5 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#0e1628] via-[#0d1222] to-[#120e28] border border-cyan-500/40 relative overflow-hidden shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 right-0 w-44 h-44 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3 mb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 font-mono text-xs font-black shadow-sm" }, "VIP"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider block" }, "Plan Activo"), /* @__PURE__ */ React.createElement("h4", { className: "text-base font-mono font-black text-white" }, userProfile && userProfile.plan || "BEATWAVE PRO CLUB (ANUAL)"))), /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-mono font-black flex items-center gap-1.5 shadow-sm" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }), "ACTIVO")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-black/40 border border-white/5 font-mono text-xs mb-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-zinc-500 uppercase" }, "Tarifa"), /* @__PURE__ */ React.createElement("div", { className: "text-white font-bold text-sm" }, "89,00 \u20AC ", /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-zinc-400 font-normal" }, "/ a\xF1o"))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-zinc-500 uppercase" }, "Renovaci\xF3n"), /* @__PURE__ */ React.createElement("div", { className: "text-zinc-200 font-medium" }, "15 Nov 2027")), /* @__PURE__ */ React.createElement("div", { className: "col-span-2 sm:col-span-1" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-zinc-500 uppercase" }, "Ahorro Aplicado"), /* @__PURE__ */ React.createElement("div", { className: "text-emerald-400 font-bold" }, "25% Descuento Anual"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 pt-1 font-mono text-xs" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              onClose();
+              if (onOpenPricing) onOpenPricing();
+            },
+            className: "px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black uppercase text-[11px] tracking-wider transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-95"
+          },
+          "Cambiar Plan / Mejorar \u2794"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              onClose();
+              if (onOpenRegister) onOpenRegister();
+            },
+            className: "px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-cyan-300 hover:text-white border border-cyan-500/40 text-[11px] font-bold transition-all cursor-pointer"
+          },
+          "+ Nueva Licencia / Registro"
+        ))), /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.CreditCard, { size: 15, className: "text-cyan-400 inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase text-white tracking-wider" }, "M\xE9todos de Pago & Pasarelas")), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setShowAddPaymentForm(!showAddPaymentForm),
+            className: "text-[11px] font-mono text-cyan-400 hover:text-cyan-300 font-bold transition-colors cursor-pointer"
+          },
+          showAddPaymentForm ? "\u2212 Cancelar" : "+ A\xF1adir M\xE9todo"
+        )), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, savedPaymentMethods.map((pm) => /* @__PURE__ */ React.createElement("div", { key: pm.id, className: "p-3 rounded-xl bg-[#0c0d1a] border border-djzinc-800 flex items-center justify-between gap-3 font-mono text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-7 rounded-lg bg-zinc-950 border border-zinc-700 flex items-center justify-center text-[10px] font-black text-white shrink-0" }, pm.type === "card" ? "\u{1F4B3}" : pm.type === "applepay" ? "\uF8FF" : pm.type === "gpay" ? "GPay" : "PP"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, pm.brand || pm.label), pm.last4 && /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u2022\u2022\u2022\u2022 ", pm.last4), pm.isDefault && /* @__PURE__ */ React.createElement("span", { className: "text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-600/50 px-1.5 py-0.5 rounded-full font-bold" }, "Predeterminado")), pm.exp && /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-zinc-500" }, "Expira: ", pm.exp))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, !pm.isDefault && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setSavedPaymentMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === pm.id })));
+              setBillingMsg({ text: "\u2713 M\xE9todo predeterminado actualizado", type: "success" });
+              setTimeout(() => setBillingMsg({ text: "", type: "" }), 3e3);
+            },
+            className: "px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold cursor-pointer"
+          },
+          "Usar por defecto"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setSavedPaymentMethods((prev) => prev.filter((m) => m.id !== pm.id));
+              setBillingMsg({ text: "\u2713 M\xE9todo de pago eliminado", type: "success" });
+              setTimeout(() => setBillingMsg({ text: "", type: "" }), 3e3);
+            },
+            className: "p-1 text-zinc-500 hover:text-rose-400 cursor-pointer",
+            title: "Eliminar m\xE9todo"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Close, { size: 13 })
+        ))))), showAddPaymentForm && /* @__PURE__ */ React.createElement("div", { className: "p-3.5 rounded-xl bg-black/60 border border-cyan-500/30 space-y-3 font-mono animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-bold text-gray-300 uppercase" }, "Selecciona M\xE9todo de Pago"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs" }, [
+          { id: "card", label: "Tarjeta", icon: "\u{1F4B3}" },
+          { id: "applepay", label: "Apple Pay", icon: "\uF8FF" },
+          { id: "gpay", label: "Google Pay", icon: "GPay" },
+          { id: "paypal", label: "PayPal", icon: "\u{1F17F}\uFE0F" }
+        ].map((opt) => /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            key: opt.id,
+            type: "button",
+            onClick: () => setNewMethodType(opt.id),
+            className: `py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-1 font-bold transition-all cursor-pointer ${newMethodType === opt.id ? "bg-cyan-500 text-black border-cyan-400 font-black shadow-sm" : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"}`
+          },
+          /* @__PURE__ */ React.createElement("span", { className: "text-sm" }, opt.icon),
+          /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, opt.label)
+        ))), newMethodType === "card" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 pt-1 text-xs" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "N\xFAmero de Tarjeta"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            placeholder: "4532 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022",
+            value: newCardNumber,
+            onChange: (e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 16);
+              const parts = val.match(/.{1,4}/g);
+              setNewCardNumber(parts ? parts.join(" ") : val);
+            },
+            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+          }
+        )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Vencimiento (MM/AA)"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            placeholder: "MM/AA",
+            value: newCardExpiry,
+            onChange: (e) => {
+              let val = e.target.value.replace(/\D/g, "").slice(0, 4);
+              if (val.length >= 2) val = val.slice(0, 2) + "/" + val.slice(2);
+              setNewCardExpiry(val);
+            },
+            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+          }
+        )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "CVC / CVV"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "password",
+            maxLength: 4,
+            placeholder: "\u2022\u2022\u2022",
+            value: newCardCvc,
+            onChange: (e) => setNewCardCvc(e.target.value.replace(/\D/g, "")),
+            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+          }
+        ))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Titular de la Tarjeta"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: newCardHolder,
+            onChange: (e) => setNewCardHolder(e.target.value),
+            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+          }
+        ))), newMethodType === "applepay" && /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2" }, /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-300" }, "Vincula tus tarjetas configuradas en el Wallet de Apple mediante Touch ID o Face ID."), /* @__PURE__ */ React.createElement("div", { className: "py-2 px-4 rounded-xl bg-white text-black font-black text-xs inline-flex items-center gap-2 shadow cursor-pointer" }, /* @__PURE__ */ React.createElement("span", null, "\uF8FF Pay"), " ", /* @__PURE__ */ React.createElement("span", null, "Conectar Apple Wallet"))), newMethodType === "gpay" && /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2" }, /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-300" }, "Conecta tu cuenta de Google Play / Google Pay para facturaci\xF3n directa."), /* @__PURE__ */ React.createElement("div", { className: "py-2 px-4 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-bold text-xs inline-flex items-center gap-2 shadow cursor-pointer hover:bg-zinc-800" }, /* @__PURE__ */ React.createElement("span", null, "G Pay"), " ", /* @__PURE__ */ React.createElement("span", null, "Conectar con Google"))), newMethodType === "paypal" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 pt-1 text-xs" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block" }, "Email de Cuenta PayPal"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "email",
+            placeholder: "dj.billing@paypal.com",
+            value: paypalEmail,
+            onChange: (e) => setPaypalEmail(e.target.value),
+            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+          }
+        )), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              const id = "pm_" + Date.now();
+              if (newMethodType === "card") {
+                const cleanCard = newCardNumber.replace(/\s/g, "");
+                const last4 = cleanCard ? cleanCard.slice(-4) : "9988";
+                setSavedPaymentMethods((prev) => [...prev, { id, type: "card", brand: "Visa / Mastercard", last4, exp: newCardExpiry || "12/28", holder: newCardHolder, isDefault: true }]);
+              } else if (newMethodType === "applepay") {
+                setSavedPaymentMethods((prev) => [...prev, { id, type: "applepay", label: "Apple Pay (Wallet)", isDefault: true }]);
+              } else if (newMethodType === "gpay") {
+                setSavedPaymentMethods((prev) => [...prev, { id, type: "gpay", label: "Google Pay / Google Play", isDefault: true }]);
+              } else {
+                setSavedPaymentMethods((prev) => [...prev, { id, type: "paypal", label: `PayPal (${paypalEmail || "Cuenta Conectada"})`, isDefault: true }]);
+              }
+              setShowAddPaymentForm(false);
+              setBillingMsg({ text: "\u2713 Nuevo m\xE9todo de pago guardado con \xE9xito", type: "success" });
+              setTimeout(() => setBillingMsg({ text: "", type: "" }), 3e3);
+            },
+            className: "w-full py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow"
+          },
+          "Guardar y Establecer como Predeterminado"
+        ))), /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-3 font-mono" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold uppercase text-white tracking-wider flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", null, "Datos Fiscales & NIF / CIF"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-zinc-500" }, "Para emisi\xF3n autom\xE1tica de facturas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Nombre / Raz\xF3n Social"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: fiscalName,
+            onChange: (e) => setFiscalName(e.target.value),
+            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+          }
+        )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "NIF / CIF / VAT ID"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: fiscalTaxId,
+            onChange: (e) => setFiscalTaxId(e.target.value),
+            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+          }
+        )), /* @__PURE__ */ React.createElement("div", { className: "sm:col-span-2" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Direcci\xF3n Fiscal"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: fiscalAddress,
+            onChange: (e) => setFiscalAddress(e.target.value),
+            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+          }
+        )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Ciudad & CP"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: fiscalCity,
+            onChange: (e) => setFiscalCity(e.target.value),
+            className: "w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+          }
+        ), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: fiscalZip,
+            onChange: (e) => setFiscalZip(e.target.value),
+            className: "w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+          }
+        ))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Pa\xEDs"), /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: fiscalCountry,
+            onChange: (e) => setFiscalCountry(e.target.value),
+            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+          }
+        ))), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              if (onUpdateProfile) {
+                onUpdateProfile({
+                  ...userProfile,
+                  fiscalName,
+                  taxId: fiscalTaxId,
+                  fiscalAddress,
+                  fiscalCity,
+                  fiscalZip,
+                  fiscalCountry
+                });
+              }
+              setBillingMsg({ text: "\u2713 Datos fiscales de facturaci\xF3n guardados", type: "success" });
+              setTimeout(() => setBillingMsg({ text: "", type: "" }), 3e3);
+            },
+            className: "px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white font-bold text-xs uppercase cursor-pointer transition-all"
+          },
+          "Guardar Datos Fiscales"
+        )), /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-3 font-mono" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold uppercase text-white tracking-wider flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", null, "Historial de Facturas (IVA 21% Desglosado)"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-cyan-400 font-bold" }, "2 Facturas Emitidas")), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, [
+          { num: "BW-2026-0891", date: "15/11/2026", concept: "BeatWave Pro Anual", base: "73,55 \u20AC", vat: "15,45 \u20AC", total: "89,00 \u20AC" },
+          { num: "BW-2025-0104", date: "15/11/2025", concept: "BeatWave Pro Anual", base: "73,55 \u20AC", vat: "15,45 \u20AC", total: "89,00 \u20AC" }
+        ].map((fac) => /* @__PURE__ */ React.createElement("div", { key: fac.num, className: "p-3 rounded-xl bg-[#0c0d18] border border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, fac.num), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-zinc-400" }, "\u2022 ", fac.date)), /* @__PURE__ */ React.createElement("div", { className: "text-[11px] text-zinc-400 mt-0.5" }, fac.concept, " (Base: ", fac.base, " + IVA 21%: ", fac.vat, ")")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "text-right" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-cyan-300" }, fac.total), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-emerald-400 block font-bold" }, "PAGADA")), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setBillingMsg({ text: `\u2713 Descargando ${fac.num}.pdf...`, type: "success" });
+              setTimeout(() => setBillingMsg({ text: "", type: "" }), 3e3);
+            },
+            className: "px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold cursor-pointer transition-colors",
+            title: "Descargar Factura PDF"
+          },
+          "PDF \u2913"
+        )))))))),
         /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#080811] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "BeatWave Pro v1.0.0 \u2022 Centro de Control DJ"), /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -4288,9 +4995,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
   var BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
     if (!isOpen) return null;
-    const [filterCategory, setFilterCategory] = useState4("all");
-    const [selectedIds, setSelectedIds] = useState4(() => new Set(entries.map((e) => e.id)));
-    const [searchTerm, setSearchTerm] = useState4("");
+    const [filterCategory, setFilterCategory] = useState5("all");
+    const [selectedIds, setSelectedIds] = useState5(() => new Set(entries.map((e) => e.id)));
+    const [searchTerm, setSearchTerm] = useState5("");
     const filteredEntries = entries.filter((e) => {
       const matchesCategory = filterCategory === "all" || e.category === filterCategory;
       const matchesSearch = !searchTerm || e.trackTitle && e.trackTitle.toLowerCase().includes(searchTerm.toLowerCase()) || e.action && e.action.toLowerCase().includes(searchTerm.toLowerCase()) || e.detailsAfter && e.detailsAfter.toLowerCase().includes(searchTerm.toLowerCase());
@@ -4496,7 +5203,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   var DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
     if (!isOpen) return null;
     const detectedOS = useMemo(() => detectClientOS(), []);
-    const [selectedOS, setSelectedOS] = useState4(() => detectedOS);
+    const [selectedOS, setSelectedOS] = useState5(() => detectedOS);
     const isMac = selectedOS === "mac";
     const modKey = isMac ? "\u2318" : "Ctrl";
     const altKey = isMac ? "\u2325" : "Alt";
@@ -4911,23 +5618,23 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
   var InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onNavigateTab, lang = "es" }) => {
     if (!isOpen) return null;
-    const [isFolded, setIsFolded] = useState4(false);
-    const [activeSectionKey, setActiveSectionKey] = useState4(initialSection || "audit");
+    const [isFolded, setIsFolded] = useState5(false);
+    const [activeSectionKey, setActiveSectionKey] = useState5(initialSection || "audit");
     const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
-    const [simStep, setSimStep] = useState4(0);
-    const [isSimPlaying, setIsSimPlaying] = useState4(true);
-    const [simSpeed, setSimSpeed] = useState4(1);
-    const [zoomFocus, setZoomFocus] = useState4(null);
-    const [activeManualTab, setActiveManualTab] = useState4("all");
-    const canvasRef = useRef5(null);
-    useEffect5(() => {
+    const [simStep, setSimStep] = useState5(0);
+    const [isSimPlaying, setIsSimPlaying] = useState5(true);
+    const [simSpeed, setSimSpeed] = useState5(1);
+    const [zoomFocus, setZoomFocus] = useState5(null);
+    const [activeManualTab, setActiveManualTab] = useState5("all");
+    const canvasRef = useRef6(null);
+    useEffect6(() => {
       if (initialSection && MANUAL_SECTIONS[initialSection]) {
         setActiveSectionKey(initialSection);
         setSimStep(0);
         setZoomFocus(null);
       }
     }, [initialSection]);
-    useEffect5(() => {
+    useEffect6(() => {
       if (!isSimPlaying) return;
       const interval = simSpeed === 2 ? 1500 : 3e3;
       const timer = setInterval(() => {
@@ -4935,14 +5642,14 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       }, interval);
       return () => clearInterval(timer);
     }, [isSimPlaying, activeSectionKey, simSpeed]);
-    useEffect5(() => {
+    useEffect6(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onClose]);
-    useEffect5(() => {
+    useEffect6(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -5945,18 +6652,18 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   }) => {
     var _a;
     if (!isOpen) return null;
-    const [activeLibId, setActiveLibId] = useState4(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
-    const [libNameInput, setLibNameInput] = useState4("");
-    const [newFolderName, setNewFolderName] = useState4("");
-    const [selectedFolderId, setSelectedFolderId] = useState4(null);
-    const [feedbackMsg, setFeedbackMsg] = useState4("");
-    const [searchTrack, setSearchTrack] = useState4("");
+    const [activeLibId, setActiveLibId] = useState5(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
+    const [libNameInput, setLibNameInput] = useState5("");
+    const [newFolderName, setNewFolderName] = useState5("");
+    const [selectedFolderId, setSelectedFolderId] = useState5(null);
+    const [feedbackMsg, setFeedbackMsg] = useState5("");
+    const [searchTrack, setSearchTrack] = useState5("");
     const currentLib = libraries.find((l) => l.id === activeLibId) || libraries[0] || {
       id: "lib_default",
       name: "Mi Biblioteca Principal",
       folders: []
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (currentLib) {
         setLibNameInput(currentLib.name || "");
         if (!selectedFolderId && currentLib.folders && currentLib.folders.length > 0) {
@@ -5964,7 +6671,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         }
       }
     }, [currentLib == null ? void 0 : currentLib.id]);
-    useEffect5(() => {
+    useEffect6(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
@@ -6330,29 +7037,29 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     onAuditProgressChange
   }) => {
     var _a, _b;
-    const [localRutaOrigen, setLocalRutaOrigen] = useState4("");
+    const [localRutaOrigen, setLocalRutaOrigen] = useState5("");
     const rutaOrigen = currentFolder || localRutaOrigen;
     const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
-    const [selectedLooseFiles, setSelectedLooseFiles] = useState4([]);
-    const [isAuditing, setIsAuditing] = useState4(false);
-    const [isLoadingDir, setIsLoadingDir] = useState4(false);
-    const [isExporting, setIsExporting] = useState4(false);
-    const [isInjecting, setIsInjecting] = useState4(false);
-    const [metrics, setMetrics] = useState4({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
-    const [filtro, setFiltro] = useState4("todos");
-    const [busqueda, setBusqueda] = useState4("");
-    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState4("ALL");
-    const [batchModalOpen, setBatchModalOpen] = useState4(false);
-    const [duplicateModalOpen, setDuplicateModalOpen] = useState4(false);
-    const [batchProgress, setBatchProgress] = useState4(0);
-    const [batchStatusMsg, setBatchStatusMsg] = useState4("");
-    const [saveFeedback, setSaveFeedback] = useState4("");
-    const [sidebarOpen, setSidebarOpen] = useState4(false);
-    const [exportDropdownOpen, setExportDropdownOpen] = useState4(false);
-    const [mobileWorkflowTab, setMobileWorkflowTab] = useState4("analizar");
-    const [batchConfigured, setBatchConfigured] = useState4(false);
-    const [isAppendMode, setIsAppendMode] = useState4(false);
-    const [batchConfigOpts, setBatchConfigOpts] = useState4({
+    const [selectedLooseFiles, setSelectedLooseFiles] = useState5([]);
+    const [isAuditing, setIsAuditing] = useState5(false);
+    const [isLoadingDir, setIsLoadingDir] = useState5(false);
+    const [isExporting, setIsExporting] = useState5(false);
+    const [isInjecting, setIsInjecting] = useState5(false);
+    const [metrics, setMetrics] = useState5({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+    const [filtro, setFiltro] = useState5("todos");
+    const [busqueda, setBusqueda] = useState5("");
+    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState5("ALL");
+    const [batchModalOpen, setBatchModalOpen] = useState5(false);
+    const [duplicateModalOpen, setDuplicateModalOpen] = useState5(false);
+    const [batchProgress, setBatchProgress] = useState5(0);
+    const [batchStatusMsg, setBatchStatusMsg] = useState5("");
+    const [saveFeedback, setSaveFeedback] = useState5("");
+    const [sidebarOpen, setSidebarOpen] = useState5(false);
+    const [exportDropdownOpen, setExportDropdownOpen] = useState5(false);
+    const [mobileWorkflowTab, setMobileWorkflowTab] = useState5("analizar");
+    const [batchConfigured, setBatchConfigured] = useState5(false);
+    const [isAppendMode, setIsAppendMode] = useState5(false);
+    const [batchConfigOpts, setBatchConfigOpts] = useState5({
       bpmKey: true,
       energyMood: true,
       acoustics: true,
@@ -6366,38 +7073,38 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       injectCovers: false,
       tacticalComments: false
     });
-    const [mixOracleOpen, setMixOracleOpen] = useState4(false);
-    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState4(null);
-    const [selectedAuditIds, setSelectedAuditIds] = useState4(/* @__PURE__ */ new Set());
-    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState4(false);
-    const [deleteModalState, setDeleteModalState] = useState4({ open: false, tracks: [], mode: "trash" });
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState4(() => {
+    const [mixOracleOpen, setMixOracleOpen] = useState5(false);
+    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState5(null);
+    const [selectedAuditIds, setSelectedAuditIds] = useState5(/* @__PURE__ */ new Set());
+    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState5(false);
+    const [deleteModalState, setDeleteModalState] = useState5({ open: false, tracks: [], mode: "trash" });
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState5(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
         return false;
       }
     });
-    const [internalTracks, setInternalTracks] = useState4([]);
+    const [internalTracks, setInternalTracks] = useState5([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = setExternalTracks !== void 0 ? setExternalTracks : setInternalTracks;
-    const [fftModalOpen, setFftModalOpen] = useState4(false);
-    const [fftAnalysisData, setFftAnalysisData] = useState4(null);
-    const [isAnalyzingFft, setIsAnalyzingFft] = useState4(false);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState4(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState4("");
-    const [fsParentPath, setFsParentPath] = useState4("");
-    const [fsFolders, setFsFolders] = useState4([]);
-    const [fsFiles, setFsFiles] = useState4([]);
-    const [selectedFsFiles, setSelectedFsFiles] = useState4([]);
-    const [stagedFolders, setStagedFolders] = useState4([]);
-    const [stagedFiles, setStagedFiles] = useState4([]);
-    const [fsActiveTab, setFsActiveTab] = useState4("folders");
-    const [fsLoading, setFsLoading] = useState4(false);
-    const [camelotModalOpen, setCamelotModalOpen] = useState4(false);
-    const tapTimesRef = useRef5([]);
-    const tableScrollRef = useRef5(null);
-    const [metricsCollapsed, setMetricsCollapsed] = useState4(() => {
+    const [fftModalOpen, setFftModalOpen] = useState5(false);
+    const [fftAnalysisData, setFftAnalysisData] = useState5(null);
+    const [isAnalyzingFft, setIsAnalyzingFft] = useState5(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState5(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState5("");
+    const [fsParentPath, setFsParentPath] = useState5("");
+    const [fsFolders, setFsFolders] = useState5([]);
+    const [fsFiles, setFsFiles] = useState5([]);
+    const [selectedFsFiles, setSelectedFsFiles] = useState5([]);
+    const [stagedFolders, setStagedFolders] = useState5([]);
+    const [stagedFiles, setStagedFiles] = useState5([]);
+    const [fsActiveTab, setFsActiveTab] = useState5("folders");
+    const [fsLoading, setFsLoading] = useState5(false);
+    const [camelotModalOpen, setCamelotModalOpen] = useState5(false);
+    const tapTimesRef = useRef6([]);
+    const tableScrollRef = useRef6(null);
+    const [metricsCollapsed, setMetricsCollapsed] = useState5(() => {
       try {
         return localStorage.getItem("bw_metrics_collapsed") !== "false";
       } catch (e) {
@@ -6414,20 +7121,20 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         return next;
       });
     };
-    useEffect5(() => {
+    useEffect6(() => {
       const handleToggleEvent = () => toggleMetricsCollapsed();
       window.addEventListener("bw:toggle-metrics", handleToggleEvent);
       return () => window.removeEventListener("bw:toggle-metrics", handleToggleEvent);
     }, []);
-    useEffect5(() => {
+    useEffect6(() => {
       if (tracks && tracks.length > 0) {
         setMetricsCollapsed(false);
       }
     }, [tracks && tracks.length > 0]);
-    const [selectedCueId, setSelectedCueId] = useState4(1);
-    const [snapToGrid, setSnapToGrid] = useState4(true);
-    const [showBeatgrid, setShowBeatgrid] = useState4(true);
-    const [cueStudioModalOpen, setCueStudioModalOpen] = useState4(false);
+    const [selectedCueId, setSelectedCueId] = useState5(1);
+    const [snapToGrid, setSnapToGrid] = useState5(true);
+    const [showBeatgrid, setShowBeatgrid] = useState5(true);
+    const [cueStudioModalOpen, setCueStudioModalOpen] = useState5(false);
     const currentTrack = tracks.find((t2) => t2.id === selectedTrack) || tracks[0] || {};
     const resetAuditWorkspace = (keepFolder = false) => {
       if (!keepFolder) {
@@ -6467,7 +7174,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (window.eel && typeof window.eel.expose === "function") {
         window.actualizar_progreso_batch = (pct, msg) => {
           if (!msg || msg.includes("detenid") || msg.includes("cancelad")) {
@@ -6488,7 +7195,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
       }
     }, [onAuditProgressChange]);
-    useEffect5(() => {
+    useEffect6(() => {
       if (typeof onAuditProgressChange === "function") {
         onAuditProgressChange({
           isAuditing,
@@ -6497,7 +7204,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         });
       }
     }, [isAuditing, batchProgress, batchStatusMsg, onAuditProgressChange]);
-    useEffect5(() => {
+    useEffect6(() => {
       if (!tracks || tracks.length === 0) {
         setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
       } else {
@@ -7700,28 +8407,28 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    const [auditSortField, setAuditSortField] = useState4("id");
-    const [auditSortDir, setAuditSortDir] = useState4("asc");
-    const [filterHeaderSearch, setFilterHeaderSearch] = useState4("");
-    const [filterHeaderArtist, setFilterHeaderArtist] = useState4("");
-    const [filterHeaderFormat, setFilterHeaderFormat] = useState4("ALL");
-    const [filterHeaderKhz, setFilterHeaderKhz] = useState4("ALL");
-    const [filterHeaderKbps, setFilterHeaderKbps] = useState4("ALL");
-    const [filterHeaderQuality, setFilterHeaderQuality] = useState4("ALL");
-    const [filterHeaderLoss, setFilterHeaderLoss] = useState4("ALL");
-    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState4("ALL");
-    const [filterHeaderLufs, setFilterHeaderLufs] = useState4("ALL");
-    const [filterHeaderDuration, setFilterHeaderDuration] = useState4("");
-    const [filterHeaderBpm, setFilterHeaderBpm] = useState4("");
-    const [filterHeaderKey, setFilterHeaderKey] = useState4("");
-    const [filterHeaderCues, setFilterHeaderCues] = useState4("ALL");
-    const [filterHeaderStatus, setFilterHeaderStatus] = useState4("ALL");
-    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState4("ALL");
-    const [filterHeaderDance, setFilterHeaderDance] = useState4("ALL");
-    const [filterHeaderPhase, setFilterHeaderPhase] = useState4("ALL");
-    const [filterHeaderGenre, setFilterHeaderGenre] = useState4("");
-    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState4("");
-    const [filterHeaderComment, setFilterHeaderComment] = useState4("");
+    const [auditSortField, setAuditSortField] = useState5("id");
+    const [auditSortDir, setAuditSortDir] = useState5("asc");
+    const [filterHeaderSearch, setFilterHeaderSearch] = useState5("");
+    const [filterHeaderArtist, setFilterHeaderArtist] = useState5("");
+    const [filterHeaderFormat, setFilterHeaderFormat] = useState5("ALL");
+    const [filterHeaderKhz, setFilterHeaderKhz] = useState5("ALL");
+    const [filterHeaderKbps, setFilterHeaderKbps] = useState5("ALL");
+    const [filterHeaderQuality, setFilterHeaderQuality] = useState5("ALL");
+    const [filterHeaderLoss, setFilterHeaderLoss] = useState5("ALL");
+    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState5("ALL");
+    const [filterHeaderLufs, setFilterHeaderLufs] = useState5("ALL");
+    const [filterHeaderDuration, setFilterHeaderDuration] = useState5("");
+    const [filterHeaderBpm, setFilterHeaderBpm] = useState5("");
+    const [filterHeaderKey, setFilterHeaderKey] = useState5("");
+    const [filterHeaderCues, setFilterHeaderCues] = useState5("ALL");
+    const [filterHeaderStatus, setFilterHeaderStatus] = useState5("ALL");
+    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState5("ALL");
+    const [filterHeaderDance, setFilterHeaderDance] = useState5("ALL");
+    const [filterHeaderPhase, setFilterHeaderPhase] = useState5("ALL");
+    const [filterHeaderGenre, setFilterHeaderGenre] = useState5("");
+    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState5("");
+    const [filterHeaderComment, setFilterHeaderComment] = useState5("");
     const DEFAULT_AUDIT_COLUMNS = {
       id: true,
       waveform: true,
@@ -7806,7 +8513,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         ]
       }
     ];
-    const [visibleColumns, setVisibleColumns] = useState4(() => {
+    const [visibleColumns, setVisibleColumns] = useState5(() => {
       try {
         const saved = localStorage.getItem("bw_audit_visible_columns");
         if (saved) return { ...DEFAULT_AUDIT_COLUMNS, ...JSON.parse(saved) };
@@ -7814,11 +8521,11 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       }
       return DEFAULT_AUDIT_COLUMNS;
     });
-    const [columnSelectorOpen, setColumnSelectorOpen] = useState4(false);
-    const [columnSearchText, setColumnSearchText] = useState4("");
-    const [isDragOver, setIsDragOver] = useState4(false);
-    const [isLibraryModalOpen, setIsLibraryModalOpen] = useState4(false);
-    const [customLibraries, setCustomLibraries] = useState4(() => {
+    const [columnSelectorOpen, setColumnSelectorOpen] = useState5(false);
+    const [columnSearchText, setColumnSearchText] = useState5("");
+    const [isDragOver, setIsDragOver] = useState5(false);
+    const [isLibraryModalOpen, setIsLibraryModalOpen] = useState5(false);
+    const [customLibraries, setCustomLibraries] = useState5(() => {
       try {
         const saved = localStorage.getItem("bw_user_custom_libraries");
         if (saved) {
@@ -7841,7 +8548,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         }
       ];
     });
-    const [activeCustomLibId, setActiveCustomLibId] = useState4(() => {
+    const [activeCustomLibId, setActiveCustomLibId] = useState5(() => {
       try {
         return localStorage.getItem("bw_active_custom_library_id") || "lib_default";
       } catch (_) {
@@ -7860,7 +8567,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       } catch (_) {
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (!columnSelectorOpen) return;
       const handleKeyDown = (e) => {
         if (e.key === "Escape") {
@@ -9991,27 +10698,27 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
       }
     };
-    const [zoom, setZoom] = useState4(4);
-    const [snapToGrid, setSnapToGrid] = useState4(true);
-    const [showBeatgrid, setShowBeatgrid] = useState4(true);
-    const [followPlayhead, setFollowPlayhead] = useState4(true);
-    const [selectedCueId, setSelectedCueId] = useState4(1);
-    const [isRegeneratingMood, setIsRegeneratingMood] = useState4(false);
-    const [saveStatus, setSaveStatus] = useState4("");
-    const [isSavingBatch, setIsSavingBatch] = useState4(false);
-    const [filterQuery, setFilterQuery] = useState4("");
-    const [fsBrowserOpen, setFsBrowserOpen] = useState4(false);
-    const [carpetasSistema, setCarpetasSistema] = useState4([]);
-    const [rutaNavegacion, setRutaNavegacion] = useState4(currentFolder || "/Users/admin/Music/mi musica");
-    const [isLoadingDir, setIsLoadingDir] = useState4(false);
-    const [showTrackListDrawer, setShowTrackListDrawer] = useState4(false);
-    const [pitchPercent, setPitchPercent] = useState4(0);
-    const [pitchRange, setPitchRange] = useState4(8);
-    const [eqBass, setEqBass] = useState4(0);
-    const [eqMid, setEqMid] = useState4(0);
-    const [eqTreble, setEqTreble] = useState4(0);
-    const [mobileDeckMode, setMobileDeckMode] = useState4("pads");
-    const [autoMappingStatus, setAutoMappingStatus] = useState4("");
+    const [zoom, setZoom] = useState5(4);
+    const [snapToGrid, setSnapToGrid] = useState5(true);
+    const [showBeatgrid, setShowBeatgrid] = useState5(true);
+    const [followPlayhead, setFollowPlayhead] = useState5(true);
+    const [selectedCueId, setSelectedCueId] = useState5(1);
+    const [isRegeneratingMood, setIsRegeneratingMood] = useState5(false);
+    const [saveStatus, setSaveStatus] = useState5("");
+    const [isSavingBatch, setIsSavingBatch] = useState5(false);
+    const [filterQuery, setFilterQuery] = useState5("");
+    const [fsBrowserOpen, setFsBrowserOpen] = useState5(false);
+    const [carpetasSistema, setCarpetasSistema] = useState5([]);
+    const [rutaNavegacion, setRutaNavegacion] = useState5(currentFolder || "/Users/admin/Music/mi musica");
+    const [isLoadingDir, setIsLoadingDir] = useState5(false);
+    const [showTrackListDrawer, setShowTrackListDrawer] = useState5(false);
+    const [pitchPercent, setPitchPercent] = useState5(0);
+    const [pitchRange, setPitchRange] = useState5(8);
+    const [eqBass, setEqBass] = useState5(0);
+    const [eqMid, setEqMid] = useState5(0);
+    const [eqTreble, setEqTreble] = useState5(0);
+    const [mobileDeckMode, setMobileDeckMode] = useState5("pads");
+    const [autoMappingStatus, setAutoMappingStatus] = useState5("");
     const handleAutoGenerateClubTemplate = () => {
       if (!currentTrack) return;
       const durClean = durMs > 1e3 ? durMs : 3e5;
@@ -10171,15 +10878,15 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       };
     });
     const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
-    const [cueNameInput, setCueNameInput] = useState4(currentCue.name || "");
-    const [cueTimeInput, setCueTimeInput] = useState4(currentCue.time || "00:00.00");
-    const [tacticalComment, setTacticalComment] = useState4((currentTrack == null ? void 0 : currentTrack.comment) || "");
-    useEffect5(() => {
+    const [cueNameInput, setCueNameInput] = useState5(currentCue.name || "");
+    const [cueTimeInput, setCueTimeInput] = useState5(currentCue.time || "00:00.00");
+    const [tacticalComment, setTacticalComment] = useState5((currentTrack == null ? void 0 : currentTrack.comment) || "");
+    useEffect6(() => {
       if (currentTrack) {
         setTacticalComment(currentTrack.comment || "");
       }
     }, [currentTrack == null ? void 0 : currentTrack.id, currentTrack == null ? void 0 : currentTrack.comment]);
-    useEffect5(() => {
+    useEffect6(() => {
       setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
       setCueTimeInput(currentCue.time || "00:00.00");
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -11264,13 +11971,13 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     t = (k) => k
   }) => {
     var _a, _b;
-    const [internalTracks, setInternalTracks] = useState4([]);
+    const [internalTracks, setInternalTracks] = useState5([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = externalSetTracks !== void 0 ? externalSetTracks : setInternalTracks;
-    const [spotifyUrl, setSpotifyUrl] = useState4("");
-    const [isAnalyzing, setIsAnalyzing] = useState4(false);
-    const [destDir, setDestDir] = useState4("/Users/admin/Music/mi musica");
-    useEffect5(() => {
+    const [spotifyUrl, setSpotifyUrl] = useState5("");
+    const [isAnalyzing, setIsAnalyzing] = useState5(false);
+    const [destDir, setDestDir] = useState5("/Users/admin/Music/mi musica");
+    useEffect6(() => {
       fetch("/api/directorio_descarga").then((r) => r.json()).then((data) => {
         if (data && data.path && typeof data.path === "string" && data.path.startsWith("/") && !data.path.includes('"') && !data.path.includes(":")) {
           setDestDir(data.path);
@@ -11278,21 +11985,21 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }).catch(() => {
       });
     }, []);
-    const [selectedFormat, setSelectedFormat] = useState4("flac");
-    const [downloadingMsg, setDownloadingMsg] = useState4("");
-    const [downloadProgress, setDownloadProgress] = useState4(0);
-    const [isDownloading, setIsDownloading] = useState4(false);
-    const [isAuditingFft, setIsAuditingFft] = useState4(false);
-    const [fftProgress, setFftProgress] = useState4(0);
-    const [fftMsg, setFftMsg] = useState4("");
-    const [selectedId, setSelectedId] = useState4(null);
-    const [spInspectorOpen, setSpInspectorOpen] = useState4(false);
-    const [downloadSession, setDownloadSession] = useState4({ downloaded: [], failed: [] });
-    const [spSubView, setSpSubView] = useState4("catalog");
-    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState4(/* @__PURE__ */ new Set());
-    const [isExportingXls, setIsExportingXls] = useState4(false);
-    const [xlsToast, setXlsToast] = useState4("");
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState4(() => {
+    const [selectedFormat, setSelectedFormat] = useState5("flac");
+    const [downloadingMsg, setDownloadingMsg] = useState5("");
+    const [downloadProgress, setDownloadProgress] = useState5(0);
+    const [isDownloading, setIsDownloading] = useState5(false);
+    const [isAuditingFft, setIsAuditingFft] = useState5(false);
+    const [fftProgress, setFftProgress] = useState5(0);
+    const [fftMsg, setFftMsg] = useState5("");
+    const [selectedId, setSelectedId] = useState5(null);
+    const [spInspectorOpen, setSpInspectorOpen] = useState5(false);
+    const [downloadSession, setDownloadSession] = useState5({ downloaded: [], failed: [] });
+    const [spSubView, setSpSubView] = useState5("catalog");
+    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState5(/* @__PURE__ */ new Set());
+    const [isExportingXls, setIsExportingXls] = useState5(false);
+    const [xlsToast, setXlsToast] = useState5("");
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState5(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
@@ -11306,7 +12013,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       } catch (e) {
       }
     };
-    const [candidateModal, setCandidateModal] = useState4({
+    const [candidateModal, setCandidateModal] = useState5({
       open: false,
       targetTrack: null,
       candidates: [],
@@ -11397,12 +12104,12 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }));
       setCandidateModal((prev) => ({ ...prev, open: false }));
     };
-    const [fsBrowserOpen, setFsBrowserOpen] = useState4(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState4("");
-    const [fsParentPath, setFsParentPath] = useState4("");
-    const [fsFolders, setFsFolders] = useState4([]);
-    const [fsLoading, setFsLoading] = useState4(false);
-    useEffect5(() => {
+    const [fsBrowserOpen, setFsBrowserOpen] = useState5(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState5("");
+    const [fsParentPath, setFsParentPath] = useState5("");
+    const [fsFolders, setFsFolders] = useState5([]);
+    const [fsLoading, setFsLoading] = useState5(false);
+    useEffect6(() => {
       if (window.eel && typeof window.eel.expose === "function") {
         const updateDownload = (pct, msg) => {
           if (!msg || msg.includes("detenid") || msg.includes("cancelad") || msg.includes("CANCELAD")) {
@@ -11709,7 +12416,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       } catch (_) {
       }
     };
-    const [poolVisibleColumns, setPoolVisibleColumns] = useState4(() => {
+    const [poolVisibleColumns, setPoolVisibleColumns] = useState5(() => {
       try {
         const saved = localStorage.getItem("bw_pool_visible_columns");
         if (saved) return { ...DEFAULT_POOL_COLUMNS, ...JSON.parse(saved) };
@@ -11717,9 +12424,9 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
       return DEFAULT_POOL_COLUMNS;
     });
-    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState4(false);
-    const [poolColumnSearchText, setPoolColumnSearchText] = useState4("");
-    useEffect5(() => {
+    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState5(false);
+    const [poolColumnSearchText, setPoolColumnSearchText] = useState5("");
+    useEffect6(() => {
       if (!poolColumnSelectorOpen) return;
       const handleKeyDown = (e) => {
         if (e.key === "Escape") {
@@ -11782,26 +12489,26 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         return next;
       });
     };
-    const [spSortField, setSpSortField] = useState4("title");
-    const [spSortDir, setSpSortDir] = useState4("asc");
-    const [spFilterSearch, setSpFilterSearch] = useState4("");
-    const [spFilterArtist, setSpFilterArtist] = useState4("");
-    const [spFilterGenre, setSpFilterGenre] = useState4("ALL");
-    const [spFilterSubgenre, setSpFilterSubgenre] = useState4("");
-    const [spFilterOrigin, setSpFilterOrigin] = useState4("ALL");
-    const [spFilterMatch, setSpFilterMatch] = useState4("ALL");
-    const [spFilterPreQuality, setSpFilterPreQuality] = useState4("ALL");
-    const [spFilterFormat, setSpFilterFormat] = useState4("ALL");
-    const [spFilterKhz, setSpFilterKhz] = useState4("ALL");
-    const [spFilterKbps, setSpFilterKbps] = useState4("ALL");
-    const [spFilterQuality, setSpFilterQuality] = useState4("ALL");
-    const [spFilterCutoff, setSpFilterCutoff] = useState4("ALL");
-    const [spFilterDuration, setSpFilterDuration] = useState4("");
-    const [spFilterBpm, setSpFilterBpm] = useState4("");
-    const [spFilterKey, setSpFilterKey] = useState4("ALL");
-    const [spFilterEnergy, setSpFilterEnergy] = useState4("ALL");
-    const [spFilterDance, setSpFilterDance] = useState4("ALL");
-    const [spFilterStatus, setSpFilterStatus] = useState4("ALL");
+    const [spSortField, setSpSortField] = useState5("title");
+    const [spSortDir, setSpSortDir] = useState5("asc");
+    const [spFilterSearch, setSpFilterSearch] = useState5("");
+    const [spFilterArtist, setSpFilterArtist] = useState5("");
+    const [spFilterGenre, setSpFilterGenre] = useState5("ALL");
+    const [spFilterSubgenre, setSpFilterSubgenre] = useState5("");
+    const [spFilterOrigin, setSpFilterOrigin] = useState5("ALL");
+    const [spFilterMatch, setSpFilterMatch] = useState5("ALL");
+    const [spFilterPreQuality, setSpFilterPreQuality] = useState5("ALL");
+    const [spFilterFormat, setSpFilterFormat] = useState5("ALL");
+    const [spFilterKhz, setSpFilterKhz] = useState5("ALL");
+    const [spFilterKbps, setSpFilterKbps] = useState5("ALL");
+    const [spFilterQuality, setSpFilterQuality] = useState5("ALL");
+    const [spFilterCutoff, setSpFilterCutoff] = useState5("ALL");
+    const [spFilterDuration, setSpFilterDuration] = useState5("");
+    const [spFilterBpm, setSpFilterBpm] = useState5("");
+    const [spFilterKey, setSpFilterKey] = useState5("ALL");
+    const [spFilterEnergy, setSpFilterEnergy] = useState5("ALL");
+    const [spFilterDance, setSpFilterDance] = useState5("ALL");
+    const [spFilterStatus, setSpFilterStatus] = useState5("ALL");
     const poolUniqueGenres = useMemo(() => {
       const set = /* @__PURE__ */ new Set();
       (tracks || []).forEach((t2) => {
@@ -13401,21 +14108,21 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     onAddTracksToSpotify,
     onRemoveTrack
   }) => {
-    const [activeSubView, setActiveSubView] = useState4("search");
-    const [searchScope, setSearchScope] = useState4("all");
-    const [isSearchingOnline, setIsSearchingOnline] = useState4(false);
-    const [onlineResults, setOnlineResults] = useState4([]);
-    const [searchLocalResults, setSearchLocalResults] = useState4([]);
-    const [hasExecutedSearch, setHasExecutedSearch] = useState4(false);
-    const [selectedTaxIds, setSelectedTaxIds] = useState4(/* @__PURE__ */ new Set());
-    const [displayMode, setDisplayMode] = useState4("table");
-    const [taxSortField, setTaxSortField] = useState4("matchScore");
-    const [taxSortDir, setTaxSortDir] = useState4("desc");
-    const [taxFilterSearch, setTaxFilterSearch] = useState4("");
-    const [taxFilterGenre, setTaxFilterGenre] = useState4("ALL");
-    const [taxFilterOrigin, setTaxFilterOrigin] = useState4("ALL");
-    const [taxFilterEnergy, setTaxFilterEnergy] = useState4("ALL");
-    const [taxFilterDance, setTaxFilterDance] = useState4("ALL");
+    const [activeSubView, setActiveSubView] = useState5("search");
+    const [searchScope, setSearchScope] = useState5("all");
+    const [isSearchingOnline, setIsSearchingOnline] = useState5(false);
+    const [onlineResults, setOnlineResults] = useState5([]);
+    const [searchLocalResults, setSearchLocalResults] = useState5([]);
+    const [hasExecutedSearch, setHasExecutedSearch] = useState5(false);
+    const [selectedTaxIds, setSelectedTaxIds] = useState5(/* @__PURE__ */ new Set());
+    const [displayMode, setDisplayMode] = useState5("table");
+    const [taxSortField, setTaxSortField] = useState5("matchScore");
+    const [taxSortDir, setTaxSortDir] = useState5("desc");
+    const [taxFilterSearch, setTaxFilterSearch] = useState5("");
+    const [taxFilterGenre, setTaxFilterGenre] = useState5("ALL");
+    const [taxFilterOrigin, setTaxFilterOrigin] = useState5("ALL");
+    const [taxFilterEnergy, setTaxFilterEnergy] = useState5("ALL");
+    const [taxFilterDance, setTaxFilterDance] = useState5("ALL");
     const handleSortTax = (field) => {
       setTaxSortDir((prev) => taxSortField === field && prev === "asc" ? "desc" : "asc");
       setTaxSortField(field);
@@ -13424,18 +14131,18 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       if (taxSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
       return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, taxSortDir === "asc" ? "\u25B2" : "\u25BC");
     };
-    const [aiQuery, setAiQuery] = useState4("");
-    const [selectedGenreFilter, setSelectedGenreFilter] = useState4("ALL");
-    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState4("ALL");
-    const [selectedVersionFilter, setSelectedVersionFilter] = useState4("ALL");
-    const [selectedBpmFilter, setSelectedBpmFilter] = useState4("ALL");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState4("ALL");
-    const [selectedMoodFilter, setSelectedMoodFilter] = useState4("ALL");
-    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState4(false);
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState4(false);
-    const [feedbackMsg, setFeedbackMsg] = useState4("");
-    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState4(false);
-    const [activeTagTab, setActiveTagTab] = useState4("bpm");
+    const [aiQuery, setAiQuery] = useState5("");
+    const [selectedGenreFilter, setSelectedGenreFilter] = useState5("ALL");
+    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState5("ALL");
+    const [selectedVersionFilter, setSelectedVersionFilter] = useState5("ALL");
+    const [selectedBpmFilter, setSelectedBpmFilter] = useState5("ALL");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState5("ALL");
+    const [selectedMoodFilter, setSelectedMoodFilter] = useState5("ALL");
+    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState5(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState5(false);
+    const [feedbackMsg, setFeedbackMsg] = useState5("");
+    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState5(false);
+    const [activeTagTab, setActiveTagTab] = useState5("bpm");
     const handleRemoveToken = (tok) => {
       if (!tok) return;
       let newQuery = aiQuery;
@@ -13456,16 +14163,16 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setIsAddTagMenuOpen(false);
       handleEjecutarBusqueda(newQuery);
     };
-    const [rutaBase, setRutaBase] = useState4("/Users/admin/Music/mi musica");
-    const [modo, setModo] = useState4("copy");
-    const [isRouting, setIsRouting] = useState4(false);
-    const [routeProgress, setRouteProgress] = useState4(0);
-    const [routeStatusMsg, setRouteStatusMsg] = useState4("");
-    const [resultSummary, setResultSummary] = useState4(null);
-    const [expandedGenre, setExpandedGenre] = useState4("Techno");
-    const [searchTerm, setSearchTerm] = useState4("");
-    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState4(null);
-    useEffect5(() => {
+    const [rutaBase, setRutaBase] = useState5("/Users/admin/Music/mi musica");
+    const [modo, setModo] = useState5("copy");
+    const [isRouting, setIsRouting] = useState5(false);
+    const [routeProgress, setRouteProgress] = useState5(0);
+    const [routeStatusMsg, setRouteStatusMsg] = useState5("");
+    const [resultSummary, setResultSummary] = useState5(null);
+    const [expandedGenre, setExpandedGenre] = useState5("Techno");
+    const [searchTerm, setSearchTerm] = useState5("");
+    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState5(null);
+    useEffect6(() => {
       handleEjecutarBusqueda("");
     }, []);
     const parsedQuery = useMemo(() => parseAIDJQuery(aiQuery), [aiQuery]);
@@ -14958,52 +15665,52 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     ));
   };
   var ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
-    const [isListening, setIsListening] = useState4(false);
-    const [countdown, setCountdown] = useState4(10);
-    const [isAnalyzing, setIsAnalyzing] = useState4(false);
-    const [statusMsg, setStatusMsg] = useState4("");
-    const [identifiedTrack, setIdentifiedTrack] = useState4(null);
-    const [history, setHistory] = useState4([]);
-    const [previewPlaying, setPreviewPlaying] = useState4(false);
-    const [micLevel, setMicLevel] = useState4(0);
-    const audioRef = useRef5(new Audio());
-    const mediaRecorderRef = useRef5(null);
-    const audioStreamRef = useRef5(null);
-    const fileInputRef = useRef5(null);
-    const timerRef = useRef5(null);
-    const animFrameRef = useRef5(null);
-    const audioCtxRef = useRef5(null);
-    const [dragOver, setDragOver] = useState4(false);
-    const [selectedEngine, setSelectedEngine] = useState4(() => {
+    const [isListening, setIsListening] = useState5(false);
+    const [countdown, setCountdown] = useState5(10);
+    const [isAnalyzing, setIsAnalyzing] = useState5(false);
+    const [statusMsg, setStatusMsg] = useState5("");
+    const [identifiedTrack, setIdentifiedTrack] = useState5(null);
+    const [history, setHistory] = useState5([]);
+    const [previewPlaying, setPreviewPlaying] = useState5(false);
+    const [micLevel, setMicLevel] = useState5(0);
+    const audioRef = useRef6(new Audio());
+    const mediaRecorderRef = useRef6(null);
+    const audioStreamRef = useRef6(null);
+    const fileInputRef = useRef6(null);
+    const timerRef = useRef6(null);
+    const animFrameRef = useRef6(null);
+    const audioCtxRef = useRef6(null);
+    const [dragOver, setDragOver] = useState5(false);
+    const [selectedEngine, setSelectedEngine] = useState5(() => {
       try {
         return localStorage.getItem("bw_radar_engine") || "hybrid";
       } catch (e) {
         return "hybrid";
       }
     });
-    const [auddToken, setAuddToken] = useState4(() => {
+    const [auddToken, setAuddToken] = useState5(() => {
       try {
         return localStorage.getItem("bw_audd_token") || "";
       } catch (e) {
         return "";
       }
     });
-    const [showConfig, setShowConfig] = useState4(false);
-    const [micCaptureMode, setMicCaptureMode] = useState4("auto");
-    const [micPermissionError, setMicPermissionError] = useState4(null);
-    useEffect5(() => {
+    const [showConfig, setShowConfig] = useState5(false);
+    const [micCaptureMode, setMicCaptureMode] = useState5("auto");
+    const [micPermissionError, setMicPermissionError] = useState5(null);
+    useEffect6(() => {
       try {
         localStorage.setItem("bw_radar_engine", selectedEngine);
       } catch (e) {
       }
     }, [selectedEngine]);
-    useEffect5(() => {
+    useEffect6(() => {
       try {
         localStorage.setItem("bw_audd_token", auddToken);
       } catch (e) {
       }
     }, [auddToken]);
-    const [notebookTracks, setNotebookTracks] = useState4(() => {
+    const [notebookTracks, setNotebookTracks] = useState5(() => {
       try {
         const saved = localStorage.getItem("beatwave_shazam_notebook");
         return saved ? JSON.parse(saved) : [];
@@ -15011,8 +15718,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         return [];
       }
     });
-    const [notebookFeedback, setNotebookFeedback] = useState4("");
-    useEffect5(() => {
+    const [notebookFeedback, setNotebookFeedback] = useState5("");
+    useEffect6(() => {
       try {
         localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(notebookTracks));
       } catch (e) {
@@ -15140,7 +15847,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     };
-    useEffect5(() => {
+    useEffect6(() => {
       const audio = audioRef.current;
       const handleEnded = () => setPreviewPlaying(false);
       const handlePause = () => setPreviewPlaying(false);
@@ -15957,7 +16664,7 @@ ${text}`);
     )))));
   };
   var TrendsWorkspace = ({ lang = "es" }) => {
-    const [trendsData, setTrendsData] = useState4({
+    const [trendsData, setTrendsData] = useState5({
       last_crawled_at: "Sincronizando...",
       next_scheduled_run: "Martes 23:00",
       items: [],
@@ -15969,14 +16676,14 @@ ${text}`);
       dj_gear: [],
       trends_radar: []
     });
-    const [loading, setLoading] = useState4(true);
-    const [isCrawling, setIsCrawling] = useState4(false);
-    const [selectedCategory, setSelectedCategory] = useState4("todas");
-    const [selectedCity, setSelectedCity] = useState4("Madrid");
-    const [searchQuery, setSearchQuery] = useState4("");
-    const [dateFilter, setDateFilter] = useState4("all");
-    const [readingArticle, setReadingArticle] = useState4(null);
-    const [copiedRef, setCopiedRef] = useState4(false);
+    const [loading, setLoading] = useState5(true);
+    const [isCrawling, setIsCrawling] = useState5(false);
+    const [selectedCategory, setSelectedCategory] = useState5("todas");
+    const [selectedCity, setSelectedCity] = useState5("Madrid");
+    const [searchQuery, setSearchQuery] = useState5("");
+    const [dateFilter, setDateFilter] = useState5("all");
+    const [readingArticle, setReadingArticle] = useState5(null);
+    const [copiedRef, setCopiedRef] = useState5(false);
     const categories = [
       { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "\u{1F310}" },
       { id: "Festivales & Eventos", label: lang === "en" ? "Events (Time To House)" : "Eventos & Clubs (Time To House)", icon: "\u{1F3AA}" },
@@ -16008,7 +16715,7 @@ ${text}`);
         setLoading(false);
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       fetchTrends();
     }, []);
     const handleRunCrawler = async () => {
@@ -16601,23 +17308,23 @@ Respuesta: ${qa.a}`).join("\n\n"),
     onNavigateTab,
     lang = "es"
   }) => {
-    const [setName, setSetName] = useState4("BeatWave_Mainstage_Set");
-    const [selectedTrackIdx, setSelectedTrackIdx] = useState4(null);
-    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState4(false);
-    const [searchAddQuery, setSearchAddQuery] = useState4("");
-    const [exportStatus, setExportStatus] = useState4(null);
-    const [isExporting, setIsExporting] = useState4(false);
-    const [isAuditingSet, setIsAuditingSet] = useState4(false);
-    const [auditSetProgress, setAuditSetProgress] = useState4(0);
-    const [folderLoading, setFolderLoading] = useState4(false);
-    const [folderProgress, setFolderProgress] = useState4({ pct: 0, msg: "" });
-    const [viewMode, setViewMode] = useState4("list");
-    const [graphData, setGraphData] = useState4({ nodes: [], edges: [] });
-    const [isLoadingGraph, setIsLoadingGraph] = useState4(false);
-    const [aiAuditResult, setAiAuditResult] = useState4(null);
-    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState4(false);
-    const [hoveredFlowIdx, setHoveredFlowIdx] = useState4(null);
-    useEffect5(() => {
+    const [setName, setSetName] = useState5("BeatWave_Mainstage_Set");
+    const [selectedTrackIdx, setSelectedTrackIdx] = useState5(null);
+    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState5(false);
+    const [searchAddQuery, setSearchAddQuery] = useState5("");
+    const [exportStatus, setExportStatus] = useState5(null);
+    const [isExporting, setIsExporting] = useState5(false);
+    const [isAuditingSet, setIsAuditingSet] = useState5(false);
+    const [auditSetProgress, setAuditSetProgress] = useState5(0);
+    const [folderLoading, setFolderLoading] = useState5(false);
+    const [folderProgress, setFolderProgress] = useState5({ pct: 0, msg: "" });
+    const [viewMode, setViewMode] = useState5("list");
+    const [graphData, setGraphData] = useState5({ nodes: [], edges: [] });
+    const [isLoadingGraph, setIsLoadingGraph] = useState5(false);
+    const [aiAuditResult, setAiAuditResult] = useState5(null);
+    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState5(false);
+    const [hoveredFlowIdx, setHoveredFlowIdx] = useState5(null);
+    useEffect6(() => {
       if (!auditTracks || auditTracks.length === 0 || !setTracks || setTracks.length === 0) return;
       let hasChanges = false;
       const updated = setTracks.map((st) => {
@@ -18027,31 +18734,31 @@ Respuesta: ${qa.a}`).join("\n\n"),
     onSelectDirectory,
     lang = "es"
   }) => {
-    const [useDemo, setUseDemo] = useState4(false);
+    const [useDemo, setUseDemo] = useState5(false);
     const activeTracks = rawTracks && rawTracks.length > 0 ? rawTracks : useDemo ? DEMO_MAP_TRACKS : [];
-    const [projectionMode, setProjectionMode] = useState4("energy_dance");
-    const [colorMode, setColorMode] = useState4("genre");
-    const [toolMode, setToolMode] = useState4("pan");
-    const [searchQuery, setSearchQuery] = useState4("");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState4("ALL");
-    const [showHarmonicPaths, setShowHarmonicPaths] = useState4(true);
-    const [selectedTrack, setSelectedTrack] = useState4(null);
-    const [selectedMapTracks, setSelectedMapTracks] = useState4([]);
-    const [hoveredTrack, setHoveredTrack] = useState4(null);
-    const [mouseScreenPos, setMouseScreenPos] = useState4({ x: -100, y: -100 });
-    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState4(true);
-    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState4(true);
-    const [zoomDisplay, setZoomDisplay] = useState4(1);
-    const [isPanning, setIsPanning] = useState4(false);
-    const canvasRef = useRef5(null);
-    const containerRef = useRef5(null);
-    const animRef = useRef5(null);
-    const imageCacheRef = useRef5(/* @__PURE__ */ new Map());
-    const panTimerRef = useRef5(null);
-    const spatialGridRef = useRef5(/* @__PURE__ */ new Map());
-    const mouseRafRef = useRef5(null);
-    const activeLoadingCountRef = useRef5(0);
-    const pendingLoadQueueRef = useRef5([]);
+    const [projectionMode, setProjectionMode] = useState5("energy_dance");
+    const [colorMode, setColorMode] = useState5("genre");
+    const [toolMode, setToolMode] = useState5("pan");
+    const [searchQuery, setSearchQuery] = useState5("");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState5("ALL");
+    const [showHarmonicPaths, setShowHarmonicPaths] = useState5(true);
+    const [selectedTrack, setSelectedTrack] = useState5(null);
+    const [selectedMapTracks, setSelectedMapTracks] = useState5([]);
+    const [hoveredTrack, setHoveredTrack] = useState5(null);
+    const [mouseScreenPos, setMouseScreenPos] = useState5({ x: -100, y: -100 });
+    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState5(true);
+    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState5(true);
+    const [zoomDisplay, setZoomDisplay] = useState5(1);
+    const [isPanning, setIsPanning] = useState5(false);
+    const canvasRef = useRef6(null);
+    const containerRef = useRef6(null);
+    const animRef = useRef6(null);
+    const imageCacheRef = useRef6(/* @__PURE__ */ new Map());
+    const panTimerRef = useRef6(null);
+    const spatialGridRef = useRef6(/* @__PURE__ */ new Map());
+    const mouseRafRef = useRef6(null);
+    const activeLoadingCountRef = useRef6(0);
+    const pendingLoadQueueRef = useRef6([]);
     const processCoverQueue = () => {
       const MAX_CONCURRENT = 8;
       while (activeLoadingCountRef.current < MAX_CONCURRENT && pendingLoadQueueRef.current.length > 0) {
@@ -18097,7 +18804,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       processCoverQueue();
     };
     const radialView = projectionMode === "camelot_wheel" || projectionMode === "acoustic_clusters";
-    const transformRef = useRef5({
+    const transformRef = useRef6({
       scale: 1,
       panX: 0,
       panY: 0,
@@ -18147,13 +18854,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setZoomDisplay(clamped);
       }
     };
-    const selectionRef = useRef5({
+    const selectionRef = useRef6({
       isSelecting: false,
       points: [],
       boxStart: null
     });
-    const nodesRef = useRef5([]);
-    useEffect5(() => {
+    const nodesRef = useRef6([]);
+    useEffect6(() => {
       const bpms = activeTracks.map((t) => parseFloat(t.bpm || t.b) || 126).filter((b) => b > 40 && b < 250);
       const minBpm = bpms.length > 0 ? Math.min(...bpms) : 120;
       const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 150;
@@ -18247,7 +18954,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       spatialGridRef.current = grid;
       nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
-    useEffect5(() => {
+    useEffect6(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -19286,17 +19993,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
     }
   ];
   var KnowledgeWorkspace = ({ lang = "es" }) => {
-    const [activeSection, setActiveSection] = useState4("courses");
-    const [knowledgeData, setKnowledgeData] = useState4({
+    const [activeSection, setActiveSection] = useState5("courses");
+    const [knowledgeData, setKnowledgeData] = useState5({
       courses: [],
       videos: [],
       manuals: [],
       tricks: [],
       glossary: []
     });
-    const [loading, setLoading] = useState4(true);
-    const [expandedCourseId, setExpandedCourseId] = useState4("course_01");
-    const [glossarySearch, setGlossarySearch] = useState4("");
+    const [loading, setLoading] = useState5(true);
+    const [expandedCourseId, setExpandedCourseId] = useState5("course_01");
+    const [glossarySearch, setGlossarySearch] = useState5("");
     const fetchKnowledge = async () => {
       try {
         setLoading(true);
@@ -19316,7 +20023,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setLoading(false);
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       fetchKnowledge();
     }, []);
     const filteredGlossary = useMemo(() => {
@@ -19560,18 +20267,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
     antiMuddy = null,
     partnerDeck = null
   }) => {
-    const canvasRef = useRef5(null);
-    const minimapRef = useRef5(null);
-    const minimapCacheRef = useRef5(null);
-    const [zoom, setZoom] = useState4(4);
-    const [showTacticalAids, setShowTacticalAids] = useState4(true);
-    const [hoveredMilestone, setHoveredMilestone] = useState4(null);
-    const [progress, setProgress] = useState4(deck.play_progress || 0.15);
-    const progressRef = useRef5(deck.play_progress || 0.15);
-    const isPlayingRef = useRef5(Boolean(deck.is_playing));
-    const bpmRef = useRef5(deck.bpm || 130);
-    const durationSecRef = useRef5(deck.duration_sec || 390);
-    useEffect5(() => {
+    const canvasRef = useRef6(null);
+    const minimapRef = useRef6(null);
+    const minimapCacheRef = useRef6(null);
+    const [zoom, setZoom] = useState5(4);
+    const [showTacticalAids, setShowTacticalAids] = useState5(true);
+    const [hoveredMilestone, setHoveredMilestone] = useState5(null);
+    const [progress, setProgress] = useState5(deck.play_progress || 0.15);
+    const progressRef = useRef6(deck.play_progress || 0.15);
+    const isPlayingRef = useRef6(Boolean(deck.is_playing));
+    const bpmRef = useRef6(deck.bpm || 130);
+    const durationSecRef = useRef6(deck.duration_sec || 390);
+    useEffect6(() => {
       if (deck.play_progress !== void 0) {
         const diff = Math.abs(progressRef.current - deck.play_progress);
         if (diff > 0.02) {
@@ -19583,7 +20290,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       bpmRef.current = parseFloat(deck.bpm) || 130;
       durationSecRef.current = parseFloat(deck.duration_sec) || 390;
     }, [deck.play_progress, deck.is_playing, deck.bpm, deck.duration_sec]);
-    useEffect5(() => {
+    useEffect6(() => {
       let animId;
       let lastTime = performance.now();
       let lastUiUpdate = 0;
@@ -19643,7 +20350,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const barsToNextCue = beatsToNextCue ? Math.max(1, Math.ceil(beatsToNextCue / 4)) : null;
     const timeToNextCue = nextCue ? Math.max(0, (nextCue.pct - progress) * durSec) : 0;
     const isBassClashDanger = antiMuddy && antiMuddy.status === "danger" && (deck.low_ratio || 0) >= 44;
-    useEffect5(() => {
+    useEffect6(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -20641,16 +21348,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
     "is_simulating": true
   };
   var CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
-    const [state, setState] = useState4(DEFAULT_COPILOT_STATE);
-    const [clock, setClock] = useState4("");
-    const [latency, setLatency] = useState4(2);
-    const [visibleCount, setVisibleCount] = useState4(4);
-    const [tracksList, setTracksList] = useState4(DEFAULT_COPILOT_STATE.recommendations);
-    const [draggedIdx, setDraggedIdx] = useState4(null);
-    const [transitionAnalysis, setTransitionAnalysis] = useState4(null);
-    const [lowEqApplied, setLowEqApplied] = useState4(false);
-    const [manualPickerOpen, setManualPickerOpen] = useState4(false);
-    const [manualSearchQuery, setManualSearchQuery] = useState4("");
+    const [state, setState] = useState5(DEFAULT_COPILOT_STATE);
+    const [clock, setClock] = useState5("");
+    const [latency, setLatency] = useState5(2);
+    const [visibleCount, setVisibleCount] = useState5(4);
+    const [tracksList, setTracksList] = useState5(DEFAULT_COPILOT_STATE.recommendations);
+    const [draggedIdx, setDraggedIdx] = useState5(null);
+    const [transitionAnalysis, setTransitionAnalysis] = useState5(null);
+    const [lowEqApplied, setLowEqApplied] = useState5(false);
+    const [manualPickerOpen, setManualPickerOpen] = useState5(false);
+    const [manualSearchQuery, setManualSearchQuery] = useState5("");
     const handleApplyCorrection = () => {
       setLowEqApplied((prev) => {
         const next = !prev;
@@ -20696,12 +21403,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setVisibleCount((v) => Math.max(v, Math.min(8, tracksList.length + 1)));
       setManualPickerOpen(false);
     };
-    const [controllerState, setControllerState] = useState4({
+    const [controllerState, setControllerState] = useState5({
       detected: true,
       name: "PIONEER DDJ-FLX4 (USB)",
       status: "CONECTADA"
     });
-    useEffect5(() => {
+    useEffect6(() => {
       if (typeof navigator !== "undefined" && navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess({ sysex: false }).then((access) => {
           const checkDevices = () => {
@@ -20727,14 +21434,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         });
       }
     }, []);
-    useEffect5(() => {
+    useEffect6(() => {
       const timer = setInterval(() => {
         const now = /* @__PURE__ */ new Date();
         setClock(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       }, 1e3);
       return () => clearInterval(timer);
     }, []);
-    useEffect5(() => {
+    useEffect6(() => {
       let isMounted = true;
       let isFetching = false;
       const fetchStatus = async () => {
@@ -21041,10 +21748,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     })))));
   };
   var CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
-    const [copilotInfo, setCopilotInfo] = useState4({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
-    const [copied, setCopied] = useState4(false);
-    const [qrShown, setQrShown] = useState4(false);
-    useEffect5(() => {
+    const [copilotInfo, setCopilotInfo] = useState5({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
+    const [copied, setCopied] = useState5(false);
+    const [qrShown, setQrShown] = useState5(false);
+    useEffect6(() => {
       if (isOpen) {
         fetch("/api/copilot/info").then((r) => r.json()).then((data) => setCopilotInfo(data)).catch(() => {
         });
@@ -21323,20 +22030,20 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
-    const [phase, setPhase] = useState4("video");
-    const [videoOpacity, setVideoOpacity] = useState4(0);
-    const [selectedAlpha, setSelectedAlpha] = useState4(0.85);
-    const [isMuted, setIsMuted] = useState4(false);
-    const [isBassShaking, setIsBassShaking] = useState4(false);
-    const videoRef = useRef5(null);
-    const canvasRef = useRef5(null);
-    useEffect5(() => {
+    const [phase, setPhase] = useState5("video");
+    const [videoOpacity, setVideoOpacity] = useState5(0);
+    const [selectedAlpha, setSelectedAlpha] = useState5(0.85);
+    const [isMuted, setIsMuted] = useState5(false);
+    const [isBassShaking, setIsBassShaking] = useState5(false);
+    const videoRef = useRef6(null);
+    const canvasRef = useRef6(null);
+    useEffect6(() => {
       const timer = setTimeout(() => {
         setVideoOpacity(1);
       }, 50);
       return () => clearTimeout(timer);
     }, []);
-    useEffect5(() => {
+    useEffect6(() => {
       const vid = videoRef.current;
       if (!vid) return;
       vid.currentTime = 0;
@@ -21412,7 +22119,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onClose();
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (phase !== "portal") return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -21466,7 +22173,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           onError: () => setPhase("portal"),
           onTimeUpdate: handleTimeUpdate,
           onEnded: handleVideoEnded,
-          src: "/assets/intro_cinematic.mp4",
+          src: "assets/intro_cinematic.mp4",
           className: "w-full h-full object-cover pointer-events-none",
           style: {
             opacity: videoOpacity * selectedAlpha,
@@ -21508,7 +22215,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       )), /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-10 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement(
         "img",
         {
-          src: "/assets/beatwave_text.png",
+          src: "assets/beatwave_text.png",
           alt: "BEAT WAVE PRO \u2022 Precision Audio Intelligence",
           className: "w-[280px] sm:w-[420px] md:w-[500px] h-auto object-contain drop-shadow-[0_0_35px_rgba(6,182,212,0.7)] group-hover:brightness-110 transition-all duration-300"
         }
@@ -21533,8 +22240,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     return null;
   };
   var App = () => {
-    const [pricingOpen, setPricingOpen] = useState4(false);
-    const [cinematicIntroOpen, setCinematicIntroOpen] = useState4(() => {
+    const [pricingOpen, setPricingOpen] = useState5(false);
+    const [registerModalOpen, setRegisterModalOpen] = useState5(false);
+    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState5("pro");
+    const [cinematicIntroOpen, setCinematicIntroOpen] = useState5(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         if (p.get("skipintro") === "1" || p.get("nointro") === "1") return false;
@@ -21543,7 +22252,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         return false;
       }
     });
-    const [lang, setLang] = useState4(() => {
+    const [lang, setLang] = useState5(() => {
       try {
         return localStorage.getItem("beatwave_lang") || "es";
       } catch (e) {
@@ -21558,7 +22267,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     const t = (k) => I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k] || I18N_TRANSLATIONS["es"][k] || k;
-    const [activeTab, setActiveTab] = useState4(() => {
+    const [activeTab, setActiveTab] = useState5(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         const q = p.get("tab") || window.location.hash.replace("#", "");
@@ -21592,23 +22301,23 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return "audit";
     });
-    const [currentFolder, setCurrentFolder] = useState4("/Users/admin/Music/mi musica");
-    const [auditTracks, setAuditTracks] = useState4(() => {
+    const [currentFolder, setCurrentFolder] = useState5("/Users/admin/Music/mi musica");
+    const [auditTracks, setAuditTracks] = useState5(() => {
       return typeof DEMO_MAP_TRACKS !== "undefined" && Array.isArray(DEMO_MAP_TRACKS) ? [...DEMO_MAP_TRACKS] : [];
     });
-    const [setBuilderTracks, setSetBuilderTracks] = useState4(() => {
+    const [setBuilderTracks, setSetBuilderTracks] = useState5(() => {
       return typeof DEMO_MAP_TRACKS !== "undefined" && Array.isArray(DEMO_MAP_TRACKS) ? [...DEMO_MAP_TRACKS.slice(0, 8)] : [];
     });
-    const [spotifyTracks, setSpotifyTracks] = useState4([]);
-    const [selectedTrack, setSelectedTrack] = useState4(() => {
+    const [spotifyTracks, setSpotifyTracks] = useState5([]);
+    const [selectedTrack, setSelectedTrack] = useState5(() => {
       return typeof DEMO_MAP_TRACKS !== "undefined" && DEMO_MAP_TRACKS[0] ? DEMO_MAP_TRACKS[0].id : null;
     });
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
-    const [nowPlayingTrack, setNowPlayingTrack] = useState4(null);
-    const [isPlaying, setIsPlaying] = useState4(false);
-    const [isFooterDeckExpanded, setIsFooterDeckExpanded] = useState4(false);
-    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState4(false);
-    const localAudioInputRef = useRef5(null);
+    const [nowPlayingTrack, setNowPlayingTrack] = useState5(null);
+    const [isPlaying, setIsPlaying] = useState5(false);
+    const [isFooterDeckExpanded, setIsFooterDeckExpanded] = useState5(false);
+    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState5(false);
+    const localAudioInputRef = useRef6(null);
     const handleLoadLocalAudioFile = (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -21648,21 +22357,21 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       setLoadTrackMenuOpen(false);
     };
-    const playProgressRef = useRef5(0);
+    const playProgressRef = useRef6(0);
     const setPlayProgress = useCallback((pct) => {
       const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
       playProgressRef.current = safe;
       window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
     }, []);
-    const audioRef = useRef5(null);
-    const [mobileProgress, setMobileProgress] = useState4(0);
-    useEffect5(() => {
+    const audioRef = useRef6(null);
+    const [mobileProgress, setMobileProgress] = useState5(0);
+    useEffect6(() => {
       const onProgress = (e) => setMobileProgress(e.detail.pct);
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [playProgress, setPlayProgressForWorkspaces] = useState4(0);
-    useEffect5(() => {
+    const [playProgress, setPlayProgressForWorkspaces] = useState5(0);
+    useEffect6(() => {
       let lastUpdate = 0;
       const THROTTLE_MS = 100;
       const onProgress = (e) => {
@@ -21675,8 +22384,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [globalAuditInfo, setGlobalAuditInfo] = useState4({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
-    useEffect5(() => {
+    const [globalAuditInfo, setGlobalAuditInfo] = useState5({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
+    useEffect6(() => {
       if (window.eel && typeof window.eel.expose === "function") {
         window.actualizar_progreso_batch = (pct, msg) => {
           if (!msg || msg.includes("detenid") || msg.includes("cancelad")) {
@@ -21702,10 +22411,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       }
     }, []);
-    const [tutorialOpen, setTutorialOpen] = useState4(false);
-    const [tutorialInitialMode, setTutorialInitialMode] = useState4("launcher");
-    const [mobileDrawerOpen, setMobileDrawerOpen] = useState4(false);
-    const [railExpanded, setRailExpanded] = useState4(() => {
+    const [tutorialOpen, setTutorialOpen] = useState5(false);
+    const [tutorialInitialMode, setTutorialInitialMode] = useState5("launcher");
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState5(false);
+    const [railExpanded, setRailExpanded] = useState5(() => {
       try {
         return localStorage.getItem("bw_rail_expanded") !== "0";
       } catch (e) {
@@ -21722,9 +22431,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
         return next;
       });
     };
-    const [copilotModalOpen, setCopilotModalOpen] = useState4(false);
-    const [manualModalOpen, setManualModalOpen] = useState4(false);
-    const [manualSection, setManualSection] = useState4("audit");
+    const [copilotModalOpen, setCopilotModalOpen] = useState5(false);
+    const [manualModalOpen, setManualModalOpen] = useState5(false);
+    const [manualSection, setManualSection] = useState5("audit");
     const handleOpenManual = (section = null) => {
       const secMap = {
         "audit": "audit",
@@ -21750,8 +22459,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setManualModalOpen(true);
       }
     };
-    const [userModalOpen, setUserModalOpen] = useState4(false);
-    const [userProfile, setUserProfile] = useState4(() => {
+    const [userModalOpen, setUserModalOpen] = useState5(false);
+    const [userProfile, setUserProfile] = useState5(() => {
       try {
         const saved = localStorage.getItem("bw_user_profile");
         if (saved) return JSON.parse(saved);
@@ -21774,7 +22483,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       } catch (e) {
       }
     };
-    const [savedSessions, setSavedSessions] = useState4(() => {
+    const [savedSessions, setSavedSessions] = useState5(() => {
       try {
         const saved = localStorage.getItem("bw_saved_sessions");
         if (saved) return JSON.parse(saved);
@@ -21839,8 +22548,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         return next;
       });
     };
-    const [bitacoraModalOpen, setBitacoraModalOpen] = useState4(false);
-    const [bitacoraEntries, setBitacoraEntries] = useState4(() => {
+    const [bitacoraModalOpen, setBitacoraModalOpen] = useState5(false);
+    const [bitacoraEntries, setBitacoraEntries] = useState5(() => {
       try {
         const saved = localStorage.getItem("bw_audit_bitacora");
         if (saved) return JSON.parse(saved);
@@ -21900,7 +22609,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       } catch (e) {
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       const handleBitacoraSync = (e) => {
         if (e && e.detail && Array.isArray(e.detail)) {
           setBitacoraEntries(e.detail);
@@ -21909,7 +22618,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("bw_bitacora_updated", handleBitacoraSync);
       return () => window.removeEventListener("bw_bitacora_updated", handleBitacoraSync);
     }, []);
-    useEffect5(() => {
+    useEffect6(() => {
       if (userProfile && userProfile.autoSave !== false) {
         try {
           const autoSession = {
@@ -21923,7 +22632,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       }
     }, [currentFolder, activeTab, selectedTrack, userProfile]);
-    const [clubMode, setClubMode] = useState4(() => {
+    const [clubMode, setClubMode] = useState5(() => {
       try {
         return localStorage.getItem("bw_club_mode") === "true";
       } catch (e) {
@@ -21940,8 +22649,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         return next;
       });
     };
-    const [shortcutsModalOpen, setShortcutsModalOpen] = useState4(false);
-    const [speakerLogoMode, setSpeakerLogoMode] = useState4(() => {
+    const [shortcutsModalOpen, setShortcutsModalOpen] = useState5(false);
+    const [speakerLogoMode, setSpeakerLogoMode] = useState5(() => {
       try {
         return localStorage.getItem("cleandjmix_speaker_logo_mode") || "neon";
       } catch (e) {
@@ -21955,15 +22664,15 @@ Respuesta: ${qa.a}`).join("\n\n"),
       } catch (e) {
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       window.setSpeakerLogoMode = handleSetSpeakerLogoMode;
       window.toggleSpeakerLogoMode = () => {
         handleSetSpeakerLogoMode(speakerLogoMode === "neon" ? "original" : "neon");
       };
     }, [speakerLogoMode]);
-    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState4(false);
-    const logoTechnoTimerRef = useRef5(null);
-    const initialTechnoPlayedRef = useRef5(false);
+    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState5(false);
+    const logoTechnoTimerRef = useRef6(null);
+    const initialTechnoPlayedRef = useRef6(false);
     const triggerLogoTechno = () => {
       setIsLogoTechnoActive(true);
       if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
@@ -21971,13 +22680,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setIsLogoTechnoActive(false);
       }, 1e4);
     };
-    useEffect5(() => {
+    useEffect6(() => {
       if (tutorialOpen || copilotModalOpen) {
         if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
         setIsLogoTechnoActive(false);
       }
     }, [tutorialOpen, copilotModalOpen]);
-    useEffect5(() => {
+    useEffect6(() => {
       window.abrirIntroCinematica = () => {
         setCinematicIntroOpen(true);
       };
@@ -22047,14 +22756,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setActiveTab("spotify");
     };
     const handleAddTrackToSpotify = handleAddTracksToSpotify;
-    const [logs, setLogs] = useState4([
+    const [logs, setLogs] = useState5([
       { type: "info", text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
       { type: "divider", text: "--------------------------------------------------" },
       { type: "success", text: "[ OK ] Audio Engine & Stream Router Online." },
       { type: "success", text: "[ OK ] Serato Database XML Link Ready." }
     ]);
-    const synthAudioCtxRef = useRef5(null);
-    const synthIntervalRef = useRef5(null);
+    const synthAudioCtxRef = useRef6(null);
+    const synthIntervalRef = useRef6(null);
     const stopSynthPreview = () => {
       if (synthIntervalRef.current) {
         clearInterval(synthIntervalRef.current);
@@ -22072,7 +22781,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       stopSynthPreview();
       setIsPlaying(false);
     };
-    useEffect5(() => {
+    useEffect6(() => {
       const audio = new Audio();
       audio.preload = "auto";
       audio.onended = () => {
@@ -22274,7 +22983,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         window.eel.cue_audio_mac(trk.path || trk.f || "")();
       }
     };
-    useEffect5(() => {
+    useEffect6(() => {
       const handleKeyDown = (e) => {
         const active = document.activeElement;
         const tag = active ? active.tagName.toLowerCase() : "";
@@ -22503,7 +23212,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         AppCinematicIntro,
         {
           isOpen: true,
-          onOpenPricing: () => setPricingOpen(true),
+          onOpenPricing: () => {
+            setCinematicIntroOpen(false);
+            try {
+              sessionStorage.setItem("bw_intro_viewed", "true");
+            } catch (e) {
+            }
+            setPricingOpen(true);
+          },
           onClose: () => {
             setCinematicIntroOpen(false);
             try {
@@ -22525,7 +23241,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
               sessionStorage.setItem("bw_intro_viewed", "true");
             } catch (e) {
             }
-            setUserModalOpen(true);
+            setRegisterModalOpen(true);
           },
           onOpenTour: () => {
             setCinematicIntroOpen(false);
@@ -22596,7 +23312,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0" }, /* @__PURE__ */ React.createElement(
             "img",
             {
-              src: "/assets/beatwave_text.png",
+              src: "assets/beatwave_text.png",
               alt: "BEAT WAVE PRO \u2022 Precision Audio Intelligence",
               className: `h-7 sm:h-8 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? "anim-soundwave drop-shadow-[0_0_18px_rgba(6,182,212,0.85)]" : "group-hover:brightness-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]"}`
             }
@@ -22906,11 +23622,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setActiveTab,
         initialMode: tutorialInitialMode
       }
-    ), /* @__PURE__ */ React.createElement(PricingModal, { isOpen: pricingOpen, onClose: () => setPricingOpen(false), onSelectPlan: (plan) => {
-      setPricingOpen(false);
-      if (plan === "free") return;
-      setUserModalOpen(true);
-    } }), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(
+      PricingModal,
+      {
+        isOpen: pricingOpen,
+        onClose: () => setPricingOpen(false),
+        onSelectPlan: (plan) => {
+          setPricingOpen(false);
+          if (plan === "free") return;
+          setSelectedPlanForRegister(plan === "lifetime" ? "lifetime" : "pro");
+          setRegisterModalOpen(true);
+        }
+      }
+    ), /* @__PURE__ */ React.createElement(
       CopilotLaunchModal,
       {
         isOpen: copilotModalOpen,
@@ -22957,7 +23681,33 @@ Respuesta: ${qa.a}`).join("\n\n"),
           activeTab
         },
         onNavigateTab: setActiveTab,
-        onOpenShortcuts: () => setShortcutsModalOpen(true)
+        onOpenShortcuts: () => setShortcutsModalOpen(true),
+        onOpenPricing: () => {
+          setUserModalOpen(false);
+          setPricingOpen(true);
+        },
+        onOpenRegister: () => {
+          setUserModalOpen(false);
+          setRegisterModalOpen(true);
+        }
+      }
+    ), /* @__PURE__ */ React.createElement(
+      RegisterFlowModal,
+      {
+        isOpen: registerModalOpen,
+        initialPlan: selectedPlanForRegister,
+        onClose: () => setRegisterModalOpen(false),
+        onOpenPricing: () => {
+          setRegisterModalOpen(false);
+          setPricingOpen(true);
+        },
+        onSuccessRegister: (newProfile) => {
+          setRegisterModalOpen(false);
+          if (handleUpdateUserProfile) {
+            handleUpdateUserProfile(newProfile);
+          }
+          setUserModalOpen(true);
+        }
       }
     ), /* @__PURE__ */ React.createElement(
       BitacoraModal,
@@ -23017,7 +23767,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
             sessionStorage.setItem("bw_intro_viewed", "true");
           } catch (e) {
           }
-          setUserModalOpen(true);
+          setRegisterModalOpen(true);
         },
         onOpenTour: () => {
           setCinematicIntroOpen(false);

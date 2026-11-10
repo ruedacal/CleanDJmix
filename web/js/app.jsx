@@ -4,6 +4,7 @@ import { TopBar } from './shell/TopBar.jsx';
 import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
 import { WsButton, ToolbarDivider, ExportMenu, FilterMenu, IngestDropzone, CamelotKeyBadge } from './shell/workspace-ui.jsx';
 import { PricingModal } from './shell/pricing-modal.jsx';
+import { RegisterFlowModal } from './shell/register-modal.jsx';
 import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from './shell/map-overlays.jsx';
 const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
 
@@ -4235,11 +4236,13 @@ const UserAccountModal = ({
     onDeleteSession,
     currentSessionSnapshot = {},
     onNavigateTab,
-    onOpenShortcuts
+    onOpenShortcuts,
+    onOpenPricing,
+    onOpenRegister
 }) => {
     if (!isOpen) return null;
 
-    const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'sessions' | 'preferences'
+    const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'sessions' | 'preferences' | 'billing'
     const [alias, setAlias] = useState((userProfile && userProfile.alias) || 'DJ Alex BeatWave');
     const [fullName, setFullName] = useState((userProfile && userProfile.fullName) || 'Alejandro Rueda');
     const [email, setEmail] = useState((userProfile && userProfile.email) || 'alex.dj@beatwave.pro');
@@ -4264,6 +4267,28 @@ const UserAccountModal = ({
     // Sesiones
     const [sessionNameInput, setSessionNameInput] = useState('');
     const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+
+    // Facturación, Métodos de Pago & Pasarelas
+    const [savedPaymentMethods, setSavedPaymentMethods] = useState([
+        { id: 'pm_card_main', type: 'card', brand: 'Mastercard', last4: '4242', exp: '08/29', holder: 'Alejandro Rueda', isDefault: true },
+        { id: 'pm_applepay', type: 'applepay', label: 'Apple Pay (Wallet)', isDefault: false }
+    ]);
+    const [showAddPaymentForm, setShowAddPaymentForm] = useState(false);
+    const [newMethodType, setNewMethodType] = useState('card');
+    const [newCardNumber, setNewCardNumber] = useState('');
+    const [newCardExpiry, setNewCardExpiry] = useState('');
+    const [newCardCvc, setNewCardCvc] = useState('');
+    const [newCardHolder, setNewCardHolder] = useState('Alejandro Rueda');
+    const [paypalEmail, setPaypalEmail] = useState('');
+    const [billingMsg, setBillingMsg] = useState({ text: '', type: '' });
+
+    // Datos Fiscales
+    const [fiscalName, setFiscalName] = useState((userProfile && userProfile.fiscalName) || 'Alejandro Rueda / BeatWave DJ');
+    const [fiscalTaxId, setFiscalTaxId] = useState((userProfile && userProfile.taxId) || 'ES-48765432-W');
+    const [fiscalAddress, setFiscalAddress] = useState((userProfile && userProfile.fiscalAddress) || 'Gran Vía 28, 4º B');
+    const [fiscalCity, setFiscalCity] = useState((userProfile && userProfile.fiscalCity) || 'Madrid');
+    const [fiscalZip, setFiscalZip] = useState((userProfile && userProfile.fiscalZip) || '28013');
+    const [fiscalCountry, setFiscalCountry] = useState((userProfile && userProfile.fiscalCountry) || 'España');
 
     const fileInputRef = React.useRef(null);
 
@@ -4363,9 +4388,9 @@ const UserAccountModal = ({
                 onClick={onClose}
             />
 
-            {/* Columna Lateral Derecha (Slide-over Drawer) - Fondo Plano Sólido 100% Opaco */}
+            {/* Columna Lateral Derecha (Slide-over Drawer) - Mismo ancho homogéneo que la columna de manual */}
             <aside 
-                className="fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[500px] md:w-[540px] max-w-[95vw] h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+                className="fixed top-0 bottom-0 right-0 z-[99999] w-full sm:w-[580px] md:w-[680px] lg:w-[780px] max-w-full h-full bg-[#0a0b14] border-l border-djzinc-750 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Perfil con Avatar y Datos Rápidos */}
@@ -4485,6 +4510,17 @@ const UserAccountModal = ({
                     </button>
                     <button
                         type="button"
+                        onClick={() => setActiveTab('billing')}
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                            activeTab === 'billing'
+                                ? 'bg-cyan-500 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                                : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
+                        }`}
+                    >
+                        <Icons.CreditCard size={14} className="inline-block align-[-2px]" /> <span>Datos de Pago & Plan</span>
+                    </button>
+                    <button
+                        type="button"
                         onClick={() => setActiveTab('sessions')}
                         className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                             activeTab === 'sessions'
@@ -4507,11 +4543,15 @@ const UserAccountModal = ({
                     </button>
                 </div>
 
-                {/* Mensaje de Confirmación Global */}
-                {saveSuccessMsg && (
-                    <div className="px-4 py-2 bg-emerald-950/90 border-b border-emerald-600/70 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0">
+                {/* Mensaje de Confirmación Global o Facturación */}
+                {(saveSuccessMsg || billingMsg.text) && (
+                    <div className={`px-4 py-2 border-b text-xs font-mono font-bold flex items-center gap-2 animate-fadeIn shrink-0 ${
+                        (billingMsg.type === 'error')
+                            ? 'bg-rose-950/90 border-rose-600/70 text-rose-300'
+                            : 'bg-emerald-950/90 border-emerald-600/70 text-emerald-300'
+                    }`}>
                         <Icons.Sparkles size={14} className="inline-block align-[-2px]" />
-                        <span>{saveSuccessMsg}</span>
+                        <span>{saveSuccessMsg || billingMsg.text}</span>
                     </div>
                 )}
 
@@ -4874,6 +4914,416 @@ const UserAccountModal = ({
                             >
                                 Guardar Preferencias de Cabina
                             </button>
+                        </div>
+                    )}
+
+                    {/* PESTAÑA 4: DATOS DE PAGO & PLAN */}
+                    {activeTab === 'billing' && (
+                        <div className="space-y-5 animate-fadeIn">
+                            {/* Resumen del Plan Actual y Acciones de Upgrade */}
+                            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#0e1628] via-[#0d1222] to-[#120e28] border border-cyan-500/40 relative overflow-hidden shadow-lg">
+                                <div className="absolute top-0 right-0 w-44 h-44 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+                                
+                                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 font-mono text-xs font-black shadow-sm">
+                                            VIP
+                                        </span>
+                                        <div>
+                                            <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider block">
+                                                Plan Activo
+                                            </span>
+                                            <h4 className="text-base font-mono font-black text-white">
+                                                {(userProfile && userProfile.plan) || 'BEATWAVE PRO CLUB (ANUAL)'}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-mono font-black flex items-center gap-1.5 shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        ACTIVO
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-black/40 border border-white/5 font-mono text-xs mb-4">
+                                    <div>
+                                        <div className="text-[10px] text-zinc-500 uppercase">Tarifa</div>
+                                        <div className="text-white font-bold text-sm">89,00 € <span className="text-[10px] text-zinc-400 font-normal">/ año</span></div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-zinc-500 uppercase">Renovación</div>
+                                        <div className="text-zinc-200 font-medium">15 Nov 2027</div>
+                                    </div>
+                                    <div className="col-span-2 sm:col-span-1">
+                                        <div className="text-[10px] text-zinc-500 uppercase">Ahorro Aplicado</div>
+                                        <div className="text-emerald-400 font-bold">25% Descuento Anual</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onClose();
+                                            if (onOpenPricing) onOpenPricing();
+                                        }}
+                                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black uppercase text-[11px] tracking-wider transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-95"
+                                    >
+                                        Cambiar Plan / Mejorar ➔
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onClose();
+                                            if (onOpenRegister) onOpenRegister();
+                                        }}
+                                        className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-cyan-300 hover:text-white border border-cyan-500/40 text-[11px] font-bold transition-all cursor-pointer"
+                                    >
+                                        + Nueva Licencia / Registro
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Métodos de Pago Guardados y Pasarelas */}
+                            <div className="p-4 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Icons.CreditCard size={15} className="text-cyan-400 inline-block align-[-2px]" />
+                                        <h4 className="text-xs font-mono font-bold uppercase text-white tracking-wider">
+                                            Métodos de Pago & Pasarelas
+                                        </h4>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddPaymentForm(!showAddPaymentForm)}
+                                        className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 font-bold transition-colors cursor-pointer"
+                                    >
+                                        {showAddPaymentForm ? '− Cancelar' : '+ Añadir Método'}
+                                    </button>
+                                </div>
+
+                                {/* Lista de métodos actuales */}
+                                <div className="space-y-2">
+                                    {savedPaymentMethods.map((pm) => (
+                                        <div key={pm.id} className="p-3 rounded-xl bg-[#0c0d1a] border border-djzinc-800 flex items-center justify-between gap-3 font-mono text-xs">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-7 rounded-lg bg-zinc-950 border border-zinc-700 flex items-center justify-center text-[10px] font-black text-white shrink-0">
+                                                    {pm.type === 'card' ? '💳' : pm.type === 'applepay' ? '' : pm.type === 'gpay' ? 'GPay' : 'PP'}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-white flex items-center gap-2">
+                                                        <span>{pm.brand || pm.label}</span>
+                                                        {pm.last4 && <span className="text-zinc-400">•••• {pm.last4}</span>}
+                                                        {pm.isDefault && (
+                                                            <span className="text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-600/50 px-1.5 py-0.5 rounded-full font-bold">
+                                                                Predeterminado
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {pm.exp && <div className="text-[10px] text-zinc-500">Expira: {pm.exp}</div>}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                {!pm.isDefault && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSavedPaymentMethods(prev => prev.map(m => ({ ...m, isDefault: m.id === pm.id })));
+                                                            setBillingMsg({ text: '✓ Método predeterminado actualizado', type: 'success' });
+                                                            setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
+                                                        }}
+                                                        className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold cursor-pointer"
+                                                    >
+                                                        Usar por defecto
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSavedPaymentMethods(prev => prev.filter(m => m.id !== pm.id));
+                                                        setBillingMsg({ text: '✓ Método de pago eliminado', type: 'success' });
+                                                        setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
+                                                    }}
+                                                    className="p-1 text-zinc-500 hover:text-rose-400 cursor-pointer"
+                                                    title="Eliminar método"
+                                                >
+                                                    <Icons.Close size={13} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Formulario desplegable para añadir nuevo método */}
+                                {showAddPaymentForm && (
+                                    <div className="p-3.5 rounded-xl bg-black/60 border border-cyan-500/30 space-y-3 font-mono animate-fadeIn">
+                                        <div className="text-[11px] font-bold text-gray-300 uppercase">Selecciona Método de Pago</div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+                                            {[
+                                                { id: 'card', label: 'Tarjeta', icon: '💳' },
+                                                { id: 'applepay', label: 'Apple Pay', icon: '' },
+                                                { id: 'gpay', label: 'Google Pay', icon: 'GPay' },
+                                                { id: 'paypal', label: 'PayPal', icon: '🅿️' }
+                                            ].map(opt => (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => setNewMethodType(opt.id)}
+                                                    className={`py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-1 font-bold transition-all cursor-pointer ${
+                                                        newMethodType === opt.id
+                                                            ? 'bg-cyan-500 text-black border-cyan-400 font-black shadow-sm'
+                                                            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white'
+                                                    }`}
+                                                >
+                                                    <span className="text-sm">{opt.icon}</span>
+                                                    <span className="text-[10px]">{opt.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {newMethodType === 'card' && (
+                                            <div className="space-y-2 pt-1 text-xs">
+                                                <div>
+                                                    <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">Número de Tarjeta</label>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="4532 •••• •••• ••••"
+                                                        value={newCardNumber}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value.replace(/\D/g, '').slice(0, 16);
+                                                            const parts = val.match(/.{1,4}/g);
+                                                            setNewCardNumber(parts ? parts.join(' ') : val);
+                                                        }}
+                                                        className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">Vencimiento (MM/AA)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="MM/AA"
+                                                            value={newCardExpiry}
+                                                            onChange={(e) => {
+                                                                let val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                                                if (val.length >= 2) val = val.slice(0, 2) + '/' + val.slice(2);
+                                                                setNewCardExpiry(val);
+                                                            }}
+                                                            className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">CVC / CVV</label>
+                                                        <input 
+                                                            type="password" 
+                                                            maxLength={4}
+                                                            placeholder="•••"
+                                                            value={newCardCvc}
+                                                            onChange={(e) => setNewCardCvc(e.target.value.replace(/\D/g, ''))}
+                                                            className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">Titular de la Tarjeta</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={newCardHolder}
+                                                        onChange={(e) => setNewCardHolder(e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {newMethodType === 'applepay' && (
+                                            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2">
+                                                <p className="text-[11px] text-zinc-300">Vincula tus tarjetas configuradas en el Wallet de Apple mediante Touch ID o Face ID.</p>
+                                                <div className="py-2 px-4 rounded-xl bg-white text-black font-black text-xs inline-flex items-center gap-2 shadow cursor-pointer">
+                                                    <span> Pay</span> <span>Conectar Apple Wallet</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {newMethodType === 'gpay' && (
+                                            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2">
+                                                <p className="text-[11px] text-zinc-300">Conecta tu cuenta de Google Play / Google Pay para facturación directa.</p>
+                                                <div className="py-2 px-4 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-bold text-xs inline-flex items-center gap-2 shadow cursor-pointer hover:bg-zinc-800">
+                                                    <span>G Pay</span> <span>Conectar con Google</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {newMethodType === 'paypal' && (
+                                            <div className="space-y-2 pt-1 text-xs">
+                                                <label className="text-[10px] text-zinc-400 uppercase font-bold block">Email de Cuenta PayPal</label>
+                                                <input 
+                                                    type="email" 
+                                                    placeholder="dj.billing@paypal.com"
+                                                    value={paypalEmail}
+                                                    onChange={(e) => setPaypalEmail(e.target.value)}
+                                                    className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+                                                />
+                                            </div>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const id = 'pm_' + Date.now();
+                                                if (newMethodType === 'card') {
+                                                    const cleanCard = newCardNumber.replace(/\s/g, '');
+                                                    const last4 = cleanCard ? cleanCard.slice(-4) : '9988';
+                                                    setSavedPaymentMethods(prev => [...prev, { id, type: 'card', brand: 'Visa / Mastercard', last4, exp: newCardExpiry || '12/28', holder: newCardHolder, isDefault: true }]);
+                                                } else if (newMethodType === 'applepay') {
+                                                    setSavedPaymentMethods(prev => [...prev, { id, type: 'applepay', label: 'Apple Pay (Wallet)', isDefault: true }]);
+                                                } else if (newMethodType === 'gpay') {
+                                                    setSavedPaymentMethods(prev => [...prev, { id, type: 'gpay', label: 'Google Pay / Google Play', isDefault: true }]);
+                                                } else {
+                                                    setSavedPaymentMethods(prev => [...prev, { id, type: 'paypal', label: `PayPal (${paypalEmail || 'Cuenta Conectada'})`, isDefault: true }]);
+                                                }
+                                                setShowAddPaymentForm(false);
+                                                setBillingMsg({ text: '✓ Nuevo método de pago guardado con éxito', type: 'success' });
+                                                setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
+                                            }}
+                                            className="w-full py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow"
+                                        >
+                                            Guardar y Establecer como Predeterminado
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Datos Fiscales para Facturación */}
+                            <div className="p-4 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-3 font-mono">
+                                <h4 className="text-xs font-bold uppercase text-white tracking-wider flex items-center justify-between">
+                                    <span>Datos Fiscales & NIF / CIF</span>
+                                    <span className="text-[10px] text-zinc-500">Para emisión automática de facturas</span>
+                                </h4>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                    <div>
+                                        <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">Nombre / Razón Social</label>
+                                        <input 
+                                            type="text" 
+                                            value={fiscalName}
+                                            onChange={(e) => setFiscalName(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">NIF / CIF / VAT ID</label>
+                                        <input 
+                                            type="text" 
+                                            value={fiscalTaxId}
+                                            onChange={(e) => setFiscalTaxId(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+                                        />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">Dirección Fiscal</label>
+                                        <input 
+                                            type="text" 
+                                            value={fiscalAddress}
+                                            onChange={(e) => setFiscalAddress(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">Ciudad & CP</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input 
+                                                type="text" 
+                                                value={fiscalCity}
+                                                onChange={(e) => setFiscalCity(e.target.value)}
+                                                className="w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+                                            />
+                                            <input 
+                                                type="text" 
+                                                value={fiscalZip}
+                                                onChange={(e) => setFiscalZip(e.target.value)}
+                                                className="w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">País</label>
+                                        <input 
+                                            type="text" 
+                                            value={fiscalCountry}
+                                            onChange={(e) => setFiscalCountry(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400"
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (onUpdateProfile) {
+                                            onUpdateProfile({
+                                                ...userProfile,
+                                                fiscalName,
+                                                taxId: fiscalTaxId,
+                                                fiscalAddress,
+                                                fiscalCity,
+                                                fiscalZip,
+                                                fiscalCountry
+                                            });
+                                        }
+                                        setBillingMsg({ text: '✓ Datos fiscales de facturación guardados', type: 'success' });
+                                        setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
+                                    }}
+                                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white font-bold text-xs uppercase cursor-pointer transition-all"
+                                >
+                                    Guardar Datos Fiscales
+                                </button>
+                            </div>
+
+                            {/* Historial de Facturas con desglose 21% IVA */}
+                            <div className="p-4 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-3 font-mono">
+                                <h4 className="text-xs font-bold uppercase text-white tracking-wider flex items-center justify-between">
+                                    <span>Historial de Facturas (IVA 21% Desglosado)</span>
+                                    <span className="text-[10px] text-cyan-400 font-bold">2 Facturas Emitidas</span>
+                                </h4>
+
+                                <div className="space-y-2">
+                                    {[
+                                        { num: 'BW-2026-0891', date: '15/11/2026', concept: 'BeatWave Pro Anual', base: '73,55 €', vat: '15,45 €', total: '89,00 €' },
+                                        { num: 'BW-2025-0104', date: '15/11/2025', concept: 'BeatWave Pro Anual', base: '73,55 €', vat: '15,45 €', total: '89,00 €' }
+                                    ].map(fac => (
+                                        <div key={fac.num} className="p-3 rounded-xl bg-[#0c0d18] border border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                            <div>
+                                                <div className="font-bold text-white flex items-center gap-2">
+                                                    <span>{fac.num}</span>
+                                                    <span className="text-[10px] text-zinc-400">• {fac.date}</span>
+                                                </div>
+                                                <div className="text-[11px] text-zinc-400 mt-0.5">
+                                                    {fac.concept} (Base: {fac.base} + IVA 21%: {fac.vat})
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-right">
+                                                    <span className="text-sm font-black text-cyan-300">{fac.total}</span>
+                                                    <span className="text-[9px] text-emerald-400 block font-bold">PAGADA</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setBillingMsg({ text: `✓ Descargando ${fac.num}.pdf...`, type: 'success' });
+                                                        setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
+                                                    }}
+                                                    className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold cursor-pointer transition-colors"
+                                                    title="Descargar Factura PDF"
+                                                >
+                                                    PDF ⤓
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -31105,6 +31555,8 @@ const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMod
 const App = () => {
     // Intro Espectacular a Pantalla Completa con Video de Fondo
     const [pricingOpen, setPricingOpen] = useState(false);
+    const [registerModalOpen, setRegisterModalOpen] = useState(false);
+    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState('pro');
     const [cinematicIntroOpen, setCinematicIntroOpen] = useState(() => {
         try {
             const p = new URLSearchParams(window.location.search);
@@ -32131,7 +32583,11 @@ const App = () => {
         return (
             <AppCinematicIntro
                 isOpen={true}
-                onOpenPricing={() => setPricingOpen(true)}
+                onOpenPricing={() => {
+                    setCinematicIntroOpen(false);
+                    try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
+                    setPricingOpen(true);
+                }}
                 onClose={() => {
                     setCinematicIntroOpen(false);
                     try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
@@ -32144,7 +32600,7 @@ const App = () => {
                 onOpenRegister={() => {
                     setCinematicIntroOpen(false);
                     try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
-                    setUserModalOpen(true);
+                    setRegisterModalOpen(true);
                 }}
                 onOpenTour={() => {
                     setCinematicIntroOpen(false);
@@ -32603,7 +33059,16 @@ const App = () => {
             />
 
             {/* MODAL LANZADOR BEATWAVE LIVE COPILOT */}
-            <PricingModal isOpen={pricingOpen} onClose={() => setPricingOpen(false)} onSelectPlan={(plan) => { setPricingOpen(false); if (plan === 'free') return; setUserModalOpen(true); }} />
+            <PricingModal 
+                isOpen={pricingOpen} 
+                onClose={() => setPricingOpen(false)} 
+                onSelectPlan={(plan) => { 
+                    setPricingOpen(false); 
+                    if (plan === 'free') return; 
+                    setSelectedPlanForRegister(plan === 'lifetime' ? 'lifetime' : 'pro');
+                    setRegisterModalOpen(true); 
+                }} 
+            />
             <CopilotLaunchModal 
                 isOpen={copilotModalOpen}
                 onClose={() => setCopilotModalOpen(false)}
@@ -32650,6 +33115,32 @@ const App = () => {
                 }}
                 onNavigateTab={setActiveTab}
                 onOpenShortcuts={() => setShortcutsModalOpen(true)}
+                onOpenPricing={() => {
+                    setUserModalOpen(false);
+                    setPricingOpen(true);
+                }}
+                onOpenRegister={() => {
+                    setUserModalOpen(false);
+                    setRegisterModalOpen(true);
+                }}
+            />
+
+            {/* MODAL DE REGISTRO & PASARELA DE PAGO COMPLETA */}
+            <RegisterFlowModal
+                isOpen={registerModalOpen}
+                initialPlan={selectedPlanForRegister}
+                onClose={() => setRegisterModalOpen(false)}
+                onOpenPricing={() => {
+                    setRegisterModalOpen(false);
+                    setPricingOpen(true);
+                }}
+                onSuccessRegister={(newProfile) => {
+                    setRegisterModalOpen(false);
+                    if (handleUpdateUserProfile) {
+                        handleUpdateUserProfile(newProfile);
+                    }
+                    setUserModalOpen(true);
+                }}
             />
 
             {/* CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS AUDITABLE */}
@@ -32691,7 +33182,7 @@ const App = () => {
                 onOpenRegister={() => {
                     setCinematicIntroOpen(false);
                     try { sessionStorage.setItem('bw_intro_viewed', 'true'); } catch (e) {}
-                    setUserModalOpen(true);
+                    setRegisterModalOpen(true);
                 }}
                 onOpenTour={() => {
                     setCinematicIntroOpen(false);
