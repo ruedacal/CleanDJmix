@@ -4437,16 +4437,17 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       };
     }, [onClose]);
     return ReactDOM.createPortal(
-      /* @__PURE__ */ React.createElement("div", { className: "fixed top-14 inset-x-0 bottom-0 z-[55] overflow-hidden select-none pointer-events-none" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[99998] overflow-hidden select-none pointer-events-none" }, /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "fixed top-14 inset-x-0 bottom-0 bg-black/80 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto",
+          className: "fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto",
           onClick: onClose
         }
       ), /* @__PURE__ */ React.createElement(
         "aside",
         {
-          className: "fixed top-14 bottom-0 inset-x-0 sm:left-auto sm:right-0 z-[55] w-full sm:w-[440px] md:w-[480px] lg:w-[500px] max-w-full h-[calc(100vh-3.5rem)] bg-[#0a0b14] border-t-2 sm:border-t-0 sm:border-l-4 border-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto",
+          style: { width: "100%", maxWidth: "500px" },
+          className: "fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto",
           onClick: (e) => e.stopPropagation()
         },
         /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.User, { size: 16 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "CUENTA & SESI\xD3N DJ"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 px-2 py-0.5 rounded-full font-black" }, "PERFIL CABINA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, alias, " \u2022 ", email))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
@@ -6593,17 +6594,18 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       );
     }
     return ReactDOM.createPortal(
-      /* @__PURE__ */ React.createElement("div", { className: "fixed top-14 inset-x-0 bottom-0 z-[55] overflow-hidden select-none pointer-events-none" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[99998] overflow-hidden select-none pointer-events-none" }, /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "fixed top-14 inset-x-0 bottom-0 bg-black/70 backdrop-blur-[1px] pointer-events-auto transition-opacity",
+          className: "fixed inset-0 bg-black/60 backdrop-blur-[1px] pointer-events-auto transition-opacity",
           onClick: onClose,
           title: "Haz clic fuera para cerrar el manual y volver a la cabina"
         }
       ), /* @__PURE__ */ React.createElement(
         "aside",
         {
-          className: "fixed top-14 bottom-0 inset-x-0 sm:left-auto sm:right-0 z-[55] w-full sm:w-[440px] md:w-[480px] lg:w-[500px] max-w-full h-[calc(100vh-3.5rem)] bg-[#080914] border-t-2 sm:border-t-0 sm:border-l-4 border-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto",
+          style: { width: "100%", maxWidth: "500px" },
+          className: "fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#080914] border-l-4 border-l-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto",
           onClick: (e) => e.stopPropagation()
         },
         /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-750 bg-[#0d0f20] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg shadow-[0_0_15px_rgba(236,72,153,0.5)] shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "MANUAL MAESTRO DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-pink-950 text-pink-200 border border-pink-500 px-2 py-0.5 rounded-full font-black" }, "60% ANCHO \u2022 CABINA ACTIVA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-300 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, activeSec.tag))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
@@ -9926,14 +9928,15 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       "div",
       {
         onClick: () => setSidebarOpen(false),
-        className: "fixed top-14 inset-x-0 bottom-0 bg-black/70 backdrop-blur-xs z-[52] transition-opacity animate-fadeIn",
+        className: "fixed inset-0 bg-black/70 backdrop-blur-xs z-[99998] transition-opacity animate-fadeIn",
         "aria-hidden": "true"
       }
     ), /* @__PURE__ */ React.createElement(
       "aside",
       {
         key: currentTrack ? currentTrack.id : "none",
-        className: "ws-inspector fixed top-14 bottom-0 inset-x-0 sm:left-auto sm:right-0 z-[55] w-full sm:w-[440px] md:w-[480px] lg:w-[500px] max-w-full h-[calc(100vh-3.5rem)] bg-[#0a0b14] border-t-2 sm:border-t-0 sm:border-l-4 border-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+        style: { width: "100%", maxWidth: "500px" },
+        className: "ws-inspector fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
       },
       /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 16 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "TRACK INSPECTOR"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-amber-950/90 text-amber-300 border border-amber-500/60 px-2 py-0.5 rounded-full font-mono font-black" }, "ID #", currentTrack.id || "--")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, "AN\xC1LISIS AC\xDASTICO, TAGS & METADATOS"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
         "button",
@@ -13979,14 +13982,15 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       "div",
       {
         onClick: () => setSpInspectorOpen(false),
-        className: "fixed top-14 inset-x-0 bottom-0 bg-black/70 backdrop-blur-xs z-[52] transition-opacity animate-fadeIn",
+        className: "fixed inset-0 bg-black/70 backdrop-blur-xs z-[99998] transition-opacity animate-fadeIn",
         "aria-hidden": "true"
       }
     ), /* @__PURE__ */ React.createElement(
       "aside",
       {
         key: currentTrack ? currentTrack.id : "sp_none",
-        className: "fixed top-14 bottom-0 inset-x-0 sm:left-auto sm:right-0 z-[55] w-full sm:w-[440px] md:w-[480px] lg:w-[500px] max-w-full h-[calc(100vh-3.5rem)] bg-[#0a0b14] border-t-2 sm:border-t-0 sm:border-l-4 border-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+        style: { width: "100%", maxWidth: "500px" },
+        className: "fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
       },
       /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Spotify, { size: 16 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs sm:text-sm font-mono font-black uppercase text-white tracking-wider" }, "RECORD POOL INSPECTOR"), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] bg-amber-950/90 text-amber-300 border border-amber-500/60 px-2 py-0.5 rounded-full font-mono font-black" }, "ID #", currentTrack.id || "--")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-gray-400 font-mono truncate max-w-[280px] sm:max-w-[400px]" }, "INSPECCI\xD3N DE PISTA & DESCARGA FLAC"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
         "button",

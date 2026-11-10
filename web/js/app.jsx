@@ -4392,16 +4392,17 @@ const UserAccountModal = ({
     }, [onClose]);
 
     return ReactDOM.createPortal(
-        <div className="fixed top-14 inset-x-0 bottom-0 z-[55] overflow-hidden select-none pointer-events-none">
-            {/* Backdrop Sólido Plano con Desenfoque (No tapa la barra de navegación superior) */}
+        <div className="fixed inset-0 z-[99998] overflow-hidden select-none pointer-events-none">
+            {/* Backdrop Sólido Plano con Desenfoque */}
             <div 
-                className="fixed top-14 inset-x-0 bottom-0 bg-black/80 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto" 
+                className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto" 
                 onClick={onClose}
             />
 
-            {/* Columna Lateral Derecha (Slide-over Drawer) - Full screen en móvil, compacta y concisa */}
+            {/* Columna Lateral Derecha (Slide-over Drawer) - Homogénea de 500px en Desktop, 100% en Móvil */}
             <aside 
-                className="fixed top-14 bottom-0 inset-x-0 sm:left-auto sm:right-0 z-[55] w-full sm:w-[440px] md:w-[480px] lg:w-[500px] max-w-full h-[calc(100vh-3.5rem)] bg-[#0a0b14] border-t-2 sm:border-t-0 sm:border-l-4 border-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
+                style={{ width: '100%', maxWidth: '500px' }}
+                className="fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Perfil con Look & Feel BeatWave */}
@@ -7618,17 +7619,18 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     // MANUAL EXCLUSIVO: COLUMNA LATERAL DERECHA (DESACOPLADA CON PORTAL)
     // ─────────────────────────────────────────────────────────────────────────
     return ReactDOM.createPortal(
-        <div className="fixed top-14 inset-x-0 bottom-0 z-[55] overflow-hidden select-none pointer-events-none">
-            {/* Backdrop sutil clicable para cerrar sin tapar la barra superior ni la cabina detrás */}
+        <div className="fixed inset-0 z-[99998] overflow-hidden select-none pointer-events-none">
+            {/* Backdrop sutil clicable para cerrar */}
             <div 
-                className="fixed top-14 inset-x-0 bottom-0 bg-black/70 backdrop-blur-[1px] pointer-events-auto transition-opacity"
+                className="fixed inset-0 bg-black/60 backdrop-blur-[1px] pointer-events-auto transition-opacity"
                 onClick={onClose}
                 title="Haz clic fuera para cerrar el manual y volver a la cabina"
             />
 
-            {/* Columna Lateral Derecha - Full screen en móvil, ancho compacto en desktop */}
+            {/* Columna Lateral Derecha - Homogénea de 500px en Desktop, 100% en Móvil */}
             <aside 
-                className="fixed top-14 bottom-0 inset-x-0 sm:left-auto sm:right-0 z-[55] w-full sm:w-[440px] md:w-[480px] lg:w-[500px] max-w-full h-[calc(100vh-3.5rem)] bg-[#080914] border-t-2 sm:border-t-0 sm:border-l-4 border-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
+                style={{ width: '100%', maxWidth: '500px' }}
+                className="fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#080914] border-l-4 border-l-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Drawer */}
@@ -12250,15 +12252,16 @@ const AuditWorkspace = ({
 
             {sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && (
                 <>
-                    {/* Backdrop oscuro para móvil y desktop (no pisa la barra de navegación superior) */}
+                    {/* Backdrop oscuro para móvil y desktop */}
                     <div 
                         onClick={() => setSidebarOpen(false)} 
-                        className="fixed top-14 inset-x-0 bottom-0 bg-black/70 backdrop-blur-xs z-[52] transition-opacity animate-fadeIn" 
+                        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[99998] transition-opacity animate-fadeIn" 
                         aria-hidden="true" 
                     />
                     <aside 
                         key={currentTrack ? currentTrack.id : "none"} 
-                        className="ws-inspector fixed top-14 bottom-0 inset-x-0 sm:left-auto sm:right-0 z-[55] w-full sm:w-[440px] md:w-[480px] lg:w-[500px] max-w-full h-[calc(100vh-3.5rem)] bg-[#0a0b14] border-t-2 sm:border-t-0 sm:border-l-4 border-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+                        style={{ width: '100%', maxWidth: '500px' }}
+                        className="ws-inspector fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                     >
                     {/* Cabecera del Inspector unificada con el Look & Feel de BeatWave */}
                     <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
@@ -18291,12 +18294,13 @@ const SpotifyWorkspace = ({
                 <>
                     <div 
                         onClick={() => setSpInspectorOpen(false)} 
-                        className="fixed top-14 inset-x-0 bottom-0 bg-black/70 backdrop-blur-xs z-[52] transition-opacity animate-fadeIn" 
+                        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[99998] transition-opacity animate-fadeIn" 
                         aria-hidden="true" 
                     />
                     <aside 
                         key={currentTrack ? currentTrack.id : "sp_none"} 
-                        className="fixed top-14 bottom-0 inset-x-0 sm:left-auto sm:right-0 z-[55] w-full sm:w-[440px] md:w-[480px] lg:w-[500px] max-w-full h-[calc(100vh-3.5rem)] bg-[#0a0b14] border-t-2 sm:border-t-0 sm:border-l-4 border-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+                        style={{ width: '100%', maxWidth: '500px' }}
+                        className="fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                     >
                     <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
