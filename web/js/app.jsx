@@ -28764,12 +28764,483 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
 // =======================================================
 // WORKSPACE IN-APP: BEATWAVE LIVE COPILOT (CABINA)
 // =======================================================
+const DEFAULT_COPILOT_STATE = {
+    "connected": true,
+    "source": "SIMULATION_MODE",
+    "platform": "serato",
+    "platform_mode": "auto",
+    "platform_name": "Serato DJ Pro",
+    "platform_icon": "\ud83d\udcbf",
+    "platform_color": "#06b6d4",
+    "platform_status": "LIVE",
+    "detected_platforms": {
+        "serato": true,
+        "rekordbox": true,
+        "virtualdj": true,
+        "traktor": false
+    },
+    "deck_1": {
+        "deck_num": "1",
+        "status": "ON AIR (MASTER)",
+        "is_master": true,
+        "is_playing": true,
+        "artist": "Mauro Picotto",
+        "title": "Komodo (Megavoices Claxixx)",
+        "bpm": 137.68,
+        "camelot": "10A",
+        "camelot_color": "#f472b6",
+        "raw_key": "Bm",
+        "file_path": "Users/admin/Music/FLAC quality/The Midnight - Deep Blue.flac",
+        "genre": "Melodic Techno",
+        "subgenre": "Club Master",
+        "energy": 92,
+        "danceability": 88,
+        "format": "FLAC 24-bit",
+        "duration": "06:30",
+        "duration_sec": 390.0,
+        "elapsed_sec": 182.25,
+        "play_progress": 0.4673,
+        "phase": "Peak Time",
+        "year": "2024",
+        "cover": "/cover?path=Users/admin/Music/FLAC quality/The Midnight - Deep Blue.flac",
+        "cues": [
+            {
+                "id": 1,
+                "name": "Downbeat 1.0.0",
+                "color": "#ef4444",
+                "pct": 0.04,
+                "time": "00:00.25"
+            },
+            {
+                "id": 2,
+                "name": "Intro Perc",
+                "color": "#f97316",
+                "pct": 0.16,
+                "time": "01:04.00"
+            },
+            {
+                "id": 3,
+                "name": "Bassline In",
+                "color": "#eab308",
+                "pct": 0.32,
+                "time": "02:08.00"
+            },
+            {
+                "id": 4,
+                "name": "MAIN DROP",
+                "color": "#10b981",
+                "pct": 0.48,
+                "time": "03:12.00"
+            },
+            {
+                "id": 5,
+                "name": "Breakdown",
+                "color": "#06b6d4",
+                "pct": 0.62,
+                "time": "04:16.00"
+            },
+            {
+                "id": 6,
+                "name": "Climax 2",
+                "color": "#3b82f6",
+                "pct": 0.74,
+                "time": "05:04.00"
+            },
+            {
+                "id": 7,
+                "name": "Outro 32b",
+                "color": "#8b5cf6",
+                "pct": 0.86,
+                "time": "06:08.00"
+            },
+            {
+                "id": 8,
+                "name": "Cut / Fade",
+                "color": "#ec4899",
+                "pct": 0.96,
+                "time": "07:15.00"
+            }
+        ],
+        "structural_phases": [
+            {
+                "id": "intro",
+                "name": "Intro Percusiva",
+                "start_pct": 0.0,
+                "end_pct": 0.16,
+                "type": "intro",
+                "label": "Intro 32b \u2022 Mezcla In",
+                "color": "#06b6d4"
+            },
+            {
+                "id": "build",
+                "name": "Bassline In",
+                "start_pct": 0.16,
+                "end_pct": 0.35,
+                "type": "build",
+                "label": "Bassline Activa",
+                "color": "#eab308"
+            },
+            {
+                "id": "break",
+                "name": "Breakdown",
+                "start_pct": 0.35,
+                "end_pct": 0.48,
+                "type": "break",
+                "label": "Breakdown (Sin Graves)",
+                "color": "#38bdf8"
+            },
+            {
+                "id": "drop",
+                "name": "MAIN DROP",
+                "start_pct": 0.48,
+                "end_pct": 0.74,
+                "type": "drop",
+                "label": "\u26a1 DROP PRINCIPAL (Cl\u00edmax)",
+                "color": "#ef4444"
+            },
+            {
+                "id": "break2",
+                "name": "Segundo Par\u00f3n",
+                "start_pct": 0.74,
+                "end_pct": 0.82,
+                "type": "break",
+                "label": "Puente Mel\u00f3dico",
+                "color": "#a855f7"
+            },
+            {
+                "id": "outro",
+                "name": "Outro Limpio",
+                "start_pct": 0.82,
+                "end_pct": 1.0,
+                "type": "outro",
+                "label": "\ud83d\udfe2 OUTRO SEGURO \u2022 Mezcla Out",
+                "color": "#10b981"
+            }
+        ],
+        "lufs": -8.7,
+        "low_ratio": 48.0,
+        "mid_ratio": 32.0,
+        "high_ratio": 20.0,
+        "acoustic_role": "Bass Driver",
+        "is_audited": true,
+        "comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
+        "tactical_comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
+        "mood": "Peak Time Climax"
+    },
+    "deck_2": {
+        "deck_num": "2",
+        "status": "CUE / PREPARADO",
+        "is_master": false,
+        "is_playing": false,
+        "artist": "Marco Bailey / Sigvard",
+        "title": "Smooth Mind",
+        "bpm": 140.0,
+        "camelot": "6A",
+        "camelot_color": "#c084fc",
+        "raw_key": "Gm",
+        "file_path": "Users/admin/Music/FLAC quality/Snog - Turn on your Brain Baby vs. Acid Outburst 06.flac",
+        "genre": "Raw / Deep Techno",
+        "subgenre": "Drumcode Core",
+        "energy": 91,
+        "danceability": 95,
+        "format": "FLAC 16-bit",
+        "duration": "05:48",
+        "duration_sec": 348.0,
+        "elapsed_sec": 88.25,
+        "play_progress": 0.2536,
+        "phase": "Hypnotic Groove",
+        "year": "2023",
+        "cover": "/cover?path=Users/admin/Music/FLAC quality/Snog - Turn on your Brain Baby vs. Acid Outburst 06.flac",
+        "cues": [
+            {
+                "id": 1,
+                "name": "Downbeat 1.0.0",
+                "color": "#ef4444",
+                "pct": 0.05,
+                "time": "00:00.30"
+            },
+            {
+                "id": 2,
+                "name": "Vocal Hook",
+                "color": "#f97316",
+                "pct": 0.19,
+                "time": "01:08.00"
+            },
+            {
+                "id": 3,
+                "name": "Build-Up 16b",
+                "color": "#eab308",
+                "pct": 0.35,
+                "time": "02:16.00"
+            },
+            {
+                "id": 4,
+                "name": "PEAK DROP",
+                "color": "#10b981",
+                "pct": 0.5,
+                "time": "03:20.00"
+            },
+            {
+                "id": 5,
+                "name": "Acid Meltdown",
+                "color": "#06b6d4",
+                "pct": 0.64,
+                "time": "04:24.00"
+            },
+            {
+                "id": 6,
+                "name": "Second Drop",
+                "color": "#3b82f6",
+                "pct": 0.76,
+                "time": "05:12.00"
+            },
+            {
+                "id": 7,
+                "name": "Outro Limpio",
+                "color": "#8b5cf6",
+                "pct": 0.88,
+                "time": "06:16.00"
+            },
+            {
+                "id": 8,
+                "name": "Fade Out",
+                "color": "#ec4899",
+                "pct": 0.97,
+                "time": "06:45.00"
+            }
+        ],
+        "structural_phases": [
+            {
+                "id": "intro",
+                "name": "Intro Percusiva",
+                "start_pct": 0.0,
+                "end_pct": 0.16,
+                "type": "intro",
+                "label": "Intro 32b \u2022 Mezcla In",
+                "color": "#06b6d4"
+            },
+            {
+                "id": "build",
+                "name": "Bassline In",
+                "start_pct": 0.16,
+                "end_pct": 0.35,
+                "type": "build",
+                "label": "Bassline Activa",
+                "color": "#eab308"
+            },
+            {
+                "id": "break",
+                "name": "Breakdown",
+                "start_pct": 0.35,
+                "end_pct": 0.48,
+                "type": "break",
+                "label": "Breakdown (Sin Graves)",
+                "color": "#38bdf8"
+            },
+            {
+                "id": "drop",
+                "name": "MAIN DROP",
+                "start_pct": 0.48,
+                "end_pct": 0.74,
+                "type": "drop",
+                "label": "\u26a1 DROP PRINCIPAL (Cl\u00edmax)",
+                "color": "#ef4444"
+            },
+            {
+                "id": "break2",
+                "name": "Segundo Par\u00f3n",
+                "start_pct": 0.74,
+                "end_pct": 0.82,
+                "type": "break",
+                "label": "Puente Mel\u00f3dico",
+                "color": "#a855f7"
+            },
+            {
+                "id": "outro",
+                "name": "Outro Limpio",
+                "start_pct": 0.82,
+                "end_pct": 1.0,
+                "type": "outro",
+                "label": "\ud83d\udfe2 OUTRO SEGURO \u2022 Mezcla Out",
+                "color": "#10b981"
+            }
+        ],
+        "lufs": -9.5,
+        "low_ratio": 51.0,
+        "mid_ratio": 31.0,
+        "high_ratio": 18.0,
+        "acoustic_role": "Bass Driver",
+        "is_audited": true,
+        "comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
+        "tactical_comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
+        "mood": "Hypnotic Groove"
+    },
+    "anti_muddy": {
+        "clash_detected": true,
+        "severity": "CRITICAL",
+        "badge": "BASS CLASH",
+        "color": "#ef4444",
+        "message": "Ambos tracks tienen sub-graves dominantes (>44%). El solape directo crear\u00e1 empaste y distorsi\u00f3n en el sistema de sala.",
+        "tactical_advice": "Corta la EQ de graves (Low) en el canal entrante (-6dB a -12dB) antes de abrir el fader, o usa filtro paso-alto."
+    },
+    "harmonic": {
+        "compatible": false,
+        "match_type": "HARMONIC CLASH",
+        "camelot_diff": "+4 Pasos",
+        "energy_trend": "Disonancia Tonal",
+        "badge": "HARMONIC CLASH",
+        "color": "#ef4444",
+        "advice": "Choque arm\u00f3nico severo (10A \u2794 6A). Usa par\u00f3n o transici\u00f3n por percusi\u00f3n."
+    },
+    "lufs_delta": -0.8,
+    "bpm_delta": -0.37,
+    "bpm_pct": -0.28,
+    "recommendations": [
+        {
+            "id": "rec_1",
+            "title": "Higher (Original Mix)",
+            "artist": "Amelie Lens",
+            "bpm": 130.0,
+            "camelot": "10A",
+            "role": "Percussive Tool",
+            "lufs": -6.5,
+            "low_ratio": 36.0,
+            "genre": "Acid / Peak Techno",
+            "subgenre": "Lenske Peak",
+            "energy": 94,
+            "danceability": 89,
+            "mood": "Acid Drive",
+            "format": "FLAC 24-bit",
+            "duration": "06:12",
+            "year": "2023",
+            "cover": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
+            "strategy": "Mezcla Arm\u00f3nica Segura",
+            "reason": "Mismo tono (10A) y espectro percusivo limpio. Cero riesgo de embarre en graves.",
+            "camelot_color": "#f472b6"
+        },
+        {
+            "id": "rec_2",
+            "title": "Your Mind (Extended Club)",
+            "artist": "Adam Beyer & Bart Skils",
+            "bpm": 131.0,
+            "camelot": "11A",
+            "role": "Peak Time Driver",
+            "lufs": -5.9,
+            "low_ratio": 49.0,
+            "genre": "Drumcode Techno",
+            "subgenre": "Drumcode Peak",
+            "energy": 96,
+            "danceability": 92,
+            "mood": "Peak Time Climax",
+            "format": "FLAC Hi-Res",
+            "duration": "07:22",
+            "year": "2022",
+            "cover": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
+            "strategy": "Subid\u00f3n de Energ\u00eda (+1)",
+            "reason": "Aumento arm\u00f3nico a 11A con +1.0 BPM. Eleva la intensidad del club para el cl\u00edmax.",
+            "camelot_color": "#fb7185"
+        },
+        {
+            "id": "rec_3",
+            "title": "Old School",
+            "artist": "Hertz",
+            "bpm": 130.0,
+            "camelot": "10A",
+            "role": "Industrial Driver",
+            "lufs": -6.2,
+            "low_ratio": 38.0,
+            "genre": "Hard Techno Industrial",
+            "subgenre": "Sway Records",
+            "energy": 93,
+            "danceability": 91,
+            "mood": "Raw Industrial",
+            "format": "FLAC 24-bit",
+            "duration": "05:12",
+            "year": "2024",
+            "cover": "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&h=300&fit=crop",
+            "strategy": "Groove Industrial Limpio",
+            "reason": "Mismo Camelot (10A), pegada seca sin saturar sub-graves. Transici\u00f3n directa perfecta.",
+            "camelot_color": "#f472b6"
+        },
+        {
+            "id": "rec_4",
+            "title": "Booster (Gary Beck Remix)",
+            "artist": "Planetary Assault Systems",
+            "bpm": 129.5,
+            "camelot": "10A",
+            "role": "Percussive Descongestor",
+            "lufs": -7.1,
+            "low_ratio": 32.0,
+            "genre": "Hypnotic / Raw",
+            "subgenre": "Mote-Evolver",
+            "energy": 88,
+            "danceability": 86,
+            "mood": "Hypnotic Groove",
+            "format": "WAV 24-bit",
+            "duration": "05:48",
+            "year": "2021",
+            "cover": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop",
+            "strategy": "Descongesti\u00f3n de Sala",
+            "reason": "Textura enfocada en medios y agudos. Ideal para limpiar la sala tras un drop saturado.",
+            "camelot_color": "#f472b6"
+        },
+        {
+            "id": "rec_5",
+            "title": "Subversion",
+            "artist": "Enrico Sangiuliano",
+            "bpm": 130.5,
+            "camelot": "11A",
+            "role": "Cosmic Climax",
+            "lufs": -6.0,
+            "low_ratio": 44.0,
+            "genre": "Peak Time Techno",
+            "subgenre": "NINETOZERO",
+            "energy": 95,
+            "danceability": 90,
+            "mood": "Cosmic Meltdown",
+            "format": "FLAC Hi-Res",
+            "duration": "06:48",
+            "year": "2023",
+            "cover": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
+            "strategy": "Ascensi\u00f3n Hipn\u00f3tica",
+            "reason": "Sintetizadores espaciales que abren el panorama est\u00e9reo antes de cortar los bajos.",
+            "camelot_color": "#fb7185"
+        },
+        {
+            "id": "rec_6",
+            "title": "Rave Generation",
+            "artist": "Reinier Zonneveld",
+            "bpm": 132.0,
+            "camelot": "11A",
+            "role": "Acid Meltdown",
+            "lufs": -5.5,
+            "low_ratio": 46.0,
+            "genre": "Acid Techno",
+            "subgenre": "Filth on Acid",
+            "energy": 98,
+            "danceability": 94,
+            "mood": "High Energy Climax",
+            "format": "WAV 24-bit",
+            "duration": "06:15",
+            "year": "2024",
+            "cover": "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop",
+            "strategy": "Explosi\u00f3n Peak Time",
+            "reason": "Energ\u00eda m\u00e1xima para cerrar el set. Requiere swap r\u00e1pido de EQ Low en drop.",
+            "camelot_color": "#fb7185"
+        }
+    ],
+    "local_ip": "192.168.1.151",
+    "timestamp": 1794309847.254317,
+    "last_updated": "12:24:07",
+    "is_simulating": true
+};
+
 const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
-    const [state, setState] = useState(null);
+    const [state, setState] = useState(DEFAULT_COPILOT_STATE);
     const [clock, setClock] = useState('');
     const [latency, setLatency] = useState(2);
     const [visibleCount, setVisibleCount] = useState(4);
-    const [tracksList, setTracksList] = useState([]);
+    const [tracksList, setTracksList] = useState(DEFAULT_COPILOT_STATE.recommendations);
     const [draggedIdx, setDraggedIdx] = useState(null);
     const [transitionAnalysis, setTransitionAnalysis] = useState(null);
     const [controllerState, setControllerState] = useState({
@@ -28836,6 +29307,11 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     }
                 }
             } catch (e) {
+                if (isMounted) {
+                    setState(prev => prev || DEFAULT_COPILOT_STATE);
+                    setLatency(1);
+                    setTracksList(prev => (prev.length === 0 ? DEFAULT_COPILOT_STATE.recommendations : prev));
+                }
             } finally {
                 isFetching = false;
             }
@@ -28855,8 +29331,48 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                 const data = await res.json();
                 setState(data);
                 if (data.recommendations) setTracksList(data.recommendations);
+                return;
             }
         } catch (e) {}
+
+        // Fallback interactivo local para Figma / Offline:
+        setState(prev => {
+            const current = prev || DEFAULT_COPILOT_STATE;
+            const newSim = !current.is_simulating;
+            return {
+                ...current,
+                is_simulating: newSim,
+                source: newSim ? 'SIMULATION_MODE' : 'SERATO_LIVE',
+                deck_1: {
+                    ...current.deck_1,
+                    title: newSim ? 'Komodo (Megavoices Claxixx)' : 'Deep Blue',
+                    artist: newSim ? 'Mauro Picotto' : 'The Midnight',
+                    bpm: newSim ? 137.68 : 130.0,
+                    camelot: newSim ? '10A' : '10A',
+                    mood: newSim ? 'Peak Time Climax' : 'Melodic Club'
+                },
+                deck_2: {
+                    ...current.deck_2,
+                    title: newSim ? 'Smooth Mind' : 'Turn on your Brain Baby',
+                    artist: newSim ? 'Marco Bailey / Sigvard' : 'Snog',
+                    bpm: newSim ? 140.0 : 129.63,
+                    camelot: newSim ? '6A' : '8A',
+                    mood: newSim ? 'Hypnotic Groove' : 'Drumcode Core'
+                },
+                anti_muddy: {
+                    clash_detected: newSim,
+                    severity: newSim ? 'CRITICAL' : 'SAFE',
+                    color: newSim ? '#ef4444' : '#10b981',
+                    badge: newSim ? 'BASS CLASH' : 'SAFE MIX',
+                    message: newSim 
+                        ? 'Ambos tracks tienen sub-graves dominantes (>44%). El solape directo creará empaste y distorsión en el sistema de sala.'
+                        : 'Equilibrio de frecuencias óptimo entre Decks. Transición limpia sin solape.',
+                    tactical_advice: newSim 
+                        ? 'Corta la EQ de graves (Low) en el canal entrante (-6dB a -12dB) antes de abrir el fader, o usa filtro paso-alto.'
+                        : 'Curva de mezcla perfecta en compás 32.'
+                }
+            };
+        });
     };
 
     const setPlatform = async (plat) => {
@@ -28869,8 +29385,18 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             if (res.ok) {
                 const data = await res.json();
                 setState(data);
+                return;
             }
         } catch (e) {}
+        setState(prev => {
+            const current = prev || DEFAULT_COPILOT_STATE;
+            return {
+                ...current,
+                platform: plat,
+                platform_mode: plat,
+                platform_name: plat === 'serato' ? 'Serato DJ Pro' : plat === 'rekordbox' ? 'Rekordbox' : plat === 'virtualdj' ? 'VirtualDJ Pro' : plat === 'traktor' ? 'Traktor Pro' : 'Auto-Detect'
+            };
+        });
     };
 
     // Lógica Drag and Drop para reordenar pistas próximas + Análisis dinámico
@@ -29235,8 +29761,10 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
             if (res.ok) {
                 const data = await res.json();
                 setCopilotInfo(prev => ({ ...prev, simulation_mode: !prev.simulation_mode }));
+                return;
             }
         } catch (e) {}
+        setCopilotInfo(prev => ({ ...prev, simulation_mode: !prev.simulation_mode }));
     };
 
     const selectPlatform = async (pId) => {
@@ -29253,8 +29781,14 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                     platform_mode: pId,
                     active_platform: data.platform
                 }));
+                return;
             }
         } catch (e) {}
+        setCopilotInfo(prev => ({
+            ...prev,
+            platform_mode: pId,
+            active_platform: pId === 'auto' ? 'serato' : pId
+        }));
     };
 
     const companionUrl = copilotInfo.companion_url || `${window.location.protocol}//${copilotInfo.local_ip || '127.0.0.1'}:8000/copilot.html`;
