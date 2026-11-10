@@ -8,6 +8,7 @@ import json
 import time
 import urllib.parse
 import shutil
+import concurrent.futures
 import numpy as np
 import soundfile as sf
 import eel
@@ -39,13 +40,20 @@ class AuditCacheDB:
         self._init_db()
 
     def _get_conn(self):
-        conn = sqlite3.connect(self.db_path, timeout=10)
+        conn = sqlite3.connect(self.db_path, timeout=30)
         conn.row_factory = sqlite3.Row
         return conn
 
     def _init_db(self):
         with self._lock:
             with self._get_conn() as conn:
+                try:
+                    conn.execute("PRAGMA journal_mode = WAL;")
+                    conn.execute("PRAGMA synchronous = NORMAL;")
+                    conn.execute("PRAGMA cache_size = -64000;")
+                    conn.execute("PRAGMA temp_store = MEMORY;")
+                except Exception:
+                    pass
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS audit_cache (
                         filepath TEXT PRIMARY KEY,
@@ -72,6 +80,70 @@ class AuditCacheDB:
                 """)
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_fp ON audit_cache(acoustic_fp)")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_hash ON audit_cache(file_hash)")
+
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS metadata_cache (
+                        filepath TEXT PRIMARY KEY,
+                        mtime REAL,
+                        filesize INTEGER,
+                        track_json TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_meta_lookup ON metadata_cache(filepath, mtime, filesize)")
+
+    def get_metadata_batch(self, file_tuples: list) -> dict:
+        """
+        file_tuples: lista de tuplas (filepath, mtime, filesize)
+        Retorna: dict con {filepath: track_dict} para todas las coincidencias válidas en caché.
+        """
+        if not file_tuples:
+            return {}
+        hits = {}
+        chunk_size = 800
+        with self._lock:
+            try:
+                with self._get_conn() as conn:
+                    cur = conn.cursor()
+                    for i in range(0, len(file_tuples), chunk_size):
+                        chunk = file_tuples[i : i + chunk_size]
+                        paths = [t[0] for t in chunk]
+                        placeholders = ",".join("?" for _ in paths)
+                        cur.execute(
+                            f"SELECT filepath, mtime, filesize, track_json FROM metadata_cache WHERE filepath IN ({placeholders})",
+                            paths
+                        )
+                        chunk_map = {t[0]: (t[1], t[2]) for t in chunk}
+                        for row in cur.fetchall():
+                            fpath = row["filepath"]
+                            expected = chunk_map.get(fpath)
+                            if not expected:
+                                continue
+                            exp_mtime, exp_size = expected
+                            if abs(float(row["mtime"]) - float(exp_mtime)) <= 1.0 and int(row["filesize"]) == int(exp_size):
+                                try:
+                                    hits[fpath] = json.loads(row["track_json"])
+                                except Exception:
+                                    pass
+            except Exception as e:
+                print(f"[CACHE DB BATCH GET ERROR] {e}")
+        return hits
+
+    def set_metadata_batch(self, items: list):
+        """
+        items: lista de tuplas (filepath, mtime, filesize, track_json_str)
+        """
+        if not items:
+            return
+        with self._lock:
+            try:
+                with self._get_conn() as conn:
+                    conn.executemany("""
+                        INSERT OR REPLACE INTO metadata_cache (filepath, mtime, filesize, track_json, updated_at)
+                        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """, items)
+            except Exception as e:
+                print(f"[CACHE DB BATCH SET ERROR] {e}")
 
     def get(self, filepath: str, mtime: float = None, filesize: int = None):
         if not filepath:
@@ -1258,343 +1330,420 @@ return folderPath'''
             "tracks": tracks_auditados
         }
 
-    def cargar_metadatos_directorio(self, ruta_directorio, progreso_cb=None):
-        """Lee únicamente los metadatos existentes de los archivos sin ejecutar procesos pesados."""
-        if not ruta_directorio:
-            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
-
-        self.reiniciar_cancelacion()
-        extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
+    @staticmethod
+    def _escanear_archivos_audio_recursivo(ruta_directorio, extensiones, max_files=50000):
         archivos = []
-        seen_files = set()
+        seen = set()
+
+        def _escanear_dir(dir_path):
+            try:
+                with os.scandir(dir_path) as it:
+                    for entry in it:
+                        if len(archivos) >= max_files:
+                            break
+                        try:
+                            if entry.is_dir(follow_symlinks=False):
+                                if not entry.name.startswith("."):
+                                    _escanear_dir(entry.path)
+                            elif entry.is_file(follow_symlinks=False):
+                                name_lower = entry.name.lower()
+                                if not entry.name.startswith(".") and name_lower.endswith(extensiones):
+                                    full_p = entry.path
+                                    if full_p not in seen:
+                                        seen.add(full_p)
+                                        st = entry.stat()
+                                        archivos.append((full_p, dir_path, entry.name, float(st.st_mtime), int(st.st_size)))
+                        except Exception:
+                            continue
+            except Exception:
+                pass
 
         if isinstance(ruta_directorio, (list, tuple)):
             for item in ruta_directorio:
                 if not isinstance(item, str):
                     continue
                 if os.path.isfile(item):
-                    if item.lower().endswith(extensiones) and item not in seen_files:
-                        archivos.append((os.path.dirname(item), os.path.basename(item)))
-                        seen_files.add(item)
+                    name_lower = os.path.basename(item).lower()
+                    if not os.path.basename(item).startswith(".") and name_lower.endswith(extensiones) and item not in seen:
+                        seen.add(item)
+                        try:
+                            st = os.stat(item)
+                            archivos.append((item, os.path.dirname(item), os.path.basename(item), float(st.st_mtime), int(st.st_size)))
+                        except Exception:
+                            pass
                 elif os.path.isdir(item):
-                    for root, _, files in os.walk(item):
-                        for file in sorted(files):
-                            if not file.startswith(".") and file.lower().endswith(extensiones):
-                                full_p = os.path.join(root, file)
-                                if full_p not in seen_files:
-                                    archivos.append((root, file))
-                                    seen_files.add(full_p)
-                                    if len(archivos) >= 50000:
-                                        break
-                        if len(archivos) >= 50000:
-                            break
-            if archivos:
-                self.directorio_actual = archivos[0][0]
+                    _escanear_dir(item)
         elif isinstance(ruta_directorio, str):
             if os.path.isfile(ruta_directorio):
-                if ruta_directorio.lower().endswith(extensiones):
-                    archivos.append((os.path.dirname(ruta_directorio), os.path.basename(ruta_directorio)))
-                    self.directorio_actual = os.path.dirname(ruta_directorio)
-            elif os.path.isdir(ruta_directorio):
-                self.directorio_actual = ruta_directorio
-                for root, _, files in os.walk(ruta_directorio):
-                    for file in sorted(files):
-                        if not file.startswith(".") and file.lower().endswith(extensiones):
-                            full_p = os.path.join(root, file)
-                            if full_p not in seen_files:
-                                archivos.append((root, file))
-                                seen_files.add(full_p)
-                                if len(archivos) >= 50000:
-                                    break
-                    if len(archivos) >= 50000:
-                        break
-        else:
-            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
-
-        total_files = len(archivos)
-        if total_files == 0:
-            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
-
-        if progreso_cb:
-            progreso_cb(3, f"Localizados {total_files} archivos en disco...")
-
-        tracks_cargados = []
-        sin_meta_count = 0
-        emit_interval = min(25, max(5, total_files // 50))
-
-        for idx, (root, file) in enumerate(archivos, 1):
-            _cooperative_yield()
-            if self._cancelar_proceso:
-                print(f"[AUDIT SERVICE] Carga de metadatos detenida por el usuario en ({idx}/{total_files})")
-                if progreso_cb:
-                    progreso_cb(0, f"Carga detenida por el usuario.")
-                break
-
-            full_path = os.path.join(root, file)
-            pct = int(3 + (idx / total_files) * 94)
-            if idx == 1 or idx % emit_interval == 0 or idx == total_files:
-                if progreso_cb:
-                    progreso_cb(pct, f"Leyendo metadatos ({idx}/{total_files}): {file}")
-
-            filename = os.path.basename(full_path)
-            ext = os.path.splitext(filename)[1].lower()
-            artist_fb, title_fb = AudioProcessorService._parsear_nombre(filename)
-
-            title = ""
-            artist = ""
-            bpm_str = "--"
-            key_str = "--"
-            dur_str = "00:00"
-            genre_str = ""
-            subgenre_str = ""
-            trim_start_ms = 0.0
-            first_downbeat_ms = 0.0
-            has_cover = False
-            filesize = 0
-
-            try:
-                filesize = os.path.getsize(full_path)
-            except Exception:
-                pass
-
-            tech_sr = 44100
-            tech_depth = 16
-            tech_kbps = 0
-            tech_channels = 2
-
-            try:
-                if ext == ".flac":
+                name_lower = os.path.basename(ruta_directorio).lower()
+                if not os.path.basename(ruta_directorio).startswith(".") and name_lower.endswith(extensiones):
                     try:
-                        f = FLAC(full_path)
-                        title = f.get("TITLE", [""])[0]
-                        artist = f.get("ARTIST", [""])[0]
-                        raw_k = f.get("INITIALKEY", f.get("KEY", [""]))[0]
-                        if raw_k:
-                            key_str = AudioProcessorService.normalizar_key(raw_k)
-                        bpm_val = f.get("BPM", [""])[0]
-                        if bpm_val:
-                            try:
-                                bpm_str = f"{float(str(bpm_val).replace(',', '.')):.2f}"
-                            except Exception:
-                                pass
-                        if f.info and f.info.length:
-                            m = int(f.info.length) // 60
-                            s = int(f.info.length) % 60
-                            dur_str = f"{m}:{s:02d}"
-                            tech_sr = getattr(f.info, "sample_rate", 44100)
-                            tech_depth = getattr(f.info, "bits_per_sample", 16)
-                            tech_channels = getattr(f.info, "channels", 2)
-                            raw_br = getattr(f.info, "bitrate", 0)
-                            tech_kbps = round(raw_br / 1000) if raw_br else round((tech_sr * tech_depth * tech_channels) / 1000)
-                        raw_trim = f.get("TRIM_START_MS", [""])[0]
-                        if raw_trim:
-                            try:
-                                trim_start_ms = float(raw_trim)
-                            except Exception:
-                                pass
-                        raw_down = f.get("FIRST_DOWNBEAT_MS", [""])[0]
-                        if raw_down:
-                            try:
-                                first_downbeat_ms = float(raw_down)
-                            except Exception:
-                                pass
-                        raw_g = f.get("GENRE", [""])[0]
-                        raw_sg = f.get("SUBGENRE", [""])[0]
-                        if raw_g:
-                            genre_str = str(raw_g)
-                        if raw_sg:
-                            subgenre_str = str(raw_sg)
-                        if getattr(f, "pictures", None):
-                            has_cover = True
-                    except Exception:
-                        m = MutagenFile(full_path, easy=True)
-                        if m:
-                            title = str(m.get("title", [""])[0])
-                            artist = str(m.get("artist", [""])[0])
-                            genre_str = str(m.get("genre", [""])[0])
-                            if m.info and hasattr(m.info, "length"):
-                                dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
-                                tech_sr = getattr(m.info, "sample_rate", 44100)
-                                tech_depth = getattr(m.info, "bits_per_sample", 16)
-                                tech_kbps = round(getattr(m.info, "bitrate", 0) / 1000)
-                else:
-                    id3_tags = None
-                    try:
-                        id3_tags = ID3(full_path)
-                        t_frame = id3_tags.get("TXXX:TRIM_START_MS")
-                        d_frame = id3_tags.get("TXXX:FIRST_DOWNBEAT_MS")
-                        tcon_frame = id3_tags.get("TCON")
-                        subg_frame = id3_tags.get("TXXX:SUBGENRE")
-                        if tcon_frame and tcon_frame.text:
-                            genre_str = str(tcon_frame.text[0])
-                        if subg_frame and subg_frame.text:
-                            subgenre_str = str(subg_frame.text[0])
-                        if t_frame and t_frame.text:
-                            trim_start_ms = float(t_frame.text[0])
-                        if d_frame and d_frame.text:
-                            first_downbeat_ms = float(d_frame.text[0])
-                        if any(k.startswith('APIC') for k in id3_tags.keys()):
-                            has_cover = True
+                        st = os.stat(ruta_directorio)
+                        archivos.append((ruta_directorio, os.path.dirname(ruta_directorio), os.path.basename(ruta_directorio), float(st.st_mtime), int(st.st_size)))
                     except Exception:
                         pass
+            elif os.path.isdir(ruta_directorio):
+                _escanear_dir(ruta_directorio)
 
+        return archivos
+
+    def _extraer_metadatos_pista_individual(self, full_path, root, file, mtime, filesize, dir_cover_cache=None):
+        filename = os.path.basename(full_path)
+        ext = os.path.splitext(filename)[1].lower()
+        artist_fb, title_fb = AudioProcessorService._parsear_nombre(filename)
+
+        title = ""
+        artist = ""
+        bpm_str = "--"
+        key_str = "--"
+        dur_str = "00:00"
+        genre_str = ""
+        subgenre_str = ""
+        trim_start_ms = 0.0
+        first_downbeat_ms = 0.0
+        has_cover = False
+
+        tech_sr = 44100
+        tech_depth = 16
+        tech_kbps = 0
+        tech_channels = 2
+
+        try:
+            if ext == ".flac":
+                try:
+                    f = FLAC(full_path)
+                    title = f.get("TITLE", [""])[0]
+                    artist = f.get("ARTIST", [""])[0]
+                    raw_k = f.get("INITIALKEY", f.get("KEY", [""]))[0]
+                    if raw_k:
+                        key_str = AudioProcessorService.normalizar_key(raw_k)
+                    bpm_val = f.get("BPM", [""])[0]
+                    if bpm_val:
+                        try:
+                            bpm_str = f"{float(str(bpm_val).replace(',', '.')):.2f}"
+                        except Exception:
+                            pass
+                    if f.info and f.info.length:
+                        m = int(f.info.length) // 60
+                        s = int(f.info.length) % 60
+                        dur_str = f"{m}:{s:02d}"
+                        tech_sr = getattr(f.info, "sample_rate", 44100)
+                        tech_depth = getattr(f.info, "bits_per_sample", 16)
+                        tech_channels = getattr(f.info, "channels", 2)
+                        raw_br = getattr(f.info, "bitrate", 0)
+                        tech_kbps = round(raw_br / 1000) if raw_br else round((tech_sr * tech_depth * tech_channels) / 1000)
+                    raw_trim = f.get("TRIM_START_MS", [""])[0]
+                    if raw_trim:
+                        try:
+                            trim_start_ms = float(raw_trim)
+                        except Exception:
+                            pass
+                    raw_down = f.get("FIRST_DOWNBEAT_MS", [""])[0]
+                    if raw_down:
+                        try:
+                            first_downbeat_ms = float(raw_down)
+                        except Exception:
+                            pass
+                    raw_g = f.get("GENRE", [""])[0]
+                    raw_sg = f.get("SUBGENRE", [""])[0]
+                    if raw_g:
+                        genre_str = str(raw_g)
+                    if raw_sg:
+                        subgenre_str = str(raw_sg)
+                    if getattr(f, "pictures", None):
+                        has_cover = True
+                except Exception:
                     m = MutagenFile(full_path, easy=True)
                     if m:
                         title = str(m.get("title", [""])[0])
                         artist = str(m.get("artist", [""])[0])
-                        raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
-                        if raw_bpm:
-                            try:
-                                bpm_str = f"{float(raw_bpm):.2f}"
-                            except Exception:
-                                pass
-                        raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
-                        if raw_key:
-                            key_str = AudioProcessorService.normalizar_key(raw_key)
-                        if not genre_str:
-                            genre_str = str(m.get("genre", [""])[0])
+                        genre_str = str(m.get("genre", [""])[0])
                         if m.info and hasattr(m.info, "length"):
                             dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
                             tech_sr = getattr(m.info, "sample_rate", 44100)
+                            tech_depth = getattr(m.info, "bits_per_sample", 16)
                             tech_kbps = round(getattr(m.info, "bitrate", 0) / 1000)
-            except Exception:
-                pass
-
-            if not title:
-                title = title_fb
-            if not artist:
-                artist = artist_fb
-
-            if " / " in genre_str:
-                parts = genre_str.split(" / ", 1)
-                genre_str = parts[0].strip()
-                if not subgenre_str:
-                    subgenre_str = parts[1].strip()
-            genre_str = genre_str or "Tech House"
-            subgenre_str = subgenre_str or "Tech House"
-
-            missing = (bpm_str == "--" or key_str == "--")
-            if missing:
-                sin_meta_count += 1
-
-            cues_frase = []
-            if bpm_str != "--" and dur_str != "00:00":
+            else:
+                id3_tags = None
                 try:
-                    dur_calc_ms = 300000
-                    if ":" in dur_str:
-                        dp = dur_str.split(":")
-                        dur_calc_ms = int((int(dp[0]) * 60 + float(dp[1])) * 1000)
-                    cues_frase = AudioProcessorService.calcular_8_hot_cues_fraseo(
-                        duration_ms=dur_calc_ms,
-                        bpm=float(bpm_str),
-                        downbeat_ms=int(first_downbeat_ms)
-                    )
+                    id3_tags = ID3(full_path)
+                    t_frame = id3_tags.get("TXXX:TRIM_START_MS")
+                    d_frame = id3_tags.get("TXXX:FIRST_DOWNBEAT_MS")
+                    tcon_frame = id3_tags.get("TCON")
+                    subg_frame = id3_tags.get("TXXX:SUBGENRE")
+                    if tcon_frame and tcon_frame.text:
+                        genre_str = str(tcon_frame.text[0])
+                    if subg_frame and subg_frame.text:
+                        subgenre_str = str(subg_frame.text[0])
+                    if t_frame and t_frame.text:
+                        trim_start_ms = float(t_frame.text[0])
+                    if d_frame and d_frame.text:
+                        first_downbeat_ms = float(d_frame.text[0])
+                    if any(k.startswith('APIC') for k in id3_tags.keys()):
+                        has_cover = True
                 except Exception:
                     pass
 
-            if tech_kbps == 0:
-                tech = self.extraer_info_tecnica_audio(full_path)
-                tech_sr = tech.get("samplerate", tech_sr)
-                tech_depth = tech.get("bit_depth", tech_depth)
-                tech_kbps = tech.get("bitrate_kbps", tech_kbps)
+                m = MutagenFile(full_path, easy=True)
+                if m:
+                    title = str(m.get("title", [""])[0])
+                    artist = str(m.get("artist", [""])[0])
+                    raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
+                    if raw_bpm:
+                        try:
+                            bpm_str = f"{float(raw_bpm):.2f}"
+                        except Exception:
+                            pass
+                    raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
+                    if raw_key:
+                        key_str = AudioProcessorService.normalizar_key(raw_key)
+                    if not genre_str:
+                        genre_str = str(m.get("genre", [""])[0])
+                    if m.info and hasattr(m.info, "length"):
+                        dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
+                        tech_sr = getattr(m.info, "sample_rate", 44100)
+                        tech_kbps = round(getattr(m.info, "bitrate", 0) / 1000)
+        except Exception:
+            pass
 
-            diag = self.diagnosticar_calidad_audio(
-                filepath=full_path,
-                cutoff_khz=0.0,
-                samplerate=tech_sr,
-                bit_depth=tech_depth,
-                bitrate_kbps=tech_kbps,
-                fmt=ext.replace(".", "").upper()
-            )
+        if not title:
+            title = title_fb
+        if not artist:
+            artist = artist_fb
 
-            # Si no se detectó carátula en tags ID3/FLAC, consultar si existe cover local
-            if not has_cover:
-                has_cover = AudioProcessorService.tiene_caratula(full_path)
-            track_cover = f"/cover?path={urllib.parse.quote(full_path)}" if has_cover else ""
+        if " / " in genre_str:
+            parts = genre_str.split(" / ", 1)
+            genre_str = parts[0].strip()
+            if not subgenre_str:
+                subgenre_str = parts[1].strip()
+        genre_str = genre_str or "Tech House"
+        subgenre_str = subgenre_str or "Tech House"
 
-            # Estimación inicial de energía, danceability y fase DJ
-            if bpm_str != "--":
-                try:
-                    b_num = float(bpm_str)
-                    e_initial = min(98, max(45, int(60 + (b_num - 118.0) * 1.5)))
-                    dance_initial = min(98, max(50, int(92 - abs(b_num - 126.0) * 0.9)))
-                except Exception:
-                    b_num = 126.0
-                    e_initial = 80
-                    dance_initial = 80
+        cues_frase = []
+        if bpm_str != "--" and dur_str != "00:00":
+            try:
+                dur_calc_ms = 300000
+                if ":" in dur_str:
+                    dp = dur_str.split(":")
+                    dur_calc_ms = int((int(dp[0]) * 60 + float(dp[1])) * 1000)
+                cues_frase = AudioProcessorService.calcular_8_hot_cues_fraseo(
+                    duration_ms=dur_calc_ms,
+                    bpm=float(bpm_str),
+                    downbeat_ms=int(first_downbeat_ms)
+                )
+            except Exception:
+                pass
+
+        if tech_kbps == 0:
+            tech = self.extraer_info_tecnica_audio(full_path)
+            tech_sr = tech.get("samplerate", tech_sr)
+            tech_depth = tech.get("bit_depth", tech_depth)
+            tech_kbps = tech.get("bitrate_kbps", tech_kbps)
+
+        diag = self.diagnosticar_calidad_audio(
+            filepath=full_path,
+            cutoff_khz=0.0,
+            samplerate=tech_sr,
+            bit_depth=tech_depth,
+            bitrate_kbps=tech_kbps,
+            fmt=ext.replace(".", "").upper()
+        )
+
+        if not has_cover:
+            dir_has_img = False
+            if dir_cover_cache is not None:
+                if root in dir_cover_cache:
+                    dir_has_img = dir_cover_cache[root]
+                else:
+                    dir_has_img = any(
+                        os.path.exists(os.path.join(root, cand))
+                        for cand in ("cover.jpg", "cover.png", "folder.jpg", "front.jpg")
+                    )
+                    dir_cover_cache[root] = dir_has_img
             else:
+                dir_has_img = any(
+                    os.path.exists(os.path.join(root, cand))
+                    for cand in ("cover.jpg", "cover.png", "folder.jpg", "front.jpg")
+                )
+            has_cover = dir_has_img
+
+        track_cover = f"/cover?path={urllib.parse.quote(full_path)}" if has_cover else ""
+
+        if bpm_str != "--":
+            try:
+                b_num = float(bpm_str)
+                e_initial = min(98, max(45, int(60 + (b_num - 118.0) * 1.5)))
+                dance_initial = min(98, max(50, int(92 - abs(b_num - 126.0) * 0.9)))
+            except Exception:
                 b_num = 126.0
-                e_initial = 75
-                dance_initial = 75
+                e_initial = 80
+                dance_initial = 80
+        else:
+            b_num = 126.0
+            e_initial = 75
+            dance_initial = 75
 
-            fase_init = MoodIntelligenceService.clasificar_fase_sesion_dj(
-                bpm=b_num,
-                key=key_str if key_str != "--" else "8A",
-                energy=e_initial,
-                danceability=dance_initial,
-                genre=genre_str,
-                filepath=full_path
-            )
+        fase_init = MoodIntelligenceService.clasificar_fase_sesion_dj(
+            bpm=b_num,
+            key=key_str if key_str != "--" else "8A",
+            energy=e_initial,
+            danceability=dance_initial,
+            genre=genre_str,
+            filepath=full_path
+        )
 
-            has_title = bool(title and str(title).strip().lower() not in ("untitled", "desconocido", "unknown", "track", "pista"))
-            has_artist = bool(artist and str(artist).strip().lower() not in ("desconocido", "unknown", "various artists", "various", "artist"))
+        has_title = bool(title and str(title).strip().lower() not in ("untitled", "desconocido", "unknown", "track", "pista"))
+        has_artist = bool(artist and str(artist).strip().lower() not in ("desconocido", "unknown", "various artists", "various", "artist"))
 
-            initial_comment = f"[{bpm_str} BPM | {key_str} | {fase_init['fase_badge']}] Intro 32b • Drop contundente • Outro 64b"
+        initial_comment = f"[{bpm_str} BPM | {key_str} | {fase_init['fase_badge']}] Intro 32b • Drop contundente • Outro 64b"
 
-            tracks_cargados.append({
-                "id": idx,
-                "f": str(file),
-                "filename": str(file),
-                "path": str(full_path),
-                "t": str(title),
-                "title": str(title),
-                "a": str(artist),
-                "artist": str(artist),
-                "b": bpm_str,
-                "bpm": bpm_str,
-                "k": key_str,
-                "key": key_str,
-                "e": e_initial,
-                "dance": dance_initial,
-                "danceability": dance_initial,
-                "mood": fase_init.get("vibe", "Build-Up"),
-                "fase_dj": fase_init.get("fase", "Medio"),
-                "fase_badge": fase_init.get("fase_badge", "BUILD-UP"),
-                "fase_color": fase_init.get("fase_color", "amber"),
-                "vibe": fase_init.get("vibe", "Agitado"),
-                "recomendacion_dj": fase_init.get("recomendacion", ""),
-                "missing_title": not has_title,
-                "missing_artist": not has_artist,
-                "missing_cover": not has_cover,
-                "has_cover": bool(has_cover),
-                "genre": genre_str,
-                "subgenre": subgenre_str,
-                "duration": dur_str,
-                "format": str(diag.get("format") or ext.replace(".", "").upper()),
-                "sample_rate_khz": float(diag.get("sample_rate_khz", 44.1)),
-                "bitrate_kbps": int(diag.get("bitrate_kbps", 0)),
-                "bit_depth": int(diag.get("bit_depth", 16)),
-                "calidad": str(diag.get("calidad", "Pendiente")),
-                "perdida": str(diag.get("perdida", "Sin auditar")),
-                "perdida_pct": float(diag.get("perdida_pct", 0.0)),
-                "compresion": str(diag.get("compresion", "")),
-                "es_fake": bool(diag.get("es_fake", False)),
-                "badge_color": str(diag.get("badge_color", "zinc")),
-                "status": str(diag.get("status") or "Cargado (Sin auditar)"),
-                "cutoff_khz": 0.0,
-                "trim_start_ms": trim_start_ms,
-                "first_downbeat_ms": first_downbeat_ms,
-                "filesize": filesize,
-                "comment": initial_comment,
-                "cover": track_cover,
-                "cues": cues_frase
-            })
+        return {
+            "id": 0,
+            "f": str(file),
+            "filename": str(file),
+            "path": str(full_path),
+            "t": str(title),
+            "title": str(title),
+            "a": str(artist),
+            "artist": str(artist),
+            "b": bpm_str,
+            "bpm": bpm_str,
+            "k": key_str,
+            "key": key_str,
+            "e": e_initial,
+            "dance": dance_initial,
+            "danceability": dance_initial,
+            "mood": fase_init.get("vibe", "Build-Up"),
+            "fase_dj": fase_init.get("fase", "Medio"),
+            "fase_badge": fase_init.get("fase_badge", "BUILD-UP"),
+            "fase_color": fase_init.get("fase_color", "amber"),
+            "vibe": fase_init.get("vibe", "Agitado"),
+            "recomendacion_dj": fase_init.get("recomendacion", ""),
+            "missing_title": not has_title,
+            "missing_artist": not has_artist,
+            "missing_cover": not has_cover,
+            "has_cover": bool(has_cover),
+            "genre": genre_str,
+            "subgenre": subgenre_str,
+            "duration": dur_str,
+            "format": str(diag.get("format") or ext.replace(".", "").upper()),
+            "sample_rate_khz": float(diag.get("sample_rate_khz", 44.1)),
+            "bitrate_kbps": int(diag.get("bitrate_kbps", 0)),
+            "bit_depth": int(diag.get("bit_depth", 16)),
+            "calidad": str(diag.get("calidad", "Pendiente")),
+            "perdida": str(diag.get("perdida", "Sin auditar")),
+            "perdida_pct": float(diag.get("perdida_pct", 0.0)),
+            "compresion": str(diag.get("compresion", "")),
+            "es_fake": bool(diag.get("es_fake", False)),
+            "badge_color": str(diag.get("badge_color", "zinc")),
+            "status": str(diag.get("status") or "Cargado (Sin auditar)"),
+            "cutoff_khz": 0.0,
+            "trim_start_ms": trim_start_ms,
+            "first_downbeat_ms": first_downbeat_ms,
+            "filesize": filesize,
+            "comment": initial_comment,
+            "cover": track_cover,
+            "cues": cues_frase
+        }
 
+    def cargar_metadatos_directorio(self, ruta_directorio, progreso_cb=None):
+        """Lee metadatos existentes con motor multi-hilo en paralelo y caché persistente SQLite WAL (soporte 50.000 pistas)."""
+        if not ruta_directorio:
+            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
+
+        self.reiniciar_cancelacion()
+        extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
+
+        # 1. ESCANEO CON OS.SCANDIR (Lectura dirent de kernel, sin stat() redundantes)
+        archivos = self._escanear_archivos_audio_recursivo(ruta_directorio, extensiones, max_files=50000)
+        total_files = len(archivos)
+        if total_files == 0:
+            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
+
+        self.directorio_actual = archivos[0][1]
+
+        if progreso_cb:
+            progreso_cb(3, f"Localizados {total_files} archivos en disco...")
+
+        # 2. VERIFICACIÓN MASIVA EN CACHÉ PERSISTENTE SQLITE WAL (Sub-segundo para 50k pistas ya indexadas)
+        file_tuples = [(item[0], item[3], item[4]) for item in archivos]
+        cached_dict = self.db_cache.get_metadata_batch(file_tuples) if self.db_cache else {}
+
+        tracks_cargados = []
+        archivos_pendientes = []
+        path_to_item = {}
+
+        for item in archivos:
+            fpath = item[0]
+            path_to_item[fpath] = item
+            if fpath in cached_dict:
+                tracks_cargados.append(cached_dict[fpath])
+            else:
+                archivos_pendientes.append(item)
+
+        total_pendientes = len(archivos_pendientes)
+
+        # 3. PROCESAMIENTO MULTIHILO EN PARALELO PARA CACHE MISSES (ThreadPoolExecutor sin dependencias)
+        if total_pendientes > 0:
+            num_workers = min(32, max(4, (os.cpu_count() or 4) * 2))
+            dir_cover_cache = {}
+            items_to_save_cache = []
+            emit_interval = min(50, max(5, total_pendientes // 40))
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+                future_to_path = {
+                    executor.submit(
+                        self._extraer_metadatos_pista_individual,
+                        item[0], item[1], item[2], item[3], item[4], dir_cover_cache
+                    ): item[0]
+                    for item in archivos_pendientes
+                }
+
+                done_count = 0
+                for future in concurrent.futures.as_completed(future_to_path):
+                    if self._cancelar_proceso:
+                        print(f"[AUDIT SERVICE] Carga cancelada por usuario en {done_count}/{total_pendientes}")
+                        executor.shutdown(wait=False)
+                        break
+
+                    done_count += 1
+                    fpath = future_to_path[future]
+                    try:
+                        res_track = future.result()
+                        if res_track:
+                            tracks_cargados.append(res_track)
+                            orig_item = path_to_item.get(fpath)
+                            if orig_item:
+                                items_to_save_cache.append((
+                                    fpath,
+                                    float(orig_item[3]),
+                                    int(orig_item[4]),
+                                    json.dumps(res_track)
+                                ))
+                    except Exception as err:
+                        print(f"[METADATA EXTRACT ERROR] {fpath}: {err}")
+
+                    if progreso_cb and (done_count % emit_interval == 0 or done_count == total_pendientes):
+                        pct = int(5 + (done_count / total_pendientes) * 90)
+                        progreso_cb(pct, f"Indexando pistas ({done_count}/{total_pendientes})...")
+
+            # Guardar en SQLite en lote en una única transacción WAL atómica
+            if items_to_save_cache and self.db_cache:
+                self.db_cache.set_metadata_batch(items_to_save_cache)
+
+        # 4. PRESERVAR ORDEN EXACTO DE ARCHIVOS Y REASIGNAR ID SECUENCIAL
+        path_order = {item[0]: idx for idx, item in enumerate(archivos)}
+        tracks_cargados.sort(key=lambda t: path_order.get(t.get("path") or "", 999999))
+        for idx, t in enumerate(tracks_cargados, 1):
+            t["id"] = idx
+
+        # 5. CÁLCULO DE MÉTRICAS Y DUPLICADOS
         total = len(tracks_cargados)
-        ready_count = max(0, total - sin_meta_count)
+        sin_meta_count = sum(1 for t in tracks_cargados if (t.get("b") == "--" or t.get("k") == "--" or t.get("bpm") == "--" or t.get("key") == "--"))
         missing_title_count = sum(1 for t in tracks_cargados if t.get("missing_title"))
         missing_artist_count = sum(1 for t in tracks_cargados if t.get("missing_artist"))
         missing_cover_count = sum(1 for t in tracks_cargados if t.get("missing_cover"))
+        ready_count = max(0, total - sin_meta_count)
 
         dup_summary = self.detectar_duplicados_biblioteca(tracks_cargados, proteger_versiones_hermanas=True)
         dup_count = dup_summary.get("total_duplicados", 0)
@@ -1610,7 +1759,7 @@ return folderPath'''
             "missing_cover": missing_cover_count,
             "duplicates": dup_count,
             "ready": ready_count,
-            "errors": 0,
+            "errors": sum(1 for t in tracks_cargados if t.get("es_fake")),
             "tracks": tracks_cargados
         }
 
