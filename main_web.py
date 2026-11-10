@@ -119,7 +119,15 @@ def compilar_frontend_si_necesario():
         if not os.path.exists(bundle_path) or os.path.getmtime(jsx_path) > os.path.getmtime(bundle_path):
             try:
                 subprocess.run(
-                    ["npx", "-y", "esbuild", jsx_path, f"--outfile={bundle_path}"],
+                    [
+                        "npx", "-y", "esbuild", jsx_path,
+                        f"--outfile={bundle_path}",
+                        "--bundle",
+                        "--loader:.jsx=jsx",
+                        "--loader:.js=jsx",
+                        "--target=es2019",
+                        '--define:process.env.NODE_ENV="production"'
+                    ],
                     check=False,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
@@ -133,7 +141,15 @@ def compilar_frontend_si_necesario():
         if not os.path.exists(copilot_bundle) or os.path.getmtime(copilot_jsx) > os.path.getmtime(copilot_bundle):
             try:
                 subprocess.run(
-                    ["npx", "-y", "esbuild", copilot_jsx, f"--outfile={copilot_bundle}"],
+                    [
+                        "npx", "-y", "esbuild", copilot_jsx,
+                        f"--outfile={copilot_bundle}",
+                        "--bundle",
+                        "--loader:.jsx=jsx",
+                        "--loader:.js=jsx",
+                        "--target=es2019",
+                        '--define:process.env.NODE_ENV="production"'
+                    ],
                     check=False,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
