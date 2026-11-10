@@ -10817,7 +10817,7 @@ const AuditWorkspace = ({
                                 <Icons.Gear size={14} className="inline-block align-[-2px]" />
                                 <span>Columnas</span>
                                 <span className="text-[10px] text-djcyan-400 font-mono font-bold">
-                                    ({Object.values(visibleColumns).filter(Boolean).length}/24)
+                                    ({Object.values(visibleColumns).filter(Boolean).length}/{Object.keys(visibleColumns).length})
                                 </span>
                             </button>
 
@@ -13727,7 +13727,7 @@ const AuditWorkspace = ({
                                             Centro de Columnas & Vistas
                                         </h3>
                                         <span className="px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black">
-                                            {Object.values(visibleColumns).filter(Boolean).length} de 24 activas
+                                            {Object.values(visibleColumns).filter(Boolean).length} de {Object.keys(visibleColumns).length} activas
                                         </span>
                                     </div>
                                     <p className="text-[11px] text-gray-400 font-sans mt-0.5">
@@ -17264,7 +17264,7 @@ const SpotifyWorkspace = ({
                                 <Icons.Gear size={14} className="inline-block align-[-2px]" />
                                 <span>Columnas</span>
                                 <span className="text-[10px] text-djcyan-400 font-mono font-bold">
-                                    ({Object.values(poolVisibleColumns).filter(Boolean).length}/20)
+                                    ({Object.values(poolVisibleColumns).filter(Boolean).length}/{Object.keys(poolVisibleColumns).length})
                                 </span>
                             </button>
 
@@ -19011,7 +19011,7 @@ const SpotifyWorkspace = ({
                                             Columnas de Record Pool & Catálogo
                                         </h3>
                                         <span className="px-2 py-0.5 rounded-full bg-djcyan-950 border border-djcyan-600/60 text-djcyan-300 font-mono text-[11px] font-black">
-                                            {Object.values(poolVisibleColumns).filter(Boolean).length} de 20 activas
+                                            {Object.values(poolVisibleColumns).filter(Boolean).length} de {Object.keys(poolVisibleColumns).length} activas
                                         </span>
                                     </div>
                                     <p className="text-[11px] text-gray-400 font-sans mt-0.5">
