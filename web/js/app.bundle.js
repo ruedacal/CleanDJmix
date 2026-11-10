@@ -4335,6 +4335,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const [newCardCvc, setNewCardCvc] = useState5("");
     const [newCardHolder, setNewCardHolder] = useState5("Alejandro Rueda");
     const [paypalEmail, setPaypalEmail] = useState5("");
+    const [demoFilled, setDemoFilled] = useState5(false);
     const [billingMsg, setBillingMsg] = useState5({ text: "", type: "" });
     const [fiscalName, setFiscalName] = useState5(userProfile && userProfile.fiscalName || "Alejandro Rueda / BeatWave DJ");
     const [fiscalTaxId, setFiscalTaxId] = useState5(userProfile && userProfile.taxId || "ES-48765432-W");
@@ -4866,6 +4867,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
               setNewCardExpiry("12/28");
               setNewCardCvc("888");
               setNewCardHolder("DJ TESTER PRO");
+              setDemoFilled(true);
             },
             className: "text-[9.5px] font-mono font-bold text-cyan-400 hover:text-cyan-300 underline cursor-pointer flex items-center gap-1",
             title: "Rellenar datos de prueba para verificar pasarela en local"
@@ -4873,6 +4875,20 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
           " ",
           /* @__PURE__ */ React.createElement("span", null, "Rellenar Tarjeta Demo")
+        )), demoFilled && /* @__PURE__ */ React.createElement("div", { className: "mb-2 p-2 rounded-xl bg-cyan-950/80 border border-cyan-500/70 text-cyan-200 text-[10.5px] font-mono flex items-center justify-between animate-fadeIn shadow-sm" }, /* @__PURE__ */ React.createElement("span", null, '\u26A1 Tarjeta demo cargada. Revisa los datos y pulsa "Confirmar y Guardar".'), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setNewCardNumber("");
+              setNewCardExpiry("");
+              setNewCardCvc("");
+              setNewCardHolder("Alejandro Rueda");
+              setDemoFilled(false);
+            },
+            className: "text-[10px] text-zinc-400 hover:text-white underline cursor-pointer ml-2"
+          },
+          "Limpiar"
         )), /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(
           "input",
           {
@@ -4958,16 +4974,32 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             onChange: (e) => setPaypalEmail(e.target.value),
             className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
           }
-        )), /* @__PURE__ */ React.createElement(
+        )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 pt-2" }, /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
             onClick: () => {
+              setShowAddPaymentForm(false);
+              setDemoFilled(false);
+            },
+            className: "px-3.5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-mono font-bold text-xs cursor-pointer transition-colors"
+          },
+          "Cancelar"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              if (newMethodType === "card" && (!newCardNumber || newCardNumber.replace(/\s/g, "").length < 12)) {
+                setBillingMsg({ text: "\u26A0\uFE0F Introduce los 16 d\xEDgitos de la tarjeta", type: "error" });
+                setTimeout(() => setBillingMsg({ text: "", type: "" }), 3e3);
+                return;
+              }
               const id = "pm_" + Date.now();
               if (newMethodType === "card") {
                 const cleanCard = newCardNumber.replace(/\s/g, "");
                 const last4 = cleanCard ? cleanCard.slice(-4) : "9988";
-                setSavedPaymentMethods((prev) => [...prev, { id, type: "card", brand: "Visa / Mastercard", last4, exp: newCardExpiry || "12/28", holder: newCardHolder, isDefault: true }]);
+                setSavedPaymentMethods((prev) => [...prev, { id, type: "card", brand: "Visa / Mastercard", last4, exp: newCardExpiry || "12/28", holder: newCardHolder || "DJ CABINA", isDefault: true }]);
               } else if (newMethodType === "applepay") {
                 setSavedPaymentMethods((prev) => [...prev, { id, type: "applepay", label: "Apple Pay (Wallet)", isDefault: true }]);
               } else if (newMethodType === "gpay") {
@@ -4976,13 +5008,16 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
                 setSavedPaymentMethods((prev) => [...prev, { id, type: "paypal", label: `PayPal (${paypalEmail || "Cuenta Conectada"})`, isDefault: true }]);
               }
               setShowAddPaymentForm(false);
-              setBillingMsg({ text: "\u2713 Nuevo m\xE9todo de pago guardado con \xE9xito", type: "success" });
+              setDemoFilled(false);
+              setBillingMsg({ text: "\u2713 M\xE9todo de pago verificado y guardado como predeterminado", type: "success" });
               setTimeout(() => setBillingMsg({ text: "", type: "" }), 3e3);
             },
-            className: "w-full py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow"
+            className: "flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow flex items-center justify-center gap-1.5"
           },
-          "Guardar y Establecer como Predeterminado"
-        ))), /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-3 font-mono" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold uppercase text-white tracking-wider flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", null, "Datos Fiscales & NIF / CIF"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-zinc-500" }, "Para emisi\xF3n autom\xE1tica de facturas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Nombre / Raz\xF3n Social"), /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ React.createElement("span", null, "\u2713"),
+          " ",
+          /* @__PURE__ */ React.createElement("span", null, "Confirmar y Guardar M\xE9todo de Pago")
+        )))), /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-2xl bg-djzinc-900/60 border border-djzinc-800 space-y-3 font-mono" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold uppercase text-white tracking-wider flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", null, "Datos Fiscales & NIF / CIF"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-zinc-500" }, "Para emisi\xF3n autom\xE1tica de facturas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Nombre / Raz\xF3n Social"), /* @__PURE__ */ React.createElement(
           "input",
           {
             type: "text",

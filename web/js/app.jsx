@@ -4280,6 +4280,7 @@ const UserAccountModal = ({
     const [newCardCvc, setNewCardCvc] = useState('');
     const [newCardHolder, setNewCardHolder] = useState('Alejandro Rueda');
     const [paypalEmail, setPaypalEmail] = useState('');
+    const [demoFilled, setDemoFilled] = useState(false);
     const [billingMsg, setBillingMsg] = useState({ text: '', type: '' });
 
     // Datos Fiscales
@@ -5136,6 +5137,7 @@ const UserAccountModal = ({
                                                                 setNewCardExpiry('12/28');
                                                                 setNewCardCvc('888');
                                                                 setNewCardHolder('DJ TESTER PRO');
+                                                                setDemoFilled(true);
                                                             }}
                                                             className="text-[9.5px] font-mono font-bold text-cyan-400 hover:text-cyan-300 underline cursor-pointer flex items-center gap-1"
                                                             title="Rellenar datos de prueba para verificar pasarela en local"
@@ -5143,6 +5145,24 @@ const UserAccountModal = ({
                                                             <span>⚡</span> <span>Rellenar Tarjeta Demo</span>
                                                         </button>
                                                     </div>
+                                                    {demoFilled && (
+                                                        <div className="mb-2 p-2 rounded-xl bg-cyan-950/80 border border-cyan-500/70 text-cyan-200 text-[10.5px] font-mono flex items-center justify-between animate-fadeIn shadow-sm">
+                                                            <span>⚡ Tarjeta demo cargada. Revisa los datos y pulsa "Confirmar y Guardar".</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setNewCardNumber('');
+                                                                    setNewCardExpiry('');
+                                                                    setNewCardCvc('');
+                                                                    setNewCardHolder('Alejandro Rueda');
+                                                                    setDemoFilled(false);
+                                                                }}
+                                                                className="text-[10px] text-zinc-400 hover:text-white underline cursor-pointer ml-2"
+                                                            >
+                                                                Limpiar
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                     <div className="relative">
                                                         <input 
                                                             type="text" 
@@ -5258,29 +5278,47 @@ const UserAccountModal = ({
                                             </div>
                                         )}
 
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const id = 'pm_' + Date.now();
-                                                if (newMethodType === 'card') {
-                                                    const cleanCard = newCardNumber.replace(/\s/g, '');
-                                                    const last4 = cleanCard ? cleanCard.slice(-4) : '9988';
-                                                    setSavedPaymentMethods(prev => [...prev, { id, type: 'card', brand: 'Visa / Mastercard', last4, exp: newCardExpiry || '12/28', holder: newCardHolder, isDefault: true }]);
-                                                } else if (newMethodType === 'applepay') {
-                                                    setSavedPaymentMethods(prev => [...prev, { id, type: 'applepay', label: 'Apple Pay (Wallet)', isDefault: true }]);
-                                                } else if (newMethodType === 'gpay') {
-                                                    setSavedPaymentMethods(prev => [...prev, { id, type: 'gpay', label: 'Google Pay / Google Play', isDefault: true }]);
-                                                } else {
-                                                    setSavedPaymentMethods(prev => [...prev, { id, type: 'paypal', label: `PayPal (${paypalEmail || 'Cuenta Conectada'})`, isDefault: true }]);
-                                                }
-                                                setShowAddPaymentForm(false);
-                                                setBillingMsg({ text: '✓ Nuevo método de pago guardado con éxito', type: 'success' });
-                                                setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
-                                            }}
-                                            className="w-full py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow"
-                                        >
-                                            Guardar y Establecer como Predeterminado
-                                        </button>
+                                        <div className="flex items-center gap-2 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowAddPaymentForm(false);
+                                                    setDemoFilled(false);
+                                                }}
+                                                className="px-3.5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-mono font-bold text-xs cursor-pointer transition-colors"
+                                            >
+                                                Cancelar
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (newMethodType === 'card' && (!newCardNumber || newCardNumber.replace(/\s/g, '').length < 12)) {
+                                                        setBillingMsg({ text: '⚠️ Introduce los 16 dígitos de la tarjeta', type: 'error' });
+                                                        setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
+                                                        return;
+                                                    }
+                                                    const id = 'pm_' + Date.now();
+                                                    if (newMethodType === 'card') {
+                                                        const cleanCard = newCardNumber.replace(/\s/g, '');
+                                                        const last4 = cleanCard ? cleanCard.slice(-4) : '9988';
+                                                        setSavedPaymentMethods(prev => [...prev, { id, type: 'card', brand: 'Visa / Mastercard', last4, exp: newCardExpiry || '12/28', holder: newCardHolder || 'DJ CABINA', isDefault: true }]);
+                                                    } else if (newMethodType === 'applepay') {
+                                                        setSavedPaymentMethods(prev => [...prev, { id, type: 'applepay', label: 'Apple Pay (Wallet)', isDefault: true }]);
+                                                    } else if (newMethodType === 'gpay') {
+                                                        setSavedPaymentMethods(prev => [...prev, { id, type: 'gpay', label: 'Google Pay / Google Play', isDefault: true }]);
+                                                    } else {
+                                                        setSavedPaymentMethods(prev => [...prev, { id, type: 'paypal', label: `PayPal (${paypalEmail || 'Cuenta Conectada'})`, isDefault: true }]);
+                                                    }
+                                                    setShowAddPaymentForm(false);
+                                                    setDemoFilled(false);
+                                                    setBillingMsg({ text: '✓ Método de pago verificado y guardado como predeterminado', type: 'success' });
+                                                    setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
+                                                }}
+                                                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black text-xs uppercase cursor-pointer transition-all active:scale-95 shadow flex items-center justify-center gap-1.5"
+                                            >
+                                                <span>✓</span> <span>Confirmar y Guardar Método de Pago</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
