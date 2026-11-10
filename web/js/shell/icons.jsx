@@ -26,7 +26,7 @@ const makeIcon = (children, { filled = false, defaultClass = '', defaultSize = 1
 export const ShellIcons = {
     Library: makeIcon(<><path d="m16 6 4 14" /><path d="M12 6v14" /><path d="M8 8v12" /><path d="M4 4v16" /></>),
     Cue: makeIcon(<><path d="M4 22V3" /><path d="M4 4h12.5l-2.8 4.5 2.8 4.5H4" /><circle cx="4" cy="4" r="1.5" /><circle cx="4" cy="21" r="1.25" fill="currentColor" /></>),
-    Turntable: makeIcon(<><rect x="2" y="3" width="20" height="18" rx="2.5" /><circle cx="9.5" cy="12" r="6" /><circle cx="9.5" cy="12" r="2.2" /><path d="M9.5 6v3.8M9.5 14.2v3.8" /><circle cx="17.5" cy="7" r="1" /><path d="M17.5 8v6.5l-2.5 2.5" /></>),
+    Turntable: makeIcon(<><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="3.2" /><path d="M12 3.5v5.3M12 15.2v5.3" /></>),
     Flow: makeIcon(<><path d="M21 15V6" /><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path d="M12 12H3" /><path d="M16 6H3" /><path d="M12 18H3" /></>),
     Map: makeIcon(<><path d="M3 3v16a2 2 0 0 0 2 2h16" /><circle cx="8" cy="15" r="1.25" /><circle cx="11.5" cy="9.5" r="1.25" /><circle cx="16" cy="13" r="1.25" /><circle cx="19" cy="6" r="1.25" /></>),
     Spotify: makeIcon(<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /><path d="M12 15V3" /></>),

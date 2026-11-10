@@ -125,12 +125,9 @@ const PlatformAutoLogo = ({ size = 20, className = "" }) => (
 
 const CopilotTurntableLogo = ({ size = 20, className = "" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <rect x="2" y="3" width="20" height="18" rx="2.5" />
-        <circle cx="9.5" cy="12" r="6" />
-        <circle cx="9.5" cy="12" r="2.2" />
-        <path d="M9.5 6v3.8M9.5 14.2v3.8" />
-        <circle cx="17.5" cy="7" r="1" />
-        <path d="M17.5 8v6.5l-2.5 2.5" />
+        <circle cx="12" cy="12" r="8.5" />
+        <circle cx="12" cy="12" r="3.2" />
+        <path d="M12 3.5v5.3M12 15.2v5.3" />
     </svg>
 );
 

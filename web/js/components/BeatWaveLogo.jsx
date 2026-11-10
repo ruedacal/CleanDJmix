@@ -8,15 +8,6 @@
 import React from 'react';
 
 export const BeatWaveLogoBadge = ({ size = 'sm', isAnimated = true, isTechnoActive = false, className = '' }) => {
-    // Size presets: 'xs' (24px), 'sm' (36px), 'md' (44px), 'lg' (96px/112px), 'xl' (128px)
-    const sizeConfig = {
-        xs: { dims: 'w-6 h-6', border: 'border-[1.5px]' },
-        sm: { dims: 'w-9 h-9', border: 'border-2' },
-        md: { dims: 'w-11 h-11', border: 'border-[3px]' },
-        lg: { dims: 'w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32', border: 'border-[5px] sm:border-[6px]' },
-        xl: { dims: 'w-32 h-32', border: 'border-[8px]' }
-    }[size] || { dims: size, border: 'border-2' };
-
     const animBarClasses = isAnimated ? [
         'bw-equalizer-bar-1',
         'bw-equalizer-bar-2',
@@ -27,7 +18,7 @@ export const BeatWaveLogoBadge = ({ size = 'sm', isAnimated = true, isTechnoActi
 
     return (
         <div 
-            className={`relative rounded-full flex items-center justify-center shrink-0 ${sizeConfig.border} border-white bg-[#030712]/95 shadow-[0_0_24px_rgba(6,182,212,0.9),inset_0_0_12px_rgba(6,182,212,0.4)] backdrop-blur-md select-none group-hover:shadow-[0_0_32px_rgba(6,182,212,1),inset_0_0_16px_rgba(6,182,212,0.55)] transition-all duration-300 ${isTechnoActive ? 'anim-soundwave drop-shadow-[0_0_24px_rgba(6,182,212,1)] scale-105' : ''} ${sizeConfig.dims} ${className}`}
+            className={`relative rounded-full flex items-center justify-center shrink-0 bw-brand-logo-badge size-${size} select-none transition-all duration-300 ${isTechnoActive ? 'anim-soundwave scale-105' : ''} ${className}`}
         >
             <svg 
                 viewBox="0 0 100 100" 

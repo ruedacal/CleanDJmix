@@ -396,23 +396,29 @@ const Icons = ShellIcons;
 
 const SECTION_TITLE_CLASS = "font-syne font-black text-lg sm:text-xl leading-tight text-white tracking-wide uppercase";
 
-const SectionTitle = ({ icon: Icon, title, accent, badge, className = "" }) => (
-    <div className={`flex items-center gap-2.5 min-w-0 shrink-0 ${className}`}>
-        {Icon && (
-            <span className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0">
-                <Icon size={16} />
-            </span>
-        )}
-        <h2 className={`${SECTION_TITLE_CLASS} truncate`}>
-            {title}{accent && <span className="text-djcyan-400"> {accent}</span>}
-        </h2>
-        {badge && (
-            <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-djcyan-950 text-djcyan-400 border border-djcyan-800 shrink-0">
-                {badge}
-            </span>
-        )}
-    </div>
-);
+const SectionTitle = ({ icon: Icon, title, accent, badge, accentColor = "cyan", className = "" }) => {
+    const isPurple = accentColor === "purple";
+    const iconBg = isPurple ? "bg-purple-500/15 border-purple-500/40 text-purple-300" : "bg-djcyan-500/10 border-djcyan-500/30 text-djcyan-400";
+    const accentText = isPurple ? "text-purple-400" : "text-djcyan-400";
+    const badgeStyle = isPurple ? "bg-purple-950/80 text-purple-300 border-purple-800" : "bg-djcyan-950 text-djcyan-400 border-djcyan-800";
+    return (
+        <div className={`flex items-center gap-2.5 min-w-0 shrink-0 ${className}`}>
+            {Icon && (
+                <span className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}`}>
+                    <Icon size={16} />
+                </span>
+            )}
+            <h2 className={`${SECTION_TITLE_CLASS} truncate`}>
+                {title}{accent && <span className={accentText}> {accent}</span>}
+            </h2>
+            {badge && (
+                <span className={`hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle}`}>
+                    {badge}
+                </span>
+            )}
+        </div>
+    );
+};
 
 // Tooltip Flotante Educativo Desacoplado de Overflows mediante ReactDOM.createPortal
 const InfoTip = ({ text, title }) => {
@@ -21998,22 +22004,18 @@ const TrendsWorkspace = ({ lang = "es" }) => {
             <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <div className="flex items-center gap-2.5">
-                            <span className="p-2 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/40 rounded-xl text-indigo-400">
-                                <Icons.Trends />
-                            </span>
-                            <div>
-                                <h1 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2">
-                                    <span>TENDENCIAS DE MÚSICA ELECTRÓNICA</span>
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-indigo-950 border border-indigo-500/60 text-indigo-300">
-                                        STUDIO LAB · RADAR & FESTIVALES
-                                    </span>
-                                </h1>
-                                <p className="text-xs text-gray-400 mt-0.5">
-                                    Nuevas corrientes, calendario oficial de festivales, análisis de sesiones de DJ y entrevistas exclusivas con referencias bibliográficas.
-                                </p>
-                            </div>
-                        </div>
+                                            <div className="flex flex-col gap-1">
+                        <SectionTitle 
+                            icon={Icons.Trends} 
+                            title="Tendencias" 
+                            accent="Studio Lab" 
+                            badge="RADAR & FESTIVALES" 
+                            accentColor="purple" 
+                        />
+                        <p className="text-xs text-gray-400 mt-0.5">
+                            Inteligencia musical continua y escaneo de tendencias acústicas de cabina.
+                        </p>
+                    </div>
                     </div>
 
                     {/* Caja de Estado del Crawler & Botón de Sincronización */}
@@ -25469,9 +25471,21 @@ const MapWorkspace = ({
             const tr = transformRef.current;
             const clamped = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, parsed));
             tr.targetScale = clamped;
-            // Centrado cinemático progresivo al cambiar zoom para evitar que la pantalla quede en blanco
-            tr.targetPanX *= 0.65;
-            tr.targetPanY *= 0.65;
+            
+            // CENTRADO INTELIGENTE: Si hay nodos activos, recentrar suavemente hacia el centroide del clúster
+            const nodes = nodesRef.current || [];
+            if (nodes.length > 0) {
+                let sumX = 0, sumY = 0;
+                nodes.forEach(n => { sumX += (n.x || 0.5); sumY += (n.y || 0.5); });
+                const avgNx = sumX / nodes.length;
+                const avgNy = sumY / nodes.length;
+                // Ajustar targetPan para que el centro del cluster quede exactamente en pantalla
+                tr.targetPanX = (0.5 - avgNx) * 320 * (clamped > 1 ? Math.min(clamped, 4) : 1);
+                tr.targetPanY = (0.5 - avgNy) * 260 * (clamped > 1 ? Math.min(clamped, 4) : 1);
+            } else {
+                tr.targetPanX = 0;
+                tr.targetPanY = 0;
+            }
             setZoomDisplay(clamped);
         }
     };
@@ -26653,6 +26667,261 @@ const MapWorkspace = ({
 // =========================================================================
 // ESPACIO DE TRABAJO: CONOCIMIENTO (CURSOS, VÍDEOS Y MANUALES DJ)
 // =========================================================================
+// ==============================================================================
+// GLOSARIO ACÚSTICO & TÉCNICO DJ INTEGRAL DE BEATWAVE PRO
+// ==============================================================================
+const BEATWAVE_MASTER_GLOSSARY = [
+    // CABINA & HARDWARE
+    {
+        term: "Downbeat (Beat 1.0.0)",
+        category: "Cabina & Decks",
+        tag: "MÉTRICA",
+        color: "#06b6d4",
+        icon: "🎯",
+        definition: "Primer golpe o pulso fuerte de un compás de 4 tiempos (4/4). Marcar el Hot Cue 1 en el downbeat exacto garantiza que las transiciones queden matemáticamente alineadas sin desfase rítmico ni choque de bombos.",
+        formula: "Compás 4/4 • T1 (1.0.0)",
+        impact: "Alineación de fraseo (frase de 16/32 compases) en Rekordbox, Serato y Traktor."
+    },
+    {
+        term: "Beatgrid & Cuantización",
+        category: "Cabina & Decks",
+        tag: "TEMPORAL",
+        color: "#38bdf8",
+        icon: "🎛️",
+        definition: "Malla temporal microscópica superpuesta a la forma de onda de audio. La cuantización fuerza a los Hot Cues, bucles y transiciones a anclarse automáticamente al pulso más cercano, evitando desviaciones humanas al tocar los pads.",
+        formula: "Resolución: 1/16 beat @ 60fps",
+        impact: "Garantiza loops sin imperfecciones y saltos en directo 100% rítmicos."
+    },
+    {
+        term: "Hot Cues Tácticos (1–8)",
+        category: "Cabina & Decks",
+        tag: "ESTRUCTURA",
+        color: "#f59e0b",
+        icon: "🏷️",
+        definition: "Marcadores de acceso instantáneo mapeados a los 8 pads de la controladora DJ. BeatWave Pro estandariza la convención NV2: CUE 1 (Intro/Downbeat), CUE 2 (Build-up), CUE 3 (Drop Principal), CUE 4 (Break/Breakdown), CUE 5 (Segundo Drop) y CUE 8 (Outro Seguro).",
+        formula: "8 Cues • Colores NV2 Corporativos",
+        impact: "Navegación espacial instantánea por la estructura del track en cualquier reproductor."
+    },
+    {
+        term: "Slip Mode",
+        category: "Cabina & Decks",
+        tag: "REPRODUCCIÓN",
+        color: "#10b981",
+        icon: "⚡",
+        definition: "Modo de reproducción donde la música continúa corriendo en silencio en segundo plano mientras el DJ ejecuta scratch, bucles manuales o reverse. Al soltar el pad o jogwheel, la canción retoma exactamente en el compás donde estaría normalmente.",
+        formula: "Playhead Virtual Continuo",
+        impact: "Permite trucos rítmicos sin perder la sincronización con el otro deck."
+    },
+    {
+        term: "Master Tempo (Key Lock)",
+        category: "Cabina & Decks",
+        tag: "DSP TONAL",
+        color: "#a855f7",
+        icon: "🔒",
+        definition: "Algoritmo de time-stretching en tiempo real que preserva la tonalidad original (pitch/key) de una pista incluso al alterar drásticamente su velocidad (BPM) con el fader de pitch.",
+        formula: "Pitch Shift = 0 semitonos @ ΔBPM",
+        impact: "Evita el efecto 'voces de pitufo' o ralentizaciones graves al ajustar tempo."
+    },
+    {
+        term: "Zero-Crossing (Paso por Cero)",
+        category: "Cabina & Decks",
+        tag: "DSP AUDIO",
+        color: "#ec4899",
+        icon: "✂️",
+        definition: "Punto exacto de la onda sonora donde la amplitud eléctrica cruza el eje de 0 voltios. Colocar cortes y Hot Cues en el zero-crossing previene micro-chasquidos (clicks o pops) que pueden dañar altavoces de gran potencia.",
+        formula: "Amplitud: V(t) = 0.00 V",
+        impact: "Transiciones limpias sin ruidos parásitos en sistemas de sonido de club."
+    },
+
+    // DSP & ACÚSTICA
+    {
+        term: "Bass Clash (Conflicto de Graves)",
+        category: "DSP & Acústica",
+        tag: "CRÍTICO",
+        color: "#ef4444",
+        icon: "⚠️",
+        definition: "Solapamiento destructivo de energía de sub-graves (<120 Hz) entre dos pistas reproduciéndose simultáneamente. Genera cancelación de fase acústica, pérdida de pegada en el bombo y sobrecarga en los amplificadores de subgraves del club.",
+        formula: "Energía Sub-Bass > 44% en ambos Decks",
+        impact: "BeatWave Copilot emite alerta y activa corte preventivo de EQ Low (-6dB a -12dB)."
+    },
+    {
+        term: "Anti-Muddy DSP",
+        category: "DSP & Acústica",
+        tag: "ALGORITMO",
+        color: "#10b981",
+        icon: "🛡️",
+        definition: "Motor algorítmico exclusivo de BeatWave Pro que analiza el espectro combinado de frecuencias de ambos decks en tiempo real para predecir y disipar el enmascaramiento sonoro antes de que el DJ abra el fader en la mesa de mezclas.",
+        formula: "Análisis espectral FFT de 512 bandas",
+        impact: "Mezclas diáfanas y cristalinas con punch absoluto en sala grande."
+    },
+    {
+        term: "LUFS Integrado (EBU R128)",
+        category: "DSP & Acústica",
+        tag: "SONORIDAD",
+        color: "#38bdf8",
+        icon: "📊",
+        definition: "Unidad de Sonoridad Relativa a Escala Completa que mide la potencia acústica percibida por el oído humano a lo largo de toda la pista. Estándar club recomendado: -7.0 a -6.0 LUFS para tracks de música electrónica comercial.",
+        formula: "Curva de ponderación K (ITU-R BS.1770)",
+        impact: "Asegura niveles homogéneos de ganancia sin saturación ni saltos de volumen."
+    },
+    {
+        term: "True Peak (dBTP)",
+        category: "DSP & Acústica",
+        tag: "DINÁMICA",
+        color: "#fbbf24",
+        icon: "📈",
+        definition: "Nivel de pico inter-muestra que reconstruye analógicamente la señal sonora entre muestras digitales. Superar 0.0 dBTP genera recorte duro (clipping) en los convertidores DAC de mesas de club como Pioneer DJM-V10 o Allen & Heath Xone:96.",
+        formula: "Over-sampling x4 inter-sample peak",
+        impact: "Mantiene la señal bajo -0.3 dBTP para evitar distorsión analógica."
+    },
+    {
+        term: "Espectro Tri-Banda (3-Way Split)",
+        category: "DSP & Acústica",
+        tag: "VISUALIZADOR",
+        color: "#06b6d4",
+        icon: "🌈",
+        definition: "Visualización de forma de onda dividida en 3 rangos espectrales: Azul Oscuro para Graves y Sub-bajos (<200 Hz), Naranja/Cian para Medios y Voces (200 Hz – 2.5 kHz), y Blanco Puro para Agudos y Transitorios (>2.5 kHz).",
+        formula: "Low (<200Hz) • Mid • High (>2.5kHz)",
+        impact: "Permite al DJ anticipar visualmente bajadas, drops y entradas vocales al segundo."
+    },
+
+    // ARMONÍA & CAMELOT
+    {
+        term: "Camelot Wheel",
+        category: "Armonía & Camelot",
+        tag: "TEORÍA",
+        color: "#ec4899",
+        icon: "🎡",
+        definition: "Sistema circular de 24 casillas que traduce el círculo de quintas a 12 números (1 al 12) y dos letras: A para tonalidades menores y B para tonalidades mayores. Permite a cualquier DJ seleccionar la pista armónica perfecta de un vistazo.",
+        formula: "12 números x 2 modos (A/B)",
+        impact: "Evita notas disonantes y melodías enfrentadas en mezclas largas."
+    },
+    {
+        term: "Energy Boost (+2 Camelot)",
+        category: "Armonía & Camelot",
+        tag: "PSICO-ENERGÍA",
+        color: "#f59e0b",
+        icon: "🚀",
+        definition: "Técnica armónica que consiste en saltar dos posiciones horarias en la rueda de Camelot (ejemplo: de 8A a 10A, o de 11B a 1B). Provoca una elevación inmediata de la tensión emocional y la euforia en la pista de baile.",
+        formula: "Key actual + 2 (ej. 8A → 10A / Bm → C#m)",
+        impact: "Ideal para momentos culminantes y cambios de energía en festivales."
+    },
+    {
+        term: "Mezcla Diatónica (+1 / -1)",
+        category: "Armonía & Camelot",
+        tag: "ARMONÍA PURA",
+        color: "#10b981",
+        icon: "🎵",
+        definition: "Mezcla entre casillas vecinas de la rueda Camelot (ejemplo: 8A con 7A o 9A). Al compartir casi todas las notas de sus respectivas escalas, las melodías y líneas de bajo se entrelazan de forma 100% natural sin choques tonales.",
+        formula: "Quinta Justa ascendente (+1) o descendente (-1)",
+        impact: "La regla de oro para sets continuos, fluidos e hipnóticos."
+    },
+    {
+        term: "Modo Relativo (A ↔ B)",
+        category: "Armonía & Camelot",
+        tag: "CAMBIO DE COLOR",
+        color: "#8b5cf6",
+        icon: "🎭",
+        definition: "Transición entre la tonalidad menor y su mayor relativa en el mismo número de la rueda (ejemplo: 8A/La menor a 8B/Do mayor). Ambas tonalidades comparten exactamente las mismas notas, transformando el mood de oscuro a luminoso.",
+        formula: "Tono relativo: Mismo número, distinta letra",
+        impact: "Inyección de luz y épica en breaks vocales sin cambiar centro tonal."
+    },
+
+    // PSICOACÚSTICA & IA
+    {
+        term: "Energía (0–100%)",
+        category: "Psicoacústica & IA",
+        tag: "POTENCIA",
+        color: "#f97316",
+        icon: "⚡",
+        definition: "Métrica calculada por algoritmos de Machine Learning que combina la densidad rítmica de los transitorios, el volumen de frecuencias medias-altas y la compresión espectral para calibrar la fuerza percibida en pista.",
+        formula: "ML Acoustic Energy Index",
+        impact: "Permite programar la curva de intensidad del set sin bajones inesperados."
+    },
+    {
+        term: "Intensidad (Arousal)",
+        category: "Psicoacústica & IA",
+        tag: "ACTIVACIÓN",
+        color: "#10b981",
+        icon: "📈",
+        definition: "Nivel de activación fisiológica y excitación motora que la música induce en el sistema nervioso del oyente (frecuencia cardíaca y ganas de bailar). Rango de 0% (relajación/chillout) a 100% (frenesí rave / peak time).",
+        formula: "Russells Circumplex Arousal Axis",
+        impact: "Gestiona el ritmo biológico del público durante sesiones de más de 3 horas."
+    },
+    {
+        term: "Positividad (Valence)",
+        category: "Psicoacústica & IA",
+        tag: "VALENCIA",
+        color: "#06b6d4",
+        icon: "✨",
+        definition: "Valencia afectiva y emocional de una pista de audio. Valores cercanos al 0% indican temas oscuros, industriales, densos o melancólicos; valores cercanos al 100% reflejan temas eufóricos, alegres, veraniegos o festivos.",
+        formula: "Affective Valence Meter (0.0 – 1.0)",
+        impact: "Alinea la selección musical con la vibra exacta de la noche y el público."
+    },
+    {
+        term: "Mood & Fase de Set",
+        category: "Psicoacústica & IA",
+        tag: "ESTRATEGIA",
+        color: "#c084fc",
+        icon: "🧭",
+        definition: "Clasificación táctica del rol de cada pista dentro de la sesión DJ: Warm-up (construcción inicial), Mid-Set Groove (mantenimiento de ritmo), Peak Time Climax (momento de máxima euforia) y Afterhours (ritmo hipnótico para cierre).",
+        formula: "Clasificador Heurístico Multicriterio",
+        impact: "Sugiere automáticamente las mejores pistas de entrada para cada hora del evento."
+    },
+
+    // METADATOS & SUITES DJ
+    {
+        term: "ID3v2.4 UTF-8",
+        category: "Metadatos & Suites",
+        tag: "ESTÁNDAR",
+        color: "#38bdf8",
+        icon: "💾",
+        definition: "Versión más avanzada y robusta del estándar internacional de metadatos de audio MP3/WAV/AIFF. El uso de codificación UTF-8 previene caracteres corruptos (mojibake) en pantallas táctiles de Pioneer CDJ-3000 y Denon SC6000.",
+        formula: "ID3v2.4.0 • Codificación UTF-8 pura",
+        impact: "Títulos, artistas y comentarios legibles al 100% en cualquier cabina del mundo."
+    },
+    {
+        term: "Rekordbox XML",
+        category: "Metadatos & Suites",
+        tag: "PIONEER DJ",
+        color: "#0284c7",
+        icon: "💿",
+        definition: "Estructura jerárquica nativa de Pioneer DJ que almacena metadatos enriquecidos, listas de reproducción, memoria de Hot Cues con milisegundos exactos y coordenadas del beatgrid para exportación rápida a pendrives USB.",
+        formula: "Rekordbox 6/7 Master XML Schema",
+        impact: "Carga instantánea de colecciones en equipos estándar de club (CDJ/XDJ)."
+    },
+    {
+        term: "Serato Markers2",
+        category: "Metadatos & Suites",
+        tag: "SERATO DJ",
+        color: "#00d1e8",
+        icon: "🎚️",
+        definition: "Bloque de datos binarios almacenado en el tag ID3 GEOB (General Encapsulated Object) de Serato DJ Pro. Contiene los colores RGB de los 8 Hot Cues, bucles guardados y configuraciones de scratch sin requerir bases de datos externas.",
+        formula: "GEOB:Serato Markers2 Binary Chunk",
+        impact: "Los Hot Cues aparecen con sus colores corporativos exactos al pinchar en Serato."
+    },
+    {
+        term: "Traktor NML",
+        category: "Metadatos & Suites",
+        tag: "NATIVE INST.",
+        color: "#facc15",
+        icon: "⚡",
+        definition: "Formato de archivo XML nativo de Native Instruments Traktor Pro 3/4. Registra los puntos de acceso CUE, GRID, FADE-IN, FADE-OUT y bucles tipo POI para sincronización en directo.",
+        formula: "Traktor Collection NML v19+",
+        impact: "Compatibilidad absoluta con controladores Traktor Kontrol S4/X1/Z2."
+    },
+    {
+        term: "VirtualDJ POI",
+        category: "Metadatos & Suites",
+        tag: "ATOMIX VDJ",
+        color: "#f97316",
+        icon: "🎧",
+        definition: "Puntos de Interés (POI) propios del motor VirtualDJ 2024. Permite automatizar transiciones por stem separation, avisos de corte de frecuencias y marcas de mezcla armónica por compás.",
+        formula: "VirtualDJ Extended VDJ_POI Tag",
+        impact: "Desbloquea el máximo potencial de mezcla con Stems acústicos en directo."
+    }
+];
+
 const KnowledgeWorkspace = ({ lang = "es" }) => {
     const [activeSection, setActiveSection] = useState("courses"); // 'courses' | 'videos' | 'manuals' | 'tricks' | 'glossary'
     const [knowledgeData, setKnowledgeData] = useState({
@@ -26691,13 +26960,22 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
     }, []);
 
     const filteredGlossary = useMemo(() => {
-        const items = knowledgeData.glossary || [];
-        if (!glossarySearch.trim()) return items;
+        // Combinar glosario maestro exhaustivo de BeatWave con cualquier término dinámico del backend
+        const dynamicItems = knowledgeData.glossary || [];
+        const combined = [...BEATWAVE_MASTER_GLOSSARY];
+        dynamicItems.forEach(d => {
+            if (!combined.some(c => c.term.toLowerCase() === (d.term || '').toLowerCase())) {
+                combined.push(d);
+            }
+        });
+        if (!glossarySearch.trim()) return combined;
         const q = glossarySearch.toLowerCase();
-        return items.filter(g => 
+        return combined.filter(g => 
             (g.term || "").toLowerCase().includes(q) || 
             (g.definition || "").toLowerCase().includes(q) ||
-            (g.category || "").toLowerCase().includes(q)
+            (g.category || "").toLowerCase().includes(q) ||
+            (g.tag || "").toLowerCase().includes(q) ||
+            (g.impact || "").toLowerCase().includes(q)
         );
     }, [knowledgeData.glossary, glossarySearch]);
 
@@ -26706,21 +26984,17 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
             {/* Header de Conocimiento */}
             <div className="p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex items-center gap-2.5">
-                        <span className="p-2 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/40 rounded-xl text-indigo-400">
-                            <Icons.Knowledge />
-                        </span>
-                        <div>
-                            <h1 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2">
-                                <span>ACADEMIA & CONOCIMIENTO DJ</span>
-                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-purple-950 border border-purple-500/60 text-purple-300">
-                                    STUDIO ACADEMY · FORMACIÓN
-                                </span>
-                            </h1>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                                Cursos estructurados por niveles, masterclasses en vídeo, manuales técnicos descargables y glosario acústico.
-                            </p>
-                        </div>
+                    <div className="flex flex-col gap-1">
+                        <SectionTitle 
+                            icon={Icons.Knowledge} 
+                            title="Conocimiento" 
+                            accent="& Academia" 
+                            badge="FORMACIÓN DJ" 
+                            accentColor="purple" 
+                        />
+                        <p className="text-xs text-gray-400 mt-0.5">
+                            Centro de aprendizaje profesional: guías acústicas, técnicas de mezcla, manuales y glosario exhaustivo.
+                        </p>
                     </div>
 
                     {/* Botones de Cabecera: Tutoriales y Manual PDF */}
@@ -27100,32 +27374,88 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                     </div>
                 )}
 
-                {/* SECCIÓN 5: GLOSARIO ACÚSTICO DJ */}
+                {/* SECCIÓN 5: GLOSARIO ACÚSTICO DJ INTEGRAL & VISUAL */}
                 {activeSection === "glossary" && (
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between gap-3 max-w-md">
-                            <input
-                                type="text"
-                                value={glossarySearch}
-                                onChange={(e) => setGlossarySearch(e.target.value)}
-                                placeholder="Filtrar términos (ej. LUFS, Camelot, Zero-Crossing)..."
-                                className="w-full bg-[#0d0d15] border border-djzinc-800 rounded-lg px-3 py-1.5 text-xs text-gray-200 outline-none focus:border-djcyan-500 font-mono"
-                            />
+                    <div className="space-y-6">
+                        {/* BARRA SUPERIOR: BUSCADOR & FILTROS POR CATEGORÍA */}
+                        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800/90 shadow-xl backdrop-blur-md">
+                            <div className="relative flex-1 max-w-md">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-mono text-xs">🔍</span>
+                                <input
+                                    type="text"
+                                    value={glossarySearch}
+                                    onChange={(e) => setGlossarySearch(e.target.value)}
+                                    placeholder="Buscar término (ej. Bass Clash, Downbeat, LUFS, Camelot)..."
+                                    className="w-full pl-8 pr-4 py-2 bg-zinc-900/90 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 outline-none focus:border-cyan-400 font-mono shadow-inner transition-colors"
+                                />
+                                {glossarySearch && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setGlossarySearch("")}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white text-xs font-mono"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* BADGE RESUMEN */}
+                            <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 shrink-0">
+                                <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 font-bold text-cyan-300">
+                                    {filteredGlossary.length} Términos DJ
+                                </span>
+                                <span className="text-zinc-600">|</span>
+                                <span className="text-[11px] text-zinc-500">100% Definiciones Operativas</span>
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {filteredGlossary.map((term, tIdx) => (
+                        {/* GRID DE TARJETAS VISUALES DEL GLOSARIO */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {filteredGlossary.map((item, idx) => (
                                 <div
-                                    key={tIdx}
-                                    className="p-4 bg-[#0e0e16] border border-djzinc-800/80 rounded-xl space-y-1.5 shadow"
+                                    key={idx}
+                                    className="p-4 rounded-2xl bg-[#0b0c13] border border-zinc-800/90 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-all duration-300 flex flex-col justify-between gap-3 group"
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-xs font-black text-djcyan-300 font-mono">{term.term}</h4>
-                                        <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-gray-400 border border-djzinc-800">
-                                            {term.category}
-                                        </span>
+                                    {/* Cabecera del término */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span 
+                                                className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider uppercase border"
+                                                style={{ 
+                                                    backgroundColor: `${item.color || '#06b6d4'}15`, 
+                                                    borderColor: `${item.color || '#06b6d4'}40`,
+                                                    color: item.color || '#06b6d4'
+                                                }}
+                                            >
+                                                {item.tag || item.category}
+                                            </span>
+                                            <span className="text-xs">{item.icon || "📖"}</span>
+                                        </div>
+
+                                        <h4 className="font-syne font-black text-sm text-white group-hover:text-cyan-300 transition-colors tracking-tight flex items-center gap-1.5">
+                                            {item.term}
+                                        </h4>
+
+                                        <p className="text-xs text-zinc-300 leading-relaxed font-sans">
+                                            {item.definition}
+                                        </p>
                                     </div>
-                                    <p className="text-xs text-gray-300 leading-relaxed">{term.definition}</p>
+
+                                    {/* Footer con Fórmula e Impacto en Cabina */}
+                                    <div className="pt-2.5 border-t border-zinc-800/80 space-y-1.5 text-[10px] font-mono">
+                                        {item.formula && (
+                                            <div className="flex items-center justify-between text-zinc-400">
+                                                <span className="text-zinc-500 font-bold">MÉTRICA:</span>
+                                                <span className="text-cyan-400 font-semibold truncate">{item.formula}</span>
+                                            </div>
+                                        )}
+                                        {item.impact && (
+                                            <div className="p-1.5 rounded-lg bg-zinc-950/70 border border-zinc-900 text-zinc-400 leading-normal">
+                                                <strong className="text-emerald-400">Impacto Cabina: </strong>
+                                                <span>{item.impact}</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -28659,10 +28989,10 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS VERTICALMENTE + ENERGÍA & INTENSIDAD (AROUSAL) */}
+                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS CON MOOD DEBAJO + ENERGÍA, INTENSIDAD Y POSITIVIDAD */}
                 <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3">
-                    {/* TONO Y TEMPO APILADOS EN UN SOLO BLOQUE DE MITAD DE ALTURA */}
-                    <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0">
+                    {/* BLOQUE TONO, TEMPO Y MOOD DEBAJO DE LOS BPM */}
+                    <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]">
                         {/* Fila Tono */}
                         <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
                             <div 
@@ -28674,7 +29004,8 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                             <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TONO</span>
                             <span className="font-syne font-bold text-[10px] text-white truncate">{deck.raw_key || deck.camelot}</span>
                         </div>
-                        {/* Fila Tempo */}
+
+                        {/* Fila Tempo (BPM) */}
                         <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
                             <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TEMPO</span>
                             <span className="font-orbitron font-black text-[10px] text-white">
@@ -28682,71 +29013,52 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                             </span>
                             <span className="text-[7px] text-zinc-400 font-mono">BPM</span>
                         </div>
+
+                        {/* Cuadro morado con el Mood ubicado debajo de los BPM */}
+                        <div className="px-1.5 py-0.5 rounded-lg bg-purple-950/70 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300 truncate max-w-full text-center" title={deck.mood || deck.phase || 'Peak Time Climax'}>
+                            ✨ {deck.mood || deck.phase || 'Peak Time Climax'}
+                        </div>
                     </div>
 
-                    {/* ENERGÍA (NARANJA) E INTENSIDAD / AROUSAL (MORADA) + MOOD */}
-                    <div className="flex-1 min-w-[125px] flex flex-col justify-center gap-1">
-                        {/* Fila 1: Energía con Barra Naranja */}
-                        <div className="flex items-center justify-between text-[8px] font-mono">
-                            <span className="text-amber-400 font-bold flex items-center gap-0.5">
-                                <Icons.Zap size={9} /> ENERGÍA {deck.energy || 90}%
-                            </span>
-                        </div>
-                        <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                            <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${deck.energy || 90}%` }}></div>
-                        </div>
-
-                        {/* Fila 2: Intensidad (Arousal) con Barra Morada */}
-                        <div className="flex items-center justify-between text-[8px] font-mono mt-0.5">
-                            <span className="text-purple-400 font-bold flex items-center gap-0.5">
-                                <Icons.Activity size={9} /> INTENSIDAD (AROUSAL) {deck.arousal || deck.danceability || 88}%
-                            </span>
-                        </div>
-                        <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                            <div className="h-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 rounded-full" style={{ width: `${deck.arousal || deck.danceability || 88}%` }}></div>
+                    {/* COLUMNA PSICOMETRÍA: ENERGÍA, INTENSIDAD Y POSITIVIDAD APILADAS */}
+                    <div className="flex-1 min-w-[125px] flex flex-col justify-center gap-1.5">
+                        {/* Fila 1: Energía */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-amber-400 font-bold flex items-center gap-1">
+                                    <Icons.Zap size={9} /> ENERGÍA
+                                </span>
+                                <span className="text-amber-400 font-bold">{deck.energy || 90}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${deck.energy || 90}%` }}></div>
+                            </div>
                         </div>
 
-                        {/* Mood Badge */}
-                        <div className="flex items-center justify-start mt-0.5">
-                            <span className="px-1.5 py-0.2 rounded bg-purple-950/70 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300 truncate max-w-full" title={deck.mood || deck.phase || 'Peak Time Climax'}>
-                                ✨ {deck.mood || deck.phase || 'Peak Time Climax'}
-                            </span>
+                        {/* Fila 2: Intensidad (sin paréntesis, con icono) */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                    <Icons.Activity size={9} /> INTENSIDAD
+                                </span>
+                                <span className="text-emerald-400 font-bold">{deck.arousal || deck.danceability || 88}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${deck.arousal || deck.danceability || 88}%` }}></div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            {/* MÉTRICAS PSICOACÚSTICAS DJ: POSITIVIDAD (VALENCE) E INTENSIDAD (AROUSAL) */}
-            <div className="grid grid-cols-2 gap-2 mb-2.5">
-                <div className="p-2 sm:p-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
-                    <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
-                        POSITIVIDAD (VALENCE)
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="font-mono text-xs font-bold text-djcyan-400">
-                            {deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%
-                        </span>
-                        <div className="flex-1 max-w-[120px] bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
-                            <div 
-                                className="h-full bg-djcyan-400 rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(6,182,212,0.8)]" 
-                                style={{ width: `${deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%` }}
-                            />
-                        </div>
-                    </div>
-                </div>
-                <div className="p-2 sm:p-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
-                    <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
-                        INTENSIDAD (AROUSAL)
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="font-mono text-xs font-bold text-emerald-400">
-                            {deck.arousal != null ? deck.arousal : (side === '1' || side === 'A' ? 88 : 91)}%
-                        </span>
-                        <div className="flex-1 max-w-[120px] bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
-                            <div 
-                                className="h-full bg-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(16,185,129,0.8)]" 
-                                style={{ width: `${deck.arousal != null ? deck.arousal : (side === '1' || side === 'A' ? 88 : 91)}%` }}
-                            />
+                        {/* Fila 3: Positividad (sin paréntesis, con icono) */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-djcyan-400 font-bold flex items-center gap-1">
+                                    <Icons.Sparkles size={9} /> POSITIVIDAD
+                                </span>
+                                <span className="text-djcyan-400 font-bold">{deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-djcyan-400 rounded-full shadow-[0_0_6px_rgba(6,182,212,0.8)]" style={{ width: `${deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%` }}></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -30445,17 +30757,9 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
 // LOGOTIPO CORPORATIVO BEATWAVE PRO (5 BARRAS ANIMADAS EN BUCLE CONSTANTE DE 3S)
 // ==============================================================================
 const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
-    // Presets de tamaño y grosor proporcional de borde blanco corporativo:
-    // 'sm' (navbar: 36px, borde 2px), 'md' (44px, borde 3px), 'lg' (intro portal: 112px, borde 6px proporcional)
-    const sizeConfig = {
-        sm: { dims: 'w-8 h-8 sm:w-9 sm:h-9', border: 'border-2' },
-        md: { dims: 'w-10 h-10 sm:w-11 sm:h-11', border: 'border-[3px]' },
-        lg: { dims: 'w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32', border: 'border-[5px] sm:border-[6px]' }
-    }[size] || { dims: size, border: 'border-2' };
-
     return (
         <div 
-            className={`relative rounded-full flex items-center justify-center shrink-0 ${sizeConfig.border} border-white bg-[#030712]/95 shadow-[0_0_24px_rgba(6,182,212,0.9),inset_0_0_12px_rgba(6,182,212,0.4)] backdrop-blur-md select-none group-hover:shadow-[0_0_32px_rgba(6,182,212,1),inset_0_0_16px_rgba(6,182,212,0.55)] transition-all duration-300 ${sizeConfig.dims} ${className}`}
+            className={`relative rounded-full flex items-center justify-center shrink-0 bw-brand-logo-badge size-${size} select-none transition-all duration-300 ${className}`}
         >
             {/* SVG Vectorial Nativo de 5 Barras Ecualizadoras Animadas en Cian Corporativo */}
             <svg 
@@ -32093,13 +32397,48 @@ const App = () => {
                 </div>
 
                 {!nowPlayingTrack ? (
-                    <div className="flex items-center gap-3 min-w-0 md:w-72 shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 md:w-80 shrink-0">
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-white/15 text-zinc-600">
                             <Icons.Disc size={20} />
                         </div>
-                        <div className="flex flex-col min-w-0">
+                        <div className="flex flex-col min-w-0 flex-1">
                             <span className="bw-eyebrow">{t('deck_standby_label') || 'DECK 1 STANDBY'}</span>
-                            <span className="text-xs text-zinc-500 truncate">{t('deck_standby_comment_hint') || 'Carga una pista para ver su comentario táctico'}</span>
+                            <span className="text-xs text-zinc-500 truncate">{t('deck_standby_comment_hint') || 'Carga una pista para reproducir'}</span>
+                        </div>
+
+                        {/* SELECTOR DE CARGA DE PISTA: DESDE BIBLIOTECA O DISPOSITIVO */}
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setLoadTrackMenuOpen(prev => !prev)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/40 hover:bg-cyan-500/25 text-cyan-300 font-mono text-[11px] font-bold transition-all cursor-pointer shadow-sm"
+                            >
+                                <span>🎵 Cargar</span>
+                                <Icons.ChevronDown size={11} />
+                            </button>
+
+                            {loadTrackMenuOpen && (
+                                <div className="absolute left-0 bottom-full mb-2 z-50 w-52 rounded-xl bg-zinc-950/98 border border-zinc-700/80 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md text-xs font-mono">
+                                    <button
+                                        type="button"
+                                        onClick={handleLoadFirstLibraryTrack}
+                                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-zinc-800 text-zinc-200 hover:text-white transition-colors text-left cursor-pointer"
+                                    >
+                                        <span>📚</span>
+                                        <span>Desde Biblioteca DJ</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (localAudioInputRef.current) localAudioInputRef.current.click();
+                                        }}
+                                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-cyan-950/60 text-cyan-300 hover:text-white border border-transparent hover:border-cyan-500/30 transition-colors text-left cursor-pointer"
+                                    >
+                                        <span>📁</span>
+                                        <span>Desde tu Dispositivo</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (
