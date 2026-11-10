@@ -495,18 +495,25 @@ const CopilotSeratoWaveform = ({
             {showTacticalAids && (
                 <div className="relative p-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        {/* CONTADOR DE ANTICIPACIÓN */}
+                        {/* CONTADOR DE ANTICIPACIÓN (URGENCIA EN ROJO < 5s) */}
                         <div className="flex items-center gap-2">
                             {isBassClashDanger ? (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-950/60 border border-red-500/70 text-red-300 font-mono text-[11px] font-bold shadow-[0_0_12px_rgba(239,68,68,0.4)] animate-pulse">
-                                    <span>⚠️</span>
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-950/80 border border-red-500 text-red-200 font-mono text-[11px] font-bold shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse ring-1 ring-red-400">
+                                    <span className="text-sm">⚠️</span>
                                     <span>EN 8 COMPASES (00:12) ➔ BASS CLASH: Cortar Low EQ</span>
                                 </div>
                             ) : nextCue ? (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djcyan-950/50 border border-djcyan-500/50 text-djcyan-300 font-mono text-[11px] font-bold">
-                                    <span>⏳</span>
-                                    <span>EN <strong className="text-white font-orbitron">{barsToNextCue}</strong> BARS ({formatSec(timeToNextCue)}) ➔ <span className="text-white uppercase">{nextCue.name}</span></span>
-                                </div>
+                                (timeToNextCue <= 5.0 && timeToNextCue > 0) ? (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-600 text-white font-mono text-[11px] font-black shadow-[0_0_25px_rgba(239,68,68,1)] ring-2 ring-red-400 border border-white animate-pulse scale-105">
+                                        <span className="text-sm animate-bounce">🚨</span>
+                                        <span>¡ATENCIÓN! EN <strong className="text-yellow-300 font-orbitron">{formatSec(timeToNextCue)}</strong> ➔ <span className="uppercase tracking-wider">{nextCue.name}</span></span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djcyan-950/60 border border-djcyan-500/60 text-djcyan-300 font-mono text-[11px] font-bold">
+                                        <span>⏳</span>
+                                        <span>EN <strong className="text-white font-orbitron">{barsToNextCue}</strong> BARS ({formatSec(timeToNextCue)}) ➔ <span className="text-white uppercase">{nextCue.name}</span></span>
+                                    </div>
+                                )
                             ) : (
                                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-mono text-[11px] font-bold">
                                     <span>🟢</span>
@@ -515,27 +522,36 @@ const CopilotSeratoWaveform = ({
                             )}
                         </div>
 
-                        {/* PUNTOS CLAVE / MILESTONES INTERACTIVOS CON HOVER */}
+                        {/* HITOS DE AYUDA TÁCTICOS DIFERENCIADOS CLARAMENTE DE LOS CUES */}
                         <div className="flex items-center gap-1 flex-wrap">
-                            <span className="text-[9px] font-mono uppercase text-zinc-500 mr-1 hidden md:inline">Hitos:</span>
-                            {cues.slice(0, 6).map((c) => {
-                                const isPassed = (c.pct || 0) <= progress;
-                                const isTarget = nextCue && nextCue.id === c.id;
+                            <span className="text-[9px] font-mono uppercase text-amber-400 font-bold mr-1 hidden md:inline">🎯 Hitos:</span>
+                            {phases.map((ph) => {
+                                const phStart = ph.start_pct || 0;
+                                const isPassed = phStart <= progress;
+                                const isCurrent = progress >= ph.start_pct && progress < ph.end_pct;
+                                const iconsMap = { intro: '🚀', build: '🛑', break: '🌊', break2: '🌊', drop: '🎯', outro: '🏁' };
+                                const icon = iconsMap[ph.type] || '⚡';
                                 return (
                                     <div
-                                        key={c.id}
-                                        onMouseEnter={() => setHoveredMilestone(c)}
+                                        key={ph.id}
+                                        onMouseEnter={() => setHoveredMilestone({
+                                            name: ph.name || ph.label,
+                                            time: formatSec(ph.start_pct * durSec),
+                                            pct: ph.start_pct,
+                                            color: ph.color,
+                                            directive: ph.directive || ph.label
+                                        })}
                                         onMouseLeave={() => setHoveredMilestone(null)}
-                                        className={`relative px-1.5 py-0.5 rounded cursor-pointer transition-all text-[9px] font-mono font-bold flex items-center gap-1 ${
-                                            isTarget
-                                                ? 'bg-djcyan-400 text-black shadow-[0_0_8px_rgba(6,182,212,0.8)] scale-105'
+                                        className={`relative px-1.5 py-0.5 rounded cursor-pointer transition-all text-[9px] font-mono font-bold flex items-center gap-1 border ${
+                                            isCurrent
+                                                ? 'bg-amber-400 text-black border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.9)] scale-105 ring-1 ring-white'
                                                 : isPassed
-                                                ? 'bg-zinc-900 text-zinc-400 border border-zinc-800'
-                                                : 'bg-zinc-950 text-zinc-300 border border-zinc-700/60 hover:border-djcyan-400'
+                                                ? 'bg-zinc-900/80 text-zinc-400 border-zinc-800'
+                                                : 'bg-zinc-950 text-zinc-300 border-zinc-700/60 hover:border-amber-400'
                                         }`}
                                     >
-                                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.color }}></span>
-                                        <span className="truncate max-w-[70px]">{c.name.split(' ')[0]}</span>
+                                        <span>{icon}</span>
+                                        <span className="truncate max-w-[70px]">{ph.name.toUpperCase()}</span>
                                     </div>
                                 );
                             })}
@@ -637,6 +653,202 @@ const CopilotSeratoWaveform = ({
         </div>
     );
 };
+
+
+const MASTER_TRACKS_POOL = [
+    {
+        id: 'rec_1',
+        title: 'Higher (Original Mix)',
+        artist: 'Amelie Lens',
+        bpm: 138.0,
+        camelot: '10A',
+        raw_key: 'Bm',
+        role: 'Percussive Tool',
+        lufs: -6.5,
+        low_ratio: 36.0,
+        genre: 'Acid / Peak Techno',
+        subgenre: 'Lenske Peak',
+        energy: 94,
+        danceability: 89,
+        arousal: 92,
+        mood: 'Acid Drive',
+        format: 'FLAC 24-bit',
+        duration: '06:12',
+        year: '2023',
+        cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop',
+        strategy: 'Mezcla Armónica Segura',
+        reason: 'Mismo tono (10A) y espectro percusivo limpio. Cero riesgo de embarre en graves.',
+        camelot_color: '#f472b6'
+    },
+    {
+        id: 'rec_2',
+        title: 'Your Mind (Extended Club)',
+        artist: 'Adam Beyer & Bart Skils',
+        bpm: 138.5,
+        camelot: '11A',
+        raw_key: 'F#m',
+        role: 'Peak Time Driver',
+        lufs: -5.9,
+        low_ratio: 49.0,
+        genre: 'Drumcode Techno',
+        subgenre: 'Drumcode Peak',
+        energy: 96,
+        danceability: 92,
+        arousal: 95,
+        mood: 'Peak Time Climax',
+        format: 'FLAC Hi-Res',
+        duration: '07:22',
+        year: '2022',
+        cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop',
+        strategy: 'Subidón de Energía (+1)',
+        reason: 'Aumento armónico a 11A con +1.0 BPM. Eleva la intensidad del club para el clímax.',
+        camelot_color: '#fb7185'
+    },
+    {
+        id: 'rec_3',
+        title: 'Old School',
+        artist: 'Hertz',
+        bpm: 138.0,
+        camelot: '10A',
+        raw_key: 'Bm',
+        role: 'Industrial Driver',
+        lufs: -6.2,
+        low_ratio: 38.0,
+        genre: 'Hard Techno Industrial',
+        subgenre: 'Sway Records',
+        energy: 93,
+        danceability: 91,
+        arousal: 90,
+        mood: 'Raw Industrial',
+        format: 'FLAC 24-bit',
+        duration: '05:12',
+        year: '2024',
+        cover: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&h=300&fit=crop',
+        strategy: 'Groove Industrial Limpio',
+        reason: 'Mismo Camelot (10A), pegada seca sin saturar sub-graves. Transición directa perfecta.',
+        camelot_color: '#f472b6'
+    },
+    {
+        id: 'rec_4',
+        title: 'Booster (Gary Beck Remix)',
+        artist: 'Planetary Assault Systems',
+        bpm: 137.5,
+        camelot: '10A',
+        raw_key: 'Bm',
+        role: 'Percussive Descongestor',
+        lufs: -7.1,
+        low_ratio: 32.0,
+        genre: 'Hypnotic / Raw',
+        subgenre: 'Mote-Evolver',
+        energy: 88,
+        danceability: 86,
+        arousal: 85,
+        mood: 'Hypnotic Groove',
+        format: 'WAV 24-bit',
+        duration: '05:48',
+        year: '2021',
+        cover: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop',
+        strategy: 'Descongestión de Sala',
+        reason: 'Textura enfocada en medios y agudos. Ideal para limpiar la sala tras un drop saturado.',
+        camelot_color: '#f472b6'
+    },
+    {
+        id: 'rec_5',
+        title: 'Subversion',
+        artist: 'Enrico Sangiuliano',
+        bpm: 138.0,
+        camelot: '11A',
+        raw_key: 'F#m',
+        role: 'Cosmic Climax',
+        lufs: -6.0,
+        low_ratio: 44.0,
+        genre: 'Peak Time Techno',
+        subgenre: 'NINETOZERO',
+        energy: 95,
+        danceability: 90,
+        arousal: 94,
+        mood: 'Cosmic Meltdown',
+        format: 'FLAC Hi-Res',
+        duration: '06:48',
+        year: '2023',
+        cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop',
+        strategy: 'Ascensión Hipnótica',
+        reason: 'Sintetizadores espaciales que abren el panorama estéreo antes de cortar los bajos.',
+        camelot_color: '#fb7185'
+    },
+    {
+        id: 'rec_6',
+        title: 'Rave Generation',
+        artist: 'Reinier Zonneveld',
+        bpm: 139.0,
+        camelot: '11A',
+        raw_key: 'F#m',
+        role: 'Acid Meltdown',
+        lufs: -5.5,
+        low_ratio: 46.0,
+        genre: 'Acid Techno',
+        subgenre: 'Filth on Acid',
+        energy: 98,
+        danceability: 94,
+        arousal: 98,
+        mood: 'High Energy Climax',
+        format: 'WAV 24-bit',
+        duration: '06:15',
+        year: '2024',
+        cover: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop',
+        strategy: 'Explosión Peak Time',
+        reason: 'Energía máxima para cerrar el set. Requiere swap rápido de EQ Low en drop.',
+        camelot_color: '#fb7185'
+    },
+    {
+        id: 'rec_7',
+        title: 'Age of Love (Charlotte de Witte Remix)',
+        artist: 'Age of Love',
+        bpm: 138.0,
+        camelot: '9A',
+        raw_key: 'Em',
+        role: 'Peak Acid Driver',
+        lufs: -5.8,
+        low_ratio: 41.0,
+        genre: 'Peak Techno',
+        subgenre: 'Diki Records',
+        energy: 96,
+        danceability: 92,
+        arousal: 95,
+        mood: 'Euphoric Peak',
+        format: 'FLAC 24-bit',
+        duration: '07:30',
+        year: '2021',
+        cover: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=300&fit=crop',
+        strategy: 'Descenso Armónico Suave (-1)',
+        reason: 'Transición diagonal suave a 9A, manteniendo la tensión alta en el público.',
+        camelot_color: '#818cf8'
+    },
+    {
+        id: 'rec_8',
+        title: 'Consciousness',
+        artist: 'Anyma & Chris Avantgarde',
+        bpm: 130.0,
+        camelot: '8A',
+        raw_key: 'Am',
+        role: 'Melodic Journey',
+        lufs: -6.4,
+        low_ratio: 35.0,
+        genre: 'Melodic Techno',
+        subgenre: 'Afterlife',
+        energy: 90,
+        danceability: 88,
+        arousal: 89,
+        mood: 'Atmospheric Meltdown',
+        format: 'FLAC Hi-Res',
+        duration: '05:48',
+        year: '2022',
+        cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop',
+        strategy: 'Cruce Melódico Espacioso',
+        reason: 'Ideal para bajar de BPM o abrir el viaje melódico con graves limpios.',
+        camelot_color: '#c084fc'
+    }
+];
 
 const DEFAULT_COPILOT_STATE = {
     "connected": true,
@@ -1120,6 +1332,60 @@ function LiveCopilotApp() {
     const [tracksList, setTracksList] = useState(DEFAULT_COPILOT_STATE.recommendations);
     const [draggedIdx, setDraggedIdx] = useState(null);
     const [transitionAnalysis, setTransitionAnalysis] = useState(null);
+    const [lowEqApplied, setLowEqApplied] = useState(false);
+    const [manualPickerOpen, setManualPickerOpen] = useState(false);
+    const [manualSearchQuery, setManualSearchQuery] = useState('');
+
+    const handleApplyCorrection = () => {
+        setLowEqApplied(prev => {
+            const next = !prev;
+            setState(curr => {
+                if (!curr) return curr;
+                return {
+                    ...curr,
+                    deck_2: {
+                        ...curr.deck_2,
+                        low_ratio: next ? 24 : 51,
+                        lufs: next ? -7.8 : -6.3
+                    },
+                    anti_muddy: {
+                        ...curr.anti_muddy,
+                        status: next ? 'safe' : 'danger',
+                        tag: next ? 'EQ LOW -10dB APLICADO' : 'BASS CLASH',
+                        color: next ? '#10b981' : '#ef4444',
+                        message: next 
+                            ? 'Low EQ cortado en Deck 2 (-10dB). Espectro de sub-graves despejado y sin distorsión en sala.' 
+                            : 'Ambos tracks tienen sub-graves dominantes (>44%). El solape directo creará empaste y distorsión en el sistema de sala.',
+                        action: next ? 'Restablecer EQ (Deshacer)' : 'Corta la EQ de graves (Low) en el canal entrante (-6dB a -12dB)'
+                    }
+                };
+            });
+            return next;
+        });
+    };
+
+    const handleRandomLoad = () => {
+        const poolCopy = [...MASTER_TRACKS_POOL];
+        for (let i = poolCopy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [poolCopy[i], poolCopy[j]] = [poolCopy[j], poolCopy[i]];
+        }
+        setTracksList(poolCopy.slice(0, 8));
+        setVisibleCount(8);
+    };
+
+    const handleAddManualTrack = (track) => {
+        setTracksList(prev => {
+            if (prev.some(t => t.id === track.id)) return prev;
+            if (prev.length >= 8) {
+                return [...prev.slice(0, 7), track];
+            }
+            return [...prev, track];
+        });
+        setVisibleCount(v => Math.max(v, Math.min(8, tracksList.length + 1)));
+        setManualPickerOpen(false);
+    };
+
     const [controllerState, setControllerState] = useState({
         detected: true,
         name: 'PIONEER DDJ-FLX4 (USB)',
@@ -1248,17 +1514,20 @@ function LiveCopilotApp() {
     };
 
     const toggleSimulation = async () => {
-        try {
-            const res = await fetch('/api/copilot/toggle_simulation', { method: 'POST' });
-            if (res.ok) {
-                const data = await res.json();
-                setState(data);
-                if (data.recommendations) setTracksList(data.recommendations);
-                return;
-            }
-        } catch (e) {}
+        const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocalHost) {
+            try {
+                const res = await fetch('/api/copilot/toggle_simulation', { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    setState(data);
+                    if (data.recommendations) setTracksList(data.recommendations);
+                    return;
+                }
+            } catch (e) {}
+        }
 
-        // Fallback interactivo local para Figma / Offline:
+        // Fallback interactivo local para Figma / Offline / Standalone:
         setState(prev => {
             const current = prev || DEFAULT_COPILOT_STATE;
             const newSim = !current.is_simulating;
@@ -1363,18 +1632,8 @@ function LiveCopilotApp() {
         } catch (e) {}
     };
 
-    if (!state) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-[#040407]">
-                <div className="w-12 h-12 rounded-full border-4 border-djcyan-500/20 border-t-djcyan-400 animate-spin"></div>
-                <p className="font-mono text-xs text-djcyan-400 uppercase tracking-widest animate-pulse">
-                    Sincronizando con suites DJ (Serato, Rekordbox, VDJ, Traktor) & BeatWave DSP...
-                </p>
-            </div>
-        );
-    }
-
-    const { deck_1, deck_2, anti_muddy, harmonic, recommendations, local_ip, platform, platform_mode, platform_name, platform_icon, platform_color, platform_status } = state;
+    const activeState = state || DEFAULT_COPILOT_STATE;
+    const { deck_1, deck_2, anti_muddy, harmonic, recommendations, local_ip, platform, platform_mode, platform_name, platform_icon, platform_color, platform_status } = activeState;
     const companionUrl = `http://${local_ip || '127.0.0.1'}:8000/copilot.html`;
 
     const platformsList = [
@@ -1555,17 +1814,38 @@ function LiveCopilotApp() {
                         <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline">• Arrastra para reordenar</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {displayRecommendations.length > 4 && (
-                            <button
-                                type="button"
-                                onClick={() => setVisibleCount(v => v === 4 ? displayRecommendations.length : 4)}
-                                className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 text-xs font-mono font-bold text-djcyan-400 transition-colors cursor-pointer"
-                            >
-                                {visibleCount === 4 ? `Cargar más pistas (+${displayRecommendations.length - 4})` : 'Mostrar 4 pistas'}
-                            </button>
-                        )}
-                        <span className="text-[10px] font-mono text-zinc-500">Filtrado Rueda Camelot</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* CARGAR MÁS DE 4 EN 4 HASTA MÁXIMO 8 */}
+                        <button
+                            type="button"
+                            onClick={() => setVisibleCount(v => v === 4 ? Math.min(8, displayRecommendations.length) : 4)}
+                            className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 text-xs font-mono font-bold text-djcyan-400 transition-colors cursor-pointer"
+                            title="Alternar entre 4 y 8 pistas visibles"
+                        >
+                            {visibleCount === 4 ? 'Cargar más (+4)' : 'Mostrar 4 (-4)'}
+                        </button>
+
+                        {/* BOTÓN CARGA ALEATORIA */}
+                        <button
+                            type="button"
+                            onClick={handleRandomLoad}
+                            className="px-2.5 py-1 rounded-lg bg-purple-950/70 hover:bg-purple-900 border border-purple-500/60 text-xs font-mono font-bold text-purple-300 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                            title="Cargar selección aleatoria de candidatos de la biblioteca"
+                        >
+                            <span>🎲</span>
+                            <span>Carga Aleatoria</span>
+                        </button>
+
+                        {/* BOTÓN CARGA MANUAL */}
+                        <button
+                            type="button"
+                            onClick={() => setManualPickerOpen(true)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/60 text-xs font-mono font-bold text-emerald-300 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                            title="Buscar y añadir manualmente una pista a la cola"
+                        >
+                            <span>➕</span>
+                            <span>Carga Manual</span>
+                        </button>
                     </div>
                 </div>
 
@@ -1759,7 +2039,7 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                     </div>
 
                     <div className="min-w-0 flex-1">
-                        <h2 className="font-syne font-black text-sm sm:text-base text-white tracking-wide leading-tight truncate" title={deck.title}>
+                        <h2 className="font-syne font-bold text-xs sm:text-sm text-white tracking-tight leading-tight truncate" title={deck.title}>
                             {deck.title}
                         </h2>
                         <p className="font-syne font-bold text-xs text-zinc-400 mt-0.5 truncate" title={deck.artist}>
@@ -1780,40 +2060,57 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null }
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: Camelot + BPM + Energía & Groove + Mood */}
+                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS VERTICALMENTE + ENERGÍA & INTENSIDAD (AROUSAL) */}
                 <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3">
-                    {/* Camelot */}
-                    <div className="flex items-center gap-2 p-1.5 rounded-xl bg-zinc-950/80 border border-zinc-800 shrink-0">
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-orbitron font-black text-xs sm:text-sm text-black shadow" style={{ backgroundColor: deck.camelot_color }}>
-                            {deck.camelot}
+                    {/* TONO Y TEMPO APILADOS EN UN SOLO BLOQUE DE MITAD DE ALTURA */}
+                    <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0">
+                        {/* Fila Tono */}
+                        <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
+                            <div 
+                                className="w-5 h-4 rounded text-[9px] font-orbitron font-black text-black flex items-center justify-center shrink-0 shadow-sm"
+                                style={{ backgroundColor: deck.camelot_color || '#ec4899' }}
+                            >
+                                {deck.camelot || '10A'}
+                            </div>
+                            <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TONO</span>
+                            <span className="font-syne font-bold text-[10px] text-white truncate">{deck.raw_key || deck.camelot}</span>
                         </div>
-                        <div className="min-w-0 pr-1">
-                            <div className="text-[8px] font-mono uppercase text-zinc-500">Tono</div>
-                            <div className="font-syne font-bold text-xs text-white truncate">{deck.raw_key || deck.camelot}</div>
+                        {/* Fila Tempo */}
+                        <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
+                            <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TEMPO</span>
+                            <span className="font-orbitron font-black text-[10px] text-white">
+                                {deck.bpm ? Number(deck.bpm).toFixed(2) : '130.00'}
+                            </span>
+                            <span className="text-[7px] text-zinc-400 font-mono">BPM</span>
                         </div>
                     </div>
 
-                    {/* BPM */}
-                    <div className="p-1.5 px-2 rounded-xl bg-zinc-950/80 border border-zinc-800 flex flex-col justify-center shrink-0">
-                        <div className="text-[8px] font-mono uppercase text-zinc-500">Tempo</div>
-                        <div className="font-orbitron font-black text-xs sm:text-sm text-white">
-                            {deck.bpm ? Number(deck.bpm).toFixed(2) : '130.00'} <span className="text-[8px] font-normal text-zinc-400 font-mono">BPM</span>
-                        </div>
-                    </div>
-
-                    {/* Energía, Groove & Mood */}
-                    <div className="flex-1 min-w-[90px] flex flex-col justify-center gap-1">
-                        <div className="flex items-center justify-between text-[9px] font-mono">
-                            <span className="text-amber-400 font-bold flex items-center gap-0.5">⚡ {deck.energy || 90}%</span>
-                            <span className="text-purple-400 font-bold flex items-center gap-0.5">🕺 {deck.danceability || 88}%</span>
+                    {/* ENERGÍA (NARANJA) E INTENSIDAD / AROUSAL (MORADA) + MOOD */}
+                    <div className="flex-1 min-w-[125px] flex flex-col justify-center gap-1">
+                        {/* Fila 1: Energía con Barra Naranja */}
+                        <div className="flex items-center justify-between text-[8px] font-mono">
+                            <span className="text-amber-400 font-bold flex items-center gap-0.5">
+                                ⚡ ENERGÍA {deck.energy || 90}%
+                            </span>
                         </div>
                         <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                            <div className="h-full bg-gradient-to-r from-amber-500 to-red-500" style={{ width: `${deck.energy || 90}%` }}></div>
+                            <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${deck.energy || 90}%` }}></div>
                         </div>
+
+                        {/* Fila 2: Intensidad (Arousal) con Barra Morada */}
+                        <div className="flex items-center justify-between text-[8px] font-mono mt-0.5">
+                            <span className="text-purple-400 font-bold flex items-center gap-0.5">
+                                〰️ INTENSIDAD (AROUSAL) {deck.arousal || deck.danceability || 88}%
+                            </span>
+                        </div>
+                        <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                            <div className="h-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 rounded-full" style={{ width: `${deck.arousal || deck.danceability || 88}%` }}></div>
+                        </div>
+
                         {/* Mood Badge */}
                         <div className="flex items-center justify-start mt-0.5">
                             <span className="px-1.5 py-0.2 rounded bg-purple-950/70 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300 truncate max-w-full" title={deck.mood || deck.phase || 'Peak Time Climax'}>
-                                {deck.mood || deck.phase || 'Peak Time Climax'}
+                                ✨ {deck.mood || deck.phase || 'Peak Time Climax'}
                             </span>
                         </div>
                     </div>
