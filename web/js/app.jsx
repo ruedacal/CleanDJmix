@@ -11583,7 +11583,17 @@ const AuditWorkspace = ({
             </div>
 
             {sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && (
-                <aside key={currentTrack ? currentTrack.id : "none"} className="ws-inspector w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-[var(--bw-surface-1)] border-l border-[var(--bw-line-strong)] flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl">
+                <>
+                    {/* Backdrop oscuro en móvil */}
+                    <div 
+                        onClick={() => setSidebarOpen(false)} 
+                        className="md:hidden fixed inset-0 bg-black/75 backdrop-blur-xs z-40 transition-opacity animate-fadeIn" 
+                        aria-hidden="true" 
+                    />
+                    <aside 
+                        key={currentTrack ? currentTrack.id : "none"} 
+                        className="ws-inspector fixed inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl md:rounded-none md:static md:inset-auto md:max-h-none md:h-full w-full md:w-80 lg:w-96 md:border-l md:border-[var(--bw-line-strong)] bg-[var(--bw-surface-1)] flex flex-col shrink-0 z-50 overflow-hidden shadow-2xl border-t border-cyan-500/30 md:border-t-0"
+                    >
                     <div className="h-12 px-3 border-b border-[var(--bw-line)] bg-[var(--bw-surface-2)] flex justify-between items-center">
                         <div className="ws-glass-title"><Icons.Sliders size={14} /><span>Inspector</span></div>
                         <div className="flex items-center gap-2">
@@ -12136,7 +12146,8 @@ const AuditWorkspace = ({
                         <span>Quitar este track del análisis</span>
                     </button>
                 </div>
-            </aside>
+                    </aside>
+                </>
             )}
 
             {/* DOCK FLOTANTE DE ACCIONES POR LOTE (FLOATING BATCH DOCK) */}
@@ -17595,7 +17606,7 @@ const SpotifyWorkspace = ({
                             Descargar {selectedCount > 1 ? `Seleccionadas (${selectedCount})` : 'Pista Actual'} .{selectedFormat.toUpperCase()}
                         </button>
                     </div>
-                </aside>
+                        </aside>
             )}
 
             {/* Modal Navegador de Carpetas Web Integrado para Destino */}

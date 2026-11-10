@@ -9038,311 +9038,327 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           /* @__PURE__ */ React.createElement("span", null, "SuperFLAC Lossless HD")
         ))
       );
-    }))))), sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && /* @__PURE__ */ React.createElement("aside", { key: currentTrack ? currentTrack.id : "none", className: "ws-inspector w-full sm:w-96 fixed sm:relative inset-y-0 right-0 bg-[var(--bw-surface-1)] border-l border-[var(--bw-line-strong)] flex flex-col shrink-0 slide-in-right z-50 sm:z-20 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "h-12 px-3 border-b border-[var(--bw-line)] bg-[var(--bw-surface-2)] flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "ws-glass-title" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14 }), /* @__PURE__ */ React.createElement("span", null, "Inspector")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-readout" }, "#", currentTrack.id || "--"), /* @__PURE__ */ React.createElement(
-      "button",
+    }))))), sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+      "div",
       {
         onClick: () => setSidebarOpen(false),
-        className: "ws-glass-icon",
-        "aria-label": t("btn_close_panel") || "Cerrar Panel",
-        title: t("btn_close_panel") || "Cerrar Panel"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 space-y-4" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          if (currentTrack && currentTrack.id) {
-            setSelectedTrack(currentTrack.id);
-          }
-          if (onNavigateTab) {
-            onNavigateTab("hotcues");
-          }
-        },
-        className: "ws-btn ws-btn-outline w-full justify-center h-9",
-        title: "Abrir este track en la pesta\xF1a Estudio Hot Cues a pantalla completa con Beatgrid ampliado"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", null, t("btn_edit_cues_studio") || "Editar Hot Cues en Estudio")
-    ), /* @__PURE__ */ React.createElement("div", { className: "w-full aspect-video bg-djzinc-950 rounded-lg border border-djzinc-800 relative group overflow-hidden flex items-center justify-center shadow-inner" }, /* @__PURE__ */ React.createElement(
-      "img",
-      {
-        src: getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : currentTrack.f ? `/cover?path=${encodeURIComponent(currentTrack.f)}` : null)),
-        alt: "Cover Art",
-        onError: (e) => {
-          e.target.onerror = null;
-          e.target.src = DEFAULT_VINYL_SVG;
-        },
-        className: "w-full h-full object-cover"
-      }
-    ), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono backdrop-blur border border-djzinc-700" }, "ID3v2.4")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-sm text-djcyan-400 truncate", title: currentTrack.t || currentTrack.title }, currentTrack.t || currentTrack.title || "Selecciona un track"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 truncate", title: currentTrack.a || currentTrack.artist }, currentTrack.a || currentTrack.artist || "--")), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => {
-          if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f)) {
-            onTogglePlay && onTogglePlay();
-          } else {
-            onPlayTrack && onPlayTrack(currentTrack, 0, true);
-          }
-        },
-        className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0 transition-colors"
-      },
-      nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) && isPlaying ? /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Pause, { size: 12 }), "PAUSE") : /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Play, { size: 12 }), "PLAY")
-    )), isFlacUpgradeCandidate(currentTrack) ? /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-gradient-to-br from-cyan-950/60 via-purple-950/40 to-djzinc-900 border border-cyan-500/70 rounded-xl flex flex-col gap-2 shadow-lg shadow-cyan-950/30" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-black text-cyan-300 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Gem, { size: 14, className: "inline-block align-[-2px]" }), " SuperFLAC: No Cumple Hi-Res"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-700/60 font-bold" }, currentTrack.es_fake ? "FAKE / TRANSCODE" : currentTrack.calidad || "CALIDAD MEDIA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "Este archivo FLAC presenta corte de frecuencia (", currentTrack.cutoff_khz || "--", " kHz) o bitrate insuficiente para considerarse True Lossless. Puedes buscar y descargar el master original en el Record Pool."), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleBuscarReemplazosSpotify([currentTrack]),
-        disabled: isSearchingSpotifyHD,
-        className: "w-full py-1.5 px-3 rounded bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 text-black font-black text-xs cursor-pointer shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
-      },
-      isSearchingSpotifyHD ? /* @__PURE__ */ React.createElement(Icons.Clock, { size: 13 }) : /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 13 }),
-      /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Cat\xE1logo..." : "Buscar SuperFLAC Lossless en Cat\xE1logo")
-    )) : isBadQualityTrack(currentTrack) ? /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-amber-950/40 border border-amber-600/70 rounded-lg flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-bold text-amber-300 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Warning, { size: 14, className: "inline-block align-[-2px]" }), " Calidad Sub-\xF3ptima Detectada"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-red-400 bg-red-950 px-1.5 py-0.5 rounded border border-red-800 font-bold" }, currentTrack.es_fake ? "FLAC FAKE" : currentTrack.calidad || "Baja Calidad")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "Esta pista presenta compresi\xF3n lossy o corte espectral (", currentTrack.cutoff_khz || "--", " kHz). Puedes reemplazarla autom\xE1ticamente por su versi\xF3n oficial en FLAC."), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleBuscarReemplazosSpotify([currentTrack]),
-        disabled: isSearchingSpotifyHD,
-        className: "w-full py-1.5 px-3 rounded bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-black font-black text-xs cursor-pointer shadow transition-all active:scale-95 flex items-center justify-center gap-1.5"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Refresh, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Cat\xE1logo..." : "Buscar Reemplazo HD en Cat\xE1logo")
-    )) : null, /* @__PURE__ */ React.createElement(
-      RekordboxWaveform,
-      {
-        track: currentTrack,
-        cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
-        duration: currentTrack.duration || "05:00",
-        onSeekTrack: onPlayTrack,
-        playProgress: isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) ? playProgress : 0,
-        isCurrentPlaying: isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f),
-        onUpdateCues: (newCues) => updateCurrentTrackField("cues", newCues),
-        selectedCueId,
-        onSelectCue: setSelectedCueId,
-        snapToGrid,
-        showBeatgrid,
-        onToggleSnap: () => setSnapToGrid((prev) => !prev),
-        onToggleGrid: () => setShowBeatgrid((prev) => !prev)
-      }
-    ), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-3 rounded-lg border border-djzinc-800 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs pb-2 border-b border-djzinc-850" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.ZoomIn, { size: 14, className: "inline-block align-[-2px]" }), " Pureza & Calidad Ac\xFAstica"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Teorema de Nyquist y P\xE9rdida", text: "En audio sin p\xE9rdida (FLAC/WAV a 44.1kHz), la frecuencia m\xE1xima te\xF3rica es de 22.05kHz cubriendo todo el rango audible humano. Un corte abrupto a 16kHz o 20kHz evidencia transcode falso desde MP3 con p\xE9rdida." })), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => handleAbrirFftModal(currentTrack),
-        className: "px-2 py-0.5 bg-djzinc-800 hover:bg-djzinc-700 text-djcyan-400 text-[10px] font-mono font-bold rounded border border-djzinc-650 cursor-pointer transition-colors",
-        title: "Abrir an\xE1lisis espectral FFT en detalle"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Activity, { size: 13 }),
-      " VER FFT"
-    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[9px] uppercase block" }, "Formato / Tasa"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-bold" }, currentTrack.format || "FLAC", " \u2022 ", currentTrack.sample_rate_khz || 44.1, " kHz")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[9px] uppercase block" }, "Bitrate / Bits"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 font-bold" }, currentTrack.bitrate_kbps ? `${currentTrack.bitrate_kbps} kbps` : currentTrack.format === "MP3" ? "320 kbps" : "1062 kbps")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[9px] uppercase block" }, "Corte Espectral FFT"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${Boolean(currentTrack.es_fake || currentTrack.format === "FLAC" && String(currentTrack.status || "").includes("Fake")) ? "text-red-400" : "text-emerald-400"}` }, currentTrack.cutoff_khz ? `${currentTrack.cutoff_khz} kHz` : "PASS 22.05 kHz")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[9px] uppercase block" }, "Calidad & P\xE9rdida"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${Boolean(currentTrack.es_fake || currentTrack.format === "FLAC" && String(currentTrack.status || "").includes("Fake")) ? "text-red-400" : "text-emerald-400"}` }, currentTrack.calidad || (Boolean(currentTrack.es_fake) ? "Baja" : "Alta"), " (", currentTrack.perdida_pct ? `${currentTrack.perdida_pct}%` : "0%", ")"))), Boolean(currentTrack.es_fake || currentTrack.format === "FLAC" && String(currentTrack.status || "").includes("Fake")) ? /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-red-950/80 border border-red-700/80 rounded text-[11px] font-mono text-red-300 flex items-center gap-2 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.3)]" }, /* @__PURE__ */ React.createElement(Icons.Warning, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "font-bold block uppercase" }, "FLAC FAKE DETECTADO"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-red-400" }, "Corte a ", currentTrack.cutoff_khz, "kHz. Archivo inflado desde MP3 con p\xE9rdida."))) : /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-emerald-950/50 border border-emerald-800/60 rounded text-[11px] font-mono text-emerald-300 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "font-bold block uppercase" }, currentTrack.status || "Audio Aut\xE9ntico"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-emerald-400/90" }, currentTrack.perdida || "Sin P\xE9rdida (Rango audible 100% preservado)"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2.5 rounded border border-djzinc-800 space-y-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Volume, { size: 14, className: "inline-block align-[-2px]" }), " Sonoridad & Din\xE1mica (EBU R128)"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Sonoridad LUFS y True Peak", text: "Mide el volumen percibido para evitar saltos en cabina. -8 a -11 LUFS es el est\xE1ndar de club moderno. True Peak > 0.0 dBFS indica clipping y distorsi\xF3n." })), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${currentTrack.clipping ? "bg-red-950 text-red-400 border border-red-700 animate-pulse" : "bg-emerald-950 text-emerald-400 border border-emerald-800"}` }, currentTrack.clipping ? /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Icons.Alert, { size: 12 }), "CLIPPING") : /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 12 }), "CLEAN PEAK"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-1.5 text-center font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-1.5 rounded border border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block" }, "LUFS Int."), /* @__PURE__ */ React.createElement("span", { className: `font-bold text-xs ${currentTrack.lufs > -7 ? "text-amber-400" : currentTrack.lufs && currentTrack.lufs <= -14 ? "text-cyan-400" : "text-emerald-400"}` }, currentTrack.lufs !== void 0 ? `${currentTrack.lufs} LUFS` : "-9.0 LUFS")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-1.5 rounded border border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block" }, "True Peak"), /* @__PURE__ */ React.createElement("span", { className: `font-bold text-xs ${currentTrack.clipping ? "text-red-400 font-black" : "text-gray-200"}` }, currentTrack.true_peak !== void 0 ? `${currentTrack.true_peak > 0 ? "+" : ""}${currentTrack.true_peak} dB` : "-0.1 dB")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-1.5 rounded border border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block" }, "Rango (LRA)"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs text-gray-300" }, currentTrack.lra ? `${currentTrack.lra} LU` : "3.5 LU")))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-850 flex flex-col gap-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-gray-300 font-semibold flex items-center" }, "Trim Silencio (Zero-Cross)", /* @__PURE__ */ React.createElement(InfoTip, { title: "Recorte de Silencio", text: "Elimina el silencio muerto en cabecera cortando en paso por cero de amplitud (-60dBFS) para evitar clicks al mezclar." })), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/60" }, `-${Number(currentTrack.trim_start_ms || 0).toFixed(1)} ms`)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteTrim(-10), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 10ms" }, "-10ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteTrim(-1), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 1ms" }, "-1ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteTrim(1), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 1ms" }, "+1ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteTrim(10), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 10ms" }, "+10ms"), /* @__PURE__ */ React.createElement("button", { onClick: handleAutoDetectarTrimDownbeat, className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-800 hover:bg-djzinc-700 text-amber-300 rounded border border-amber-800/60 cursor-pointer", title: "Auto-detectar con DSP" }, "Auto")), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => handlePreescuchaOffset(currentTrack.trim_start_ms || 0),
-        className: "px-2 py-0.5 text-[9px] font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 rounded border border-amber-800/80 cursor-pointer transition-colors",
-        title: "Preescucha directa desde el punto de recorte"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Play, { size: 14, className: "inline-block align-[-2px]" }),
-      " Trim"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-850 flex flex-col gap-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-gray-300 font-semibold flex items-center" }, "Beatgrid 1.0.0 (Downbeat)", /* @__PURE__ */ React.createElement(InfoTip, { title: "Beatgrid Downbeat", text: "Fija el primer golpe de bombo real para que el sincro de Serato/Rekordbox nunca quede a contratiempo." })), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-djcyan-300 bg-djcyan-950/80 px-2 py-0.5 rounded border border-djcyan-800/60" }, `${Number(currentTrack.first_downbeat_ms || 0).toFixed(1)} ms`)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteDownbeat(-10), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 10ms" }, "-10ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteDownbeat(-1), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 1ms" }, "-1ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteDownbeat(1), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 1ms" }, "+1ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteDownbeat(10), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 10ms" }, "+10ms"), /* @__PURE__ */ React.createElement("button", { onClick: handleAutoDetectarTrimDownbeat, className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-800 hover:bg-djzinc-700 text-djcyan-300 rounded border border-djcyan-800/60 cursor-pointer", title: "Auto-detectar con DSP" }, "Auto")), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => handlePreescuchaOffset(currentTrack.first_downbeat_ms || 0),
-        className: "px-2 py-0.5 text-[9px] font-bold bg-djcyan-950/70 hover:bg-djcyan-900 text-djcyan-300 rounded border border-djcyan-800/80 cursor-pointer transition-colors",
-        title: "Preescucha directa desde el primer golpe de bombo"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Play, { size: 14, className: "inline-block align-[-2px]" }),
-      " Beat 1"
-    )))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", null, "BPM Decimal"), /* @__PURE__ */ React.createElement(InfoTip, { title: "BPM Exacto & TAP", text: "Tempo con precisi\xF3n de dos decimales con bot\xF3n TAP para marcar pulsaciones y micro-ajustes finos." })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: currentTrack.b || "",
-        onChange: (e) => updateCurrentTrackField("b", e.target.value),
-        className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-1.5 py-1 text-xs font-mono font-bold text-white outline-none"
+        className: "md:hidden fixed inset-0 bg-black/75 backdrop-blur-xs z-40 transition-opacity animate-fadeIn",
+        "aria-hidden": "true"
       }
     ), /* @__PURE__ */ React.createElement(
-      "button",
+      "aside",
       {
-        type: "button",
-        onClick: handleTapTempo,
-        className: "px-2 py-1 text-[9px] font-mono font-black bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 rounded border border-djcyan-800/80 cursor-pointer shadow active:scale-95 transition-all",
-        title: "Pulsa repetidamente al ritmo de la m\xFAsica para calcular el tempo"
+        key: currentTrack ? currentTrack.id : "none",
+        className: "ws-inspector fixed inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl md:rounded-none md:static md:inset-auto md:max-h-none md:h-full w-full md:w-80 lg:w-96 md:border-l md:border-[var(--bw-line-strong)] bg-[var(--bw-surface-1)] flex flex-col shrink-0 z-50 overflow-hidden shadow-2xl border-t border-cyan-500/30 md:border-t-0"
       },
-      "TAP"
-    ), /* @__PURE__ */ React.createElement("button", { onClick: () => {
-      const v = parseFloat(currentTrack.b);
-      if (!isNaN(v)) updateCurrentTrackField("b", (v - 0.1).toFixed(2));
-    }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 0.1 BPM" }, "-0.1"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
-      const v = parseFloat(currentTrack.b);
-      if (!isNaN(v)) updateCurrentTrackField("b", (v + 0.1).toFixed(2));
-    }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 0.1 BPM" }, "+0.1"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
-      const v = parseFloat(currentTrack.b);
-      if (!isNaN(v)) updateCurrentTrackField("b", (v / 2).toFixed(2));
-    }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Dividir por 2" }, "/2"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
-      const v = parseFloat(currentTrack.b);
-      if (!isNaN(v)) updateCurrentTrackField("b", (v * 2).toFixed(2));
-    }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", ((_b = CAMELOT_WHEEL_DATA[currentTrack.k]) == null ? void 0 : _b.classical) || "Am", ")")), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setCamelotModalOpen(true),
-        className: "text-[9px] font-mono font-bold text-djcyan-400 hover:text-djcyan-300 flex items-center gap-0.5 cursor-pointer",
-        title: "Abrir Rueda Arm\xF3nica Camelot Interactiva"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Disc, { size: 14, className: "inline-block align-[-2px]" }),
-      " Rueda"
-    )), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: currentTrack.k || "8A",
-        onChange: (e) => updateCurrentTrackField("k", e.target.value),
-        className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-mono font-bold text-djcyan-400 outline-none cursor-pointer"
-      },
-      Object.entries(CAMELOT_WHEEL_DATA).map(([kKey, kData]) => /* @__PURE__ */ React.createElement("option", { key: kKey, value: kKey }, kKey, " \u2022 ", kData.classical, " (", kData.name, ")"))
-    ))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-3 rounded border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold flex items-center" }, "Nivel de Energ\xEDa & Pegada", /* @__PURE__ */ React.createElement(InfoTip, { title: "V\xFAmetro de Energ\xEDa", text: "Medidor de pegada e intensidad sonora (rango 1-100) en escala de 5 segmentos LED de club." })), /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-xs text-white" }, currentTrack.e || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-5 gap-1.5 h-6 p-1 bg-black/60 rounded border border-djzinc-850" }, [
-      { val: 20, color: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]", off: "bg-emerald-950/40 border-emerald-900/40" },
-      { val: 40, color: "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]", off: "bg-emerald-950/40 border-emerald-900/40" },
-      { val: 60, color: "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]", off: "bg-amber-950/40 border-amber-900/40" },
-      { val: 80, color: "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]", off: "bg-orange-950/40 border-orange-900/40" },
-      { val: 100, color: "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.9)] animate-pulse", off: "bg-red-950/40 border-red-900/40" }
-    ].map((seg, sIdx) => {
-      const isActive = (currentTrack.e || 80) >= seg.val;
-      return /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "h-12 px-3 border-b border-[var(--bw-line)] bg-[var(--bw-surface-2)] flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "ws-glass-title" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14 }), /* @__PURE__ */ React.createElement("span", null, "Inspector")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-readout" }, "#", currentTrack.id || "--"), /* @__PURE__ */ React.createElement(
         "button",
         {
-          key: sIdx,
+          onClick: () => setSidebarOpen(false),
+          className: "ws-glass-icon",
+          "aria-label": t("btn_close_panel") || "Cerrar Panel",
+          title: t("btn_close_panel") || "Cerrar Panel"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+      ))),
+      /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 space-y-4" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
           type: "button",
-          onClick: () => updateCurrentTrackField("e", seg.val),
-          className: `h-full rounded-sm border transition-all cursor-pointer ${isActive ? `${seg.color} border-transparent` : `${seg.off}`}`,
-          title: `Nivel ${sIdx + 1} (${seg.val}%)`
-        }
-      );
-    })), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "range",
-        min: "1",
-        max: "100",
-        value: currentTrack.e || 80,
-        onChange: (e) => updateCurrentTrackField("e", Number(e.target.value)),
-        className: "w-full accent-djgreen-500 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800 flex flex-col justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", null, "Danceability"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Bailabilidad", text: "Fuerza del comp\xE1s y estabilidad r\xEDtmica para mantener la pista bailando." })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-djcyan-400" }, currentTrack.dance || 85, "%"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "range",
-        min: "1",
-        max: "100",
-        value: currentTrack.dance || 85,
-        onChange: (e) => updateCurrentTrackField("dance", Number(e.target.value)),
-        className: "w-20 accent-djcyan-400 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer"
-      }
-    ))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800 flex flex-col justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", null, "Mood / Color"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Atm\xF3sfera Sonora", text: "Clasificador del color sonoro y momento ideal de sesi\xF3n." })), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: currentTrack.mood || "Peak Time",
-        onChange: (e) => updateCurrentTrackField("mood", e.target.value),
-        className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-1.5 py-1 text-xs font-semibold text-emerald-400 outline-none cursor-pointer"
-      },
-      DJ_MOODS_LIST.map((m) => /* @__PURE__ */ React.createElement("option", { key: m.id, value: m.id }, m.label))
-    ))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold" }, "Taxonom\xEDa Serato Crate"), /* @__PURE__ */ React.createElement(InfoTip, { title: "G\xE9nero y Taxonom\xEDa", text: "Clasificaci\xF3n en dos niveles (G\xE9nero ra\xEDz > Subg\xE9nero) que determina el etiquetado TCON y el ruteo f\xEDsico a carpetas y crates de Serato / Rekordbox." })), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 block mb-1" }, "G\xE9nero Ra\xEDz"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: currentTrack.genre || "Tech House",
-        onChange: (e) => {
-          const newG = e.target.value;
-          updateCurrentTrackField("genre", newG);
-          const subList = TAXONOMY_TREE[newG] || [];
-          updateCurrentTrackField("subgenre", subList[0] || newG);
+          onClick: () => {
+            if (currentTrack && currentTrack.id) {
+              setSelectedTrack(currentTrack.id);
+            }
+            if (onNavigateTab) {
+              onNavigateTab("hotcues");
+            }
+          },
+          className: "ws-btn ws-btn-outline w-full justify-center h-9",
+          title: "Abrir este track en la pesta\xF1a Estudio Hot Cues a pantalla completa con Beatgrid ampliado"
         },
-        className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-semibold text-gray-200 outline-none cursor-pointer"
-      },
-      Object.keys(TAXONOMY_TREE).map((g) => /* @__PURE__ */ React.createElement("option", { key: g, value: g }, g))
-    )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 block mb-1" }, "Subg\xE9nero / Crate"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: currentTrack.subgenre || (TAXONOMY_TREE[currentTrack.genre || "Tech House"] ? TAXONOMY_TREE[currentTrack.genre || "Tech House"][0] : "Tech House"),
-        onChange: (e) => updateCurrentTrackField("subgenre", e.target.value),
-        className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-semibold text-djcyan-400 outline-none cursor-pointer"
-      },
-      (TAXONOMY_TREE[currentTrack.genre || "Tech House"] || [currentTrack.subgenre || "Tech House"]).map((sg) => /* @__PURE__ */ React.createElement("option", { key: sg, value: sg }, sg))
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between pt-1 border-t border-djzinc-850 text-[10px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 font-mono truncate max-w-[210px]", title: `/${currentTrack.genre || "Tech House"}/${currentTrack.subgenre || ""}/` }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), " /", currentTrack.genre || "Tech House", "/", currentTrack.subgenre || "General", "/"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleEnrutarPistaActual,
-        className: "px-2 py-1 bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 border border-djcyan-700/60 rounded font-bold text-[9px] cursor-pointer transition-colors shadow active:scale-95",
-        title: "Enrutar y copiar/mover archivo a su carpeta f\xEDsica y crate Serato"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Package, { size: 14, className: "inline-block align-[-2px]" }),
-      " Enrutar a Crate"
-    ))), /* @__PURE__ */ React.createElement(
-      CompactHotCuesSummary,
-      {
-        track: currentTrack,
-        cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
-        selectedCueId,
-        onSelectCue: setSelectedCueId,
-        onOpenStudio: () => {
-          if (onNavigateTab) {
-            onNavigateTab("hotcues");
-          } else {
-            setCueStudioModalOpen(true);
+        /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }),
+        /* @__PURE__ */ React.createElement("span", null, t("btn_edit_cues_studio") || "Editar Hot Cues en Estudio")
+      ), /* @__PURE__ */ React.createElement("div", { className: "w-full aspect-video bg-djzinc-950 rounded-lg border border-djzinc-800 relative group overflow-hidden flex items-center justify-center shadow-inner" }, /* @__PURE__ */ React.createElement(
+        "img",
+        {
+          src: getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : currentTrack.f ? `/cover?path=${encodeURIComponent(currentTrack.f)}` : null)),
+          alt: "Cover Art",
+          onError: (e) => {
+            e.target.onerror = null;
+            e.target.src = DEFAULT_VINYL_SVG;
+          },
+          className: "w-full h-full object-cover"
+        }
+      ), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono backdrop-blur border border-djzinc-700" }, "ID3v2.4")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-sm text-djcyan-400 truncate", title: currentTrack.t || currentTrack.title }, currentTrack.t || currentTrack.title || "Selecciona un track"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 truncate", title: currentTrack.a || currentTrack.artist }, currentTrack.a || currentTrack.artist || "--")), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => {
+            if (nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f)) {
+              onTogglePlay && onTogglePlay();
+            } else {
+              onPlayTrack && onPlayTrack(currentTrack, 0, true);
+            }
+          },
+          className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0 transition-colors"
+        },
+        nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) && isPlaying ? /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Pause, { size: 12 }), "PAUSE") : /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Play, { size: 12 }), "PLAY")
+      )), isFlacUpgradeCandidate(currentTrack) ? /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-gradient-to-br from-cyan-950/60 via-purple-950/40 to-djzinc-900 border border-cyan-500/70 rounded-xl flex flex-col gap-2 shadow-lg shadow-cyan-950/30" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-black text-cyan-300 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Gem, { size: 14, className: "inline-block align-[-2px]" }), " SuperFLAC: No Cumple Hi-Res"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-700/60 font-bold" }, currentTrack.es_fake ? "FAKE / TRANSCODE" : currentTrack.calidad || "CALIDAD MEDIA")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "Este archivo FLAC presenta corte de frecuencia (", currentTrack.cutoff_khz || "--", " kHz) o bitrate insuficiente para considerarse True Lossless. Puedes buscar y descargar el master original en el Record Pool."), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleBuscarReemplazosSpotify([currentTrack]),
+          disabled: isSearchingSpotifyHD,
+          className: "w-full py-1.5 px-3 rounded bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 text-black font-black text-xs cursor-pointer shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+        },
+        isSearchingSpotifyHD ? /* @__PURE__ */ React.createElement(Icons.Clock, { size: 13 }) : /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 13 }),
+        /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Cat\xE1logo..." : "Buscar SuperFLAC Lossless en Cat\xE1logo")
+      )) : isBadQualityTrack(currentTrack) ? /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-amber-950/40 border border-amber-600/70 rounded-lg flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-bold text-amber-300 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Warning, { size: 14, className: "inline-block align-[-2px]" }), " Calidad Sub-\xF3ptima Detectada"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-red-400 bg-red-950 px-1.5 py-0.5 rounded border border-red-800 font-bold" }, currentTrack.es_fake ? "FLAC FAKE" : currentTrack.calidad || "Baja Calidad")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-300 leading-tight" }, "Esta pista presenta compresi\xF3n lossy o corte espectral (", currentTrack.cutoff_khz || "--", " kHz). Puedes reemplazarla autom\xE1ticamente por su versi\xF3n oficial en FLAC."), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleBuscarReemplazosSpotify([currentTrack]),
+          disabled: isSearchingSpotifyHD,
+          className: "w-full py-1.5 px-3 rounded bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-black font-black text-xs cursor-pointer shadow transition-all active:scale-95 flex items-center justify-center gap-1.5"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Refresh, { size: 14, className: "inline-block align-[-2px]" }),
+        /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Cat\xE1logo..." : "Buscar Reemplazo HD en Cat\xE1logo")
+      )) : null, /* @__PURE__ */ React.createElement(
+        RekordboxWaveform,
+        {
+          track: currentTrack,
+          cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
+          duration: currentTrack.duration || "05:00",
+          onSeekTrack: onPlayTrack,
+          playProgress: isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) ? playProgress : 0,
+          isCurrentPlaying: isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f),
+          onUpdateCues: (newCues) => updateCurrentTrackField("cues", newCues),
+          selectedCueId,
+          onSelectCue: setSelectedCueId,
+          snapToGrid,
+          showBeatgrid,
+          onToggleSnap: () => setSnapToGrid((prev) => !prev),
+          onToggleGrid: () => setShowBeatgrid((prev) => !prev)
+        }
+      ), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-3 rounded-lg border border-djzinc-800 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs pb-2 border-b border-djzinc-850" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.ZoomIn, { size: 14, className: "inline-block align-[-2px]" }), " Pureza & Calidad Ac\xFAstica"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Teorema de Nyquist y P\xE9rdida", text: "En audio sin p\xE9rdida (FLAC/WAV a 44.1kHz), la frecuencia m\xE1xima te\xF3rica es de 22.05kHz cubriendo todo el rango audible humano. Un corte abrupto a 16kHz o 20kHz evidencia transcode falso desde MP3 con p\xE9rdida." })), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => handleAbrirFftModal(currentTrack),
+          className: "px-2 py-0.5 bg-djzinc-800 hover:bg-djzinc-700 text-djcyan-400 text-[10px] font-mono font-bold rounded border border-djzinc-650 cursor-pointer transition-colors",
+          title: "Abrir an\xE1lisis espectral FFT en detalle"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Activity, { size: 13 }),
+        " VER FFT"
+      )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[9px] uppercase block" }, "Formato / Tasa"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-bold" }, currentTrack.format || "FLAC", " \u2022 ", currentTrack.sample_rate_khz || 44.1, " kHz")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[9px] uppercase block" }, "Bitrate / Bits"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 font-bold" }, currentTrack.bitrate_kbps ? `${currentTrack.bitrate_kbps} kbps` : currentTrack.format === "MP3" ? "320 kbps" : "1062 kbps")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[9px] uppercase block" }, "Corte Espectral FFT"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${Boolean(currentTrack.es_fake || currentTrack.format === "FLAC" && String(currentTrack.status || "").includes("Fake")) ? "text-red-400" : "text-emerald-400"}` }, currentTrack.cutoff_khz ? `${currentTrack.cutoff_khz} kHz` : "PASS 22.05 kHz")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[9px] uppercase block" }, "Calidad & P\xE9rdida"), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${Boolean(currentTrack.es_fake || currentTrack.format === "FLAC" && String(currentTrack.status || "").includes("Fake")) ? "text-red-400" : "text-emerald-400"}` }, currentTrack.calidad || (Boolean(currentTrack.es_fake) ? "Baja" : "Alta"), " (", currentTrack.perdida_pct ? `${currentTrack.perdida_pct}%` : "0%", ")"))), Boolean(currentTrack.es_fake || currentTrack.format === "FLAC" && String(currentTrack.status || "").includes("Fake")) ? /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-red-950/80 border border-red-700/80 rounded text-[11px] font-mono text-red-300 flex items-center gap-2 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.3)]" }, /* @__PURE__ */ React.createElement(Icons.Warning, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "font-bold block uppercase" }, "FLAC FAKE DETECTADO"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-red-400" }, "Corte a ", currentTrack.cutoff_khz, "kHz. Archivo inflado desde MP3 con p\xE9rdida."))) : /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-emerald-950/50 border border-emerald-800/60 rounded text-[11px] font-mono text-emerald-300 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "font-bold block uppercase" }, currentTrack.status || "Audio Aut\xE9ntico"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-emerald-400/90" }, currentTrack.perdida || "Sin P\xE9rdida (Rango audible 100% preservado)"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/80 p-2.5 rounded border border-djzinc-800 space-y-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Volume, { size: 14, className: "inline-block align-[-2px]" }), " Sonoridad & Din\xE1mica (EBU R128)"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Sonoridad LUFS y True Peak", text: "Mide el volumen percibido para evitar saltos en cabina. -8 a -11 LUFS es el est\xE1ndar de club moderno. True Peak > 0.0 dBFS indica clipping y distorsi\xF3n." })), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${currentTrack.clipping ? "bg-red-950 text-red-400 border border-red-700 animate-pulse" : "bg-emerald-950 text-emerald-400 border border-emerald-800"}` }, currentTrack.clipping ? /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Icons.Alert, { size: 12 }), "CLIPPING") : /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 12 }), "CLEAN PEAK"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-1.5 text-center font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-1.5 rounded border border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block" }, "LUFS Int."), /* @__PURE__ */ React.createElement("span", { className: `font-bold text-xs ${currentTrack.lufs > -7 ? "text-amber-400" : currentTrack.lufs && currentTrack.lufs <= -14 ? "text-cyan-400" : "text-emerald-400"}` }, currentTrack.lufs !== void 0 ? `${currentTrack.lufs} LUFS` : "-9.0 LUFS")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-1.5 rounded border border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block" }, "True Peak"), /* @__PURE__ */ React.createElement("span", { className: `font-bold text-xs ${currentTrack.clipping ? "text-red-400 font-black" : "text-gray-200"}` }, currentTrack.true_peak !== void 0 ? `${currentTrack.true_peak > 0 ? "+" : ""}${currentTrack.true_peak} dB` : "-0.1 dB")), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-1.5 rounded border border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block" }, "Rango (LRA)"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-xs text-gray-300" }, currentTrack.lra ? `${currentTrack.lra} LU` : "3.5 LU")))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-850 flex flex-col gap-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-gray-300 font-semibold flex items-center" }, "Trim Silencio (Zero-Cross)", /* @__PURE__ */ React.createElement(InfoTip, { title: "Recorte de Silencio", text: "Elimina el silencio muerto en cabecera cortando en paso por cero de amplitud (-60dBFS) para evitar clicks al mezclar." })), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/60" }, `-${Number(currentTrack.trim_start_ms || 0).toFixed(1)} ms`)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteTrim(-10), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 10ms" }, "-10ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteTrim(-1), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 1ms" }, "-1ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteTrim(1), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 1ms" }, "+1ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteTrim(10), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 10ms" }, "+10ms"), /* @__PURE__ */ React.createElement("button", { onClick: handleAutoDetectarTrimDownbeat, className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-800 hover:bg-djzinc-700 text-amber-300 rounded border border-amber-800/60 cursor-pointer", title: "Auto-detectar con DSP" }, "Auto")), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => handlePreescuchaOffset(currentTrack.trim_start_ms || 0),
+          className: "px-2 py-0.5 text-[9px] font-bold bg-amber-950/70 hover:bg-amber-900 text-amber-300 rounded border border-amber-800/80 cursor-pointer transition-colors",
+          title: "Preescucha directa desde el punto de recorte"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Play, { size: 14, className: "inline-block align-[-2px]" }),
+        " Trim"
+      ))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-850 flex flex-col gap-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-gray-300 font-semibold flex items-center" }, "Beatgrid 1.0.0 (Downbeat)", /* @__PURE__ */ React.createElement(InfoTip, { title: "Beatgrid Downbeat", text: "Fija el primer golpe de bombo real para que el sincro de Serato/Rekordbox nunca quede a contratiempo." })), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-black text-djcyan-300 bg-djcyan-950/80 px-2 py-0.5 rounded border border-djcyan-800/60" }, `${Number(currentTrack.first_downbeat_ms || 0).toFixed(1)} ms`)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteDownbeat(-10), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 10ms" }, "-10ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteDownbeat(-1), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 1ms" }, "-1ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteDownbeat(1), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 1ms" }, "+1ms"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleMicroAjusteDownbeat(10), className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 10ms" }, "+10ms"), /* @__PURE__ */ React.createElement("button", { onClick: handleAutoDetectarTrimDownbeat, className: "px-1.5 py-0.5 text-[9px] font-mono font-bold bg-djzinc-800 hover:bg-djzinc-700 text-djcyan-300 rounded border border-djcyan-800/60 cursor-pointer", title: "Auto-detectar con DSP" }, "Auto")), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => handlePreescuchaOffset(currentTrack.first_downbeat_ms || 0),
+          className: "px-2 py-0.5 text-[9px] font-bold bg-djcyan-950/70 hover:bg-djcyan-900 text-djcyan-300 rounded border border-djcyan-800/80 cursor-pointer transition-colors",
+          title: "Preescucha directa desde el primer golpe de bombo"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Play, { size: 14, className: "inline-block align-[-2px]" }),
+        " Beat 1"
+      )))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", null, "BPM Decimal"), /* @__PURE__ */ React.createElement(InfoTip, { title: "BPM Exacto & TAP", text: "Tempo con precisi\xF3n de dos decimales con bot\xF3n TAP para marcar pulsaciones y micro-ajustes finos." })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: currentTrack.b || "",
+          onChange: (e) => updateCurrentTrackField("b", e.target.value),
+          className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-1.5 py-1 text-xs font-mono font-bold text-white outline-none"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleTapTempo,
+          className: "px-2 py-1 text-[9px] font-mono font-black bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 rounded border border-djcyan-800/80 cursor-pointer shadow active:scale-95 transition-all",
+          title: "Pulsa repetidamente al ritmo de la m\xFAsica para calcular el tempo"
+        },
+        "TAP"
+      ), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+        const v = parseFloat(currentTrack.b);
+        if (!isNaN(v)) updateCurrentTrackField("b", (v - 0.1).toFixed(2));
+      }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Restar 0.1 BPM" }, "-0.1"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+        const v = parseFloat(currentTrack.b);
+        if (!isNaN(v)) updateCurrentTrackField("b", (v + 0.1).toFixed(2));
+      }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Sumar 0.1 BPM" }, "+0.1"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+        const v = parseFloat(currentTrack.b);
+        if (!isNaN(v)) updateCurrentTrackField("b", (v / 2).toFixed(2));
+      }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Dividir por 2" }, "/2"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+        const v = parseFloat(currentTrack.b);
+        if (!isNaN(v)) updateCurrentTrackField("b", (v * 2).toFixed(2));
+      }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", ((_b = CAMELOT_WHEEL_DATA[currentTrack.k]) == null ? void 0 : _b.classical) || "Am", ")")), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setCamelotModalOpen(true),
+          className: "text-[9px] font-mono font-bold text-djcyan-400 hover:text-djcyan-300 flex items-center gap-0.5 cursor-pointer",
+          title: "Abrir Rueda Arm\xF3nica Camelot Interactiva"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Disc, { size: 14, className: "inline-block align-[-2px]" }),
+        " Rueda"
+      )), /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: currentTrack.k || "8A",
+          onChange: (e) => updateCurrentTrackField("k", e.target.value),
+          className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-mono font-bold text-djcyan-400 outline-none cursor-pointer"
+        },
+        Object.entries(CAMELOT_WHEEL_DATA).map(([kKey, kData]) => /* @__PURE__ */ React.createElement("option", { key: kKey, value: kKey }, kKey, " \u2022 ", kData.classical, " (", kData.name, ")"))
+      ))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-3 rounded border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold flex items-center" }, "Nivel de Energ\xEDa & Pegada", /* @__PURE__ */ React.createElement(InfoTip, { title: "V\xFAmetro de Energ\xEDa", text: "Medidor de pegada e intensidad sonora (rango 1-100) en escala de 5 segmentos LED de club." })), /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-xs text-white" }, currentTrack.e || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-5 gap-1.5 h-6 p-1 bg-black/60 rounded border border-djzinc-850" }, [
+        { val: 20, color: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]", off: "bg-emerald-950/40 border-emerald-900/40" },
+        { val: 40, color: "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]", off: "bg-emerald-950/40 border-emerald-900/40" },
+        { val: 60, color: "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]", off: "bg-amber-950/40 border-amber-900/40" },
+        { val: 80, color: "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]", off: "bg-orange-950/40 border-orange-900/40" },
+        { val: 100, color: "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.9)] animate-pulse", off: "bg-red-950/40 border-red-900/40" }
+      ].map((seg, sIdx) => {
+        const isActive = (currentTrack.e || 80) >= seg.val;
+        return /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            key: sIdx,
+            type: "button",
+            onClick: () => updateCurrentTrackField("e", seg.val),
+            className: `h-full rounded-sm border transition-all cursor-pointer ${isActive ? `${seg.color} border-transparent` : `${seg.off}`}`,
+            title: `Nivel ${sIdx + 1} (${seg.val}%)`
+          }
+        );
+      })), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "range",
+          min: "1",
+          max: "100",
+          value: currentTrack.e || 80,
+          onChange: (e) => updateCurrentTrackField("e", Number(e.target.value)),
+          className: "w-full accent-djgreen-500 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer"
+        }
+      )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800 flex flex-col justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", null, "Danceability"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Bailabilidad", text: "Fuerza del comp\xE1s y estabilidad r\xEDtmica para mantener la pista bailando." })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-djcyan-400" }, currentTrack.dance || 85, "%"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "range",
+          min: "1",
+          max: "100",
+          value: currentTrack.dance || 85,
+          onChange: (e) => updateCurrentTrackField("dance", Number(e.target.value)),
+          className: "w-20 accent-djcyan-400 h-1.5 bg-djzinc-800 rounded-lg cursor-pointer"
+        }
+      ))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800 flex flex-col justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", null, "Mood / Color"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Atm\xF3sfera Sonora", text: "Clasificador del color sonoro y momento ideal de sesi\xF3n." })), /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: currentTrack.mood || "Peak Time",
+          onChange: (e) => updateCurrentTrackField("mood", e.target.value),
+          className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-1.5 py-1 text-xs font-semibold text-emerald-400 outline-none cursor-pointer"
+        },
+        DJ_MOODS_LIST.map((m) => /* @__PURE__ */ React.createElement("option", { key: m.id, value: m.id }, m.label))
+      ))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold" }, "Taxonom\xEDa Serato Crate"), /* @__PURE__ */ React.createElement(InfoTip, { title: "G\xE9nero y Taxonom\xEDa", text: "Clasificaci\xF3n en dos niveles (G\xE9nero ra\xEDz > Subg\xE9nero) que determina el etiquetado TCON y el ruteo f\xEDsico a carpetas y crates de Serato / Rekordbox." })), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 block mb-1" }, "G\xE9nero Ra\xEDz"), /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: currentTrack.genre || "Tech House",
+          onChange: (e) => {
+            const newG = e.target.value;
+            updateCurrentTrackField("genre", newG);
+            const subList = TAXONOMY_TREE[newG] || [];
+            updateCurrentTrackField("subgenre", subList[0] || newG);
+          },
+          className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-semibold text-gray-200 outline-none cursor-pointer"
+        },
+        Object.keys(TAXONOMY_TREE).map((g) => /* @__PURE__ */ React.createElement("option", { key: g, value: g }, g))
+      )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 block mb-1" }, "Subg\xE9nero / Crate"), /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: currentTrack.subgenre || (TAXONOMY_TREE[currentTrack.genre || "Tech House"] ? TAXONOMY_TREE[currentTrack.genre || "Tech House"][0] : "Tech House"),
+          onChange: (e) => updateCurrentTrackField("subgenre", e.target.value),
+          className: "w-full bg-djzinc-900 border border-djzinc-700 rounded px-2 py-1 text-xs font-semibold text-djcyan-400 outline-none cursor-pointer"
+        },
+        (TAXONOMY_TREE[currentTrack.genre || "Tech House"] || [currentTrack.subgenre || "Tech House"]).map((sg) => /* @__PURE__ */ React.createElement("option", { key: sg, value: sg }, sg))
+      ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between pt-1 border-t border-djzinc-850 text-[10px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 font-mono truncate max-w-[210px]", title: `/${currentTrack.genre || "Tech House"}/${currentTrack.subgenre || ""}/` }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), " /", currentTrack.genre || "Tech House", "/", currentTrack.subgenre || "General", "/"), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleEnrutarPistaActual,
+          className: "px-2 py-1 bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-400 border border-djcyan-700/60 rounded font-bold text-[9px] cursor-pointer transition-colors shadow active:scale-95",
+          title: "Enrutar y copiar/mover archivo a su carpeta f\xEDsica y crate Serato"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Package, { size: 14, className: "inline-block align-[-2px]" }),
+        " Enrutar a Crate"
+      ))), /* @__PURE__ */ React.createElement(
+        CompactHotCuesSummary,
+        {
+          track: currentTrack,
+          cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
+          selectedCueId,
+          onSelectCue: setSelectedCueId,
+          onOpenStudio: () => {
+            if (onNavigateTab) {
+              onNavigateTab("hotcues");
+            } else {
+              setCueStudioModalOpen(true);
+            }
           }
         }
-      }
-    ), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase mb-1" }, /* @__PURE__ */ React.createElement("span", null, "Comentario T\xE1ctico DJ"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Comentario de Mezcla", text: "Texto estrat\xE9gico inyectado en el tag ID3 COMM visible en las pantallas de la mesa para recordar qu\xE9 hacer con la pista." })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1 mb-1.5" }, [
-      { label: "Peak Time", text: "Peak Time \u2022 Drop Contundente \u2022 Outro R\xE1pido 32b" },
-      { label: "Warm Up", text: "Warm Up \u2022 Groovy 64b \u2022 Entrada Progresiva" },
-      { label: "Breakdown", text: "Breakdown Vocal Intenso \u2022 Mezcla Larga con Bajos" },
-      { label: "After", text: "Afterhours \u2022 Dark Hypnotic \u2022 Bombo Pesado" }
-    ].map((tpl, tIdx) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: tIdx,
-        type: "button",
-        onClick: () => updateCurrentTrackField("comment", tpl.text),
-        className: "px-1.5 py-0.5 text-[9px] font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer transition-colors",
-        title: `Insertar: "${tpl.text}"`
-      },
-      tpl.label
-    ))), /* @__PURE__ */ React.createElement(
-      "textarea",
-      {
-        value: currentTrack.comment || "",
-        onChange: (e) => updateCurrentTrackField("comment", e.target.value),
-        rows: "2",
-        className: "w-full bg-djzinc-950 border border-djzinc-700 rounded p-2 text-xs text-gray-200 outline-none font-mono resize-none"
-      }
-    ))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          setMixOracleTargetTrack(currentTrack);
-          setMixOracleOpen(true);
+      ), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase mb-1" }, /* @__PURE__ */ React.createElement("span", null, "Comentario T\xE1ctico DJ"), /* @__PURE__ */ React.createElement(InfoTip, { title: "Comentario de Mezcla", text: "Texto estrat\xE9gico inyectado en el tag ID3 COMM visible en las pantallas de la mesa para recordar qu\xE9 hacer con la pista." })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1 mb-1.5" }, [
+        { label: "Peak Time", text: "Peak Time \u2022 Drop Contundente \u2022 Outro R\xE1pido 32b" },
+        { label: "Warm Up", text: "Warm Up \u2022 Groovy 64b \u2022 Entrada Progresiva" },
+        { label: "Breakdown", text: "Breakdown Vocal Intenso \u2022 Mezcla Larga con Bajos" },
+        { label: "After", text: "Afterhours \u2022 Dark Hypnotic \u2022 Bombo Pesado" }
+      ].map((tpl, tIdx) => /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: tIdx,
+          type: "button",
+          onClick: () => updateCurrentTrackField("comment", tpl.text),
+          className: "px-1.5 py-0.5 text-[9px] font-mono bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 rounded border border-djzinc-750 cursor-pointer transition-colors",
+          title: `Insertar: "${tpl.text}"`
         },
-        className: "w-full py-2 bg-gradient-to-r from-purple-900 to-indigo-900 hover:from-purple-800 hover:to-indigo-800 text-purple-200 border border-purple-500/50 rounded font-mono font-bold text-xs shadow-md cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5",
-        title: "Buscar en la biblioteca los tracks arm\xF3nica y espectralmente compatibles con este tema"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Compass, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", null, "Buscar Parejas (Mix Oracle)")
-    ), /* @__PURE__ */ React.createElement("button", { onClick: handleGuardarTrack, className: "w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Aplicar Cambios a este Track"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: (e) => {
-          if (currentTrack && (currentTrack.id || currentTrack.id === 0)) {
-            handleRemoveSingleTrack(currentTrack.id, e);
-            setSidebarOpen(false);
-          }
+        tpl.label
+      ))), /* @__PURE__ */ React.createElement(
+        "textarea",
+        {
+          value: currentTrack.comment || "",
+          onChange: (e) => updateCurrentTrackField("comment", e.target.value),
+          rows: "2",
+          className: "w-full bg-djzinc-950 border border-djzinc-700 rounded p-2 text-xs text-gray-200 outline-none font-mono resize-none"
+        }
+      ))),
+      /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 space-y-2" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            setMixOracleTargetTrack(currentTrack);
+            setMixOracleOpen(true);
+          },
+          className: "w-full py-2 bg-gradient-to-r from-purple-900 to-indigo-900 hover:from-purple-800 hover:to-indigo-800 text-purple-200 border border-purple-500/50 rounded font-mono font-bold text-xs shadow-md cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5",
+          title: "Buscar en la biblioteca los tracks arm\xF3nica y espectralmente compatibles con este tema"
         },
-        className: "w-full py-1.5 bg-red-950/50 hover:bg-red-900/80 text-red-300 hover:text-white rounded border border-red-800/60 font-mono text-xs font-semibold cursor-pointer transition-colors flex items-center justify-center gap-1.5",
-        title: "Quitar este archivo de la lista y del an\xE1lisis global"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", null, "Quitar este track del an\xE1lisis")
-    ))), selectedAuditIds.size > 0 && /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement(Icons.Compass, { size: 14, className: "inline-block align-[-2px]" }),
+        /* @__PURE__ */ React.createElement("span", null, "Buscar Parejas (Mix Oracle)")
+      ), /* @__PURE__ */ React.createElement("button", { onClick: handleGuardarTrack, className: "w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Aplicar Cambios a este Track"), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: (e) => {
+            if (currentTrack && (currentTrack.id || currentTrack.id === 0)) {
+              handleRemoveSingleTrack(currentTrack.id, e);
+              setSidebarOpen(false);
+            }
+          },
+          className: "w-full py-1.5 bg-red-950/50 hover:bg-red-900/80 text-red-300 hover:text-white rounded border border-red-800/60 font-mono text-xs font-semibold cursor-pointer transition-colors flex items-center justify-center gap-1.5",
+          title: "Quitar este archivo de la lista y del an\xE1lisis global"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" }),
+        /* @__PURE__ */ React.createElement("span", null, "Quitar este track del an\xE1lisis")
+      ))
+    )), selectedAuditIds.size > 0 && /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "fixed bottom-24 md:bottom-20 inset-x-0 mx-auto max-w-2xl bg-[#0e0e18]/95 backdrop-blur-md rounded-2xl px-4 py-2.5 border border-djcyan-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_25px_rgba(6,182,212,0.25)] flex items-center justify-between gap-3 z-40 animate-fadeIn font-mono"

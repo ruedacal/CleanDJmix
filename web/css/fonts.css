@@ -2,6 +2,22 @@
 /* Fuentes locales cargadas desde /fonts/ para uso offline en cabina */
 
 @font-face {
+  font-family: 'Nimbus Mono PS';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Nimbus Mono PS'), local('NimbusMonoPS-Regular');
+}
+
+@font-face {
+  font-family: 'Nimbus Mono PS';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Nimbus Mono PS Bold'), local('NimbusMonoPS-Bold');
+}
+
+@font-face {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 300;

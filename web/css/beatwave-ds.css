@@ -5,6 +5,8 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
+    --font-mono: 'Nimbus Mono PS', 'JetBrains Mono', ui-monospace, monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --bw-black: #09090b;
     --bw-surface-1: #0e0e11;
     --bw-surface-2: #141418;
@@ -37,6 +39,7 @@ body {
 
 /* Tabular, slashed-zero digits for BPM, Camelot keys and timecodes. */
 .font-mono, code, kbd, .tabular-nums {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums slashed-zero;
     font-feature-settings: 'zero', 'tnum';
 }
