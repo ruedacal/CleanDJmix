@@ -272,6 +272,58 @@ def dump_all_screens():
     for tab, fn, title in screens:
         dump_screen(tab, fn, title, combined_css, logo_b64)
 
+    dump_responsive_screens(combined_css, logo_b64)
+
+def dump_responsive_screens(combined_css, logo_b64):
+    responsive_dir = os.path.join(OUT_DIR, "screens", "responsive")
+    os.makedirs(responsive_dir, exist_ok=True)
+    viewports = [
+        ("mobile_393px.html", 393, 852, "Móvil (393px iPhone 14/15)"),
+        ("tablet_768px.html", 768, 1024, "Tablet (768px iPad Mini)"),
+        ("desktop_1512px.html", 1512, 982, "Desktop (1512px MacBook Pro)")
+    ]
+    for fn, w, h, desc in viewports:
+        url = "http://localhost:8000/?skipintro=1&tab=audit"
+        cmd = [
+            CHROME_PATH,
+            "--headless",
+            "--disable-gpu",
+            "--run-all-compositor-stages-before-draw",
+            "--virtual-time-budget=6000",
+            f"--window-size={w},{h}",
+            "--dump-dom",
+            url
+        ]
+        try:
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+            html = res.stdout.decode("utf-8", "ignore")
+            html = re.sub(r'<link[^>]*rel=["\']stylesheet["\'][^>]*>', '', html)
+            style_block = f"""
+    <style>
+        html, body {{
+            background-color: #09090b !important;
+            color: #d4d4d8 !important;
+            width: {w}px;
+            min-height: {h}px;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: 'Inter', -apple-system, sans-serif;
+        }}
+        {combined_css}
+    </style>
+    """
+            html = html.replace('</head>', f'{style_block}\n</head>')
+            if logo_b64:
+                html = re.sub(r'src=["\'][^"\']*beatwave_text\.png["\']', f'src="{logo_b64}"', html)
+            html = html.replace('<body ', f'<body style="background-color: #09090b !important; color: #d4d4d8 !important; width: {w}px; min-height: {h}px; margin: 0;" ')
+            out = os.path.join(responsive_dir, fn)
+            with open(out, "w", encoding="utf-8") as f:
+                f.write(html)
+            print(f"✓ Pantalla responsive exportada: {fn} ({desc})")
+        except Exception as e:
+            print(f"✗ Error exportando responsive {fn}: {e}")
+
 
 def write_readme():
     content = """# BEATWAVE PRO — Figma Design Package

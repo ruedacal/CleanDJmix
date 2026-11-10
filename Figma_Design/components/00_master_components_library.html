@@ -85,6 +85,22 @@
 /* Fuentes locales cargadas desde /fonts/ para uso offline en cabina */
 
 @font-face {
+  font-family: 'Nimbus Mono PS';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Nimbus Mono PS'), local('NimbusMonoPS-Regular');
+}
+
+@font-face {
+  font-family: 'Nimbus Mono PS';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Nimbus Mono PS Bold'), local('NimbusMonoPS-Bold');
+}
+
+@font-face {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 300;
@@ -1092,6 +1108,8 @@ body.club-mode,
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
+    --font-mono: 'Nimbus Mono PS', 'JetBrains Mono', ui-monospace, monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --bw-black: #09090b;
     --bw-surface-1: #0e0e11;
     --bw-surface-2: #141418;
@@ -1124,6 +1142,7 @@ body {
 
 /* Tabular, slashed-zero digits for BPM, Camelot keys and timecodes. */
 .font-mono, code, kbd, .tabular-nums {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums slashed-zero;
     font-feature-settings: 'zero', 'tnum';
 }
