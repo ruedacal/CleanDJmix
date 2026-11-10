@@ -27570,6 +27570,56 @@ const BEATWAVE_MASTER_GLOSSARY = [
         formula: "Trama GEOB: 'Serato Markers_V2' + 'BeatWave Pro Cues'",
         impact: "Carga instantánea de Cues y BPM de alta fidelidad en cualquier reproductor o cabina sin reanálisis."
     },
+    {
+        term: "Teorema de Nyquist-Shannon",
+        category: "DSP & Acústica",
+        tag: "MUESTREO",
+        color: "#6366f1",
+        icon: "📉",
+        definition: "Ley matemática de procesamiento digital de señales: para muestrear una onda analógica sin distorsión por aliasing, la frecuencia de muestreo (Fs) debe ser estrictamente superior al doble de la componente espectral más alta (Fmax). Por ello, el estándar de audio CD a 44.1 kHz cubre exactamente el límite del oído humano hasta 22.05 kHz.",
+        formula: "Fs ≥ 2 · Fmax • Límite Nyquist = Fs / 2",
+        impact: "Explica por qué un MP3 de 128 kbps con corte a 16 kHz suena apagado frente a un FLAC sin pérdidas a 44.1/48 kHz."
+    },
+    {
+        term: "Dithering & Ruido TPDF",
+        category: "DSP & Acústica",
+        tag: "CUANTIZACIÓN",
+        color: "#84cc16",
+        icon: "🎲",
+        definition: "Inyección intencional de ruido estocástico no correlacionado con función de densidad triangular (TPDF) al reducir la profundidad de bits (ej. de 24-bit o 32-bit float a 16-bit). Elimina la distorsión armónica no lineal generada por el truncamiento de muestras, transformando el error en un suave siseo uniforme inaudible.",
+        formula: "TPDF Dither: e[n] = (rand1 - rand2) · LSB",
+        impact: "Preserva la reverberación y colas de silencio sin chirridos digitales en los breakdowns de cabina."
+    },
+    {
+        term: "Cancelación de Fase en Subgraves",
+        category: "DSP & Acústica",
+        tag: "FASE / CLUB",
+        color: "#ef4444",
+        icon: "⚠️",
+        definition: "Interferencia destructiva originada cuando dos pistas reproducen simultáneamente componentes en la banda de 30-100 Hz con desfase cercano a 180°. Las presiones acústicas se anulan físicamente en el aire del club, haciendo desaparecer por completo la pegada del bombo en la pista.",
+        formula: "Δθ = 180° ⇒ y_total = y1 - y2 ≈ 0",
+        impact: "Exige la regla de oro: nunca mezclar dos bombos con sus faders de LOW abiertos a la vez (Bass Swapping)."
+    },
+    {
+        term: "Anti-Aliasing Filter (Brickwall LPF)",
+        category: "DSP & Acústica",
+        tag: "FILTRADO",
+        color: "#a855f7",
+        icon: "🛡️",
+        definition: "Filtro paso-bajas analógico y digital de pendiente ultraempinada (brickwall) situado antes de la digitalización ADC o resampling. Corta cualquier componente armónica por encima de Fs/2 para evitar que se pliegue hacia el espectro audible como frecuencias fantasma inarmónicas.",
+        formula: "Atenuación > 96 dB @ F > Fs / 2",
+        impact: "Garantiza un sonido cristalino y nítido al cambiar el pitch de una canción en vivo."
+    },
+    {
+        term: "Headroom Acústico del Mixer",
+        category: "Cabina & Decks",
+        tag: "GANANCIA",
+        color: "#f59e0b",
+        icon: "🎚️",
+        definition: "Margen de seguridad en decibelios existente entre el nivel nominal de trabajo (0 dBVU / +4 dBu) y el umbral de distorsión analógica o clip digital absoluto (0 dBFS). Mantener un headroom de +6 a +12 dB en los canales permite que los transitorios del bombo respiren sin aplastamiento.",
+        formula: "Headroom = Nivel de Clip (0 dBFS) - Nivel RMS",
+        impact: "Evita que el sonido del club se comprima y sature cuando suenan dos decks a la vez."
+    },
     // CABINA & HARDWARE
     {
         term: "Downbeat (Beat 1.0.0)",

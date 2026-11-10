@@ -417,54 +417,224 @@ DJ_TRICKS_AND_CURIOSITIES = [
 
 GLOSSARY_ITEMS = [
     {
+        "term": "FFT (Fast Fourier Transform)",
+        "category": "DSP & Acústica",
+        "tag": "ESPECTRO",
+        "color": "#06b6d4",
+        "icon": "🔬",
+        "definition": "Transformada Rápida de Fourier. Algoritmo matemático que descompone en tiempo real una forma de onda de audio del dominio temporal al espectro de frecuencias (magnitud y fase). Es la base del análisis espectral, la detección precisa de transitorios del bombo y la calibración armónica en BeatWave Pro.",
+        "formula": "X[k] = ∑ x[n] · e^(-i 2π k n / N) (N=2048, Hop=512)",
+        "impact": "Permite visualizar el espectro 3-band y aislar frecuencias para Beatgrid y tonalidad."
+    },
+    {
+        "term": "Crest Factor (Factor de Cresta)",
+        "category": "DSP & Acústica",
+        "tag": "DINÁMICA",
+        "color": "#f59e0b",
+        "icon": "📊",
+        "definition": "Relación en decibelios entre la amplitud pico máxima de la señal y su valor medio cuadrático (RMS). Cuantifica el grado de compresión y limitación en el mastering. Un Crest Factor bajo (< 7.5 dB) indica transitorios comprimidos y bombos saturados propios de Hard Techno o Schranz, mientras que valores altos (> 12 dB) reflejan dinámica orgánica.",
+        "formula": "CF (dB) = 20 · log10( Peak / RMS )",
+        "impact": "Diferencia de inmediato pistas ultracomprimidas de temas con dinámica natural para masterizar la ganancia del mixer."
+    },
+    {
+        "term": "Zero-Crossing Rate (ZCR)",
+        "category": "DSP & Acústica",
+        "tag": "RUGOSIDAD",
+        "color": "#ec4899",
+        "icon": "⚡",
+        "definition": "Tasa de cruces por cero. Mide la frecuencia con la que la onda de audio atraviesa el eje de amplitud cero por unidad de tiempo. En música electrónica revela el contenido de altas frecuencias, la aspereza de sintetizadores distorsionados y la presencia de componentes ruidosos o percusivos frente a tonos sinusoidales puros.",
+        "formula": "ZCR = (1 / 2N) ∑ |sgn(x[n]) - sgn(x[n-1])|",
+        "impact": "Identifica texturas industriales, bombos crujientes y saturación analógica en el Drop."
+    },
+    {
+        "term": "Spectral Centroid (Centroide Espectral)",
+        "category": "DSP & Acústica",
+        "tag": "TIMBRE",
+        "color": "#8b5cf6",
+        "icon": "🌈",
+        "definition": "Centro de gravedad del espectro de frecuencias ponderado por su magnitud. Correlaciona directamente con la percepción psicoacústica de 'brillo' u 'oscuridad' sonora. Un centroide bajo (< 1600 Hz) caracteriza al Raw y Hypnotic Techno; un centroide elevado (> 2600 Hz) define la estridencia de Acid, Industrial o Peak Time.",
+        "formula": "fc = ∑ (f · |X(f)|) / ∑ |X(f)|",
+        "impact": "Permite emparejar pistas por balance tímbrico para que la mezcla no suene ni opaca ni chillona."
+    },
+    {
+        "term": "Spectral Flatness (Entropía de Wiener)",
+        "category": "DSP & Acústica",
+        "tag": "RUIDO / TONAL",
+        "color": "#10b981",
+        "icon": "📐",
+        "definition": "Medida del aplanamiento espectral calculada como el cociente entre la media geométrica y la media aritmética del espectro de potencia. Valores cercanos a 0 indican presencia de tonos armónicos puros (sintetizadores de Melodic Techno), mientras que valores cercanos a 1 indican ruido blanco o percusiones metálicas (Hard Groove / Industrial).",
+        "formula": "Flatness = exp( (1/N) ∑ ln(|X|^2) ) / ( (1/N) ∑ |X|^2 )",
+        "impact": "Separa automáticamente tracks melódicos y armónicos de producciones percusivas y ruidosas."
+    },
+    {
+        "term": "Drop Window MIR (Ventana de Clímax)",
+        "category": "DSP & Acústica",
+        "tag": "DETECCIÓN",
+        "color": "#ef4444",
+        "icon": "💥",
+        "definition": "Algoritmo de perfilado energético por RMS que analiza la canción en bloques de 4 segundos para localizar la ventana de 12 segundos con máxima presión acústica (Drop 1 o Drop 2). Al omitir intros minimalistas y parones etéreos, la extracción de descriptores se realiza exclusivamente en el clímax sonoro.",
+        "formula": "Ventana 12s @ Max RMS Energy Profile",
+        "impact": "Evita falsos positivos de género derivados de introducciones desnudas o breakdowns ambientales."
+    },
+    {
+        "term": "Rumble Sub-Bass Ratio (20–60 Hz vs 60–140 Hz)",
+        "category": "DSP & Acústica",
+        "tag": "SUB-GRAVES",
+        "color": "#3b82f6",
+        "icon": "🔊",
+        "definition": "Cociente entre la energía sub-grave continua (cola de rumble generada con reverb/retraso filtrado) y el golpe seco del bombo (punch). Crucial en el Techno contemporáneo: permite discernir si un track tiene un subgrave rodante masivo (Hard/Raw Techno) o una línea de bajo corta y punteada (Tech House / Melodic).",
+        "formula": "Ratio = E(20–60 Hz) / E(60–140 Hz)",
+        "impact": "Previene saturación en el sistema de sonido del club al ecualizar los subgraves en la mezcla."
+    },
+    {
+        "term": "Danzabilidad (Danceability)",
+        "category": "DSP & Acústica",
+        "tag": "PSICO-RITMO",
+        "color": "#a855f7",
+        "icon": "💃",
+        "definition": "Descriptor psicoacústico que evalúa la regularidad rítmica, la estabilidad del pulso 4-on-the-floor, la fuerza de los transitorios percusivos y la consistencia del groove. Puntuación del 0% al 100% que predice la naturalidad con la que el público responde con movimiento corporal continuo en pista.",
+        "formula": "Algoritmo Multi-Onsets + Regularidad de Fase",
+        "impact": "Garantiza tracks con tracción física irresistible para mantener la pista de baile en movimiento."
+    },
+    {
+        "term": "LUFS Integrado & True Peak",
+        "category": "DSP & Acústica",
+        "tag": "SONORIDAD",
+        "color": "#14b8a6",
+        "icon": "📏",
+        "definition": "Loudness Units relative to Full Scale según norma internacional EBU R128 e ITU-R BS.1770. Mide el volumen percibido por el oído humano en lugar del pico eléctrico. El True Peak detecta picos inter-muestrales generados tras la conversión analógica, evitando distorsión en etapas de potencia.",
+        "formula": "EBU R128 (-14 a -6 LUFS) • True Peak < -0.5 dBTP",
+        "impact": "Nivelación matemática de ganancias entre temas para no tocar el trim del mezclador durante la sesión."
+    },
+    {
+        "term": "Dynamic Range (DR / Rango Dinámico)",
+        "category": "DSP & Acústica",
+        "tag": "DINÁMICA",
+        "color": "#f97316",
+        "icon": "🎚️",
+        "definition": "Diferencia de sonoridad entre los pasajes más enérgicos del track y el promedio RMS general (medición estilo DR Meter). Un rango dinámico adecuado preserva el impacto del kick y evita la fatiga auditiva en el público durante sesiones de más de tres horas.",
+        "formula": "DR = Top 20% RMS - Media Acústica (dB)",
+        "impact": "Mantiene la pegada física en el pecho sin emborronar las frecuencias medias del sintetizador."
+    },
+    {
+        "term": "Teorema de Nyquist-Shannon",
+        "category": "DSP & Acústica",
+        "tag": "MUESTREO",
+        "color": "#6366f1",
+        "icon": "📉",
+        "definition": "Ley matemática de procesamiento digital de señales: para muestrear una onda analógica sin distorsión por aliasing, la frecuencia de muestreo (Fs) debe ser estrictamente superior al doble de la componente espectral más alta (Fmax). Por ello, el estándar de audio CD a 44.1 kHz cubre exactamente el límite del oído humano hasta 22.05 kHz.",
+        "formula": "Fs ≥ 2 · Fmax • Límite Nyquist = Fs / 2",
+        "impact": "Explica por qué un MP3 de 128 kbps con corte a 16 kHz suena apagado frente a un FLAC sin pérdidas a 44.1/48 kHz."
+    },
+    {
+        "term": "Dithering & Ruido TPDF",
+        "category": "DSP & Acústica",
+        "tag": "CUANTIZACIÓN",
+        "color": "#84cc16",
+        "icon": "🎲",
+        "definition": "Inyección intencional de ruido estocástico no correlacionado con función de densidad triangular (TPDF) al reducir la profundidad de bits (ej. de 24-bit o 32-bit float a 16-bit). Elimina la distorsión armónica no lineal generada por el truncamiento de muestras, transformando el error en un suave siseo uniforme inaudible.",
+        "formula": "TPDF Dither: e[n] = (rand1 - rand2) · LSB",
+        "impact": "Preserva la reverberación y colas de silencio sin chirridos digitales en los breakdowns de cabina."
+    },
+    {
+        "term": "Cancelación de Fase en Subgraves",
+        "category": "DSP & Acústica",
+        "tag": "FASE / CLUB",
+        "color": "#ef4444",
+        "icon": "⚠️",
+        "definition": "Interferencia destructiva originada cuando dos pistas reproducen simultáneamente componentes en la banda de 30-100 Hz con desfase cercano a 180°. Las presiones acústicas se anulan físicamente en el aire del club, haciendo desaparecer por completo la pegada del bombo en la pista.",
+        "formula": "Δθ = 180° ⇒ y_total = y1 - y2 ≈ 0",
+        "impact": "Exige la regla de oro: nunca mezclar dos bombos con sus faders de LOW abiertos a la vez (Bass Swapping)."
+    },
+    {
         "term": "BPM (Beats Per Minute)",
-        "category": "Tempo",
-        "definition": "Número de pulsaciones por minuto que determina la velocidad de una pista. En CleanDJmix PRO se calcula con resolución centesimal (ej. 128.00)."
+        "category": "Cabina & Decks",
+        "tag": "TEMPO",
+        "color": "#06b6d4",
+        "icon": "⏱️",
+        "definition": "Número de pulsaciones por minuto que determina la velocidad de una pista. En BeatWave Pro se calcula mediante autocorrelación de onsets con resolución centesimal (ej. 128.00 BPM) para un anclaje de Beatgrid perfecto.",
+        "formula": "BPM = 60 / Periodo entre Beats (s)",
+        "impact": "Alinea transiciones y loops sin que los temas se descompasen con el tiempo."
     },
     {
         "term": "Camelot Wheel",
-        "category": "Armonía",
-        "definition": "Sistema visual creado por Mark Davis que mapea las 24 claves musicales a números del 1 al 12 y letras A (menor) y B (mayor) para mezclas armónicas intuitivas."
+        "category": "Armonía & Camelot",
+        "tag": "ARMONÍA",
+        "color": "#ec4899",
+        "icon": "🎡",
+        "definition": "Sistema visual creado por Mark Davis que mapea las 24 claves musicales a números del 1 al 12 y letras A (menor) y B (mayor) para mezclas armónicas intuitivas sin notas disonantes.",
+        "formula": "12 cuadrantes horarios • Claves Menores (A) / Mayores (B)",
+        "impact": "Garantiza transiciones melódicas y acordes en armonía pura (+1, -1, modo relativo)."
     },
     {
         "term": "Tone Play",
-        "category": "Técnica",
-        "definition": "Técnica de DJing que consiste en reordenar o cambiar el tono de fragmentos sonoros mediante Hot Cues en los pads para interpretar una melodía diferente sobre el compás."
+        "category": "Cabina & Decks",
+        "tag": "TÉCNICA",
+        "color": "#38bdf8",
+        "icon": "🎹",
+        "definition": "Técnica de DJing que consiste en reordenar o cambiar el tono de fragmentos sonoros mediante Hot Cues afinados en los 8 pads para interpretar una melodía diferente sobre el compás.",
+        "formula": "8 Cues afinados a notas de la escala diatónica",
+        "impact": "Permite crear remixes en riguroso directo sin sintetizadores externos."
     },
     {
         "term": "Wordplay Transition",
-        "category": "Transición",
-        "definition": "Técnica de cambio de pista donde la última palabra de la vocal del tema A se conecta con la misma palabra o rima idéntica en el inicio vocal del tema B."
+        "category": "Cabina & Decks",
+        "tag": "TRANSICIÓN",
+        "color": "#f59e0b",
+        "icon": "🗣️",
+        "definition": "Técnica de cambio de pista donde la última palabra de la vocal del tema A se conecta con la misma palabra o rima idéntica en el inicio vocal del tema B.",
+        "formula": "Corte de fader milimétrico en la última sílaba vocal",
+        "impact": "Crea una conexión mental instantánea en el público en cambios de género imprevistos."
     },
     {
         "term": "Downbeat (Beat 1.0.0)",
-        "category": "Estructura",
-        "definition": "El primer pulso fuerte de un compás de cuatro tiempos. Marcar el primer Hot Cue en el downbeat exacto garantiza mezclas sin desfase métrico."
+        "category": "Cabina & Decks",
+        "tag": "ESTRUCTURA",
+        "color": "#10b981",
+        "icon": "🎯",
+        "definition": "El primer pulso fuerte de un compás de cuatro tiempos. Marcar el primer Hot Cue en el downbeat exacto garantiza mezclas sin desfase métrico.",
+        "formula": "Compás 4/4 • T1 (1.0.0)",
+        "impact": "Alineación de fraseo (16/32 compases) en Pioneer Rekordbox, Serato DJ y Traktor."
     },
     {
         "term": "Efecto Haas (Precedencia)",
-        "category": "Acústica",
-        "definition": "Fenómeno psicoacústico donde dos sonidos idénticos separados por menos de 35 ms se perciben como uno solo proveniente de la dirección del primer sonido emitido."
+        "category": "Psicoacústica & IA",
+        "tag": "PSICOACÚSTICA",
+        "color": "#8b5cf6",
+        "icon": "👂",
+        "definition": "Fenómeno psicoacústico donde dos sonidos idénticos separados por menos de 35 ms se perciben como uno solo proveniente de la dirección del primer sonido emitido.",
+        "formula": "Δt < 35 ms ⇒ Localización dominada por el primer frente de onda",
+        "impact": "Explica por qué un monitor de cabina con retardo excesivo confunde el oído del DJ durante la mezcla."
     },
     {
         "term": "Missing Fundamental",
-        "category": "Psicoacústica",
-        "definition": "Ilusión perceptiva mediante la cual el cerebro infiere el tono grave más bajo a partir de una serie coherente de sus armónicos superiores, incluso si el subwoofer no emite la fundamental física."
-    },
-    {
-        "term": "LUFS (Loudness Units Full Scale)",
-        "category": "DSP & Master",
-        "definition": "Estándar de medición acústica EBU R128 que calcula la sonoridad percibida por el oído humano en lugar de los picos matemáticos aislados."
+        "category": "Psicoacústica & IA",
+        "tag": "ILUSIÓN AUDITIVA",
+        "color": "#3b82f6",
+        "icon": "🧠",
+        "definition": "Ilusión perceptiva mediante la cual el cerebro infiere el tono grave más bajo a partir de una serie coherente de sus armónicos superiores, incluso si el subwoofer no emite la fundamental física.",
+        "formula": "f_fundamental = mcd(f_armónico_1, f_armónico_2, ...)",
+        "impact": "Permite que los bombos suenen profundos en altavoces compactos saturando medios-bajos."
     },
     {
         "term": "Transcode / Fake FLAC",
-        "category": "Forensics",
-        "definition": "Archivo con extensión de formato sin pérdidas (como .flac) que en realidad fue generado a partir de una fuente lossy (MP3). Se detecta por un corte abrupto de frecuencias por debajo de 20 kHz."
+        "category": "Metadatos & Suites",
+        "tag": "FORENSE",
+        "color": "#ef4444",
+        "icon": "🕵️",
+        "definition": "Archivo con extensión de formato sin pérdidas (como .flac) que en realidad fue generado a partir de una fuente comprimida con pérdidas (MP3). Se detecta por un corte abrupto de frecuencias por debajo de 20 kHz.",
+        "formula": "Corte espectral < 20.0 kHz en contenedor Lossless",
+        "impact": "BeatWave Pro detecta y alerta al DJ sobre pistas fake antes de pincharlas en festivales."
     },
     {
-        "term": "Zero-Crossing (Cruce por Cero)",
-        "category": "Edición DSP",
-        "definition": "Punto de la señal de audio donde la amplitud es exactamente 0 voltios / 0 dBFS. Cortar o fijar Hot Cues en un cruce por cero evita los clics y chasquidos digitales."
+        "term": "ID3v2.4 UTF-8 & Serato GEOB Tags",
+        "category": "Metadatos & Suites",
+        "tag": "METADATOS",
+        "color": "#0284c7",
+        "icon": "💾",
+        "definition": "Estructura binaria de metadatos en formato ID3v2.4 UTF-8 con tramas GEOB encapsuladas. Almacenan Beatgrid milimétrico, BPM dinámico, Hot Cues nombrados y colores RGB leídos directamente por Serato DJ Pro y Pioneer CDJ-3000.",
+        "formula": "Trama GEOB: 'Serato Markers_V2' + 'BeatWave Pro Cues'",
+        "impact": "Carga instantánea de Cues y BPM de alta fidelidad en cualquier reproductor sin reanalizar."
     }
 ]
 
