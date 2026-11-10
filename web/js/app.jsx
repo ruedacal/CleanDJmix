@@ -14556,7 +14556,7 @@ const HotCuesWorkspace = ({
                         </div>
 
                         {/* Tarjetas informativas de Mood, Positividad (Valence) e Intensidad (Arousal) */}
-                        <div className="grid grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
                             <div className="bg-djzinc-950 p-2.5 rounded-lg border border-djzinc-800 flex flex-col justify-between">
                                 <span className="text-[10px] text-gray-400 uppercase font-mono">Atmósfera Sonora</span>
                                 <span className="text-xs font-bold text-amber-300 font-mono mt-1">
@@ -14726,7 +14726,7 @@ const HotCuesWorkspace = ({
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-4 gap-2.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                                 {NV2_COLORS.slice(0, 8).map((cue, idx) => {
                                     const padNum = idx + 1;
                                     const isSelected = (selectedCueId === padNum);
