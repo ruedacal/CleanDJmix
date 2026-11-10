@@ -4392,17 +4392,18 @@ const UserAccountModal = ({
     }, [onClose]);
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[99998] overflow-hidden select-none pointer-events-none">
+        <div className="fixed inset-0 overflow-hidden select-none pointer-events-none" style={{ zIndex: 99998 }}>
             {/* Backdrop Sólido Plano con Desenfoque */}
             <div 
                 className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto" 
+                style={{ zIndex: 99998 }}
                 onClick={onClose}
             />
 
             {/* Columna Lateral Derecha (Slide-over Drawer) - Homogénea de 500px en Desktop, 100% en Móvil */}
             <aside 
-                style={{ width: '100%', maxWidth: '500px' }}
-                className="fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
+                style={{ width: '100%', maxWidth: '500px', zIndex: 99999 }}
+                className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Perfil con Look & Feel BeatWave */}
@@ -7619,18 +7620,19 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
     // MANUAL EXCLUSIVO: COLUMNA LATERAL DERECHA (DESACOPLADA CON PORTAL)
     // ─────────────────────────────────────────────────────────────────────────
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[99998] overflow-hidden select-none pointer-events-none">
+        <div className="fixed inset-0 overflow-hidden select-none pointer-events-none" style={{ zIndex: 99998 }}>
             {/* Backdrop sutil clicable para cerrar */}
             <div 
                 className="fixed inset-0 bg-black/60 backdrop-blur-[1px] pointer-events-auto transition-opacity"
+                style={{ zIndex: 99998 }}
                 onClick={onClose}
                 title="Haz clic fuera para cerrar el manual y volver a la cabina"
             />
 
             {/* Columna Lateral Derecha - Homogénea de 500px en Desktop, 100% en Móvil */}
             <aside 
-                style={{ width: '100%', maxWidth: '500px' }}
-                className="fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#080914] border-l-4 border-l-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
+                style={{ width: '100%', maxWidth: '500px', zIndex: 99999 }}
+                className="fixed top-0 bottom-0 right-0 h-full bg-[#080914] border-l-4 border-l-pink-500 shadow-[-30px_0_70px_rgba(0,0,0,0.95)] flex flex-col font-sans text-gray-100 animate-slideInRight select-none pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabecera del Drawer */}
@@ -12255,13 +12257,14 @@ const AuditWorkspace = ({
                     {/* Backdrop oscuro para móvil y desktop */}
                     <div 
                         onClick={() => setSidebarOpen(false)} 
-                        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[99998] transition-opacity animate-fadeIn" 
+                        className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity animate-fadeIn" 
+                        style={{ zIndex: 99998 }}
                         aria-hidden="true" 
                     />
                     <aside 
                         key={currentTrack ? currentTrack.id : "none"} 
-                        style={{ width: '100%', maxWidth: '500px' }}
-                        className="ws-inspector fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+                        style={{ width: '100%', maxWidth: '500px', zIndex: 99999 }}
+                        className="ws-inspector fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                     >
                     {/* Cabecera del Inspector unificada con el Look & Feel de BeatWave */}
                     <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
@@ -18294,13 +18297,14 @@ const SpotifyWorkspace = ({
                 <>
                     <div 
                         onClick={() => setSpInspectorOpen(false)} 
-                        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[99998] transition-opacity animate-fadeIn" 
+                        className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity animate-fadeIn" 
+                        style={{ zIndex: 99998 }}
                         aria-hidden="true" 
                     />
                     <aside 
                         key={currentTrack ? currentTrack.id : "sp_none"} 
-                        style={{ width: '100%', maxWidth: '500px' }}
-                        className="fixed top-0 bottom-0 right-0 z-[99999] h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
+                        style={{ width: '100%', maxWidth: '500px', zIndex: 99999 }}
+                        className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-amber-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight"
                     >
                     <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0d0e1c] flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
@@ -30084,12 +30088,16 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch">
                 {/* COLUMNA IZQUIERDA: Carátula 1:1 Cuadrada Full Height + Título + Artista + Taxonomía */}
                 <div className="flex items-stretch gap-3 min-w-0">
-                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 aspect-square self-stretch rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none">
+                    <div 
+                        className="relative rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none"
+                        style={{ width: '68px', height: '68px', minWidth: '68px', minHeight: '68px', aspectRatio: '1 / 1' }}
+                    >
                         <img 
                             src={getValidCover(deck.cover)} 
                             alt="Carátula" 
                             onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                            className="w-full h-full object-cover aspect-square transition-transform group-hover:scale-105 duration-300"
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
                         {deck.duration && (
@@ -31353,37 +31361,37 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             </div>
 
             {/* GUARDIÁN TÁCTICO ANTI-MUDDY (REDUCIDO Y UBICADO ENCIMA DE LOS DECKS) */}
-            <section className="mb-3.5">
-                <div className={`p-2.5 sm:px-4 sm:py-2 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-2.5 ${
+            <section className="mb-2.5">
+                <div className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${
                     anti_muddy.status === 'danger'
-                    ? 'bg-red-950/40 border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.3)]'
+                    ? 'bg-red-950/40 border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.25)]'
                     : anti_muddy.status === 'warning'
-                    ? 'bg-amber-950/40 border-amber-500/80 shadow-[0_0_15px_rgba(245,158,11,0.25)]'
-                    : 'bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                    ? 'bg-amber-950/40 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                    : 'bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
                 }`}>
-                    <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-xl shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-base shrink-0">
                             {anti_muddy.status === 'danger' ? '🛡️' : anti_muddy.status === 'warning' ? '⚡' : '🟢'}
                         </span>
                         <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="font-syne font-black text-xs sm:text-sm text-white tracking-wide">{anti_muddy.title}</h3>
-                                <span className={`px-2 py-0.2 rounded-full text-[9px] font-mono font-black uppercase tracking-wider shrink-0 ${
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <h3 className="font-syne font-black text-xs text-white tracking-wide">{anti_muddy.title}</h3>
+                                <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${
                                     anti_muddy.status === 'danger' ? 'bg-red-600 text-white' : anti_muddy.status === 'warning' ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-black'
                                 }`}>
                                     {anti_muddy.tag}
                                 </span>
                             </div>
-                            <p className="text-[11px] text-zinc-300 truncate mt-0.5">{anti_muddy.message}</p>
+                            <p className="text-[10.5px] text-zinc-300 truncate mt-0.5">{anti_muddy.message}</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0 flex-wrap justify-between md:justify-end text-[11px] font-mono">
+                    <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono">
                         {/* BOTÓN INTERACTIVO DE ACCIÓN CORRECTIVA ANTI-MUDDY */}
                         <button
                             type="button"
                             onClick={handleApplyCorrection}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer shadow-md border ${
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold transition-all cursor-pointer shadow-sm border ${
                                 lowEqApplied
                                 ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500 text-emerald-300 hover:text-white'
                                 : 'bg-red-900/90 hover:bg-red-800 border-red-500 text-white animate-pulse'
@@ -31392,10 +31400,10 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                         >
                             <span>{lowEqApplied ? '✓' : '⚡'}</span>
                             <span className="text-djcyan-300 font-bold">ACCIÓN:</span>
-                            <span>{lowEqApplied ? 'Restablecer EQ (Deshacer)' : (anti_muddy.action || 'Corta Low EQ en Deck 2 (-10dB)')}</span>
+                            <span className="truncate max-w-[260px]">{lowEqApplied ? 'Restablecer EQ (Deshacer)' : (anti_muddy.action || 'Corta Low EQ en Deck 2 (-10dB)')}</span>
                         </button>
 
-                        <div className="flex items-center gap-2.5 text-zinc-400">
+                        <div className="flex items-center gap-2 text-zinc-400 text-[10px]">
                             <span>CAMELOT: <strong style={{ color: harmonic.color }}>{harmonic.badge}</strong></span>
                             <span>Δ LUFS: <strong className="text-white">{state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta} dB</strong></span>
                         </div>

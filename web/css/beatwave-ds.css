@@ -124,7 +124,7 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 /* ── Shell: top bar ─────────────────────────────────────────────────── */
 .bw-topbar {
     position: relative;
-    z-index: 100;
+    z-index: 1000 !important;
     background: rgba(9, 9, 11, 0.86);
     backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
@@ -249,7 +249,7 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 /* ── Popover / menu ─────────────────────────────────────────────────── */
 .bw-popover {
     position: absolute;
-    z-index: 200;
+    z-index: 1100 !important;
     background: rgba(20, 20, 24, 0.98);
     border: 1px solid var(--bw-line-strong);
     border-radius: var(--bw-radius-md);

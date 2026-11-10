@@ -24,7 +24,7 @@ const HelpMenu = ({ items }) => {
     }, [open]);
 
     return (
-        <div ref={rootRef} className="relative z-50">
+        <div ref={rootRef} className="relative z-50" style={{ zIndex: 1050 }}>
             <button
                 type="button"
                 onClick={() => setOpen((value) => !value)}

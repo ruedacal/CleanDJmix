@@ -163,7 +163,10 @@ export function RegisterFlowModal({
     };
 
     return (
-        <div className="fixed inset-0 z-[99999] overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 select-none animate-fadeIn">
+        <div 
+            className="fixed inset-0 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 select-none animate-fadeIn"
+            style={{ zIndex: 99999 }}
+        >
             <div 
                 ref={dialogRef}
                 tabIndex={-1}

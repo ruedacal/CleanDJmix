@@ -25,7 +25,11 @@ export const MapCamelotOverlay = ({ open, onToggle, selectedKey, keyFilter, onFi
     const rIn = 32;
 
     return (
-        <section className={`ws-glass w-[240px] flex flex-col transition-all overflow-hidden select-none ${open ? 'h-[285px]' : 'h-[38px]'}`} aria-label="Rueda Camelot">
+        <section 
+            style={{ width: '240px', height: open ? '280px' : '38px', padding: 0 }}
+            className="ws-glass flex flex-col transition-all overflow-hidden select-none" 
+            aria-label="Rueda Camelot"
+        >
             <header className="ws-glass-head shrink-0 h-[38px] px-3">
                 <span className="ws-glass-title">
                     <ShellIcons.Disc size={13} />
@@ -133,7 +137,11 @@ export const MapNavOverlay = ({ open = true, onToggle, zoom, onZoom, onReset, st
     );
 
     return (
-        <section className={`ws-glass w-[240px] flex flex-col transition-all overflow-hidden select-none ${open ? 'h-[285px]' : 'h-[38px]'}`} aria-label="Navegación y zoom">
+        <section 
+            style={{ width: '240px', height: open ? '280px' : '38px', padding: 0 }}
+            className="ws-glass flex flex-col transition-all overflow-hidden select-none" 
+            aria-label="Navegación y zoom"
+        >
             <header className="ws-glass-head shrink-0 h-[38px] px-3">
                 <span className="ws-glass-title">
                     <ShellIcons.Sliders size={13} />
@@ -158,7 +166,7 @@ export const MapNavOverlay = ({ open = true, onToggle, zoom, onZoom, onReset, st
             </header>
 
             {open && (
-                <div className="flex-1 flex flex-col justify-between p-3 pt-2 overflow-hidden">
+                <div className="flex-1 flex flex-col justify-between p-2.5 pt-1.5 overflow-hidden">
                     <div className="grid grid-cols-3 gap-1.5 place-items-center">
                         <span />
                         {pad(0, 30, 'Mover arriba', ShellIcons.ChevronUp)}
