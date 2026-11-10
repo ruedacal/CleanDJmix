@@ -4371,13 +4371,23 @@ const UserAccountModal = ({
         setTimeout(() => setSaveSuccessMsg(''), 3000);
     };
 
-    // Cerrar modal con tecla Escape
+    // Cerrar modal con tecla Escape o botón Atrás de móvil (History API popstate)
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') onClose();
         };
+        try {
+            window.history.pushState({ modal: 'userAccount' }, '');
+        } catch (_) {}
+        const handlePopState = () => {
+            onClose();
+        };
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('popstate', handlePopState);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('popstate', handlePopState);
+        };
     }, [onClose]);
 
     return ReactDOM.createPortal(
@@ -4417,10 +4427,11 @@ const UserAccountModal = ({
                         <button 
                             type="button" 
                             onClick={onClose} 
-                            className="w-8 h-8 rounded-xl bg-[#14162a] hover:bg-cyan-950/60 text-gray-400 hover:text-cyan-300 flex items-center justify-center border border-djzinc-700 hover:border-cyan-400/80 transition-colors cursor-pointer"
+                            className="h-8 px-2.5 sm:px-2 rounded-xl bg-[#14162a] hover:bg-cyan-950/60 text-gray-300 hover:text-cyan-300 flex items-center justify-center gap-1.5 border border-djzinc-700 hover:border-cyan-400/80 transition-colors cursor-pointer text-xs font-mono font-bold"
                             title="Cerrar (ESC)"
                         >
                             <Icons.Close size={15} />
+                            <span className="sm:hidden font-mono text-[11px]">Cerrar</span>
                         </button>
                     </div>
                 </div>
@@ -5116,18 +5127,46 @@ const UserAccountModal = ({
                                         {newMethodType === 'card' && (
                                             <div className="space-y-2 pt-1 text-xs">
                                                 <div>
-                                                    <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">Número de Tarjeta</label>
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder="4532 •••• •••• ••••"
-                                                        value={newCardNumber}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value.replace(/\D/g, '').slice(0, 16);
-                                                            const parts = val.match(/.{1,4}/g);
-                                                            setNewCardNumber(parts ? parts.join(' ') : val);
-                                                        }}
-                                                        className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
-                                                    />
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <label className="text-[10px] text-zinc-400 uppercase font-bold">Número de Tarjeta</label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setNewCardNumber('4242 4242 4242 4242');
+                                                                setNewCardExpiry('12/28');
+                                                                setNewCardCvc('888');
+                                                                setNewCardHolder('DJ TESTER PRO');
+                                                            }}
+                                                            className="text-[9.5px] font-mono font-bold text-cyan-400 hover:text-cyan-300 underline cursor-pointer flex items-center gap-1"
+                                                            title="Rellenar datos de prueba para verificar pasarela en local"
+                                                        >
+                                                            <span>⚡</span> <span>Rellenar Tarjeta Demo</span>
+                                                        </button>
+                                                    </div>
+                                                    <div className="relative">
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="4532 •••• •••• ••••"
+                                                            value={newCardNumber}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value.replace(/\D/g, '').slice(0, 16);
+                                                                const parts = val.match(/.{1,4}/g);
+                                                                setNewCardNumber(parts ? parts.join(' ') : val);
+                                                            }}
+                                                            className="w-full pl-3 pr-20 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono tracking-wider"
+                                                        />
+                                                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+                                                            {newCardNumber.startsWith('4') ? (
+                                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-600 text-white tracking-wider">VISA</span>
+                                                            ) : newCardNumber.startsWith('5') ? (
+                                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-600 text-white tracking-wider">MC</span>
+                                                            ) : newCardNumber.startsWith('3') ? (
+                                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-600 text-white tracking-wider">AMEX</span>
+                                                            ) : (
+                                                                <span className="text-[9px] font-mono text-zinc-500 font-bold">CARD</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <div>
@@ -5169,20 +5208,40 @@ const UserAccountModal = ({
                                         )}
 
                                         {newMethodType === 'applepay' && (
-                                            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2">
+                                            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2.5">
                                                 <p className="text-[11px] text-zinc-300">Vincula tus tarjetas configuradas en el Wallet de Apple mediante Touch ID o Face ID.</p>
-                                                <div className="py-2 px-4 rounded-xl bg-white text-black font-black text-xs inline-flex items-center gap-2 shadow cursor-pointer">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const id = 'pm_' + Date.now();
+                                                        setSavedPaymentMethods(prev => [...prev, { id, type: 'applepay', label: 'Apple Pay (Wallet)', isDefault: true }]);
+                                                        setShowAddPaymentForm(false);
+                                                        setBillingMsg({ text: '✓ Apple Pay vinculado correctamente con Touch ID/Face ID', type: 'success' });
+                                                        setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
+                                                    }}
+                                                    className="py-2.5 px-4 rounded-xl bg-white hover:bg-zinc-100 text-black font-black text-xs inline-flex items-center gap-2 shadow cursor-pointer transition-transform active:scale-95"
+                                                >
                                                     <span> Pay</span> <span>Conectar Apple Wallet</span>
-                                                </div>
+                                                </button>
                                             </div>
                                         )}
 
                                         {newMethodType === 'gpay' && (
-                                            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2">
+                                            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2.5">
                                                 <p className="text-[11px] text-zinc-300">Conecta tu cuenta de Google Play / Google Pay para facturación directa.</p>
-                                                <div className="py-2 px-4 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-bold text-xs inline-flex items-center gap-2 shadow cursor-pointer hover:bg-zinc-800">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const id = 'pm_' + Date.now();
+                                                        setSavedPaymentMethods(prev => [...prev, { id, type: 'gpay', label: 'Google Pay / Google Play', isDefault: true }]);
+                                                        setShowAddPaymentForm(false);
+                                                        setBillingMsg({ text: '✓ Google Play / Google Pay vinculado como método predeterminado', type: 'success' });
+                                                        setTimeout(() => setBillingMsg({ text: '', type: '' }), 3000);
+                                                    }}
+                                                    className="py-2.5 px-4 rounded-xl bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-white font-bold text-xs inline-flex items-center gap-2 shadow cursor-pointer transition-transform active:scale-95"
+                                                >
                                                     <span>G Pay</span> <span>Conectar con Google</span>
-                                                </div>
+                                                </button>
                                             </div>
                                         )}
 
@@ -5360,18 +5419,25 @@ const UserAccountModal = ({
                     )}
                 </div>
 
-                {/* Pie del Drawer */}
-                <div className="px-5 py-3 bg-[#080811] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs">
-                    <span className="text-[10px] text-gray-500">
+                {/* Pie del Drawer - Sticky con máxima ergonomía de pulgar en móvil */}
+                <div className="sticky bottom-0 px-4 sm:px-5 py-3 bg-[#080811]/95 backdrop-blur-md border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs z-20">
+                    <span className="text-[10px] text-gray-500 hidden sm:inline">
                         BeatWave Pro v1.0.0 • Centro de Control DJ
                     </span>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer"
-                    >
-                        Cerrar (ESC)
-                    </button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <span className="text-[10px] text-cyan-400 font-bold sm:hidden flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                            SESIÓN CABINA
+                        </span>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 sm:py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black text-xs transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-1.5"
+                        >
+                            <Icons.Close size={14} />
+                            <span>Cerrar Panel</span>
+                        </button>
+                    </div>
                 </div>
             </aside>
         </div>,
@@ -6206,13 +6272,23 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
         return () => clearInterval(timer);
     }, [isSimPlaying, activeSectionKey, simSpeed]);
 
-    // Tecla Escape para cerrar
+    // Tecla Escape para cerrar o botón Atrás de móvil (History API popstate)
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') onClose();
         };
+        try {
+            window.history.pushState({ modal: 'manual' }, '');
+        } catch (_) {}
+        const handlePopState = () => {
+            onClose();
+        };
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('popstate', handlePopState);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('popstate', handlePopState);
+        };
     }, [onClose]);
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -7554,10 +7630,11 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                         <button 
                             type="button"
                             onClick={onClose}
-                            className="w-8 h-8 rounded-xl bg-[#14162a] hover:bg-rose-950 text-gray-300 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
+                            className="h-8 px-2.5 sm:px-2 rounded-xl bg-[#14162a] hover:bg-rose-950 text-gray-300 hover:text-white flex items-center justify-center gap-1.5 font-mono text-xs border border-djzinc-700 transition-colors cursor-pointer"
                             title="Cerrar manual (ESC)"
                         >
                             <Icons.Close size={14} className="inline-block align-[-2px]" />
+                            <span className="sm:hidden font-mono text-[11px]">Cerrar</span>
                         </button>
                     </div>
                 </div>
@@ -7607,19 +7684,26 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     )}
                 </div>
 
-                {/* Pie del Drawer */}
-                <div className="px-5 py-3 bg-[#0a0c18] border-t border-djzinc-750 flex items-center justify-between shrink-0 font-mono text-xs">
-                    <span className="text-gray-300 text-[10.5px] flex items-center gap-1.5">
+                {/* Pie del Drawer - Sticky en móvil para máxima ergonomía */}
+                <div className="sticky bottom-0 px-4 sm:px-5 py-3 bg-[#0a0c18]/95 backdrop-blur-md border-t border-djzinc-750 flex items-center justify-between shrink-0 font-mono text-xs z-20">
+                    <span className="text-gray-300 text-[10.5px] hidden sm:flex items-center gap-1.5">
                         <Icons.Bulb size={14} className="inline-block align-[-2px]" />
                         <span>Pulsa <strong>Plegar</strong> para usar la cabina visible al 40% detrás sin cerrar</span>
                     </span>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-1.5 rounded-xl bg-[#16182e] hover:bg-[#202446] text-white font-black text-xs border border-djzinc-700 transition-colors cursor-pointer"
-                    >
-                        Cerrar (ESC)
-                    </button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <span className="text-[10px] text-pink-400 font-bold sm:hidden flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse"></span>
+                            MANUAL DJ
+                        </span>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 sm:py-1.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs border border-pink-500/60 transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-1.5"
+                        >
+                            <Icons.Close size={14} className="inline-block align-[-2px]" />
+                            <span>Cerrar Manual</span>
+                        </button>
+                    </div>
                 </div>
             </aside>
         </div>,
@@ -12161,11 +12245,12 @@ const AuditWorkspace = ({
                         <div className="flex items-center gap-2 shrink-0">
                             <button 
                                 onClick={() => setSidebarOpen(false)} 
-                                className="w-8 h-8 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-400 hover:text-amber-300 flex items-center justify-center border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer"
+                                className="h-8 px-2.5 sm:px-2 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-300 hover:text-amber-300 flex items-center justify-center gap-1.5 border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer text-xs font-mono font-bold"
                                 aria-label={t('btn_close_panel') || 'Cerrar Panel'}
                                 title={t('btn_close_panel') || 'Cerrar Panel'}
                             >
                                 <Icons.Close size={15} />
+                                <span className="sm:hidden font-mono text-[11px]">Cerrar</span>
                             </button>
                         </div>
                     </div>
@@ -12705,6 +12790,24 @@ const AuditWorkspace = ({
                     >
                         <Icons.Trash size={14} className="inline-block align-[-2px]" />
                         <span>Quitar este track del análisis</span>
+                    </button>
+                </div>
+
+                {/* Barra Sticky Inferior en Móvil para Guardar o Cerrar en la Zona del Pulgar */}
+                <div className="sticky bottom-0 px-4 py-3 bg-[#0a0b16]/95 backdrop-blur-md border-t border-djzinc-800 flex items-center justify-between gap-2 shrink-0 sm:hidden z-20 font-mono text-xs">
+                    <button
+                        type="button"
+                        onClick={() => setSidebarOpen(false)}
+                        className="px-3.5 py-2 rounded-xl bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 font-bold transition-colors cursor-pointer"
+                    >
+                        Cerrar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleGuardarTrack}
+                        className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black uppercase text-xs transition-all cursor-pointer shadow-md active:scale-95 text-center"
+                    >
+                        Aplicar Cambios ➔
                     </button>
                 </div>
                     </aside>
@@ -18180,9 +18283,10 @@ const SpotifyWorkspace = ({
                             <button 
                                 onClick={() => setSpInspectorOpen(false)}
                                 title="Cerrar inspector"
-                                className="w-8 h-8 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-400 hover:text-amber-300 flex items-center justify-center border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer"
+                                className="h-8 px-2.5 sm:px-2 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-300 hover:text-amber-300 flex items-center justify-center gap-1.5 border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer text-xs font-mono font-bold"
                             >
                                 <Icons.Close size={15} />
+                                <span className="sm:hidden font-mono text-[11px]">Cerrar</span>
                             </button>
                         </div>
                     </div>
@@ -18254,9 +18358,16 @@ const SpotifyWorkspace = ({
                             <div className="flex justify-between"><span className="text-gray-400">Formato Destino:</span><span className="font-mono text-djcyan-400 font-bold uppercase">.{selectedFormat} Lossless</span></div>
                         </div>
                     </div>
-                    <div className="p-3 bg-djzinc-950 border-t border-djzinc-800">
-                        <button onClick={() => lanzarDescargaReal(selectedCount > 0 ? tracks.filter(t => t.selected) : [currentTrack])} className="w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors">
-                            Descargar {selectedCount > 1 ? `Seleccionadas (${selectedCount})` : 'Pista Actual'} .{selectedFormat.toUpperCase()}
+                    <div className="p-3 bg-djzinc-950 border-t border-djzinc-800 flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setSpInspectorOpen(false)}
+                            className="px-3.5 py-2 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-bold text-xs sm:hidden transition-colors cursor-pointer"
+                        >
+                            Cerrar
+                        </button>
+                        <button onClick={() => lanzarDescargaReal(selectedCount > 0 ? tracks.filter(t => t.selected) : [currentTrack])} className="flex-1 py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors">
+                            Descargar {selectedCount > 1 ? `(${selectedCount})` : 'Pista Actual'} .{selectedFormat.toUpperCase()}
                         </button>
                     </div>
                     </aside>

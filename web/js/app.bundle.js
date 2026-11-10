@@ -4421,8 +4421,19 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
+      try {
+        window.history.pushState({ modal: "userAccount" }, "");
+      } catch (_) {
+      }
+      const handlePopState = () => {
+        onClose();
+      };
       window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
+      window.addEventListener("popstate", handlePopState);
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("popstate", handlePopState);
+      };
     }, [onClose]);
     return ReactDOM.createPortal(
       /* @__PURE__ */ React.createElement("div", { className: "fixed top-14 inset-x-0 bottom-0 z-[55] overflow-hidden select-none pointer-events-none" }, /* @__PURE__ */ React.createElement(
@@ -4442,10 +4453,11 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           {
             type: "button",
             onClick: onClose,
-            className: "w-8 h-8 rounded-xl bg-[#14162a] hover:bg-cyan-950/60 text-gray-400 hover:text-cyan-300 flex items-center justify-center border border-djzinc-700 hover:border-cyan-400/80 transition-colors cursor-pointer",
+            className: "h-8 px-2.5 sm:px-2 rounded-xl bg-[#14162a] hover:bg-cyan-950/60 text-gray-300 hover:text-cyan-300 flex items-center justify-center gap-1.5 border border-djzinc-700 hover:border-cyan-400/80 transition-colors cursor-pointer text-xs font-mono font-bold",
             title: "Cerrar (ESC)"
           },
-          /* @__PURE__ */ React.createElement(Icons.Close, { size: 15 })
+          /* @__PURE__ */ React.createElement(Icons.Close, { size: 15 }),
+          /* @__PURE__ */ React.createElement("span", { className: "sm:hidden font-mono text-[11px]" }, "Cerrar")
         ))),
         /* @__PURE__ */ React.createElement("div", { className: "p-4 sm:p-5 border-b border-djzinc-800 bg-[#0a0b16] flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-full overflow-hidden border-2 border-cyan-400 bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]" }, avatarUrl ? /* @__PURE__ */ React.createElement("img", { src: avatarUrl, alt: "Avatar DJ", className: "w-full h-full object-cover" }) : /* @__PURE__ */ React.createElement(Icons.Headphones, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement(
           "button",
@@ -4845,7 +4857,23 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           },
           /* @__PURE__ */ React.createElement("span", { className: "text-sm" }, opt.icon),
           /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, opt.label)
-        ))), newMethodType === "card" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 pt-1 text-xs" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "N\xFAmero de Tarjeta"), /* @__PURE__ */ React.createElement(
+        ))), newMethodType === "card" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 pt-1 text-xs" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold" }, "N\xFAmero de Tarjeta"), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setNewCardNumber("4242 4242 4242 4242");
+              setNewCardExpiry("12/28");
+              setNewCardCvc("888");
+              setNewCardHolder("DJ TESTER PRO");
+            },
+            className: "text-[9.5px] font-mono font-bold text-cyan-400 hover:text-cyan-300 underline cursor-pointer flex items-center gap-1",
+            title: "Rellenar datos de prueba para verificar pasarela en local"
+          },
+          /* @__PURE__ */ React.createElement("span", null, "\u26A1"),
+          " ",
+          /* @__PURE__ */ React.createElement("span", null, "Rellenar Tarjeta Demo")
+        )), /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(
           "input",
           {
             type: "text",
@@ -4856,9 +4884,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
               const parts = val.match(/.{1,4}/g);
               setNewCardNumber(parts ? parts.join(" ") : val);
             },
-            className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
+            className: "w-full pl-3 pr-20 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono tracking-wider"
           }
-        )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Vencimiento (MM/AA)"), /* @__PURE__ */ React.createElement(
+        ), /* @__PURE__ */ React.createElement("div", { className: "absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none" }, newCardNumber.startsWith("4") ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-600 text-white tracking-wider" }, "VISA") : newCardNumber.startsWith("5") ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-600 text-white tracking-wider" }, "MC") : newCardNumber.startsWith("3") ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-600 text-white tracking-wider" }, "AMEX") : /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-zinc-500 font-bold" }, "CARD")))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block mb-1" }, "Vencimiento (MM/AA)"), /* @__PURE__ */ React.createElement(
           "input",
           {
             type: "text",
@@ -4889,7 +4917,39 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             onChange: (e) => setNewCardHolder(e.target.value),
             className: "w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white outline-none focus:border-cyan-400 font-mono"
           }
-        ))), newMethodType === "applepay" && /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2" }, /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-300" }, "Vincula tus tarjetas configuradas en el Wallet de Apple mediante Touch ID o Face ID."), /* @__PURE__ */ React.createElement("div", { className: "py-2 px-4 rounded-xl bg-white text-black font-black text-xs inline-flex items-center gap-2 shadow cursor-pointer" }, /* @__PURE__ */ React.createElement("span", null, "\uF8FF Pay"), " ", /* @__PURE__ */ React.createElement("span", null, "Conectar Apple Wallet"))), newMethodType === "gpay" && /* @__PURE__ */ React.createElement("div", { className: "p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2" }, /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-300" }, "Conecta tu cuenta de Google Play / Google Pay para facturaci\xF3n directa."), /* @__PURE__ */ React.createElement("div", { className: "py-2 px-4 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-bold text-xs inline-flex items-center gap-2 shadow cursor-pointer hover:bg-zinc-800" }, /* @__PURE__ */ React.createElement("span", null, "G Pay"), " ", /* @__PURE__ */ React.createElement("span", null, "Conectar con Google"))), newMethodType === "paypal" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 pt-1 text-xs" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block" }, "Email de Cuenta PayPal"), /* @__PURE__ */ React.createElement(
+        ))), newMethodType === "applepay" && /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2.5" }, /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-300" }, "Vincula tus tarjetas configuradas en el Wallet de Apple mediante Touch ID o Face ID."), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              const id = "pm_" + Date.now();
+              setSavedPaymentMethods((prev) => [...prev, { id, type: "applepay", label: "Apple Pay (Wallet)", isDefault: true }]);
+              setShowAddPaymentForm(false);
+              setBillingMsg({ text: "\u2713 Apple Pay vinculado correctamente con Touch ID/Face ID", type: "success" });
+              setTimeout(() => setBillingMsg({ text: "", type: "" }), 3e3);
+            },
+            className: "py-2.5 px-4 rounded-xl bg-white hover:bg-zinc-100 text-black font-black text-xs inline-flex items-center gap-2 shadow cursor-pointer transition-transform active:scale-95"
+          },
+          /* @__PURE__ */ React.createElement("span", null, "\uF8FF Pay"),
+          " ",
+          /* @__PURE__ */ React.createElement("span", null, "Conectar Apple Wallet")
+        )), newMethodType === "gpay" && /* @__PURE__ */ React.createElement("div", { className: "p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-2.5" }, /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-300" }, "Conecta tu cuenta de Google Play / Google Pay para facturaci\xF3n directa."), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              const id = "pm_" + Date.now();
+              setSavedPaymentMethods((prev) => [...prev, { id, type: "gpay", label: "Google Pay / Google Play", isDefault: true }]);
+              setShowAddPaymentForm(false);
+              setBillingMsg({ text: "\u2713 Google Play / Google Pay vinculado como m\xE9todo predeterminado", type: "success" });
+              setTimeout(() => setBillingMsg({ text: "", type: "" }), 3e3);
+            },
+            className: "py-2.5 px-4 rounded-xl bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-white font-bold text-xs inline-flex items-center gap-2 shadow cursor-pointer transition-transform active:scale-95"
+          },
+          /* @__PURE__ */ React.createElement("span", null, "G Pay"),
+          " ",
+          /* @__PURE__ */ React.createElement("span", null, "Conectar con Google")
+        )), newMethodType === "paypal" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 pt-1 text-xs" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-zinc-400 uppercase font-bold block" }, "Email de Cuenta PayPal"), /* @__PURE__ */ React.createElement(
           "input",
           {
             type: "email",
@@ -5008,15 +5068,16 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           },
           "PDF \u2913"
         )))))))),
-        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#080811] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "BeatWave Pro v1.0.0 \u2022 Centro de Control DJ"), /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("div", { className: "sticky bottom-0 px-4 sm:px-5 py-3 bg-[#080811]/95 backdrop-blur-md border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs z-20" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 hidden sm:inline" }, "BeatWave Pro v1.0.0 \u2022 Centro de Control DJ"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-cyan-400 font-bold sm:hidden flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" }), "SESI\xD3N CABINA"), /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
             onClick: onClose,
-            className: "px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer"
+            className: "px-4 py-2 sm:py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black text-xs transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-1.5"
           },
-          "Cerrar (ESC)"
-        ))
+          /* @__PURE__ */ React.createElement(Icons.Close, { size: 14 }),
+          /* @__PURE__ */ React.createElement("span", null, "Cerrar Panel")
+        )))
       )),
       document.body
     );
@@ -5674,8 +5735,19 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
+      try {
+        window.history.pushState({ modal: "manual" }, "");
+      } catch (_) {
+      }
+      const handlePopState = () => {
+        onClose();
+      };
       window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
+      window.addEventListener("popstate", handlePopState);
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("popstate", handlePopState);
+      };
     }, [onClose]);
     useEffect6(() => {
       const canvas = canvasRef.current;
@@ -6514,10 +6586,11 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           {
             type: "button",
             onClick: onClose,
-            className: "w-8 h-8 rounded-xl bg-[#14162a] hover:bg-rose-950 text-gray-300 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer",
+            className: "h-8 px-2.5 sm:px-2 rounded-xl bg-[#14162a] hover:bg-rose-950 text-gray-300 hover:text-white flex items-center justify-center gap-1.5 font-mono text-xs border border-djzinc-700 transition-colors cursor-pointer",
             title: "Cerrar manual (ESC)"
           },
-          /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+          /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
+          /* @__PURE__ */ React.createElement("span", { className: "sm:hidden font-mono text-[11px]" }, "Cerrar")
         ))),
         renderSectionsBar(),
         /* @__PURE__ */ React.createElement("div", { className: "px-5 py-2 bg-[#0c0e1e] border-b border-djzinc-750 flex items-center justify-between text-xs font-mono shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold uppercase text-[10px] tracking-wider hidden sm:inline" }, "Vistas de Contenido:"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#14162c] p-1 rounded-xl border border-djzinc-750" }, [
@@ -6537,15 +6610,16 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           tb.label
         )))),
         /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-6" }, (activeManualTab === "all" || activeManualTab === "sim") && renderSimulatorCard(), (activeManualTab === "all" || activeManualTab === "controls") && renderControlsCatalog(), (activeManualTab === "all" || activeManualTab === "guide") && renderSectionStoryAndDetails()),
-        /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#0a0c18] border-t border-djzinc-750 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 text-[10.5px] flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Pulsa ", /* @__PURE__ */ React.createElement("strong", null, "Plegar"), " para usar la cabina visible al 40% detr\xE1s sin cerrar")), /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("div", { className: "sticky bottom-0 px-4 sm:px-5 py-3 bg-[#0a0c18]/95 backdrop-blur-md border-t border-djzinc-750 flex items-center justify-between shrink-0 font-mono text-xs z-20" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 text-[10.5px] hidden sm:flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Pulsa ", /* @__PURE__ */ React.createElement("strong", null, "Plegar"), " para usar la cabina visible al 40% detr\xE1s sin cerrar")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-pink-400 font-bold sm:hidden flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" }), "MANUAL DJ"), /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
             onClick: onClose,
-            className: "px-4 py-1.5 rounded-xl bg-[#16182e] hover:bg-[#202446] text-white font-black text-xs border border-djzinc-700 transition-colors cursor-pointer"
+            className: "px-4 py-2 sm:py-1.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs border border-pink-500/60 transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-1.5"
           },
-          "Cerrar (ESC)"
-        ))
+          /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
+          /* @__PURE__ */ React.createElement("span", null, "Cerrar Manual")
+        )))
       )),
       document.body
     );
@@ -9830,11 +9904,12 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         "button",
         {
           onClick: () => setSidebarOpen(false),
-          className: "w-8 h-8 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-400 hover:text-amber-300 flex items-center justify-center border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer",
+          className: "h-8 px-2.5 sm:px-2 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-300 hover:text-amber-300 flex items-center justify-center gap-1.5 border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer text-xs font-mono font-bold",
           "aria-label": t("btn_close_panel") || "Cerrar Panel",
           title: t("btn_close_panel") || "Cerrar Panel"
         },
-        /* @__PURE__ */ React.createElement(Icons.Close, { size: 15 })
+        /* @__PURE__ */ React.createElement(Icons.Close, { size: 15 }),
+        /* @__PURE__ */ React.createElement("span", { className: "sm:hidden font-mono text-[11px]" }, "Cerrar")
       ))),
       /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 space-y-4" }, /* @__PURE__ */ React.createElement(
         "button",
@@ -10132,6 +10207,23 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         },
         /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" }),
         /* @__PURE__ */ React.createElement("span", null, "Quitar este track del an\xE1lisis")
+      )),
+      /* @__PURE__ */ React.createElement("div", { className: "sticky bottom-0 px-4 py-3 bg-[#0a0b16]/95 backdrop-blur-md border-t border-djzinc-800 flex items-center justify-between gap-2 shrink-0 sm:hidden z-20 font-mono text-xs" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setSidebarOpen(false),
+          className: "px-3.5 py-2 rounded-xl bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 font-bold transition-colors cursor-pointer"
+        },
+        "Cerrar"
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleGuardarTrack,
+          className: "flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black uppercase text-xs transition-all cursor-pointer shadow-md active:scale-95 text-center"
+        },
+        "Aplicar Cambios \u2794"
       ))
     )), selectedAuditIds.size > 0 && /* @__PURE__ */ React.createElement(
       "div",
@@ -13866,15 +13958,24 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         {
           onClick: () => setSpInspectorOpen(false),
           title: "Cerrar inspector",
-          className: "w-8 h-8 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-400 hover:text-amber-300 flex items-center justify-center border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer"
+          className: "h-8 px-2.5 sm:px-2 rounded-xl bg-[#14162a] hover:bg-amber-950/60 text-gray-300 hover:text-amber-300 flex items-center justify-center gap-1.5 border border-djzinc-700 hover:border-amber-400/80 transition-colors cursor-pointer text-xs font-mono font-bold"
         },
-        /* @__PURE__ */ React.createElement(Icons.Close, { size: 15 })
+        /* @__PURE__ */ React.createElement(Icons.Close, { size: 15 }),
+        /* @__PURE__ */ React.createElement("span", { className: "sm:hidden font-mono text-[11px]" }, "Cerrar")
       ))),
       /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "w-full aspect-video bg-[#050508] rounded-lg border border-djzinc-800 overflow-hidden relative shadow-inner flex items-center justify-center" }, /* @__PURE__ */ React.createElement("img", { src: getValidCover(currentTrack.cover), alt: "Cover", onError: (e) => {
         e.target.onerror = null;
         e.target.src = DEFAULT_VINYL_SVG;
       }, className: "w-full h-full object-cover" }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono border border-djzinc-700" }, "HD Cover 640px")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-sm text-djcyan-400 truncate", title: currentTrack.title }, currentTrack.title || "Selecciona una pista"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 truncate" }, currentTrack.artist || "--")), /* @__PURE__ */ React.createElement("button", { onClick: (e) => handlePlayPreview(currentTrack, e), className: "px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0" }, nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.title === currentTrack.title) && isPlaying ? "\u275A\u275A PAUSE" : "\u25B6 PRE-ESCUCHA")), /* @__PURE__ */ React.createElement(RekordboxWaveform, { track: currentTrack, duration: currentTrack.duration || "03:30", onSeekTrack: (trk, pct) => handlePlayPreview(trk, null, pct) }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Tempo"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, currentTrack.bpm ? `${currentTrack.bpm} BPM` : "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Clave Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, currentTrack.key || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded-xl border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Gem, { size: 14, className: "inline-block align-[-2px]" }), " Pre-Auditor\xEDa Ac\xFAstica"), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${currentTrack.pre_quality_tier === "HI_RES_24B" || !currentTrack.pre_quality_tier && String(currentTrack.title || "").toLowerCase().includes("extended") ? "bg-djcyan-950 text-djcyan-300 border-djcyan-500 shadow-[0_0_8px_rgba(6,182,212,0.35)]" : currentTrack.pre_worth_it === false ? "bg-red-950/70 text-red-300 border-red-800" : "bg-emerald-950/70 text-emerald-300 border-emerald-600/70"}` }, currentTrack.pre_badge || (String(currentTrack.title || "").toLowerCase().includes("extended") ? "\u{1F48E} Hi-Res 24b" : "\u{1F4BD} Lossless 16b"))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xBFVale la pena?:"), /* @__PURE__ */ React.createElement("span", { className: `font-bold flex items-center gap-1 ${currentTrack.pre_worth_it === false ? "text-amber-400" : "text-emerald-400"}` }, /* @__PURE__ */ React.createElement("span", null, currentTrack.pre_worth_it === false ? "\u{1F7E1}" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("span", null, currentTrack.pre_verdict || (currentTrack.pre_worth_it === false ? "Calidad est\xE1ndar" : "\u2B50 IMPRESCINDIBLE")))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Corte Previsto:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-bold" }, currentTrack.pre_cutoff_est || "> 24.0 kHz (FLAC)")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 leading-relaxed font-sans pt-1 border-t border-djzinc-850" }, currentTrack.pre_detail || "Master de estudio oficial sin p\xE9rdidas destructivas. 100% apto para directo y sistemas de alta potencia.")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xC1lbum:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[200px]" }, currentTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "ISRC:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-300" }, currentTrack.isrc || "Auto-Tag")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Formato Destino:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-djcyan-400 font-bold uppercase" }, ".", selectedFormat, " Lossless")))),
-      /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800" }, /* @__PURE__ */ React.createElement("button", { onClick: () => lanzarDescargaReal(selectedCount > 0 ? tracks.filter((t2) => t2.selected) : [currentTrack]), className: "w-full py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Descargar ", selectedCount > 1 ? `Seleccionadas (${selectedCount})` : "Pista Actual", " .", selectedFormat.toUpperCase()))
+      /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setSpInspectorOpen(false),
+          className: "px-3.5 py-2 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-bold text-xs sm:hidden transition-colors cursor-pointer"
+        },
+        "Cerrar"
+      ), /* @__PURE__ */ React.createElement("button", { onClick: () => lanzarDescargaReal(selectedCount > 0 ? tracks.filter((t2) => t2.selected) : [currentTrack]), className: "flex-1 py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Descargar ", selectedCount > 1 ? `(${selectedCount})` : "Pista Actual", " .", selectedFormat.toUpperCase()))
     )), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0b10] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white uppercase tracking-wider font-mono" }, "Seleccionar Carpeta de Destino")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }), " Cerrar")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 truncate flex-1" }, fsCurrentPath || "/"), fsParentPath && /* @__PURE__ */ React.createElement("button", { onClick: () => handleNavegarACarpeta(fsParentPath), className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 cursor-pointer text-xs" }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 14, className: "inline-block align-[-2px]" }), " Subir nivel")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-3 space-y-1 min-h-[250px] max-h-[400px]" }, fsLoading ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-djcyan-400 animate-pulse" }, "Explorando directorios...") : fsFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-gray-500" }, "No se encontraron subdirectorios") : fsFolders.map((f, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, onDoubleClick: () => handleNavegarACarpeta(f.path), className: "flex items-center justify-between p-2 rounded hover:bg-djzinc-900 cursor-pointer border border-transparent hover:border-djzinc-800 transition-colors" }, /* @__PURE__ */ React.createElement("div", { onClick: () => handleNavegarACarpeta(f.path), className: "flex items-center gap-2.5 flex-1 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px] text-amber-400" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-300 truncate" }, f.name)), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(f.path), className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] rounded cursor-pointer shrink-0" }, "Seleccionar")))), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "px-3 py-1.5 rounded text-xs bg-djzinc-900 border border-djzinc-800 text-gray-400 hover:text-white cursor-pointer" }, "Cancelar"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(fsCurrentPath), className: "px-4 py-1.5 rounded text-xs font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black cursor-pointer shadow" }, "Usar esta Carpeta")))), candidateModal.open && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border border-djzinc-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-djzinc-950/80 border-b border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-xl bg-gradient-to-br from-djcyan-500/20 to-emerald-500/20 border border-djcyan-500/40 flex items-center justify-center text-xl shadow-inner" }, /* @__PURE__ */ React.createElement(Icons.Target, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white flex items-center gap-2" }, "Verificador de Fidelidad y Selector de Versi\xF3n DJ", /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-djcyan-950 text-djcyan-400 border border-djcyan-800" }, "100% Precisi\xF3n")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400" }, "Compara el track de tu biblioteca con las versiones disponibles en streaming para evitar descargar Radio Edits o temas incorrectos."))), /* @__PURE__ */ React.createElement(
       "button",
       {
