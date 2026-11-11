@@ -79,16 +79,25 @@ export const BeatWaveLogoLockup = ({ size = 'sm', isAnimated = true, showSubtitl
     const isVertical = orientation === 'vertical';
 
     return (
-        <div className={`flex items-center gap-3 ${isVertical ? 'flex-col text-center' : 'flex-row'} ${className}`}>
+        <div className={`flex items-center gap-2.5 ${isVertical ? 'flex-col text-center' : 'flex-row'} ${className}`}>
             <BeatWaveLogoBadge size={size} isAnimated={isAnimated} />
             <div className={`flex flex-col ${isVertical ? 'items-center' : 'items-start'}`}>
-                <span className="font-['Syne'] font-extrabold text-white tracking-[0.06em] leading-none text-base sm:text-lg select-none">
-                    BEATWAVE <span className="text-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.7)]">PRO</span>
-                </span>
-                {showSubtitle && (
-                    <span className="font-['Nimbus_Mono_PS',monospace] text-[9px] text-zinc-400 tracking-[0.22em] uppercase mt-1 select-none">
-                        AUDIO INTELLIGENCE SUITE
+                <div className="flex items-center gap-2 leading-none">
+                    <span className="font-syne font-black tracking-[0.02em] leading-none text-xl sm:text-2xl select-none">
+                        <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_14px_rgba(34,211,238,0.85)]">WAVE</span>
                     </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-widest border border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0 self-center">
+                        PRO
+                    </span>
+                </div>
+                {showSubtitle && (
+                    <div className="w-full flex justify-between items-center text-[9px] font-mono font-bold tracking-[0.06em] text-cyan-300/90 mt-1 select-none leading-none">
+                        <span>PRECISION</span>
+                        <span className="text-cyan-400 font-black text-xs leading-none">•</span>
+                        <span>AUDIO</span>
+                        <span className="text-cyan-400 font-black text-xs leading-none">•</span>
+                        <span>INTELLIGENCE</span>
+                    </div>
                 )}
             </div>
         </div>
