@@ -32852,19 +32852,35 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
     const [activeHookIndex, setActiveHookIndex] = useState(0);
+    const [exitingHookIndex, setExitingHookIndex] = useState(null);
     const [isPausedHover, setIsPausedHover] = useState(false);
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
-    // Rotación automática continua de ganchos persuasivos
+    const switchHook = (newIdx) => {
+        if (newIdx === activeHookIndex) return;
+        setExitingHookIndex(activeHookIndex);
+        setActiveHookIndex(newIdx);
+    };
+
+    useEffect(() => {
+        if (exitingHookIndex === null) return;
+        const t = setTimeout(() => {
+            setExitingHookIndex(null);
+        }, 750);
+        return () => clearTimeout(t);
+    }, [exitingHookIndex]);
+
+    // Rotación automática continua de ganchos persuasivos (3.5s según spec del slider)
     useEffect(() => {
         if (isPausedHover) return;
         const interval = setInterval(() => {
+            setExitingHookIndex(activeHookIndex);
             setActiveHookIndex(prev => (prev + 1) % CINEMATIC_HOOKS.length);
-        }, 4200);
+        }, 3500);
         return () => clearInterval(interval);
-    }, [isPausedHover]);
+    }, [isPausedHover, activeHookIndex]);
 
     // ENTRADA DEL VÍDEO: Suave aparición inicial
     useEffect(() => {
@@ -33095,53 +33111,58 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         </div>
                     </div>
 
-                    {/* ROTADOR DINÁMICO DE PUNCHLINES Y SUPERPODERES DEL PRODUCTO (SIN BORDES CON TRANSICIÓN SUAVE) */}
+                    {/* ROTADOR DINÁMICO DE PUNCHLINES Y SUPERPODERES DEL PRODUCTO (CARD SLIDER 3D PERSPECTIVE) */}
                     <div 
                         onMouseEnter={() => setIsPausedHover(true)}
                         onMouseLeave={() => setIsPausedHover(false)}
-                        className="w-full max-w-3xl my-2 px-3 sm:px-4 py-2 relative transition-all text-left select-none"
+                        className="bw-card-slider my-2 select-none text-left"
                     >
-                        <div key={activeHookIndex} className="anim-hook-transition">
-                            <div className="flex items-center justify-between gap-3 mb-2">
-                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-mono font-black tracking-wider uppercase border shadow-sm ${currentHook.color}`}>
-                                    <currentHook.icon size={13} className="shrink-0" />
-                                    <span>{currentHook.badge}</span>
-                                </span>
-                                <span className="text-[11px] font-mono text-zinc-500 font-bold">
-                                    {activeHookIndex + 1} de {CINEMATIC_HOOKS.length}
-                                </span>
-                            </div>
+                        {CINEMATIC_HOOKS.map((hook, idx) => {
+                            const isActive = idx === activeHookIndex;
+                            const isExiting = idx === exitingHookIndex;
+                            let stateClass = '';
+                            if (isActive) stateClass = 'is-active';
+                            else if (isExiting) stateClass = 'is-exiting';
 
-                            <h2 className="text-xl sm:text-3xl font-black text-white leading-snug tracking-tight mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]">
-                                {currentHook.headline}
-                            </h2>
+                            return (
+                                <div 
+                                    key={hook.id} 
+                                    className={`card-item ${stateClass}`}
+                                >
+                                    <div>
+                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-snug tracking-tight mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]">
+                                            {hook.headline}
+                                        </h2>
 
-                            <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans mb-3 drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
-                                {currentHook.body}
-                            </p>
+                                        <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
+                                            {hook.body}
+                                        </p>
+                                    </div>
 
-                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-white/10">
-                                <span className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5">
-                                    <Icons.Check size={14} className="text-emerald-400" />
-                                    {currentHook.metric}
-                                </span>
+                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-white/10 mt-2">
+                                        <span className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5">
+                                            <Icons.Check size={14} className="text-emerald-400" />
+                                            {hook.metric}
+                                        </span>
 
-                                {/* Indicadores Pills interactivos */}
-                                <div className="flex items-center gap-1.5">
-                                    {CINEMATIC_HOOKS.map((h, idx) => (
-                                        <button
-                                            key={h.id}
-                                            type="button"
-                                            onClick={() => setActiveHookIndex(idx)}
-                                            className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                                                idx === activeHookIndex ? 'w-6 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]' : 'w-1.5 bg-zinc-700 hover:bg-zinc-500'
-                                            }`}
-                                            title={h.headline}
-                                        />
-                                    ))}
+                                        {/* Indicadores Pills interactivos */}
+                                        <div className="flex items-center gap-1.5">
+                                            {CINEMATIC_HOOKS.map((h, pIdx) => (
+                                                <button
+                                                    key={h.id}
+                                                    type="button"
+                                                    onClick={() => switchHook(pIdx)}
+                                                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                                        pIdx === activeHookIndex ? 'w-6 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]' : 'w-1.5 bg-zinc-700 hover:bg-zinc-500'
+                                                    }`}
+                                                    title={h.headline}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            );
+                        })}
                     </div>
 
                     {/* BOTONES DE CONVERSIÓN & ACCESO A LICENCIA */}

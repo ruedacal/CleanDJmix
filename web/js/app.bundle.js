@@ -23823,16 +23823,30 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [isMuted, setIsMuted] = useState5(false);
     const [isBassShaking, setIsBassShaking] = useState5(false);
     const [activeHookIndex, setActiveHookIndex] = useState5(0);
+    const [exitingHookIndex, setExitingHookIndex] = useState5(null);
     const [isPausedHover, setIsPausedHover] = useState5(false);
     const videoRef = useRef6(null);
     const canvasRef = useRef6(null);
+    const switchHook = (newIdx) => {
+      if (newIdx === activeHookIndex) return;
+      setExitingHookIndex(activeHookIndex);
+      setActiveHookIndex(newIdx);
+    };
+    useEffect6(() => {
+      if (exitingHookIndex === null) return;
+      const t = setTimeout(() => {
+        setExitingHookIndex(null);
+      }, 750);
+      return () => clearTimeout(t);
+    }, [exitingHookIndex]);
     useEffect6(() => {
       if (isPausedHover) return;
       const interval = setInterval(() => {
+        setExitingHookIndex(activeHookIndex);
         setActiveHookIndex((prev) => (prev + 1) % CINEMATIC_HOOKS.length);
-      }, 4200);
+      }, 3500);
       return () => clearInterval(interval);
-    }, [isPausedHover]);
+    }, [isPausedHover, activeHookIndex]);
     useEffect6(() => {
       const timer = setTimeout(() => {
         setVideoOpacity(1);
@@ -24003,18 +24017,33 @@ Respuesta: ${qa.a}`).join("\n\n"),
           {
             onMouseEnter: () => setIsPausedHover(true),
             onMouseLeave: () => setIsPausedHover(false),
-            className: "w-full max-w-3xl my-2 px-3 sm:px-4 py-2 relative transition-all text-left select-none"
+            className: "bw-card-slider my-2 select-none text-left"
           },
-          /* @__PURE__ */ React.createElement("div", { key: activeHookIndex, className: "anim-hook-transition" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-mono font-black tracking-wider uppercase border shadow-sm ${currentHook.color}` }, /* @__PURE__ */ React.createElement(currentHook.icon, { size: 13, className: "shrink-0" }), /* @__PURE__ */ React.createElement("span", null, currentHook.badge)), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono text-zinc-500 font-bold" }, activeHookIndex + 1, " de ", CINEMATIC_HOOKS.length)), /* @__PURE__ */ React.createElement("h2", { className: "text-xl sm:text-3xl font-black text-white leading-snug tracking-tight mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]" }, currentHook.headline), /* @__PURE__ */ React.createElement("p", { className: "text-sm sm:text-base text-zinc-300 leading-relaxed font-sans mb-3 drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]" }, currentHook.body), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "text-emerald-400" }), currentHook.metric), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, CINEMATIC_HOOKS.map((h, idx) => /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              key: h.id,
-              type: "button",
-              onClick: () => setActiveHookIndex(idx),
-              className: `h-1.5 rounded-full transition-all cursor-pointer ${idx === activeHookIndex ? "w-6 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" : "w-1.5 bg-zinc-700 hover:bg-zinc-500"}`,
-              title: h.headline
-            }
-          )))))
+          CINEMATIC_HOOKS.map((hook, idx) => {
+            const isActive = idx === activeHookIndex;
+            const isExiting = idx === exitingHookIndex;
+            let stateClass = "";
+            if (isActive) stateClass = "is-active";
+            else if (isExiting) stateClass = "is-exiting";
+            return /* @__PURE__ */ React.createElement(
+              "div",
+              {
+                key: hook.id,
+                className: `card-item ${stateClass}`
+              },
+              /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-xl sm:text-2xl md:text-3xl font-black text-white leading-snug tracking-tight mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]" }, hook.headline), /* @__PURE__ */ React.createElement("p", { className: "text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]" }, hook.body)),
+              /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-white/10 mt-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "text-emerald-400" }), hook.metric), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, CINEMATIC_HOOKS.map((h, pIdx) => /* @__PURE__ */ React.createElement(
+                "button",
+                {
+                  key: h.id,
+                  type: "button",
+                  onClick: () => switchHook(pIdx),
+                  className: `h-1.5 rounded-full transition-all cursor-pointer ${pIdx === activeHookIndex ? "w-6 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" : "w-1.5 bg-zinc-700 hover:bg-zinc-500"}`,
+                  title: h.headline
+                }
+              ))))
+            );
+          })
         ), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2" }, /* @__PURE__ */ React.createElement(
           "button",
           {
