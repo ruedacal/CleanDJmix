@@ -320,11 +320,121 @@ class AuditService:
         self.directorio_actual = "/Users/admin/Music/mi musica"
         self._lock = threading.Lock()
         self._cancelar_proceso = False
+        self._stealth_thread = None
+        self._stealth_stop_event = threading.Event()
+        self._playback_checker = None
         try:
             self.db_cache = AuditCacheDB()
         except Exception as e:
             print(f"[CACHE DB INIT ERROR] {e}")
             self.db_cache = None
+
+    def set_playback_checker(self, checker_fn):
+        self._playback_checker = checker_fn
+
+    def _is_playback_active(self) -> bool:
+        if callable(self._playback_checker):
+            try:
+                return bool(self._playback_checker())
+            except Exception:
+                pass
+        return False
+
+    def detener_auditoria_silenciosa(self):
+        if hasattr(self, "_stealth_stop_event") and self._stealth_stop_event:
+            self._stealth_stop_event.set()
+
+    def lanzar_auditoria_silenciosa_segundo_plano(self, ruta_directorio):
+        """
+        Daemon worker en segundo plano totalmente invisible y silencioso.
+        - Prioridad: os.nice(19) (mínima prioridad de CPU).
+        - Pausa automática si el usuario está reproduciendo audio en la app.
+        - Throttle cooperativo: 25ms para mantener CPU < 5%.
+        - Guarda cada resultado de forma atómica en SQLite WAL.
+        """
+        if not ruta_directorio:
+            return
+        self.detener_auditoria_silenciosa()
+        self._stealth_stop_event = threading.Event()
+
+        def _stealth_worker():
+            try:
+                if hasattr(os, "nice"):
+                    os.nice(19)
+            except Exception:
+                pass
+
+            extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
+            archivos = self._escanear_archivos_audio_recursivo(ruta_directorio, extensiones, max_files=50000)
+            if not archivos or self._stealth_stop_event.is_set():
+                return
+
+            file_tuples = [(it[0], it[3], it[4]) for it in archivos]
+            cached_audits = {}
+            if hasattr(self, "db_cache") and self.db_cache:
+                try:
+                    cached_audits = self.db_cache.get_audit_batch(file_tuples)
+                except Exception:
+                    pass
+
+            delta_items = [it for it in archivos if it[0] not in cached_audits]
+            if not delta_items:
+                return
+
+            for item in delta_items:
+                if self._stealth_stop_event.is_set() or self._cancelar_proceso:
+                    break
+
+                while self._is_playback_active() and not self._stealth_stop_event.is_set() and not self._cancelar_proceso:
+                    time.sleep(0.25)
+
+                if self._stealth_stop_event.is_set() or self._cancelar_proceso:
+                    break
+
+                time.sleep(0.025)
+
+                full_path, root, file, mtime_val, fsize_val = item
+                try:
+                    fft_res = self.analizar_espectro_fft(full_path)
+                    cutoff_khz = float(fft_res.get("cutoff_khz", 22.0))
+                    spectrum_points = fft_res.get("spectrum", [])
+                    diag = fft_res.get("diagnostico") or self.diagnosticar_calidad_audio(
+                        filepath=full_path,
+                        cutoff_khz=cutoff_khz,
+                        samplerate=fft_res.get("samplerate", 44100),
+                        bit_depth=fft_res.get("bit_depth", 16),
+                        bitrate_kbps=fft_res.get("bitrate_kbps", 0),
+                        fmt=fft_res.get("format", "")
+                    )
+                    status_str = diag.get("status", "Lossless OK")
+
+                    if hasattr(self, "db_cache") and self.db_cache:
+                        self.db_cache.set({
+                            "filepath": full_path,
+                            "file_hash": "",
+                            "mtime": mtime_val,
+                            "filesize": fsize_val,
+                            "cutoff_khz": cutoff_khz,
+                            "lufs": float(fft_res.get("lufs", -10.0)),
+                            "true_peak": float(fft_res.get("true_peak", -0.1)),
+                            "low_ratio": float(fft_res.get("low_ratio", 33.3)),
+                            "mid_ratio": float(fft_res.get("mid_ratio", 33.3)),
+                            "high_ratio": float(fft_res.get("high_ratio", 33.4)),
+                            "acoustic_role": str(fft_res.get("acoustic_role", "Balanced Full-Range")),
+                            "format": str(diag.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
+                            "bitrate_kbps": int(diag.get("bitrate_kbps", 0)),
+                            "sample_rate_khz": float(diag.get("sample_rate_khz", 44.1)),
+                            "calidad": str(diag.get("calidad", "Alta")),
+                            "status": status_str,
+                            "es_fake": int(bool(diag.get("es_fake", False))),
+                            "acoustic_fp": str(fft_res.get("acoustic_fp", "")),
+                            "spectrum_json": json.dumps(spectrum_points) if spectrum_points else ""
+                        })
+                except Exception:
+                    pass
+
+        self._stealth_thread = threading.Thread(target=_stealth_worker, daemon=True, name="StealthAuditDaemon")
+        self._stealth_thread.start()
 
     @staticmethod
     def extraer_info_tecnica_audio(filepath: str) -> dict:
@@ -1062,6 +1172,7 @@ return folderPath'''
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
         self.reiniciar_cancelacion()
+        self.detener_auditoria_silenciosa()
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
         
         archivos_escaneados = self._escanear_archivos_audio_recursivo(ruta_directorio, extensiones, max_files=50000)
@@ -1875,6 +1986,12 @@ return folderPath'''
 
         if progreso_cb:
             progreso_cb(100, f"Carga completada: {total} pistas listas.")
+
+        # Iniciar auditoría acústica proactiva en segundo plano silencioso (Stealth Daemon)
+        try:
+            self.lanzar_auditoria_silenciosa_segundo_plano(ruta_directorio)
+        except Exception as e_stealth_launch:
+            print(f"[STEALTH LAUNCH WARN] {e_stealth_launch}")
 
         return {
             "total": total,

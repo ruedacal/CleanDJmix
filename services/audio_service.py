@@ -125,3 +125,7 @@ class AudioPlaybackService:
                 self.pista_actual = self._resolver_ruta(nombre_o_ruta)
             print(f"[AUDIO SERVICE] ⏮ CUE armado en 00:00.000: {os.path.basename(self.pista_actual) if self.pista_actual else 'Ready'}")
             return {"status": "cued", "path": self.pista_actual}
+
+    def esta_reproduciendo(self) -> bool:
+        with self._lock:
+            return bool(self.proceso_actual and self.proceso_actual.poll() is None)

@@ -26936,42 +26936,15 @@ const MapWorkspace = ({
                 }
             }
 
-            // DIBUJAR LOS NODOS (PISTAS) - MOTOR OPTIMIZADO PARA 5.000+ PISTAS A 60 FPS
+            // DIBUJAR LOS NODOS (PISTAS) - MOTOR LOD (LEVEL OF DETAIL) & BATCH PARTICLES A 60 FPS
             const nowPlayingId = nowPlayingTrack ? (nowPlayingTrack.id || nowPlayingTrack.path || nowPlayingTrack.title) : null;
             const searchLower = searchQuery.trim().toLowerCase();
             const selectedIdsSet = new Set(selectedMapTracks.map(t => t.id || t.path || t.title));
             const isCrowded = nodes.length > 100;
 
-            nodes.forEach(node => {
-                const pt = toScreen(node.currX, node.currY);
-                // Viewport Culling estricto: descartar inmediatamente cualquier nodo fuera de la pantalla
-                if (pt.x < -30 || pt.x > w + 30 || pt.y < -30 || pt.y > h + 30) return;
-
+            // FUNCIÓN DE RENDERIZADO EN ALTA DEFINICIÓN (CABINA / ZOOM DETALLADO)
+            const renderDetailedNode = (node, pt, isNowPlaying, isHovered, isSelectedNode, opacity) => {
                 const t = node.track;
-                const isNowPlaying = Boolean(nowPlayingTrack && (
-                    nowPlayingTrack.id === t.id ||
-                    (nowPlayingTrack.path && t.path && nowPlayingTrack.path === t.path) ||
-                    (nowPlayingTrack.title === t.title && nowPlayingTrack.artist === t.artist)
-                ));
-                const isHovered = hoveredTrack && (hoveredTrack.id === t.id || hoveredTrack.title === t.title);
-                const isSelectedNode = (selectedTrack && (selectedTrack.id === t.id || selectedTrack.title === t.title)) || selectedIdsSet.has(node.id);
-
-                // Filtro de búsqueda
-                let matchesSearch = true;
-                if (searchLower) {
-                    const textContent = `${t.title} ${t.artist} ${node.genre} ${node.keyStr}`.toLowerCase();
-                    matchesSearch = textContent.includes(searchLower);
-                }
-
-                // Filtro de clave
-                let matchesKey = true;
-                if (selectedKeyFilter !== 'ALL') {
-                    matchesKey = node.keyStr === selectedKeyFilter;
-                }
-
-                const opacity = (matchesSearch && matchesKey) ? 1.0 : 0.12;
-
-                // Color del nodo según modo
                 let nodeColor = '#06b6d4';
                 if (colorMode === 'genre') {
                     nodeColor = MAP_GENRE_COLORS[node.genre] || '#38bdf8';
@@ -27083,7 +27056,117 @@ const MapWorkspace = ({
                     const labelText = `${isNowPlaying ? '▶ ' : '★ '}${t.artist ? t.artist.slice(0, 14) : ''} - ${t.title ? t.title.slice(0, 18) : ''}`;
                     ctx.fillText(labelText, pt.x + nodeRadius + 5, pt.y + 3);
                 }
-            });
+            };
+
+            // SELECCIÓN DE NIVEL DE DETALLE (LOD) SEGÚN ESCALA Y CANTIDAD DE PISTAS
+            const isLODDistant = scale <= 1.25 || (scale <= 1.45 && nodes.length > 250);
+
+            if (isLODDistant) {
+                // NIVEL 1 (MACRO / CONSTELACIÓN): Renderizado en lotes agrupados por paleta
+                const particleBuckets = {};
+                const heroNodes = [];
+
+                for (let i = 0; i < nodes.length; i++) {
+                    const node = nodes[i];
+                    const pt = toScreen(node.currX, node.currY);
+                    if (pt.x < -20 || pt.x > w + 20 || pt.y < -20 || pt.y > h + 20) continue;
+
+                    const t = node.track;
+                    const isNowPlaying = Boolean(nowPlayingTrack && (
+                        nowPlayingTrack.id === t.id ||
+                        (nowPlayingTrack.path && t.path && nowPlayingTrack.path === t.path) ||
+                        (nowPlayingTrack.title === t.title && nowPlayingTrack.artist === t.artist)
+                    ));
+                    const isHovered = hoveredTrack && (hoveredTrack.id === t.id || hoveredTrack.title === t.title);
+                    const isSelectedNode = (selectedTrack && (selectedTrack.id === t.id || selectedTrack.title === t.title)) || selectedIdsSet.has(node.id);
+
+                    if (isNowPlaying || isHovered || isSelectedNode) {
+                        heroNodes.push({ node, pt, isNowPlaying, isHovered, isSelectedNode });
+                        continue;
+                    }
+
+                    // Filtros
+                    if (searchLower) {
+                        const textContent = `${t.title} ${t.artist} ${node.genre} ${node.keyStr}`.toLowerCase();
+                        if (!textContent.includes(searchLower)) continue;
+                    }
+                    if (selectedKeyFilter !== 'ALL' && node.keyStr !== selectedKeyFilter) {
+                        continue;
+                    }
+
+                    let nodeColor = '#06b6d4';
+                    if (colorMode === 'genre') {
+                        nodeColor = MAP_GENRE_COLORS[node.genre] || '#38bdf8';
+                    } else if (colorMode === 'camelot') {
+                        nodeColor = MAP_CAMELOT_COLORS[node.keyStr] || '#a855f7';
+                    } else if (colorMode === 'energy') {
+                        const e = node.energy;
+                        nodeColor = e >= 90 ? '#ef4444' : (e >= 75 ? '#f59e0b' : (e >= 50 ? '#06b6d4' : '#3b82f6'));
+                    } else if (colorMode === 'quality') {
+                        const isFakeOrBad = t.es_fake || (t.calidad && String(t.calidad).includes('Baja'));
+                        nodeColor = isFakeOrBad ? '#ef4444' : '#10b981';
+                    }
+
+                    // Modulación de tamaño según energía acústica
+                    const eNorm = (node.energy || 50) / 100.0;
+                    let r = 2.0 + eNorm * 2.8;
+
+                    // Pulso dinámico en temas Clímax (Energía >= 85%) para localizarlos a simple vista
+                    if (node.energy >= 85) {
+                        const pulse = 1.0 + Math.sin(Date.now() * 0.004 + (node.id || 0)) * 0.28;
+                        r *= pulse;
+                    }
+
+                    if (!particleBuckets[nodeColor]) particleBuckets[nodeColor] = [];
+                    particleBuckets[nodeColor].push({ x: pt.x, y: pt.y, r });
+                }
+
+                // Dibujado ultra-rápido en lotes (1 única llamada fill por color)
+                for (const [color, pList] of Object.entries(particleBuckets)) {
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    for (let j = 0; j < pList.length; j++) {
+                        const p = pList[j];
+                        ctx.moveTo(p.x + p.r, p.y);
+                        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    }
+                    ctx.fill();
+                }
+
+                // Renderizar los nodos "Hero" (activos, seleccionados o con hover) en alta definición sobre el lienzo
+                heroNodes.forEach(item => {
+                    renderDetailedNode(item.node, item.pt, item.isNowPlaying, item.isHovered, item.isSelectedNode, 1.0);
+                });
+            } else {
+                // NIVEL 2 (CABINA / DETALLE): Renderizado en alta definición con viewport culling
+                nodes.forEach(node => {
+                    const pt = toScreen(node.currX, node.currY);
+                    if (pt.x < -30 || pt.x > w + 30 || pt.y < -30 || pt.y > h + 30) return;
+
+                    const t = node.track;
+                    const isNowPlaying = Boolean(nowPlayingTrack && (
+                        nowPlayingTrack.id === t.id ||
+                        (nowPlayingTrack.path && t.path && nowPlayingTrack.path === t.path) ||
+                        (nowPlayingTrack.title === t.title && nowPlayingTrack.artist === t.artist)
+                    ));
+                    const isHovered = hoveredTrack && (hoveredTrack.id === t.id || hoveredTrack.title === t.title);
+                    const isSelectedNode = (selectedTrack && (selectedTrack.id === t.id || selectedTrack.title === t.title)) || selectedIdsSet.has(node.id);
+
+                    // Filtros
+                    let matchesSearch = true;
+                    if (searchLower) {
+                        const textContent = `${t.title} ${t.artist} ${node.genre} ${node.keyStr}`.toLowerCase();
+                        matchesSearch = textContent.includes(searchLower);
+                    }
+                    let matchesKey = true;
+                    if (selectedKeyFilter !== 'ALL') {
+                        matchesKey = node.keyStr === selectedKeyFilter;
+                    }
+                    const opacity = (matchesSearch && matchesKey) ? 1.0 : 0.12;
+
+                    renderDetailedNode(node, pt, isNowPlaying, isHovered, isSelectedNode, opacity);
+                });
+            }
 
             // DIBUJAR TRAZADO DE SELECCIÓN (LASSO O CAJA)
             const sel = selectionRef.current;

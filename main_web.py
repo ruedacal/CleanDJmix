@@ -163,6 +163,7 @@ eel.init("web")
 
 audio_playback_svc = AudioPlaybackService()
 audit_svc = AuditService()
+audit_svc.set_playback_checker(lambda: audio_playback_svc.esta_reproduciendo())
 media_svc = MediaService()
 download_svc = DownloadService()
 export_svc = ExportService()

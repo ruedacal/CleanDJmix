@@ -19658,23 +19658,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         const searchLower = searchQuery.trim().toLowerCase();
         const selectedIdsSet = new Set(selectedMapTracks.map((t2) => t2.id || t2.path || t2.title));
         const isCrowded = nodes.length > 100;
-        nodes.forEach((node) => {
-          const pt = toScreen(node.currX, node.currY);
-          if (pt.x < -30 || pt.x > w + 30 || pt.y < -30 || pt.y > h + 30) return;
+        const renderDetailedNode = (node, pt, isNowPlaying, isHovered, isSelectedNode, opacity) => {
           const t2 = node.track;
-          const isNowPlaying = Boolean(nowPlayingTrack && (nowPlayingTrack.id === t2.id || nowPlayingTrack.path && t2.path && nowPlayingTrack.path === t2.path || nowPlayingTrack.title === t2.title && nowPlayingTrack.artist === t2.artist));
-          const isHovered = hoveredTrack && (hoveredTrack.id === t2.id || hoveredTrack.title === t2.title);
-          const isSelectedNode = selectedTrack && (selectedTrack.id === t2.id || selectedTrack.title === t2.title) || selectedIdsSet.has(node.id);
-          let matchesSearch = true;
-          if (searchLower) {
-            const textContent = `${t2.title} ${t2.artist} ${node.genre} ${node.keyStr}`.toLowerCase();
-            matchesSearch = textContent.includes(searchLower);
-          }
-          let matchesKey = true;
-          if (selectedKeyFilter !== "ALL") {
-            matchesKey = node.keyStr === selectedKeyFilter;
-          }
-          const opacity = matchesSearch && matchesKey ? 1 : 0.12;
           let nodeColor = "#06b6d4";
           if (colorMode === "genre") {
             nodeColor = MAP_GENRE_COLORS[node.genre] || "#38bdf8";
@@ -19763,7 +19748,85 @@ Respuesta: ${qa.a}`).join("\n\n"),
             const labelText = `${isNowPlaying ? "\u25B6 " : "\u2605 "}${t2.artist ? t2.artist.slice(0, 14) : ""} - ${t2.title ? t2.title.slice(0, 18) : ""}`;
             ctx.fillText(labelText, pt.x + nodeRadius + 5, pt.y + 3);
           }
-        });
+        };
+        const isLODDistant = scale <= 1.25 || scale <= 1.45 && nodes.length > 250;
+        if (isLODDistant) {
+          const particleBuckets = {};
+          const heroNodes = [];
+          for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            const pt = toScreen(node.currX, node.currY);
+            if (pt.x < -20 || pt.x > w + 20 || pt.y < -20 || pt.y > h + 20) continue;
+            const t2 = node.track;
+            const isNowPlaying = Boolean(nowPlayingTrack && (nowPlayingTrack.id === t2.id || nowPlayingTrack.path && t2.path && nowPlayingTrack.path === t2.path || nowPlayingTrack.title === t2.title && nowPlayingTrack.artist === t2.artist));
+            const isHovered = hoveredTrack && (hoveredTrack.id === t2.id || hoveredTrack.title === t2.title);
+            const isSelectedNode = selectedTrack && (selectedTrack.id === t2.id || selectedTrack.title === t2.title) || selectedIdsSet.has(node.id);
+            if (isNowPlaying || isHovered || isSelectedNode) {
+              heroNodes.push({ node, pt, isNowPlaying, isHovered, isSelectedNode });
+              continue;
+            }
+            if (searchLower) {
+              const textContent = `${t2.title} ${t2.artist} ${node.genre} ${node.keyStr}`.toLowerCase();
+              if (!textContent.includes(searchLower)) continue;
+            }
+            if (selectedKeyFilter !== "ALL" && node.keyStr !== selectedKeyFilter) {
+              continue;
+            }
+            let nodeColor = "#06b6d4";
+            if (colorMode === "genre") {
+              nodeColor = MAP_GENRE_COLORS[node.genre] || "#38bdf8";
+            } else if (colorMode === "camelot") {
+              nodeColor = MAP_CAMELOT_COLORS[node.keyStr] || "#a855f7";
+            } else if (colorMode === "energy") {
+              const e = node.energy;
+              nodeColor = e >= 90 ? "#ef4444" : e >= 75 ? "#f59e0b" : e >= 50 ? "#06b6d4" : "#3b82f6";
+            } else if (colorMode === "quality") {
+              const isFakeOrBad = t2.es_fake || t2.calidad && String(t2.calidad).includes("Baja");
+              nodeColor = isFakeOrBad ? "#ef4444" : "#10b981";
+            }
+            const eNorm = (node.energy || 50) / 100;
+            let r = 2 + eNorm * 2.8;
+            if (node.energy >= 85) {
+              const pulse = 1 + Math.sin(Date.now() * 4e-3 + (node.id || 0)) * 0.28;
+              r *= pulse;
+            }
+            if (!particleBuckets[nodeColor]) particleBuckets[nodeColor] = [];
+            particleBuckets[nodeColor].push({ x: pt.x, y: pt.y, r });
+          }
+          for (const [color, pList] of Object.entries(particleBuckets)) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            for (let j = 0; j < pList.length; j++) {
+              const p = pList[j];
+              ctx.moveTo(p.x + p.r, p.y);
+              ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            }
+            ctx.fill();
+          }
+          heroNodes.forEach((item) => {
+            renderDetailedNode(item.node, item.pt, item.isNowPlaying, item.isHovered, item.isSelectedNode, 1);
+          });
+        } else {
+          nodes.forEach((node) => {
+            const pt = toScreen(node.currX, node.currY);
+            if (pt.x < -30 || pt.x > w + 30 || pt.y < -30 || pt.y > h + 30) return;
+            const t2 = node.track;
+            const isNowPlaying = Boolean(nowPlayingTrack && (nowPlayingTrack.id === t2.id || nowPlayingTrack.path && t2.path && nowPlayingTrack.path === t2.path || nowPlayingTrack.title === t2.title && nowPlayingTrack.artist === t2.artist));
+            const isHovered = hoveredTrack && (hoveredTrack.id === t2.id || hoveredTrack.title === t2.title);
+            const isSelectedNode = selectedTrack && (selectedTrack.id === t2.id || selectedTrack.title === t2.title) || selectedIdsSet.has(node.id);
+            let matchesSearch = true;
+            if (searchLower) {
+              const textContent = `${t2.title} ${t2.artist} ${node.genre} ${node.keyStr}`.toLowerCase();
+              matchesSearch = textContent.includes(searchLower);
+            }
+            let matchesKey = true;
+            if (selectedKeyFilter !== "ALL") {
+              matchesKey = node.keyStr === selectedKeyFilter;
+            }
+            const opacity = matchesSearch && matchesKey ? 1 : 0.12;
+            renderDetailedNode(node, pt, isNowPlaying, isHovered, isSelectedNode, opacity);
+          });
+        }
         const sel = selectionRef.current;
         if (sel.isSelecting) {
           if (toolMode === "lasso" && sel.points.length > 1) {
