@@ -33081,7 +33081,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                 <span className="font-syne font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
                                     <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.9)]">WAVE</span>
                                 </span>
-                                <span className="text-sm sm:text-xl md:text-2xl font-mono px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl font-black tracking-widest border-2 border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_22px_rgba(6,182,212,0.6)] shrink-0 self-center">
+                                <span className="text-lg sm:text-2xl md:text-3xl font-sans font-black tracking-wider px-3 sm:px-4 py-0.5 sm:py-1 rounded-[12px] sm:rounded-[15px] border-2 border-cyan-400 text-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none">
                                     PRO
                                 </span>
                             </div>
@@ -33095,52 +33095,51 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         </div>
                     </div>
 
-                    {/* ROTADOR DINÁMICO DE PUNCHLINES Y SUPERPODERES DEL PRODUCTO */}
+                    {/* ROTADOR DINÁMICO DE PUNCHLINES Y SUPERPODERES DEL PRODUCTO (SIN BORDES CON TRANSICIÓN SUAVE) */}
                     <div 
                         onMouseEnter={() => setIsPausedHover(true)}
                         onMouseLeave={() => setIsPausedHover(false)}
-                        className="w-full max-w-3xl my-3 p-5 sm:p-6 rounded-2xl bg-[#0f101d]/90 border border-cyan-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(6,182,212,0.08)] backdrop-blur-xl relative overflow-hidden transition-all text-left group"
+                        className="w-full max-w-3xl my-2 px-3 sm:px-4 py-2 relative transition-all text-left select-none"
                     >
-                        {/* Glow superior de acento */}
-                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
+                        <div key={activeHookIndex} className="anim-hook-transition">
+                            <div className="flex items-center justify-between gap-3 mb-2">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-mono font-black tracking-wider uppercase border shadow-sm ${currentHook.color}`}>
+                                    <currentHook.icon size={13} className="shrink-0" />
+                                    <span>{currentHook.badge}</span>
+                                </span>
+                                <span className="text-[11px] font-mono text-zinc-500 font-bold">
+                                    {activeHookIndex + 1} de {CINEMATIC_HOOKS.length}
+                                </span>
+                            </div>
 
-                        <div className="flex items-center justify-between gap-3 mb-2.5">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-mono font-black tracking-wider uppercase border shadow-sm ${currentHook.color}`}>
-                                <currentHook.icon size={13} className="shrink-0" />
-                                <span>{currentHook.badge}</span>
-                            </span>
-                            <span className="text-[11px] font-mono text-zinc-500 font-bold">
-                                {activeHookIndex + 1} de {CINEMATIC_HOOKS.length}
-                            </span>
-                        </div>
+                            <h2 className="text-xl sm:text-3xl font-black text-white leading-snug tracking-tight mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]">
+                                {currentHook.headline}
+                            </h2>
 
-                        <h2 className="text-lg sm:text-2xl font-black text-white leading-snug tracking-tight mb-2">
-                            {currentHook.headline}
-                        </h2>
+                            <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans mb-3 drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
+                                {currentHook.body}
+                            </p>
 
-                        <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans mb-3">
-                            {currentHook.body}
-                        </p>
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-white/10">
+                                <span className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5">
+                                    <Icons.Check size={14} className="text-emerald-400" />
+                                    {currentHook.metric}
+                                </span>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-white/10">
-                            <span className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5">
-                                <Icons.Check size={14} className="text-emerald-400" />
-                                {currentHook.metric}
-                            </span>
-
-                            {/* Indicadores Pills interactivos */}
-                            <div className="flex items-center gap-1.5">
-                                {CINEMATIC_HOOKS.map((h, idx) => (
-                                    <button
-                                        key={h.id}
-                                        type="button"
-                                        onClick={() => setActiveHookIndex(idx)}
-                                        className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                                            idx === activeHookIndex ? 'w-6 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]' : 'w-1.5 bg-zinc-700 hover:bg-zinc-500'
-                                        }`}
-                                        title={h.headline}
-                                    />
-                                ))}
+                                {/* Indicadores Pills interactivos */}
+                                <div className="flex items-center gap-1.5">
+                                    {CINEMATIC_HOOKS.map((h, idx) => (
+                                        <button
+                                            key={h.id}
+                                            type="button"
+                                            onClick={() => setActiveHookIndex(idx)}
+                                            className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                                idx === activeHookIndex ? 'w-6 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]' : 'w-1.5 bg-zinc-700 hover:bg-zinc-500'
+                                            }`}
+                                            title={h.headline}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -34502,7 +34501,7 @@ const App = () => {
                                 }`}>
                                     <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_14px_rgba(34,211,238,0.85)]">WAVE</span>
                                 </span>
-                                <span className="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-widest border border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0 self-center">
+                                <span className="text-[10px] sm:text-[11px] font-sans font-black tracking-wider px-2 py-0.5 rounded-[8px] sm:rounded-[9px] border-[1.5px] border-cyan-400 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none">
                                     PRO
                                 </span>
                             </div>
