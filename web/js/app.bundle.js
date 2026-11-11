@@ -2080,7 +2080,10 @@
       taxonomy_tab_crates: "Serato Crates & Rekordbox"
     }
   };
-  var Icons = ShellIcons;
+  var Icons = {
+    ...ShellIcons,
+    Edit: ShellIcons.Pencil
+  };
   var SECTION_TITLE_CLASS = "font-syne font-black text-lg sm:text-xl leading-tight text-white tracking-wide uppercase";
   var SectionTitle = ({ icon: Icon, title, accent, badge, accentColor = "cyan", className = "" }) => {
     const isPurple = accentColor === "purple";
@@ -4686,16 +4689,24 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       deleting ? "Eliminando..." : `\u{1F5D1}\uFE0F Eliminar Duplicados Seleccionados (${countSelected})`
     )))));
   };
-  function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
+  function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 8) {
     const [range, setRange] = useState5({ start: 0, end: 60 });
     useEffect6(() => {
       const el = containerRef.current;
       if (!el) return;
       const update = () => {
-        const scrollTop = el.scrollTop;
-        const clientHeight = el.clientHeight;
-        const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
-        const end = Math.min(items.length, Math.ceil((scrollTop + clientHeight) / rowHeight) + overscan);
+        const scrollTop = el.scrollTop || 0;
+        const clientHeight = el.clientHeight || window.innerHeight || 800;
+        let start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+        let end = Math.min(items.length, Math.ceil((scrollTop + clientHeight) / rowHeight) + overscan);
+        if (start >= items.length && items.length > 0) {
+          start = 0;
+          end = Math.min(items.length, Math.ceil(clientHeight / rowHeight) + overscan * 2);
+          if (el.scrollTop > 0) el.scrollTop = 0;
+        }
+        if (end <= start && items.length > 0) {
+          end = Math.min(items.length, start + 60);
+        }
         setRange((prev) => prev.start === start && prev.end === end ? prev : { start, end });
       };
       el.addEventListener("scroll", update, { passive: true });
@@ -4707,10 +4718,18 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         ro.disconnect();
       };
     }, [items.length, rowHeight, overscan]);
-    const visibleItems = items.slice(range.start, range.end);
-    const paddingTop = range.start * rowHeight;
-    const paddingBottom = Math.max(0, (items.length - range.end) * rowHeight);
-    return { visibleItems, paddingTop, paddingBottom, startIndex: range.start };
+    let safeStart = range.start;
+    let safeEnd = range.end;
+    if (items.length > 0) {
+      if (safeStart >= items.length || safeEnd <= safeStart) {
+        safeStart = 0;
+        safeEnd = Math.min(items.length, 60);
+      }
+    }
+    const visibleItems = items.slice(safeStart, safeEnd);
+    const paddingTop = safeStart * rowHeight;
+    const paddingBottom = Math.max(0, (items.length - safeEnd) * rowHeight);
+    return { visibleItems, paddingTop, paddingBottom, startIndex: safeStart };
   }
   var MASTER_DRAWER_STORAGE_KEY = "bw_inspector_drawer_width";
   function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 540, minWidth = 380, maxWidth = 860, isIndependent = false) {
@@ -7328,361 +7347,375 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       "Cerrar (ESC)"
     ))));
   };
-  var CustomLibraryModal = ({
-    isOpen,
-    onClose,
-    libraries = [],
-    activeLibraryId,
-    onSaveLibraries,
-    onSelectLibrary,
-    currentTracks = [],
-    selectedTrackIds = /* @__PURE__ */ new Set(),
-    onMaterializarEnDisco
+  var FOLDER_COLORS = [
+    { id: "cyan", name: "Cian Ne\xF3n", bg: "bg-cyan-500", text: "text-cyan-400", border: "border-cyan-500", dot: "bg-cyan-400" },
+    { id: "emerald", name: "Verde Club", bg: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500", dot: "bg-emerald-400" },
+    { id: "purple", name: "P\xFArpura Deep", bg: "bg-purple-500", text: "text-purple-400", border: "border-purple-500", dot: "bg-purple-400" },
+    { id: "amber", name: "\xC1mbar Warm", bg: "bg-amber-500", text: "text-amber-400", border: "border-amber-500", dot: "bg-amber-400" },
+    { id: "rose", name: "Rosa Festival", bg: "bg-rose-500", text: "text-rose-400", border: "border-rose-500", dot: "bg-rose-400" },
+    { id: "blue", name: "Azul El\xE9ctrico", bg: "bg-blue-500", text: "text-blue-400", border: "border-blue-500", dot: "bg-blue-400" },
+    { id: "indigo", name: "\xCDndigo Techno", bg: "bg-indigo-500", text: "text-indigo-400", border: "border-indigo-500", dot: "bg-indigo-400" },
+    { id: "orange", name: "Naranja Sunset", bg: "bg-orange-500", text: "text-orange-400", border: "border-orange-500", dot: "bg-orange-400" }
+  ];
+  var getColorObj = (colorId) => FOLDER_COLORS.find((c) => c.id === colorId) || FOLDER_COLORS[0];
+  var findFolderOrSub = (folders, targetId) => {
+    if (!folders || !targetId) return null;
+    for (const f of folders) {
+      if (f.id === targetId) return { folder: f, parent: null };
+      if (f.subfolders) {
+        for (const s of f.subfolders) {
+          if (s.id === targetId) return { folder: s, parent: f };
+        }
+      }
+    }
+    return null;
+  };
+  var getFolderTrackKeysSet = (folder) => {
+    const keys = /* @__PURE__ */ new Set();
+    if (!folder) return keys;
+    (folder.trackIds || []).forEach((k) => keys.add(k));
+    if (folder.subfolders) {
+      folder.subfolders.forEach((sub) => {
+        (sub.trackIds || []).forEach((k) => keys.add(k));
+      });
+    }
+    return keys;
+  };
+  var LibraryFolderSidebar = ({
+    folders = [],
+    selectedFolderId = "all",
+    onSelectFolder,
+    totalTracksCount = 0,
+    onAddFolder,
+    onAddSubfolder,
+    onRenameFolder,
+    onChangeFolderColor,
+    onDeleteFolder,
+    onToggleCollapse,
+    onAssignTracks,
+    onAutoGroupByGenre,
+    onMaterializarEnDisco,
+    onClose
   }) => {
-    var _a;
-    if (!isOpen) return null;
-    const [activeLibId, setActiveLibId] = useState5(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
-    const [libNameInput, setLibNameInput] = useState5("");
-    const [newFolderName, setNewFolderName] = useState5("");
-    const [selectedFolderId, setSelectedFolderId] = useState5(null);
-    const [feedbackMsg, setFeedbackMsg] = useState5("");
-    const [searchTrack, setSearchTrack] = useState5("");
-    const currentLib = libraries.find((l) => l.id === activeLibId) || libraries[0] || {
-      id: "lib_default",
-      name: "Mi Biblioteca Principal",
-      folders: []
+    const [editingFolderId, setEditingFolderId] = useState5(null);
+    const [editingName, setEditingName] = useState5("");
+    const [colorPickerFolderId, setColorPickerFolderId] = useState5(null);
+    const [newFolderNameInput, setNewFolderNameInput] = useState5("");
+    const [isAddingRoot, setIsAddingRoot] = useState5(false);
+    const [dragOverFolderId, setDragOverFolderId] = useState5(null);
+    const startEditing = (f, e) => {
+      if (e) e.stopPropagation();
+      setEditingFolderId(f.id);
+      setEditingName(f.name);
     };
-    useEffect6(() => {
-      if (currentLib) {
-        setLibNameInput(currentLib.name || "");
-        if (!selectedFolderId && currentLib.folders && currentLib.folders.length > 0) {
-          setSelectedFolderId(currentLib.folders[0].id);
-        }
+    const submitRename = (fId) => {
+      if (editingName.trim()) {
+        onRenameFolder(fId, editingName.trim());
       }
-    }, [currentLib == null ? void 0 : currentLib.id]);
-    useEffect6(() => {
-      const handleKeyDown = (e) => {
-        if (e.key === "Escape") onClose();
-      };
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [onClose]);
-    const handleCreateNewLibrary = () => {
-      const newId = `lib_${Date.now()}`;
-      const newLib = {
-        id: newId,
-        name: `Nueva Biblioteca ${libraries.length + 1}`,
-        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
-        folders: [
-          { id: `f_${Date.now()}_1`, name: "01 - Warm Up", tracks: [] },
-          { id: `f_${Date.now()}_2`, name: "02 - Peak Time", tracks: [] },
-          { id: `f_${Date.now()}_3`, name: "03 - Melodic & Deep", tracks: [] }
-        ]
-      };
-      const updated = [...libraries, newLib];
-      if (onSaveLibraries) onSaveLibraries(updated, newId);
-      setActiveLibId(newId);
-      setSelectedFolderId(newLib.folders[0].id);
-      setFeedbackMsg("\u2713 Biblioteca creada");
-      setTimeout(() => setFeedbackMsg(""), 2500);
+      setEditingFolderId(null);
     };
-    const handleUpdateLibraryName = () => {
-      if (!libNameInput.trim()) return;
-      const updated = libraries.map((l) => l.id === activeLibId ? { ...l, name: libNameInput.trim() } : l);
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      setFeedbackMsg(`\u2713 Nombre actualizado: ${libNameInput.trim()}`);
-      setTimeout(() => setFeedbackMsg(""), 2500);
-    };
-    const handleAddFolder = () => {
-      if (!newFolderName.trim()) return;
-      const newF = {
-        id: `f_${Date.now()}`,
-        name: newFolderName.trim(),
-        tracks: []
-      };
-      const updated = libraries.map((l) => {
-        if (l.id === activeLibId) {
-          return { ...l, folders: [...l.folders || [], newF] };
-        }
-        return l;
-      });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      setNewFolderName("");
-      setSelectedFolderId(newF.id);
-      setFeedbackMsg(`\u2713 Carpeta virtual "${newF.name}" creada`);
-      setTimeout(() => setFeedbackMsg(""), 2500);
-    };
-    const handleDeleteFolder = (folderId) => {
-      const updated = libraries.map((l) => {
-        if (l.id === activeLibId) {
-          return { ...l, folders: (l.folders || []).filter((f) => f.id !== folderId) };
-        }
-        return l;
-      });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      if (selectedFolderId === folderId) {
-        setSelectedFolderId(null);
+    const handleCreateRoot = (e) => {
+      e.preventDefault();
+      if (newFolderNameInput.trim()) {
+        onAddFolder(newFolderNameInput.trim());
+        setNewFolderNameInput("");
+        setIsAddingRoot(false);
       }
     };
-    const handleAssignTracksToActiveFolder = (folderId, onlySelected = false) => {
-      const tracksToAssign = onlySelected ? currentTracks.filter((t) => selectedTrackIds.has(t.id)) : currentTracks;
-      if (tracksToAssign.length === 0) {
-        alert("No hay pistas cargadas para asignar.");
-        return;
-      }
-      const updated = libraries.map((l) => {
-        if (l.id === activeLibId) {
-          const newFolders = (l.folders || []).map((f) => {
-            if (f.id === folderId) {
-              const existingIds = new Set((f.tracks || []).map((t) => t.id || t.file_path));
-              const added = tracksToAssign.filter((t) => !existingIds.has(t.id || t.file_path));
-              return { ...f, tracks: [...f.tracks || [], ...added] };
-            }
-            return f;
-          });
-          return { ...l, folders: newFolders };
-        }
-        return l;
-      });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      setFeedbackMsg(`\u2713 ${tracksToAssign.length} pista(s) asignadas`);
-      setTimeout(() => setFeedbackMsg(""), 3e3);
-    };
-    const handleAutoGroupByGenre = () => {
-      if (!currentTracks || currentTracks.length === 0) {
-        alert("Carga pistas en la biblioteca para auto-organizar por g\xE9nero.");
-        return;
-      }
-      const byGenre = {};
-      currentTracks.forEach((t) => {
-        const g = (t.genre || t.subgenre || "Electr\xF3nica General").trim();
-        if (!byGenre[g]) byGenre[g] = [];
-        byGenre[g].push(t);
-      });
-      const newFolders = Object.entries(byGenre).map(([genreName, trList], idx) => ({
-        id: `f_auto_${idx}_${Date.now()}`,
-        name: genreName,
-        tracks: trList
-      }));
-      const updated = libraries.map((l) => {
-        if (l.id === activeLibId) {
-          return { ...l, folders: newFolders };
-        }
-        return l;
-      });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      if (newFolders.length > 0) setSelectedFolderId(newFolders[0].id);
-      setFeedbackMsg(`\u2713 ${newFolders.length} carpetas generadas autom\xE1ticamente por g\xE9nero`);
-      setTimeout(() => setFeedbackMsg(""), 3500);
-    };
-    const handleRemoveTrackFromFolder = (folderId, trackKey) => {
-      const updated = libraries.map((l) => {
-        if (l.id === activeLibId) {
-          const newFolders = (l.folders || []).map((f) => {
-            if (f.id === folderId) {
-              return { ...f, tracks: (f.tracks || []).filter((t) => (t.id || t.file_path) !== trackKey) };
-            }
-            return f;
-          });
-          return { ...l, folders: newFolders };
-        }
-        return l;
-      });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-    };
-    const activeFolder = (currentLib.folders || []).find((f) => f.id === selectedFolderId) || currentLib.folders && currentLib.folders[0];
-    const folderTracks = (activeFolder == null ? void 0 : activeFolder.tracks) || [];
-    const filteredFolderTracks = folderTracks.filter((t) => {
-      if (!searchTrack.trim()) return true;
-      const q = searchTrack.toLowerCase();
-      return t.title && t.title.toLowerCase().includes(q) || t.artist && t.artist.toLowerCase().includes(q);
-    });
-    const totalTracksInLib = (currentLib.folders || []).reduce((acc, f) => {
-      var _a2;
-      return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
-    }, 0);
-    return ReactDOM.createPortal(
-      /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[99998] flex flex-col bg-[#070812] text-gray-200 animate-fadeIn select-none overflow-hidden font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 border-b border-djzinc-800 bg-[#0e0e1a] flex items-center justify-between shrink-0 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-2xl bg-djcyan-950/90 border border-djcyan-500/60 flex items-center justify-center text-djcyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("h3", { className: "text-base sm:text-lg font-syne font-black uppercase text-white tracking-wider" }, "LIBRER\xCDA & BIBLIOTECAS PERSONALIZADAS"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-black" }, totalTracksInLib, " PISTAS EN CAT\xC1LOGO")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-mono mt-0.5" }, "GESTOR AVANZADO DE CARPETAS VIRTUALES, AGRUPACIONES POR G\xC9NERO Y MATERIALIZACI\xD3N F\xCDSICA EN DISCO / USB"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, feedbackMsg && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-emerald-400 font-bold animate-pulse hidden sm:inline px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60" }, feedbackMsg), /* @__PURE__ */ React.createElement(
-        "button",
+    return /* @__PURE__ */ React.createElement("aside", { className: "w-[270px] shrink-0 bg-[#09090f] border-r border-djzinc-800 flex flex-col h-full select-none text-xs font-mono z-10" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 flex items-center justify-between gap-2 bg-[#0c0d16]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 15, className: "text-cyan-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-white tracking-wide truncate uppercase text-[11px]" }, "Carpetas & Crates")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onAutoGroupByGenre,
+        className: "px-2 py-0.5 rounded bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 hover:text-white border border-cyan-700/80 text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1",
+        title: "Auto-organizar autom\xE1ticamente por G\xE9nero y Subg\xE9nero"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 11, className: "text-amber-400" }),
+      /* @__PURE__ */ React.createElement("span", null, "Auto G\xE9nero")
+    ), onClose && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onClose,
+        className: "p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer",
+        title: "Ocultar panel de carpetas"
+      },
+      /* @__PURE__ */ React.createElement(Icons.ChevronLeft, { size: 14 })
+    ))), /* @__PURE__ */ React.createElement("div", { className: "p-2 border-b border-djzinc-800/80 bg-[#07070c]" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSelectFolder("all"),
+        className: `w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${selectedFolderId === "all" ? "bg-cyan-950/90 text-cyan-200 border border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.25)] font-bold" : "text-zinc-300 hover:bg-zinc-800/60 hover:text-white"}`
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 truncate" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 13, className: selectedFolderId === "all" ? "text-cyan-400" : "text-zinc-400" }), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, "Todas las pistas")),
+      /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded-full bg-zinc-800 text-[10px] text-zinc-300 font-bold border border-zinc-700" }, totalTracksCount)
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-2 space-y-1" }, folders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-8 text-center text-zinc-500 text-[11px] px-3" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 24, className: "mx-auto mb-2 opacity-40 text-cyan-400" }), /* @__PURE__ */ React.createElement("p", { className: "mb-2" }, "No hay carpetas creadas"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsAddingRoot(true),
+        className: "px-2.5 py-1 rounded bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 border border-cyan-600/60 text-[10px] font-bold cursor-pointer"
+      },
+      "+ Crear primera carpeta"
+    )) : folders.map((f) => {
+      const color = getColorObj(f.color);
+      const isSelected = selectedFolderId === f.id;
+      const isDragTarget = dragOverFolderId === f.id;
+      const subCount = f.subfolders ? f.subfolders.length : 0;
+      const totalFolderTracks = getFolderTrackKeysSet(f).size;
+      return /* @__PURE__ */ React.createElement("div", { key: f.id, className: "space-y-0.5" }, /* @__PURE__ */ React.createElement(
+        "div",
         {
-          type: "button",
-          onClick: onClose,
-          className: "w-9 h-9 rounded-xl bg-djzinc-850 hover:bg-rose-950/80 text-gray-400 hover:text-rose-300 flex items-center justify-center font-mono text-sm border border-djzinc-700 hover:border-rose-700/60 transition-all cursor-pointer shadow-sm",
-          title: "Cerrar pantalla completa (ESC)"
-        },
-        /* @__PURE__ */ React.createElement(Icons.Close, { size: 16 })
-      ))), /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 border-b border-djzinc-800 bg-[#070810] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap flex-1 min-w-[280px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono uppercase font-bold text-gray-400" }, "Biblioteca:"), /* @__PURE__ */ React.createElement(
-        "select",
-        {
-          value: activeLibId,
-          onChange: (e) => {
-            const id = e.target.value;
-            setActiveLibId(id);
-            if (onSelectLibrary) onSelectLibrary(id);
+          onDragOver: (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+            setDragOverFolderId(f.id);
           },
-          className: "px-3 py-1.5 rounded-xl bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-white font-bold outline-none focus:border-djcyan-400"
-        },
-        libraries.map((lib) => {
-          var _a2;
-          return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a2 = lib.folders) == null ? void 0 : _a2.length) || 0, " carpetas)");
-        })
-      ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
-        "input",
-        {
-          type: "text",
-          value: libNameInput,
-          onChange: (e) => setLibNameInput(e.target.value),
-          placeholder: "Nombre de la biblioteca",
-          className: "px-3 py-1 bg-djzinc-950 border border-djzinc-750 rounded-lg text-xs font-mono text-white outline-none focus:border-djcyan-400 w-44"
-        }
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: handleUpdateLibraryName,
-          className: "px-2.5 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 text-xs font-mono font-bold cursor-pointer transition-colors",
-          title: "Guardar nombre"
-        },
-        "Guardar"
-      ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: handleCreateNewLibrary,
-          className: "px-3 py-1.5 rounded-xl bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm",
-          title: "Crear una nueva biblioteca en blanco"
-        },
-        /* @__PURE__ */ React.createElement(Icons.Plus, { size: 14, className: "inline-block align-[-2px]" }),
-        /* @__PURE__ */ React.createElement("span", null, "Nueva Biblioteca")
-      ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-djzinc-800 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "w-full md:w-80 lg:w-96 p-4 flex flex-col gap-3 bg-[#080914] overflow-y-auto custom-scrollbar shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-djcyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", ((_a = currentLib.folders) == null ? void 0 : _a.length) || 0, ")")), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: handleAutoGroupByGenre,
-          className: "px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/60 text-[10px] font-mono font-bold cursor-pointer transition-colors",
-          title: "Crea carpetas autom\xE1ticamente a partir de los g\xE9neros musicales de tus pistas cargadas"
-        },
-        /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
-        " Auto por G\xE9nero"
-      )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
-        "input",
-        {
-          type: "text",
-          value: newFolderName,
-          onChange: (e) => setNewFolderName(e.target.value),
-          onKeyDown: (e) => {
-            if (e.key === "Enter") handleAddFolder();
+          onDragLeave: () => setDragOverFolderId(null),
+          onDrop: (e) => {
+            e.preventDefault();
+            setDragOverFolderId(null);
+            try {
+              const data = e.dataTransfer.getData("text/plain");
+              if (data) {
+                const keys = JSON.parse(data);
+                if (Array.isArray(keys)) onAssignTracks(f.id, keys);
+              }
+            } catch (_) {
+            }
           },
-          placeholder: "Nombre de nueva carpeta...",
-          className: "flex-1 px-3 py-1.5 bg-djzinc-950 border border-djzinc-750 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
-        }
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: handleAddFolder,
-          className: "px-3 py-1.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs rounded-xl cursor-pointer active:scale-95 shadow-sm"
+          onClick: () => onSelectFolder(f.id),
+          className: `group flex items-center justify-between px-2 py-1.5 rounded-lg transition-all cursor-pointer border ${isDragTarget ? "bg-cyan-900/90 border-cyan-400 ring-2 ring-cyan-400" : isSelected ? "bg-gradient-to-r from-zinc-850 to-zinc-900 border-cyan-500/60 text-white shadow-sm" : "border-transparent hover:bg-zinc-850/60 text-zinc-300 hover:text-white"}`
         },
-        "+ Crear"
-      )), /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 flex-1 overflow-y-auto pr-1" }, !currentLib.folders || currentLib.folders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl" }, 'No hay carpetas creadas. Crea una arriba o pulsa "Auto por G\xE9nero".') : currentLib.folders.map((f) => {
-        var _a2;
-        const isSelected = selectedFolderId === f.id;
-        const trCount = ((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0;
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 min-w-0 flex-1" }, subCount > 0 ? /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              onToggleCollapse(f.id);
+            },
+            className: "p-0.5 text-zinc-400 hover:text-white"
+          },
+          /* @__PURE__ */ React.createElement(Icons.ChevronRight, { size: 11, className: `transition-transform duration-200 ${f.collapsed ? "" : "rotate-90"}` })
+        ) : /* @__PURE__ */ React.createElement("span", { className: "w-3.5 inline-block" }), /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(
+          "span",
+          {
+            onClick: (e) => {
+              e.stopPropagation();
+              setColorPickerFolderId(colorPickerFolderId === f.id ? null : f.id);
+            },
+            className: `w-2.5 h-2.5 rounded-full ${color.dot} inline-block cursor-pointer ring-1 ring-white/20 hover:scale-125 transition-transform`,
+            title: `Color: ${color.name} (haz clic para cambiar)`
+          }
+        ), colorPickerFolderId === f.id && /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            onClick: (e) => e.stopPropagation(),
+            className: "absolute left-0 top-5 z-50 p-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl grid grid-cols-4 gap-1.5 w-32"
+          },
+          FOLDER_COLORS.map((c) => /* @__PURE__ */ React.createElement(
+            "span",
+            {
+              key: c.id,
+              onClick: () => {
+                onChangeFolderColor(f.id, c.id);
+                setColorPickerFolderId(null);
+              },
+              className: `w-5 h-5 rounded-full ${c.dot} cursor-pointer hover:scale-110 transition-transform ring-1 ring-white/30`,
+              title: c.name
+            }
+          ))
+        )), editingFolderId === f.id ? /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "text",
+            value: editingName,
+            onChange: (e) => setEditingName(e.target.value),
+            onBlur: () => submitRename(f.id),
+            onKeyDown: (e) => {
+              if (e.key === "Enter") submitRename(f.id);
+              if (e.key === "Escape") setEditingFolderId(null);
+            },
+            onClick: (e) => e.stopPropagation(),
+            autoFocus: true,
+            className: "bg-black border border-cyan-400 rounded px-1.5 py-0.5 text-xs text-white w-full font-mono outline-none"
+          }
+        ) : /* @__PURE__ */ React.createElement(
+          "span",
+          {
+            onDoubleClick: (e) => startEditing(f, e),
+            className: "truncate font-bold text-[11px]",
+            title: `${f.name} (Doble clic para renombrar)`
+          },
+          f.name
+        )),
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0 ml-1" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-zinc-800 text-[10px] text-zinc-400 font-bold group-hover:hidden" }, totalFolderTracks), /* @__PURE__ */ React.createElement("div", { className: "hidden group-hover:flex items-center gap-0.5" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              const subName = prompt(`Nueva subcarpeta dentro de "${f.name}":`);
+              if (subName && subName.trim()) onAddSubfolder(f.id, subName.trim());
+            },
+            className: "p-1 hover:text-cyan-300 text-zinc-400 rounded hover:bg-zinc-800",
+            title: "A\xF1adir subcarpeta"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Plus, { size: 11 })
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => startEditing(f, e),
+            className: "p-1 hover:text-amber-300 text-zinc-400 rounded hover:bg-zinc-800",
+            title: "Renombrar"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Pencil, { size: 11 })
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              if (confirm(`\xBFEliminar la carpeta "${f.name}"? Las pistas no se borrar\xE1n del disco.`)) {
+                onDeleteFolder(f.id);
+              }
+            },
+            className: "p-1 hover:text-red-400 text-zinc-400 rounded hover:bg-zinc-800",
+            title: "Eliminar carpeta"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Trash, { size: 11 })
+        )))
+      ), !f.collapsed && f.subfolders && f.subfolders.map((sub) => {
+        const subColor = getColorObj(sub.color || f.color);
+        const isSubSelected = selectedFolderId === sub.id;
+        const isSubDragTarget = dragOverFolderId === sub.id;
+        const subTrackCount = (sub.trackIds || []).length;
         return /* @__PURE__ */ React.createElement(
           "div",
           {
-            key: f.id,
-            onClick: () => setSelectedFolderId(f.id),
-            className: `p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? "bg-djcyan-950/40 border-djcyan-500/80 text-white shadow-md" : "bg-djzinc-900/50 border-djzinc-800 text-gray-300 hover:bg-djzinc-900 hover:border-djzinc-750"}`
+            key: sub.id,
+            onDragOver: (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
+              setDragOverFolderId(sub.id);
+            },
+            onDragLeave: () => setDragOverFolderId(null),
+            onDrop: (e) => {
+              e.preventDefault();
+              setDragOverFolderId(null);
+              try {
+                const data = e.dataTransfer.getData("text/plain");
+                if (data) {
+                  const keys = JSON.parse(data);
+                  if (Array.isArray(keys)) onAssignTracks(sub.id, keys);
+                }
+              } catch (_) {
+              }
+            },
+            onClick: () => onSelectFolder(sub.id),
+            className: `group pl-6 pr-2 py-1 rounded-lg transition-all cursor-pointer flex items-center justify-between border ${isSubDragTarget ? "bg-cyan-900/90 border-cyan-400 ring-2 ring-cyan-400" : isSubSelected ? "bg-zinc-800 border-cyan-500/50 text-white font-bold" : "border-transparent hover:bg-zinc-850/60 text-zinc-400 hover:text-zinc-200"}`
           },
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, isSelected ? "\u{1F4C2}" : "\u{1F4C1}"), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold block truncate" }, f.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono" }, trCount, " pista(s) asignadas"))),
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${subColor.dot} shrink-0` }), editingFolderId === sub.id ? /* @__PURE__ */ React.createElement(
+            "input",
+            {
+              type: "text",
+              value: editingName,
+              onChange: (e) => setEditingName(e.target.value),
+              onBlur: () => submitRename(sub.id),
+              onKeyDown: (e) => {
+                if (e.key === "Enter") submitRename(sub.id);
+                if (e.key === "Escape") setEditingFolderId(null);
+              },
+              onClick: (e) => e.stopPropagation(),
+              autoFocus: true,
+              className: "bg-black border border-cyan-400 rounded px-1 py-0.2 text-[11px] text-white w-full font-mono outline-none"
+            }
+          ) : /* @__PURE__ */ React.createElement(
+            "span",
+            {
+              onDoubleClick: (e) => startEditing(sub, e),
+              className: "truncate text-[10.5px]",
+              title: `${sub.name} (Doble clic para renombrar)`
+            },
+            sub.name
+          )),
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0 ml-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] text-zinc-500 font-bold group-hover:hidden" }, subTrackCount), /* @__PURE__ */ React.createElement("div", { className: "hidden group-hover:flex items-center gap-0.5" }, /* @__PURE__ */ React.createElement(
             "button",
             {
               type: "button",
-              onClick: () => handleAssignTracksToActiveFolder(f.id, false),
-              className: "px-2 py-0.5 rounded bg-djzinc-800 hover:bg-djcyan-950 hover:text-djcyan-300 text-gray-300 text-[10px] font-mono border border-djzinc-700 cursor-pointer",
-              title: `Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`
+              onClick: (e) => startEditing(sub, e),
+              className: "p-0.5 hover:text-amber-300 text-zinc-400 rounded",
+              title: "Renombrar subcarpeta"
             },
-            "+ Asignar (",
-            currentTracks.length,
-            ")"
+            /* @__PURE__ */ React.createElement(Icons.Pencil, { size: 10 })
           ), /* @__PURE__ */ React.createElement(
             "button",
             {
               type: "button",
-              onClick: () => handleDeleteFolder(f.id),
-              className: "w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer",
-              title: "Eliminar carpeta"
+              onClick: (e) => {
+                e.stopPropagation();
+                if (confirm(`\xBFEliminar la subcarpeta "${sub.name}"?`)) {
+                  onDeleteFolder(sub.id);
+                }
+              },
+              className: "p-0.5 hover:text-red-400 text-zinc-400 rounded",
+              title: "Eliminar subcarpeta"
             },
-            /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
-          ))
+            /* @__PURE__ */ React.createElement(Icons.Trash, { size: 10 })
+          )))
         );
-      }))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 p-5 flex flex-col gap-3.5 bg-[#0a0b18] overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, (activeFolder == null ? void 0 : activeFolder.name) || "Ninguna carpeta"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, folderTracks.length, " pista(s) en esta carpeta")), activeFolder && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, selectedTrackIds.size > 0 && /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => handleAssignTracksToActiveFolder(activeFolder.id, true),
-          className: "px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/70 text-[11px] font-mono font-bold cursor-pointer",
-          title: "Asignar solo las pistas seleccionadas con checkbox"
-        },
-        "+ Asignar Seleccionadas (",
-        selectedTrackIds.size,
-        ")"
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => handleAssignTracksToActiveFolder(activeFolder.id, false),
-          className: "px-2.5 py-1 rounded-lg bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/70 text-[11px] font-mono font-bold cursor-pointer"
-        },
-        "+ A\xF1adir Todas (",
-        currentTracks.length,
-        ")"
-      ))), folderTracks.length > 5 && /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px] absolute left-3 top-2  text-gray-500" }), /* @__PURE__ */ React.createElement(
-        "input",
-        {
-          type: "text",
-          value: searchTrack,
-          onChange: (e) => setSearchTrack(e.target.value),
-          placeholder: "Buscar en esta carpeta por t\xEDtulo o artista...",
-          className: "w-full pl-8 pr-3 py-1.5 bg-djzinc-950 border border-djzinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
-        }
-      )), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 border border-djzinc-800/80 rounded-xl bg-[#070810] p-2" }, !activeFolder || folderTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Esta carpeta est\xE1 vac\xEDa."), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-600" }, 'Pulsa "+ A\xF1adir Todas" o "+ Asignar Seleccionadas" para organizar pistas aqu\xED.')) : filteredFolderTracks.map((tr, tIdx) => {
-        var _a2;
-        const trKey = tr.id || tr.file_path || tIdx;
-        return /* @__PURE__ */ React.createElement("div", { key: trKey, className: "py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-djzinc-900/60 rounded-lg group" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10px] text-gray-500 w-5" }, tIdx + 1), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white block truncate" }, tr.title || tr.filename || ((_a2 = tr.file_path) == null ? void 0 : _a2.split("/").pop()) || "Sin t\xEDtulo"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 block truncate" }, tr.artist || "Artista desconocido", " \u2022 ", tr.genre || tr.subgenre || "Electr\xF3nica", " \u2022 ", tr.bpm ? `${Math.round(tr.bpm)} BPM` : "", " ", tr.key || ""))), /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: () => handleRemoveTrackFromFolder(activeFolder.id, trKey),
-            className: "opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 text-xs transition-opacity cursor-pointer",
-            title: "Quitar de esta carpeta"
-          },
-          /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
-        ));
-      })))), /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement(Icons.Lock, { size: 14, className: "inline-block align-[-2px]" }), " Los cambios quedan guardados autom\xE1ticamente para tu pr\xF3xima sesi\xF3n.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => onMaterializarEnDisco && onMaterializarEnDisco(currentLib),
-          disabled: !currentLib.folders || currentLib.folders.length === 0,
-          className: "px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-black text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95",
-          title: "Selecciona una carpeta o USB en disco para crear una copia f\xEDsica de tus pistas organizadas por carpetas"
-        },
-        /* @__PURE__ */ React.createElement(Icons.Save, { size: 14, className: "inline-block align-[-2px]" }),
-        /* @__PURE__ */ React.createElement("span", null, "Crear en Disco (Copia F\xEDsica Estructurada)")
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: onClose,
-          className: "px-4 py-2 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-mono font-bold text-xs cursor-pointer transition-colors"
-        },
-        "Listo"
-      )))),
-      document.body
-    );
+      }));
+    }), isAddingRoot ? /* @__PURE__ */ React.createElement("form", { onSubmit: handleCreateRoot, className: "pt-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: newFolderNameInput,
+        onChange: (e) => setNewFolderNameInput(e.target.value),
+        placeholder: "Nombre de carpeta...",
+        autoFocus: true,
+        className: "flex-1 bg-zinc-950 border border-cyan-500 rounded px-2 py-1 text-xs text-white font-mono outline-none"
+      }
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "submit",
+        className: "px-2 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-black font-bold text-xs cursor-pointer"
+      },
+      "\u2713"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsAddingRoot(false),
+        className: "px-1.5 py-1 rounded bg-zinc-800 text-zinc-400 hover:text-white text-xs cursor-pointer"
+      },
+      "\u2715"
+    ))) : /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsAddingRoot(true),
+        className: "w-full mt-2 py-1 px-2 rounded-lg border border-dashed border-zinc-700 hover:border-cyan-500/80 text-zinc-400 hover:text-cyan-300 text-[10.5px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Plus, { size: 12 }),
+      /* @__PURE__ */ React.createElement("span", null, "Nueva Carpeta")
+    )), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 border-t border-djzinc-800 bg-[#07070c] shrink-0 space-y-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onMaterializarEnDisco,
+        className: "w-full py-2 px-2.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-black font-black text-[11px] shadow-md shadow-emerald-900/30 flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95",
+        title: "Crea una copia estructurada de tus carpetas en una unidad USB o disco local"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Save, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", null, "Crear en Disco (Copia F\xEDsica)")
+    ), /* @__PURE__ */ React.createElement("div", { className: "text-[9.5px] text-zinc-500 text-center" }, "Arrastra pistas desde la tabla para organizarlas")));
+  };
+  var CustomLibraryModal = ({ isOpen, onClose }) => {
+    return null;
   };
   var AuditWorkspace = ({
     tracks: externalTracks,
@@ -7710,7 +7743,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     isSimulationMode = false,
     onToggleSimulation
   }) => {
-    var _a, _b;
+    var _a;
     const [localRutaOrigen, setLocalRutaOrigen] = useState5("");
     const rutaOrigen = currentFolder || localRutaOrigen;
     const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
@@ -8144,7 +8177,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         setBatchProgress(90);
         setBatchStatusMsg(`\u2713 ${results.length} pistas transferidas a Descargas. Redirigiendo a Pool Ingest...`);
         const formattedTracks = results.map((r, i) => {
-          var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+          var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
           const isVerified = (r.match_score !== void 0 ? r.match_score >= 80 : true) && r.es_misma_pista !== false;
           return {
             id: `sp_hd_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
@@ -8157,7 +8190,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             duration: r.duration || "03:45",
             origin: "audit_upgrade",
             reemplazo_de: r.reemplazo_de || r.filename || (targetTracks[i] ? `${targetTracks[i].artist || targetTracks[i].a || ""} - ${targetTracks[i].title || targetTracks[i].t || ""}` : null),
-            original_file: r.original_file || r.filename || ((_a2 = targetTracks[i]) == null ? void 0 : _a2.filename) || ((_b2 = targetTracks[i]) == null ? void 0 : _b2.f) || null,
+            original_file: r.original_file || r.filename || ((_a2 = targetTracks[i]) == null ? void 0 : _a2.filename) || ((_b = targetTracks[i]) == null ? void 0 : _b.f) || null,
             original_path: r.original_path || ((_c = targetTracks[i]) == null ? void 0 : _c.path) || ((_d = targetTracks[i]) == null ? void 0 : _d.filepath) || ((_e = targetTracks[i]) == null ? void 0 : _e.f) || null,
             original_duration: r.original_duration || ((_f = targetTracks[i]) == null ? void 0 : _f.duration) || null,
             original_artist: r.original_artist || ((_g = targetTracks[i]) == null ? void 0 : _g.artist) || ((_h = targetTracks[i]) == null ? void 0 : _h.a) || "Desconocido",
@@ -9204,10 +9237,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const [columnSelectorOpen, setColumnSelectorOpen] = useState5(false);
     const [columnSearchText, setColumnSearchText] = useState5("");
     const [isDragOver, setIsDragOver] = useState5(false);
-    const [isLibraryModalOpen, setIsLibraryModalOpen] = useState5(false);
-    const [customLibraries, setCustomLibraries] = useState5(() => {
+    const [libraryFolders, setLibraryFolders] = useState5(() => {
       try {
-        const saved = localStorage.getItem("bw_user_custom_libraries");
+        const saved = localStorage.getItem("bw_library_folders_v2");
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -9215,89 +9247,213 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       } catch (_) {
       }
       return [
-        {
-          id: "lib_default",
-          name: "Mi Biblioteca Principal",
-          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
-          folders: [
-            { id: "f_warm", name: "01 - Warm Up", tracks: [] },
-            { id: "f_peak", name: "02 - Peak Time", tracks: [] },
-            { id: "f_deep", name: "03 - Deep & Melodic", tracks: [] },
-            { id: "f_close", name: "04 - Closing & Special", tracks: [] }
-          ]
-        }
+        { id: "f_warm", name: "01 - Warm Up (120-124 BPM)", color: "amber", collapsed: false, trackIds: [], subfolders: [] },
+        { id: "f_peak", name: "02 - Peak Time (125-130 BPM)", color: "rose", collapsed: false, trackIds: [], subfolders: [] },
+        { id: "f_deep", name: "03 - Deep & Melodic", color: "purple", collapsed: false, trackIds: [], subfolders: [] },
+        { id: "f_close", name: "04 - Closing & Anthems", color: "cyan", collapsed: false, trackIds: [], subfolders: [] }
       ];
     });
-    const [activeCustomLibId, setActiveCustomLibId] = useState5(() => {
+    const [selectedFolderId, setSelectedFolderId] = useState5("all");
+    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState5(true);
+    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState5(false);
+    const saveFolders = (newFolders) => {
+      setLibraryFolders(newFolders);
       try {
-        return localStorage.getItem("bw_active_custom_library_id") || "lib_default";
-      } catch (_) {
-        return "lib_default";
-      }
-    });
-    const activeCustomLib = customLibraries.find((l) => l.id === activeCustomLibId) || customLibraries[0];
-    const saveCustomLibraries = (newLibs, newActiveId = null) => {
-      setCustomLibraries(newLibs);
-      try {
-        localStorage.setItem("bw_user_custom_libraries", JSON.stringify(newLibs));
-        if (newActiveId) {
-          setActiveCustomLibId(newActiveId);
-          localStorage.setItem("bw_active_custom_library_id", newActiveId);
-        }
+        localStorage.setItem("bw_library_folders_v2", JSON.stringify(newFolders));
       } catch (_) {
       }
     };
-    useEffect6(() => {
-      if (!columnSelectorOpen) return;
-      const handleKeyDown = (e) => {
-        if (e.key === "Escape") {
-          setColumnSelectorOpen(false);
-          setColumnSearchText("");
-        }
+    const handleAddFolder = (name, colorId = "cyan") => {
+      const newF = {
+        id: `f_${Date.now()}`,
+        name,
+        color: colorId,
+        collapsed: false,
+        trackIds: [],
+        subfolders: []
       };
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [columnSelectorOpen]);
-    const solicitarCarpetaDestino = async (promptMsg = "Selecciona la carpeta destino para guardar:") => {
-      if (window.eel && window.eel.seleccionar_directorio) {
-        try {
-          const ruta = await window.eel.seleccionar_directorio(promptMsg)();
-          return ruta && typeof ruta === "string" && ruta.trim() ? ruta.trim() : null;
-        } catch (e) {
-          console.error("Error al seleccionar carpeta destino:", e);
-          return null;
-        }
-      }
-      return rutaOrigen || "";
+      saveFolders([...libraryFolders, newF]);
+      setSaveFeedback(`\u2713 Carpeta "${name}" creada`);
     };
-    const handleMaterializarBibliotecaEnDisco = async (lib) => {
-      if (!lib || !lib.folders || lib.folders.length === 0) {
-        alert("Crea al menos una carpeta y asigna pistas para materializar en disco.");
+    const handleAddSubfolder = (parentId, name, colorId = null) => {
+      const updateTree = (list) => list.map((f) => {
+        if (f.id === parentId) {
+          const sub = {
+            id: `sub_${Date.now()}`,
+            name,
+            color: colorId || f.color,
+            trackIds: [],
+            subfolders: []
+          };
+          return { ...f, collapsed: false, subfolders: [...f.subfolders || [], sub] };
+        }
+        return f;
+      });
+      saveFolders(updateTree(libraryFolders));
+      setSaveFeedback(`\u2713 Subcarpeta "${name}" creada`);
+    };
+    const handleRenameFolder = (folderId, newName) => {
+      const updateTree = (list) => list.map((f) => {
+        if (f.id === folderId) return { ...f, name: newName };
+        if (f.subfolders) {
+          return {
+            ...f,
+            subfolders: f.subfolders.map((s) => s.id === folderId ? { ...s, name: newName } : s)
+          };
+        }
+        return f;
+      });
+      saveFolders(updateTree(libraryFolders));
+      setSaveFeedback(`\u2713 Renombrada a "${newName}"`);
+    };
+    const handleChangeFolderColor = (folderId, newColor) => {
+      const updateTree = (list) => list.map((f) => {
+        if (f.id === folderId) return { ...f, color: newColor };
+        if (f.subfolders) {
+          return {
+            ...f,
+            subfolders: f.subfolders.map((s) => s.id === folderId ? { ...s, color: newColor } : s)
+          };
+        }
+        return f;
+      });
+      saveFolders(updateTree(libraryFolders));
+    };
+    const handleDeleteFolder = (folderId) => {
+      const filterTree = (list) => list.filter((f) => f.id !== folderId).map((f) => ({
+        ...f,
+        subfolders: f.subfolders ? f.subfolders.filter((s) => s.id !== folderId) : []
+      }));
+      saveFolders(filterTree(libraryFolders));
+      if (selectedFolderId === folderId) setSelectedFolderId("all");
+      setSaveFeedback(`\u2713 Carpeta eliminada`);
+    };
+    const handleToggleFolderCollapse = (folderId) => {
+      const updateTree = (list) => list.map((f) => {
+        if (f.id === folderId) return { ...f, collapsed: !f.collapsed };
+        return f;
+      });
+      saveFolders(updateTree(libraryFolders));
+    };
+    const handleAssignTracksToFolder = (targetFolderId, trackKeys) => {
+      var _a2;
+      if (!trackKeys || trackKeys.length === 0) return;
+      const keySet = new Set(trackKeys);
+      const updateTree = (list) => list.map((f) => {
+        if (f.id === targetFolderId) {
+          const currentSet = new Set(f.trackIds || []);
+          keySet.forEach((k) => currentSet.add(k));
+          return { ...f, trackIds: Array.from(currentSet) };
+        }
+        if (f.subfolders) {
+          return {
+            ...f,
+            subfolders: f.subfolders.map((s) => {
+              if (s.id === targetFolderId) {
+                const currentSet = new Set(s.trackIds || []);
+                keySet.forEach((k) => currentSet.add(k));
+                return { ...s, trackIds: Array.from(currentSet) };
+              }
+              return s;
+            })
+          };
+        }
+        return f;
+      });
+      saveFolders(updateTree(libraryFolders));
+      const target = findFolderOrSub(libraryFolders, targetFolderId);
+      setSaveFeedback(`\u2713 ${trackKeys.length} pistas asignadas a "${((_a2 = target == null ? void 0 : target.folder) == null ? void 0 : _a2.name) || "carpeta"}"`);
+    };
+    const handleAutoGroupByGenre = () => {
+      if (!tracks || tracks.length === 0) {
+        alert("Carga pistas en la colecci\xF3n para auto-organizar por g\xE9nero.");
         return;
       }
-      const destino = await solicitarCarpetaDestino(`Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`);
-      if (!destino) return;
-      const estructura = lib.folders.map((f) => {
-        let fTracks = f.tracks || [];
-        if (fTracks.length === 0 && tracks && tracks.length > 0) {
-          fTracks = tracks.filter((t2) => t2.genre && t2.genre.toLowerCase() === f.name.toLowerCase() || t2.subgenre && t2.subgenre.toLowerCase() === f.name.toLowerCase());
+      const genreMap = /* @__PURE__ */ new Map();
+      tracks.forEach((t2) => {
+        const trId = t2.id !== void 0 ? t2.id : t2.file_path || t2.filename;
+        const g = (t2.genre || "Sin G\xE9nero").trim();
+        const sg = (t2.subgenre || "").trim();
+        if (!genreMap.has(g)) {
+          genreMap.set(g, { subgenres: /* @__PURE__ */ new Map(), trackIds: /* @__PURE__ */ new Set() });
         }
-        return {
-          folder_name: f.name,
-          tracks: fTracks
-        };
+        const gEntry = genreMap.get(g);
+        gEntry.trackIds.add(trId);
+        if (sg && sg.toLowerCase() !== g.toLowerCase()) {
+          if (!gEntry.subgenres.has(sg)) {
+            gEntry.subgenres.set(sg, /* @__PURE__ */ new Set());
+          }
+          gEntry.subgenres.get(sg).add(trId);
+        }
       });
+      const newFolders = [];
+      let colorIdx = 0;
+      genreMap.forEach((gData, gName) => {
+        const color = FOLDER_COLORS[colorIdx % FOLDER_COLORS.length].id;
+        colorIdx++;
+        const subfolders = [];
+        let subColorIdx = 0;
+        gData.subgenres.forEach((subTrackIds, subName) => {
+          subfolders.push({
+            id: `f_auto_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            name: subName,
+            color: FOLDER_COLORS[(colorIdx + subColorIdx) % FOLDER_COLORS.length].id,
+            trackIds: Array.from(subTrackIds),
+            subfolders: []
+          });
+          subColorIdx++;
+        });
+        newFolders.push({
+          id: `f_auto_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+          name: gName,
+          color,
+          collapsed: false,
+          trackIds: Array.from(gData.trackIds),
+          subfolders
+        });
+      });
+      saveFolders(newFolders);
+      setSaveFeedback(`\u2713 Auto-organizado en ${newFolders.length} g\xE9neros y subcarpetas`);
+    };
+    const handleMaterializarFoldersEnDisco = async () => {
+      if (!libraryFolders || libraryFolders.length === 0) {
+        alert("No hay carpetas para exportar a disco.");
+        return;
+      }
+      const destino = await solicitarCarpetaDestino(`Selecciona la carpeta base donde crear la copia estructurada de tus carpetas:`);
+      if (!destino) return;
+      const estructura = [];
+      libraryFolders.forEach((f) => {
+        const folderKeys = new Set(f.trackIds || []);
+        const fTracks = tracks.filter((t2) => folderKeys.has(t2.id) || folderKeys.has(t2.file_path) || folderKeys.has(t2.filename));
+        if (fTracks.length > 0) {
+          estructura.push({ folder_name: f.name, tracks: fTracks });
+        }
+        if (f.subfolders) {
+          f.subfolders.forEach((sub) => {
+            const subKeys = new Set(sub.trackIds || []);
+            const subTracks = tracks.filter((t2) => subKeys.has(t2.id) || subKeys.has(t2.file_path) || subKeys.has(t2.filename));
+            if (subTracks.length > 0) {
+              estructura.push({ folder_name: `${f.name}/${sub.name}`, tracks: subTracks });
+            }
+          });
+        }
+      });
+      if (estructura.length === 0) {
+        alert("Asigna pistas a las carpetas antes de crear la copia en disco.");
+        return;
+      }
       setIsExporting(true);
       setBatchProgress(20);
-      setBatchStatusMsg(`Copiando biblioteca "${lib.name}" en disco preservando respaldos...`);
+      setBatchStatusMsg(`Copiando biblioteca estructurada en disco...`);
       try {
         if (window.eel && window.eel.crear_biblioteca_en_disco) {
-          const res = await window.eel.crear_biblioteca_en_disco(lib.name, estructura, destino)();
+          const res = await window.eel.crear_biblioteca_en_disco("Coleccion_Organizada", estructura, destino)();
           setBatchProgress(100);
           if (res && res.status === "ok") {
-            setBatchStatusMsg(`\u2713 Biblioteca "${lib.name}" creada en: ${res.base_dir}`);
-            setSaveFeedback(`\u2713 ${res.total_copied} pistas copiadas en ${lib.name}`);
-            alert(`\xA1Biblioteca materializada con \xE9xito en disco!
+            setBatchStatusMsg(`\u2713 Creada en: ${res.base_dir}`);
+            setSaveFeedback(`\u2713 ${res.total_copied} pistas organizadas copiadas`);
+            alert(`\xA1Carpetas creadas con \xE9xito en disco!
 
 Ubicaci\xF3n: ${res.base_dir}
 Pistas copiadas: ${res.total_copied}
@@ -9308,8 +9464,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           }
         }
       } catch (err) {
-        console.error("Error materializando biblioteca:", err);
-        alert("Error al crear biblioteca en disco.");
+        console.error("Error materializando carpetas:", err);
+        alert("Error al exportar carpetas.");
       } finally {
         setTimeout(() => {
           setIsExporting(false);
@@ -9318,6 +9474,28 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         }, 800);
       }
     };
+    const foldersFlatList = useMemo(() => {
+      const list = [];
+      libraryFolders.forEach((f) => {
+        list.push({ id: f.id, name: f.name, color: f.color, isSub: false });
+        if (f.subfolders) {
+          f.subfolders.forEach((s) => {
+            list.push({ id: s.id, name: `\u21B3 ${s.name}`, color: s.color || f.color, isSub: true, parentName: f.name });
+          });
+        }
+      });
+      return list;
+    }, [libraryFolders]);
+    const activeFolderMeta = useMemo(() => {
+      if (!selectedFolderId || selectedFolderId === "all") return null;
+      const target = findFolderOrSub(libraryFolders, selectedFolderId);
+      if (!target || !target.folder) return null;
+      const col = getColorObj(target.folder.color);
+      return {
+        name: target.parent ? `${target.parent.name} / ${target.folder.name}` : target.folder.name,
+        dotClass: col.dot
+      };
+    }, [selectedFolderId, libraryFolders]);
     const toggleColumnVisibility = (colKey) => {
       setVisibleColumns((prev) => {
         const next = { ...prev, [colKey]: !prev[colKey] };
@@ -9405,7 +9583,18 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     };
     const tracksFiltrados = useMemo(() => {
       const parsed = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
-      let result = tracks.filter((t2) => {
+      let baseTracks = tracks;
+      if (selectedFolderId && selectedFolderId !== "all") {
+        const target = findFolderOrSub(libraryFolders, selectedFolderId);
+        if (target && target.folder) {
+          const allowedKeys = getFolderTrackKeysSet(target.folder);
+          baseTracks = baseTracks.filter((t2) => {
+            const k = t2.id !== void 0 ? t2.id : t2.file_path || t2.filename;
+            return allowedKeys.has(k) || allowedKeys.has(t2.file_path) || allowedKeys.has(t2.filename);
+          });
+        }
+      }
+      let result = baseTracks.filter((t2) => {
         const term = busqueda.toLowerCase();
         if (parsed && parsed.tokens && parsed.tokens.length > 0) {
           if (parsed.targetBpm) {
@@ -9606,7 +9795,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         return auditSortDir === "asc" ? String(valA || "").localeCompare(String(valB || "")) : String(valB || "").localeCompare(String(valA || ""));
       });
       return result;
-    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderArtist, filterHeaderGenre, filterHeaderSubgenre, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, filterHeaderAcousticRole, filterHeaderKhz, filterHeaderKbps, filterHeaderLoss, filterHeaderCutoff, filterHeaderLufs, filterHeaderDuration, filterHeaderBpm, filterHeaderKey, filterHeaderCues, filterHeaderPhase, filterHeaderComment, auditSortField, auditSortDir]);
+    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderArtist, filterHeaderGenre, filterHeaderSubgenre, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, filterHeaderAcousticRole, filterHeaderKhz, filterHeaderKbps, filterHeaderLoss, filterHeaderCutoff, filterHeaderLufs, filterHeaderDuration, filterHeaderBpm, filterHeaderKey, filterHeaderCues, filterHeaderPhase, filterHeaderComment, auditSortField, auditSortDir, selectedFolderId, libraryFolders]);
     const {
       visibleItems: virtualRows,
       paddingTop: virtualPaddingTop,
@@ -9635,15 +9824,49 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       "button",
       {
         type: "button",
-        onClick: () => onOpenLibrary ? onOpenLibrary() : setIsLibraryModalOpen(true),
-        className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap",
-        title: "Crear o gestionar biblioteca personalizada, estructurada en carpetas virtuales y copia f\xEDsica en disco"
+        onClick: () => setIsFolderSidebarOpen((prev) => !prev),
+        className: `flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap ${isFolderSidebarOpen ? "bg-cyan-950/90 border-cyan-500 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.3)]" : "bg-djzinc-900 hover:bg-djzinc-850 border-djzinc-700 text-zinc-300 hover:text-white"}`,
+        title: "Mostrar u ocultar el gestor de carpetas y crates de la biblioteca"
       },
-      /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 14, className: "inline-block align-[-2px] shrink-0" }),
-      /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline" }, "Biblioteca:"),
-      /* @__PURE__ */ React.createElement("span", { className: "text-white font-black whitespace-nowrap" }, activeCustomLib ? activeCustomLib.name : "Crear Biblioteca"),
-      /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-djzinc-900 text-djcyan-300 text-[10px] font-bold border border-djzinc-750 shrink-0" }, ((_a = activeCustomLib == null ? void 0 : activeCustomLib.folders) == null ? void 0 : _a.length) || 0)
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0 ml-auto" }, saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse hidden md:inline" }, saveFeedback), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-950/80 p-0.5 rounded-xl border border-djzinc-800 shrink-0" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px] shrink-0 text-cyan-400" }),
+      /* @__PURE__ */ React.createElement("span", null, "Carpetas"),
+      /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-black/40 text-cyan-300 text-[10px] font-bold border border-cyan-500/30 shrink-0" }, libraryFolders.length)
+    ), selectedAuditIds.size > 0 && /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setFolderMoveMenuOpen((prev) => !prev),
+        className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/80 text-emerald-300 hover:text-white text-xs font-mono font-black cursor-pointer transition-all active:scale-95 shadow-md shadow-emerald-950/40 shrink-0",
+        title: "Mover o asignar las pistas seleccionadas a una carpeta"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", null, "Mover a carpeta (", selectedAuditIds.size, ")"),
+      /* @__PURE__ */ React.createElement(Icons.ChevronDown, { size: 11 })
+    ), folderMoveMenuOpen && /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        onClick: (e) => e.stopPropagation(),
+        className: "absolute left-0 top-full mt-1.5 z-50 w-56 max-h-64 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 font-mono text-xs space-y-0.5"
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "px-2 py-1 text-[10px] text-zinc-500 uppercase font-bold border-b border-zinc-800" }, "Selecciona carpeta destino:"),
+      foldersFlatList.map((item) => {
+        const col = getColorObj(item.color);
+        return /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            key: item.id,
+            type: "button",
+            onClick: () => {
+              handleAssignTracksToFolder(item.id, Array.from(selectedAuditIds));
+              setFolderMoveMenuOpen(false);
+            },
+            className: "w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-zinc-800 text-left text-zinc-200 hover:text-white transition-colors cursor-pointer"
+          },
+          /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${col.dot} shrink-0` }),
+          /* @__PURE__ */ React.createElement("span", { className: "truncate" }, item.name)
+        );
+      })
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0 ml-auto" }, saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse hidden md:inline" }, saveFeedback), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-djzinc-950/80 p-0.5 rounded-xl border border-djzinc-800 shrink-0" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -9936,7 +10159,35 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         onClick: () => handleBuscarReemplazosSpotify(tracks.filter((t2) => selectedAuditIds.has(t2.id))),
         title: t("tooltip_send_downloads") || "Buscar las pistas seleccionadas en m\xE1xima calidad"
       }
-    ))), saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse shrink-0" }, saveFeedback)), /* @__PURE__ */ React.createElement("div", { ref: tableScrollRef, className: "flex-1 overflow-auto bg-[#0f0f13] flex flex-col" }, tracks.length === 0 ? /* @__PURE__ */ React.createElement(
+    ))), saveFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djgreen-400 font-bold animate-pulse shrink-0" }, saveFeedback)), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex overflow-hidden relative" }, isFolderSidebarOpen && /* @__PURE__ */ React.createElement(
+      LibraryFolderSidebar,
+      {
+        folders: libraryFolders,
+        selectedFolderId,
+        onSelectFolder: (fId) => setSelectedFolderId(fId),
+        totalTracksCount: tracks.length,
+        onAddFolder: handleAddFolder,
+        onAddSubfolder: handleAddSubfolder,
+        onRenameFolder: handleRenameFolder,
+        onChangeFolderColor: handleChangeFolderColor,
+        onDeleteFolder: handleDeleteFolder,
+        onToggleCollapse: handleToggleFolderCollapse,
+        onAssignTracks: handleAssignTracksToFolder,
+        onAutoGroupByGenre: handleAutoGroupByGenre,
+        onMaterializarEnDisco: handleMaterializarFoldersEnDisco,
+        onClose: () => setIsFolderSidebarOpen(false)
+      }
+    ), /* @__PURE__ */ React.createElement("div", { ref: tableScrollRef, className: "flex-1 min-w-0 overflow-auto bg-[#0f0f13] flex flex-col" }, activeFolderMeta && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-gradient-to-r from-[#121324] via-[#0d0e1a] to-[#09090f] border-b border-djzinc-800 flex items-center justify-between gap-3 text-xs font-mono shrink-0 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: `w-2.5 h-2.5 rounded-full ${activeFolderMeta.dotClass || "bg-cyan-400"} shadow-[0_0_8px_currentColor]` }), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Carpeta activa:"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-black tracking-wide" }, activeFolderMeta.name), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "(", tracksFiltrados.length, " pistas en tabla de auditor\xEDa)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSelectedFolderId("all"),
+        className: "text-[11px] text-cyan-400 hover:text-cyan-300 font-mono font-bold hover:underline cursor-pointer flex items-center gap-1"
+      },
+      "\u2715 Ver todas las pistas (",
+      tracks.length,
+      ")"
+    )), tracks.length === 0 ? /* @__PURE__ */ React.createElement(
       IngestDropzone,
       {
         isDragOver,
@@ -10214,160 +10465,199 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       },
       /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
       " Limpiar Filtros de Cabecera"
-    )))) : null, virtualPaddingTop > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingTop } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })), virtualRows.map((row, i) => {
+    )))) : null, virtualPaddingTop > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingTop } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })), ((virtualRows == null ? void 0 : virtualRows.length) > 0 ? virtualRows : tracksFiltrados.slice(0, 60)).map((row, i) => {
       const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
       const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
       const isFake = Boolean(row.es_fake || row.format === "FLAC" && String(row.status || "").includes("Fake"));
-      return /* @__PURE__ */ React.createElement("tr", { key: row.id, onClick: () => {
-        setSelectedTrack(row.id);
-        setSidebarOpen(true);
-        if (onPlayTrack) onPlayTrack(row, 0, false);
-      }, className: `cursor-pointer select-none transition-colors ${selectedTrack === row.id ? "bg-djcyan-950/40 border-l-2 border-djcyan-400" : "hover:bg-djzinc-850/40"}` }, visibleColumns.id && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, /* @__PURE__ */ React.createElement(
-        "input",
+      return /* @__PURE__ */ React.createElement(
+        "tr",
         {
-          type: "checkbox",
-          checked: selectedAuditIds.has(row.id),
-          onChange: (e) => handleToggleSelectRow(row.id, e),
-          className: "accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded"
-        }
-      ), /* @__PURE__ */ React.createElement("span", { className: "text-djzinc-500 font-mono text-[10px] w-4 text-right" }, row.id))), visibleColumns.waveform && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement(
-        TableHarmonicWaveform,
-        {
-          track: row,
-          duration: row.duration || "05:00",
-          onPlayTrack,
-          onTogglePlay,
-          isCurrentPlaying: isRowPlaying,
-          playProgress: isRowPlaying ? playProgress : 0
-        }
-      )), visibleColumns.title && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: coverUrl,
-          className: "w-9 h-9 rounded bg-djzinc-800 object-cover shrink-0 border border-djzinc-700 shadow-sm",
-          alt: "cover",
-          onError: (e) => {
-            e.target.onerror = null;
-            e.target.src = DEFAULT_VINYL_SVG;
-          }
-        }
-      ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-djcyan-400 text-xs truncate max-w-[210px] flex items-center gap-1.5", title: row.t || row.title || row.f }, /* @__PURE__ */ React.createElement("span", { className: "truncate" }, row.t || row.title || row.f || "Desconocido"), row.version_type && row.version_type !== "standard" && /* @__PURE__ */ React.createElement("span", { className: "px-1 py-0.2 rounded text-[8px] font-mono font-black uppercase bg-purple-950 text-purple-300 border border-purple-700/60 shrink-0" }, row.version_type)), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate max-w-[210px]", title: row.f }, row.f || "")))), visibleColumns.artist && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-gray-300 truncate max-w-[120px]", title: row.a || row.artist }, row.a || row.artist), visibleColumns.genre && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[95px] inline-block shadow-sm", title: row.genre || "House" }, row.genre || "House")), visibleColumns.subgenre && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block", title: row.subgenre || (TAXONOMY_TREE[row.genre || "Tech House"] ? TAXONOMY_TREE[row.genre || "Tech House"][0] : "Tech House") }, row.subgenre || (TAXONOMY_TREE[row.genre || "Tech House"] ? TAXONOMY_TREE[row.genre || "Tech House"][0] : "Tech House"))), visibleColumns.format && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-djcyan-400 border border-djzinc-750" }, row.format || (row.f ? row.f.split(".").pop().toUpperCase() : "FLAC"))), visibleColumns.sample_rate_khz && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-300" }, row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : "44.1 kHz"), visibleColumns.bitrate_kbps && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-300" }, row.bitrate_kbps ? `${row.bitrate_kbps} kbps` : row.format === "MP3" ? "320 kbps" : "1062 kbps"), visibleColumns.calidad && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${isFake ? "bg-red-950 text-red-400 border-red-800" : String(row.calidad || "").includes("Alta") || String(row.calidad || "").includes("Hi-Res") ? "bg-emerald-950/80 text-emerald-400 border-emerald-800" : String(row.calidad || "").includes("Media") ? "bg-amber-950/80 text-amber-400 border-amber-800" : row.calidad && row.calidad !== "Pendiente Auditor\xEDa" ? "bg-red-950/80 text-red-400 border-red-800" : "bg-djzinc-850 text-gray-400 border-djzinc-750"}` }, row.calidad || (isFake ? "Baja" : "Alta")), isFlacUpgradeCandidate(row) ? /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          onClick: (e) => {
-            e.stopPropagation();
-            handleBuscarReemplazosSpotify([row]);
+          key: row.id !== void 0 ? row.id : row.file_path || i,
+          draggable: true,
+          onDragStart: (e) => {
+            const idsToDrag = selectedAuditIds.has(row.id) ? Array.from(selectedAuditIds) : [row.id !== void 0 ? row.id : row.file_path || row.filename];
+            e.dataTransfer.setData("text/plain", JSON.stringify(idsToDrag));
+            e.dataTransfer.effectAllowed = "copyMove";
           },
-          className: "px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black bg-gradient-to-r from-cyan-950 to-purple-950 hover:from-cyan-900 hover:to-purple-900 text-cyan-300 border border-cyan-500/70 cursor-pointer shadow-sm flex items-center justify-center gap-1 transition-all active:scale-95",
-          title: "FLAC no cumple est\xE1ndares lossless o es de calidad media/fake. Buscar master oficial en Cat\xE1logo Global (SuperFLAC)"
-        },
-        /* @__PURE__ */ React.createElement(Icons.Gem, { size: 14, className: "inline-block align-[-2px]" }),
-        /* @__PURE__ */ React.createElement("span", null, "SuperFLAC")
-      ) : isBadQualityTrack(row) ? /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          onClick: (e) => {
-            e.stopPropagation();
-            handleBuscarReemplazosSpotify([row]);
-          },
-          className: "px-1.5 py-0.5 rounded text-[8px] font-mono font-black bg-amber-950/90 hover:bg-amber-900 text-amber-300 border border-amber-600/70 cursor-pointer shadow flex items-center justify-center gap-1 transition-all active:scale-95",
-          title: "Buscar versi\xF3n oficial en el Record Pool para sustituir este track"
-        },
-        /* @__PURE__ */ React.createElement(Icons.Refresh, { size: 14, className: "inline-block align-[-2px]" }),
-        /* @__PURE__ */ React.createElement("span", null, "Cat\xE1logo HD")
-      ) : null)), visibleColumns.perdida_pct && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center" }, isFake ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800", title: `Corte espectral a ${row.cutoff_khz || "--"}kHz` }, /* @__PURE__ */ React.createElement(Icons.Warning, { size: 14, className: "inline-block align-[-2px]" }), " Transcode (", row.perdida_pct || 0, "%)") : row.perdida === "Sin P\xE9rdida" ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60" }, "Sin P\xE9rdida") : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-300" }, row.perdida || "Sin auditar")), visibleColumns.cutoff_khz && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${isFake ? "bg-red-950 text-red-400 border-red-800" : "bg-djgreen-950/80 text-djgreen-400 border-djgreen-800"}` }, row.cutoff_khz ? `${row.cutoff_khz}kHz` : "PASS")), visibleColumns.lufs && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `text-[10px] font-bold ${row.lufs > -7 ? "text-amber-400" : row.lufs && row.lufs <= -14 ? "text-cyan-400" : "text-emerald-400"}` }, row.lufs !== void 0 ? `${row.lufs} LUFS` : "-9.0 LUFS"), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] ${row.clipping ? "text-red-400 font-black animate-pulse" : "text-gray-500"}`, title: row.clipping ? "Clipping detectado: pico real supera 0.0 dBFS" : "Pico inter-sample en rango" }, row.clipping ? "\u26A0\uFE0F CLIP" : `${row.true_peak !== void 0 ? row.true_peak > 0 ? `+${row.true_peak}` : row.true_peak : "-0.1"}dB`))), visibleColumns.duration && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center text-gray-400 font-mono" }, row.duration), visibleColumns.bpm && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "ws-bpm text-[13px]" }, row.b || "--")), visibleColumns.key && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center", title: getHarmonicKeyDisplay(row.k) }, /* @__PURE__ */ React.createElement(CamelotKeyBadge, { value: row.k })), visibleColumns.cues && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: (e) => {
-            e.stopPropagation();
+          onClick: () => {
             setSelectedTrack(row.id);
-            if (onNavigateTab) {
-              onNavigateTab("hotcues");
-            } else {
-              setCueStudioModalOpen(true);
-            }
+            setSidebarOpen(true);
+            if (onPlayTrack) onPlayTrack(row, 0, false);
           },
-          className: "px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-pink-950/80 hover:bg-pink-900 text-pink-300 border border-pink-800/60 transition-all shadow active:scale-95 cursor-pointer",
-          title: "Abrir Estudio de Hot Cues a pantalla completa con reproductor"
+          className: `cursor-pointer select-none transition-colors ${selectedTrack === row.id ? "bg-djcyan-950/40 border-l-2 border-djcyan-400" : "hover:bg-djzinc-850/40"}`
         },
-        /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }),
-        " 8 Cues"
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: (e) => {
-            e.stopPropagation();
-            if (onAddTrackToSet) {
-              onAddTrackToSet(row);
+        visibleColumns.id && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: selectedAuditIds.has(row.id),
+            onChange: (e) => handleToggleSelectRow(row.id, e),
+            className: "accent-djcyan-500 cursor-pointer w-3.5 h-3.5 rounded"
+          }
+        ), /* @__PURE__ */ React.createElement("span", { className: "text-djzinc-500 font-mono text-[10px] w-4 text-right" }, row.id))),
+        visibleColumns.waveform && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement(
+          TableHarmonicWaveform,
+          {
+            track: row,
+            duration: row.duration || "05:00",
+            onPlayTrack,
+            onTogglePlay,
+            isCurrentPlaying: isRowPlaying,
+            playProgress: isRowPlaying ? playProgress : 0
+          }
+        )),
+        visibleColumns.title && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
+          "img",
+          {
+            src: coverUrl,
+            className: "w-9 h-9 rounded bg-djzinc-800 object-cover shrink-0 border border-djzinc-700 shadow-sm",
+            alt: "cover",
+            onError: (e) => {
+              e.target.onerror = null;
+              e.target.src = DEFAULT_VINYL_SVG;
             }
+          }
+        ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-djcyan-400 text-xs truncate max-w-[210px] flex items-center gap-1.5", title: row.t || row.title || row.f }, /* @__PURE__ */ React.createElement("span", { className: "truncate" }, row.t || row.title || row.f || "Desconocido"), row.version_type && row.version_type !== "standard" && /* @__PURE__ */ React.createElement("span", { className: "px-1 py-0.2 rounded text-[8px] font-mono font-black uppercase bg-purple-950 text-purple-300 border border-purple-700/60 shrink-0" }, row.version_type)), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate max-w-[210px]", title: row.f }, row.f || "")))),
+        visibleColumns.artist && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-gray-300 truncate max-w-[120px]", title: row.a || row.artist }, row.a || row.artist),
+        visibleColumns.genre && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[95px] inline-block shadow-sm", title: row.genre || "House" }, row.genre || "House")),
+        visibleColumns.subgenre && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block", title: row.subgenre || (TAXONOMY_TREE[row.genre || "Tech House"] ? TAXONOMY_TREE[row.genre || "Tech House"][0] : "Tech House") }, row.subgenre || (TAXONOMY_TREE[row.genre || "Tech House"] ? TAXONOMY_TREE[row.genre || "Tech House"][0] : "Tech House"))),
+        visibleColumns.format && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-djcyan-400 border border-djzinc-750" }, row.format || (row.f ? row.f.split(".").pop().toUpperCase() : "FLAC"))),
+        visibleColumns.sample_rate_khz && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-300" }, row.sample_rate_khz ? `${row.sample_rate_khz} kHz` : "44.1 kHz"),
+        visibleColumns.bitrate_kbps && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-300" }, row.bitrate_kbps ? `${row.bitrate_kbps} kbps` : row.format === "MP3" ? "320 kbps" : "1062 kbps"),
+        visibleColumns.calidad && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${isFake ? "bg-red-950 text-red-400 border-red-800" : String(row.calidad || "").includes("Alta") || String(row.calidad || "").includes("Hi-Res") ? "bg-emerald-950/80 text-emerald-400 border-emerald-800" : String(row.calidad || "").includes("Media") ? "bg-amber-950/80 text-amber-400 border-amber-800" : row.calidad && row.calidad !== "Pendiente Auditor\xEDa" ? "bg-red-950/80 text-red-400 border-red-800" : "bg-djzinc-850 text-gray-400 border-djzinc-750"}` }, row.calidad || (isFake ? "Baja" : "Alta")), isFlacUpgradeCandidate(row) ? /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: (e) => {
+              e.stopPropagation();
+              handleBuscarReemplazosSpotify([row]);
+            },
+            className: "px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black bg-gradient-to-r from-cyan-950 to-purple-950 hover:from-cyan-900 hover:to-purple-900 text-cyan-300 border border-cyan-500/70 cursor-pointer shadow-sm flex items-center justify-center gap-1 transition-all active:scale-95",
+            title: "FLAC no cumple est\xE1ndares lossless o es de calidad media/fake. Buscar master oficial en Cat\xE1logo Global (SuperFLAC)"
           },
-          className: "px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-800/60 transition-all shadow active:scale-95 cursor-pointer ml-1",
-          title: "A\xF1adir pista a Set-Builder & Energy Flow Canvas"
-        },
-        /* @__PURE__ */ React.createElement(Icons.Plus, { size: 14, className: "inline-block align-[-2px]" }),
-        " Set"
-      )), visibleColumns.e && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${row.e >= 82 ? "text-red-400" : row.e >= 68 ? "text-amber-400" : "text-djcyan-400"}` }, row.e || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: `h-full rounded-full ${row.e >= 82 ? "bg-gradient-to-r from-amber-500 to-red-500" : row.e >= 68 ? "bg-gradient-to-r from-yellow-400 to-amber-500" : "bg-gradient-to-r from-cyan-400 to-blue-500"}`,
-          style: { width: `${Math.min(100, Math.max(10, row.e || 80))}%` }
-        }
-      )))), visibleColumns.dance && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement(Icons.Activity, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-purple-300" }, row.dance || row.danceability || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500",
-          style: { width: `${Math.min(100, Math.max(10, row.dance || row.danceability || 80))}%` }
-        }
-      )))), visibleColumns.intensity && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, "\u{1F525}"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-emerald-400" }, row.arousal || row.intensity || Math.round((row.e || 80) * 0.95), "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]",
-          style: { width: `${Math.min(100, Math.max(10, row.arousal || row.intensity || Math.round((row.e || 80) * 0.95)))}%` }
-        }
-      )))), visibleColumns.valence && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, "\u2728"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-cyan-300" }, row.valence != null ? row.valence : row.key && row.key.includes("B") ? 65 : 45, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]",
-          style: { width: `${Math.min(100, Math.max(10, row.valence != null ? row.valence : row.key && row.key.includes("B") ? 65 : 45))}%` }
-        }
-      )))), visibleColumns.fase_badge && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, (() => {
-        const badge = row.fase_badge || (row.e >= 82 ? "CA\xD1A" : row.e >= 68 ? "BUILD-UP" : row.bpm && parseFloat(row.bpm) < 118 ? "CALMA" : "WARM-UP");
-        const colorMap = {
-          "CA\xD1A": "bg-red-950/80 text-red-300 border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.3)]",
-          "BUILD-UP": "bg-amber-950/80 text-amber-300 border-amber-700",
-          "WARM-UP": "bg-cyan-950/80 text-cyan-300 border-cyan-700",
-          "CIERRE": "bg-purple-950/80 text-purple-300 border-purple-700",
-          "CALMA": "bg-teal-950/80 text-teal-300 border-teal-700"
-        };
-        const iconMap = {
-          "CA\xD1A": "\u{1F525}",
-          "BUILD-UP": "\u{1F680}",
-          "WARM-UP": "\u{1F3A7}",
-          "CIERRE": "\u{1F30C}",
-          "CALMA": "\u2615"
-        };
-        return /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9px] font-mono font-bold border inline-flex items-center gap-1 ${colorMap[badge] || "bg-djzinc-800 text-gray-300 border-djzinc-700"}`, title: row.fase_dj || row.recomendacion_dj || row.mood }, /* @__PURE__ */ React.createElement("span", null, iconMap[badge] || "\u{1F3B5}"), /* @__PURE__ */ React.createElement("span", null, badge));
-      })()), visibleColumns.acoustic_role && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${row.acoustic_role === "Bass Driver" ? "bg-rose-950/80 text-rose-300 border-rose-700/80" : row.acoustic_role === "Vocal / Lead" ? "bg-amber-950/80 text-amber-300 border-amber-700/80" : row.acoustic_role === "Percussive Tool" ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80" : "bg-djzinc-850 text-gray-300 border-djzinc-700"}`, title: `Ratio Espectral: Low ${row.low_ratio || 33}% | Mid ${row.mid_ratio || 33}% | High ${row.high_ratio || 34}%` }, row.acoustic_role === "Bass Driver" ? "\u{1F534} Bass Driver" : row.acoustic_role === "Vocal / Lead" ? "\u{1F7E1} Vocal / Lead" : row.acoustic_role === "Percussive Tool" ? "\u{1F7E2} Percussive" : "\u{1F535} Balanced"), currentTrack && String(currentTrack.id) !== String(row.id) && (() => {
-        const isCurBass = (currentTrack.low_ratio || 33) >= 45 || currentTrack.acoustic_role === "Bass Driver";
-        const isRowBass = (row.low_ratio || 33) >= 45 || row.acoustic_role === "Bass Driver";
-        if (isCurBass && isRowBass) {
-          return /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono px-1 py-0.2 rounded bg-red-950 text-red-300 border border-red-700/80 animate-pulse", title: "Riesgo de colisi\xF3n en subgraves 30-80 Hz" }, /* @__PURE__ */ React.createElement(Icons.Warning, { size: 14, className: "inline-block align-[-2px]" }), " Colisi\xF3n Bass");
-        } else if (isCurBass && (row.acoustic_role === "Vocal / Lead" || row.acoustic_role === "Percussive Tool") || isRowBass && (currentTrack.acoustic_role === "Vocal / Lead" || currentTrack.acoustic_role === "Percussive Tool")) {
-          return /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/80", title: "Frecuencias complementarias: Mezcla limpia garantizada" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-emerald-400 ", "aria-hidden": "true" }), " Anti-Muddy Compl.");
-        }
-        return null;
-      })())), visibleColumns.comment && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 max-w-[260px]" }, /* @__PURE__ */ React.createElement(Icons.MessageSquare, { size: 14, className: "inline-block align-[-2px] text-emerald-400  shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] font-mono text-gray-200 truncate", title: row.comment || `[${row.b || "--"} BPM | ${row.k || "--"}] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b` }, row.comment || `[${row.b || "--"} BPM | ${row.k || "--"}] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b`))), visibleColumns.status && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, isFake ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse", title: "\xA1Alerta! Falso FLAC con corte lossy previo" }, "FLAC FAKE") : String(row.status || "").includes("VERDADERO") || String(row.status || "").includes("True") || String(row.status || "").includes("HI-RES") ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800" }, row.status) : row.format === "MP3" || String(row.status || "").includes("MP3") ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-cyan-300 border border-djzinc-700" }, row.status) : /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono bg-djzinc-850 text-gray-300 border border-djzinc-750" }, row.status)), visibleColumns.actions && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: (e) => handleRemoveSingleTrack(row.id, e),
-          className: "p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-800/60 cursor-pointer transition-all active:scale-90",
-          title: "Quitar pista del an\xE1lisis (eliminar de la lista global)"
-        },
-        /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" })
-      )));
+          /* @__PURE__ */ React.createElement(Icons.Gem, { size: 14, className: "inline-block align-[-2px]" }),
+          /* @__PURE__ */ React.createElement("span", null, "SuperFLAC")
+        ) : isBadQualityTrack(row) ? /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: (e) => {
+              e.stopPropagation();
+              handleBuscarReemplazosSpotify([row]);
+            },
+            className: "px-1.5 py-0.5 rounded text-[8px] font-mono font-black bg-amber-950/90 hover:bg-amber-900 text-amber-300 border border-amber-600/70 cursor-pointer shadow flex items-center justify-center gap-1 transition-all active:scale-95",
+            title: "Buscar versi\xF3n oficial en el Record Pool para sustituir este track"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Refresh, { size: 14, className: "inline-block align-[-2px]" }),
+          /* @__PURE__ */ React.createElement("span", null, "Cat\xE1logo HD")
+        ) : null)),
+        visibleColumns.perdida_pct && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center" }, isFake ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-red-400 font-bold bg-red-950/60 px-1.5 py-0.5 rounded border border-red-800", title: `Corte espectral a ${row.cutoff_khz || "--"}kHz` }, /* @__PURE__ */ React.createElement(Icons.Warning, { size: 14, className: "inline-block align-[-2px]" }), " Transcode (", row.perdida_pct || 0, "%)") : row.perdida === "Sin P\xE9rdida" ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60" }, "Sin P\xE9rdida") : /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-300" }, row.perdida || "Sin auditar")),
+        visibleColumns.cutoff_khz && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${isFake ? "bg-red-950 text-red-400 border-red-800" : "bg-djgreen-950/80 text-djgreen-400 border-djgreen-800"}` }, row.cutoff_khz ? `${row.cutoff_khz}kHz` : "PASS")),
+        visibleColumns.lufs && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `text-[10px] font-bold ${row.lufs > -7 ? "text-amber-400" : row.lufs && row.lufs <= -14 ? "text-cyan-400" : "text-emerald-400"}` }, row.lufs !== void 0 ? `${row.lufs} LUFS` : "-9.0 LUFS"), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] ${row.clipping ? "text-red-400 font-black animate-pulse" : "text-gray-500"}`, title: row.clipping ? "Clipping detectado: pico real supera 0.0 dBFS" : "Pico inter-sample en rango" }, row.clipping ? "\u26A0\uFE0F CLIP" : `${row.true_peak !== void 0 ? row.true_peak > 0 ? `+${row.true_peak}` : row.true_peak : "-0.1"}dB`))),
+        visibleColumns.duration && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center text-gray-400 font-mono" }, row.duration),
+        visibleColumns.bpm && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "ws-bpm text-[13px]" }, row.b || "--")),
+        visibleColumns.key && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center", title: getHarmonicKeyDisplay(row.k) }, /* @__PURE__ */ React.createElement(CamelotKeyBadge, { value: row.k })),
+        visibleColumns.cues && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              setSelectedTrack(row.id);
+              if (onNavigateTab) {
+                onNavigateTab("hotcues");
+              } else {
+                setCueStudioModalOpen(true);
+              }
+            },
+            className: "px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-pink-950/80 hover:bg-pink-900 text-pink-300 border border-pink-800/60 transition-all shadow active:scale-95 cursor-pointer",
+            title: "Abrir Estudio de Hot Cues a pantalla completa con reproductor"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }),
+          " 8 Cues"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              if (onAddTrackToSet) {
+                onAddTrackToSet(row);
+              }
+            },
+            className: "px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-djcyan-950/80 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-800/60 transition-all shadow active:scale-95 cursor-pointer ml-1",
+            title: "A\xF1adir pista a Set-Builder & Energy Flow Canvas"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Plus, { size: 14, className: "inline-block align-[-2px]" }),
+          " Set"
+        )),
+        visibleColumns.e && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${row.e >= 82 ? "text-red-400" : row.e >= 68 ? "text-amber-400" : "text-djcyan-400"}` }, row.e || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            className: `h-full rounded-full ${row.e >= 82 ? "bg-gradient-to-r from-amber-500 to-red-500" : row.e >= 68 ? "bg-gradient-to-r from-yellow-400 to-amber-500" : "bg-gradient-to-r from-cyan-400 to-blue-500"}`,
+            style: { width: `${Math.min(100, Math.max(10, row.e || 80))}%` }
+          }
+        )))),
+        visibleColumns.dance && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement(Icons.Activity, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-purple-300" }, row.dance || row.danceability || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            className: "h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500",
+            style: { width: `${Math.min(100, Math.max(10, row.dance || row.danceability || 80))}%` }
+          }
+        )))),
+        visibleColumns.intensity && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, "\u{1F525}"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-emerald-400" }, row.arousal || row.intensity || Math.round((row.e || 80) * 0.95), "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            className: "h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]",
+            style: { width: `${Math.min(100, Math.max(10, row.arousal || row.intensity || Math.round((row.e || 80) * 0.95)))}%` }
+          }
+        )))),
+        visibleColumns.valence && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, "\u2728"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-cyan-300" }, row.valence != null ? row.valence : row.key && row.key.includes("B") ? 65 : 45, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            className: "h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]",
+            style: { width: `${Math.min(100, Math.max(10, row.valence != null ? row.valence : row.key && row.key.includes("B") ? 65 : 45))}%` }
+          }
+        )))),
+        visibleColumns.fase_badge && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, (() => {
+          const badge = row.fase_badge || (row.e >= 82 ? "CA\xD1A" : row.e >= 68 ? "BUILD-UP" : row.bpm && parseFloat(row.bpm) < 118 ? "CALMA" : "WARM-UP");
+          const colorMap = {
+            "CA\xD1A": "bg-red-950/80 text-red-300 border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.3)]",
+            "BUILD-UP": "bg-amber-950/80 text-amber-300 border-amber-700",
+            "WARM-UP": "bg-cyan-950/80 text-cyan-300 border-cyan-700",
+            "CIERRE": "bg-purple-950/80 text-purple-300 border-purple-700",
+            "CALMA": "bg-teal-950/80 text-teal-300 border-teal-700"
+          };
+          const iconMap = {
+            "CA\xD1A": "\u{1F525}",
+            "BUILD-UP": "\u{1F680}",
+            "WARM-UP": "\u{1F3A7}",
+            "CIERRE": "\u{1F30C}",
+            "CALMA": "\u2615"
+          };
+          return /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9px] font-mono font-bold border inline-flex items-center gap-1 ${colorMap[badge] || "bg-djzinc-800 text-gray-300 border-djzinc-700"}`, title: row.fase_dj || row.recomendacion_dj || row.mood }, /* @__PURE__ */ React.createElement("span", null, iconMap[badge] || "\u{1F3B5}"), /* @__PURE__ */ React.createElement("span", null, badge));
+        })()),
+        visibleColumns.acoustic_role && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${row.acoustic_role === "Bass Driver" ? "bg-rose-950/80 text-rose-300 border-rose-700/80" : row.acoustic_role === "Vocal / Lead" ? "bg-amber-950/80 text-amber-300 border-amber-700/80" : row.acoustic_role === "Percussive Tool" ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80" : "bg-djzinc-850 text-gray-300 border-djzinc-700"}`, title: `Ratio Espectral: Low ${row.low_ratio || 33}% | Mid ${row.mid_ratio || 33}% | High ${row.high_ratio || 34}%` }, row.acoustic_role === "Bass Driver" ? "\u{1F534} Bass Driver" : row.acoustic_role === "Vocal / Lead" ? "\u{1F7E1} Vocal / Lead" : row.acoustic_role === "Percussive Tool" ? "\u{1F7E2} Percussive" : "\u{1F535} Balanced"), currentTrack && String(currentTrack.id) !== String(row.id) && (() => {
+          const isCurBass = (currentTrack.low_ratio || 33) >= 45 || currentTrack.acoustic_role === "Bass Driver";
+          const isRowBass = (row.low_ratio || 33) >= 45 || row.acoustic_role === "Bass Driver";
+          if (isCurBass && isRowBass) {
+            return /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono px-1 py-0.2 rounded bg-red-950 text-red-300 border border-red-700/80 animate-pulse", title: "Riesgo de colisi\xF3n en subgraves 30-80 Hz" }, /* @__PURE__ */ React.createElement(Icons.Warning, { size: 14, className: "inline-block align-[-2px]" }), " Colisi\xF3n Bass");
+          } else if (isCurBass && (row.acoustic_role === "Vocal / Lead" || row.acoustic_role === "Percussive Tool") || isRowBass && (currentTrack.acoustic_role === "Vocal / Lead" || currentTrack.acoustic_role === "Percussive Tool")) {
+            return /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/80", title: "Frecuencias complementarias: Mezcla limpia garantizada" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-emerald-400 ", "aria-hidden": "true" }), " Anti-Muddy Compl.");
+          }
+          return null;
+        })())),
+        visibleColumns.comment && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 max-w-[260px]" }, /* @__PURE__ */ React.createElement(Icons.MessageSquare, { size: 14, className: "inline-block align-[-2px] text-emerald-400  shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] font-mono text-gray-200 truncate", title: row.comment || `[${row.b || "--"} BPM | ${row.k || "--"}] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b` }, row.comment || `[${row.b || "--"} BPM | ${row.k || "--"}] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b`))),
+        visibleColumns.status && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, isFake ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-black bg-red-950 text-red-400 border border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse", title: "\xA1Alerta! Falso FLAC con corte lossy previo" }, "FLAC FAKE") : String(row.status || "").includes("VERDADERO") || String(row.status || "").includes("True") || String(row.status || "").includes("HI-RES") ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800" }, row.status) : row.format === "MP3" || String(row.status || "").includes("MP3") ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-djzinc-850 text-cyan-300 border border-djzinc-700" }, row.status) : /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono bg-djzinc-850 text-gray-300 border border-djzinc-750" }, row.status)),
+        visibleColumns.actions && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => handleRemoveSingleTrack(row.id, e),
+            className: "p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-800/60 cursor-pointer transition-all active:scale-90",
+            title: "Quitar pista del an\xE1lisis (eliminar de la lista global)"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" })
+        ))
+      );
     }), virtualPaddingBottom > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingBottom } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })))), /* @__PURE__ */ React.createElement("div", { className: "block md:hidden p-2 space-y-2.5 pb-36" }, tracksFiltrados.length === 0 && !isAuditing && /* @__PURE__ */ React.createElement("div", { className: "py-14 text-center text-gray-400 font-mono text-xs px-4 flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, "Sin coincidencias con los filtros"), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -10489,7 +10779,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           /* @__PURE__ */ React.createElement("span", null, "SuperFLAC Lossless HD")
         ))
       );
-    }))))), sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+    })))))), sidebarOpen && currentTrack && (currentTrack.id || currentTrack.id === 0) && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
       "div",
       {
         onClick: () => setSidebarOpen(false),
@@ -10659,7 +10949,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Dividir por 2" }, "/2"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
         const v = parseFloat(currentTrack.b);
         if (!isNaN(v)) updateCurrentTrackField("b", (v * 2).toFixed(2));
-      }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", ((_b = CAMELOT_WHEEL_DATA[currentTrack.k]) == null ? void 0 : _b.classical) || "Am", ")")), /* @__PURE__ */ React.createElement(
+      }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", ((_a = CAMELOT_WHEEL_DATA[currentTrack.k]) == null ? void 0 : _a.classical) || "Am", ")")), /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
@@ -11219,19 +11509,6 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           /* @__PURE__ */ React.createElement("span", null, deleteModalState.mode === "list_only" ? "Quitar de la Lista" : "Confirmar Eliminaci\xF3n")
         ))
       )
-    ), isLibraryModalOpen && /* @__PURE__ */ React.createElement(
-      CustomLibraryModal,
-      {
-        isOpen: isLibraryModalOpen,
-        onClose: () => setIsLibraryModalOpen(false),
-        libraries: customLibraries,
-        activeLibraryId: activeCustomLibId,
-        onSaveLibraries: (updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId),
-        onSelectLibrary: (id) => saveCustomLibraries(customLibraries, id),
-        currentTracks: tracks,
-        selectedTrackIds: selectedAuditIds,
-        onMaterializarEnDisco: (lib) => handleMaterializarBibliotecaEnDisco(lib)
-      }
     ), columnSelectorOpen && ReactDOM.createPortal(
       /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 overflow-hidden select-none pointer-events-none", style: { zIndex: 99998 } }, /* @__PURE__ */ React.createElement(
         "div",
@@ -23721,7 +23998,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           /* @__PURE__ */ React.createElement("span", null, "Entrar a la cabina"),
           /* @__PURE__ */ React.createElement(Icons.ChevronRight, { size: 14 })
         ))),
-        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-950/90 via-blue-950/80 to-purple-950/90 border border-cyan-500/50 text-cyan-300 text-xs font-mono font-black tracking-wider uppercase mb-3 shadow-[0_0_25px_rgba(6,182,212,0.35)] animate-pulse" }, /* @__PURE__ */ React.createElement(Icons.Flame, { size: 14, className: "text-amber-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", null, "El arma definitiva que los promotores y headliners exigen en 2026")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 max-w-4xl select-none group mb-2" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center sm:items-start justify-center select-none" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 sm:gap-4 leading-none" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.9)]" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-sm sm:text-xl md:text-2xl font-mono px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl font-black tracking-widest border-2 border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_22px_rgba(6,182,212,0.6)] shrink-0 self-center" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-xs sm:text-base md:text-[22px] font-mono font-bold tracking-[0.06em] text-cyan-300/90 mt-2 sm:mt-3 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-sm sm:text-xl md:text-2xl leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-sm sm:text-xl md:text-2xl leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))), /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-950/90 via-blue-950/80 to-purple-950/90 border border-cyan-500/50 text-cyan-300 text-xs font-mono font-black tracking-wider uppercase mb-3 shadow-[0_0_25px_rgba(6,182,212,0.35)] animate-pulse" }, /* @__PURE__ */ React.createElement(Icons.Flame, { size: 14, className: "text-amber-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", null, "El arma definitiva que los promotores y headliners exigen en 2026")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 max-w-4xl select-none group mb-2" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center sm:items-start justify-center select-none" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 sm:gap-4 leading-none" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.9)]" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-sm sm:text-xl md:text-2xl font-mono px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl font-black tracking-widest border-2 border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_22px_rgba(6,182,212,0.6)] shrink-0 self-center" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-xs sm:text-base md:text-[22px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-2 sm:mt-3 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-sm sm:text-xl md:text-2xl leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-sm sm:text-xl md:text-2xl leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))), /* @__PURE__ */ React.createElement(
           "div",
           {
             onMouseEnter: () => setIsPausedHover(true),
@@ -24986,7 +25263,7 @@ ${res.path}`);
             title: isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"
           },
           /* @__PURE__ */ React.createElement("div", { className: "w-[76px] shrink-0 flex items-center justify-center my-auto" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "sm" })),
-          /* @__PURE__ */ React.createElement("div", { className: "-ml-4.5 flex flex-col justify-center shrink-0 pr-3 my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 sm:gap-2 leading-none" }, /* @__PURE__ */ React.createElement("span", { className: `font-syne font-black text-[22px] sm:text-[24px] tracking-[0.02em] leading-none select-none transition-all duration-300 ${isLogoTechnoActive ? "anim-soundwave drop-shadow-[0_0_22px_rgba(6,182,212,0.95)]" : "group-hover:brightness-110 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]"}` }, /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_14px_rgba(34,211,238,0.85)]" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-widest border border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0 self-center" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-[8.5px] sm:text-[9.5px] font-mono font-bold tracking-[0.06em] text-cyan-300/90 mt-1 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))
+          /* @__PURE__ */ React.createElement("div", { className: "-ml-4 flex flex-col justify-center shrink-0 pr-3 my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 sm:gap-2 leading-none" }, /* @__PURE__ */ React.createElement("span", { className: `font-syne font-black text-[22px] sm:text-[24px] tracking-[0.02em] leading-none select-none transition-all duration-300 ${isLogoTechnoActive ? "anim-soundwave drop-shadow-[0_0_22px_rgba(6,182,212,0.95)]" : "group-hover:brightness-110 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]"}` }, /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_14px_rgba(34,211,238,0.85)]" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-widest border border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0 self-center" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-[8.5px] sm:text-[9.5px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))
         ),
         activeTab,
         t,
