@@ -5,7 +5,7 @@ import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
 import { WsButton, ToolbarDivider, ExportMenu, FilterMenu, IngestDropzone, CamelotKeyBadge } from './shell/workspace-ui.jsx';
 import { PricingModal } from './shell/pricing-modal.jsx';
 import { RegisterFlowModal } from './shell/register-modal.jsx';
-import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from './shell/map-overlays.jsx';
+import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MapAcousticConsole, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from './shell/map-overlays.jsx';
 const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
 
 // ─── PERF: PlayerContext ──────────────────────────────────────────────────────
@@ -4228,9 +4228,9 @@ function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 5) {
 // Unificamos el ancho de TODAS las columnas laterales al ancho maestro del Inspector (540px inicial)
 const MASTER_DRAWER_STORAGE_KEY = 'bw_inspector_drawer_width';
 
-function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 540, minWidth = 380, maxWidth = 860) {
-    // Todas las columnas laterales derechas comparten el ancho del Inspector
-    const effectiveKey = MASTER_DRAWER_STORAGE_KEY;
+function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 540, minWidth = 380, maxWidth = 860, isIndependent = false) {
+    // Si isIndependent es true, utiliza su propia clave de storage y no sincroniza con los drawers maestros
+    const effectiveKey = isIndependent ? storageKey : MASTER_DRAWER_STORAGE_KEY;
 
     const [width, setWidth] = React.useState(() => {
         try {
@@ -4238,7 +4238,7 @@ function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 
             if (saved) {
                 const parsed = parseInt(saved, 10);
                 if (!isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) {
-                    if (parsed === 500) return defaultWidth;
+                    if (!isIndependent && parsed === 500) return defaultWidth;
                     return parsed;
                 }
             }
@@ -4246,8 +4246,9 @@ function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 
         return defaultWidth;
     });
 
-    // Sincronización en tiempo real entre todos los drawers abiertos
+    // Sincronización en tiempo real entre todos los drawers maestros
     React.useEffect(() => {
+        if (isIndependent) return;
         const handleSync = (ev) => {
             if (ev && ev.detail && typeof ev.detail.width === 'number') {
                 setWidth(ev.detail.width);
@@ -4255,7 +4256,7 @@ function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 
         };
         window.addEventListener('bw_drawer_width_synced', handleSync);
         return () => window.removeEventListener('bw_drawer_width_synced', handleSync);
-    }, []);
+    }, [isIndependent]);
 
     const isDraggingRef = React.useRef(false);
     const startXRef = React.useRef(0);
@@ -4278,7 +4279,9 @@ function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 
             const maxW = typeof window !== 'undefined' ? Math.min(maxWidth, window.innerWidth * 0.9) : maxWidth;
             const newWidth = Math.max(minWidth, Math.min(maxW, startWidthRef.current + delta));
             setWidth(newWidth);
-            window.dispatchEvent(new CustomEvent('bw_drawer_width_synced', { detail: { width: newWidth } }));
+            if (!isIndependent) {
+                window.dispatchEvent(new CustomEvent('bw_drawer_width_synced', { detail: { width: newWidth } }));
+            }
         };
 
         const onPointerUp = () => {
@@ -4293,7 +4296,9 @@ function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 
                 setWidth((currentW) => {
                     const rounded = Math.round(currentW);
                     localStorage.setItem(effectiveKey, String(rounded));
-                    window.dispatchEvent(new CustomEvent('bw_drawer_width_synced', { detail: { width: rounded } }));
+                    if (!isIndependent) {
+                        window.dispatchEvent(new CustomEvent('bw_drawer_width_synced', { detail: { width: rounded } }));
+                    }
                     return currentW;
                 });
             } catch (e) {}
@@ -4302,15 +4307,17 @@ function useDrawerResize(storageKey = MASTER_DRAWER_STORAGE_KEY, defaultWidth = 
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
         window.addEventListener('pointercancel', onPointerUp);
-    }, [width, effectiveKey, minWidth, maxWidth]);
+    }, [width, effectiveKey, minWidth, maxWidth, isIndependent]);
 
     const resetWidth = React.useCallback(() => {
         setWidth(defaultWidth);
         try { 
             localStorage.setItem(effectiveKey, String(defaultWidth));
-            window.dispatchEvent(new CustomEvent('bw_drawer_width_synced', { detail: { width: defaultWidth } }));
+            if (!isIndependent) {
+                window.dispatchEvent(new CustomEvent('bw_drawer_width_synced', { detail: { width: defaultWidth } }));
+            }
         } catch (e) {}
-    }, [defaultWidth, effectiveKey]);
+    }, [defaultWidth, effectiveKey, isIndependent]);
 
     return { width, onPointerDown, resetWidth };
 }
@@ -26431,6 +26438,32 @@ const MapWorkspace = ({
     const [zoomDisplay, setZoomDisplay] = useState(1.0);
     const [isPanning, setIsPanning] = useState(false);
 
+    // Consola Acústica Unificada (50% del drawer maestro = 270px)
+    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState(true);
+    const { 
+        width: mapConsoleWidth, 
+        onPointerDown: onMapConsoleResizeDown, 
+        resetWidth: onResetMapConsoleWidth 
+    } = useDrawerResize('bw_map_console_width', 270, 220, 520, true);
+
+    // Filtros Acústicos en Tiempo Real (Mixer DJ)
+    const [filterMinEnergy, setFilterMinEnergy] = useState(0);
+    const [filterMinDance, setFilterMinDance] = useState(0);
+    const [filterMinIntensity, setFilterMinIntensity] = useState(0);
+    const [filterMinValence, setFilterMinValence] = useState(0);
+    const [filterQualityMode, setFilterQualityMode] = useState('ALL'); // 'ALL' | 'lossless' | 'nofake'
+
+    const handleResetAcousticFilters = useCallback(() => {
+        setFilterMinEnergy(0);
+        setFilterMinDance(0);
+        setFilterMinIntensity(0);
+        setFilterMinValence(0);
+        setFilterQualityMode('ALL');
+        setSelectedKeyFilter('ALL');
+    }, []);
+
+    const hasActiveFilters = filterMinEnergy > 0 || filterMinDance > 0 || filterMinIntensity > 0 || filterMinValence > 0 || filterQualityMode !== 'ALL' || selectedKeyFilter !== 'ALL' || Boolean(searchQuery);
+
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const animRef = useRef(null);
@@ -26586,9 +26619,22 @@ const MapWorkspace = ({
         const nodes = nodesRef.current || [];
         const visibleNodes = nodes.filter(n => {
             if (selectedKeyFilter !== 'ALL' && n.keyStr !== selectedKeyFilter) return false;
+            const t = n.track || {};
+            const eVal = n.energy;
+            const dVal = n.danceability;
+            const iVal = Number(t.arousal || t.intensity || Math.round(eVal * 0.95)) || 0;
+            const vVal = Number(t.valence != null ? t.valence : (n.keyStr.includes('B') ? 65 : 45)) || 0;
+            if (eVal < filterMinEnergy || dVal < filterMinDance || iVal < filterMinIntensity || vVal < filterMinValence) return false;
+            if (filterQualityMode === 'lossless') {
+                const isLossless = ['flac', 'wav', 'aiff'].includes((t.extension || t.tipo || '').toLowerCase()) || (t.bitrate_kbps && t.bitrate_kbps > 1000);
+                if (!isLossless) return false;
+            } else if (filterQualityMode === 'nofake') {
+                const isBad = t.es_fake || (t.calidad && String(t.calidad).includes('Baja'));
+                if (isBad) return false;
+            }
             if (searchQuery) {
                 const q = searchQuery.toLowerCase();
-                const m = (n.track.title || '').toLowerCase().includes(q) || (n.track.artist || '').toLowerCase().includes(q);
+                const m = (t.title || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q);
                 if (!m) return false;
             }
             return true;
@@ -26643,7 +26689,7 @@ const MapWorkspace = ({
         tr.targetPanY = (0.5 - focusY) * spanY * finalScale;
         tr.isContinuousPanning = false;
         setZoomDisplay(finalScale);
-    }, [radialView, selectedKeyFilter, searchQuery, hoveredTrack, selectedTrack]);
+    }, [radialView, selectedKeyFilter, searchQuery, hoveredTrack, selectedTrack, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
 
     // Puntos para herramienta de Selección (Lasso / Box)
     const selectionRef = useRef({
@@ -27131,6 +27177,20 @@ const MapWorkspace = ({
                     if (selectedKeyFilter !== 'ALL' && node.keyStr !== selectedKeyFilter) {
                         continue;
                     }
+                    const eValLOD = node.energy;
+                    const dValLOD = node.danceability;
+                    const iValLOD = Number(t.arousal || t.intensity || Math.round(eValLOD * 0.95)) || 0;
+                    const vValLOD = Number(t.valence != null ? t.valence : (node.keyStr.includes('B') ? 65 : 45)) || 0;
+                    if (eValLOD < filterMinEnergy || dValLOD < filterMinDance || iValLOD < filterMinIntensity || vValLOD < filterMinValence) {
+                        continue;
+                    }
+                    if (filterQualityMode === 'lossless') {
+                        const isLossless = ['flac', 'wav', 'aiff'].includes((t.extension || t.tipo || '').toLowerCase()) || (t.bitrate_kbps && t.bitrate_kbps > 1000);
+                        if (!isLossless) continue;
+                    } else if (filterQualityMode === 'nofake') {
+                        const isBad = t.es_fake || (t.calidad && String(t.calidad).includes('Baja'));
+                        if (isBad) continue;
+                    }
 
                     let nodeColor = '#06b6d4';
                     if (colorMode === 'genre') {
@@ -27200,7 +27260,23 @@ const MapWorkspace = ({
                     if (selectedKeyFilter !== 'ALL') {
                         matchesKey = node.keyStr === selectedKeyFilter;
                     }
-                    const opacity = (matchesSearch && matchesKey) ? 1.0 : 0.12;
+                    const eVal = node.energy;
+                    const dVal = node.danceability;
+                    const iVal = Number(t.arousal || t.intensity || Math.round(eVal * 0.95)) || 0;
+                    const vVal = Number(t.valence != null ? t.valence : (node.keyStr.includes('B') ? 65 : 45)) || 0;
+                    let matchesQuality = true;
+                    if (filterQualityMode === 'lossless') {
+                        matchesQuality = ['flac', 'wav', 'aiff'].includes((t.extension || t.tipo || '').toLowerCase()) || (t.bitrate_kbps && t.bitrate_kbps > 1000);
+                    } else if (filterQualityMode === 'nofake') {
+                        matchesQuality = !t.es_fake && !(t.calidad && String(t.calidad).includes('Baja'));
+                    }
+                    const matchesAcoustics = (eVal >= filterMinEnergy) &&
+                                             (dVal >= filterMinDance) &&
+                                             (iVal >= filterMinIntensity) &&
+                                             (vVal >= filterMinValence) &&
+                                             matchesQuality;
+
+                    const opacity = (matchesSearch && matchesKey && matchesAcoustics) ? 1.0 : 0.08;
 
                     renderDetailedNode(node, pt, isNowPlaying, isHovered, isSelectedNode, opacity);
                 });
@@ -27250,7 +27326,7 @@ const MapWorkspace = ({
             isRunning = false;
             if (animRef.current) cancelAnimationFrame(animRef.current);
         };
-    }, [projectionMode, colorMode, toolMode, hoveredTrack, selectedTrack, nowPlayingTrack, showHarmonicPaths, searchQuery, selectedKeyFilter, selectedMapTracks]);
+    }, [projectionMode, colorMode, toolMode, hoveredTrack, selectedTrack, nowPlayingTrack, showHarmonicPaths, searchQuery, selectedKeyFilter, selectedMapTracks, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
 
     // Función auxiliar para punto dentro de polígono (Ray Casting)
     const isPointInPoly = (px, py, poly) => {
@@ -27488,6 +27564,27 @@ const MapWorkspace = ({
         const vis = activeTracks.filter(t => {
             const k = (t.key || t.k || '8A').toUpperCase();
             if (selectedKeyFilter !== 'ALL' && k !== selectedKeyFilter) return false;
+
+            const eVal = Math.max(10, Math.min(100, parseInt(t.energy !== undefined ? t.energy : (t.e || 75), 10)));
+            if (eVal < filterMinEnergy) return false;
+
+            const dVal = Math.max(10, Math.min(100, parseInt(t.danceability !== undefined ? t.danceability : (t.dance || 80), 10)));
+            if (dVal < filterMinDance) return false;
+
+            const iVal = Number(t.arousal || t.intensity || Math.round(eVal * 0.95)) || 0;
+            if (iVal < filterMinIntensity) return false;
+
+            const vVal = Number(t.valence != null ? t.valence : (k.includes('B') ? 65 : 45)) || 0;
+            if (vVal < filterMinValence) return false;
+
+            if (filterQualityMode === 'lossless') {
+                const isLossless = ['flac', 'wav', 'aiff'].includes((t.extension || t.tipo || '').toLowerCase()) || (t.bitrate_kbps && t.bitrate_kbps > 1000);
+                if (!isLossless) return false;
+            } else if (filterQualityMode === 'nofake') {
+                const isBad = t.es_fake || (t.calidad && String(t.calidad).includes('Baja'));
+                if (isBad) return false;
+            }
+
             if (!q) return true;
             return `${t.title} ${t.artist} ${t.genre || t.genero || ''} ${k}`.toLowerCase().includes(q);
         });
@@ -27499,7 +27596,7 @@ const MapWorkspace = ({
             avgEnergy: ens.length ? Math.round(ens.reduce((a, b) => a + b, 0) / ens.length) : 0,
             keyCount: new Set(vis.map(t => (t.key || t.k || '').toUpperCase()).filter(Boolean)).size,
         };
-    }, [activeTracks, searchQuery, selectedKeyFilter]);
+    }, [activeTracks, searchQuery, selectedKeyFilter, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
 
     // Métricas del grupo seleccionado mediante Lasso / Caja
     const selBpmAvg = selectedMapTracks.length > 0
@@ -27652,11 +27749,26 @@ const MapWorkspace = ({
                         <ShellIcons.Target size={13} />
                         <span className="hidden md:inline text-[11px] font-mono font-bold">Enmarcar</span>
                     </button>
+
+                    {/* TOGGLE CONSOLA ACÚSTICA DERECHA */}
+                    <button
+                        type="button"
+                        onClick={() => setIsMapConsoleOpen(prev => !prev)}
+                        className={`ws-btn ${isMapConsoleOpen ? 'ws-btn-active' : 'ws-btn-outline'} px-2.5 flex items-center gap-1.5 cursor-pointer`}
+                        title={isMapConsoleOpen ? "Ocultar Consola Acústica lateral" : "Mostrar Consola Acústica lateral y controles del mapa"}
+                        aria-expanded={isMapConsoleOpen}
+                    >
+                        <ShellIcons.Sliders size={13} />
+                        <span className="hidden sm:inline text-[11px] font-mono font-bold">Consola</span>
+                        <span className="text-[10px] font-mono opacity-80">({mapStats.visible})</span>
+                    </button>
                 </div>
             </div>
 
-            {/* ZONA CENTRAL DEL MAPA INTERACTIVO */}
-            <div ref={containerRef} className="flex-1 w-full h-full relative overflow-hidden bg-black">
+            {/* CONTENEDOR FLEX: ZONA CENTRAL DEL MAPA + CONSOLA DERECHA UNIFICADA */}
+            <div className="flex-1 w-full min-h-0 flex overflow-hidden relative">
+                {/* ZONA CENTRAL DEL MAPA INTERACTIVO */}
+                <div ref={containerRef} className="flex-1 h-full relative overflow-hidden bg-black">
                 <canvas
                     ref={canvasRef}
                     onMouseDown={handleMouseDown}
@@ -27672,29 +27784,33 @@ const MapWorkspace = ({
                     }`}
                 />
 
-                <div className="absolute top-3 left-3 z-30 select-none">
-                    <MapCamelotOverlay
-                        open={isCamelotWheelOpen}
-                        onToggle={() => setIsCamelotWheelOpen(prev => !prev)}
-                        selectedKey={selectedTrack ? (selectedTrack.key || selectedTrack.k || '8A').toUpperCase() : null}
-                        keyFilter={selectedKeyFilter}
-                        onFilter={(k) => setSelectedKeyFilter(prev => prev === k ? 'ALL' : k)}
-                        colors={MAP_CAMELOT_COLORS}
-                        isMatch={(a, b) => calcHarmonicMixMatch(a, b).isMatch}
-                    />
-                </div>
+                {!isMapConsoleOpen && (
+                    <>
+                        <div className="absolute top-3 left-3 z-30 select-none">
+                            <MapCamelotOverlay
+                                open={isCamelotWheelOpen}
+                                onToggle={() => setIsCamelotWheelOpen(prev => !prev)}
+                                selectedKey={selectedTrack ? (selectedTrack.key || selectedTrack.k || '8A').toUpperCase() : null}
+                                keyFilter={selectedKeyFilter}
+                                onFilter={(k) => setSelectedKeyFilter(prev => prev === k ? 'ALL' : k)}
+                                colors={MAP_CAMELOT_COLORS}
+                                isMatch={(a, b) => calcHarmonicMixMatch(a, b).isMatch}
+                            />
+                        </div>
 
-                <div className="absolute top-3 right-3 z-30 select-none">
-                    <MapNavOverlay
-                        open={isNavOverlayOpen}
-                        onToggle={() => setIsNavOverlayOpen(prev => !prev)}
-                        zoom={zoomDisplay}
-                        onZoom={handleFaderZoom}
-                        onReset={handleResetZoom}
-                        startPan={startPan}
-                        stopPan={stopPan}
-                    />
-                </div>
+                        <div className="absolute top-3 right-3 z-30 select-none">
+                            <MapNavOverlay
+                                open={isNavOverlayOpen}
+                                onToggle={() => setIsNavOverlayOpen(prev => !prev)}
+                                zoom={zoomDisplay}
+                                onZoom={handleFaderZoom}
+                                onReset={handleResetZoom}
+                                startPan={startPan}
+                                stopPan={stopPan}
+                            />
+                        </div>
+                    </>
+                )}
 
                 {activeTracks.length > 0 && (
                     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 select-none pointer-events-none">
@@ -27801,8 +27917,8 @@ const MapWorkspace = ({
                     </div>
                 )}
 
-                {/* TARJETA HUD FLOTANTE DE PISTA SELECCIONADA CON REPRODUCTOR MANUAL */}
-                {selectedTrack && (
+                {/* TARJETA HUD FLOTANTE DE PISTA SELECCIONADA CON REPRODUCTOR MANUAL (Solo si consola lateral cerrada) */}
+                {!isMapConsoleOpen && selectedTrack && (
                     <div className="absolute bottom-4 right-4 z-40 bg-[#0c0d16]/95 border border-djcyan-500/60 p-4 rounded-2xl shadow-[0_0_35px_rgba(6,182,212,0.3)] backdrop-blur-xl max-w-sm w-full font-mono animate-slideUp">
                         <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-djzinc-800">
                             <div className="flex items-center gap-2">
@@ -27968,8 +28084,49 @@ const MapWorkspace = ({
                     </div>
                 )}
             </div>
+
+            {/* COLUMNA DERECHA UNIFICADA: CONSOLA ACÚSTICA & CAMELOT & ZOOM & DRAG & DROP */}
+            <MapAcousticConsole
+                isOpen={isMapConsoleOpen}
+                width={mapConsoleWidth}
+                onResizeDown={onMapConsoleResizeDown}
+                onResetWidth={onResetMapConsoleWidth}
+                onClose={() => setIsMapConsoleOpen(false)}
+                zoom={zoomDisplay}
+                onZoom={handleFaderZoom}
+                onResetZoom={handleResetZoom}
+                onAutoFrame={handleAutoFrame}
+                selectedTrack={selectedTrack}
+                selectedKey={selectedTrack ? (selectedTrack.key || selectedTrack.k || '8A').toUpperCase() : null}
+                keyFilter={selectedKeyFilter}
+                onKeyFilter={(k) => setSelectedKeyFilter(prev => prev === k ? 'ALL' : k)}
+                colors={MAP_CAMELOT_COLORS}
+                isMatch={(a, b) => calcHarmonicMixMatch(a, b).isMatch}
+                filterMinEnergy={filterMinEnergy}
+                setFilterMinEnergy={setFilterMinEnergy}
+                filterMinDance={filterMinDance}
+                setFilterMinDance={setFilterMinDance}
+                filterMinIntensity={filterMinIntensity}
+                setFilterMinIntensity={setFilterMinIntensity}
+                filterMinValence={filterMinValence}
+                setFilterMinValence={setFilterMinValence}
+                filterQualityMode={filterQualityMode}
+                setFilterQualityMode={setFilterQualityMode}
+                onResetFilters={handleResetAcousticFilters}
+                hasActiveFilters={hasActiveFilters}
+                visibleCount={mapStats.visible}
+                totalCount={activeTracks.length}
+                selectedMapTracks={selectedMapTracks}
+                onPlayTrack={onPlayTrack}
+                onAddTracksToSet={onAddTracksToSet}
+                nowPlayingTrack={nowPlayingTrack}
+                isPlaying={isPlaying}
+                onTogglePlay={onTogglePlay}
+                onClearSelection={() => { setSelectedTrack(null); setSelectedMapTracks([]); }}
+            />
         </div>
-    );
+    </div>
+);
 };
 
 // =========================================================================
