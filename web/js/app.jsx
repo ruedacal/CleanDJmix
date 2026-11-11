@@ -13822,7 +13822,7 @@ const AuditWorkspace = ({
                                     onClick={() => setColumnPreset('all')}
                                     className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    <Icons.Eye size={14} className="inline-block align-[-2px]" /> Ver Todas (24)
+                                    <Icons.Eye size={14} className="inline-block align-[-2px]" /> Ver Todas ({Object.keys(DEFAULT_AUDIT_COLUMNS).length})
                                 </button>
                                 <button 
                                     type="button" 
@@ -19104,7 +19104,7 @@ const SpotifyWorkspace = ({
                                     onClick={() => setPoolColumnPreset('all')}
                                     className="px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
                                 >
-                                    <Icons.Eye size={14} className="inline-block align-[-2px]" /> Ver Todas (20)
+                                    <Icons.Eye size={14} className="inline-block align-[-2px]" /> Ver Todas ({Object.keys(DEFAULT_POOL_COLUMNS).length})
                                 </button>
                                 <button 
                                     type="button" 

@@ -145,6 +145,68 @@ class AuditCacheDB:
             except Exception as e:
                 print(f"[CACHE DB BATCH SET ERROR] {e}")
 
+    def get_audit_batch(self, file_tuples: list) -> dict:
+        """
+        file_tuples: lista de tuplas (filepath, mtime, filesize)
+        Retorna: dict con {filepath: dict(row)} para todas las coincidencias válidas en audit_cache.
+        """
+        if not file_tuples:
+            return {}
+        hits = {}
+        chunk_size = 800
+        with self._lock:
+            try:
+                with self._get_conn() as conn:
+                    cur = conn.cursor()
+                    for i in range(0, len(file_tuples), chunk_size):
+                        chunk = file_tuples[i : i + chunk_size]
+                        paths = [t[0] for t in chunk]
+                        placeholders = ",".join("?" for _ in paths)
+                        cur.execute(
+                            f"SELECT * FROM audit_cache WHERE filepath IN ({placeholders})",
+                            paths
+                        )
+                        chunk_map = {t[0]: (t[1], t[2]) for t in chunk}
+                        for row in cur.fetchall():
+                            fpath = row["filepath"]
+                            expected = chunk_map.get(fpath)
+                            if not expected:
+                                continue
+                            exp_mtime, exp_size = expected
+                            if exp_mtime is not None and abs(float(row["mtime"]) - float(exp_mtime)) > 1.0:
+                                continue
+                            if exp_size is not None and int(row["filesize"]) != int(exp_size):
+                                continue
+                            hits[fpath] = dict(row)
+            except Exception as e:
+                print(f"[CACHE DB BATCH GET AUDIT ERROR] {e}")
+        return hits
+
+    def set_audit_batch(self, items: list):
+        """
+        items: lista de tuplas con los 19 campos de audit_cache
+        """
+        if not items:
+            return
+        with self._lock:
+            try:
+                with self._get_conn() as conn:
+                    conn.executemany("""
+                        INSERT OR REPLACE INTO audit_cache (
+                            filepath, file_hash, mtime, filesize, cutoff_khz, lufs, true_peak,
+                            low_ratio, mid_ratio, high_ratio, acoustic_role, format,
+                            bitrate_kbps, sample_rate_khz, calidad, status, es_fake,
+                            acoustic_fp, spectrum_json, updated_at
+                        ) VALUES (
+                            ?, ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?,
+                            ?, ?, CURRENT_TIMESTAMP
+                        )
+                    """, items)
+            except Exception as e:
+                print(f"[CACHE DB BATCH SET AUDIT ERROR] {e}")
+
     def get(self, filepath: str, mtime: float = None, filesize: int = None):
         if not filepath:
             return None
@@ -1001,81 +1063,102 @@ return folderPath'''
 
         self.reiniciar_cancelacion()
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
-        archivos = []
-        seen_files = set()
-
-        if isinstance(ruta_directorio, (list, tuple)):
-            for item in ruta_directorio:
-                if not isinstance(item, str):
-                    continue
-                if os.path.isfile(item):
-                    if item.lower().endswith(extensiones) and item not in seen_files:
-                        archivos.append((os.path.dirname(item), os.path.basename(item)))
-                        seen_files.add(item)
-                elif os.path.isdir(item):
-                    for root, _, files in os.walk(item):
-                        for file in sorted(files):
-                            if not file.startswith(".") and file.lower().endswith(extensiones):
-                                full_p = os.path.join(root, file)
-                                if full_p not in seen_files:
-                                    archivos.append((root, file))
-                                    seen_files.add(full_p)
-                                    if len(archivos) >= 50000:
-                                        break
-                        if len(archivos) >= 50000:
-                            break
-            if archivos:
-                self.directorio_actual = archivos[0][0]
-            if emitir_log_cb:
-                emitir_log_cb(f"Iniciando auditoría avanzada de {len(archivos)} pistas seleccionadas (de carpetas y pistas sueltas)")
-        elif isinstance(ruta_directorio, str):
-            if os.path.isfile(ruta_directorio):
-                if ruta_directorio.lower().endswith(extensiones):
-                    archivos.append((os.path.dirname(ruta_directorio), os.path.basename(ruta_directorio)))
-                    self.directorio_actual = os.path.dirname(ruta_directorio)
-            elif os.path.isdir(ruta_directorio):
-                self.directorio_actual = ruta_directorio
-                for root, _, files in os.walk(ruta_directorio):
-                    for file in sorted(files):
-                        if not file.startswith(".") and file.lower().endswith(extensiones):
-                            full_p = os.path.join(root, file)
-                            if full_p not in seen_files:
-                                archivos.append((root, file))
-                                seen_files.add(full_p)
-                                if len(archivos) >= 50000:
-                                    break
-                    if len(archivos) >= 50000:
-                        break
-            if emitir_log_cb:
-                emitir_log_cb(f"Iniciando auditoría avanzada en: {ruta_directorio}")
-        else:
-            return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
-
-        total_files = len(archivos)
+        
+        archivos_escaneados = self._escanear_archivos_audio_recursivo(ruta_directorio, extensiones, max_files=50000)
+        total_files = len(archivos_escaneados)
         if total_files == 0:
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
-        if progreso_cb:
-            progreso_cb(5, f"Iniciando auditoría acústica ({total_files} pistas encontradas)...")
+        if archivos_escaneados:
+            self.directorio_actual = archivos_escaneados[0][1]
 
-        tracks_auditados = []
-        sin_meta_count = 0
-        fake_count = 0
+        if emitir_log_cb:
+            emitir_log_cb(f"Iniciando auditoría acústica ({total_files} pistas encontradas)...")
+
+        if progreso_cb:
+            progreso_cb(5, f"Verificando caché acústica de biblioteca ({total_files} pistas)...")
 
         ejecutar_fft = bool(opts is None or (isinstance(opts, dict) and opts.get("fftLossless", True)))
         inyectar_covers = bool(isinstance(opts, dict) and opts.get("injectCovers", False))
+        force_recheck = bool(isinstance(opts, dict) and opts.get("force_recheck", False))
 
-        for idx, (root, file) in enumerate(archivos, 1):
+        # 1. VERIFICACIÓN BATCH EN CACHÉ PERSISTENTE SQLITE WAL (Delta Audit)
+        file_tuples = [(item[0], item[3], item[4]) for item in archivos_escaneados]
+        cached_audits = {}
+        cached_meta = {}
+        if not force_recheck and hasattr(self, "db_cache") and self.db_cache:
+            try:
+                cached_audits = self.db_cache.get_audit_batch(file_tuples)
+                cached_meta = self.db_cache.get_metadata_batch(file_tuples)
+            except Exception as e_cache:
+                print(f"[AUDIT BATCH CACHE WARN] {e_cache}")
+
+        indexed_tracks = {}
+        pending_items = []
+        sin_meta_count = 0
+        fake_count = 0
+
+        # Particionar en pistas ya auditadas (Cache Hits) y delta pendiente
+        for idx, item in enumerate(archivos_escaneados):
+            full_p, dir_p, fname, mtime_val, fsize_val = item
+            if not force_recheck and full_p in cached_audits:
+                c_aud = cached_audits[full_p]
+                c_met = cached_meta.get(full_p)
+                if c_met and isinstance(c_met, dict):
+                    track = dict(c_met)
+                    spec_pts = []
+                    if c_aud.get("spectrum_json"):
+                        try:
+                            spec_pts = json.loads(c_aud["spectrum_json"])
+                        except Exception:
+                            pass
+                    track.update({
+                        "id": idx + 1,
+                        "status": str(c_aud.get("status") or track.get("status") or "Lossless OK"),
+                        "cutoff_khz": float(c_aud.get("cutoff_khz", 22.0)),
+                        "lufs": float(c_aud.get("lufs", -10.0)),
+                        "true_peak": float(c_aud.get("true_peak", -0.1)),
+                        "es_fake": bool(c_aud.get("es_fake", 0)),
+                        "calidad": str(c_aud.get("calidad") or track.get("calidad") or "Alta"),
+                        "acoustic_role": str(c_aud.get("acoustic_role") or track.get("acoustic_role") or "Balanced Full-Range"),
+                        "acoustic_fp": str(c_aud.get("acoustic_fp") or ""),
+                        "spectrum": spec_pts if spec_pts else track.get("spectrum", []),
+                        "badge_color": "red" if c_aud.get("es_fake") else "green",
+                        "is_audited": True,
+                        "audit_cached": True
+                    })
+                    if track.get("es_fake"):
+                        fake_count += 1
+                    b_val = track.get("bpm") or track.get("b")
+                    k_val = track.get("key") or track.get("k")
+                    if not b_val or not k_val or str(b_val) == "--" or str(k_val) == "--":
+                        sin_meta_count += 1
+                    indexed_tracks[idx] = track
+                    continue
+            pending_items.append((idx, item))
+
+        if progreso_cb:
+            cached_count = len(indexed_tracks)
+            delta_count = len(pending_items)
+            progreso_cb(10, f"Caché acústica lista: {cached_count} auditadas, {delta_count} pendientes de análisis.")
+
+        # 2. PROCESAMIENTO DELTA (SOLO PISTAS NUEVAS O MODIFICADAS)
+        newly_audited_meta = []
+        total_pending = len(pending_items)
+
+        for p_idx, (idx, item) in enumerate(pending_items, 1):
             _cooperative_yield()
             if self._cancelar_proceso:
-                print(f"[AUDITORIA] Detenida por el usuario en ({idx}/{total_files})")
+                print(f"[AUDITORIA] Detenida por el usuario en ({p_idx}/{total_pending})")
                 if progreso_cb:
                     progreso_cb(0, f"Auditoría detenida por el usuario.")
                 break
 
-            full_path = os.path.join(root, file)
-            pct = int(5 + (idx / total_files) * 90)
-            if total_files <= 30 or idx % max(1, total_files // 25) == 0 or idx == total_files:
+            full_path, root, file, mtime_val, fsize_val = item
+            pct = int(10 + (p_idx / max(1, total_pending)) * 85)
+            if total_pending <= 30 or p_idx % max(1, total_pending // 25) == 0 or p_idx == total_pending:
+                if progreso_cb:
+                    progreso_cb(pct, f"Auditando delta ({p_idx}/{total_pending}): {file}")
                 if progreso_cb:
                     progreso_cb(pct, f"Auditando ({idx}/{total_files}): {file}")
 
@@ -1237,8 +1320,8 @@ return folderPath'''
 
             v_type = TagSanitizerService.extraer_tipo_version(f"{title_str} {file}")
 
-            tracks_auditados.append({
-                "id": idx,
+            track_obj = {
+                "id": idx + 1,
                 "f": str(file),
                 "filename": str(file),
                 "path": str(full_path),
@@ -1302,8 +1385,50 @@ return folderPath'''
                 "mid_ratio": float(fft_res.get("mid_ratio", 33.3)) if 'fft_res' in locals() and isinstance(fft_res, dict) else 33.3,
                 "high_ratio": float(fft_res.get("high_ratio", 33.4)) if 'fft_res' in locals() and isinstance(fft_res, dict) else 33.4,
                 "acoustic_role": str(fft_res.get("acoustic_role", "Balanced Full-Range")) if 'fft_res' in locals() and isinstance(fft_res, dict) else "Balanced Full-Range",
-                "acoustic_fp": str(fft_res.get("acoustic_fp", "")) if 'fft_res' in locals() and isinstance(fft_res, dict) else ""
-            })
+                "acoustic_fp": str(fft_res.get("acoustic_fp", "")) if 'fft_res' in locals() and isinstance(fft_res, dict) else "",
+                "is_audited": True,
+                "audit_cached": False
+            }
+
+            # Guardar en audit_cache SQLite WAL
+            if hasattr(self, "db_cache") and self.db_cache:
+                try:
+                    self.db_cache.set({
+                        "filepath": full_path,
+                        "file_hash": "",
+                        "mtime": mtime_val,
+                        "filesize": fsize_val,
+                        "cutoff_khz": cutoff_khz,
+                        "lufs": lufs_val,
+                        "true_peak": tp_val,
+                        "low_ratio": track_obj["low_ratio"],
+                        "mid_ratio": track_obj["mid_ratio"],
+                        "high_ratio": track_obj["high_ratio"],
+                        "acoustic_role": track_obj["acoustic_role"],
+                        "format": track_obj["format"],
+                        "bitrate_kbps": track_obj["bitrate_kbps"],
+                        "sample_rate_khz": track_obj["sample_rate_khz"],
+                        "calidad": track_obj["calidad"],
+                        "status": track_obj["status"],
+                        "es_fake": int(bool(track_obj["es_fake"])),
+                        "acoustic_fp": track_obj["acoustic_fp"],
+                        "spectrum_json": json.dumps(spectrum_points) if spectrum_points else ""
+                    })
+                    newly_audited_meta.append((full_path, mtime_val, fsize_val, json.dumps(track_obj)))
+                except Exception as e_save:
+                    print(f"[AUDIT SAVE ERR] {e_save}")
+
+            indexed_tracks[idx] = track_obj
+
+        # Guardar metadatos enriquecidos en metadata_cache
+        if newly_audited_meta and hasattr(self, "db_cache") and self.db_cache:
+            try:
+                self.db_cache.set_metadata_batch(newly_audited_meta)
+            except Exception as e_mset:
+                print(f"[AUDIT META BATCH SET ERR] {e_mset}")
+
+        # 3. RECONSTRUIR LISTA ORDENADA DE TODAS LAS PISTAS (CACHÉ + DELTA)
+        tracks_auditados = [indexed_tracks[i] for i in sorted(indexed_tracks.keys())]
 
         total = len(tracks_auditados)
         ready_count = max(0, total - sin_meta_count)

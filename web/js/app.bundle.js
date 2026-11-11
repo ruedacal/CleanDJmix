@@ -10921,7 +10921,9 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
             className: "px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
           },
           /* @__PURE__ */ React.createElement(Icons.Eye, { size: 14, className: "inline-block align-[-2px]" }),
-          " Ver Todas (24)"
+          " Ver Todas (",
+          Object.keys(DEFAULT_AUDIT_COLUMNS).length,
+          ")"
         ), /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -14422,7 +14424,9 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
             className: "px-2.5 py-1 rounded-lg bg-djzinc-900 hover:bg-djzinc-850 text-djcyan-300 border border-djzinc-750 hover:border-djcyan-500/50 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95"
           },
           /* @__PURE__ */ React.createElement(Icons.Eye, { size: 14, className: "inline-block align-[-2px]" }),
-          " Ver Todas (20)"
+          " Ver Todas (",
+          Object.keys(DEFAULT_POOL_COLUMNS).length,
+          ")"
         ), /* @__PURE__ */ React.createElement(
           "button",
           {
