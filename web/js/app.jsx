@@ -32861,23 +32861,23 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         <span>El arma definitiva que los promotores y headliners exigen en 2026</span>
                     </div>
 
-                    {/* Logo Oficial + Tipografía */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl select-none group mb-2">
+                    {/* Logo Oficial + Tipografía Proporcional a Escala de Cabecera */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 max-w-4xl select-none group mb-2">
                         <BeatWaveLogoBadge size="lg" />
                         <div className="flex flex-col items-center sm:items-start justify-center select-none">
-                            <div className="flex items-center gap-2.5 sm:gap-3 leading-none">
-                                <span className="font-syne font-black text-3xl sm:text-4xl md:text-5xl tracking-wide uppercase select-none transition-all duration-300 drop-shadow-[0_2px_16px_rgba(0,0,0,0.9)]">
-                                    <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_25px_rgba(6,182,212,0.85)]">WAVE</span>
+                            <div className="flex items-center gap-3 sm:gap-4 leading-none">
+                                <span className="font-syne font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
+                                    <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.9)]">WAVE</span>
                                 </span>
-                                <span className="text-xs sm:text-sm md:text-base font-mono px-2.5 py-1 rounded-lg font-black tracking-widest border border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_18px_rgba(6,182,212,0.6)]">
+                                <span className="text-sm sm:text-xl md:text-2xl font-mono px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl font-black tracking-widest border-2 border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_22px_rgba(6,182,212,0.6)] shrink-0 self-center">
                                     PRO
                                 </span>
                             </div>
-                            <div className="w-full flex justify-between items-center text-xs sm:text-sm font-mono font-bold tracking-[0.10em] text-cyan-300/90 mt-2 select-none">
+                            <div className="w-full flex justify-between items-center text-xs sm:text-base md:text-[22px] font-mono font-bold tracking-[0.06em] text-cyan-300/90 mt-2 sm:mt-3 select-none leading-none">
                                 <span>PRECISION</span>
-                                <span className="text-cyan-400 font-black text-sm">•</span>
+                                <span className="text-cyan-400 font-black text-sm sm:text-xl md:text-2xl leading-none">•</span>
                                 <span>AUDIO</span>
-                                <span className="text-cyan-400 font-black text-sm">•</span>
+                                <span className="text-cyan-400 font-black text-sm sm:text-xl md:text-2xl leading-none">•</span>
                                 <span>INTELLIGENCE</span>
                             </div>
                         </div>

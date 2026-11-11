@@ -77,25 +77,38 @@ export const BeatWaveLogoBadge = ({ size = 'sm', isAnimated = true, isTechnoActi
 
 export const BeatWaveLogoLockup = ({ size = 'sm', isAnimated = true, showSubtitle = true, orientation = 'horizontal', className = '' }) => {
     const isVertical = orientation === 'vertical';
+    const isLg = size === 'lg';
 
     return (
-        <div className={`flex items-center gap-2.5 ${isVertical ? 'flex-col text-center' : 'flex-row'} ${className}`}>
+        <div className={`flex items-center ${isLg ? 'gap-4 sm:gap-6' : 'gap-2.5'} ${isVertical ? 'flex-col text-center' : 'flex-row'} ${className}`}>
             <BeatWaveLogoBadge size={size} isAnimated={isAnimated} />
             <div className={`flex flex-col ${isVertical ? 'items-center' : 'items-start'}`}>
-                <div className="flex items-center gap-2 leading-none">
-                    <span className="font-syne font-black tracking-[0.02em] leading-none text-xl sm:text-2xl select-none">
-                        <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_14px_rgba(34,211,238,0.85)]">WAVE</span>
+                <div className={`flex items-center ${isLg ? 'gap-3 sm:gap-4' : 'gap-2'} leading-none`}>
+                    <span className={`font-syne font-black tracking-[0.02em] leading-none select-none ${
+                        isLg 
+                            ? 'text-4xl sm:text-6xl md:text-7xl lg:text-[76px] drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]' 
+                            : 'text-xl sm:text-2xl'
+                    }`}>
+                        <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.85)]">WAVE</span>
                     </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md font-black tracking-widest border border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.5)] shrink-0 self-center">
+                    <span className={`${
+                        isLg 
+                            ? 'text-sm sm:text-xl md:text-2xl font-mono px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl border-2' 
+                            : 'text-[10px] font-mono px-1.5 py-0.5 rounded-md border'
+                    } font-black tracking-widest border-cyan-400/80 bg-cyan-950 text-cyan-300 shadow-[0_0_16px_rgba(6,182,212,0.5)] shrink-0 self-center`}>
                         PRO
                     </span>
                 </div>
                 {showSubtitle && (
-                    <div className="w-full flex justify-between items-center text-[9px] font-mono font-bold tracking-[0.06em] text-cyan-300/90 mt-1 select-none leading-none">
+                    <div className={`w-full flex justify-between items-center font-mono font-bold tracking-[0.06em] text-cyan-300/90 select-none leading-none ${
+                        isLg 
+                            ? 'text-xs sm:text-base md:text-[22px] mt-2 sm:mt-3' 
+                            : 'text-[9px] mt-1'
+                    }`}>
                         <span>PRECISION</span>
-                        <span className="text-cyan-400 font-black text-xs leading-none">•</span>
+                        <span className={`text-cyan-400 font-black leading-none ${isLg ? 'text-sm sm:text-xl md:text-2xl' : 'text-xs'}`}>•</span>
                         <span>AUDIO</span>
-                        <span className="text-cyan-400 font-black text-xs leading-none">•</span>
+                        <span className={`text-cyan-400 font-black leading-none ${isLg ? 'text-sm sm:text-xl md:text-2xl' : 'text-xs'}`}>•</span>
                         <span>INTELLIGENCE</span>
                     </div>
                 )}
