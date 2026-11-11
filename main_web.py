@@ -11,6 +11,7 @@ os.chdir(BASE_DIR)
 
 import subprocess
 import atexit
+import json
 import eel
 import bottle
 
@@ -297,14 +298,23 @@ def serve_previews(filename):
     return bottle.static_file(clean_name, root=previews_dir)
 
 def _sanitize_for_json(data):
-    """Sanitiza recursivamente cualquier estructura de datos para asegurar UTF-8 estricto sin surrogates."""
-    if isinstance(data, str):
-        return data.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
-    elif isinstance(data, dict):
-        return {_sanitize_for_json(k): _sanitize_for_json(v) for k, v in data.items()}
-    elif isinstance(data, (list, tuple)):
-        return [_sanitize_for_json(item) for item in data]
-    return data
+    """Sanitiza estructuras para JSON. Optimizado: si ya es válido UTF-8 no realiza recorrido recursivo en Python."""
+    try:
+        json.dumps(data)
+        return data
+    except (UnicodeEncodeError, ValueError, TypeError):
+        pass
+
+    def _clean(obj):
+        if isinstance(obj, str):
+            return obj.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
+        elif isinstance(obj, dict):
+            return {_clean(k): _clean(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [_clean(item) for item in obj]
+        return obj
+
+    return _clean(data)
 
 def _emitir_log_ui(mensaje: str):
     clean = str(mensaje).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
@@ -318,7 +328,7 @@ def _emitir_progreso_batch(pct: int, msg: str):
     try:
         if hasattr(eel, "actualizar_progreso_batch"):
             clean_msg = str(msg).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
-            eel.actualizar_progreso_batch(int(pct), clean_msg)()
+            eel.actualizar_progreso_batch(int(pct), clean_msg)
     except Exception:
         pass
 

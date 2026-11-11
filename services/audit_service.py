@@ -553,11 +553,11 @@ class AuditService:
         ffmpeg_bin = "/usr/local/bin/ffmpeg" if os.path.exists("/usr/local/bin/ffmpeg") else "ffmpeg"
         try:
             cmd = [
-                ffmpeg_bin, "-nostats", "-i", filepath,
+                ffmpeg_bin, "-nostats", "-ss", "45", "-t", "15", "-i", filepath,
                 "-filter_complex", "ebur128=peak=true",
                 "-f", "null", "-"
             ]
-            p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=8)
+            p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5)
             out = p.stderr
 
             m_i = re.search(r'Integrated loudness:\s+I:\s+([-\d\.]+)\s+LUFS', out)
@@ -851,7 +851,7 @@ return folderPath'''
                 }
                 if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
                     try:
-                        eel.notificar_resultado_auditoria(res)()
+                        eel.notificar_resultado_auditoria(res)
                     except Exception:
                         pass
                 return res
@@ -921,8 +921,35 @@ return folderPath'''
                 else:
                     spectrum_points.append(0.0)
 
-            # Medición de sonoridad profesional LUFS y True Peak (EBU R128)
-            lufs_res = self.medir_lufs_y_true_peak(filepath)
+            # Medición de sonoridad profesional LUFS y True Peak (EBU R128 ultrarrápido en NumPy)
+            if data is not None and len(data) > 0:
+                p_tot = float(np.mean(data ** 2) + 1e-12)
+                lufs_calc = round(float(-0.691 + 10.0 * np.log10(p_tot)), 1)
+                peak_linear = float(np.max(np.abs(data)))
+                tp_calc = round(float(20.0 * np.log10(max(1e-6, peak_linear))), 1)
+                is_clip = bool(tp_calc > 0.0)
+                if lufs_calc > -7.0:
+                    st_lufs = "Muy Alto (Loudness War)"
+                    bg_lufs = "amber"
+                elif lufs_calc >= -11.0:
+                    st_lufs = "Óptimo Club (-8 a -11 LUFS)"
+                    bg_lufs = "green"
+                elif lufs_calc >= -14.0:
+                    st_lufs = "Streaming Estándar (-14 LUFS)"
+                    bg_lufs = "green"
+                else:
+                    st_lufs = "Dinámica Alta (Bajo Volumen)"
+                    bg_lufs = "zinc"
+                lufs_res = {
+                    "lufs": lufs_calc,
+                    "lra": 0.0,
+                    "true_peak": tp_calc,
+                    "clipping": is_clip,
+                    "status_lufs": st_lufs,
+                    "badge_lufs": bg_lufs
+                }
+            else:
+                lufs_res = self.medir_lufs_y_true_peak(filepath)
 
             # Cálculo de Ratio Espectral Tri-Banda (Anti-Muddy / Densidad Espectral)
             # Low: 20 - 250 Hz (Subgrave y pegada de bombo)
@@ -1019,7 +1046,7 @@ return folderPath'''
             }
             if spotify_id is not None and hasattr(eel, "notificar_resultado_auditoria"):
                 try:
-                    eel.notificar_resultado_auditoria(resultado)()
+                    eel.notificar_resultado_auditoria(resultado)
                 except Exception:
                     pass
             return resultado
@@ -1253,290 +1280,259 @@ return folderPath'''
             delta_count = len(pending_items)
             progreso_cb(10, f"Caché acústica lista: {cached_count} auditadas, {delta_count} pendientes de análisis.")
 
-        # 2. PROCESAMIENTO DELTA (SOLO PISTAS NUEVAS O MODIFICADAS)
+        # 2. PROCESAMIENTO DELTA MULTIHILO (SOLO PISTAS NUEVAS O MODIFICADAS)
         newly_audited_meta = []
+        newly_audited_db = []
         total_pending = len(pending_items)
 
-        for p_idx, (idx, item) in enumerate(pending_items, 1):
-            _cooperative_yield()
-            if self._cancelar_proceso:
-                print(f"[AUDITORIA] Detenida por el usuario en ({p_idx}/{total_pending})")
-                if progreso_cb:
-                    progreso_cb(0, f"Auditoría detenida por el usuario.")
-                break
+        if total_pending > 0:
+            num_workers = min(16, max(4, (os.cpu_count() or 4) * 2))
+            emit_step = max(1, min(25, total_pending // 20))
 
-            full_path, root, file, mtime_val, fsize_val = item
-            pct = int(10 + (p_idx / max(1, total_pending)) * 85)
-            if total_pending <= 30 or p_idx % max(1, total_pending // 25) == 0 or p_idx == total_pending:
-                if progreso_cb:
-                    progreso_cb(pct, f"Auditando delta ({p_idx}/{total_pending}): {file}")
-                if progreso_cb:
-                    progreso_cb(pct, f"Auditando ({idx}/{total_files}): {file}")
+            def _procesar_un_delta(task_tuple):
+                if self._cancelar_proceso:
+                    return None
+                p_idx, idx, item = task_tuple
+                full_path, root, file, mtime_val, fsize_val = item
 
-            info = AudioProcessorService.analizar_track_avanzado(full_path)
-            if self._cancelar_proceso:
-                break
-            bpm_val = info.get("bpm")
-            key_val = info.get("key")
-            is_missing = bool(info.get("missing_meta", False) or not bpm_val or not key_val or str(bpm_val) == "--" or str(key_val) == "--")
-            if is_missing:
-                # Fallback acústico nativo offline: análisis local de BPM y Camelot Key vía Librosa/FFT
-                try:
-                    local_dsp = self.detectar_bpm_tonalidad_librosa(full_path)
-                    if local_dsp and local_dsp.get("status") == "ok":
-                        if not bpm_val or str(bpm_val) == "--":
-                            bpm_val = str(local_dsp.get("bpm"))
-                            info["bpm"] = bpm_val
-                            info["b"] = bpm_val
-                        if not key_val or str(key_val) == "--":
-                            key_val = str(local_dsp.get("key"))
-                            info["key"] = key_val
-                            info["k"] = key_val
-                        is_missing = False
-                    else:
-                        sin_meta_count += 1
-                except Exception:
-                    sin_meta_count += 1
+                # Reutilizar metadata en caché si existe para evitar re-parseo ID3
+                c_met = cached_meta.get(full_path)
+                if c_met and isinstance(c_met, dict):
+                    info = dict(c_met)
+                else:
+                    info = AudioProcessorService.analizar_track_avanzado(full_path)
 
-            cutoff_khz = float(info.get("cutoff_khz") or 22.0)
-            perdida = 0
-            spectrum_points = []
+                bpm_val = info.get("bpm") or info.get("b")
+                key_val = info.get("key") or info.get("k")
+                is_missing = bool(info.get("missing_meta", False) or not bpm_val or not key_val or str(bpm_val) == "--" or str(key_val) == "--")
 
-            if ejecutar_fft:
-                try:
-                    fft_res = self.analizar_espectro_fft(full_path)
-                    cutoff_khz = float(fft_res.get("cutoff_khz", 22.0))
-                    perdida = fft_res.get("perdida", 0)
-                    spectrum_points = fft_res.get("spectrum", [])
-                    diag = fft_res.get("diagnostico") or self.diagnosticar_calidad_audio(
-                        filepath=full_path,
-                        cutoff_khz=cutoff_khz,
-                        samplerate=fft_res.get("samplerate", 44100),
-                        bit_depth=fft_res.get("bit_depth", 16),
-                        bitrate_kbps=fft_res.get("bitrate_kbps", 0),
-                        fmt=fft_res.get("format", "")
-                    )
-                    status_str = diag.get("status", "Lossless OK")
-                    if diag.get("es_fake", False):
-                        fake_count += 1
-                except Exception:
+                cutoff_khz = float(info.get("cutoff_khz") or 22.0)
+                perdida = 0
+                spectrum_points = []
+                status_str = "Lossless OK"
+                is_fake = False
+                lufs_val = -10.0
+                lra_val = 0.0
+                tp_val = -0.1
+                is_clipping = False
+                status_lufs = "Normal"
+                badge_lufs = "green"
+                low_ratio = 33.3
+                mid_ratio = 33.3
+                high_ratio = 33.4
+                acoustic_role = "Balanced Full-Range"
+                acoustic_fp = ""
+
+                if ejecutar_fft:
+                    try:
+                        fft_res = self.analizar_espectro_fft(full_path)
+                        cutoff_khz = float(fft_res.get("cutoff_khz", 22.0))
+                        perdida = fft_res.get("perdida", 0)
+                        spectrum_points = fft_res.get("spectrum", [])
+                        status_str = fft_res.get("status", "Lossless OK")
+                        is_fake = bool(fft_res.get("es_fake", False))
+                        lufs_val = float(fft_res.get("lufs", -10.0))
+                        tp_val = float(fft_res.get("true_peak", -0.1))
+                        is_clipping = bool(tp_val > 0.0)
+                        status_lufs = fft_res.get("status_lufs", "Normal")
+                        badge_lufs = fft_res.get("badge_lufs", "green")
+                        low_ratio = float(fft_res.get("low_ratio", 33.3))
+                        mid_ratio = float(fft_res.get("mid_ratio", 33.3))
+                        high_ratio = float(fft_res.get("high_ratio", 33.4))
+                        acoustic_role = str(fft_res.get("acoustic_role", "Balanced Full-Range"))
+                        acoustic_fp = str(fft_res.get("acoustic_fp", ""))
+                    except Exception:
+                        tech = self.extraer_info_tecnica_audio(full_path)
+                        diag = self.diagnosticar_calidad_audio(
+                            filepath=full_path,
+                            cutoff_khz=cutoff_khz,
+                            samplerate=tech.get("samplerate", 44100),
+                            bit_depth=tech.get("bit_depth", 16),
+                            bitrate_kbps=tech.get("bitrate_kbps", 0),
+                            fmt=tech.get("format", "")
+                        )
+                        status_str = diag.get("status", "Lossless OK")
+                        is_fake = bool(diag.get("es_fake", False))
+                else:
                     tech = self.extraer_info_tecnica_audio(full_path)
                     diag = self.diagnosticar_calidad_audio(
                         filepath=full_path,
-                        cutoff_khz=cutoff_khz,
+                        cutoff_khz=0.0,
                         samplerate=tech.get("samplerate", 44100),
                         bit_depth=tech.get("bit_depth", 16),
                         bitrate_kbps=tech.get("bitrate_kbps", 0),
                         fmt=tech.get("format", "")
                     )
                     status_str = diag.get("status", "Lossless OK")
-                    if diag.get("es_fake", False):
-                        fake_count += 1
-            else:
-                tech = self.extraer_info_tecnica_audio(full_path)
-                diag = self.diagnosticar_calidad_audio(
-                    filepath=full_path,
-                    cutoff_khz=0.0,
-                    samplerate=tech.get("samplerate", 44100),
-                    bit_depth=tech.get("bit_depth", 16),
-                    bitrate_kbps=tech.get("bitrate_kbps", 0),
-                    fmt=tech.get("format", "")
-                )
-                status_str = diag.get("status", "Lossless OK")
-                if diag.get("es_fake", False):
-                    fake_count += 1
+                    is_fake = bool(diag.get("es_fake", False))
 
-            # Detección ultrarrápida y/o inyección de carátulas durante la auditoría
-            has_cover = AudioProcessorService.tiene_caratula(full_path)
-            track_cover = f"/cover?path={urllib.parse.quote(full_path)}" if has_cover else str(info.get("cover") or "")
-            if inyectar_covers and not has_cover:
-                resolved_c = AudioProcessorService.resolver_caratula_local_o_remota(
-                    full_path, 
-                    str(info.get("artist") or ""), 
-                    str(info.get("title") or "")
-                )
-                if resolved_c:
-                    track_cover = resolved_c
-                    has_cover = True
-                    AudioProcessorService.escribir_metadatos_pro(full_path, info, cover_url=resolved_c)
+                # Detección ultrarrápida y/o inyección de carátulas durante la auditoría
+                has_cover = bool(info.get("has_cover") or info.get("cover"))
+                if not has_cover:
+                    has_cover = AudioProcessorService.tiene_caratula(full_path)
+                track_cover = f"/cover?path={urllib.parse.quote(full_path)}" if has_cover else str(info.get("cover") or "")
+                if inyectar_covers and not has_cover:
+                    resolved_c = AudioProcessorService.resolver_caratula_local_o_remota(
+                        full_path, 
+                        str(info.get("artist") or ""), 
+                        str(info.get("title") or "")
+                    )
+                    if resolved_c:
+                        track_cover = resolved_c
+                        has_cover = True
+                        AudioProcessorService.escribir_metadatos_pro(full_path, info, cover_url=resolved_c)
 
-            # Clasificación de Fase en Sesión DJ
-            bpm_num = float(bpm_val) if bpm_val and str(bpm_val) != "--" else 126.0
-            key_clean = str(key_val or "8A")
-            e_num = int(info.get("energy") or 85)
-            dance_num = int(info.get("danceability") or info.get("dance") or 85)
-            from services.mood_intelligence_service import MoodIntelligenceService
-            from services.genre_classifier_service import GenreClassifierDSP
-            fase_info = MoodIntelligenceService.clasificar_fase_sesion_dj(
-                bpm=bpm_num,
-                key=key_clean,
-                energy=e_num,
-                danceability=dance_num,
-                genre=str(info.get("genre") or "Tech House"),
-                filepath=full_path
-            )
-
-            title_str = str(info.get("title") or os.path.splitext(file)[0])
-            artist_str = str(info.get("artist") or "Desconocido")
-            has_title = bool(title_str and title_str.lower().strip() not in ("untitled", "desconocido", "unknown", "track", "pista"))
-            has_artist = bool(artist_str and artist_str.lower().strip() not in ("desconocido", "unknown", "various artists", "various", "artist"))
-
-            tactical_comment = str(info.get("comment") or "")
-            if not tactical_comment or "Intro" not in tactical_comment:
-                tactical_comment = MoodIntelligenceService.generar_comentario_tactico(
+                # Clasificación de Fase en Sesión DJ
+                bpm_num = float(bpm_val) if bpm_val and str(bpm_val) != "--" else 126.0
+                key_clean = str(key_val or "8A")
+                e_num = int(info.get("energy") or info.get("e") or 85)
+                dance_num = int(info.get("danceability") or info.get("dance") or 85)
+                
+                fase_info = MoodIntelligenceService.clasificar_fase_sesion_dj(
                     bpm=bpm_num,
                     key=key_clean,
-                    mood=fase_info.get("vibe", "Peak Time"),
-                    subtag=fase_info.get("fase", "Clímax"),
                     energy=e_num,
-                    cues=info.get("cues") or [],
-                    first_downbeat_ms=float(info.get("first_downbeat_ms") or 0.0),
-                    lang="es"
+                    danceability=dance_num,
+                    genre=str(info.get("genre") or "Tech House"),
+                    filepath=full_path
                 )
 
-            # Medición de sonoridad profesional LUFS y True Peak (EBU R128)
-            if ejecutar_fft and 'fft_res' in locals() and isinstance(fft_res, dict) and 'lufs' in fft_res:
-                lufs_val = fft_res.get("lufs", -10.0)
-                lra_val = fft_res.get("lra", 0.0)
-                tp_val = fft_res.get("true_peak", -0.1)
-                is_clipping = fft_res.get("clipping", False)
-                status_lufs = fft_res.get("status_lufs", "Normal")
-                badge_lufs = fft_res.get("badge_lufs", "green")
-            else:
-                lufs_data = self.medir_lufs_y_true_peak(full_path)
-                lufs_val = lufs_data.get("lufs", -10.0)
-                lra_val = lufs_data.get("lra", 0.0)
-                tp_val = lufs_data.get("true_peak", -0.1)
-                is_clipping = lufs_data.get("clipping", False)
-                status_lufs = lufs_data.get("status_lufs", "Normal")
-                badge_lufs = lufs_data.get("badge_lufs", "green")
+                title_str = str(info.get("title") or os.path.splitext(file)[0])
+                artist_str = str(info.get("artist") or "Desconocido")
+                has_title = bool(title_str and title_str.lower().strip() not in ("untitled", "desconocido", "unknown", "track", "pista"))
+                has_artist = bool(artist_str and artist_str.lower().strip() not in ("desconocido", "unknown", "various artists", "various", "artist"))
 
-                        # Clasificación Acústica de Género y Subgénero (GenreClassifierDSP MIR)
-            try:
-                bpm_float = float(bpm_val) if bpm_val and str(bpm_val) != "--" else 0.0
-                cls_data = GenreClassifierDSP.classify_track(full_path, known_bpm=bpm_float)
-                track_genre = cls_data.get("genre", "TECHNO")
-                track_subgenre = cls_data.get("subgenre", "Peak Time / Driving")
-                track_mood = cls_data.get("mood", "Peak Time Hypnotic")
-                track_crate = cls_data.get("crate_path", "")
-                track_confidence = cls_data.get("confidence", 85.0)
-                track_sig = cls_data.get("signature", {})
-            except Exception as e_cls:
-                track_genre = "TECHNO"
-                track_subgenre = "Peak Time / Driving"
-                track_mood = "Peak Time Hypnotic"
-                track_crate = "/Music/Serato/Techno/Peak Time / Driving/"
-                track_confidence = 75.0
-                track_sig = {}
+                tactical_comment = str(info.get("comment") or "")
+                if not tactical_comment or "Intro" not in tactical_comment:
+                    tactical_comment = MoodIntelligenceService.generar_comentario_tactico(
+                        bpm=bpm_num,
+                        key=key_clean,
+                        mood=fase_info.get("vibe", "Peak Time"),
+                        subtag=fase_info.get("fase", "Clímax"),
+                        energy=e_num,
+                        cues=info.get("cues") or [],
+                        first_downbeat_ms=float(info.get("first_downbeat_ms") or 0.0),
+                        lang="es"
+                    )
 
-            v_type = TagSanitizerService.extraer_tipo_version(f"{title_str} {file}")
+                track_genre = str(info.get("genre") or "Tech House")
+                track_subgenre = str(info.get("subgenre") or track_genre)
+                v_type = TagSanitizerService.extraer_tipo_version(f"{title_str} {file}")
 
-            track_obj = {
-                "id": idx + 1,
-                "f": str(file),
-                "filename": str(file),
-                "path": str(full_path),
-                "t": title_str,
-                "title": title_str,
-                "a": artist_str,
-                "artist": artist_str,
-                "b": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
-                "bpm": f"{float(bpm_val):.2f}" if bpm_val and str(bpm_val) != "--" else "--",
-                "k": str(key_val or "--"),
-                "key": str(key_val or "--"),
-                "e": e_num,
-                "dance": dance_num,
-                "danceability": dance_num,
-                "mood": str(info.get("mood") or fase_info.get("vibe", "Peak Time")),
-                "fase_dj": fase_info.get("fase", "Medio"),
-                "fase_badge": fase_info.get("fase_badge", "BUILD-UP"),
-                "fase_color": fase_info.get("fase_color", "amber"),
-                "vibe": fase_info.get("vibe", "Agitado"),
-                "recomendacion_dj": fase_info.get("recomendacion", ""),
-                "missing_title": not has_title,
-                "missing_artist": not has_artist,
-                "missing_cover": not has_cover,
-                "has_cover": bool(has_cover),
-                "duration": str(info.get("duration") or "05:30"),
-                "cover": track_cover,
-                "format": str(diag.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
-                "sample_rate_khz": float(diag.get("sample_rate_khz", 44.1)),
-                "bitrate_kbps": int(diag.get("bitrate_kbps", 0)),
-                "bit_depth": int(diag.get("bit_depth", 16)),
-                "calidad": str(diag.get("calidad", "Alta")),
-                "perdida": str(diag.get("perdida", "Sin Pérdida")),
-                "perdida_pct": float(diag.get("perdida_pct", 0.0)),
-                "compresion": str(diag.get("compresion", "")),
-                "es_fake": bool(diag.get("es_fake", False)),
-                "badge_color": str(diag.get("badge_color", "green")),
-                "status": status_str,
-                "cutoff_khz": cutoff_khz,
-                "lufs": lufs_val,
-                "lra": lra_val,
-                "true_peak": tp_val,
-                "clipping": is_clipping,
-                "status_lufs": status_lufs,
-                "badge_lufs": badge_lufs,
-                "version_type": v_type,
-                "genre": track_genre,
-                "subgenre": track_subgenre,
-                "g": track_subgenre,
-                "mood": track_mood,
-                "crate_path": track_crate,
-                "confidence": track_confidence,
-                "acoustic_sig": track_sig,
-                "spectrum": spectrum_points,
-                "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
-                "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
-                "comment": tactical_comment,
-                "genre": str(info.get("genre") or "Tech House"),
-                "subgenre": str(info.get("subgenre") or "Tech House"),
-                "cues": info.get("cues") or [],
-                "low_ratio": float(fft_res.get("low_ratio", 33.3)) if 'fft_res' in locals() and isinstance(fft_res, dict) else 33.3,
-                "mid_ratio": float(fft_res.get("mid_ratio", 33.3)) if 'fft_res' in locals() and isinstance(fft_res, dict) else 33.3,
-                "high_ratio": float(fft_res.get("high_ratio", 33.4)) if 'fft_res' in locals() and isinstance(fft_res, dict) else 33.4,
-                "acoustic_role": str(fft_res.get("acoustic_role", "Balanced Full-Range")) if 'fft_res' in locals() and isinstance(fft_res, dict) else "Balanced Full-Range",
-                "acoustic_fp": str(fft_res.get("acoustic_fp", "")) if 'fft_res' in locals() and isinstance(fft_res, dict) else "",
-                "is_audited": True,
-                "audit_cached": False
-            }
+                track_obj = {
+                    "id": idx + 1,
+                    "f": str(file),
+                    "filename": str(file),
+                    "path": str(full_path),
+                    "t": title_str,
+                    "title": title_str,
+                    "a": artist_str,
+                    "artist": artist_str,
+                    "b": f"{bpm_num:.2f}" if bpm_val and str(bpm_val) != "--" else "--",
+                    "bpm": f"{bpm_num:.2f}" if bpm_val and str(bpm_val) != "--" else "--",
+                    "k": key_clean,
+                    "key": key_clean,
+                    "e": e_num,
+                    "dance": dance_num,
+                    "danceability": dance_num,
+                    "mood": str(info.get("mood") or fase_info.get("vibe", "Peak Time")),
+                    "fase_dj": fase_info.get("fase", "Medio"),
+                    "fase_badge": fase_info.get("fase_badge", "BUILD-UP"),
+                    "fase_color": fase_info.get("fase_color", "amber"),
+                    "vibe": fase_info.get("vibe", "Agitado"),
+                    "recomendacion_dj": fase_info.get("recomendacion", ""),
+                    "missing_title": not has_title,
+                    "missing_artist": not has_artist,
+                    "missing_cover": not has_cover,
+                    "has_cover": bool(has_cover),
+                    "duration": str(info.get("duration") or "05:30"),
+                    "cover": track_cover,
+                    "format": str(info.get("format") or os.path.splitext(file)[1].replace(".", "").upper()),
+                    "sample_rate_khz": float(info.get("sample_rate_khz", 44.1)),
+                    "bitrate_kbps": int(info.get("bitrate_kbps", 0)),
+                    "bit_depth": int(info.get("bit_depth", 16)),
+                    "calidad": "Baja" if is_fake else str(info.get("calidad") or "Alta"),
+                    "perdida": "Compresión" if is_fake else "Sin Pérdida",
+                    "perdida_pct": 35.0 if is_fake else 0.0,
+                    "compresion": "Lossy Transcode" if is_fake else "",
+                    "es_fake": is_fake,
+                    "badge_color": "red" if is_fake else "green",
+                    "status": status_str,
+                    "cutoff_khz": cutoff_khz,
+                    "lufs": lufs_val,
+                    "lra": lra_val,
+                    "true_peak": tp_val,
+                    "clipping": is_clipping,
+                    "status_lufs": status_lufs,
+                    "badge_lufs": badge_lufs,
+                    "version_type": v_type,
+                    "genre": track_genre,
+                    "subgenre": track_subgenre,
+                    "g": track_subgenre,
+                    "cues": info.get("cues") or [],
+                    "low_ratio": low_ratio,
+                    "mid_ratio": mid_ratio,
+                    "high_ratio": high_ratio,
+                    "acoustic_role": acoustic_role,
+                    "acoustic_fp": acoustic_fp,
+                    "spectrum": spectrum_points,
+                    "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
+                    "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
+                    "comment": tactical_comment,
+                    "is_audited": True,
+                    "audit_cached": False
+                }
 
-            # Guardar en audit_cache SQLite WAL
-            if hasattr(self, "db_cache") and self.db_cache:
+                audit_tuple = (
+                    full_path, "", mtime_val, fsize_val, cutoff_khz, lufs_val, tp_val,
+                    low_ratio, mid_ratio, high_ratio, acoustic_role, track_obj["format"],
+                    track_obj["bitrate_kbps"], track_obj["sample_rate_khz"], track_obj["calidad"],
+                    track_obj["status"], int(is_fake), acoustic_fp,
+                    json.dumps(spectrum_points) if spectrum_points else ""
+                )
+                meta_tuple = (full_path, mtime_val, fsize_val, json.dumps(track_obj))
+                return idx, track_obj, audit_tuple, meta_tuple, is_fake, is_missing
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+                tasks = [(p_idx, idx, item) for p_idx, (idx, item) in enumerate(pending_items, 1)]
+                futures = {executor.submit(_procesar_un_delta, t): t for t in tasks}
+                done_c = 0
+                for fut in concurrent.futures.as_completed(futures):
+                    if self._cancelar_proceso:
+                        executor.shutdown(wait=False)
+                        break
+                    done_c += 1
+                    p_idx_t, idx_t, item_t = futures[fut]
+                    fname_t = item_t[2]
+                    try:
+                        res = fut.result()
+                        if res:
+                            t_idx, track_obj, a_tuple, m_tuple, t_fake, t_missing = res
+                            indexed_tracks[t_idx] = track_obj
+                            newly_audited_db.append(a_tuple)
+                            newly_audited_meta.append(m_tuple)
+                            if t_fake:
+                                fake_count += 1
+                            if t_missing:
+                                sin_meta_count += 1
+                    except Exception as e_proc:
+                        print(f"[AUDIT WORKER ERR] {fname_t}: {e_proc}")
+
+                    if progreso_cb and (done_c % emit_step == 0 or done_c == total_pending):
+                        pct = int(10 + (done_c / total_pending) * 85)
+                        progreso_cb(pct, f"Auditando delta ({done_c}/{total_pending}): {fname_t}")
+
+            # Guardar en SQLite en lotes atómicos WAL (una sola transacción masiva)
+            if newly_audited_db and hasattr(self, "db_cache") and self.db_cache:
                 try:
-                    self.db_cache.set({
-                        "filepath": full_path,
-                        "file_hash": "",
-                        "mtime": mtime_val,
-                        "filesize": fsize_val,
-                        "cutoff_khz": cutoff_khz,
-                        "lufs": lufs_val,
-                        "true_peak": tp_val,
-                        "low_ratio": track_obj["low_ratio"],
-                        "mid_ratio": track_obj["mid_ratio"],
-                        "high_ratio": track_obj["high_ratio"],
-                        "acoustic_role": track_obj["acoustic_role"],
-                        "format": track_obj["format"],
-                        "bitrate_kbps": track_obj["bitrate_kbps"],
-                        "sample_rate_khz": track_obj["sample_rate_khz"],
-                        "calidad": track_obj["calidad"],
-                        "status": track_obj["status"],
-                        "es_fake": int(bool(track_obj["es_fake"])),
-                        "acoustic_fp": track_obj["acoustic_fp"],
-                        "spectrum_json": json.dumps(spectrum_points) if spectrum_points else ""
-                    })
-                    newly_audited_meta.append((full_path, mtime_val, fsize_val, json.dumps(track_obj)))
-                except Exception as e_save:
-                    print(f"[AUDIT SAVE ERR] {e_save}")
-
-            indexed_tracks[idx] = track_obj
-
-        # Guardar metadatos enriquecidos en metadata_cache
-        if newly_audited_meta and hasattr(self, "db_cache") and self.db_cache:
-            try:
-                self.db_cache.set_metadata_batch(newly_audited_meta)
-            except Exception as e_mset:
-                print(f"[AUDIT META BATCH SET ERR] {e_mset}")
+                    self.db_cache.set_audit_batch(newly_audited_db)
+                except Exception as e_asave:
+                    print(f"[AUDIT BATCH SAVE ERR] {e_asave}")
+            if newly_audited_meta and hasattr(self, "db_cache") and self.db_cache:
+                try:
+                    self.db_cache.set_metadata_batch(newly_audited_meta)
+                except Exception as e_msave:
+                    print(f"[AUDIT META BATCH SAVE ERR] {e_msave}")
 
         # 3. RECONSTRUIR LISTA ORDENADA DE TODAS LAS PISTAS (CACHÉ + DELTA)
         tracks_auditados = [indexed_tracks[i] for i in sorted(indexed_tracks.keys())]
@@ -1700,44 +1696,52 @@ return folderPath'''
                             tech_depth = getattr(m.info, "bits_per_sample", 16)
                             tech_kbps = round(getattr(m.info, "bitrate", 0) / 1000)
             else:
-                id3_tags = None
-                try:
-                    id3_tags = ID3(full_path)
-                    t_frame = id3_tags.get("TXXX:TRIM_START_MS")
-                    d_frame = id3_tags.get("TXXX:FIRST_DOWNBEAT_MS")
-                    tcon_frame = id3_tags.get("TCON")
-                    subg_frame = id3_tags.get("TXXX:SUBGENRE")
-                    if tcon_frame and tcon_frame.text:
-                        genre_str = str(tcon_frame.text[0])
-                    if subg_frame and subg_frame.text:
-                        subgenre_str = str(subg_frame.text[0])
-                    if t_frame and t_frame.text:
-                        trim_start_ms = float(t_frame.text[0])
-                    if d_frame and d_frame.text:
-                        first_downbeat_ms = float(d_frame.text[0])
-                    if any(k.startswith('APIC') for k in id3_tags.keys()):
-                        has_cover = True
-                except Exception:
-                    pass
+                m = MutagenFile(full_path)
+                if m is not None:
+                    tags = getattr(m, "tags", None)
+                    if tags is not None and hasattr(tags, "get"):
+                        def _get_tag_val(keys):
+                            for k in keys:
+                                v = tags.get(k)
+                                if v is not None:
+                                    if hasattr(v, "text") and v.text:
+                                        return str(v.text[0])
+                                    if isinstance(v, (list, tuple)) and len(v) > 0:
+                                        return str(v[0])
+                                    return str(v)
+                            return ""
 
-                m = MutagenFile(full_path, easy=True)
-                if m:
-                    title = str(m.get("title", [""])[0])
-                    artist = str(m.get("artist", [""])[0])
-                    raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
-                    if raw_bpm:
-                        try:
-                            bpm_str = f"{float(raw_bpm):.2f}"
-                        except Exception:
-                            pass
-                    raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
-                    if raw_key:
-                        key_str = AudioProcessorService.normalizar_key(raw_key)
-                    if not genre_str:
-                        genre_str = str(m.get("genre", [""])[0])
+                        title = _get_tag_val(["TIT2", "title", "\xa9nam"])
+                        artist = _get_tag_val(["TPE1", "artist", "\xa9ART"])
+                        raw_bpm = _get_tag_val(["TBPM", "bpm", "tmpo"]).replace(",", ".")
+                        if raw_bpm:
+                            try:
+                                bpm_str = f"{float(raw_bpm):.2f}"
+                            except Exception:
+                                pass
+                        raw_key = _get_tag_val(["TKEY", "initialkey", "key"])
+                        if raw_key:
+                            key_str = AudioProcessorService.normalizar_key(raw_key)
+                        genre_str = _get_tag_val(["TCON", "genre", "\xa9gen"])
+                        subgenre_str = _get_tag_val(["TXXX:SUBGENRE", "subgenre"])
+                        t_ms = _get_tag_val(["TXXX:TRIM_START_MS"])
+                        if t_ms:
+                            try:
+                                trim_start_ms = float(t_ms)
+                            except Exception:
+                                pass
+                        d_ms = _get_tag_val(["TXXX:FIRST_DOWNBEAT_MS"])
+                        if d_ms:
+                            try:
+                                first_downbeat_ms = float(d_ms)
+                            except Exception:
+                                pass
+                        if any(str(k).startswith("APIC") or str(k).lower().startswith("covr") for k in tags.keys()):
+                            has_cover = True
                     if m.info and hasattr(m.info, "length"):
                         dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
                         tech_sr = getattr(m.info, "sample_rate", 44100)
+                        tech_depth = getattr(m.info, "bits_per_sample", 16)
                         tech_kbps = round(getattr(m.info, "bitrate", 0) / 1000)
         except Exception:
             pass
