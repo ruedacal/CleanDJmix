@@ -34260,21 +34260,28 @@ const App = () => {
                 logo={(
                     <div 
                         onClick={triggerLogoTechno} 
-                        className="flex items-center select-none cursor-pointer group py-1 sm:py-1.5"
+                        className="flex items-center select-none cursor-pointer group my-auto py-1 sm:py-1.5"
                         title={isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"}
                     >
                         {/* CONTENEDOR CENTRADO RESPECTO AL MENÚ LATERAL COLAPSADO (76px de ancho, centro en 38px) */}
-                        <div className="w-[76px] shrink-0 flex items-center justify-center">
+                        <div className="w-[76px] shrink-0 flex items-center justify-center my-auto">
                             <BeatWaveLogoBadge size="sm" />
                         </div>
 
-                        {/* LETRAS OFICIALES BEATWAVE PRO A LA DERECHA */}
-                        <div className="flex items-center shrink-0 pl-1 pr-3">
-                            <img 
-                                src="assets/beatwave_text.png" 
-                                alt="BEAT WAVE PRO • Precision Audio Intelligence" 
-                                className={`h-7 sm:h-8 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? 'anim-soundwave drop-shadow-[0_0_18px_rgba(6,182,212,0.85)]' : 'group-hover:brightness-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]'}`}
-                            />
+                        {/* TIPOGRAFÍA OFICIAL BEATWAVE PRO CON ESTILO DE TÍTULOS (FONT-SYNE BLACK) Y EMPAQUE */}
+                        <div className="-ml-3.5 flex flex-col justify-center shrink-0 pr-3 my-auto">
+                            <div className={`font-syne font-black text-[22px] sm:text-[24px] tracking-[0.03em] leading-none text-white whitespace-nowrap transition-all duration-300 ${
+                                isLogoTechnoActive 
+                                    ? 'anim-soundwave drop-shadow-[0_0_22px_rgba(6,182,212,0.95)]' 
+                                    : 'group-hover:brightness-110 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]'
+                            }`}>
+                                BEATWAVE <span className="text-cyan-400 drop-shadow-[0_0_14px_rgba(34,211,238,0.85)]">PRO</span>
+                            </div>
+                            <div className="w-full flex justify-between items-center text-[9px] sm:text-[10px] font-mono font-bold tracking-[0.06em] text-cyan-300/90 mt-1 select-none leading-none">
+                                <span>PRECISION</span>
+                                <span>AUDIO</span>
+                                <span>INTELLIGENCE</span>
+                            </div>
                         </div>
                     </div>
                 )}

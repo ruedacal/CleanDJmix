@@ -335,7 +335,7 @@
   }) => {
     const current = findNavItem(activeTab);
     const alias = userProfile && userProfile.alias || "DJ";
-    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-50 flex h-16 w-full shrink-0 items-center gap-2 pl-0 pr-3 sm:pr-4 py-2", style: { zIndex: 1e3 } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-50 flex min-h-[68px] w-full shrink-0 items-center gap-2 pl-0 pr-3 sm:pr-4 py-2.5 sm:py-3", style: { zIndex: 1e3 } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3 py-1 shadow-[0_0_12px_rgba(6,182,212,0.25)]",
@@ -24989,18 +24989,11 @@ ${res.path}`);
           "div",
           {
             onClick: triggerLogoTechno,
-            className: "flex items-center select-none cursor-pointer group py-1 sm:py-1.5",
+            className: "flex items-center select-none cursor-pointer group my-auto py-1 sm:py-1.5",
             title: isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"
           },
-          /* @__PURE__ */ React.createElement("div", { className: "w-[76px] shrink-0 flex items-center justify-center" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "sm" })),
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 pl-1 pr-3" }, /* @__PURE__ */ React.createElement(
-            "img",
-            {
-              src: "assets/beatwave_text.png",
-              alt: "BEAT WAVE PRO \u2022 Precision Audio Intelligence",
-              className: `h-7 sm:h-8 w-auto object-contain transition-all duration-300 ${isLogoTechnoActive ? "anim-soundwave drop-shadow-[0_0_18px_rgba(6,182,212,0.85)]" : "group-hover:brightness-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]"}`
-            }
-          ))
+          /* @__PURE__ */ React.createElement("div", { className: "w-[76px] shrink-0 flex items-center justify-center my-auto" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "sm" })),
+          /* @__PURE__ */ React.createElement("div", { className: "-ml-3.5 flex flex-col justify-center shrink-0 pr-3 my-auto" }, /* @__PURE__ */ React.createElement("div", { className: `font-syne font-black text-[22px] sm:text-[24px] tracking-[0.03em] leading-none text-white whitespace-nowrap transition-all duration-300 ${isLogoTechnoActive ? "anim-soundwave drop-shadow-[0_0_22px_rgba(6,182,212,0.95)]" : "group-hover:brightness-110 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]"}` }, "BEATWAVE ", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_14px_rgba(34,211,238,0.85)]" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-[9px] sm:text-[10px] font-mono font-bold tracking-[0.06em] text-cyan-300/90 mt-1 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))
         ),
         activeTab,
         t,

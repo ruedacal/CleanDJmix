@@ -97,7 +97,7 @@ export const TopBar = ({
     const alias = (userProfile && userProfile.alias) || 'DJ';
 
     return (
-        <header className="bw-topbar relative z-50 flex h-16 w-full shrink-0 items-center gap-2 pl-0 pr-3 sm:pr-4 py-2" style={{ zIndex: 1000 }}>
+        <header className="bw-topbar relative z-50 flex min-h-[68px] w-full shrink-0 items-center gap-2 pl-0 pr-3 sm:pr-4 py-2.5 sm:py-3" style={{ zIndex: 1000 }}>
             <div className="flex items-center shrink-0 min-w-0">{logo}</div>
 
             <div className="hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10">
