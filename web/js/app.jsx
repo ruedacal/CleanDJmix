@@ -26802,14 +26802,52 @@ const MapWorkspace = ({
                 t.targetPanX += t.continuousDx;
                 t.targetPanY += t.continuousDy;
             }
-            // Clamping cinemático estricto para que los nodos siempre estén en el viewport (pantalla nunca en blanco)
+            // CLAMPING CINEMÁTICO INTELIGENTE ANTI-VACÍO:
+            // Asegura que el cluster de pistas SIEMPRE permanezca visible en pantalla y nunca quede en negro
             const side = radialView ? Math.min(w, h) : null;
             const spanX = side || w;
             const spanY = side || h;
-            const maxAllowedPanX = Math.max(120, (spanX * 0.5) * (t.targetScale || 1));
-            const maxAllowedPanY = Math.max(120, (spanY * 0.5) * (t.targetScale || 1));
-            t.targetPanX = Math.max(-maxAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
-            t.targetPanY = Math.max(-maxAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
+            const effScale = t.targetScale || 1.0;
+            const currentNodes = nodesRef.current || [];
+
+            if (currentNodes.length > 0) {
+                let minNx = 1.0, maxNx = 0.0, minNy = 1.0, maxNy = 0.0;
+                for (let i = 0; i < currentNodes.length; i++) {
+                    const cn = currentNodes[i];
+                    const nx = cn.currX;
+                    const ny = cn.currY;
+                    if (nx < minNx) minNx = nx;
+                    if (nx > maxNx) maxNx = nx;
+                    if (ny < minNy) minNy = ny;
+                    if (ny > maxNy) maxNy = ny;
+                }
+                const focusNx = (minNx + maxNx) * 0.5;
+                const focusNy = (minNy + maxNy) * 0.5;
+
+                // Margen dinámico para garantizar siempre pistas visibles
+                const marginX = Math.min(w * 0.35, 160);
+                const marginY = Math.min(h * 0.35, 160);
+
+                const minAllowedPanX = marginX - w * 0.5 - (maxNx - 0.5) * spanX * effScale;
+                const maxAllowedPanX = w * 0.5 - marginX - (minNx - 0.5) * spanX * effScale;
+                const minAllowedPanY = marginY - h * 0.5 - (maxNy - 0.5) * spanY * effScale;
+                const maxAllowedPanY = h * 0.5 - marginY - (minNy - 0.5) * spanY * effScale;
+
+                if (minAllowedPanX <= maxAllowedPanX) {
+                    t.targetPanX = Math.max(minAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
+                } else {
+                    t.targetPanX = (0.5 - focusNx) * spanX * effScale;
+                }
+
+                if (minAllowedPanY <= maxAllowedPanY) {
+                    t.targetPanY = Math.max(minAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
+                } else {
+                    t.targetPanY = (0.5 - focusNy) * spanY * effScale;
+                }
+            } else {
+                t.targetPanX = 0;
+                t.targetPanY = 0;
+            }
 
             t.panX += (t.targetPanX - t.panX) * 0.22;
             t.panY += (t.targetPanY - t.panY) * 0.22;
@@ -27382,7 +27420,7 @@ const MapWorkspace = ({
         }
     };
 
-    // Zoom cinemático suave con rueda centrado en puntero
+    // Zoom cinemático suave con rueda centrado en contenido (Anti-pantalla en blanco)
     const handleWheel = (e) => {
         e.preventDefault();
         const canvas = canvasRef.current;
@@ -27400,10 +27438,28 @@ const MapWorkspace = ({
         const cx = w / 2 + transformRef.current.targetPanX;
         const cy = h / 2 + transformRef.current.targetPanY;
 
-        const maxPanX = Math.max(100, (w * 0.44) * newScale);
-        const maxPanY = Math.max(100, (h * 0.44) * newScale);
-        transformRef.current.targetPanX = Math.max(-maxPanX, Math.min(maxPanX, mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2));
-        transformRef.current.targetPanY = Math.max(-maxPanY, Math.min(maxPanY, mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2));
+        const nodes = nodesRef.current || [];
+        let zoomCenterScreenX = mouseX;
+        let zoomCenterScreenY = mouseY;
+
+        // Si el puntero no apunta a un nodo, anclar el zoom hacia el centroide de pistas para que nunca se pierda el contenido
+        if (!hoveredTrack && nodes.length > 0) {
+            let avgNx = 0, avgNy = 0;
+            for (let i = 0; i < nodes.length; i++) {
+                avgNx += nodes[i].currX;
+                avgNy += nodes[i].currY;
+            }
+            avgNx /= nodes.length;
+            avgNy /= nodes.length;
+            const side = radialView ? Math.min(w, h) : null;
+            const centroidScreenX = w / 2 + transformRef.current.targetPanX + (avgNx - 0.5) * (side || w) * currentScale;
+            const centroidScreenY = h / 2 + transformRef.current.targetPanY + (avgNy - 0.5) * (side || h) * currentScale;
+            zoomCenterScreenX = mouseX * 0.4 + centroidScreenX * 0.6;
+            zoomCenterScreenY = mouseY * 0.4 + centroidScreenY * 0.6;
+        }
+
+        transformRef.current.targetPanX = zoomCenterScreenX - (zoomCenterScreenX - cx) * (newScale / currentScale) - w / 2;
+        transformRef.current.targetPanY = zoomCenterScreenY - (zoomCenterScreenY - cy) * (newScale / currentScale) - h / 2;
         transformRef.current.targetScale = newScale;
         setZoomDisplay(newScale);
     };
@@ -34047,14 +34103,16 @@ const App = () => {
                 logo={(
                     <div 
                         onClick={triggerLogoTechno} 
-                        className="flex items-center gap-1.5 sm:gap-2 select-none cursor-pointer group"
+                        className="flex items-center select-none cursor-pointer group py-1 sm:py-1.5"
                         title={isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"}
                     >
-                        {/* LOGOTIPO OFICIAL BEATWAVE PRO NATIVO VECTORIAL (HTML + CSS + SVG EN CIAN) */}
-                        <BeatWaveLogoBadge size="sm" />
+                        {/* CONTENEDOR CENTRADO RESPECTO AL MENÚ LATERAL COLAPSADO (76px de ancho, centro en 38px) */}
+                        <div className="w-[76px] shrink-0 flex items-center justify-center">
+                            <BeatWaveLogoBadge size="sm" />
+                        </div>
 
                         {/* LETRAS OFICIALES BEATWAVE PRO A LA DERECHA */}
-                        <div className="flex items-center shrink-0">
+                        <div className="flex items-center shrink-0 pl-1 pr-3">
                             <img 
                                 src="assets/beatwave_text.png" 
                                 alt="BEAT WAVE PRO • Precision Audio Intelligence" 

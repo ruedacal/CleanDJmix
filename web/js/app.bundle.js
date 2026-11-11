@@ -335,7 +335,7 @@
   }) => {
     const current = findNavItem(activeTab);
     const alias = userProfile && userProfile.alias || "DJ";
-    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-50 flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4", style: { zIndex: 1e3 } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("header", { className: "bw-topbar relative z-50 flex h-16 w-full shrink-0 items-center gap-2 pl-0 pr-3 sm:pr-4 py-2", style: { zIndex: 1e3 } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 min-w-0" }, logo), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-500" }, current.group), /* @__PURE__ */ React.createElement(ShellIcons.ChevronRight, { size: 12, className: "text-zinc-600" }), /* @__PURE__ */ React.createElement("h1", { className: "text-sm font-semibold text-white truncate" }, navLabel(current, t))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3 py-1 shadow-[0_0_12px_rgba(6,182,212,0.25)]",
@@ -19544,10 +19544,41 @@ Respuesta: ${qa.a}`).join("\n\n"),
         const side = radialView ? Math.min(w, h) : null;
         const spanX = side || w;
         const spanY = side || h;
-        const maxAllowedPanX = Math.max(120, spanX * 0.5 * (t.targetScale || 1));
-        const maxAllowedPanY = Math.max(120, spanY * 0.5 * (t.targetScale || 1));
-        t.targetPanX = Math.max(-maxAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
-        t.targetPanY = Math.max(-maxAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
+        const effScale = t.targetScale || 1;
+        const currentNodes = nodesRef.current || [];
+        if (currentNodes.length > 0) {
+          let minNx = 1, maxNx = 0, minNy = 1, maxNy = 0;
+          for (let i = 0; i < currentNodes.length; i++) {
+            const cn = currentNodes[i];
+            const nx = cn.currX;
+            const ny = cn.currY;
+            if (nx < minNx) minNx = nx;
+            if (nx > maxNx) maxNx = nx;
+            if (ny < minNy) minNy = ny;
+            if (ny > maxNy) maxNy = ny;
+          }
+          const focusNx = (minNx + maxNx) * 0.5;
+          const focusNy = (minNy + maxNy) * 0.5;
+          const marginX = Math.min(w * 0.35, 160);
+          const marginY = Math.min(h * 0.35, 160);
+          const minAllowedPanX = marginX - w * 0.5 - (maxNx - 0.5) * spanX * effScale;
+          const maxAllowedPanX = w * 0.5 - marginX - (minNx - 0.5) * spanX * effScale;
+          const minAllowedPanY = marginY - h * 0.5 - (maxNy - 0.5) * spanY * effScale;
+          const maxAllowedPanY = h * 0.5 - marginY - (minNy - 0.5) * spanY * effScale;
+          if (minAllowedPanX <= maxAllowedPanX) {
+            t.targetPanX = Math.max(minAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
+          } else {
+            t.targetPanX = (0.5 - focusNx) * spanX * effScale;
+          }
+          if (minAllowedPanY <= maxAllowedPanY) {
+            t.targetPanY = Math.max(minAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
+          } else {
+            t.targetPanY = (0.5 - focusNy) * spanY * effScale;
+          }
+        } else {
+          t.targetPanX = 0;
+          t.targetPanY = 0;
+        }
         t.panX += (t.targetPanX - t.panX) * 0.22;
         t.panY += (t.targetPanY - t.panY) * 0.22;
         t.scale += (t.targetScale - t.scale) * 0.22;
@@ -20032,10 +20063,25 @@ Respuesta: ${qa.a}`).join("\n\n"),
       const h = rect.height;
       const cx = w / 2 + transformRef.current.targetPanX;
       const cy = h / 2 + transformRef.current.targetPanY;
-      const maxPanX = Math.max(100, w * 0.44 * newScale);
-      const maxPanY = Math.max(100, h * 0.44 * newScale);
-      transformRef.current.targetPanX = Math.max(-maxPanX, Math.min(maxPanX, mouseX - (mouseX - cx) * (newScale / currentScale) - w / 2));
-      transformRef.current.targetPanY = Math.max(-maxPanY, Math.min(maxPanY, mouseY - (mouseY - cy) * (newScale / currentScale) - h / 2));
+      const nodes = nodesRef.current || [];
+      let zoomCenterScreenX = mouseX;
+      let zoomCenterScreenY = mouseY;
+      if (!hoveredTrack && nodes.length > 0) {
+        let avgNx = 0, avgNy = 0;
+        for (let i = 0; i < nodes.length; i++) {
+          avgNx += nodes[i].currX;
+          avgNy += nodes[i].currY;
+        }
+        avgNx /= nodes.length;
+        avgNy /= nodes.length;
+        const side = radialView ? Math.min(w, h) : null;
+        const centroidScreenX = w / 2 + transformRef.current.targetPanX + (avgNx - 0.5) * (side || w) * currentScale;
+        const centroidScreenY = h / 2 + transformRef.current.targetPanY + (avgNy - 0.5) * (side || h) * currentScale;
+        zoomCenterScreenX = mouseX * 0.4 + centroidScreenX * 0.6;
+        zoomCenterScreenY = mouseY * 0.4 + centroidScreenY * 0.6;
+      }
+      transformRef.current.targetPanX = zoomCenterScreenX - (zoomCenterScreenX - cx) * (newScale / currentScale) - w / 2;
+      transformRef.current.targetPanY = zoomCenterScreenY - (zoomCenterScreenY - cy) * (newScale / currentScale) - h / 2;
       transformRef.current.targetScale = newScale;
       setZoomDisplay(newScale);
     };
@@ -24438,11 +24484,11 @@ ${res.path}`);
           "div",
           {
             onClick: triggerLogoTechno,
-            className: "flex items-center gap-1.5 sm:gap-2 select-none cursor-pointer group",
+            className: "flex items-center select-none cursor-pointer group py-1 sm:py-1.5",
             title: isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"
           },
-          /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "sm" }),
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0" }, /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ React.createElement("div", { className: "w-[76px] shrink-0 flex items-center justify-center" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "sm" })),
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center shrink-0 pl-1 pr-3" }, /* @__PURE__ */ React.createElement(
             "img",
             {
               src: "assets/beatwave_text.png",
