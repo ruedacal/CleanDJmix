@@ -33083,23 +33083,23 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
                 {/* Contenido Principal con Logo y Rotador de Hooks Persuasivos */}
                 <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto">
-                    {/* Logo Oficial + Tipografía Proporcional a Escala de Cabecera */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 max-w-4xl select-none group mb-2">
+                    {/* Logo Oficial + Tipografía Proporcional a Escala de Cabecera (Idéntica Proporción 1:1) */}
+                    <div className="flex flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group mb-2.5">
                         <BeatWaveLogoBadge size="lg" />
-                        <div className="flex flex-col items-center sm:items-start justify-center select-none">
-                            <div className="flex items-center gap-3 sm:gap-4 leading-none">
-                                <span className="font-syne font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
+                        <div className="flex flex-col justify-center select-none pr-1">
+                            <div className="flex items-center gap-2 sm:gap-3 leading-none">
+                                <span className="font-syne font-black text-3xl sm:text-5xl md:text-6xl lg:text-[70px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
                                     <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.9)]">WAVE</span>
                                 </span>
-                                <span className="text-lg sm:text-2xl md:text-3xl font-sans font-black tracking-wider px-3 sm:px-4 py-0.5 sm:py-1 rounded-[12px] sm:rounded-[15px] border-2 border-cyan-400 text-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none">
+                                <span className="text-xs sm:text-xl md:text-2xl lg:text-[31px] font-sans font-black tracking-wider px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 rounded-md sm:rounded-xl md:rounded-[18px] border-[1.5px] sm:border-[2.5px] md:border-[3px] border-cyan-400 text-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none">
                                     PRO
                                 </span>
                             </div>
-                            <div className="w-full flex justify-between items-center text-xs sm:text-base md:text-[22px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-2 sm:mt-3 select-none leading-none">
+                            <div className="w-full flex justify-between items-center text-[10px] sm:text-base md:text-xl lg:text-[27px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 sm:mt-1.5 md:mt-2 select-none leading-none">
                                 <span>PRECISION</span>
-                                <span className="text-cyan-400 font-black text-sm sm:text-xl md:text-2xl leading-none">•</span>
+                                <span className="text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none">•</span>
                                 <span>AUDIO</span>
-                                <span className="text-cyan-400 font-black text-sm sm:text-xl md:text-2xl leading-none">•</span>
+                                <span className="text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none">•</span>
                                 <span>INTELLIGENCE</span>
                             </div>
                         </div>
