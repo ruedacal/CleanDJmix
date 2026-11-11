@@ -33083,12 +33083,6 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
                 {/* Contenido Principal con Logo y Rotador de Hooks Persuasivos */}
                 <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto">
-                    {/* Badge / Kicker Clickbait de Alto Impacto */}
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-950/90 via-blue-950/80 to-purple-950/90 border border-cyan-500/50 text-cyan-300 text-xs font-mono font-black tracking-wider uppercase mb-3 shadow-[0_0_25px_rgba(6,182,212,0.35)] animate-pulse">
-                        <Icons.Flame size={14} className="text-amber-400 shrink-0" />
-                        <span>El arma definitiva que los promotores y headliners exigen en 2026</span>
-                    </div>
-
                     {/* Logo Oficial + Tipografía Proporcional a Escala de Cabecera */}
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 max-w-4xl select-none group mb-2">
                         <BeatWaveLogoBadge size="lg" />
