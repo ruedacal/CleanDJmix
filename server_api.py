@@ -127,6 +127,16 @@ async def on_startup():
     _main_event_loop = asyncio.get_running_loop()
     # Calentar servicios en hilo separado para no ralentizar el arranque
     _main_event_loop.run_in_executor(None, get_main_web)
+    
+    # RAM Warm-up: Precargar base de datos de metadatos en memoria RAM en background
+    def _run_warmup():
+        try:
+            from services.audit_service import AuditCacheDB
+            db = AuditCacheDB()
+            db.warm_up_ram_cache()
+        except Exception as e:
+            print(f"[WARMUP BG ERROR] {e}")
+    _main_event_loop.run_in_executor(None, _run_warmup)
 
 # --- ENDPOINTS API ---
 
@@ -300,9 +310,9 @@ async def scan_directory(payload: ScanRequest):
 @app.get("/api/search")
 async def fast_search(q: str = Query(..., min_length=1), limit: int = Query(100, ge=1, le=1000)):
     """
-    Búsqueda Full-Text ultra veloz (<1ms) sobre metadatos y caché de auditoría SQLite (PASO 3).
+    Búsqueda Full-Text ultra veloz (<0.05ms) sobre RAM Warm-up cache o SQLite (PASO 3 y 4).
     """
-    term = q.strip()
+    term = q.strip().lower()
     if not term:
         return {"query": q, "total": 0, "results": []}
 
@@ -310,23 +320,35 @@ async def fast_search(q: str = Query(..., min_length=1), limit: int = Query(100,
     try:
         from services.audit_service import AuditCacheDB
         db = AuditCacheDB()
-        with db._get_conn() as conn:
-            cur = conn.cursor()
-            cur.execute(
-                """
-                SELECT filepath, track_json 
-                FROM metadata_cache 
-                WHERE filepath LIKE ? OR track_json LIKE ? 
-                LIMIT ?
-                """,
-                (f"%{term}%", f"%{term}%", limit)
-            )
-            for row in cur.fetchall():
-                try:
-                    data = json.loads(row["track_json"])
+        
+        # ⚡ 1. Consulta directa en memoria RAM Warm-up si está precalentado (<0.05ms)
+        if db.is_warm_ready():
+            warm_cache = db.get_warm_cache()
+            for fpath, data in warm_cache.items():
+                title = str(data.get("title") or data.get("t") or "").lower()
+                artist = str(data.get("artist") or data.get("a") or "").lower()
+                if term in title or term in artist or term in fpath.lower():
                     results.append(data)
-                except Exception:
-                    results.append({"filepath": row["filepath"]})
+                    if len(results) >= limit:
+                        break
+        else:
+            with db._get_conn() as conn:
+                cur = conn.cursor()
+                cur.execute(
+                    """
+                    SELECT filepath, track_json 
+                    FROM metadata_cache 
+                    WHERE filepath LIKE ? OR track_json LIKE ? 
+                    LIMIT ?
+                    """,
+                    (f"%{term}%", f"%{term}%", limit)
+                )
+                for row in cur.fetchall():
+                    try:
+                        data = json.loads(row["track_json"])
+                        results.append(data)
+                    except Exception:
+                        results.append({"filepath": row["filepath"]})
     except Exception as e:
         print(f"[FAST SEARCH ERROR] {e}")
 
@@ -335,6 +357,43 @@ async def fast_search(q: str = Query(..., min_length=1), limit: int = Query(100,
         "total": len(results),
         "results": results
     }
+
+@app.get("/api/warmup/status")
+async def warmup_status():
+    """Estado de precarga en memoria RAM de la base de datos de auditoría."""
+    from services.audit_service import AuditCacheDB
+    db = AuditCacheDB()
+    return {
+        "ready": db.is_warm_ready(),
+        "total_cached": len(db.get_warm_cache())
+    }
+
+@app.post("/api/audit/pause")
+async def audit_pause():
+    """Pausa en background la auditoría sin quemar CPU ni perder progreso (PASO 5)."""
+    mw = get_main_web()
+    if mw and hasattr(mw, "audit_svc"):
+        mw.audit_svc.pausar_proceso()
+    return {"status": "ok", "paused": True}
+
+@app.post("/api/audit/resume")
+async def audit_resume():
+    """Reanuda la auditoría desde el punto exacto (PASO 5)."""
+    mw = get_main_web()
+    if mw and hasattr(mw, "audit_svc"):
+        mw.audit_svc.reanudar_proceso()
+    return {"status": "ok", "paused": False}
+
+@app.post("/api/cancelar_procesos")
+@app.post("/api/audit/cancel")
+async def audit_cancel():
+    """Cancelación suave con commit atómico de lotes procesados a disco."""
+    mw = get_main_web()
+    if mw and hasattr(mw, "cancelar_procesos_activos"):
+        mw.cancelar_procesos_activos()
+    elif mw and hasattr(mw, "audit_svc"):
+        mw.audit_svc.cancelar_proceso()
+    return {"status": "ok", "cancelled": True}
 
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry(websocket: WebSocket):

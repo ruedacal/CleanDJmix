@@ -9466,7 +9466,27 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       }
     };
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
+    const [isAuditPaused, setIsAuditPaused] = useState5(false);
+    const handleTogglePausaProceso = async () => {
+      const nextState = !isAuditPaused;
+      setIsAuditPaused(nextState);
+      try {
+        const endpoint = nextState ? "/api/audit/pause" : "/api/audit/resume";
+        fetch(endpoint, { method: "POST" }).catch(() => {
+        });
+        if (window.eel) {
+          if (nextState && window.eel.pausar_auditoria) {
+            await window.eel.pausar_auditoria()();
+          } else if (!nextState && window.eel.reanudar_auditoria) {
+            await window.eel.reanudar_auditoria()();
+          }
+        }
+      } catch (e) {
+        console.error("Error al pausar/reanudar:", e);
+      }
+    };
     const handleCancelarProceso = async () => {
+      setIsAuditPaused(false);
       try {
         fetch("/api/cancelar_procesos", { method: "POST" }).catch(() => {
         });
@@ -10428,11 +10448,22 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           { id: "xlsx", label: "Informe Excel", ext: ".XLSX", desc: "Hojas por destino y auditor\xEDa", Logo: null, onClick: handleExportarXLS }
         ]
       }
-    ))), (isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 animate-pulse" }), batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold" }, batchProgress, "%"), /* @__PURE__ */ React.createElement(
+    ))), (isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAuditPaused ? "bg-amber-400" : "bg-djcyan-400"} animate-pulse` }), isAuditPaused ? "\u23F8 Auditor\xEDa en pausa (cero p\xE9rdida de datos, puedes reanudar cuando quieras)" : batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold" }, batchProgress, "%"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleTogglePausaProceso,
+        className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer transition-colors shadow flex items-center gap-1 ${isAuditPaused ? "bg-amber-500 hover:bg-amber-400 text-black border border-amber-300 animate-pulse" : "bg-djzinc-800 hover:bg-djzinc-700 text-amber-300 border border-amber-600/50"}`,
+        title: isAuditPaused ? "Reanudar procesamiento de auditor\xEDa" : "Pausar temporalmente sin perder progreso"
+      },
+      isAuditPaused ? /* @__PURE__ */ React.createElement(Icons.Play, { size: 12, className: "inline-block align-[-1px]" }) : /* @__PURE__ */ React.createElement(Icons.Pause, { size: 12, className: "inline-block align-[-1px]" }),
+      /* @__PURE__ */ React.createElement("span", null, isAuditPaused ? "Reanudar" : "Pausar")
+    ), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: handleCancelarProceso,
-        className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 cursor-pointer transition-colors shadow flex items-center gap-1"
+        className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 cursor-pointer transition-colors shadow flex items-center gap-1",
+        title: "Cancelar y descartar proceso"
       },
       /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, t("btn_cancel") || "Cancelar")
@@ -24743,6 +24774,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
     const [globalAuditInfo, setGlobalAuditInfo] = useState5({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
+    useEffect6(() => {
+      fetch("/api/warmup/status").then((res) => res.json()).then((data) => {
+        if (data && data.ready) {
+          console.log(`[RAM WARM-UP] Cat\xE1logo precalentado: ${data.total_cached} pistas en memoria RAM.`);
+        }
+      }).catch(() => {
+      });
+    }, []);
     useEffect6(() => {
       if (window.eel && typeof window.eel.expose === "function") {
         window.actualizar_progreso_batch = (pct, msg) => {

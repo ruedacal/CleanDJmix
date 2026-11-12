@@ -745,6 +745,16 @@ def cancelar_procesos_activos():
     return {"status": "ok", "msg": "Procesos cancelados"}
 
 @eel.expose
+def pausar_auditoria():
+    audit_svc.pausar_proceso()
+    return {"status": "ok", "msg": "Auditoría en pausa"}
+
+@eel.expose
+def reanudar_auditoria():
+    audit_svc.reanudar_proceso()
+    return {"status": "ok", "msg": "Auditoría reanudada"}
+
+@eel.expose
 def seleccionar_directorio_descarga():
     return download_svc.seleccionar_directorio_descarga()
 

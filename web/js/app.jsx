@@ -10644,7 +10644,28 @@ const AuditWorkspace = ({
 
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
 
+    const [isAuditPaused, setIsAuditPaused] = useState(false);
+
+    const handleTogglePausaProceso = async () => {
+        const nextState = !isAuditPaused;
+        setIsAuditPaused(nextState);
+        try {
+            const endpoint = nextState ? '/api/audit/pause' : '/api/audit/resume';
+            fetch(endpoint, { method: 'POST' }).catch(() => {});
+            if (window.eel) {
+                if (nextState && window.eel.pausar_auditoria) {
+                    await window.eel.pausar_auditoria()();
+                } else if (!nextState && window.eel.reanudar_auditoria) {
+                    await window.eel.reanudar_auditoria()();
+                }
+            }
+        } catch (e) {
+            console.error("Error al pausar/reanudar:", e);
+        }
+    };
+
     const handleCancelarProceso = async () => {
+        setIsAuditPaused(false);
         try {
             fetch('/api/cancelar_procesos', { method: 'POST' }).catch(() => {});
         } catch (e) {}
@@ -11754,14 +11775,28 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                     <div className="bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all">
                         <div className="flex justify-between items-center text-xs font-mono">
                             <span className="text-djcyan-400 font-semibold truncate flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></span>
-                                {batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")}
+                                <span className={`w-2 h-2 rounded-full ${isAuditPaused ? 'bg-amber-400' : 'bg-djcyan-400'} animate-pulse`}></span>
+                                {isAuditPaused ? "⏸ Auditoría en pausa (cero pérdida de datos, puedes reanudar cuando quieras)" : (batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando..."))}
                             </span>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2.5">
                                 <span className="text-gray-300 font-bold">{batchProgress}%</span>
+                                <button
+                                    type="button"
+                                    onClick={handleTogglePausaProceso}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer transition-colors shadow flex items-center gap-1 ${
+                                        isAuditPaused 
+                                            ? 'bg-amber-500 hover:bg-amber-400 text-black border border-amber-300 animate-pulse' 
+                                            : 'bg-djzinc-800 hover:bg-djzinc-700 text-amber-300 border border-amber-600/50'
+                                    }`}
+                                    title={isAuditPaused ? "Reanudar procesamiento de auditoría" : "Pausar temporalmente sin perder progreso"}
+                                >
+                                    {isAuditPaused ? <Icons.Play size={12} className="inline-block align-[-1px]" /> : <Icons.Pause size={12} className="inline-block align-[-1px]" />}
+                                    <span>{isAuditPaused ? 'Reanudar' : 'Pausar'}</span>
+                                </button>
                                 <button
                                     onClick={handleCancelarProceso}
                                     className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 hover:bg-red-900 text-red-300 border border-red-750 cursor-pointer transition-colors shadow flex items-center gap-1"
+                                    title="Cancelar y descartar proceso"
                                 >
                                     <Icons.Close size={14} className="inline-block align-[-2px]" />
                                     <span>{t('btn_cancel') || 'Cancelar'}</span>
@@ -34081,6 +34116,18 @@ const App = () => {
 
     // Estado Global de Tareas en Background & Tutorial de Bienvenida (Deshabilitado a petición)
     const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' });
+
+    // RAM Warm-up: Monitorear precarga en caliente del catálogo al arrancar
+    useEffect(() => {
+        fetch('/api/warmup/status')
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.ready) {
+                    console.log(`[RAM WARM-UP] Catálogo precalentado: ${data.total_cached} pistas en memoria RAM.`);
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     // Listener Global de Progreso de Carga y Auditoría para TopBar y Workspaces
     useEffect(() => {
