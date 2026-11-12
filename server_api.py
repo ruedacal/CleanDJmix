@@ -212,7 +212,7 @@ async def get_cover(path: str = Query(...)):
             return Response(content=data, media_type=mime)
     except Exception as e:
         pass
-    return JSONResponse(status_code=204, content={"message": "Sin carátula"})
+    return Response(status_code=204)
 
 @app.get("/stream_audio")
 async def stream_audio(request: Request, path: str = Query(...)):
