@@ -134,111 +134,116 @@ input[type=range].pitch-slider-vertical::-webkit-slider-thumb {
 }
 
 /* =========================================================
-   CLEAN-LINE KINETIC SCRAMBLE STUDIO (V1 - V4)
-   Paleta: #05080f (Fondo) | #0066FF / #00A3FF / #38BDF8 (Azul)
+   BEATWAVE HERO SHOWCASE STUDIO · 01 WARP DEPTH & LASER SCRAMBLE
+   Paleta: #05080c (Fondo) | #0066FF / #00A3FF / #38BDF8 (Azul)
    ========================================================= */
 
 :root {
-  --bg-canvas: #05080f;
+  --bg-void: #05080c;
   --corp-blue: #0066FF;
   --elec-blue: #00A3FF;
-  --ice-blue: #38BDF8;
-  --entry-duration: 520ms;
-  --blur-out-duration: 600ms;
-  --stay-duration: 3000ms;
+  --cyan-glow: #38BDF8;
+  --emerald-check: #10b981;
 }
 
-/* Líneas de estela horizontal corporativa */
-.speed-streak {
+/* Escenario Hero 3D */
+.hero-stage {
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  width: 100%;
+}
+
+.hero-slide {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  will-change: transform, opacity, filter;
+  margin: 0 auto;
+}
+
+/* Estelas de velocidad horizontal en azul corporativo */
+.laser-trail {
   position: absolute;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--corp-blue) 45%, var(--ice-blue) 85%, transparent 100%);
-  box-shadow: 0 0 12px rgba(0, 163, 255, 0.5);
+  background: linear-gradient(90deg, transparent 0%, var(--corp-blue) 40%, var(--cyan-glow) 85%, transparent 100%);
+  box-shadow: 0 0 12px rgba(0, 163, 255, 0.65);
   opacity: 0;
   pointer-events: none;
   will-change: transform, opacity;
 }
 
-.streak-active .speed-streak.s1 {
-  top: calc(50% - 36px);
-  width: 48vw;
-  animation: blueStreakSweep calc(var(--entry-duration) * 0.9) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.trail-active .laser-trail.t1 {
+  top: calc(50% - 76px);
+  width: 45vw;
+  animation: trailShoot 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-.streak-active .speed-streak.s2 {
-  top: calc(50% + 36px);
-  width: 36vw;
-  animation: blueStreakSweep calc(var(--entry-duration) * 0.85) cubic-bezier(0.16, 1, 0.3, 1) 30ms forwards;
-}
-
-@keyframes blueStreakSweep {
-  0% { opacity: 0; transform: translateX(100vw) scaleX(2.5); }
-  30% { opacity: 0.95; transform: translateX(10vw) scaleX(3); }
-  100% { opacity: 0; transform: translateX(-80vw) scaleX(0.5); }
+.trail-active .laser-trail.t2 {
+  top: calc(50% - 22px);
+  width: 34vw;
+  animation: trailShoot 480ms cubic-bezier(0.16, 1, 0.3, 1) 40ms forwards;
 }
 
-/* =====================================================================
-   CONTENEDOR SIN MARCOS PARA LA LÍNEA DE TEXTO
-   ===================================================================== */
-.kinetic-line-wrapper {
-  position: relative;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  will-change: transform, opacity, filter;
-  padding: 8px 0;
-  max-width: 95vw;
+@keyframes trailShoot {
+  0% { opacity: 0; transform: translateX(100vw) scaleX(2.4); }
+  35% { opacity: 0.9; transform: translateX(5vw) scaleX(2.8); }
+  100% { opacity: 0; transform: translateX(-75vw) scaleX(0.4); }
 }
 
-.kinetic-text {
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+/* Título libre sin marco en tipografía Inter idéntica a la captura */
+.hero-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-weight: 700 !important;
   text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
   color: #ffffff !important;
-  user-select: none;
   white-space: nowrap !important;
+  will-change: transform, opacity, filter;
 }
 
-/* Caracteres individuales */
-.char-span {
-  display: inline-block;
-  will-change: transform, opacity, filter, color;
-  transition: color 180ms ease, text-shadow 180ms ease;
+@media (max-width: 768px) {
+  .hero-title {
+    white-space: normal !important;
+  }
 }
 
-.char-scrambled {
-  color: #00A3FF !important;
-  text-shadow: 0 0 12px rgba(0, 163, 255, 0.75) !important;
+/* Caracteres cifrados vs bloqueados */
+.glyph-scramble {
+  font-family: 'JetBrains Mono', monospace !important;
+  color: var(--elec-blue) !important;
+  text-shadow: 0 0 14px rgba(0, 163, 255, 0.8) !important;
+  font-weight: 700 !important;
 }
 
-.char-locked {
+.glyph-locked {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-weight: 700 !important;
   color: #ffffff !important;
-  text-shadow: 0 0 18px rgba(56, 189, 248, 0.25) !important;
+  text-shadow: 0 0 24px rgba(56, 189, 248, 0.16) !important;
+  transition: color 220ms ease, text-shadow 220ms ease;
 }
 
-/* =====================================================================
-   VARIACIÓN 01: HYPER-STREAK & SNAP
-   ===================================================================== */
-.anim-v1-in {
-  animation: v1HyperStreakIn var(--entry-duration) cubic-bezier(0.08, 0.96, 0.18, 1.18) forwards;
+/* Entrada supersónica horizontal del título desde la derecha */
+.title-fly-in {
+  animation: titleStreakFromRight 560ms cubic-bezier(0.08, 0.96, 0.18, 1.14) forwards !important;
 }
 
-@keyframes v1HyperStreakIn {
+@keyframes titleStreakFromRight {
   0% {
     opacity: 0;
-    transform: translateX(115vw) scaleX(2.4) skewX(-16deg);
-    filter: blur(24px);
+    transform: translateX(105vw) scaleX(2.1) skewX(-14deg);
+    filter: blur(20px);
   }
-  45% {
+  48% {
     opacity: 1;
-    transform: translateX(-22px) scaleX(1.08) skewX(4deg);
-    filter: blur(4px);
+    transform: translateX(-18px) scaleX(1.05) skewX(3deg);
+    filter: blur(3px);
   }
-  75% {
-    transform: translateX(7px) scaleX(0.98) skewX(-1.5deg);
+  78% {
+    transform: translateX(6px) scaleX(0.99) skewX(-1deg);
     filter: blur(0px);
   }
   100% {
@@ -248,123 +253,92 @@ input[type=range].pitch-slider-vertical::-webkit-slider-thumb {
   }
 }
 
-/* =====================================================================
-   VARIACIÓN 03: SUB-PIXEL BLUR CASCADE
-   ===================================================================== */
-.anim-v3-in {
-  animation: v3SubPixelGlide var(--entry-duration) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Subtítulo descriptivo de 2 líneas */
+.hero-subtitle {
+  max-width: 760px;
+  color: #cbd5e1;
+  font-weight: 400;
+  line-height: 1.55;
+  will-change: transform, opacity, filter;
+  transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 480ms cubic-bezier(0.16, 1, 0.3, 1),
+              filter 480ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes v3SubPixelGlide {
-  0% {
-    opacity: 0;
-    transform: translateX(75vw);
-    filter: blur(22px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0px);
-    filter: blur(0px);
-  }
+/* Pill Badge técnico fiel a la captura */
+.tech-pill-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 22px;
+  border-radius: 9999px;
+  background: rgba(5, 11, 18, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 0 24px rgba(0, 163, 255, 0.14), inset 0 0 12px rgba(0, 163, 255, 0.08);
+  overflow: hidden;
+  will-change: transform, opacity, filter;
+  transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms,
+              transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms,
+              filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms,
+              border-color 300ms ease,
+              box-shadow 300ms ease;
 }
 
-/* Onda luminosa azul que barre la línea en V3 */
-.wave-sweep-overlay {
+/* Barrido de luz en el badge al bloquearse el título */
+.badge-shimmer-bar {
   position: absolute;
   inset: 0;
   background: linear-gradient(90deg, transparent 0%, rgba(0, 163, 255, 0.35) 50%, transparent 100%);
-  mix-blend-mode: screen;
+  transform: translateX(-100%);
   pointer-events: none;
-  opacity: 0;
 }
-.wave-sweep-active {
-  animation: blueWaveAcross 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+.badge-sweep-run .badge-shimmer-bar {
+  animation: badgeLightPass 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-@keyframes blueWaveAcross {
-  0% { opacity: 0; transform: translateX(-60%); }
-  40% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(60%); }
+@keyframes badgeLightPass {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-/* =====================================================================
-   VARIACIÓN 04: TELEMETRY LOCK-ON + 1PX LASER UNDERLINE
-   ===================================================================== */
-.anim-v4-in {
-  animation: v4MagneticStop var(--entry-duration) cubic-bezier(0.05, 0.98, 0.15, 1) forwards;
+/* 01 · Warp Depth & Laser Scramble */
+.choreo-01-exit {
+  animation: c01WarpOut 520ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
 
-@keyframes v4MagneticStop {
-  0% {
-    opacity: 0;
-    transform: translateX(105vw);
-    filter: blur(14px);
-  }
-  82% {
-    opacity: 1;
-    transform: translateX(-3px);
-    filter: blur(0px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0px);
-    filter: blur(0px);
-  }
-}
-
-.laser-underline {
-  height: 1px;
-  width: 100%;
-  margin-top: 12px;
-  background: linear-gradient(90deg, transparent, var(--corp-blue) 15%, var(--ice-blue) 50%, var(--corp-blue) 85%, transparent);
-  box-shadow: 0 0 10px var(--elec-blue);
-  transform: scaleX(0);
-  transform-origin: center;
-  opacity: 0;
-  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1), opacity 250ms ease;
-}
-.laser-underline.is-locked {
-  transform: scaleX(1);
-  opacity: 1;
-}
-
-/* =====================================================================
-   SALIDA DIFUMINADA UNIVERSAL HACIA ARRIBA
-   ===================================================================== */
-.anim-blur-out {
-  animation: cleanBlurFadeUp var(--blur-out-duration) cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
-}
-
-@keyframes cleanBlurFadeUp {
+@keyframes c01WarpOut {
   0% {
     opacity: 1;
-    transform: translateY(0px) scale(1);
+    transform: scale(1) translateZ(0px);
     filter: blur(0px);
   }
   100% {
     opacity: 0;
-    transform: translateY(-24px) scale(1.03);
+    transform: scale(1.12) translateZ(80px);
     filter: blur(22px);
   }
 }
 
-/* =====================================================================
-   ENTRADA DIFUMINADA SINCRONIZADA DE LA CAJA COMPLETA
-   ===================================================================== */
-.anim-box-enter {
-  animation: cleanBlurFadeIn 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+/* Dots de paginación inferiores fieles a la captura */
+.page-dot {
+  height: 8px;
+  width: 8px;
+  border-radius: 9999px;
+  background-color: #475569;
+  transition: all 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  border: none;
+  outline: none;
 }
 
-@keyframes cleanBlurFadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(22px) scale(0.98);
-    filter: blur(18px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0px) scale(1);
-    filter: blur(0px);
-  }
+.page-dot:hover {
+  background-color: #94a3b8;
+}
+
+.page-dot.is-active {
+  width: 34px !important;
+  background: linear-gradient(90deg, #0066FF, #38BDF8) !important;
+  box-shadow: 0 0 14px rgba(0, 163, 255, 0.75) !important;
 }
 
 

@@ -24328,221 +24328,212 @@ Respuesta: ${qa.a}`).join("\n\n"),
       )
     );
   };
-  var KINETIC_STUDIO_PHRASES = [
+  var HERO_SHOWCASE_SLIDES = [
     {
-      ticker: "AN\xC1LISIS ESPECTRAL DE ALTA PRECISI\xD3N",
-      badge: "DSP EN DIRECTO \xB7 0 BARRO AC\xDASTICO",
-      body: "El algoritmo Anti-Muddy Guard analiza la densidad espectral FFT a 60fps y bloquea el empaste de subgraves antes de que toques el fader. Mezclas quir\xFArgicas garantizadas a 130+ dB.",
-      metric: "0% Empaste en Sala \xB7 130+ dB Cristalinos"
+      title: "AUDITOR\xCDA FORENSE DE AUDIO LOSSLESS",
+      subtitle: "Detecta transcodificaciones falsas MP3-a-FLAC al instante mediante an\xE1lisis FFT de corte espectral, clics digitales y silencios an\xF3malos.",
+      badge: "Escaneo FFT 24-bit \xB7 Detecci\xF3n Fake 320"
     },
     {
-      ticker: "EXTRACCI\xD3N NEURONAL DE STEMS EN TIEMPO REAL",
-      badge: "COPILOT IA \xB7 LATENCIA CERO (<25MS)",
-      body: "Monitoreo en tiempo real de tus decks en Serato, Rekordbox o Traktor: previene choques arm\xF3nicos, calcula el delta de LUFS y te susurra el siguiente track ganador para romper la pista.",
-      metric: "Latencia <25ms \xB7 Serato \xB7 Rekordbox \xB7 Traktor"
+      title: "SEPARACI\xD3N NEURONAL DE STEMS EN VIVO",
+      subtitle: "A\xEDsla voces, bater\xEDas, bajos y melod\xEDas en segundos con aceleraci\xF3n nativa en Apple Silicon conservando todos tus metadatos ID3.",
+      badge: "Motor BS-Roformer \xB7 4 Canales Sin P\xE9rdida"
     },
     {
-      ticker: "DETECCI\xD3N AUTOM\xC1TICA DE DROPS Y HOT CUES",
-      badge: "8 HOT CUES \xB7 PREPARACI\xD3N EN 1 CLIC",
-      body: "Detecci\xF3n instant\xE1nea de downbeats reales, ca\xEDdas masivas (drops) y transiciones perfectas inyectadas directamente en las etiquetas nativas Serato GEOB e ID3v2.4 sin tocar software lento.",
-      metric: "Etiquetado Serato GEOB & ID3v2.4 Nativo"
+      title: "DETECCI\xD3N AUTOM\xC1TICA DE DROPS Y HOT CUES",
+      subtitle: "Analiza la energ\xEDa sub-bass y alinea la rejilla de compases 4/4 para marcar Intro, Breakdown, Drop y Outro listos para Rekordbox.",
+      badge: "Beatgrid 1.1 Exacto \xB7 Exportaci\xF3n XML"
     },
     {
-      ticker: "SINCRONIZACI\xD3N ARM\xD3NICA CAMELOT 4/4",
-      badge: "RADAR ESPECTRAL 3D & CONSTELACI\xD3N",
-      body: "Navega toda tu colecci\xF3n como una galaxia espacial en 3D: agrupa temas por compatibilidad arm\xF3nica Camelot, densidad de graves y BPM para sets hipn\xF3ticos sin esfuerzo.",
-      metric: "Clustering 3D Espectral \xB7 Compatibilidad +1/-1"
+      title: "SINCRONIZACI\xD3N ARM\xD3NICA CAMELOT 4/4",
+      subtitle: "Navega toda tu colecci\xF3n como una galaxia espacial en 3D: agrupa temas por compatibilidad arm\xF3nica Camelot, densidad de graves y BPM para sets hipn\xF3ticos sin esfuerzo.",
+      badge: "Clustering 3D Espectral \xB7 Compatibilidad +1/-1"
     },
     {
-      ticker: "AUDITOR\xCDA FORENSE DE AUDIO LOSSLESS",
-      badge: "DETECCI\xD3N REAL DE CALIDAD \xB7 ANTI-FAKE FLAC",
-      body: "Auditor\xEDa espectral por transformada r\xE1pida de Fourier que detecta cortes de agudos a 16kHz y 20kHz, certificando calidad de estudio profesional antes de pisar el escenario.",
-      metric: "Corte Real de Frecuencias \xB7 100% Calidad Club"
+      title: "B\xDASQUEDA SEM\xC1NTICA POR VIBRA SONORA",
+      subtitle: "Encuentra al instante el track exacto describiendo su textura, atm\xF3sfera o energ\xEDa sin depender de etiquetas manuales incompletas.",
+      badge: "Embeddings Vectoriales \xB7 Similitud T\xEDmbrica"
     }
   ];
   var GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
   var CleanLineKineticStudioStage = () => {
-    const [phraseIndex, setPhraseIndex] = useState5(0);
-    const [phaseBadge, setPhaseBadge] = useState5("STREAMING");
+    const [currentIndex, setCurrentIndex] = useState5(0);
     const [isHovered, setIsHovered] = useState5(false);
-    const stageBoxRef = useRef6(null);
-    const wrapperRef = useRef6(null);
-    const textElRef = useRef6(null);
-    const waveRef = useRef6(null);
-    const streakRef = useRef6(null);
+    const slideRef = useRef6(null);
+    const titleRef = useRef6(null);
+    const subtitleRef = useRef6(null);
+    const badgeRef = useRef6(null);
+    const trailRef = useRef6(null);
     const timersRef = useRef6([]);
     const intervalsRef = useRef6([]);
     const isHoveredRef = useRef6(false);
     isHoveredRef.current = isHovered;
     const isTransitioningRef = useRef6(false);
-    const clearAllTimers = () => {
+    const clearAsync = () => {
       timersRef.current.forEach((t) => clearTimeout(t));
       intervalsRef.current.forEach((i) => clearInterval(i));
       timersRef.current = [];
       intervalsRef.current = [];
     };
-    const addTimer = (fn, ms) => {
-      const id = setTimeout(fn, ms);
+    const addTimeout = (fn, delay) => {
+      const id = setTimeout(fn, delay);
       timersRef.current.push(id);
       return id;
     };
-    const addInterval = (fn, ms) => {
-      const id = setInterval(fn, ms);
+    const addInterval = (fn, delay) => {
+      const id = setInterval(fn, delay);
       intervalsRef.current.push(id);
       return id;
     };
     const randomGlyph = () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-    const transitionToPhrase = (targetIdx) => {
-      if (isTransitioningRef.current) return;
-      isTransitioningRef.current = true;
-      clearAllTimers();
-      const stageBox = stageBoxRef.current;
-      setPhaseBadge("DISSOLVING UPWARD");
-      if (stageBox) {
-        stageBox.classList.remove("anim-box-enter");
-        void stageBox.offsetWidth;
-        stageBox.classList.add("anim-blur-out");
-      }
-      const blurOutDuration = 480;
-      setTimeout(() => {
-        setPhraseIndex(targetIdx);
-        if (stageBox) {
-          stageBox.classList.remove("anim-blur-out");
-          void stageBox.offsetWidth;
-          stageBox.classList.add("anim-box-enter");
-        }
-        isTransitioningRef.current = false;
-      }, blurOutDuration);
+    const scrambleText = (str) => str.split("").map((c) => c === " " ? " " : randomGlyph()).join("");
+    const resetAnimationClasses = () => {
+      const slideEl = slideRef.current;
+      const titleEl = titleRef.current;
+      const trailEl = trailRef.current;
+      const badgeEl = badgeRef.current;
+      if (slideEl) slideEl.classList.remove("choreo-01-exit");
+      if (titleEl) titleEl.classList.remove("title-fly-in");
+      if (trailEl) trailEl.classList.remove("trail-active");
+      if (badgeEl) badgeEl.classList.remove("badge-sweep-run");
+      if (slideEl) void slideEl.offsetWidth;
     };
-    const scheduleExit = (currentIdx) => {
-      setPhaseBadge("LOCKED \xB7 READABLE");
-      const stayDuration = 3200;
-      addTimer(() => {
+    const transitionToSlide = (targetIndex, skipExit = false) => {
+      if (isTransitioningRef.current && !skipExit) return;
+      clearAsync();
+      isTransitioningRef.current = true;
+      const exitDuration = skipExit ? 0 : 480;
+      const slideEl = slideRef.current;
+      if (!skipExit && slideEl) {
+        resetAnimationClasses();
+        slideEl.classList.add("choreo-01-exit");
+      }
+      addTimeout(() => {
+        setCurrentIndex(targetIndex);
+        const slideData = HERO_SHOWCASE_SLIDES[targetIndex];
+        resetAnimationClasses();
+        const titleEl = titleRef.current;
+        const subtitleEl = subtitleRef.current;
+        const badgeEl = badgeRef.current;
+        const trailEl = trailRef.current;
+        if (subtitleEl) {
+          subtitleEl.textContent = slideData.subtitle;
+          subtitleEl.style.opacity = "0";
+          subtitleEl.style.transform = "translateY(14px)";
+          subtitleEl.style.filter = "blur(8px)";
+        }
+        if (badgeEl) {
+          badgeEl.style.opacity = "0";
+          badgeEl.style.transform = "translateY(16px) scale(0.96)";
+          badgeEl.style.filter = "blur(8px)";
+        }
+        if (titleEl) {
+          titleEl.innerHTML = `<span class="glyph-scramble">${scrambleText(slideData.title)}</span>`;
+          titleEl.classList.add("title-fly-in");
+        }
+        if (trailEl) {
+          trailEl.classList.add("trail-active");
+        }
+        const flightMutator = addInterval(() => {
+          if (titleEl) {
+            titleEl.innerHTML = `<span class="glyph-scramble">${scrambleText(slideData.title)}</span>`;
+          }
+        }, 32);
+        addTimeout(() => {
+          if (subtitleEl) {
+            subtitleEl.style.opacity = "1";
+            subtitleEl.style.transform = "translateY(0px)";
+            subtitleEl.style.filter = "blur(0px)";
+          }
+          if (badgeEl) {
+            badgeEl.style.opacity = "1";
+            badgeEl.style.transform = "translateY(0px) scale(1)";
+            badgeEl.style.filter = "blur(0px)";
+          }
+        }, 180);
+        addTimeout(() => {
+          clearInterval(flightMutator);
+          let iter = 0;
+          const totalLen = slideData.title.length;
+          const decodeLoop = addInterval(() => {
+            let html = "";
+            for (let i = 0; i < totalLen; i++) {
+              const ch = slideData.title[i];
+              if (ch === " ") {
+                html += " ";
+              } else if (i < iter) {
+                html += `<span class="glyph-locked">${ch}</span>`;
+              } else {
+                html += `<span class="glyph-scramble">${randomGlyph()}</span>`;
+              }
+            }
+            if (titleEl) titleEl.innerHTML = html;
+            if (iter >= totalLen) {
+              clearInterval(decodeLoop);
+              if (titleEl) titleEl.innerHTML = `<span class="glyph-locked">${slideData.title}</span>`;
+              if (badgeEl) badgeEl.classList.add("badge-sweep-run");
+              isTransitioningRef.current = false;
+              scheduleNextAutoSlide(targetIndex);
+            }
+            iter += 1.6;
+          }, 22);
+        }, 360);
+      }, exitDuration);
+    };
+    const scheduleNextAutoSlide = (activeIdx) => {
+      addTimeout(() => {
         if (isHoveredRef.current) {
           const checkHover = addInterval(() => {
             if (!isHoveredRef.current) {
               clearInterval(checkHover);
-              scheduleExit(currentIdx);
+              scheduleNextAutoSlide(activeIdx);
             }
           }, 800);
           return;
         }
-        const nextIdx = (currentIdx + 1) % KINETIC_STUDIO_PHRASES.length;
-        transitionToPhrase(nextIdx);
-      }, stayDuration);
-    };
-    const runHybridRibbonBlur = (phrase, currentIdx) => {
-      const textEl = textElRef.current;
-      const waveOverlay = waveRef.current;
-      const streakLayer = streakRef.current;
-      if (!textEl) return;
-      if (streakLayer) {
-        streakLayer.classList.remove("streak-active");
-        void streakLayer.offsetWidth;
-        streakLayer.classList.add("streak-active");
-      }
-      if (waveOverlay) {
-        waveOverlay.classList.remove("wave-sweep-active");
-        void waveOverlay.offsetWidth;
-      }
-      setPhaseBadge("STREAMING // DECRYPT");
-      const entryDuration = 520;
-      const decryptSpeed = 22;
-      textEl.innerHTML = phrase.split("").map((ch, idx) => {
-        if (ch === " ") return `<span class="inline-block w-2 sm:w-3">&nbsp;</span>`;
-        return `<span class="char-span char-scrambled" data-idx="${idx}" style="opacity:0; transform: translateX(65vw) scaleX(1.5); filter: blur(14px);">${randomGlyph()}</span>`;
-      }).join("");
-      const spans = Array.from(textEl.querySelectorAll(".char-span"));
-      const staggerDelay = Math.max(10, Math.floor(entryDuration / Math.max(spans.length, 1)));
-      const spins = [];
-      spans.forEach((span, i) => {
-        const realChar = phrase[parseInt(span.dataset.idx, 10)];
-        const spin = addInterval(() => {
-          span.textContent = randomGlyph();
-        }, 36);
-        spins.push(spin);
-        addTimer(() => {
-          span.style.transition = `transform 340ms cubic-bezier(0.12, 0.95, 0.22, 1.08), opacity 200ms ease, filter 260ms ease`;
-          span.style.opacity = "1";
-          span.style.transform = "translateX(0px) scaleX(1)";
-          span.style.filter = "blur(0px)";
-          if (i === spans.length - 1) {
-            addTimer(() => {
-              if (waveOverlay) waveOverlay.classList.add("wave-sweep-active");
-              setPhaseBadge("WAVE DECRYPT");
-              let iter = 0;
-              const waveTimer = addInterval(() => {
-                spans.forEach((s, sIdx) => {
-                  const c = phrase[parseInt(s.dataset.idx, 10)];
-                  if (sIdx < iter) {
-                    s.textContent = c;
-                    s.className = "char-span char-locked";
-                    s.style.color = "#ffffff";
-                    s.style.textShadow = "0 0 18px rgba(56, 189, 248, 0.35)";
-                  } else if (sIdx < iter + 3) {
-                    s.textContent = randomGlyph();
-                    s.className = "char-span";
-                    s.style.color = "#38BDF8";
-                    s.style.textShadow = "0 0 14px #00A3FF";
-                  } else {
-                    s.textContent = randomGlyph();
-                    s.className = "char-span char-scrambled";
-                    s.style.color = "";
-                    s.style.textShadow = "";
-                  }
-                });
-                if (iter >= spans.length) {
-                  clearInterval(waveTimer);
-                  spins.forEach((sp) => clearInterval(sp));
-                  spans.forEach((s) => {
-                    const c = phrase[parseInt(s.dataset.idx, 10)];
-                    s.textContent = c;
-                    s.className = "char-span char-locked";
-                    s.style.color = "#ffffff";
-                    s.style.textShadow = "0 0 18px rgba(56, 189, 248, 0.25)";
-                  });
-                  scheduleExit(currentIdx);
-                }
-                iter += 1.4;
-              }, decryptSpeed);
-            }, 60);
-          }
-        }, i * staggerDelay);
-      });
+        const nextIdx = (activeIdx + 1) % HERO_SHOWCASE_SLIDES.length;
+        transitionToSlide(nextIdx, false);
+      }, 4200);
     };
     useEffect6(() => {
-      clearAllTimers();
-      const currentPhraseObj = KINETIC_STUDIO_PHRASES[phraseIndex] || KINETIC_STUDIO_PHRASES[0];
-      runHybridRibbonBlur(currentPhraseObj.ticker, phraseIndex);
-      return () => clearAllTimers();
-    }, [phraseIndex]);
-    const currentPhrase = KINETIC_STUDIO_PHRASES[phraseIndex] || KINETIC_STUDIO_PHRASES[0];
+      transitionToSlide(0, true);
+      return () => clearAsync();
+    }, []);
+    const currentSlide = HERO_SHOWCASE_SLIDES[currentIndex] || HERO_SHOWCASE_SLIDES[0];
     return /* @__PURE__ */ React.createElement(
       "div",
       {
-        ref: stageBoxRef,
-        className: "w-full flex flex-col items-center justify-center relative select-none my-4 sm:my-6 anim-box-enter",
+        className: "w-full flex flex-col items-center justify-center relative select-none my-4 sm:my-6 hero-stage",
         onMouseEnter: () => setIsHovered(true),
         onMouseLeave: () => setIsHovered(false)
       },
-      /* @__PURE__ */ React.createElement("div", { ref: streakRef, className: "absolute inset-0 pointer-events-none overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "speed-streak s1" }), /* @__PURE__ */ React.createElement("div", { className: "speed-streak s2" })),
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-center space-x-2.5 mb-4 sm:mb-6 font-mono text-[11px] tracking-widest text-slate-500 uppercase" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00A3FF] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, phaseBadge), /* @__PURE__ */ React.createElement("span", null, "//"), /* @__PURE__ */ React.createElement("span", { className: "text-slate-400" }, String(phraseIndex + 1).padStart(2, "0"), " / ", String(KINETIC_STUDIO_PHRASES.length).padStart(2, "0"))),
-      /* @__PURE__ */ React.createElement("div", { ref: wrapperRef, className: "kinetic-line-wrapper" }, /* @__PURE__ */ React.createElement("div", { ref: waveRef, className: "wave-sweep-overlay" }), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { ref: trailRef, className: "absolute inset-0 pointer-events-none overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "laser-trail t1" }), /* @__PURE__ */ React.createElement("div", { className: "laser-trail t2" })),
+      /* @__PURE__ */ React.createElement("section", { ref: slideRef, className: "hero-slide px-4" }, /* @__PURE__ */ React.createElement(
         "h1",
         {
-          ref: textElRef,
-          className: "kinetic-text text-xl sm:text-3xl md:text-4xl lg:text-[40px] text-center px-4"
+          ref: titleRef,
+          className: "hero-title text-2xl sm:text-4xl md:text-[42px] lg:text-[46px] mb-4 text-center"
         },
-        currentPhrase.ticker
-      )),
-      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center text-center mt-5 sm:mt-6 max-w-3xl px-4 select-none" }, /* @__PURE__ */ React.createElement("p", { className: "text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]" }, currentPhrase.body), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5 bg-cyan-950/40 border border-cyan-500/20 px-3 py-1 rounded-full shadow-[0_0_12px_rgba(34,211,238,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "text-emerald-400" }), currentPhrase.metric), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, KINETIC_STUDIO_PHRASES.map((p, pIdx) => /* @__PURE__ */ React.createElement(
+        currentSlide.title
+      ), /* @__PURE__ */ React.createElement(
+        "p",
+        {
+          ref: subtitleRef,
+          className: "hero-subtitle text-sm sm:text-base md:text-[18px] mb-6 px-2 text-center"
+        },
+        currentSlide.subtitle
+      ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6" }, /* @__PURE__ */ React.createElement("div", { ref: badgeRef, className: "tech-pill-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-shimmer-bar" }), /* @__PURE__ */ React.createElement("svg", { className: "w-4 h-4 text-emerald-400 shrink-0", viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: "2.4", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React.createElement("polyline", { points: "4 10.5 8 14.5 16 6" })), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs sm:text-[13px] font-semibold tracking-wide text-[#00A3FF]" }, currentSlide.badge)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center space-x-2.5" }, HERO_SHOWCASE_SLIDES.map((_, dotIdx) => /* @__PURE__ */ React.createElement(
         "button",
         {
-          key: pIdx,
+          key: dotIdx,
           type: "button",
-          onClick: () => transitionToPhrase(pIdx),
-          className: `h-1.5 rounded-full transition-all cursor-pointer ${pIdx === phraseIndex ? "w-6 bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)]" : "w-1.5 bg-zinc-700 hover:bg-zinc-500"}`,
-          title: p.ticker
+          onClick: () => {
+            if (dotIdx !== currentIndex) {
+              transitionToSlide(dotIdx, false);
+            }
+          },
+          className: `page-dot ${dotIdx === currentIndex ? "is-active" : ""}`,
+          "aria-label": `Diapositiva ${dotIdx + 1}`
         }
       )))))
     );
