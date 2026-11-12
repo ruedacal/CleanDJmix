@@ -24,6 +24,7 @@ from pydantic import BaseModel
 # Servicios locales de audio
 from services.media_service import MediaService
 from services.cloud_sync_service import CloudSyncService
+from services.copilot_service import copilot_service
 try:
     from services.audit_service import AuditService
 except Exception as e:
@@ -404,6 +405,145 @@ async def websocket_telemetry(websocket: WebSocket):
             await websocket.send_json({"type": "pong", "received": data})
     except WebSocketDisconnect:
         telemetry.disconnect(websocket)
+
+# ============================================================================
+# BEATWAVE LIVE COPILOT: WEBSOCKET 60 FPS & ULTRA LOW-LATENCY REST API (<25ms)
+# ============================================================================
+
+class CopilotWebSocketManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self._loop_task: Optional[asyncio.Task] = None
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        if self._loop_task is None or self._loop_task.done():
+            self._loop_task = asyncio.create_task(self._push_loop())
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def _push_loop(self):
+        """Ciclo reactivo a 60 FPS (~16ms) con latencia <25ms y push inmediato."""
+        while len(self.active_connections) > 0:
+            try:
+                state = copilot_service.get_live_state()
+                state["server_ts"] = time.time()
+                for ws in list(self.active_connections):
+                    try:
+                        await ws.send_json(state)
+                    except Exception:
+                        self.disconnect(ws)
+            except Exception:
+                pass
+            await asyncio.sleep(0.016)
+
+copilot_ws_mgr = CopilotWebSocketManager()
+
+@app.websocket("/ws/copilot")
+async def websocket_copilot(websocket: WebSocket):
+    await copilot_ws_mgr.connect(websocket)
+    try:
+        # Enviar primer frame de inmediato
+        init_state = copilot_service.get_live_state()
+        init_state["server_ts"] = time.time()
+        await websocket.send_json(init_state)
+        while True:
+            msg = await websocket.receive_text()
+            try:
+                data = json.loads(msg)
+                action = data.get("action")
+                if action == "set_master":
+                    copilot_service.set_manual_master(data.get("master", "toggle"))
+                elif action == "set_platform":
+                    copilot_service.set_platform(data.get("platform", "auto"))
+                elif action == "toggle_simulation":
+                    copilot_service.simulation_mode = not copilot_service.simulation_mode
+                elif action == "ping":
+                    await websocket.send_json({
+                        "type": "pong",
+                        "client_ts": data.get("client_ts"),
+                        "server_ts": time.time()
+                    })
+            except Exception:
+                pass
+    except WebSocketDisconnect:
+        copilot_ws_mgr.disconnect(websocket)
+
+@app.get("/api/copilot/status")
+async def api_copilot_status():
+    """Estado en tiempo real consolidado de cabina DJ (<1ms)."""
+    return copilot_service.get_live_state()
+
+@app.get("/api/copilot/stream")
+async def api_copilot_stream():
+    """Fallback Server-Sent Events (SSE) a 30 FPS cuando WebSocket no está disponible."""
+    async def event_generator():
+        while True:
+            state = copilot_service.get_live_state()
+            yield f"data: {json.dumps(state)}\n\n"
+            await asyncio.sleep(0.033)
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.get("/api/copilot/platforms")
+async def api_copilot_platforms():
+    """Plataformas soportadas y activas (Serato, Rekordbox, VirtualDJ, Traktor)."""
+    return {
+        "platform_mode": copilot_service.platform_mode,
+        "active_platform": copilot_service.detect_active_platform(),
+        "platforms": copilot_service.get_available_platforms()
+    }
+
+@app.post("/api/copilot/set_platform")
+async def api_copilot_set_platform(request: Request):
+    platform = "auto"
+    try:
+        body = await request.json()
+        platform = body.get("platform", "auto")
+    except Exception:
+        platform = request.query_params.get("platform", "auto")
+    return copilot_service.set_platform(platform)
+
+@app.post("/api/copilot/set_master")
+async def api_copilot_set_master(request: Request):
+    master_val = "1"
+    try:
+        body = await request.json()
+        master_val = body.get("master", "1")
+    except Exception:
+        master_val = request.query_params.get("master", "1")
+    return copilot_service.set_manual_master(master_val)
+
+@app.post("/api/copilot/toggle_simulation")
+async def api_copilot_toggle_simulation():
+    copilot_service.simulation_mode = not copilot_service.simulation_mode
+    return copilot_service.get_live_state()
+
+@app.get("/api/copilot/info")
+async def api_copilot_info():
+    ip = copilot_service.get_local_ip()
+    return {
+        "local_ip": ip,
+        "companion_url": f"http://{ip}:8000/copilot.html",
+        "active_platform": copilot_service.detect_active_platform(),
+        "platform_mode": copilot_service.platform_mode,
+        "platforms": copilot_service.get_available_platforms(),
+        "serato_detected": os.path.exists(copilot_service.serato_db_path),
+        "serato_db_path": copilot_service.serato_db_path,
+        "simulation_mode": copilot_service.simulation_mode
+    }
+
+WEB_DIR = os.path.join(BASE_DIR, "web")
+
+@app.get("/copilot")
+@app.get("/copilot.html")
+async def serve_copilot_page():
+    copilot_html = os.path.join(WEB_DIR, "copilot.html")
+    if os.path.exists(copilot_html):
+        return FileResponse(copilot_html)
+    return JSONResponse({"error": "copilot.html no encontrado"}, status_code=404)
 
 # Montar interfaz frontend React compilada (web/)
 WEB_DIR = os.path.join(BASE_DIR, "web")

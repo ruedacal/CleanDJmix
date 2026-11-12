@@ -6,6 +6,10 @@ __pycache__/
 # Caches and logs
 *.log
 *.db
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
 data/*.json
 .coverage
 .cache

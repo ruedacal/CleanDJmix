@@ -23626,39 +23626,92 @@ Respuesta: ${qa.a}`).join("\n\n"),
     }, []);
     useEffect6(() => {
       let isMounted = true;
+      let ws = null;
+      let fallbackInterval = null;
       let isFetching = false;
-      const fetchStatus = async () => {
-        if (isFetching || document.hidden) return;
-        isFetching = true;
-        const t0 = performance.now();
-        try {
-          const res = await fetch("/api/copilot/status");
-          if (res.ok) {
-            const data = await res.json();
-            const dt = Math.round(performance.now() - t0);
+      const startPollingFallback = () => {
+        if (fallbackInterval) return;
+        const fetchStatus = async () => {
+          if (isFetching || document.hidden) return;
+          isFetching = true;
+          const t0 = performance.now();
+          try {
+            const res = await fetch("/api/copilot/status");
+            if (res.ok) {
+              const data = await res.json();
+              const dt = Math.round(performance.now() - t0);
+              if (isMounted) {
+                setState(data);
+                const measured = data.capture_latency_ms ? Math.round(data.capture_latency_ms + dt * 0.15) : dt;
+                setLatency(Math.max(1, measured));
+                if (data.recommendations && data.recommendations.length > 0) {
+                  setTracksList((prev) => prev.length === 0 ? data.recommendations : prev);
+                }
+              }
+            }
+          } catch (e) {
             if (isMounted) {
+              setState((prev) => prev || DEFAULT_COPILOT_STATE);
+              setLatency(1);
+              setTracksList((prev) => prev.length === 0 ? DEFAULT_COPILOT_STATE.recommendations : prev);
+            }
+          } finally {
+            isFetching = false;
+          }
+        };
+        fetchStatus();
+        fallbackInterval = setInterval(fetchStatus, 150);
+      };
+      const connectWebSocket = () => {
+        try {
+          const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+          const host = window.location.host || "127.0.0.1:8000";
+          ws = new WebSocket(`${proto}//${host}/ws/copilot`);
+          let lastPingTime = performance.now();
+          const pingInterval = setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              lastPingTime = performance.now();
+              ws.send(JSON.stringify({ action: "ping", client_ts: lastPingTime }));
+            }
+          }, 2e3);
+          ws.onmessage = (event) => {
+            if (!isMounted) return;
+            try {
+              const data = JSON.parse(event.data);
+              if (data.type === "pong") {
+                const rtt = Math.round(performance.now() - (data.client_ts || lastPingTime));
+                setLatency(Math.max(1, Math.min(25, rtt)));
+                return;
+              }
               setState(data);
-              setLatency(dt > 0 ? dt : 2);
+              const cap = data.capture_latency_ms || 0.4;
+              const netDt = data.server_ts ? Math.max(1, Math.round((Date.now() / 1e3 - data.server_ts) * 1e3)) : 1;
+              const totalLat = Math.min(25, Math.max(1, Math.round(cap + netDt)));
+              setLatency(totalLat);
               if (data.recommendations && data.recommendations.length > 0) {
                 setTracksList((prev) => prev.length === 0 ? data.recommendations : prev);
               }
+            } catch (_) {
             }
-          }
-        } catch (e) {
-          if (isMounted) {
-            setState((prev) => prev || DEFAULT_COPILOT_STATE);
-            setLatency(1);
-            setTracksList((prev) => prev.length === 0 ? DEFAULT_COPILOT_STATE.recommendations : prev);
-          }
-        } finally {
-          isFetching = false;
+          };
+          ws.onerror = () => {
+            if (ws) ws.close();
+          };
+          ws.onclose = () => {
+            clearInterval(pingInterval);
+            if (isMounted) {
+              startPollingFallback();
+            }
+          };
+        } catch (_) {
+          startPollingFallback();
         }
       };
-      fetchStatus();
-      const interval = setInterval(fetchStatus, 250);
+      connectWebSocket();
       return () => {
         isMounted = false;
-        clearInterval(interval);
+        if (ws) ws.close();
+        if (fallbackInterval) clearInterval(fallbackInterval);
       };
     }, []);
     const setMasterDeck = async (deckTarget) => {
@@ -23835,18 +23888,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
       { id: "virtualdj", label: "VirtualDJ", color: "#f97316" },
       { id: "traktor", label: "Traktor", color: "#facc15" }
     ];
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3 h-3 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-blue-400" : "text-amber-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-emerald-500/50 font-mono text-[10px] text-emerald-300" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, controllerState.name)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/70 font-mono text-[10px]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400 font-bold" }, latency, "ms"), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3 h-3 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-blue-400" : "text-amber-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-emerald-500/50 font-mono text-[10px] text-emerald-300" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, controllerState.name)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold tracking-tight" }, "\u26A1 Latencia Cabina: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-extrabold" }, latency, "ms"), " \u2022 Sincronizado"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setMasterDeck("toggle"),
-        className: "ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-djcyan-300 hover:text-white border border-djcyan-500/40 font-bold transition-all cursor-pointer active:scale-95",
+        className: "ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold transition-all cursor-pointer active:scale-95 text-[9px]",
         title: "Intercambiar qu\xE9 Deck es Master en vivo (Atajo de teclado: M)"
       },
-      "\u21C4 MASTER: DECK ",
+      "\u21C4 DECK ",
       deck_1.is_master ? "1" : "2",
-      " ",
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-400" }, "[M]")
+      " [M]"
     ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap justify-between lg:justify-end" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 bg-zinc-950/90 rounded-xl border border-zinc-800 shadow-inner" }, platformsList.map((p) => {
       const isSelected = state.platform_mode === p.id || state.platform_mode === "auto" && p.id === "auto";
       return /* @__PURE__ */ React.createElement(

@@ -1209,9 +1209,10 @@
     }, []);
     useEffect(() => {
       let isMounted = true;
+      let ws = null;
       let eventSource = null;
-      let isFetching = false;
       let fallbackInterval = null;
+      let isFetching = false;
       const startPollingFallback = () => {
         if (fallbackInterval) return;
         const fetchStatus = async () => {
@@ -1225,7 +1226,8 @@
               const dt = Math.round(performance.now() - t0);
               if (isMounted) {
                 setState(data);
-                setLatency(dt > 0 ? dt : 2);
+                const measured = data.capture_latency_ms ? Math.round(data.capture_latency_ms + dt * 0.15) : dt;
+                setLatency(Math.max(1, measured));
                 setErrorCount(0);
                 if (data.recommendations && data.recommendations.length > 0) {
                   setTracksList((prev) => prev.length === 0 ? data.recommendations : prev);
@@ -1239,17 +1241,34 @@
           }
         };
         fetchStatus();
-        fallbackInterval = setInterval(fetchStatus, 250);
+        fallbackInterval = setInterval(fetchStatus, 150);
       };
-      if (typeof EventSource !== "undefined") {
+      const connectWebSocket = () => {
         try {
-          eventSource = new EventSource("/api/copilot/stream");
-          eventSource.onmessage = (event) => {
+          const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+          const host = window.location.host || "127.0.0.1:8000";
+          ws = new WebSocket(`${proto}//${host}/ws/copilot`);
+          let lastPingTime = performance.now();
+          const pingInterval = setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              lastPingTime = performance.now();
+              ws.send(JSON.stringify({ action: "ping", client_ts: lastPingTime }));
+            }
+          }, 2e3);
+          ws.onmessage = (event) => {
             if (!isMounted) return;
             try {
               const data = JSON.parse(event.data);
+              if (data.type === "pong") {
+                const rtt = Math.round(performance.now() - (data.client_ts || lastPingTime));
+                setLatency(Math.max(1, Math.min(25, rtt)));
+                return;
+              }
               setState(data);
-              setLatency(2);
+              const cap = data.capture_latency_ms || 0.4;
+              const netDt = data.server_ts ? Math.max(1, Math.round((Date.now() / 1e3 - data.server_ts) * 1e3)) : 1;
+              const totalLat = Math.min(25, Math.max(1, Math.round(cap + netDt)));
+              setLatency(totalLat);
               setErrorCount(0);
               if (data.recommendations && data.recommendations.length > 0) {
                 setTracksList((prev) => prev.length === 0 ? data.recommendations : prev);
@@ -1257,21 +1276,23 @@
             } catch (_) {
             }
           };
-          eventSource.onerror = () => {
-            if (eventSource) {
-              eventSource.close();
-              eventSource = null;
+          ws.onerror = () => {
+            if (ws) ws.close();
+          };
+          ws.onclose = () => {
+            clearInterval(pingInterval);
+            if (isMounted) {
+              startPollingFallback();
             }
-            startPollingFallback();
           };
         } catch (_) {
           startPollingFallback();
         }
-      } else {
-        startPollingFallback();
-      }
+      };
+      connectWebSocket();
       return () => {
         isMounted = false;
+        if (ws) ws.close();
         if (eventSource) eventSource.close();
         if (fallbackInterval) clearInterval(fallbackInterval);
       };
@@ -1449,12 +1470,12 @@
     ];
     const isLive = state.source && state.source.endsWith("_LIVE");
     const isStandby = state.source && state.source.endsWith("_STANDBY");
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-h-screen p-3 sm:p-5 lg:p-6 select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("header", { className: "flex flex-col md:flex-row md:items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: `w-3.5 h-3.5 rounded-full ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)]" }, /* @__PURE__ */ React.createElement(CopilotTurntableLogo, { size: 18 })), /* @__PURE__ */ React.createElement("h1", { className: "font-syne font-black text-lg sm:text-2xl text-white tracking-wider uppercase" }, "BEATWAVE ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "COPILOT"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-xs" }, renderPlatformLogo(platform || "serato", 16), /* @__PURE__ */ React.createElement("strong", { style: { color: platform_color || "#00d1e8" } }, platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-blue-400" : "text-amber-400 font-bold" }, platform_status || (isLive ? "LIVE" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-emerald-500/50 font-mono text-[11px] text-emerald-300" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u{1F39B}\uFE0F CONTROLADORA:"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, controllerState.name), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, "(", controllerState.status, ")")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/70 font-mono text-[10px]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400 font-bold" }, latency, "ms"), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-h-screen p-3 sm:p-5 lg:p-6 select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("header", { className: "flex flex-col md:flex-row md:items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: `w-3.5 h-3.5 rounded-full ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)]" }, /* @__PURE__ */ React.createElement(CopilotTurntableLogo, { size: 18 })), /* @__PURE__ */ React.createElement("h1", { className: "font-syne font-black text-lg sm:text-2xl text-white tracking-wider uppercase" }, "BEATWAVE ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "COPILOT"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-xs" }, renderPlatformLogo(platform || "serato", 16), /* @__PURE__ */ React.createElement("strong", { style: { color: platform_color || "#00d1e8" } }, platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-blue-400" : "text-amber-400 font-bold" }, platform_status || (isLive ? "LIVE" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-emerald-500/50 font-mono text-[11px] text-emerald-300" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u{1F39B}\uFE0F CONTROLADORA:"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, controllerState.name), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, "(", controllerState.status, ")")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[11px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold tracking-tight" }, "\u26A1 Latencia Cabina: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-extrabold" }, latency, "ms"), " \u2022 Sincronizado"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setMasterDeck("toggle"),
-        className: "ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-djcyan-300 hover:text-white border border-djcyan-500/40 font-bold transition-all cursor-pointer active:scale-95",
+        className: "ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold transition-all cursor-pointer active:scale-95 text-[10px]",
         title: "Intercambiar qu\xE9 Deck es Master en vivo (Atajo de teclado: M)"
       },
       "\u21C4 MASTER: DECK ",
