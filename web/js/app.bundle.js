@@ -7728,7 +7728,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     onSelectLibrary,
     currentTracks = [],
     selectedTrackIds = /* @__PURE__ */ new Set(),
-    onMaterializarEnDisco
+    onMaterializarEnDisco,
+    onAuditarCrate
   }) => {
     var _a;
     if (!isOpen) return null;
@@ -8009,7 +8010,19 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
           ))
         );
-      }))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 p-5 flex flex-col gap-3.5 bg-[#0a0b18] overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, (activeFolder == null ? void 0 : activeFolder.name) || "Ninguna carpeta"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, folderTracks.length, " pista(s) en esta carpeta")), activeFolder && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, selectedTrackIds.size > 0 && /* @__PURE__ */ React.createElement(
+      }))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 p-5 flex flex-col gap-3.5 bg-[#0a0b18] overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, (activeFolder == null ? void 0 : activeFolder.name) || "Ninguna carpeta"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, folderTracks.length, " pista(s) en esta carpeta")), activeFolder && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            if (onAuditarCrate) onAuditarCrate(activeFolder, currentLib);
+          },
+          className: "px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-[11px] font-mono font-black shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+          title: "Filtrar la mesa de auditor\xEDa principal mostrando exclusivamente esta carpeta/crate"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Eye, { size: 13 }),
+        /* @__PURE__ */ React.createElement("span", null, "Auditar en Mesa")
+      ), selectedTrackIds.size > 0 && /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
@@ -8099,7 +8112,9 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     onAuditProgressChange,
     onOpenLibrary,
     isSimulationMode = false,
-    onToggleSimulation
+    onToggleSimulation,
+    activeCrateFilter = null,
+    onClearCrateFilter
   }) => {
     var _a;
     const [localRutaOrigen, setLocalRutaOrigen] = useState5("");
@@ -9964,10 +9979,45 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       setFilterHeaderPhase("ALL");
       setFilterHeaderComment("");
     };
+    const searchIndex = useMemo(() => {
+      if (!tracks || tracks.length === 0) return null;
+      const tokenMap = /* @__PURE__ */ new Map();
+      const tokenize = (str) => {
+        if (!str) return [];
+        return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/[\s\-_.,/()[\]+&]+/);
+      };
+      for (let i = 0; i < tracks.length; i++) {
+        const t2 = tracks[i];
+        const id = t2.id !== void 0 ? t2.id : i;
+        const terms = [
+          ...tokenize(t2.t || t2.title),
+          ...tokenize(t2.a || t2.artist),
+          ...tokenize(t2.genre),
+          ...tokenize(t2.subgenre),
+          ...tokenize(t2.k || t2.key),
+          ...tokenize(t2.f || t2.filename)
+        ];
+        for (const term of terms) {
+          if (!term || term.length < 2) continue;
+          let s = tokenMap.get(term);
+          if (!s) {
+            s = /* @__PURE__ */ new Set();
+            tokenMap.set(term, s);
+          }
+          s.add(id);
+        }
+      }
+      return tokenMap;
+    }, [tracks]);
     const tracksFiltrados = useMemo(() => {
       const parsed = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
       let baseTracks = tracks;
-      if (selectedFolderId && selectedFolderId !== "all") {
+      if (activeCrateFilter && activeCrateFilter.trackKeys && activeCrateFilter.trackKeys.size > 0) {
+        baseTracks = baseTracks.filter((t2) => {
+          const k = t2.id !== void 0 ? t2.id : t2.file_path || t2.filename;
+          return activeCrateFilter.trackKeys.has(k) || activeCrateFilter.trackKeys.has(t2.file_path) || activeCrateFilter.trackKeys.has(t2.filename);
+        });
+      } else if (selectedFolderId && selectedFolderId !== "all") {
         const target = findFolderOrSub(libraryFolders, selectedFolderId);
         if (target && target.folder) {
           const allowedKeys = getFolderTrackKeysSet(target.folder);
@@ -9977,8 +10027,38 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           });
         }
       }
-      let result = baseTracks.filter((t2) => {
-        const term = busqueda.toLowerCase();
+      const rawTerm = busqueda.trim().toLowerCase();
+      let candidateIds = null;
+      if (rawTerm.length >= 2 && !parsed && searchIndex) {
+        const cleanTerm = rawTerm.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const searchTokens = cleanTerm.split(/\s+/).filter((t2) => t2.length >= 2);
+        if (searchTokens.length > 0) {
+          for (const tok of searchTokens) {
+            let matchedSet = /* @__PURE__ */ new Set();
+            for (const [indexedToken, idSet] of searchIndex.entries()) {
+              if (indexedToken.startsWith(tok) || indexedToken.includes(tok)) {
+                idSet.forEach((id) => matchedSet.add(id));
+              }
+            }
+            if (candidateIds === null) {
+              candidateIds = matchedSet;
+            } else {
+              const intersection = /* @__PURE__ */ new Set();
+              matchedSet.forEach((id) => {
+                if (candidateIds.has(id)) intersection.add(id);
+              });
+              candidateIds = intersection;
+            }
+            if (candidateIds.size === 0) break;
+          }
+        }
+      }
+      let result = baseTracks.filter((t2, i) => {
+        const term = rawTerm;
+        if (candidateIds !== null) {
+          const k = t2.id !== void 0 ? t2.id : i;
+          if (!candidateIds.has(k)) return false;
+        }
         if (parsed && parsed.tokens && parsed.tokens.length > 0) {
           if (parsed.targetBpm) {
             const trkBpm = parseFloat((t2 == null ? void 0 : t2.bpm) || (t2 == null ? void 0 : t2.b)) || 0;
@@ -10178,7 +10258,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         return auditSortDir === "asc" ? String(valA || "").localeCompare(String(valB || "")) : String(valB || "").localeCompare(String(valA || ""));
       });
       return result;
-    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderArtist, filterHeaderGenre, filterHeaderSubgenre, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, filterHeaderAcousticRole, filterHeaderKhz, filterHeaderKbps, filterHeaderLoss, filterHeaderCutoff, filterHeaderLufs, filterHeaderDuration, filterHeaderBpm, filterHeaderKey, filterHeaderCues, filterHeaderPhase, filterHeaderComment, auditSortField, auditSortDir, selectedFolderId, libraryFolders]);
+    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderArtist, filterHeaderGenre, filterHeaderSubgenre, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, filterHeaderAcousticRole, filterHeaderKhz, filterHeaderKbps, filterHeaderLoss, filterHeaderCutoff, filterHeaderLufs, filterHeaderDuration, filterHeaderBpm, filterHeaderKey, filterHeaderCues, filterHeaderPhase, filterHeaderComment, auditSortField, auditSortDir, selectedFolderId, libraryFolders, activeCrateFilter, searchIndex]);
     const {
       visibleItems: virtualRows,
       paddingTop: virtualPaddingTop,
@@ -10570,7 +10650,17 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         onMaterializarEnDisco: handleMaterializarFoldersEnDisco,
         onClose: () => setIsFolderSidebarOpen(false)
       }
-    ), /* @__PURE__ */ React.createElement("div", { ref: tableScrollRef, className: "flex-1 min-w-0 overflow-auto bg-[#0f0f13] flex flex-col" }, activeFolderMeta && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-gradient-to-r from-[#121324] via-[#0d0e1a] to-[#09090f] border-b border-djzinc-800 flex items-center justify-between gap-3 text-xs font-mono shrink-0 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: `w-2.5 h-2.5 rounded-full ${activeFolderMeta.dotClass || "bg-cyan-400"} shadow-[0_0_8px_currentColor]` }), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Carpeta activa:"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-black tracking-wide" }, activeFolderMeta.name), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "(", tracksFiltrados.length, " pistas en tabla de auditor\xEDa)")), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { ref: tableScrollRef, className: "flex-1 min-w-0 overflow-auto bg-[#0f0f13] flex flex-col" }, activeCrateFilter && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-gradient-to-r from-cyan-950/90 via-[#0d1527] to-[#09090f] border-b border-cyan-500/50 flex items-center justify-between gap-3 text-xs font-mono shrink-0 select-none animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_#06b6d4] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Filtrando por Crate:"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-black tracking-wide text-sm" }, activeCrateFilter.name), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-300 font-mono text-[11px] bg-cyan-950 px-2 py-0.5 rounded border border-cyan-600/40" }, activeCrateFilter.libName), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "(", tracksFiltrados.length, " pistas en tabla de auditor\xEDa)")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onClearCrateFilter,
+        className: "px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/60 text-cyan-300 hover:text-white text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1 shadow-sm",
+        title: "Quitar filtro de crate y ver toda la biblioteca"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 13, className: "inline-block align-[-1px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "Ver toda la biblioteca (", tracks.length, ")")
+    )), activeFolderMeta && !activeCrateFilter && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-gradient-to-r from-[#121324] via-[#0d0e1a] to-[#09090f] border-b border-djzinc-800 flex items-center justify-between gap-3 text-xs font-mono shrink-0 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: `w-2.5 h-2.5 rounded-full ${activeFolderMeta.dotClass || "bg-cyan-400"} shadow-[0_0_8px_currentColor]` }), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Carpeta activa:"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-black tracking-wide" }, activeFolderMeta.name), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "(", tracksFiltrados.length, " pistas en tabla de auditor\xEDa)")), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -24729,6 +24819,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     });
     const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState5(false);
+    const [activeCrateFilter, setActiveCrateFilter] = useState5(null);
+    const handleAuditarCrateDesdeModal = (folder, lib) => {
+      if (!folder) return;
+      const keys = new Set((folder.tracks || []).map((t2) => t2.id !== void 0 ? t2.id : t2.file_path || t2.filename || t2.path));
+      setActiveCrateFilter({
+        id: folder.id,
+        name: folder.name,
+        libName: lib ? lib.name : "Biblioteca",
+        trackKeys: keys
+      });
+      setActiveTab("audit");
+      setIsLibraryDrawerOpen(false);
+    };
     const saveCustomLibraries = (newLibs, newActiveId = null) => {
       setCustomLibraries(newLibs);
       try {
@@ -25753,7 +25856,9 @@ ${res.path}`);
         onAuditProgressChange: setGlobalAuditInfo,
         onOpenLibrary: () => setIsLibraryDrawerOpen(true),
         isSimulationMode,
-        onToggleSimulation: handleToggleSimulation
+        onToggleSimulation: handleToggleSimulation,
+        activeCrateFilter,
+        onClearCrateFilter: () => setActiveCrateFilter(null)
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "hotcues" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       HotCuesWorkspace,
@@ -26102,7 +26207,8 @@ ${res.path}`);
         onSelectLibrary: (id) => saveCustomLibraries(customLibraries, id),
         currentTracks: auditTracks,
         selectedTrackIds: new Set((auditTracks || []).filter((t2) => t2.selected).map((t2) => t2.id)),
-        onMaterializarEnDisco: handleMaterializarBibliotecaEnDisco
+        onMaterializarEnDisco: handleMaterializarBibliotecaEnDisco,
+        onAuditarCrate: handleAuditarCrateDesdeModal
       }
     ), /* @__PURE__ */ React.createElement(
       AppCinematicIntro,

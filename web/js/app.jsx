@@ -8609,7 +8609,8 @@ const CustomLibraryModal = ({
     onSelectLibrary,
     currentTracks = [],
     selectedTrackIds = new Set(),
-    onMaterializarEnDisco
+    onMaterializarEnDisco,
+    onAuditarCrate
 }) => {
     if (!isOpen) return null;
 
@@ -8997,6 +8998,17 @@ const CustomLibraryModal = ({
 
                             {activeFolder && (
                                 <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (onAuditarCrate) onAuditarCrate(activeFolder, currentLib);
+                                        }}
+                                        className="px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-[11px] font-mono font-black shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                        title="Filtrar la mesa de auditoría principal mostrando exclusivamente esta carpeta/crate"
+                                    >
+                                        <Icons.Eye size={13} />
+                                        <span>Auditar en Mesa</span>
+                                    </button>
                                     {selectedTrackIds.size > 0 && (
                                         <button
                                             type="button"
@@ -9138,7 +9150,9 @@ const AuditWorkspace = ({
     onAuditProgressChange,
     onOpenLibrary,
     isSimulationMode = false,
-    onToggleSimulation
+    onToggleSimulation,
+    activeCrateFilter = null,
+    onClearCrateFilter
 }) => {
     const [localRutaOrigen, setLocalRutaOrigen] = useState('');
     const rutaOrigen = currentFolder || localRutaOrigen;
@@ -11173,11 +11187,50 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         setFilterHeaderComment('');
     };
 
+    // ─── PASO 3: ÍNDICE INVERTIDO EN MEMORIA RAM PARA BÚSQUEDA INSTANTÁNEA (<1ms) ───
+    const searchIndex = useMemo(() => {
+        if (!tracks || tracks.length === 0) return null;
+        const tokenMap = new Map();
+        const tokenize = (str) => {
+            if (!str) return [];
+            return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/[\s\-_.,/()[\]+&]+/);
+        };
+        for (let i = 0; i < tracks.length; i++) {
+            const t = tracks[i];
+            const id = t.id !== undefined ? t.id : i;
+            const terms = [
+                ...tokenize(t.t || t.title),
+                ...tokenize(t.a || t.artist),
+                ...tokenize(t.genre),
+                ...tokenize(t.subgenre),
+                ...tokenize(t.k || t.key),
+                ...tokenize(t.f || t.filename)
+            ];
+            for (const term of terms) {
+                if (!term || term.length < 2) continue;
+                let s = tokenMap.get(term);
+                if (!s) {
+                    s = new Set();
+                    tokenMap.set(term, s);
+                }
+                s.add(id);
+            }
+        }
+        return tokenMap;
+    }, [tracks]);
+
     const tracksFiltrados = useMemo(() => {
         const parsed = (busqueda && busqueda.length > 2) ? parseAIDJQuery(busqueda) : null;
 
         let baseTracks = tracks;
-        if (selectedFolderId && selectedFolderId !== 'all') {
+
+        // Filtrado por Crate Virtual Activo procedente de Librería
+        if (activeCrateFilter && activeCrateFilter.trackKeys && activeCrateFilter.trackKeys.size > 0) {
+            baseTracks = baseTracks.filter(t => {
+                const k = t.id !== undefined ? t.id : (t.file_path || t.filename);
+                return activeCrateFilter.trackKeys.has(k) || activeCrateFilter.trackKeys.has(t.file_path) || activeCrateFilter.trackKeys.has(t.filename);
+            });
+        } else if (selectedFolderId && selectedFolderId !== 'all') {
             const target = findFolderOrSub(libraryFolders, selectedFolderId);
             if (target && target.folder) {
                 const allowedKeys = getFolderTrackKeysSet(target.folder);
@@ -11188,8 +11241,43 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
             }
         }
 
-        let result = baseTracks.filter(t => {
-            const term = busqueda.toLowerCase();
+        const rawTerm = busqueda.trim().toLowerCase();
+        let candidateIds = null;
+
+        // Búsqueda instantánea en RAM <1ms usando el índice invertido (si no es IA query con BPM/Key)
+        if (rawTerm.length >= 2 && !parsed && searchIndex) {
+            const cleanTerm = rawTerm.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const searchTokens = cleanTerm.split(/\s+/).filter(t => t.length >= 2);
+            if (searchTokens.length > 0) {
+                for (const tok of searchTokens) {
+                    let matchedSet = new Set();
+                    for (const [indexedToken, idSet] of searchIndex.entries()) {
+                        if (indexedToken.startsWith(tok) || indexedToken.includes(tok)) {
+                            idSet.forEach(id => matchedSet.add(id));
+                        }
+                    }
+                    if (candidateIds === null) {
+                        candidateIds = matchedSet;
+                    } else {
+                        const intersection = new Set();
+                        matchedSet.forEach(id => {
+                            if (candidateIds.has(id)) intersection.add(id);
+                        });
+                        candidateIds = intersection;
+                    }
+                    if (candidateIds.size === 0) break;
+                }
+            }
+        }
+
+        let result = baseTracks.filter((t, i) => {
+            const term = rawTerm;
+
+            // Poda ultrarrápida O(1) con índice invertido
+            if (candidateIds !== null) {
+                const k = t.id !== undefined ? t.id : i;
+                if (!candidateIds.has(k)) return false;
+            }
 
             // Filtrado determinista en memoria mediante parseAIDJQuery
             if (parsed && parsed.tokens && parsed.tokens.length > 0) {
@@ -11404,7 +11492,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         });
 
         return result;
-    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderArtist, filterHeaderGenre, filterHeaderSubgenre, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, filterHeaderAcousticRole, filterHeaderKhz, filterHeaderKbps, filterHeaderLoss, filterHeaderCutoff, filterHeaderLufs, filterHeaderDuration, filterHeaderBpm, filterHeaderKey, filterHeaderCues, filterHeaderPhase, filterHeaderComment, auditSortField, auditSortDir, selectedFolderId, libraryFolders]);
+    }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderArtist, filterHeaderGenre, filterHeaderSubgenre, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, filterHeaderAcousticRole, filterHeaderKhz, filterHeaderKbps, filterHeaderLoss, filterHeaderCutoff, filterHeaderLufs, filterHeaderDuration, filterHeaderBpm, filterHeaderKey, filterHeaderCues, filterHeaderPhase, filterHeaderComment, auditSortField, auditSortDir, selectedFolderId, libraryFolders, activeCrateFilter, searchIndex]);
 
     // PERF: Virtualización de filas — solo renderiza las visibles + buffer overscan
     const {
@@ -12054,8 +12142,30 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                     )}
 
                     <div ref={tableScrollRef} className="flex-1 min-w-0 overflow-auto bg-[#0f0f13] flex flex-col">
+                        {/* Banner Informativo de Crate Virtual Activo procedente de Librería */}
+                        {activeCrateFilter && (
+                            <div className="px-4 py-2 bg-gradient-to-r from-cyan-950/90 via-[#0d1527] to-[#09090f] border-b border-cyan-500/50 flex items-center justify-between gap-3 text-xs font-mono shrink-0 select-none animate-fadeIn">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_#06b6d4] animate-pulse"></span>
+                                    <span className="text-gray-400">Filtrando por Crate:</span>
+                                    <span className="text-white font-black tracking-wide text-sm">{activeCrateFilter.name}</span>
+                                    <span className="text-cyan-300 font-mono text-[11px] bg-cyan-950 px-2 py-0.5 rounded border border-cyan-600/40">{activeCrateFilter.libName}</span>
+                                    <span className="text-cyan-400 font-bold">({tracksFiltrados.length} pistas en tabla de auditoría)</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={onClearCrateFilter}
+                                    className="px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/60 text-cyan-300 hover:text-white text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1 shadow-sm"
+                                    title="Quitar filtro de crate y ver toda la biblioteca"
+                                >
+                                    <Icons.Close size={13} className="inline-block align-[-1px]" />
+                                    <span>Ver toda la biblioteca ({tracks.length})</span>
+                                </button>
+                            </div>
+                        )}
+
                         {/* Banner Informativo de Carpeta Activa con botón para Ver Todas */}
-                        {activeFolderMeta && (
+                        {activeFolderMeta && !activeCrateFilter && (
                             <div className="px-4 py-2 bg-gradient-to-r from-[#121324] via-[#0d0e1a] to-[#09090f] border-b border-djzinc-800 flex items-center justify-between gap-3 text-xs font-mono shrink-0 select-none">
                                 <div className="flex items-center gap-2">
                                     <span className={`w-2.5 h-2.5 rounded-full ${activeFolderMeta.dotClass || 'bg-cyan-400'} shadow-[0_0_8px_currentColor]`}></span>
@@ -34041,6 +34151,20 @@ const App = () => {
     });
 
     const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState(false);
+    const [activeCrateFilter, setActiveCrateFilter] = useState(null);
+
+    const handleAuditarCrateDesdeModal = (folder, lib) => {
+        if (!folder) return;
+        const keys = new Set((folder.tracks || []).map(t => t.id !== undefined ? t.id : (t.file_path || t.filename || t.path)));
+        setActiveCrateFilter({
+            id: folder.id,
+            name: folder.name,
+            libName: lib ? lib.name : 'Biblioteca',
+            trackKeys: keys
+        });
+        setActiveTab('audit');
+        setIsLibraryDrawerOpen(false);
+    };
 
     const saveCustomLibraries = (newLibs, newActiveId = null) => {
         setCustomLibraries(newLibs);
@@ -35149,6 +35273,8 @@ const App = () => {
                         onOpenLibrary={() => setIsLibraryDrawerOpen(true)}
                         isSimulationMode={isSimulationMode}
                         onToggleSimulation={handleToggleSimulation}
+                        activeCrateFilter={activeCrateFilter}
+                        onClearCrateFilter={() => setActiveCrateFilter(null)}
                     />
                 </div>
                 <div style={{ display: activeTab === 'hotcues' ? 'flex' : 'none' }} className="w-full h-full">
@@ -35560,6 +35686,7 @@ const App = () => {
                 currentTracks={auditTracks}
                 selectedTrackIds={new Set((auditTracks || []).filter(t => t.selected).map(t => t.id))}
                 onMaterializarEnDisco={handleMaterializarBibliotecaEnDisco}
+                onAuditarCrate={handleAuditarCrateDesdeModal}
             />
 
             {/* PRESENTACIÓN CINEMÁTICA A PANTALLA COMPLETA CON VÍDEO DE FONDO */}

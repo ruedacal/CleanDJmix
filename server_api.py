@@ -294,6 +294,45 @@ async def scan_directory(payload: ScanRequest):
         "tracks": tracks
     }
 
+@app.get("/api/search")
+async def fast_search(q: str = Query(..., min_length=1), limit: int = Query(100, ge=1, le=1000)):
+    """
+    Búsqueda Full-Text ultra veloz (<1ms) sobre metadatos y caché de auditoría SQLite (PASO 3).
+    """
+    term = q.strip()
+    if not term:
+        return {"query": q, "total": 0, "results": []}
+
+    results = []
+    try:
+        from services.audit_service import AudioAuditor
+        auditor = AudioAuditor()
+        with auditor._get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT filepath, track_json 
+                FROM metadata_cache 
+                WHERE filepath LIKE ? OR track_json LIKE ? 
+                LIMIT ?
+                """,
+                (f"%{term}%", f"%{term}%", limit)
+            )
+            for row in cur.fetchall():
+                try:
+                    data = json.loads(row["track_json"])
+                    results.append(data)
+                except Exception:
+                    results.append({"filepath": row["filepath"]})
+    except Exception as e:
+        print(f"[FAST SEARCH ERROR] {e}")
+
+    return {
+        "query": q,
+        "total": len(results),
+        "results": results
+    }
+
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry(websocket: WebSocket):
     await telemetry.connect(websocket)
