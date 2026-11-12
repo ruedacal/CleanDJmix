@@ -9179,18 +9179,19 @@ const AuditWorkspace = ({
     const [batchConfigured, setBatchConfigured] = useState(false);
     const [isAppendMode, setIsAppendMode] = useState(false);
     const [batchConfigOpts, setBatchConfigOpts] = useState({
+        fftLossless: true,
+        trimSilences: true,
+        beatgrid: true,
         bpmKey: true,
-        energyMood: true,
-        acoustics: true,
-        detectFakes: true,
-        autoCue: true,
-        hotcuesGrid: true,
-        trimSilence: true,
-        missingMeta: true,
+        energyDance: true,
+        moodDetect: true,
+        hotCues8: true,
+        tacticalComments: true,
+        injectCovers: true,
+        detectDuplicates: true,
+        fixMissingNames: true,
         normalizeNames: true,
-        losslessScan: true,
-        injectCovers: false,
-        tacticalComments: false
+        onlyIncomplete: false
     });
     // 🔮 Mix Oracle (Radar de Mezcla Mágica)
     const [mixOracleOpen, setMixOracleOpen] = useState(false);
@@ -13637,8 +13638,13 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                     Trim Silencio (Zero-Cross)
                                     <InfoTip title="Recorte de Silencio" text="Elimina el silencio muerto en cabecera cortando en paso por cero de amplitud (-60dBFS) para evitar clicks al mezclar." />
                                 </span>
-                                <span className="text-[11px] font-mono font-black text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/60">
-                                    {`-${Number(currentTrack.trim_start_ms || 0).toFixed(1)} ms`}
+                                <span className="text-[11px] font-mono font-black text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/60 flex items-center gap-1.5">
+                                    <span>{`-${Number(currentTrack.trim_start_ms || 0).toFixed(1)} ms`}</span>
+                                    {currentTrack.trim_end_ms > 0 && (
+                                        <span className="text-gray-400 text-[10px]" title="Silencio de cola podado">
+                                            {`• Cola: -${Math.max(0, (parseDurationMs(currentTrack.duration || "05:00") - currentTrack.trim_end_ms)).toFixed(0)} ms`}
+                                        </span>
+                                    )}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between gap-1">
