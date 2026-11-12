@@ -2,6 +2,8 @@ import { Icon, useToast } from './admin/ui.jsx';
 import { Overview, Database, Logs } from './admin/sections-core.jsx';
 import { Promotions, Codes, Skills, Banners } from './admin/sections-growth.jsx';
 import { Analytics, Seo, Billing, Notices, Settings } from './admin/sections-insights.jsx';
+import { QueryConsole, Behavior } from './admin/sections-data.jsx';
+import { Social, ContentStudio } from './admin/sections-content.jsx';
 
 const { useState, useEffect } = React;
 
@@ -9,6 +11,7 @@ const NAV = [
     { group: 'Operación', items: [
         { id: 'overview', label: 'Resumen', icon: 'home', C: Overview },
         { id: 'database', label: 'Base de datos', icon: 'db', C: Database },
+        { id: 'query', label: 'Consultas SQL', icon: 'code', C: QueryConsole },
     ] },
     { group: 'Crecimiento', items: [
         { id: 'promos', label: 'Promociones', icon: 'megaphone', C: Promotions, count: 2 },
@@ -18,7 +21,12 @@ const NAV = [
     ] },
     { group: 'Insights', items: [
         { id: 'analytics', label: 'Analítica', icon: 'chart', C: Analytics },
+        { id: 'behavior', label: 'Comportamiento', icon: 'flow', C: Behavior },
         { id: 'seo', label: 'SEO', icon: 'search', C: Seo },
+    ] },
+    { group: 'Contenido', items: [
+        { id: 'social', label: 'Redes sociales', icon: 'share', C: Social },
+        { id: 'content', label: 'Estudio de contenido', icon: 'pen', C: ContentStudio },
     ] },
     { group: 'Negocio', items: [
         { id: 'billing', label: 'Facturación', icon: 'card', C: Billing },

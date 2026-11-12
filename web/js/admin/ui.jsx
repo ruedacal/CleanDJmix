@@ -23,6 +23,13 @@ const ICON_PATHS = {
     send: 'M4 12l16-8-6 16-2-7z',
     refresh: 'M20 11a8 8 0 0 0-14.9-3M4 4v4h4m-4 5a8 8 0 0 0 14.9 3M20 20v-4h-4',
     external: 'M14 4h6v6m0-6l-9 9M18 14v6H4V6h6',
+    code: 'M8 8l-4 4 4 4m8-8l4 4-4 4M14 5l-4 14',
+    flow: 'M5 4h6v5H5zM13 15h6v5h-6zM8 9v4a2 2 0 0 0 2 2h3',
+    share: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4',
+    pen: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
+    play: 'M7 5l12 7-12 7z',
+    up: 'M12 19V5m-6 6l6-6 6 6',
+    down: 'M12 5v14m-6-6l6 6 6-6',
 };
 
 export function Icon({ name, size = 16, className = '' }) {
