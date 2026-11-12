@@ -271,21 +271,24 @@ async def scan_directory(payload: ScanRequest):
     if not os.path.isdir(target_dir):
         raise HTTPException(status_code=400, detail="El directorio especificado no existe.")
 
-    tracks = []
-    audio_exts = {".mp3", ".wav", ".aif", ".aiff", ".flac", ".m4a"}
-    
-    for root, _, files in os.walk(target_dir):
-        for f in files:
-            ext = os.path.splitext(f)[1].lower()
-            if ext in audio_exts:
-                full_path = os.path.join(root, f)
-                tracks.append({
-                    "id": full_path,
-                    "filename": f,
-                    "filepath": full_path,
-                    "size": os.path.getsize(full_path),
-                    "modified": os.path.getmtime(full_path)
-                })
+    # Escaneo recursivo multinúcleo ultra optimizado con os.scandir (PEP 471)
+    from services.audit_service import AuditService, AuditCacheDB
+    auditor = AuditService()
+    archivos = auditor._escanear_archivos_audio_recursivo(
+        target_dir,
+        extensiones=(".mp3", ".wav", ".aif", ".aiff", ".flac", ".m4a")
+    )
+
+    tracks = [
+        {
+            "id": item[0],
+            "filepath": item[0],
+            "filename": item[2],
+            "modified": item[3],
+            "size": item[4]
+        }
+        for item in archivos
+    ]
 
     return {
         "status": "success",
@@ -305,9 +308,9 @@ async def fast_search(q: str = Query(..., min_length=1), limit: int = Query(100,
 
     results = []
     try:
-        from services.audit_service import AudioAuditor
-        auditor = AudioAuditor()
-        with auditor._get_conn() as conn:
+        from services.audit_service import AuditCacheDB
+        db = AuditCacheDB()
+        with db._get_conn() as conn:
             cur = conn.cursor()
             cur.execute(
                 """

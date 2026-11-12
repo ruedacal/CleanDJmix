@@ -11219,7 +11219,10 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         return tokenMap;
     }, [tracks]);
 
+    const searchBenchmarkRef = useRef(0.2);
+
     const tracksFiltrados = useMemo(() => {
+        const benchStart = performance.now();
         const parsed = (busqueda && busqueda.length > 2) ? parseAIDJQuery(busqueda) : null;
 
         let baseTracks = tracks;
@@ -11490,6 +11493,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                 ? String(valA || '').localeCompare(String(valB || '')) 
                 : String(valB || '').localeCompare(String(valA || ''));
         });
+
+        searchBenchmarkRef.current = Math.max(0.1, Number((performance.now() - benchStart).toFixed(2)));
 
         return result;
     }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderArtist, filterHeaderGenre, filterHeaderSubgenre, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, filterHeaderAcousticRole, filterHeaderKhz, filterHeaderKbps, filterHeaderLoss, filterHeaderCutoff, filterHeaderLufs, filterHeaderDuration, filterHeaderBpm, filterHeaderKey, filterHeaderCues, filterHeaderPhase, filterHeaderComment, auditSortField, auditSortDir, selectedFolderId, libraryFolders, activeCrateFilter, searchIndex]);
@@ -12017,6 +12022,16 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                 </button>
                             )}
                         </div>
+
+                        {/* Benchmark visual de latencia de búsqueda en RAM (<1ms) */}
+                        {busqueda && busqueda.trim().length >= 2 && (
+                            <div className="flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full bg-cyan-950/90 border border-cyan-500/50 text-[10.5px] font-mono text-cyan-300 font-bold shadow-md shadow-cyan-950/50 animate-fadeIn">
+                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                                <span>{tracksFiltrados.length} pistas</span>
+                                <span className="text-zinc-600">•</span>
+                                <span className="text-emerald-400 font-black">{searchBenchmarkRef.current}ms</span>
+                            </div>
+                        )}
 
                         {/* Chips Inteligentes detectados por IA DJ */}
                         {(() => {

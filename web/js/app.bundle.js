@@ -10009,7 +10009,9 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
       return tokenMap;
     }, [tracks]);
+    const searchBenchmarkRef = useRef6(0.2);
     const tracksFiltrados = useMemo(() => {
+      const benchStart = performance.now();
       const parsed = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
       let baseTracks = tracks;
       if (activeCrateFilter && activeCrateFilter.trackKeys && activeCrateFilter.trackKeys.size > 0) {
@@ -10257,6 +10259,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         }
         return auditSortDir === "asc" ? String(valA || "").localeCompare(String(valB || "")) : String(valB || "").localeCompare(String(valA || ""));
       });
+      searchBenchmarkRef.current = Math.max(0.1, Number((performance.now() - benchStart).toFixed(2)));
       return result;
     }, [tracks, busqueda, filtro, filterHeaderSearch, filterHeaderArtist, filterHeaderGenre, filterHeaderSubgenre, filterHeaderFormat, filterHeaderQuality, filterHeaderStatus, filterHeaderEnergy, filterHeaderDance, filterHeaderAcousticRole, filterHeaderKhz, filterHeaderKbps, filterHeaderLoss, filterHeaderCutoff, filterHeaderLufs, filterHeaderDuration, filterHeaderBpm, filterHeaderKey, filterHeaderCues, filterHeaderPhase, filterHeaderComment, auditSortField, auditSortDir, selectedFolderId, libraryFolders, activeCrateFilter, searchIndex]);
     const {
@@ -10546,7 +10549,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         className: "absolute right-2.5 text-gray-500 hover:text-gray-300 text-xs cursor-pointer"
       },
       /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
-    )), (() => {
+    )), busqueda && busqueda.trim().length >= 2 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full bg-cyan-950/90 border border-cyan-500/50 text-[10.5px] font-mono text-cyan-300 font-bold shadow-md shadow-cyan-950/50 animate-fadeIn" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, tracksFiltrados.length, " pistas"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-black" }, searchBenchmarkRef.current, "ms")), (() => {
       const p = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
       if (!p || !p.tokens || p.tokens.length === 0) return null;
       return /* @__PURE__ */ React.createElement("div", { className: "hidden lg:flex items-center gap-1.5 flex-wrap" }, p.tokens.map((tok, tIdx) => /* @__PURE__ */ React.createElement("span", { key: tIdx, className: "px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-djcyan-950 text-djcyan-300 border border-djcyan-500/50 shadow-sm animate-fadeIn" }, tok.label)));

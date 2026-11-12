@@ -1323,7 +1323,8 @@ return folderPath'''
         total_pending = len(pending_items)
 
         if total_pending > 0:
-            num_workers = min(16, max(4, (os.cpu_count() or 4) * 2))
+            # PASO 4: Procesamiento paralelo multinúcleo dinámico para auditoría DSP en background
+            num_workers = min(32, max(4, (os.cpu_count() or 4) * 2))
             emit_step = max(1, min(25, total_pending // 20))
 
             def _procesar_un_delta(task_tuple):
