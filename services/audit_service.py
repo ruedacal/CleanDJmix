@@ -867,22 +867,39 @@ return folderPath'''
                 frames_to_read = min(fs * 10, max(4096, info_sf.frames - start_frame))
                 data, samplerate = sf.read(filepath, start=start_frame, frames=frames_to_read)
             except Exception as sf_err:
-                # Fallback seguro con pydub / ffmpeg para MP3, M4A, AIFF o FLACs con cabeceras complejas
+                # Fallback de ultra-alta velocidad (Patrón AudioAuditor multi-plataforma)
+                # Decodificación directa en memoria RAM vía pipe sin escribir archivos temporales en disco
                 try:
-                    from pydub import AudioSegment
-                    seg = AudioSegment.from_file(filepath)
-                    dur_ms = len(seg)
-                    start_ms = max(0, int(dur_ms * 0.25))
-                    end_ms = min(dur_ms, start_ms + 10000)
-                    sub_seg = seg[start_ms:end_ms]
-                    samplerate = sub_seg.frame_rate
-                    samples = np.array(sub_seg.get_array_of_samples(), dtype=np.float32)
-                    if sub_seg.channels > 1:
-                        samples = samples.reshape((-1, sub_seg.channels)).mean(axis=1)
-                    data = samples / (2.0 ** (sub_seg.sample_width * 8 - 1))
-                except Exception as pydub_err:
-                    print(f"[AUDITORIA FFT] Error decodificando audio: {pydub_err}")
-                    raise sf_err
+                    ffmpeg_bin = shutil.which("ffmpeg") or ("/usr/local/bin/ffmpeg" if os.path.exists("/usr/local/bin/ffmpeg") else "ffmpeg")
+                    cmd = [
+                        ffmpeg_bin, "-nostats", "-loglevel", "error",
+                        "-ss", "30", "-t", "5", "-i", filepath,
+                        "-f", "f32le", "-ac", "1", "-ar", "44100", "pipe:1"
+                    ]
+                    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=10**6)
+                    raw_pcm, _ = proc.communicate(timeout=5)
+                    if raw_pcm and len(raw_pcm) >= 4096:
+                        data = np.frombuffer(raw_pcm, dtype=np.float32)
+                        samplerate = 44100
+                    else:
+                        raise ValueError("Buffer PCM de audio vacío tras decodificación directa")
+                except Exception as ff_pipe_err:
+                    print(f"[AUDITORIA FFT] Fallo en decodificación rápida ({ff_pipe_err}). Usando fallback secundario.")
+                    try:
+                        from pydub import AudioSegment
+                        seg = AudioSegment.from_file(filepath)
+                        dur_ms = len(seg)
+                        start_ms = max(0, int(dur_ms * 0.25))
+                        end_ms = min(dur_ms, start_ms + 10000)
+                        sub_seg = seg[start_ms:end_ms]
+                        samplerate = sub_seg.frame_rate
+                        samples = np.array(sub_seg.get_array_of_samples(), dtype=np.float32)
+                        if sub_seg.channels > 1:
+                            samples = samples.reshape((-1, sub_seg.channels)).mean(axis=1)
+                        data = samples / (2.0 ** (sub_seg.sample_width * 8 - 1))
+                    except Exception as pydub_err:
+                        print(f"[AUDITORIA FFT] Error crítico decodificando audio: {pydub_err}")
+                        raise sf_err
 
             if data is None or len(data) == 0:
                 raise ValueError("Buffer de audio vacío tras decodificación")
