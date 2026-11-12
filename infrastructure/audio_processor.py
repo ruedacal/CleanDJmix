@@ -83,112 +83,141 @@ class AudioProcessorService:
     @staticmethod
     def detectar_trim_y_downbeat(ruta: str) -> tuple:
         """Calcula de forma rigurosa y en dos fases consecutivas:
-        1. Recorte de silencio muerto (Zero-Crossing Auto-Trim a -48 dBFS estándar DJ Pioneer/Rekordbox).
-        2. Fijación matemática del Beatgrid 1.0.0 anclado al primer golpe de bombo real (downbeat >= trim)."""
+        1. Recorte bidireccional de silencio muerto (Zero-Crossing Auto-Trim a -48 dBFS en Cabecera y Cola).
+        2. Fijación matemática del Beatgrid 1.0.0 anclado al primer golpe de bombo real (downbeat >= trim_start).
+        Retorna: (trim_start_ms, trim_end_ms, first_downbeat_ms)"""
         if not ruta or not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
-            return 0.0, 0.0
+            return 0.0, 0.0, 0.0
         try:
+            import soundfile as sf
             import numpy as np
 
-            mono, sr = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=12.0)
-            if mono is None or len(mono) == 0:
-                return 0.0, 0.0
+            # 1. Inspección de metadatos de audio con soundfile C-level
+            info = sf.info(ruta)
+            sr = info.samplerate
+            total_frames = info.frames
+            dur_total_ms = round((total_frames / sr) * 1000.0, 1)
 
-            # Si todo el fragmento es silencio absoluto (< -66 dBFS)
-            max_amp = float(np.max(np.abs(mono)))
-            if max_amp < 0.0005:
-                return 0.0, 0.0
+            # --- CABECERA (HEAD): Cargar los primeros 12 segundos ---
+            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=12.0)
+            if mono_head is None or len(mono_head) == 0:
+                return 0.0, dur_total_ms, 0.0
 
-            # FASE 1: Zero-Crossing Silence Trim (Cruce por cero a -48 dBFS estándar de club)
-            hop_silence = max(1, int(sr * 0.005))  # bloques de 5ms
-            num_blocks = len(mono) // hop_silence
-            if num_blocks == 0:
-                return 0.0, 0.0
+            # FASE 1A: Zero-Crossing Silence Trim en Cabecera
+            hop_silence = max(1, int(sr_head * 0.005))  # bloques de 5ms
+            num_blocks = len(mono_head) // hop_silence
+            trim_start_ms = 0.0
+            downbeat_ms = 0.0
 
-            sliced = mono[:num_blocks * hop_silence].reshape((num_blocks, hop_silence))
-            block_rms = np.sqrt(np.mean(sliced ** 2, axis=1))
+            if num_blocks > 0:
+                sliced = mono_head[:num_blocks * hop_silence].reshape((num_blocks, hop_silence))
+                block_rms = np.sqrt(np.mean(sliced ** 2, axis=1))
 
-            # Umbral Auto-Cue estándar DJ (-48 dBFS ~ 0.00398) con fallbacks graduados
-            audible_blocks = np.where(block_rms > 0.00398)[0]
-            if len(audible_blocks) == 0:
-                audible_blocks = np.where(block_rms > 0.00200)[0]  # -54 dBFS
-            if len(audible_blocks) == 0:
-                audible_blocks = np.where(block_rms > 0.00100)[0]  # -60 dBFS
-            if len(audible_blocks) == 0:
-                return 0.0, 0.0
+                # Umbral Auto-Cue estándar DJ (-48 dBFS ~ 0.00398) con fallbacks graduados
+                audible_blocks = np.where(block_rms > 0.00398)[0]
+                if len(audible_blocks) == 0:
+                    audible_blocks = np.where(block_rms > 0.00200)[0]  # -54 dBFS
+                if len(audible_blocks) == 0:
+                    audible_blocks = np.where(block_rms > 0.00100)[0]  # -60 dBFS
 
-            first_block = audible_blocks[0]
-            sample_candidate = first_block * hop_silence
+                if len(audible_blocks) > 0:
+                    first_block = audible_blocks[0]
+                    sample_candidate = first_block * hop_silence
 
-            # Búsqueda retroactiva del cruce por cero exacto para garantizar 0 DC offset y 0 pop
-            search_start = max(0, sample_candidate - int(sr * 0.025))
-            sub = mono[search_start:sample_candidate + hop_silence]
-            signs = np.signbit(sub)
-            diffs = np.where(np.diff(signs))[0]
-            if len(diffs) > 0:
-                zero_cross_idx = search_start + int(diffs[-1])
-            else:
-                zero_cross_idx = sample_candidate
-
-            trim_ms = round(float(zero_cross_idx) / sr * 1000.0, 1)
-
-            # FASE 2: Detección del Downbeat Beatgrid 1.0.0 (estrictamente POST-TRIM)
-            # Analizar hasta 6 segundos posteriores al punto de corte de silencio
-            max_search_samples = min(len(mono), zero_cross_idx + int(sr * 6.0))
-            sub_audio = mono[zero_cross_idx:max_search_samples]
-
-            if len(sub_audio) < int(sr * 0.05):
-                return trim_ms, trim_ms
-
-            # Filtro pasabajos para aislar la pegada del bombo / subgrave (< 180 Hz)
-            try:
-                from scipy.signal import butter, filtfilt
-                nyq = 0.5 * sr
-                cutoff = min(180.0, nyq * 0.5)
-                b, a = butter(2, cutoff / nyq, btype='low')
-                sub_low = filtfilt(b, a, sub_audio)
-            except Exception:
-                sub_low = sub_audio
-
-            frame_len = int(sr * 0.020)  # 20ms
-            hop_len = int(sr * 0.004)    # 4ms
-
-            if len(sub_low) > frame_len:
-                num_frames = (len(sub_low) - frame_len) // hop_len
-                frames = np.lib.stride_tricks.as_strided(
-                    sub_low,
-                    shape=(num_frames, frame_len),
-                    strides=(sub_low.strides[0] * hop_len, sub_low.strides[0])
-                )
-                energies = np.sqrt(np.mean(frames ** 2, axis=1))
-                energy_diff = np.maximum(0, np.diff(energies))
-
-                max_diff = float(np.max(energy_diff)) if len(energy_diff) > 0 else 0.0
-                if max_diff > 0.003:
-                    # Encontrar el primer pico rítmico contundente (> 25% del máximo transitorio)
-                    peaks = np.where(energy_diff > (max_diff * 0.25))[0]
-                    if len(peaks) > 0:
-                        first_peak = int(peaks[0])
-                        peak_sample = zero_cross_idx + (first_peak * hop_len)
-                        # Micro-ajuste al pico absoluto más cercano dentro del frame
-                        local_window = mono[max(0, peak_sample - hop_len):min(len(mono), peak_sample + frame_len)]
-                        local_max_idx = int(np.argmax(np.abs(local_window))) if len(local_window) > 0 else 0
-                        final_sample = max(0, peak_sample - hop_len + local_max_idx)
-                        downbeat_ms = round(float(final_sample) / sr * 1000.0, 1)
+                    # Búsqueda retroactiva del cruce por cero exacto para garantizar 0 DC offset y 0 pop
+                    search_start = max(0, sample_candidate - int(sr_head * 0.025))
+                    sub = mono_head[search_start:sample_candidate + hop_silence]
+                    signs = np.signbit(sub)
+                    diffs = np.where(np.diff(signs))[0]
+                    if len(diffs) > 0:
+                        zero_cross_idx = search_start + int(diffs[-1])
                     else:
-                        downbeat_ms = trim_ms
+                        zero_cross_idx = sample_candidate
+
+                    trim_start_ms = round(float(zero_cross_idx) / sr_head * 1000.0, 1)
+
+                    # FASE 1B: Detección del Downbeat Beatgrid 1.0.0 (estrictamente POST-TRIM)
+                    max_search_samples = min(len(mono_head), zero_cross_idx + int(sr_head * 6.0))
+                    sub_audio = mono_head[zero_cross_idx:max_search_samples]
+
+                    if len(sub_audio) >= int(sr_head * 0.05):
+                        try:
+                            from scipy.signal import butter, filtfilt
+                            nyq = 0.5 * sr_head
+                            cutoff = min(180.0, nyq * 0.5)
+                            b, a = butter(2, cutoff / nyq, btype='low')
+                            sub_low = filtfilt(b, a, sub_audio)
+                        except Exception:
+                            sub_low = sub_audio
+
+                        frame_len = int(sr_head * 0.020)  # 20ms
+                        hop_len = int(sr_head * 0.004)    # 4ms
+
+                        if len(sub_low) > frame_len:
+                            num_frames = (len(sub_low) - frame_len) // hop_len
+                            frames = np.lib.stride_tricks.as_strided(
+                                sub_low,
+                                shape=(num_frames, frame_len),
+                                strides=(sub_low.strides[0] * hop_len, sub_low.strides[0])
+                            )
+                            energies = np.sqrt(np.mean(frames ** 2, axis=1))
+                            energy_diff = np.maximum(0, np.diff(energies))
+
+                            max_diff = float(np.max(energy_diff)) if len(energy_diff) > 0 else 0.0
+                            if max_diff > 0.003:
+                                peaks = np.where(energy_diff > (max_diff * 0.25))[0]
+                                if len(peaks) > 0:
+                                    first_peak = int(peaks[0])
+                                    peak_sample = zero_cross_idx + (first_peak * hop_len)
+                                    local_window = mono_head[max(0, peak_sample - hop_len):min(len(mono_head), peak_sample + frame_len)]
+                                    local_max_idx = int(np.argmax(np.abs(local_window))) if len(local_window) > 0 else 0
+                                    final_sample = max(0, peak_sample - hop_len + local_max_idx)
+                                    downbeat_ms = round(float(final_sample) / sr_head * 1000.0, 1)
+                                else:
+                                    downbeat_ms = trim_start_ms
+                            else:
+                                downbeat_ms = trim_start_ms
+                        else:
+                            downbeat_ms = trim_start_ms
+                    else:
+                        downbeat_ms = trim_start_ms
                 else:
-                    downbeat_ms = trim_ms
-            else:
-                downbeat_ms = trim_ms
+                    trim_start_ms = 0.0
+                    downbeat_ms = 0.0
 
-            # Regla de oro acústica DJ: el Downbeat nunca puede situarse antes del silencio recortado
-            if downbeat_ms < trim_ms:
-                downbeat_ms = trim_ms
+            if downbeat_ms < trim_start_ms:
+                downbeat_ms = trim_start_ms
 
-            return trim_ms, downbeat_ms
+            # --- COLA (TAIL): Detección de Silencio Final / Outro Fade-Out ---
+            trim_end_ms = dur_total_ms
+            tail_sec = min(25.0, dur_total_ms / 1000.0 * 0.5)
+            tail_frames = int(tail_sec * sr)
+            if tail_frames > 0 and total_frames > tail_frames:
+                try:
+                    start_tail_frame = total_frames - tail_frames
+                    tail_data, _ = sf.read(ruta, start=start_tail_frame, stop=total_frames, dtype='float32')
+                    mono_tail = np.mean(tail_data, axis=1) if tail_data.ndim > 1 else tail_data
+                    
+                    hop_tail = max(1, int(sr * 0.01)) # 10ms
+                    num_tail_blocks = len(mono_tail) // hop_tail
+                    if num_tail_blocks > 0:
+                        tail_blocks = mono_tail[:num_tail_blocks * hop_tail].reshape((num_tail_blocks, hop_tail))
+                        tail_rms = np.sqrt(np.mean(tail_blocks ** 2, axis=1))
+                        # Umbral de cola: corte a -54 dBFS (~0.0020) o -60 dBFS
+                        audible_tail = np.where(tail_rms > 0.0020)[0]
+                        if len(audible_tail) == 0:
+                            audible_tail = np.where(tail_rms > 0.0010)[0]
+                        if len(audible_tail) > 0:
+                            last_block = audible_tail[-1]
+                            rel_sample = (last_block + 1) * hop_tail
+                            abs_sample = start_tail_frame + rel_sample
+                            trim_end_ms = min(dur_total_ms, round(abs_sample / sr * 1000.0, 1))
+                except Exception:
+                    trim_end_ms = dur_total_ms
+
+            return trim_start_ms, trim_end_ms, downbeat_ms
         except Exception:
-            return 0.0, 0.0
+            return 0.0, 0.0, 0.0
 
     @staticmethod
     def analizar_track_avanzado(ruta: str) -> dict:
@@ -331,12 +360,21 @@ class AudioProcessorService:
             except Exception:
                 key = "8A"
 
+        trim_end_ms = 0.0
         if trim_start_ms <= 0.0 or first_downbeat_ms <= 0.0:
-            det_trim, det_down = AudioProcessorService.detectar_trim_y_downbeat(ruta)
+            det_res = AudioProcessorService.detectar_trim_y_downbeat(ruta)
+            if len(det_res) == 3:
+                det_trim, det_end, det_down = det_res
+            else:
+                det_trim, det_down = det_res
+                det_end = float(duration_sec * 1000)
             if trim_start_ms <= 0.0:
                 trim_start_ms = det_trim
             if first_downbeat_ms <= 0.0:
                 first_downbeat_ms = det_down
+            trim_end_ms = det_end
+        else:
+            trim_end_ms = float(duration_sec * 1000)
 
         # El Downbeat siempre debe ser >= trim_start_ms
         if first_downbeat_ms < trim_start_ms:
@@ -354,7 +392,10 @@ class AudioProcessorService:
         cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
             duration_ms=dur_ms,
             bpm=bpm,
-            downbeat_ms=int(first_downbeat_ms)
+            downbeat_ms=int(first_downbeat_ms),
+            ruta=ruta,
+            trim_start_ms=int(trim_start_ms),
+            trim_end_ms=int(trim_end_ms)
         )
 
         subtag_val = ""
@@ -418,14 +459,31 @@ class AudioProcessorService:
             "bitrate_kbps": 320 if ext == ".mp3" else 1411,
             "bit_depth": 16,
             "trim_start_ms": trim_start_ms,
+            "trim_end_ms": trim_end_ms,
             "first_downbeat_ms": first_downbeat_ms,
             "cues": cues
         }
 
     @staticmethod
-    def calcular_8_hot_cues_fraseo(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0) -> list:
-        """Calcula automáticamente los 8 Hot Cues estándar (Pads Numark NV2 / Pioneer DJ)
-        sincronizados a compases y frases musicales (16 y 32 compases) anclados al Beatgrid 1.0.0."""
+    def calcular_8_hot_cues_fraseo(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, ruta: str = None, trim_start_ms: int = 0, trim_end_ms: int = 0) -> list:
+        """Calcula los 8 Hot Cues estándar (Pads Numark NV2 / Pioneer DJ) sincronizados
+        al Beatgrid 1.0.0. Si 'ruta' existe, aplica análisis acústico de subgraves y transitorios
+        (Enfoque 4 + 1) para ubicar los Drops y Breaks reales en lugar de meros porcentajes."""
+        if ruta and os.path.exists(ruta):
+            try:
+                cues_acusticos = AudioProcessorService.calcular_8_hot_cues_acusticos(
+                    ruta=ruta,
+                    duration_ms=duration_ms,
+                    bpm=bpm,
+                    downbeat_ms=downbeat_ms,
+                    trim_start_ms=trim_start_ms,
+                    trim_end_ms=trim_end_ms
+                )
+                if cues_acusticos and len(cues_acusticos) == 8:
+                    return cues_acusticos
+            except Exception as e_acust:
+                print(f"[HOT CUES DSP WARN] Fallback a fraseo estándar: {e_acust}")
+
         try:
             bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
         except Exception:
@@ -441,15 +499,12 @@ class AudioProcessorService:
         except Exception:
             downbeat_clean = 0
 
-        # Duración de 1 beat (negra) y 1 compás (4/4 = 4 beats) en milisegundos
         beat_ms = 60000.0 / bpm_clean
         bar_ms = beat_ms * 4.0
 
-        # Total de compases enteros en el track disponible
         usable_dur = max(1000, dur_clean - downbeat_clean)
         total_bars = max(8, int(usable_dur / bar_ms))
 
-        # Distribución armónica y proporcional según la estructura musical 4/4 real de club
         o1 = 0
         if total_bars >= 112:
             o2 = 16
@@ -472,7 +527,187 @@ class AudioProcessorService:
             o2, o3, o4, o5, o6, o7, o8 = [min(total_bars - (8 - i), i * step) for i in range(1, 8)]
 
         bar_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
-        # Garantía matemática de orden estrictamente ascendente dentro de los límites del track
+        for i in range(1, 8):
+            if bar_offsets[i] <= bar_offsets[i - 1]:
+                bar_offsets[i] = bar_offsets[i - 1] + 1
+            if bar_offsets[i] >= total_bars:
+                bar_offsets[i] = max(bar_offsets[i - 1] + 1, total_bars - (8 - i))
+
+        cue_configs = [
+            {"id": 1, "name": "Kick / Intro", "color": "#ef4444", "rgb": (239, 68, 68), "text": "text-red-400", "border": "border-red-500/50", "bg": "bg-red-500/10"},
+            {"id": 2, "name": "Hi-Hats In", "color": "#f97316", "rgb": (249, 115, 22), "text": "text-orange-400", "border": "border-orange-500/50", "bg": "bg-orange-500/10"},
+            {"id": 3, "name": "Bassline", "color": "#eab308", "rgb": (234, 179, 8), "text": "text-yellow-400", "border": "border-yellow-500/50", "bg": "bg-yellow-500/10"},
+            {"id": 4, "name": "Main Break", "color": "#22c55e", "rgb": (34, 197, 94), "text": "text-green-400", "border": "border-green-500/50", "bg": "bg-green-500/10"},
+            {"id": 5, "name": "Drop 1 (Climax)", "color": "#06b6d4", "rgb": (6, 182, 212), "text": "text-cyan-400", "border": "border-cyan-500/50", "bg": "bg-cyan-500/10"},
+            {"id": 6, "name": "Mid Break", "color": "#3b82f6", "rgb": (59, 130, 246), "text": "text-blue-400", "border": "border-blue-500/50", "bg": "bg-blue-500/10"},
+            {"id": 7, "name": "Drop 2 (Re-Kick)", "color": "#a855f7", "rgb": (168, 85, 247), "text": "text-purple-400", "border": "border-purple-500/50", "bg": "bg-purple-500/10"},
+            {"id": 8, "name": "Outro Mix Point", "color": "#ec4899", "rgb": (236, 72, 153), "text": "text-pink-400", "border": "border-pink-500/50", "bg": "bg-pink-500/10"}
+        ]
+
+        result = []
+        for idx in range(8):
+            cfg = cue_configs[idx]
+            b_offset = bar_offsets[idx] if idx < len(bar_offsets) else (idx * 16)
+            compas = b_offset + 1
+            pos_ms = int(downbeat_clean + (b_offset * bar_ms))
+            if pos_ms >= dur_clean:
+                pos_ms = max(0, dur_clean - int((8 - idx) * 1000))
+
+            sec = pos_ms / 1000.0
+            m = int(sec // 60)
+            s = sec % 60
+            time_str = f"{m:02d}:{s:04.1f}"
+            pct = round(pos_ms / dur_clean, 4) if dur_clean > 0 else 0.0
+
+            result.append({
+                "id": cfg["id"],
+                "bar": compas,
+                "bar_str": f"Bar {compas}",
+                "name": f"{cfg['name']} (Bar {compas})",
+                "short_name": cfg["name"],
+                "pos_ms": pos_ms,
+                "time": time_str,
+                "pct": pct,
+                "color": cfg["color"],
+                "rgb": cfg["rgb"],
+                "text": cfg["text"],
+                "border": cfg["border"],
+                "bg": cfg["bg"]
+            })
+
+        return result
+
+    @staticmethod
+    def calcular_8_hot_cues_acusticos(ruta: str, duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, trim_start_ms: int = 0, trim_end_ms: int = 0) -> list:
+        """Algoritmo acústico híbrido (Sub-Bass Transients Enfoque 4 + Fraseo Cuantizado Enfoque 1):
+        1. Filtra la señal subgrave (< 150 Hz) y calcula envolventes RMS compás a compás.
+        2. Detecta caídas sostenidas de graves (Breakdowns) e incrementos explosivos (Drops: Delta Low > 20%).
+        3. Cuantiza cada marcador al límite estricto de frase musical (16 o 32 compases) anclado al Beatgrid 1.0.0."""
+        import soundfile as sf
+        import numpy as np
+        import scipy.signal as signal
+
+        bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
+        dur_clean = int(duration_ms) if duration_ms and int(duration_ms) > 1000 else 300000
+        downbeat_clean = max(0, int(downbeat_ms))
+
+        # Lectura rápida decodificada a mono float32
+        data, sr_in = sf.read(ruta, dtype='float32')
+        mono = np.mean(data, axis=1) if data.ndim > 1 else data
+
+        # Submuestreo a ~12 kHz para ejecución DSP en < 150ms
+        decimate = max(1, sr_in // 12000)
+        sr_sub = sr_in // decimate
+        mono_sub = mono[::decimate]
+
+        # Filtro Butterworth paso bajo a 150 Hz para aislar la pegada del bombo y subgrave
+        sos = signal.butter(2, 150.0 / (sr_sub / 2.0), btype='low', output='sos')
+        low_mono = signal.sosfilt(sos, mono_sub)
+
+        beat_ms = 60000.0 / bpm_clean
+        bar_ms = beat_ms * 4.0
+        bar_samples = int(sr_sub * (bar_ms / 1000.0))
+        if bar_samples <= 0:
+            bar_samples = int(sr_sub * 2.0)
+
+        # Usar la duración neta entre downbeat y trim_end
+        end_ms = trim_end_ms if (trim_end_ms and trim_end_ms > downbeat_clean) else dur_clean
+        total_bars = max(8, int((end_ms - downbeat_clean) / bar_ms))
+        num_bars_audio = min(total_bars, len(mono_sub) // bar_samples)
+
+        rms_total = np.zeros(num_bars_audio)
+        rms_sub = np.zeros(num_bars_audio)
+        for b in range(num_bars_audio):
+            s = b * bar_samples
+            e = s + bar_samples
+            rms_total[b] = np.sqrt(np.mean(mono_sub[s:e]**2))
+            rms_sub[b] = np.sqrt(np.mean(low_mono[s:e]**2))
+
+        # Gradiente diferencial de subgraves respecto a los 4 compases precedentes
+        delta_low = np.zeros(num_bars_audio)
+        for i in range(2, num_bars_audio):
+            prev_low = np.mean(rms_sub[max(0, i-4):i])
+            delta_low[i] = rms_sub[i] - prev_low
+
+        # 1. Cue 1: Downbeat 1.0.0 (Primer beat real)
+        o1 = 0
+
+        # 2. Cue 2: Hi-Hats In / Groove In (Compás 17 o 33)
+        # Buscar el primer salto significativo en energía de frecuencias medias/altas en los primeros compases
+        o2 = 16 if total_bars >= 32 else 8
+        if total_bars >= 48 and num_bars_audio >= 33:
+            # Si el compás 16 es todavía muy calmo y en el 32 entra percusión completa
+            if rms_total[32] > rms_total[16] * 1.25:
+                o2 = 32
+
+        # 3. Cue 3: Bassline In / Transición Intro (Compás 33 o 49)
+        o3 = max(o2 + 8, 32 if total_bars >= 64 else 16)
+        if total_bars >= 80 and o2 == 32:
+            o3 = 48
+
+        # 4 & 5. Drop 1 (Clímax) y Main Break:
+        # Buscar en la ventana 25% a 65% de la pista el punto de mayor subidón de subgraves (delta_low)
+        drop1_min_bar = max(o3 + 8, int(total_bars * 0.25))
+        drop1_max_bar = min(num_bars_audio - 16, int(total_bars * 0.65))
+
+        best_drop1_bar = int(total_bars * 0.40)
+        best_drop1_score = -999.0
+        for b in range(drop1_min_bar, max(drop1_min_bar + 1, drop1_max_bar)):
+            # Puntuación combinada: salto de subgraves + nivel absoluto
+            score = delta_low[b] * 0.7 + rms_sub[b] * 0.3
+            if score > best_drop1_score:
+                best_drop1_score = score
+                best_drop1_bar = b
+
+        # Cuantizar Drop 1 a límite de frase musical (múltiplos de 8 compases)
+        quant_drop1_bar = int(round(best_drop1_bar / 8.0)) * 8
+        if quant_drop1_bar <= o3:
+            quant_drop1_bar = o3 + 8
+        o5 = min(total_bars - 16, quant_drop1_bar) # Cue 5: Drop 1
+
+        # Cue 4: Main Break (Inicio del parón o subidón que precede al Drop 1, típicamente 8 o 16 compases antes)
+        # Buscar retroactivamente dónde cayó el subgrave
+        break_candidate = max(o3, o5 - 16)
+        for b in range(max(o3, o5 - 24), o5):
+            if rms_sub[b] < np.mean(rms_sub) * 0.6:
+                break_candidate = int(round(b / 8.0)) * 8
+                break
+        o4 = max(o3 + 4, min(o5 - 4, break_candidate))
+
+        # 6 & 7. Drop 2 (Re-Kick) y Mid Break:
+        # Buscar en la ventana 60% a 85% de la pista
+        drop2_min_bar = max(o5 + 16, int(total_bars * 0.60))
+        drop2_max_bar = min(num_bars_audio - 8, int(total_bars * 0.88))
+
+        best_drop2_bar = int(total_bars * 0.75)
+        best_drop2_score = -999.0
+        for b in range(drop2_min_bar, max(drop2_min_bar + 1, drop2_max_bar)):
+            score = delta_low[b] * 0.7 + rms_sub[b] * 0.3
+            if score > best_drop2_score:
+                best_drop2_score = score
+                best_drop2_bar = b
+
+        quant_drop2_bar = int(round(best_drop2_bar / 8.0)) * 8
+        if quant_drop2_bar <= o5 + 8:
+            quant_drop2_bar = o5 + 16
+        o7 = min(total_bars - 8, quant_drop2_bar) # Cue 7: Drop 2
+
+        # Cue 6: Mid Break (Parón entre Drop 1 y Drop 2)
+        mid_break_cand = max(o5 + 8, o7 - 16)
+        for b in range(o5 + 8, o7):
+            if rms_sub[b] < np.mean(rms_sub) * 0.65:
+                mid_break_cand = int(round(b / 8.0)) * 8
+                break
+        o6 = max(o5 + 4, min(o7 - 4, mid_break_cand))
+
+        # 8. Cue 8: Outro Mix Point (32 o 16 compases antes del fin utilizable trim_end)
+        if total_bars >= 112:
+            o8 = max(o7 + 8, int((total_bars - 16) / 8) * 8)
+        else:
+            o8 = max(o7 + 4, total_bars - 8)
+
+        bar_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
+        # Garantía matemática de orden estrictamente ascendente y encaje en límites
         for i in range(1, 8):
             if bar_offsets[i] <= bar_offsets[i - 1]:
                 bar_offsets[i] = bar_offsets[i - 1] + 1
@@ -996,6 +1231,7 @@ class AudioProcessorService:
 
         downbeat_ms = int(float(meta_track.get("first_downbeat_ms") or 0))
         trim_ms = float(meta_track.get("trim_start_ms") or 0.0)
+        trim_end_ms = float(meta_track.get("trim_end_ms") or 0.0)
 
         dance_raw = meta_track.get("danceability") or meta_track.get("dance") or meta_track.get("d") or 85
         try:
@@ -1154,6 +1390,8 @@ class AudioProcessorService:
                 audio["SERATO_PLAYLIST"] = [mood_val]
                 if trim_ms > 0:
                     audio["TRIM_START_MS"] = [f"{trim_ms:.1f}"]
+                if trim_end_ms > 0:
+                    audio["TRIM_END_MS"] = [f"{trim_end_ms:.1f}"]
                 if downbeat_ms > 0:
                     audio["FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}"]
 
@@ -1228,6 +1466,8 @@ class AudioProcessorService:
 
                 if trim_ms > 0:
                     id3.add(TXXX(encoding=1, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
+                if trim_end_ms > 0:
+                    id3.add(TXXX(encoding=1, desc="TRIM_END_MS", text=[f"{trim_end_ms:.1f}"]))
                 if downbeat_ms > 0:
                     id3.add(TXXX(encoding=1, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
 
@@ -1361,6 +1601,8 @@ class AudioProcessorService:
                 audio["----:com.apple.iTunes:MOOD"] = [mood_val.encode("utf-8")]
                 if trim_ms > 0:
                     audio["----:com.apple.iTunes:TRIM_START_MS"] = [f"{trim_ms:.1f}".encode("utf-8")]
+                if trim_end_ms > 0:
+                    audio["----:com.apple.iTunes:TRIM_END_MS"] = [f"{trim_end_ms:.1f}".encode("utf-8")]
                 if downbeat_ms > 0:
                     audio["----:com.apple.iTunes:FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}".encode("utf-8")]
 

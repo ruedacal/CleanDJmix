@@ -3838,7 +3838,8 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
             group: "DSP & Audio Forensics",
             items: [
                 { key: "fftLossless", title: "Inspección FFT Lossless Real", desc: "Análisis espectral por FFT para cazar transcodificaciones falsas a 16kHz/19kHz.", badge: "FFT 4096", badgeColor: "text-djcyan-400 bg-djcyan-950/80 border-djcyan-800/60" },
-                { key: "trimSilences", title: "Zero-Crossing Silence Trim", desc: "Elimina silencios de cabecera y cola cortando en cruce por cero a -48 dBFS.", badge: "DSP Fast", badgeColor: "text-djgreen-400 bg-djgreen-950/80 border-djgreen-800/60" },
+                { key: "trimSilences", title: "Zero-Crossing Silence Auto-Trim (Cabecera & Cola)", desc: "Elimina espacios en blanco y silencios muertos cortando a cruce por cero a -48 dBFS al inicio y fin.", badge: "Trim 2-Way", badgeColor: "text-djgreen-400 bg-djgreen-950/80 border-djgreen-800/60" },
+                { key: "beatgrid", title: "Fijación Downbeat Beatgrid 1.0.0 (Anti-Trote)", desc: "Ancla el Beatgrid al primer bombo real post-trim para eliminar derivas y trotes de sincro.", badge: "Grid 1.0.0", badgeColor: "text-blue-400 bg-blue-950/80 border-blue-800/60" },
                 { key: "detectDuplicates", title: "Buscar & Deduplicar por Calidad", desc: "Compara pistas duplicadas por Nyquist FFT, formato y tamaño para depurar biblioteca.", badge: "Lossless Win", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" }
             ]
         },
@@ -3847,7 +3848,6 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
             items: [
                 { key: "fixMissingNames", title: "Auto-Completar Título / Artista", desc: "Deduce títulos y artistas faltantes desde la nomenclatura del archivo y metatags.", badge: "Tags Auto", badgeColor: "text-emerald-400 bg-emerald-950/80 border-emerald-800/60" },
                 { key: "normalizeNames", title: "Normalizar Nombres & Limpiar Feats", desc: "Higieniza títulos, limpia spam promocional y normaliza feats.", badge: "Higienizar", badgeColor: "text-purple-400 bg-purple-950/80 border-purple-800/60" },
-                { key: "beatgrid", title: "Fijación Downbeat Beatgrid 1.0.0", desc: "Encuentra el primer golpe de bombo real y ancla el grid para evitar desfases de sincro.", badge: "Grid Auto", badgeColor: "text-blue-400 bg-blue-950/80 border-blue-800/60" },
                 { key: "bpmKey", title: "BPM Decimal & Notación Camelot", desc: "Calcula tempo con 2 decimales y mapea tono a notación Camelot estándar.", badge: "Key Wheel", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" },
                 { key: "injectCovers", title: "Inyección de Carátulas 1:1 (Artwork)", desc: "Detecta carátulas de carpeta o carátula oficial y las incrusta 600x600 en APIC/FLAC.", badge: "Cover 1:1", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" },
                 { key: "onlyIncomplete", title: "Auditar Solo Pistas Incompletas", desc: "Omite pistas que ya tengan todos los metadatos completos para acelerar auditorías.", badge: "Speed Fast", badgeColor: "text-purple-400 bg-purple-950/80 border-purple-800/60" }
@@ -3858,7 +3858,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
             items: [
                 { key: "energyDance", title: "Cálculo Energía & Danceability", desc: "Calcula la pegada RMS de graves y solidez rítmica de 1 a 100.", badge: "RMS Core", badgeColor: "text-purple-400 bg-purple-950/80 border-purple-800/60" },
                 { key: "moodDetect", title: "Clasificación de Atmósfera & Fase DJ", desc: "Etiqueta ubicación de sesión (Warm-Up, Build-Up, Clímax Caña, Cierre, Calma).", badge: "AI Cluster", badgeColor: "text-emerald-400 bg-emerald-950/80 border-emerald-800/60" },
-                { key: "hotCues8", title: "Inyección 8 Hot Cues (Numark NV2)", desc: "Genera los 8 puntos estructurales estándar de sesión en pads RGB.", badge: "NV2 Cues", badgeColor: "text-pink-400 bg-pink-950/80 border-pink-800/60" },
+                { key: "hotCues8", title: "8 Hot Cues Acústicos (Drops & Fraseo 16/32b)", desc: "Analiza caídas de graves y explosión real de Drops (Sub-Bass + RMS) cuantizados al compás.", badge: "NV2 / Pioneer", badgeColor: "text-pink-400 bg-pink-950/80 border-pink-800/60" },
                 { key: "tacticalComments", title: "Inyección de Comentario Táctico DJ", desc: "Inyecta en el tag ID3 COMM la guía rápida de mezcla visible en pantalla de la mesa.", badge: "Tag ID3", badgeColor: "text-gray-300 bg-djzinc-800 border-djzinc-700" }
             ]
         }

@@ -1324,9 +1324,13 @@ return folderPath'''
         if progreso_cb:
             progreso_cb(5, f"Verificando caché acústica de biblioteca ({total_files} pistas)...")
 
-        ejecutar_fft = bool(opts is None or (isinstance(opts, dict) and opts.get("fftLossless", True)))
-        inyectar_covers = bool(isinstance(opts, dict) and opts.get("injectCovers", False))
-        force_recheck = bool(isinstance(opts, dict) and opts.get("force_recheck", False))
+        opts_dict = opts if isinstance(opts, dict) else {}
+        ejecutar_fft = bool(opts is None or opts_dict.get("fftLossless", True))
+        inyectar_covers = bool(opts_dict.get("injectCovers", False))
+        force_recheck = bool(opts_dict.get("force_recheck", False))
+        opt_trim_silences = bool(opts is None or opts_dict.get("trimSilences", True))
+        opt_beatgrid = bool(opts is None or opts_dict.get("beatgrid", True))
+        opt_hotcues8 = bool(opts is None or opts_dict.get("hotCues8", True))
 
         # 1. VERIFICACIÓN BATCH EN CACHÉ PERSISTENTE SQLITE WAL (Delta Audit)
         file_tuples = [(item[0], item[3], item[4]) for item in archivos_escaneados]
@@ -1582,15 +1586,16 @@ return folderPath'''
                     "genre": track_genre,
                     "subgenre": track_subgenre,
                     "g": track_subgenre,
-                    "cues": info.get("cues") or [],
+                    "cues": (info.get("cues") or []) if opt_hotcues8 else [],
                     "low_ratio": low_ratio,
                     "mid_ratio": mid_ratio,
                     "high_ratio": high_ratio,
                     "acoustic_role": acoustic_role,
                     "acoustic_fp": acoustic_fp,
                     "spectrum": spectrum_points,
-                    "trim_start_ms": float(info.get("trim_start_ms") or 0.0),
-                    "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0),
+                    "trim_start_ms": float(info.get("trim_start_ms") or 0.0) if opt_trim_silences else 0.0,
+                    "trim_end_ms": float(info.get("trim_end_ms") or 0.0) if opt_trim_silences else 0.0,
+                    "first_downbeat_ms": float(info.get("first_downbeat_ms") or 0.0) if opt_beatgrid else 0.0,
                     "comment": tactical_comment,
                     "is_audited": True,
                     "audit_cached": False
