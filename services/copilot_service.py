@@ -113,6 +113,8 @@ class CopilotService:
         self._last_live_state_time: float = 0.0
         self._cached_live_state: Optional[Dict[str, Any]] = None
         self.manual_master_deck: Optional[str] = None  # None = auto, '1' = Deck 1, '2' = Deck 2
+        self.anti_muddy_mode: str = "club"  # 'club' (40% estricto festival/club), 'standard' (44%), 'studio' (48%)
+        self.anti_muddy_threshold: float = 40.0
 
         # Reactive Inode & Persistent Connection Caches (<25ms OpenStudio Architecture)
         self._serato_conn: Optional[sqlite3.Connection] = None
@@ -797,49 +799,101 @@ class CopilotService:
         return self._rekordbox_cached_entries or entries
 
     # =========================================================================
-    # REGLAS ANTI-MUDDY & COMPATIBILIDAD ARMÓNICA
+    # REGLAS ANTI-MUDDY & COMPATIBILIDAD ARMÓNICA (CALIBRACIÓN DDJ-FLX4)
     # =========================================================================
 
     def _calculate_anti_muddy_guard(self, deck_a: Dict[str, Any], deck_b: Dict[str, Any]) -> Dict[str, Any]:
-        """Calcula el riesgo de colisión de graves y saturación espectral (Anti-Muddy DSP)."""
-        sub_a = deck_a.get("low_ratio", 45.0)
-        sub_b = deck_b.get("low_ratio", 45.0)
+        """Calcula el riesgo de colisión de graves y saturación espectral con recomendaciones para Pioneer DDJ-FLX4."""
+        sub_a = float(deck_a.get("low_ratio", 45.0) or 45.0)
+        sub_b = float(deck_b.get("low_ratio", 45.0) or 45.0)
 
-        if sub_a >= 44.0 and sub_b >= 44.0:
+        thresh = getattr(self, "anti_muddy_threshold", 40.0)
+        warn_thresh = max(34.0, thresh - 4.0)
+        mode_str = getattr(self, "anti_muddy_mode", "club").upper()
+
+        if sub_a >= thresh and sub_b >= thresh:
             return {
                 "status": "danger",
                 "severity": 3,
-                "title": "⚠️ CONFLICTO DE GRAVES (Anti-Muddy Guard)",
-                "message": "Ambos tracks tienen sub-graves dominantes (>44%). El solape directo creará empaste y distorsión en el sistema de sala.",
-                "action": "Corta la EQ de graves (Low) en el canal entrante (-6dB a -12dB) antes de abrir el fader, o usa filtro paso-alto.",
-                "tag": "BASS CLASH"
+                "title": f"⚠️ CONFLICTO DE GRAVES (Anti-Muddy Guard • Modo {mode_str})",
+                "message": f"Ambos tracks saturan en sub-graves ({sub_a:.1f}% y {sub_b:.1f}% > {thresh}%). Solaparlos causará cancelación de fase y distorsión en el sistema de sala.",
+                "action": "🎛️ DDJ-FLX4: Gira perilla FILTER CH2 a las 14:00 (HPF +30%) o recorta EQ LOW a las 09:00 (-9dB) antes de abrir el fader.",
+                "tag": "BASS CLASH",
+                "threshold": thresh,
+                "mode": getattr(self, "anti_muddy_mode", "club"),
+                "flx4": {
+                    "controller": "Pioneer DDJ-FLX4",
+                    "filter_knob": "HPF +30% (14:00)",
+                    "eq_low": "LOW -9dB (09:00)",
+                    "macro": "FILTER HPF o [SMART CFX]"
+                }
             }
-        elif (sub_a >= 44.0 and sub_b >= 38.0) or (sub_b >= 44.0 and sub_a >= 38.0):
+        elif (sub_a >= thresh and sub_b >= warn_thresh) or (sub_b >= thresh and sub_a >= warn_thresh):
             return {
                 "status": "warning",
                 "severity": 2,
-                "title": "⚡ PRECAUCIÓN DE GRAVES",
-                "message": "Carga energética considerable en frecuencias bajas. Evita solapar bombos en drop completo.",
-                "action": "Realiza la transición durante el breakdown o filtra progresivamente con EQ Low.",
-                "tag": "MODERATE MUD"
+                "title": f"⚡ PRECAUCIÓN DE GRAVES (Modo {mode_str})",
+                "message": f"Carga energética considerable en frecuencias bajas (> {warn_thresh}%). Evita solapar bombos en drop completo.",
+                "action": "🎛️ DDJ-FLX4: Modula perilla FILTER a las 13:30 (HPF leve) durante el breakdown o baja EQ LOW a las 11:00.",
+                "tag": "MODERATE MUD",
+                "threshold": thresh,
+                "mode": getattr(self, "anti_muddy_mode", "club"),
+                "flx4": {
+                    "controller": "Pioneer DDJ-FLX4",
+                    "filter_knob": "HPF +15% (13:30)",
+                    "eq_low": "LOW -3dB (11:00)",
+                    "macro": "Filtro progresivo"
+                }
             }
-        elif sub_b < 38.0 or "Percussive" in deck_b.get("acoustic_role", ""):
+        elif sub_b < warn_thresh or "Percussive" in deck_b.get("acoustic_role", ""):
             return {
                 "status": "safe",
                 "severity": 1,
                 "title": "🟢 MEZCLA LIMPIA & SEGURA",
                 "message": "El track entrante es percusivo / medio-agudo. Espectro acústicamente complementario.",
-                "action": "Transición continua permitida. Los bombos y texturas no colisionarán.",
-                "tag": "CLEAN MIX"
+                "action": "🎛️ DDJ-FLX4: Perilla FILTER al centro (12:00) y EQ LOW al centro (0dB). Mezcla continua segura.",
+                "tag": "CLEAN MIX",
+                "threshold": thresh,
+                "mode": getattr(self, "anti_muddy_mode", "club"),
+                "flx4": {
+                    "controller": "Pioneer DDJ-FLX4",
+                    "filter_knob": "CENTER (12:00)",
+                    "eq_low": "0dB (12:00)",
+                    "macro": "Mezcla Libre"
+                }
             }
         return {
             "status": "info",
             "severity": 1,
             "title": "ℹ️ BALANCE CONTROLADO",
             "message": "Distribución espectral equilibrada entre ambos decks.",
-            "action": "Monitorea la ganancia al sumar ambos canales.",
-            "tag": "BALANCED"
+            "action": "🎛️ DDJ-FLX4: Monitorea Trim/Gain al sumar ambos canales.",
+            "tag": "BALANCED",
+            "threshold": thresh,
+            "mode": getattr(self, "anti_muddy_mode", "club"),
+            "flx4": {
+                "controller": "Pioneer DDJ-FLX4",
+                "filter_knob": "CENTER (12:00)",
+                "eq_low": "0dB (12:00)",
+                "macro": "Monitoreo"
+            }
         }
+
+    def set_anti_muddy_mode(self, mode: str) -> Dict[str, Any]:
+        """Ajusta la sensibilidad del Anti-Muddy Guard ('club' 40%, 'standard' 44%, 'studio' 48%)."""
+        m = str(mode).strip().lower()
+        if m in ("club", "estricto", "strict"):
+            self.anti_muddy_mode = "club"
+            self.anti_muddy_threshold = 40.0
+        elif m in ("studio", "suave", "soft"):
+            self.anti_muddy_mode = "studio"
+            self.anti_muddy_threshold = 48.0
+        else:
+            self.anti_muddy_mode = "standard"
+            self.anti_muddy_threshold = 44.0
+        self._last_live_state_time = 0.0
+        self._cached_live_state = None
+        return self.get_live_state()
 
     def _calculate_harmonic_relation(self, key_a: str, key_b: str) -> Dict[str, Any]:
         """Evalúa la compatibilidad armónica basada en la rueda Camelot."""

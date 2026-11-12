@@ -521,6 +521,17 @@ async def api_copilot_toggle_simulation():
     copilot_service.simulation_mode = not copilot_service.simulation_mode
     return copilot_service.get_live_state()
 
+@app.post("/api/copilot/set_anti_muddy_mode")
+async def api_copilot_set_anti_muddy_mode(request: Request):
+    """Calibra la sensibilidad de Anti-Muddy Guard ('club' 40%, 'standard' 44%, 'studio' 48%)."""
+    mode = "club"
+    try:
+        body = await request.json()
+        mode = body.get("mode", "club")
+    except Exception:
+        mode = request.query_params.get("mode", "club")
+    return copilot_service.set_anti_muddy_mode(mode)
+
 @app.get("/api/copilot/info")
 async def api_copilot_info():
     ip = copilot_service.get_local_ip()

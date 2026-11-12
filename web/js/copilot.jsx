@@ -1907,9 +1907,17 @@ function LiveCopilotApp() {
                     </div>
 
                     <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono">
+                        {anti_muddy.flx4 && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                                <span>🎛️ DDJ-FLX4:</span>
+                                <span className="text-white font-extrabold">{anti_muddy.flx4.filter_knob}</span>
+                                <span className="text-zinc-400">•</span>
+                                <span className="text-amber-300 font-extrabold">{anti_muddy.flx4.eq_low}</span>
+                            </div>
+                        )}
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/60 border border-zinc-800">
                             <span className="text-djcyan-400 font-bold">ACCIÓN:</span>
-                            <span className="text-zinc-200 font-semibold truncate max-w-[260px]">{anti_muddy.action}</span>
+                            <span className="text-zinc-200 font-semibold truncate max-w-[280px]">{anti_muddy.action}</span>
                         </div>
                         <div className="flex items-center gap-2 text-zinc-400 text-[10px]">
                             <span>CAMELOT: <strong style={{ color: harmonic.color }}>{harmonic.badge}</strong></span>
