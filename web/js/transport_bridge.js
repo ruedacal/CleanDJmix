@@ -131,10 +131,66 @@
   });
 
   window.eel = eelProxy;
+  // Sincronización ultraligera de metadatos (Zero Audio Ingestion)
+  async function pushMetadataSync(libraryName, folders, tracks) {
+    const lightTracks = {};
+    if (Array.isArray(tracks)) {
+      tracks.forEach(t => {
+        const id = t.id || t.path || t.filename;
+        if (!id) return;
+        lightTracks[id] = {
+          title: t.title || t.track || '',
+          artist: t.artist || '',
+          bpm: t.bpm || null,
+          key: t.initial_key || t.key || '',
+          genre: t.genre || '',
+          subgenre: t.subgenre || '',
+          duration_ms: t.duration_ms || t.duration || 0,
+          energy: t.energy || 0,
+          danceability: t.danceability || 0,
+          lossless: !!t.lossless,
+          cues: t.cues || [],
+          beatgrid: t.beatgrid || null,
+          folder_id: t.folder_id || null
+        };
+      });
+    }
+
+    const payload = {
+      library_name: libraryName || 'Mi Biblioteca DJ',
+      folders: folders || [],
+      tracks_metadata: lightTracks
+    };
+
+    const res = await fetch('/api/sync/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  }
+
+  async function pullMetadataSync() {
+    const res = await fetch('/api/sync/pull');
+    return await res.json();
+  }
+
+  async function getMetadataSyncStatus() {
+    const res = await fetch('/api/sync/status');
+    return await res.json();
+  }
+
+  window.BeatWaveSync = {
+    push: pushMetadataSync,
+    pull: pullMetadataSync,
+    status: getMetadataSyncStatus
+  };
+
   window.__beatwave_transport_bridge = {
     invokeRpc,
     initWebSocket,
-    callbacks
+    callbacks,
+    sync: window.BeatWaveSync
   };
 
   // Arrancar WebSocket en background

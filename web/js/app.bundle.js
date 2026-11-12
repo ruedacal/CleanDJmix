@@ -9256,6 +9256,31 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     const [selectedFolderId, setSelectedFolderId] = useState5("all");
     const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState5(true);
     const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState5(false);
+    const [cloudSyncStatus, setCloudSyncStatus] = useState5({ isSyncing: false, synced: false, lastSyncText: "" });
+    const handleCloudMetadataSync = async () => {
+      setCloudSyncStatus({ isSyncing: true, synced: false, lastSyncText: "Sincronizando..." });
+      try {
+        if (window.BeatWaveSync && window.BeatWaveSync.push) {
+          const res = await window.BeatWaveSync.push("Mi Biblioteca DJ", libraryFolders, tracks);
+          if (res && res.status === "success") {
+            setCloudSyncStatus({
+              isSyncing: false,
+              synced: true,
+              lastSyncText: `\u2713 ${res.total_tracks} tracks (${res.payload_size_kb} KB)`
+            });
+            setSaveFeedback(`\u2601\uFE0F Sincronizados ${res.total_tracks} tracks (${res.payload_size_kb} KB) en la nube sin transferir audio`);
+            setTimeout(() => setSaveFeedback(null), 5e3);
+          } else {
+            setCloudSyncStatus({ isSyncing: false, synced: false, lastSyncText: "Error sync" });
+          }
+        } else {
+          setCloudSyncStatus({ isSyncing: false, synced: true, lastSyncText: "Local OK" });
+        }
+      } catch (e) {
+        console.error("Error en sync cloud:", e);
+        setCloudSyncStatus({ isSyncing: false, synced: false, lastSyncText: "Fallo sync" });
+      }
+    };
     const saveFolders = (newFolders) => {
       setLibraryFolders(newFolders);
       try {
@@ -9937,7 +9962,17 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         onClick: () => batchConfigured ? handleEjecutarAuditoriaLote() : setBatchModalOpen(true),
         title: batchConfigured ? "Ejecutar el an\xE1lisis configurado sobre las pistas cargadas" : "Primero configura la auditor\xEDa"
       }
-    )), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group ml-auto" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group ml-auto flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+      WsButton,
+      {
+        variant: cloudSyncStatus.synced ? "active" : "ghost",
+        icon: cloudSyncStatus.isSyncing ? Icons.Refresh : Icons.Cloud,
+        label: cloudSyncStatus.isSyncing ? "Sincronizando..." : "Sync Cloud",
+        badge: cloudSyncStatus.lastSyncText || (cloudSyncStatus.synced ? "\u2713 Listo" : null),
+        onClick: handleCloudMetadataSync,
+        title: "Sincronizar metadatos y carpetas en la nube (<5 KB por pista, coste cero, sin subir audio)"
+      }
+    ), /* @__PURE__ */ React.createElement(
       ExportMenu,
       {
         disabled: tracks.length === 0,

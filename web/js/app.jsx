@@ -10283,6 +10283,32 @@ const AuditWorkspace = ({
     const [selectedFolderId, setSelectedFolderId] = useState('all');
     const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState(true);
     const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState(false);
+    const [cloudSyncStatus, setCloudSyncStatus] = useState({ isSyncing: false, synced: false, lastSyncText: '' });
+
+    const handleCloudMetadataSync = async () => {
+        setCloudSyncStatus({ isSyncing: true, synced: false, lastSyncText: 'Sincronizando...' });
+        try {
+            if (window.BeatWaveSync && window.BeatWaveSync.push) {
+                const res = await window.BeatWaveSync.push("Mi Biblioteca DJ", libraryFolders, tracks);
+                if (res && res.status === 'success') {
+                    setCloudSyncStatus({
+                        isSyncing: false,
+                        synced: true,
+                        lastSyncText: `✓ ${res.total_tracks} tracks (${res.payload_size_kb} KB)`
+                    });
+                    setSaveFeedback(`☁️ Sincronizados ${res.total_tracks} tracks (${res.payload_size_kb} KB) en la nube sin transferir audio`);
+                    setTimeout(() => setSaveFeedback(null), 5000);
+                } else {
+                    setCloudSyncStatus({ isSyncing: false, synced: false, lastSyncText: 'Error sync' });
+                }
+            } else {
+                setCloudSyncStatus({ isSyncing: false, synced: true, lastSyncText: 'Local OK' });
+            }
+        } catch (e) {
+            console.error("Error en sync cloud:", e);
+            setCloudSyncStatus({ isSyncing: false, synced: false, lastSyncText: 'Fallo sync' });
+        }
+    };
 
     const saveFolders = (newFolders) => {
         setLibraryFolders(newFolders);
@@ -11091,7 +11117,15 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                         />
                     </div>
 
-                    <div className="ws-toolbar-group ml-auto">
+                    <div className="ws-toolbar-group ml-auto flex items-center gap-2">
+                        <WsButton
+                            variant={cloudSyncStatus.synced ? 'active' : 'ghost'}
+                            icon={cloudSyncStatus.isSyncing ? Icons.Refresh : Icons.Cloud}
+                            label={cloudSyncStatus.isSyncing ? "Sincronizando..." : "Sync Cloud"}
+                            badge={cloudSyncStatus.lastSyncText || (cloudSyncStatus.synced ? "✓ Listo" : null)}
+                            onClick={handleCloudMetadataSync}
+                            title="Sincronizar metadatos y carpetas en la nube (<5 KB por pista, coste cero, sin subir audio)"
+                        />
                         <ExportMenu
                             disabled={tracks.length === 0}
                             busy={isExporting || isInjecting}

@@ -23,6 +23,7 @@ from pydantic import BaseModel
 
 # Servicios locales de audio
 from services.media_service import MediaService
+from services.cloud_sync_service import CloudSyncService
 try:
     from services.audit_service import AuditService
 except Exception as e:
@@ -84,6 +85,11 @@ class RpcPayload(BaseModel):
     args: Optional[List[Any]] = []
     kwargs: Optional[Dict[str, Any]] = {}
 
+class SyncPushPayload(BaseModel):
+    library_name: Optional[str] = "Mi Biblioteca DJ"
+    folders: Optional[List[Dict[str, Any]]] = []
+    tracks_metadata: Optional[Dict[str, Any]] = {}
+
 # Lazy loading de main_web para arranque instantáneo sin bloquear imports
 _main_web_module = None
 _main_event_loop = None
@@ -138,6 +144,29 @@ async def health():
         "exposed_rpc_functions": exposed_count,
         "timestamp": time.time()
     }
+
+@app.post("/api/sync/push")
+async def sync_push(payload: SyncPushPayload):
+    """Sincroniza el snapshot ligero de carpetas y metadatos (Zero Audio Ingestion)."""
+    res = CloudSyncService.push_sync(payload.dict())
+    await telemetry.broadcast({
+        "type": "sync_event",
+        "action": "push",
+        "total_tracks": res.get("total_tracks", 0),
+        "total_folders": res.get("total_folders", 0),
+        "timestamp": res.get("timestamp")
+    })
+    return res
+
+@app.get("/api/sync/pull")
+async def sync_pull():
+    """Recupera el último snapshot de metadatos y carpetas del usuario."""
+    return CloudSyncService.pull_sync()
+
+@app.get("/api/sync/status")
+async def sync_status():
+    """Estado y métricas de sincronización ultraligera sin transferencia de audio."""
+    return CloudSyncService.get_sync_status()
 
 @app.get("/eel.js")
 async def serve_eel_shim():
