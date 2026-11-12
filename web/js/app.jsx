@@ -33571,123 +33571,428 @@ const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
 // ==============================================================================
 
 // Superpoderes persuasivos y hooks de alta conversión para el rotador dinámico
-const CINEMATIC_HOOKS = [
+const KINETIC_STUDIO_PHRASES = [
     {
-        id: "muddy-guard",
+        ticker: "ANÁLISIS ESPECTRAL DE ALTA PRECISIÓN",
         badge: "DSP EN DIRECTO · 0 BARRO ACÚSTICO",
-        color: "border-cyan-500/50 bg-cyan-950/80 text-cyan-300",
-        icon: Icons.Sliders,
-        headline: "¿Por qué tus mezclas suenan sucias en el club y cómo erradicarlo al instante?",
         body: "El algoritmo Anti-Muddy Guard analiza la densidad espectral FFT a 60fps y bloquea el empaste de subgraves antes de que toques el fader. Mezclas quirúrgicas garantizadas a 130+ dB.",
         metric: "0% Empaste en Sala · 130+ dB Cristalinos"
     },
     {
-        id: "hotcues",
-        badge: "8 HOT CUES · PREPARACIÓN EN 1 CLIC",
-        color: "border-emerald-500/50 bg-emerald-950/80 text-emerald-300",
-        icon: Icons.Cue,
-        headline: "Ahorra 200 horas de trabajo manual en cada festival o residencia",
-        body: "Detección instantánea de downbeats reales, caídas masivas (drops) y transiciones perfectas inyectadas directamente en las etiquetas nativas Serato GEOB e ID3v2.4 sin tocar software lento.",
-        metric: "Etiquetado Serato GEOB & ID3v2.4 Nativo"
-    },
-    {
-        id: "copilot",
+        ticker: "EXTRACCIÓN NEURONAL DE STEMS EN TIEMPO REAL",
         badge: "COPILOT IA · LATENCIA CERO (<25MS)",
-        color: "border-amber-500/50 bg-amber-950/80 text-amber-300",
-        icon: Icons.Brain,
-        headline: "Tu segundo cerebro en cabina: predice la reacción de la pista antes de mezclar",
         body: "Monitoreo en tiempo real de tus decks en Serato, Rekordbox o Traktor: previene choques armónicos, calcula el delta de LUFS y te susurra el siguiente track ganador para romper la pista.",
         metric: "Latencia <25ms · Serato · Rekordbox · Traktor"
     },
     {
-        id: "radar",
+        ticker: "DETECCIÓN AUTOMÁTICA DE DROPS Y HOT CUES",
+        badge: "8 HOT CUES · PREPARACIÓN EN 1 CLIC",
+        body: "Detección instantánea de downbeats reales, caídas masivas (drops) y transiciones perfectas inyectadas directamente en las etiquetas nativas Serato GEOB e ID3v2.4 sin tocar software lento.",
+        metric: "Etiquetado Serato GEOB & ID3v2.4 Nativo"
+    },
+    {
+        ticker: "SINCRONIZACIÓN ARMÓNICA CAMELOT 4/4",
         badge: "RADAR ESPECTRAL 3D & CONSTELACIÓN",
-        color: "border-purple-500/50 bg-purple-950/80 text-purple-300",
-        icon: Icons.Radar,
-        headline: "¿Bloqueado buscando el siguiente tema? Encuentra la pareja perfecta en 0.2s",
         body: "Navega toda tu colección como una galaxia espacial en 3D: agrupa temas por compatibilidad armónica Camelot, densidad de graves y BPM para sets hipnóticos sin esfuerzo.",
         metric: "Clustering 3D Espectral · Compatibilidad +1/-1"
     },
     {
-        id: "universal-sync",
-        badge: "1 USB UNIVERSAL · COMPATIBILIDAD TOTAL",
-        color: "border-blue-500/50 bg-blue-950/80 text-blue-300",
-        icon: Icons.Turntable,
-        headline: "Un solo USB. Cualquier cabina del mundo. Cero conversiones manuales",
-        body: "Exporta nativamente a Pioneer CDJ-3000, Rekordbox XML, Serato DJ Pro, Traktor Pro y VirtualDJ manteniendo la totalidad de cues, rejillas, notas y calificaciones intactas.",
-        metric: "1 USB Universal · Cero Bloqueo de Ecosistema"
-    },
-    {
-        id: "fake-detector",
+        ticker: "AUDITORÍA FORENSE DE AUDIO LOSSLESS",
         badge: "DETECCIÓN REAL DE CALIDAD · ANTI-FAKE FLAC",
-        color: "border-rose-500/50 bg-rose-950/80 text-rose-300",
-        icon: Icons.Shield,
-        headline: "Desenmascara rips de YouTube y falsos MP3 antes de que rompan el sonido del club",
         body: "Auditoría espectral por transformada rápida de Fourier que detecta cortes de agudos a 16kHz y 20kHz, certificando calidad de estudio profesional antes de pisar el escenario.",
         metric: "Corte Real de Frecuencias · 100% Calidad Club"
     }
 ];
 
-// =========================================================
-// CLEAN-LINE KINETIC SCRAMBLE STUDIO (VARIACIÓN 02 · TICKER RIBBON STREAM)
-// =========================================================
+// Glifos alfanuméricos y técnicos para el estado ilegible
 const GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
 
-const KineticScrambleTitle = ({ text, isActive, className = "" }) => {
-    const elRef = useRef(null);
+// =========================================================
+// CLEAN-LINE KINETIC SCRAMBLE STUDIO (ESCENARIO LIBRE SIN MARCOS NI TARJETAS)
+// =========================================================
+const CleanLineKineticStudioStage = () => {
+    const [phraseIndex, setPhraseIndex] = useState(0);
+    const [variation, setVariation] = useState('v2'); // 'v1' | 'v2' | 'v3' | 'v4'
+    const [phaseBadge, setPhaseBadge] = useState('STREAMING');
+    const [isHovered, setIsHovered] = useState(false);
+    
+    const wrapperRef = useRef(null);
+    const textRef = useRef(null);
+    const laserRef = useRef(null);
+    const waveRef = useRef(null);
+    const streakRef = useRef(null);
 
-    useEffect(() => {
-        if (!isActive) return;
-        const el = elRef.current;
-        if (!el || !text) return;
+    const timersRef = useRef([]);
+    const intervalsRef = useRef([]);
+    const isHoveredRef = useRef(false);
+    isHoveredRef.current = isHovered;
 
-        const entryMs = 520;
-        const decryptMs = 24;
+    const clearAllTimers = () => {
+        timersRef.current.forEach(t => clearTimeout(t));
+        intervalsRef.current.forEach(i => clearInterval(i));
+        timersRef.current = [];
+        intervalsRef.current = [];
+    };
 
-        // Reset animación horizontal con streak y skew (enterFromRight)
-        el.style.animation = 'none';
-        void el.offsetHeight; // reflow forzado
-        el.style.animation = `enterFromRight ${entryMs}ms cubic-bezier(0.08, 0.96, 0.18, 1.18) forwards`;
+    const addTimer = (fn, ms) => {
+        const id = setTimeout(fn, ms);
+        timersRef.current.push(id);
+        return id;
+    };
 
-        const scrambleLoop = setInterval(() => {
-            el.textContent = text.split('').map(c => 
-                c === ' ' ? ' ' : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]
-            ).join('');
+    const addInterval = (fn, ms) => {
+        const id = setInterval(fn, ms);
+        intervalsRef.current.push(id);
+        return id;
+    };
+
+    const randomGlyph = () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+    const scrambleString = (str) => str.split('').map(c => (c === ' ' ? ' ' : randomGlyph())).join('');
+
+    const resetStageClasses = () => {
+        const wrapper = wrapperRef.current;
+        const streakLayer = streakRef.current;
+        const waveOverlay = waveRef.current;
+        const laserLine = laserRef.current;
+        if (!wrapper) return;
+
+        wrapper.classList.remove('anim-v1-in', 'anim-v3-in', 'anim-v4-in', 'anim-blur-out');
+        if (streakLayer) streakLayer.classList.remove('streak-active');
+        if (waveOverlay) waveOverlay.classList.remove('wave-sweep-active');
+        if (laserLine) {
+            laserLine.classList.remove('is-locked');
+            laserLine.style.display = variation === 'v4' ? 'block' : 'none';
+        }
+        void wrapper.offsetWidth;
+    };
+
+    const scheduleExit = (currentIdx) => {
+        setPhaseBadge('LOCKED · READABLE');
+        const stayDuration = 2800;
+        const blurOutDuration = 600;
+
+        addTimer(() => {
+            if (isHoveredRef.current) {
+                const checkHover = addInterval(() => {
+                    if (!isHoveredRef.current) {
+                        clearInterval(checkHover);
+                        scheduleExit(currentIdx);
+                    }
+                }, 800);
+                return;
+            }
+
+            setPhaseBadge('DISSOLVING UPWARD');
+            const wrapper = wrapperRef.current;
+            const laserLine = laserRef.current;
+            if (laserLine) laserLine.classList.remove('is-locked');
+            if (wrapper) {
+                wrapper.classList.remove('anim-v1-in', 'anim-v3-in', 'anim-v4-in');
+                void wrapper.offsetWidth;
+                wrapper.classList.add('anim-blur-out');
+            }
+
+            addTimer(() => {
+                setPhraseIndex(prev => (prev + 1) % KINETIC_STUDIO_PHRASES.length);
+            }, blurOutDuration);
+        }, stayDuration);
+    };
+
+    const runVariation1 = (phrase, currentIdx) => {
+        const wrapper = wrapperRef.current;
+        const textEl = textRef.current;
+        const streakLayer = streakRef.current;
+        if (!wrapper || !textEl) return;
+
+        setPhaseBadge('HYPER-STREAK // INCOMING');
+        textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
+        wrapper.classList.add('anim-v1-in');
+        if (streakLayer) streakLayer.classList.add('streak-active');
+
+        const entryDuration = 520;
+        const decryptSpeed = 24;
+
+        const flightMutator = addInterval(() => {
+            textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
         }, 35);
 
-        let decodeLoop = null;
-        const decodeTimeout = setTimeout(() => {
-            clearInterval(scrambleLoop);
+        addTimer(() => {
+            clearInterval(flightMutator);
+            setPhaseBadge('DECODING STREAM');
             let iter = 0;
-            decodeLoop = setInterval(() => {
-                el.innerHTML = text.split('').map((ch, idx) => {
-                    if (ch === ' ') return ' ';
-                    if (idx < iter) return `<span style="color:#ffffff">${ch}</span>`;
-                    return `<span class="char-scrambled">${GLYPHS[Math.floor(Math.random() * GLYPHS.length)]}</span>`;
-                }).join('');
 
-                if (iter >= text.length) {
-                    clearInterval(decodeLoop);
-                    el.textContent = text;
+            const decryptTimer = addInterval(() => {
+                let html = '';
+                for (let i = 0; i < phrase.length; i++) {
+                    const ch = phrase[i];
+                    if (ch === ' ') {
+                        html += ' ';
+                    } else if (i < iter) {
+                        html += `<span class="char-locked">${ch}</span>`;
+                    } else {
+                        html += `<span class="char-scrambled">${randomGlyph()}</span>`;
+                    }
+                }
+                textEl.innerHTML = html;
+
+                if (iter >= phrase.length) {
+                    clearInterval(decryptTimer);
+                    textEl.innerHTML = `<span class="char-locked">${phrase}</span>`;
+                    scheduleExit(currentIdx);
                 }
                 iter += 1.4;
-            }, decryptMs);
-        }, entryMs * 0.72);
+            }, decryptSpeed);
+        }, entryDuration * 0.72);
+    };
 
-        return () => {
-            clearInterval(scrambleLoop);
-            clearTimeout(decodeTimeout);
-            if (decodeLoop) clearInterval(decodeLoop);
-        };
-    }, [text, isActive]);
+    const runVariation2 = (phrase, currentIdx) => {
+        const wrapper = wrapperRef.current;
+        const textEl = textRef.current;
+        if (!wrapper || !textEl) return;
+
+        setPhaseBadge('TICKER RIBBON // STREAMING');
+        wrapper.style.opacity = '1';
+        wrapper.style.transform = 'none';
+        wrapper.style.filter = 'none';
+
+        const entryDuration = 520;
+        const decryptSpeed = 24;
+
+        textEl.innerHTML = phrase.split('').map((ch, idx) => {
+            if (ch === ' ') return `<span class="inline-block w-2 sm:w-3">&nbsp;</span>`;
+            return `<span class="char-span char-scrambled" data-idx="${idx}" style="opacity:0; transform: translateX(75vw) scaleX(1.6); filter: blur(10px);">${randomGlyph()}</span>`;
+        }).join('');
+
+        const spans = Array.from(textEl.querySelectorAll('.char-span'));
+        const staggerDelay = Math.max(12, Math.floor(entryDuration / Math.max(spans.length, 1)));
+
+        spans.forEach((span, i) => {
+            const realChar = phrase[parseInt(span.dataset.idx, 10)];
+            const spin = addInterval(() => {
+                span.textContent = randomGlyph();
+            }, 40);
+
+            addTimer(() => {
+                span.style.transition = `transform 360ms cubic-bezier(0.12, 0.95, 0.22, 1.08), opacity 200ms ease, filter 280ms ease`;
+                span.style.opacity = '1';
+                span.style.transform = 'translateX(0px) scaleX(1)';
+                span.style.filter = 'blur(0px)';
+
+                addTimer(() => {
+                    clearInterval(spin);
+                    span.textContent = realChar;
+                    span.classList.remove('char-scrambled');
+                    span.classList.add('char-locked');
+
+                    if (i === spans.length - 1) {
+                        scheduleExit(currentIdx);
+                    }
+                }, decryptSpeed * 5);
+            }, i * staggerDelay);
+        });
+    };
+
+    const runVariation3 = (phrase, currentIdx) => {
+        const wrapper = wrapperRef.current;
+        const textEl = textRef.current;
+        const waveOverlay = waveRef.current;
+        if (!wrapper || !textEl) return;
+
+        setPhaseBadge('SUB-PIXEL CASCADE // GLIDE');
+        textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
+        wrapper.classList.add('anim-v3-in');
+
+        const entryDuration = 520;
+        const decryptSpeed = 24;
+
+        const mutator = addInterval(() => {
+            textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
+        }, 38);
+
+        addTimer(() => {
+            clearInterval(mutator);
+            if (waveOverlay) waveOverlay.classList.add('wave-sweep-active');
+            setPhaseBadge('WAVE DECRYPT');
+
+            let iter = 0;
+            const waveDecrypt = addInterval(() => {
+                let html = '';
+                for (let i = 0; i < phrase.length; i++) {
+                    const ch = phrase[i];
+                    if (ch === ' ') {
+                        html += ' ';
+                    } else if (i < iter) {
+                        html += `<span class="char-locked">${ch}</span>`;
+                    } else if (i < iter + 4) {
+                        html += `<span style="color:#38BDF8; text-shadow: 0 0 14px #00A3FF;">${randomGlyph()}</span>`;
+                    } else {
+                        html += `<span class="char-scrambled">${randomGlyph()}</span>`;
+                    }
+                }
+                textEl.innerHTML = html;
+
+                if (iter >= phrase.length) {
+                    clearInterval(waveDecrypt);
+                    textEl.innerHTML = `<span class="char-locked">${phrase}</span>`;
+                    scheduleExit(currentIdx);
+                }
+                iter += 1.2;
+            }, decryptSpeed);
+        }, entryDuration * 0.55);
+    };
+
+    const runVariation4 = (phrase, currentIdx) => {
+        const wrapper = wrapperRef.current;
+        const textEl = textRef.current;
+        const laserLine = laserRef.current;
+        if (!wrapper || !textEl) return;
+
+        setPhaseBadge('TELEMETRY // LOCKING');
+        textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
+        wrapper.classList.add('anim-v4-in');
+
+        const entryDuration = 520;
+        const decryptSpeed = 24;
+
+        const flightMutator = addInterval(() => {
+            textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
+        }, 30);
+
+        addTimer(() => {
+            clearInterval(flightMutator);
+            if (laserLine) laserLine.classList.add('is-locked');
+            setPhaseBadge('SIGNAL LOCKED');
+
+            let iter = 0;
+            const lockDecrypt = addInterval(() => {
+                let html = '';
+                for (let i = 0; i < phrase.length; i++) {
+                    const ch = phrase[i];
+                    if (ch === ' ') {
+                        html += ' ';
+                    } else if (i < iter) {
+                        html += `<span class="char-locked">${ch}</span>`;
+                    } else {
+                        html += `<span class="char-scrambled">${randomGlyph()}</span>`;
+                    }
+                }
+                textEl.innerHTML = html;
+
+                if (iter >= phrase.length) {
+                    clearInterval(lockDecrypt);
+                    textEl.innerHTML = `<span class="char-locked">${phrase}</span>`;
+                    scheduleExit(currentIdx);
+                }
+                iter += 1.8;
+            }, Math.max(12, decryptSpeed * 0.75));
+        }, entryDuration * 0.82);
+    };
+
+    useEffect(() => {
+        clearAllTimers();
+        resetStageClasses();
+
+        const currentPhraseObj = KINETIC_STUDIO_PHRASES[phraseIndex] || KINETIC_STUDIO_PHRASES[0];
+        const phrase = currentPhraseObj.ticker;
+
+        if (variation === 'v1') runVariation1(phrase, phraseIndex);
+        else if (variation === 'v2') runVariation2(phrase, phraseIndex);
+        else if (variation === 'v3') runVariation3(phrase, phraseIndex);
+        else if (variation === 'v4') runVariation4(phrase, phraseIndex);
+
+        return () => clearAllTimers();
+    }, [phraseIndex, variation]);
+
+    const currentPhrase = KINETIC_STUDIO_PHRASES[phraseIndex] || KINETIC_STUDIO_PHRASES[0];
 
     return (
-        <h2 
-            ref={elRef}
-            className={`kinetic-line ${className}`}
+        <div 
+            className="w-full flex flex-col items-center justify-center relative overflow-hidden select-none my-4 sm:my-6"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
-            {text}
-        </h2>
+            {/* Estelas de velocidad azul corporativo */}
+            <div ref={streakRef} className="absolute inset-0 pointer-events-none">
+                <div className="speed-streak s1" />
+                <div className="speed-streak s2" />
+            </div>
+
+            {/* Telemetría superior y selector de 4 variaciones */}
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-6 font-mono text-[11px] tracking-widest text-slate-500 uppercase">
+                <div className="flex items-center space-x-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00A3FF]" />
+                    <span className="text-cyan-400 font-bold">{phaseBadge}</span>
+                    <span>//</span>
+                    <span className="text-slate-400">{String(phraseIndex + 1).padStart(2, '0')} / {String(KINETIC_STUDIO_PHRASES.length).padStart(2, '0')}</span>
+                </div>
+
+                {/* Micro-selector de variaciones */}
+                <div className="flex items-center gap-1 bg-white/[0.04] p-0.5 rounded-full border border-white/[0.08]">
+                    {[
+                        { id: 'v1', label: '01 · Hyper' },
+                        { id: 'v2', label: '02 · Ribbon' },
+                        { id: 'v3', label: '03 · Blur' },
+                        { id: 'v4', label: '04 · Telemetry' }
+                    ].map(v => (
+                        <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => setVariation(v.id)}
+                            className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] transition-all cursor-pointer ${
+                                variation === v.id
+                                    ? 'bg-[#0066FF] text-white font-bold shadow-[0_0_10px_rgba(0,102,255,0.6)]'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            {v.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* LÍNEA DE TEXTO ÚNICA SIN MARCOS NI CAJAS */}
+            <div ref={wrapperRef} className="kinetic-line-wrapper">
+                <div ref={waveRef} className="wave-sweep-overlay" />
+                <h1 
+                    ref={textRef} 
+                    className="kinetic-text text-xl sm:text-3xl md:text-4xl lg:text-[40px] text-center px-4"
+                >
+                    {currentPhrase.ticker}
+                </h1>
+                <div ref={laserRef} className="laser-underline" />
+            </div>
+
+            {/* Subtítulo técnico y métrica clave */}
+            <div className="flex flex-col items-center text-center mt-5 sm:mt-6 max-w-3xl px-4 select-none">
+                <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
+                    {currentPhrase.body}
+                </p>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-3">
+                    <span className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5 bg-cyan-950/40 border border-cyan-500/20 px-3 py-1 rounded-full">
+                        <Icons.Check size={14} className="text-emerald-400" />
+                        {currentPhrase.metric}
+                    </span>
+
+                    {/* Indicadores Pills interactivos */}
+                    <div className="flex items-center gap-1.5">
+                        {KINETIC_STUDIO_PHRASES.map((p, pIdx) => (
+                            <button
+                                key={pIdx}
+                                type="button"
+                                onClick={() => setPhraseIndex(pIdx)}
+                                className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                    pIdx === phraseIndex
+                                        ? 'w-6 bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)]'
+                                        : 'w-1.5 bg-zinc-700 hover:bg-zinc-500'
+                                }`}
+                                title={p.ticker}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -33700,36 +34005,9 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
     const [selectedAlpha, setSelectedAlpha] = useState(0.85); // Alpha 85% exacto solicitado por el usuario
     const [isMuted, setIsMuted] = useState(false);
     const [isBassShaking, setIsBassShaking] = useState(false);
-    const [activeHookIndex, setActiveHookIndex] = useState(0);
-    const [exitingHookIndex, setExitingHookIndex] = useState(null);
-    const [isPausedHover, setIsPausedHover] = useState(false);
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
-
-    const switchHook = (newIdx) => {
-        if (newIdx === activeHookIndex) return;
-        setExitingHookIndex(activeHookIndex);
-        setActiveHookIndex(newIdx);
-    };
-
-    useEffect(() => {
-        if (exitingHookIndex === null) return;
-        const t = setTimeout(() => {
-            setExitingHookIndex(null);
-        }, 750);
-        return () => clearTimeout(t);
-    }, [exitingHookIndex]);
-
-    // Rotación automática continua de ganchos persuasivos (3.5s según spec del slider)
-    useEffect(() => {
-        if (isPausedHover) return;
-        const interval = setInterval(() => {
-            setExitingHookIndex(activeHookIndex);
-            setActiveHookIndex(prev => (prev + 1) % CINEMATIC_HOOKS.length);
-        }, 3500);
-        return () => clearInterval(interval);
-    }, [isPausedHover, activeHookIndex]);
 
     // ENTRADA DEL VÍDEO: Suave aparición inicial
     useEffect(() => {
@@ -33875,8 +34153,6 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
         return () => cancelAnimationFrame(animId);
     }, [phase, isTransitioning]);
 
-    const currentHook = CINEMATIC_HOOKS[activeHookIndex] || CINEMATIC_HOOKS[0];
-
     return (
         <div 
             className="fixed inset-0 z-[99999] bg-[#09090b] overflow-hidden flex flex-col justify-between font-sans text-white select-none"
@@ -33933,7 +34209,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 {/* Contenido Principal con Logo y Rotador de Hooks Persuasivos */}
                 <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto">
                     {/* Logo Oficial + Tipografía Proporcional a Escala de Cabecera (Idéntica Proporción 1:1) con Mayor Espaciado */}
-                    <div className="flex flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group mb-8 sm:mb-12 md:mb-16">
+                    <div className="flex flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group mb-12 sm:mb-16 md:mb-20">
                         <BeatWaveLogoBadge size="lg" />
                         <div className="flex flex-col justify-center select-none pr-1">
                             <div className="flex items-center gap-2 sm:gap-3 leading-none">
@@ -33954,63 +34230,8 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         </div>
                     </div>
 
-                    {/* ROTADOR DINÁMICO DE PUNCHLINES Y SUPERPODERES DEL PRODUCTO (CARD SLIDER 3D PERSPECTIVE) */}
-                    <div 
-                        onMouseEnter={() => setIsPausedHover(true)}
-                        onMouseLeave={() => setIsPausedHover(false)}
-                        className="bw-card-slider mt-6 sm:mt-8 md:mt-10 mb-4 select-none text-left"
-                    >
-                        {CINEMATIC_HOOKS.map((hook, idx) => {
-                            const isActive = idx === activeHookIndex;
-                            const isExiting = idx === exitingHookIndex;
-                            let stateClass = '';
-                            if (isActive) stateClass = 'is-active';
-                            else if (isExiting) stateClass = 'is-exiting';
-
-                            return (
-                                <div 
-                                    key={hook.id} 
-                                    className={`card-item ${stateClass}`}
-                                >
-                                    <div>
-                                        <div className="w-full overflow-hidden py-1 mb-2">
-                                            <KineticScrambleTitle 
-                                                text={hook.headline}
-                                                isActive={isActive}
-                                                className="text-base sm:text-lg md:text-xl lg:text-2xl tracking-tight"
-                                            />
-                                        </div>
-
-                                        <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
-                                            {hook.body}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-white/10 mt-2">
-                                        <span className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5">
-                                            <Icons.Check size={14} className="text-emerald-400" />
-                                            {hook.metric}
-                                        </span>
-
-                                        {/* Indicadores Pills interactivos */}
-                                        <div className="flex items-center gap-1.5">
-                                            {CINEMATIC_HOOKS.map((h, pIdx) => (
-                                                <button
-                                                    key={h.id}
-                                                    type="button"
-                                                    onClick={() => switchHook(pIdx)}
-                                                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                                                        pIdx === activeHookIndex ? 'w-6 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]' : 'w-1.5 bg-zinc-700 hover:bg-zinc-500'
-                                                    }`}
-                                                    title={h.headline}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    {/* ESCENARIO LIBRE SIN MARCOS NI TARJETAS: CLEAN-LINE KINETIC SCRAMBLE STUDIO */}
+                    <CleanLineKineticStudioStage />
 
                     {/* BOTONES DE CONVERSIÓN & ACCESO A LICENCIA */}
                     <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2">

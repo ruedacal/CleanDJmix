@@ -134,18 +134,79 @@ input[type=range].pitch-slider-vertical::-webkit-slider-thumb {
 }
 
 /* =========================================================
-   VARIACIÓN 02 · TICKER RIBBON STREAM (KINETIC SCRAMBLE)
+   CLEAN-LINE KINETIC SCRAMBLE STUDIO (V1 - V4)
    Paleta: #05080f (Fondo) | #0066FF / #00A3FF / #38BDF8 (Azul)
    ========================================================= */
 
-.kinetic-line {
-  display: inline-block !important;
+:root {
+  --bg-canvas: #05080f;
+  --corp-blue: #0066FF;
+  --elec-blue: #00A3FF;
+  --ice-blue: #38BDF8;
+  --entry-duration: 520ms;
+  --blur-out-duration: 600ms;
+  --stay-duration: 3000ms;
+}
+
+/* Líneas de estela horizontal corporativa */
+.speed-streak {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--corp-blue) 45%, var(--ice-blue) 85%, transparent 100%);
+  box-shadow: 0 0 12px rgba(0, 163, 255, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.streak-active .speed-streak.s1 {
+  top: calc(50% - 36px);
+  width: 48vw;
+  animation: blueStreakSweep calc(var(--entry-duration) * 0.9) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.streak-active .speed-streak.s2 {
+  top: calc(50% + 36px);
+  width: 36vw;
+  animation: blueStreakSweep calc(var(--entry-duration) * 0.85) cubic-bezier(0.16, 1, 0.3, 1) 30ms forwards;
+}
+
+@keyframes blueStreakSweep {
+  0% { opacity: 0; transform: translateX(100vw) scaleX(2.5); }
+  30% { opacity: 0.95; transform: translateX(10vw) scaleX(3); }
+  100% { opacity: 0; transform: translateX(-80vw) scaleX(0.5); }
+}
+
+/* =====================================================================
+   CONTENEDOR SIN MARCOS PARA LA LÍNEA DE TEXTO
+   ===================================================================== */
+.kinetic-line-wrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  will-change: transform, opacity, filter;
+  padding: 8px 0;
+  max-width: 95vw;
+}
+
+.kinetic-text {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   font-weight: 800 !important;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-transform: uppercase;
   color: #ffffff !important;
+  user-select: none;
   white-space: nowrap !important;
-  will-change: transform, opacity, filter !important;
-  text-rendering: optimizeLegibility;
+}
+
+/* Caracteres individuales */
+.char-span {
+  display: inline-block;
+  will-change: transform, opacity, filter, color;
+  transition: color 180ms ease, text-shadow 180ms ease;
 }
 
 .char-scrambled {
@@ -153,30 +214,130 @@ input[type=range].pitch-slider-vertical::-webkit-slider-thumb {
   text-shadow: 0 0 12px rgba(0, 163, 255, 0.75) !important;
 }
 
-/* Entrada horizontal desde la derecha */
-@keyframes enterFromRight {
+.char-locked {
+  color: #ffffff !important;
+  text-shadow: 0 0 18px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* =====================================================================
+   VARIACIÓN 01: HYPER-STREAK & SNAP
+   ===================================================================== */
+.anim-v1-in {
+  animation: v1HyperStreakIn var(--entry-duration) cubic-bezier(0.08, 0.96, 0.18, 1.18) forwards;
+}
+
+@keyframes v1HyperStreakIn {
   0% {
     opacity: 0;
-    transform: translateX(115vw) scaleX(2.2) skewX(-14deg);
-    filter: blur(22px);
+    transform: translateX(115vw) scaleX(2.4) skewX(-16deg);
+    filter: blur(24px);
   }
-  50% {
+  45% {
     opacity: 1;
-    transform: translateX(-18px) scaleX(1.06) skewX(3deg);
-    filter: blur(3px);
+    transform: translateX(-22px) scaleX(1.08) skewX(4deg);
+    filter: blur(4px);
+  }
+  75% {
+    transform: translateX(7px) scaleX(0.98) skewX(-1.5deg);
+    filter: blur(0px);
   }
   100% {
     opacity: 1;
-    transform: translateX(0) scaleX(1) skewX(0deg);
+    transform: translateX(0px) scaleX(1) skewX(0deg);
     filter: blur(0px);
   }
 }
 
-/* Salida difuminada hacia arriba */
-@keyframes blurFadeUp {
+/* =====================================================================
+   VARIACIÓN 03: SUB-PIXEL BLUR CASCADE
+   ===================================================================== */
+.anim-v3-in {
+  animation: v3SubPixelGlide var(--entry-duration) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes v3SubPixelGlide {
+  0% {
+    opacity: 0;
+    transform: translateX(75vw);
+    filter: blur(22px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0px);
+    filter: blur(0px);
+  }
+}
+
+/* Onda luminosa azul que barre la línea en V3 */
+.wave-sweep-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 163, 255, 0.35) 50%, transparent 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  opacity: 0;
+}
+.wave-sweep-active {
+  animation: blueWaveAcross 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes blueWaveAcross {
+  0% { opacity: 0; transform: translateX(-60%); }
+  40% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(60%); }
+}
+
+/* =====================================================================
+   VARIACIÓN 04: TELEMETRY LOCK-ON + 1PX LASER UNDERLINE
+   ===================================================================== */
+.anim-v4-in {
+  animation: v4MagneticStop var(--entry-duration) cubic-bezier(0.05, 0.98, 0.15, 1) forwards;
+}
+
+@keyframes v4MagneticStop {
+  0% {
+    opacity: 0;
+    transform: translateX(105vw);
+    filter: blur(14px);
+  }
+  82% {
+    opacity: 1;
+    transform: translateX(-3px);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0px);
+    filter: blur(0px);
+  }
+}
+
+.laser-underline {
+  height: 1px;
+  width: 100%;
+  margin-top: 12px;
+  background: linear-gradient(90deg, transparent, var(--corp-blue) 15%, var(--ice-blue) 50%, var(--corp-blue) 85%, transparent);
+  box-shadow: 0 0 10px var(--elec-blue);
+  transform: scaleX(0);
+  transform-origin: center;
+  opacity: 0;
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1), opacity 250ms ease;
+}
+.laser-underline.is-locked {
+  transform: scaleX(1);
+  opacity: 1;
+}
+
+/* =====================================================================
+   SALIDA DIFUMINADA UNIVERSAL HACIA ARRIBA
+   ===================================================================== */
+.anim-blur-out {
+  animation: cleanBlurFadeUp var(--blur-out-duration) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes cleanBlurFadeUp {
   0% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0px) scale(1);
     filter: blur(0px);
   }
   100% {
