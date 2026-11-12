@@ -33631,7 +33631,7 @@ const CINEMATIC_HOOKS = [
 // =========================================================
 // CLEAN-LINE KINETIC SCRAMBLE STUDIO (VARIACIÓN 02 · TICKER RIBBON STREAM)
 // =========================================================
-const KINETIC_GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
+const GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
 
 const KineticScrambleTitle = ({ text, isActive, className = "" }) => {
     const elRef = useRef(null);
@@ -33644,29 +33644,26 @@ const KineticScrambleTitle = ({ text, isActive, className = "" }) => {
         const entryMs = 520;
         const decryptMs = 24;
 
-        // Disparo de la animación horizontal con streak y skew
+        // Reset animación horizontal con streak y skew (enterFromRight)
         el.style.animation = 'none';
-        void el.offsetHeight; // reflow para rearmar keyframe
+        void el.offsetHeight; // reflow forzado
         el.style.animation = `enterFromRight ${entryMs}ms cubic-bezier(0.08, 0.96, 0.18, 1.18) forwards`;
 
-        let scrambleLoop = null;
-        let decodeLoop = null;
-        let decodeTimeout = null;
-
-        scrambleLoop = setInterval(() => {
+        const scrambleLoop = setInterval(() => {
             el.textContent = text.split('').map(c => 
-                c === ' ' ? ' ' : KINETIC_GLYPHS[Math.floor(Math.random() * KINETIC_GLYPHS.length)]
+                c === ' ' ? ' ' : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]
             ).join('');
         }, 35);
 
-        decodeTimeout = setTimeout(() => {
-            if (scrambleLoop) clearInterval(scrambleLoop);
+        let decodeLoop = null;
+        const decodeTimeout = setTimeout(() => {
+            clearInterval(scrambleLoop);
             let iter = 0;
             decodeLoop = setInterval(() => {
                 el.innerHTML = text.split('').map((ch, idx) => {
                     if (ch === ' ') return ' ';
                     if (idx < iter) return `<span style="color:#ffffff">${ch}</span>`;
-                    return `<span class="char-scrambled">${KINETIC_GLYPHS[Math.floor(Math.random() * KINETIC_GLYPHS.length)]}</span>`;
+                    return `<span class="char-scrambled">${GLYPHS[Math.floor(Math.random() * GLYPHS.length)]}</span>`;
                 }).join('');
 
                 if (iter >= text.length) {
@@ -33678,8 +33675,8 @@ const KineticScrambleTitle = ({ text, isActive, className = "" }) => {
         }, entryMs * 0.72);
 
         return () => {
-            if (scrambleLoop) clearInterval(scrambleLoop);
-            if (decodeTimeout) clearTimeout(decodeTimeout);
+            clearInterval(scrambleLoop);
+            clearTimeout(decodeTimeout);
             if (decodeLoop) clearInterval(decodeLoop);
         };
     }, [text, isActive]);
@@ -33936,7 +33933,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 {/* Contenido Principal con Logo y Rotador de Hooks Persuasivos */}
                 <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto">
                     {/* Logo Oficial + Tipografía Proporcional a Escala de Cabecera (Idéntica Proporción 1:1) con Mayor Espaciado */}
-                    <div className="flex flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group mb-8 sm:mb-12 md:mb-14">
+                    <div className="flex flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group mb-8 sm:mb-12 md:mb-16">
                         <BeatWaveLogoBadge size="lg" />
                         <div className="flex flex-col justify-center select-none pr-1">
                             <div className="flex items-center gap-2 sm:gap-3 leading-none">
@@ -33961,7 +33958,7 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                     <div 
                         onMouseEnter={() => setIsPausedHover(true)}
                         onMouseLeave={() => setIsPausedHover(false)}
-                        className="bw-card-slider mt-4 sm:mt-6 mb-4 select-none text-left"
+                        className="bw-card-slider mt-6 sm:mt-8 md:mt-10 mb-4 select-none text-left"
                     >
                         {CINEMATIC_HOOKS.map((hook, idx) => {
                             const isActive = idx === activeHookIndex;
@@ -33976,11 +33973,13 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                                     className={`card-item ${stateClass}`}
                                 >
                                     <div>
-                                        <KineticScrambleTitle 
-                                            text={hook.headline}
-                                            isActive={isActive}
-                                            className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-snug tracking-tight mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] max-w-full"
-                                        />
+                                        <div className="w-full overflow-hidden py-1 mb-2">
+                                            <KineticScrambleTitle 
+                                                text={hook.headline}
+                                                isActive={isActive}
+                                                className="text-base sm:text-lg md:text-xl lg:text-2xl tracking-tight"
+                                            />
+                                        </div>
 
                                         <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
                                             {hook.body}

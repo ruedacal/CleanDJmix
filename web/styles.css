@@ -139,17 +139,18 @@ input[type=range].pitch-slider-vertical::-webkit-slider-thumb {
    ========================================================= */
 
 .kinetic-line {
-  display: inline-block;
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 800;
-  color: #ffffff;
-  white-space: normal;
-  will-change: transform, opacity, filter;
+  display: inline-block !important;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  will-change: transform, opacity, filter !important;
+  text-rendering: optimizeLegibility;
 }
 
 .char-scrambled {
-  color: #00A3FF;
-  text-shadow: 0 0 12px rgba(0, 163, 255, 0.75);
+  color: #00A3FF !important;
+  text-shadow: 0 0 12px rgba(0, 163, 255, 0.75) !important;
 }
 
 /* Entrada horizontal desde la derecha */

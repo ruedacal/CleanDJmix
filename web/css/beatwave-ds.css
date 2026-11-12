@@ -269,9 +269,10 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 .bw-card-slider {
     position: relative;
     width: 100%;
-    max-width: 768px;
+    max-width: 860px;
     height: 245px;
     perspective: 1000px;
+    overflow: hidden;
 }
 @media (min-width: 640px) {
     .bw-card-slider {
