@@ -24384,6 +24384,57 @@ Respuesta: ${qa.a}`).join("\n\n"),
       metric: "Corte Real de Frecuencias \xB7 100% Calidad Club"
     }
   ];
+  var KINETIC_GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
+  var KineticScrambleTitle = ({ text, isActive, className = "" }) => {
+    const elRef = useRef6(null);
+    useEffect6(() => {
+      if (!isActive) return;
+      const el = elRef.current;
+      if (!el || !text) return;
+      const entryMs = 520;
+      const decryptMs = 24;
+      el.style.animation = "none";
+      void el.offsetHeight;
+      el.style.animation = `enterFromRight ${entryMs}ms cubic-bezier(0.08, 0.96, 0.18, 1.18) forwards`;
+      let scrambleLoop = null;
+      let decodeLoop = null;
+      let decodeTimeout = null;
+      scrambleLoop = setInterval(() => {
+        el.textContent = text.split("").map(
+          (c) => c === " " ? " " : KINETIC_GLYPHS[Math.floor(Math.random() * KINETIC_GLYPHS.length)]
+        ).join("");
+      }, 35);
+      decodeTimeout = setTimeout(() => {
+        if (scrambleLoop) clearInterval(scrambleLoop);
+        let iter = 0;
+        decodeLoop = setInterval(() => {
+          el.innerHTML = text.split("").map((ch, idx) => {
+            if (ch === " ") return " ";
+            if (idx < iter) return `<span style="color:#ffffff">${ch}</span>`;
+            return `<span class="char-scrambled">${KINETIC_GLYPHS[Math.floor(Math.random() * KINETIC_GLYPHS.length)]}</span>`;
+          }).join("");
+          if (iter >= text.length) {
+            clearInterval(decodeLoop);
+            el.textContent = text;
+          }
+          iter += 1.4;
+        }, decryptMs);
+      }, entryMs * 0.72);
+      return () => {
+        if (scrambleLoop) clearInterval(scrambleLoop);
+        if (decodeTimeout) clearTimeout(decodeTimeout);
+        if (decodeLoop) clearInterval(decodeLoop);
+      };
+    }, [text, isActive]);
+    return /* @__PURE__ */ React.createElement(
+      "h2",
+      {
+        ref: elRef,
+        className: `kinetic-line ${className}`
+      },
+      text
+    );
+  };
   var AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
     const [phase, setPhase] = useState5("video");
@@ -24582,12 +24633,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
           /* @__PURE__ */ React.createElement("span", null, "Entrar a la cabina"),
           /* @__PURE__ */ React.createElement(Icons.ChevronRight, { size: 14 })
         ))),
-        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group mb-2.5" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center select-none pr-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 sm:gap-3 leading-none" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-black text-3xl sm:text-5xl md:text-6xl lg:text-[70px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.9)]" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-xl md:text-2xl lg:text-[31px] font-sans font-black tracking-wider px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 rounded-md sm:rounded-xl md:rounded-[18px] border-[1.5px] sm:border-[2.5px] md:border-[3px] border-cyan-400 text-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-[10px] sm:text-base md:text-xl lg:text-[27px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 sm:mt-1.5 md:mt-2 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))), /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group mb-8 sm:mb-12 md:mb-14" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center select-none pr-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 sm:gap-3 leading-none" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-black text-3xl sm:text-5xl md:text-6xl lg:text-[70px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.9)]" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-xl md:text-2xl lg:text-[31px] font-sans font-black tracking-wider px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 rounded-md sm:rounded-xl md:rounded-[18px] border-[1.5px] sm:border-[2.5px] md:border-[3px] border-cyan-400 text-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-[10px] sm:text-base md:text-xl lg:text-[27px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 sm:mt-1.5 md:mt-2 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))), /* @__PURE__ */ React.createElement(
           "div",
           {
             onMouseEnter: () => setIsPausedHover(true),
             onMouseLeave: () => setIsPausedHover(false),
-            className: "bw-card-slider my-2 select-none text-left"
+            className: "bw-card-slider mt-4 sm:mt-6 mb-4 select-none text-left"
           },
           CINEMATIC_HOOKS.map((hook, idx) => {
             const isActive = idx === activeHookIndex;
@@ -24601,7 +24652,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
                 key: hook.id,
                 className: `card-item ${stateClass}`
               },
-              /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-xl sm:text-2xl md:text-3xl font-black text-white leading-snug tracking-tight mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]" }, hook.headline), /* @__PURE__ */ React.createElement("p", { className: "text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]" }, hook.body)),
+              /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
+                KineticScrambleTitle,
+                {
+                  text: hook.headline,
+                  isActive,
+                  className: "text-xl sm:text-2xl md:text-3xl font-black text-white leading-snug tracking-tight mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] max-w-full"
+                }
+              ), /* @__PURE__ */ React.createElement("p", { className: "text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]" }, hook.body)),
               /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-white/10 mt-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "text-emerald-400" }), hook.metric), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, CINEMATIC_HOOKS.map((h, pIdx) => /* @__PURE__ */ React.createElement(
                 "button",
                 {

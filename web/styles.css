@@ -133,5 +133,57 @@ input[type=range].pitch-slider-vertical::-webkit-slider-thumb {
     height: 0;
 }
 
+/* =========================================================
+   VARIACIÓN 02 · TICKER RIBBON STREAM (KINETIC SCRAMBLE)
+   Paleta: #05080f (Fondo) | #0066FF / #00A3FF / #38BDF8 (Azul)
+   ========================================================= */
+
+.kinetic-line {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: normal;
+  will-change: transform, opacity, filter;
+}
+
+.char-scrambled {
+  color: #00A3FF;
+  text-shadow: 0 0 12px rgba(0, 163, 255, 0.75);
+}
+
+/* Entrada horizontal desde la derecha */
+@keyframes enterFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(115vw) scaleX(2.2) skewX(-14deg);
+    filter: blur(22px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-18px) scaleX(1.06) skewX(3deg);
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scaleX(1) skewX(0deg);
+    filter: blur(0px);
+  }
+}
+
+/* Salida difuminada hacia arriba */
+@keyframes blurFadeUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(1.03);
+    filter: blur(22px);
+  }
+}
+
 
 
