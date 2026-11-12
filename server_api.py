@@ -57,7 +57,7 @@ class TelemetryManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, message: dict):
-        for connection in self.active_connections:
+        for connection in list(self.active_connections):
             try:
                 await connection.send_json(message)
             except Exception:
@@ -80,10 +80,54 @@ class CrateFolderRequest(BaseModel):
     parent_id: Optional[str] = None
     track_ids: Optional[List[str]] = []
 
+class RpcPayload(BaseModel):
+    args: Optional[List[Any]] = []
+    kwargs: Optional[Dict[str, Any]] = {}
+
+# Lazy loading de main_web para arranque instantáneo sin bloquear imports
+_main_web_module = None
+_main_event_loop = None
+
+def get_main_web():
+    global _main_web_module
+    if _main_web_module is None:
+        try:
+            import main_web
+            _main_web_module = main_web
+
+            # Enganchar emisor de progreso hacia el WebSocket de telemetría
+            def _ws_actualizar_progreso(pct, msg=""):
+                try:
+                    payload = {
+                        "type": "rpc_callback",
+                        "name": "actualizar_progreso_batch",
+                        "args": [int(pct), str(msg)]
+                    }
+                    if _main_event_loop and _main_event_loop.is_running():
+                        asyncio.run_coroutine_threadsafe(telemetry.broadcast(payload), _main_event_loop)
+                except Exception:
+                    pass
+
+            _main_web_module.eel.actualizar_progreso_batch = _ws_actualizar_progreso
+            print(f"[FastAPI Engine] Enlazadas {len(_main_web_module.eel._exposed_functions)} funciones RPC locales.")
+        except Exception as e:
+            print(f"[FastAPI Engine] Error importando main_web: {e}")
+            _main_web_module = False
+    return _main_web_module if _main_web_module else None
+
+@app.on_event("startup")
+async def on_startup():
+    global _main_event_loop
+    _main_event_loop = asyncio.get_running_loop()
+    # Calentar servicios en hilo separado para no ralentizar el arranque
+    _main_event_loop.run_in_executor(None, get_main_web)
+
 # --- ENDPOINTS API ---
 
 @app.get("/api/health")
 async def health():
+    mw = get_main_web()
+    exposed_count = len(mw.eel._exposed_functions) if mw and hasattr(mw, "eel") and hasattr(mw.eel, "_exposed_functions") else 0
     return {
         "status": "ok",
         "app": "BEATWAVE PRO",
@@ -91,8 +135,41 @@ async def health():
         "zero_cloud_ingest": True,
         "audio_service": "native-local",
         "version": "2.4.0",
+        "exposed_rpc_functions": exposed_count,
         "timestamp": time.time()
     }
+
+@app.get("/eel.js")
+async def serve_eel_shim():
+    """Shim para que el tag <script src='eel.js'> resuelva 200 OK en entornos web/FastAPI sin error."""
+    js_content = "/* BeatWave PRO Eel Shim */ window.eel = window.eel || {};"
+    return Response(content=js_content, media_type="application/javascript")
+
+@app.post("/api/rpc/{method_name}")
+async def handle_rpc(method_name: str, payload: RpcPayload):
+    """Enrutador RPC universal para todas las operaciones de audio, carpetas y auditoría."""
+    mw = get_main_web()
+    if not mw or not hasattr(mw, "eel") or not hasattr(mw.eel, "_exposed_functions"):
+        raise HTTPException(status_code=503, detail="Motor de audio local inicializando...")
+
+    fn = mw.eel._exposed_functions.get(method_name)
+    if not fn:
+        raise HTTPException(status_code=404, detail=f"Método RPC '{method_name}' no registrado.")
+
+    args = payload.args or []
+    kwargs = payload.kwargs or {}
+
+    loop = asyncio.get_running_loop()
+    try:
+        result = await loop.run_in_executor(None, lambda: fn(*args, **kwargs))
+        return {"status": "ok", "method": method_name, "result": result}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "method": method_name, "error": str(e)}
+        )
 
 @app.get("/cover")
 async def get_cover(path: str = Query(...)):
@@ -106,7 +183,6 @@ async def get_cover(path: str = Query(...)):
             return Response(content=data, media_type=mime)
     except Exception as e:
         pass
-    # Imagen placeholder transparente o svg
     return JSONResponse(status_code=204, content={"message": "Sin carátula"})
 
 @app.get("/stream_audio")
@@ -118,7 +194,6 @@ async def stream_audio(request: Request, path: str = Query(...)):
     file_size = os.path.getsize(path)
     range_header = request.headers.get("range")
     
-    # Determinar tipo de contenido
     ext = os.path.splitext(path)[1].lower()
     media_types = {
         ".mp3": "audio/mpeg",
@@ -190,41 +265,12 @@ async def scan_directory(payload: ScanRequest):
         "tracks": tracks
     }
 
-@app.post("/api/audit/batch")
-async def audit_batch(payload: BatchAuditRequest):
-    """Ejecuta análisis de lote en hilos locales notificando vía WebSocket."""
-    total = len(payload.track_paths)
-    results = []
-
-    for idx, path in enumerate(payload.track_paths):
-        # Notificar progreso en tiempo real
-        await telemetry.broadcast({
-            "type": "audit_progress",
-            "current": idx + 1,
-            "total": total,
-            "percent": int(((idx + 1) / total) * 100),
-            "current_track": os.path.basename(path)
-        })
-        # Lectura de metadatos locales instantánea
-        try:
-            meta = MediaService.extract_full_metadata(path) if hasattr(MediaService, "extract_full_metadata") else {}
-            results.append({"path": path, "metadata": meta, "status": "ok"})
-        except Exception as e:
-            results.append({"path": path, "error": str(e), "status": "error"})
-
-    return {
-        "status": "complete",
-        "processed": len(results),
-        "results": results
-    }
-
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry(websocket: WebSocket):
     await telemetry.connect(websocket)
     try:
         while True:
             data = await websocket.receive_text()
-            # Echo o recepción de comandos interactivos desde la UI
             await websocket.send_json({"type": "pong", "received": data})
     except WebSocketDisconnect:
         telemetry.disconnect(websocket)
