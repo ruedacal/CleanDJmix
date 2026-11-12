@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
     <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/beatwave_wave_icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BEATWAVE PRO - Precision Audio Intelligence</title>
@@ -19,5 +21,14 @@
 <body class="bg-[#09090b] text-zinc-300 h-screen w-full max-w-full overflow-x-hidden overflow-y-hidden antialiased selection:bg-djcyan-500 selection:text-white font-sans">
     <div id="root" class="h-full w-full"></div>
     <script src="js/app.bundle.js?v=2.4.1"></script>
+    <script>
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js').catch(function(err) {
+                    console.log('[BEATWAVE SW] Registro omitido:', err);
+                });
+            });
+        }
+    </script>
 </body>
 </html>

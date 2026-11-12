@@ -9,7 +9,9 @@
     "build:css": "python3 scripts/build_offline.py --skip-vendor --skip-fonts --skip-js",
     "build:vendor": "python3 scripts/build_offline.py --skip-fonts --skip-css --skip-js",
     "dev": "python3 scripts/dev_web.py",
-    "desktop": "python3 main_web.py"
+    "desktop": "python3 main_web.py",
+    "desktop:fastapi": "bash run_fastapi.sh",
+    "build:desktop": "bash scripts/build_desktop.sh"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",
