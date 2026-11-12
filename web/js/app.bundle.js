@@ -24363,18 +24363,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
   var GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
   var CleanLineKineticStudioStage = () => {
     const [phraseIndex, setPhraseIndex] = useState5(0);
-    const [variation, setVariation] = useState5("v2");
     const [phaseBadge, setPhaseBadge] = useState5("STREAMING");
     const [isHovered, setIsHovered] = useState5(false);
+    const stageBoxRef = useRef6(null);
     const wrapperRef = useRef6(null);
-    const textRef = useRef6(null);
-    const laserRef = useRef6(null);
+    const textElRef = useRef6(null);
     const waveRef = useRef6(null);
     const streakRef = useRef6(null);
     const timersRef = useRef6([]);
     const intervalsRef = useRef6([]);
     const isHoveredRef = useRef6(false);
     isHoveredRef.current = isHovered;
+    const isTransitioningRef = useRef6(false);
     const clearAllTimers = () => {
       timersRef.current.forEach((t) => clearTimeout(t));
       intervalsRef.current.forEach((i) => clearInterval(i));
@@ -24392,26 +24392,31 @@ Respuesta: ${qa.a}`).join("\n\n"),
       return id;
     };
     const randomGlyph = () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-    const scrambleString = (str) => str.split("").map((c) => c === " " ? " " : randomGlyph()).join("");
-    const resetStageClasses = () => {
-      const wrapper = wrapperRef.current;
-      const streakLayer = streakRef.current;
-      const waveOverlay = waveRef.current;
-      const laserLine = laserRef.current;
-      if (!wrapper) return;
-      wrapper.classList.remove("anim-v1-in", "anim-v3-in", "anim-v4-in", "anim-blur-out");
-      if (streakLayer) streakLayer.classList.remove("streak-active");
-      if (waveOverlay) waveOverlay.classList.remove("wave-sweep-active");
-      if (laserLine) {
-        laserLine.classList.remove("is-locked");
-        laserLine.style.display = variation === "v4" ? "block" : "none";
+    const transitionToPhrase = (targetIdx) => {
+      if (isTransitioningRef.current) return;
+      isTransitioningRef.current = true;
+      clearAllTimers();
+      const stageBox = stageBoxRef.current;
+      setPhaseBadge("DISSOLVING UPWARD");
+      if (stageBox) {
+        stageBox.classList.remove("anim-box-enter");
+        void stageBox.offsetWidth;
+        stageBox.classList.add("anim-blur-out");
       }
-      void wrapper.offsetWidth;
+      const blurOutDuration = 480;
+      setTimeout(() => {
+        setPhraseIndex(targetIdx);
+        if (stageBox) {
+          stageBox.classList.remove("anim-blur-out");
+          void stageBox.offsetWidth;
+          stageBox.classList.add("anim-box-enter");
+        }
+        isTransitioningRef.current = false;
+      }, blurOutDuration);
     };
     const scheduleExit = (currentIdx) => {
       setPhaseBadge("LOCKED \xB7 READABLE");
-      const stayDuration = 2800;
-      const blurOutDuration = 600;
+      const stayDuration = 3200;
       addTimer(() => {
         if (isHoveredRef.current) {
           const checkHover = addInterval(() => {
@@ -24422,229 +24427,120 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }, 800);
           return;
         }
-        setPhaseBadge("DISSOLVING UPWARD");
-        const wrapper = wrapperRef.current;
-        const laserLine = laserRef.current;
-        if (laserLine) laserLine.classList.remove("is-locked");
-        if (wrapper) {
-          wrapper.classList.remove("anim-v1-in", "anim-v3-in", "anim-v4-in");
-          void wrapper.offsetWidth;
-          wrapper.classList.add("anim-blur-out");
-        }
-        addTimer(() => {
-          setPhraseIndex((prev) => (prev + 1) % KINETIC_STUDIO_PHRASES.length);
-        }, blurOutDuration);
+        const nextIdx = (currentIdx + 1) % KINETIC_STUDIO_PHRASES.length;
+        transitionToPhrase(nextIdx);
       }, stayDuration);
     };
-    const runVariation1 = (phrase, currentIdx) => {
-      const wrapper = wrapperRef.current;
-      const textEl = textRef.current;
+    const runHybridRibbonBlur = (phrase, currentIdx) => {
+      const textEl = textElRef.current;
+      const waveOverlay = waveRef.current;
       const streakLayer = streakRef.current;
-      if (!wrapper || !textEl) return;
-      setPhaseBadge("HYPER-STREAK // INCOMING");
-      textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
-      wrapper.classList.add("anim-v1-in");
-      if (streakLayer) streakLayer.classList.add("streak-active");
+      if (!textEl) return;
+      if (streakLayer) {
+        streakLayer.classList.remove("streak-active");
+        void streakLayer.offsetWidth;
+        streakLayer.classList.add("streak-active");
+      }
+      if (waveOverlay) {
+        waveOverlay.classList.remove("wave-sweep-active");
+        void waveOverlay.offsetWidth;
+      }
+      setPhaseBadge("STREAMING // DECRYPT");
       const entryDuration = 520;
-      const decryptSpeed = 24;
-      const flightMutator = addInterval(() => {
-        textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
-      }, 35);
-      addTimer(() => {
-        clearInterval(flightMutator);
-        setPhaseBadge("DECODING STREAM");
-        let iter = 0;
-        const decryptTimer = addInterval(() => {
-          let html = "";
-          for (let i = 0; i < phrase.length; i++) {
-            const ch = phrase[i];
-            if (ch === " ") {
-              html += " ";
-            } else if (i < iter) {
-              html += `<span class="char-locked">${ch}</span>`;
-            } else {
-              html += `<span class="char-scrambled">${randomGlyph()}</span>`;
-            }
-          }
-          textEl.innerHTML = html;
-          if (iter >= phrase.length) {
-            clearInterval(decryptTimer);
-            textEl.innerHTML = `<span class="char-locked">${phrase}</span>`;
-            scheduleExit(currentIdx);
-          }
-          iter += 1.4;
-        }, decryptSpeed);
-      }, entryDuration * 0.72);
-    };
-    const runVariation2 = (phrase, currentIdx) => {
-      const wrapper = wrapperRef.current;
-      const textEl = textRef.current;
-      if (!wrapper || !textEl) return;
-      setPhaseBadge("TICKER RIBBON // STREAMING");
-      wrapper.style.opacity = "1";
-      wrapper.style.transform = "none";
-      wrapper.style.filter = "none";
-      const entryDuration = 520;
-      const decryptSpeed = 24;
+      const decryptSpeed = 22;
       textEl.innerHTML = phrase.split("").map((ch, idx) => {
         if (ch === " ") return `<span class="inline-block w-2 sm:w-3">&nbsp;</span>`;
-        return `<span class="char-span char-scrambled" data-idx="${idx}" style="opacity:0; transform: translateX(75vw) scaleX(1.6); filter: blur(10px);">${randomGlyph()}</span>`;
+        return `<span class="char-span char-scrambled" data-idx="${idx}" style="opacity:0; transform: translateX(65vw) scaleX(1.5); filter: blur(14px);">${randomGlyph()}</span>`;
       }).join("");
       const spans = Array.from(textEl.querySelectorAll(".char-span"));
-      const staggerDelay = Math.max(12, Math.floor(entryDuration / Math.max(spans.length, 1)));
+      const staggerDelay = Math.max(10, Math.floor(entryDuration / Math.max(spans.length, 1)));
+      const spins = [];
       spans.forEach((span, i) => {
         const realChar = phrase[parseInt(span.dataset.idx, 10)];
         const spin = addInterval(() => {
           span.textContent = randomGlyph();
-        }, 40);
+        }, 36);
+        spins.push(spin);
         addTimer(() => {
-          span.style.transition = `transform 360ms cubic-bezier(0.12, 0.95, 0.22, 1.08), opacity 200ms ease, filter 280ms ease`;
+          span.style.transition = `transform 340ms cubic-bezier(0.12, 0.95, 0.22, 1.08), opacity 200ms ease, filter 260ms ease`;
           span.style.opacity = "1";
           span.style.transform = "translateX(0px) scaleX(1)";
           span.style.filter = "blur(0px)";
-          addTimer(() => {
-            clearInterval(spin);
-            span.textContent = realChar;
-            span.classList.remove("char-scrambled");
-            span.classList.add("char-locked");
-            if (i === spans.length - 1) {
-              scheduleExit(currentIdx);
-            }
-          }, decryptSpeed * 5);
+          if (i === spans.length - 1) {
+            addTimer(() => {
+              if (waveOverlay) waveOverlay.classList.add("wave-sweep-active");
+              setPhaseBadge("WAVE DECRYPT");
+              let iter = 0;
+              const waveTimer = addInterval(() => {
+                spans.forEach((s, sIdx) => {
+                  const c = phrase[parseInt(s.dataset.idx, 10)];
+                  if (sIdx < iter) {
+                    s.textContent = c;
+                    s.className = "char-span char-locked";
+                    s.style.color = "#ffffff";
+                    s.style.textShadow = "0 0 18px rgba(56, 189, 248, 0.35)";
+                  } else if (sIdx < iter + 3) {
+                    s.textContent = randomGlyph();
+                    s.className = "char-span";
+                    s.style.color = "#38BDF8";
+                    s.style.textShadow = "0 0 14px #00A3FF";
+                  } else {
+                    s.textContent = randomGlyph();
+                    s.className = "char-span char-scrambled";
+                    s.style.color = "";
+                    s.style.textShadow = "";
+                  }
+                });
+                if (iter >= spans.length) {
+                  clearInterval(waveTimer);
+                  spins.forEach((sp) => clearInterval(sp));
+                  spans.forEach((s) => {
+                    const c = phrase[parseInt(s.dataset.idx, 10)];
+                    s.textContent = c;
+                    s.className = "char-span char-locked";
+                    s.style.color = "#ffffff";
+                    s.style.textShadow = "0 0 18px rgba(56, 189, 248, 0.25)";
+                  });
+                  scheduleExit(currentIdx);
+                }
+                iter += 1.4;
+              }, decryptSpeed);
+            }, 60);
+          }
         }, i * staggerDelay);
       });
     };
-    const runVariation3 = (phrase, currentIdx) => {
-      const wrapper = wrapperRef.current;
-      const textEl = textRef.current;
-      const waveOverlay = waveRef.current;
-      if (!wrapper || !textEl) return;
-      setPhaseBadge("SUB-PIXEL CASCADE // GLIDE");
-      textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
-      wrapper.classList.add("anim-v3-in");
-      const entryDuration = 520;
-      const decryptSpeed = 24;
-      const mutator = addInterval(() => {
-        textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
-      }, 38);
-      addTimer(() => {
-        clearInterval(mutator);
-        if (waveOverlay) waveOverlay.classList.add("wave-sweep-active");
-        setPhaseBadge("WAVE DECRYPT");
-        let iter = 0;
-        const waveDecrypt = addInterval(() => {
-          let html = "";
-          for (let i = 0; i < phrase.length; i++) {
-            const ch = phrase[i];
-            if (ch === " ") {
-              html += " ";
-            } else if (i < iter) {
-              html += `<span class="char-locked">${ch}</span>`;
-            } else if (i < iter + 4) {
-              html += `<span style="color:#38BDF8; text-shadow: 0 0 14px #00A3FF;">${randomGlyph()}</span>`;
-            } else {
-              html += `<span class="char-scrambled">${randomGlyph()}</span>`;
-            }
-          }
-          textEl.innerHTML = html;
-          if (iter >= phrase.length) {
-            clearInterval(waveDecrypt);
-            textEl.innerHTML = `<span class="char-locked">${phrase}</span>`;
-            scheduleExit(currentIdx);
-          }
-          iter += 1.2;
-        }, decryptSpeed);
-      }, entryDuration * 0.55);
-    };
-    const runVariation4 = (phrase, currentIdx) => {
-      const wrapper = wrapperRef.current;
-      const textEl = textRef.current;
-      const laserLine = laserRef.current;
-      if (!wrapper || !textEl) return;
-      setPhaseBadge("TELEMETRY // LOCKING");
-      textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
-      wrapper.classList.add("anim-v4-in");
-      const entryDuration = 520;
-      const decryptSpeed = 24;
-      const flightMutator = addInterval(() => {
-        textEl.innerHTML = `<span class="char-scrambled">${scrambleString(phrase)}</span>`;
-      }, 30);
-      addTimer(() => {
-        clearInterval(flightMutator);
-        if (laserLine) laserLine.classList.add("is-locked");
-        setPhaseBadge("SIGNAL LOCKED");
-        let iter = 0;
-        const lockDecrypt = addInterval(() => {
-          let html = "";
-          for (let i = 0; i < phrase.length; i++) {
-            const ch = phrase[i];
-            if (ch === " ") {
-              html += " ";
-            } else if (i < iter) {
-              html += `<span class="char-locked">${ch}</span>`;
-            } else {
-              html += `<span class="char-scrambled">${randomGlyph()}</span>`;
-            }
-          }
-          textEl.innerHTML = html;
-          if (iter >= phrase.length) {
-            clearInterval(lockDecrypt);
-            textEl.innerHTML = `<span class="char-locked">${phrase}</span>`;
-            scheduleExit(currentIdx);
-          }
-          iter += 1.8;
-        }, Math.max(12, decryptSpeed * 0.75));
-      }, entryDuration * 0.82);
-    };
     useEffect6(() => {
       clearAllTimers();
-      resetStageClasses();
       const currentPhraseObj = KINETIC_STUDIO_PHRASES[phraseIndex] || KINETIC_STUDIO_PHRASES[0];
-      const phrase = currentPhraseObj.ticker;
-      if (variation === "v1") runVariation1(phrase, phraseIndex);
-      else if (variation === "v2") runVariation2(phrase, phraseIndex);
-      else if (variation === "v3") runVariation3(phrase, phraseIndex);
-      else if (variation === "v4") runVariation4(phrase, phraseIndex);
+      runHybridRibbonBlur(currentPhraseObj.ticker, phraseIndex);
       return () => clearAllTimers();
-    }, [phraseIndex, variation]);
+    }, [phraseIndex]);
     const currentPhrase = KINETIC_STUDIO_PHRASES[phraseIndex] || KINETIC_STUDIO_PHRASES[0];
     return /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: "w-full flex flex-col items-center justify-center relative overflow-hidden select-none my-4 sm:my-6",
+        ref: stageBoxRef,
+        className: "w-full flex flex-col items-center justify-center relative select-none my-4 sm:my-6 anim-box-enter",
         onMouseEnter: () => setIsHovered(true),
         onMouseLeave: () => setIsHovered(false)
       },
-      /* @__PURE__ */ React.createElement("div", { ref: streakRef, className: "absolute inset-0 pointer-events-none" }, /* @__PURE__ */ React.createElement("div", { className: "speed-streak s1" }), /* @__PURE__ */ React.createElement("div", { className: "speed-streak s2" })),
-      /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-6 font-mono text-[11px] tracking-widest text-slate-500 uppercase" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00A3FF]" }), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, phaseBadge), /* @__PURE__ */ React.createElement("span", null, "//"), /* @__PURE__ */ React.createElement("span", { className: "text-slate-400" }, String(phraseIndex + 1).padStart(2, "0"), " / ", String(KINETIC_STUDIO_PHRASES.length).padStart(2, "0"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-white/[0.04] p-0.5 rounded-full border border-white/[0.08]" }, [
-        { id: "v1", label: "01 \xB7 Hyper" },
-        { id: "v2", label: "02 \xB7 Ribbon" },
-        { id: "v3", label: "03 \xB7 Blur" },
-        { id: "v4", label: "04 \xB7 Telemetry" }
-      ].map((v) => /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          key: v.id,
-          type: "button",
-          onClick: () => setVariation(v.id),
-          className: `px-2.5 py-0.5 rounded-full font-mono text-[10px] transition-all cursor-pointer ${variation === v.id ? "bg-[#0066FF] text-white font-bold shadow-[0_0_10px_rgba(0,102,255,0.6)]" : "text-slate-400 hover:text-white"}`
-        },
-        v.label
-      )))),
+      /* @__PURE__ */ React.createElement("div", { ref: streakRef, className: "absolute inset-0 pointer-events-none overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "speed-streak s1" }), /* @__PURE__ */ React.createElement("div", { className: "speed-streak s2" })),
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center space-x-2.5 mb-4 sm:mb-6 font-mono text-[11px] tracking-widest text-slate-500 uppercase" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00A3FF] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, phaseBadge), /* @__PURE__ */ React.createElement("span", null, "//"), /* @__PURE__ */ React.createElement("span", { className: "text-slate-400" }, String(phraseIndex + 1).padStart(2, "0"), " / ", String(KINETIC_STUDIO_PHRASES.length).padStart(2, "0"))),
       /* @__PURE__ */ React.createElement("div", { ref: wrapperRef, className: "kinetic-line-wrapper" }, /* @__PURE__ */ React.createElement("div", { ref: waveRef, className: "wave-sweep-overlay" }), /* @__PURE__ */ React.createElement(
         "h1",
         {
-          ref: textRef,
+          ref: textElRef,
           className: "kinetic-text text-xl sm:text-3xl md:text-4xl lg:text-[40px] text-center px-4"
         },
         currentPhrase.ticker
-      ), /* @__PURE__ */ React.createElement("div", { ref: laserRef, className: "laser-underline" })),
-      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center text-center mt-5 sm:mt-6 max-w-3xl px-4 select-none" }, /* @__PURE__ */ React.createElement("p", { className: "text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]" }, currentPhrase.body), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5 bg-cyan-950/40 border border-cyan-500/20 px-3 py-1 rounded-full" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "text-emerald-400" }), currentPhrase.metric), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, KINETIC_STUDIO_PHRASES.map((p, pIdx) => /* @__PURE__ */ React.createElement(
+      )),
+      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center text-center mt-5 sm:mt-6 max-w-3xl px-4 select-none" }, /* @__PURE__ */ React.createElement("p", { className: "text-sm sm:text-base text-zinc-300 leading-relaxed font-sans drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]" }, currentPhrase.body), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5 bg-cyan-950/40 border border-cyan-500/20 px-3 py-1 rounded-full shadow-[0_0_12px_rgba(34,211,238,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "text-emerald-400" }), currentPhrase.metric), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, KINETIC_STUDIO_PHRASES.map((p, pIdx) => /* @__PURE__ */ React.createElement(
         "button",
         {
           key: pIdx,
           type: "button",
-          onClick: () => setPhraseIndex(pIdx),
+          onClick: () => transitionToPhrase(pIdx),
           className: `h-1.5 rounded-full transition-all cursor-pointer ${pIdx === phraseIndex ? "w-6 bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)]" : "w-1.5 bg-zinc-700 hover:bg-zinc-500"}`,
           title: p.ticker
         }

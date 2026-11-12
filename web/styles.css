@@ -331,7 +331,7 @@ input[type=range].pitch-slider-vertical::-webkit-slider-thumb {
    SALIDA DIFUMINADA UNIVERSAL HACIA ARRIBA
    ===================================================================== */
 .anim-blur-out {
-  animation: cleanBlurFadeUp var(--blur-out-duration) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: cleanBlurFadeUp var(--blur-out-duration) cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
 
 @keyframes cleanBlurFadeUp {
@@ -346,6 +346,27 @@ input[type=range].pitch-slider-vertical::-webkit-slider-thumb {
     filter: blur(22px);
   }
 }
+
+/* =====================================================================
+   ENTRADA DIFUMINADA SINCRONIZADA DE LA CAJA COMPLETA
+   ===================================================================== */
+.anim-box-enter {
+  animation: cleanBlurFadeIn 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@keyframes cleanBlurFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.98);
+    filter: blur(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+    filter: blur(0px);
+  }
+}
+
 
 
 
