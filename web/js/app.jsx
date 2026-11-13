@@ -8799,23 +8799,23 @@ const CustomLibraryModal = ({
     const totalTracksInLib = (currentLib.folders || []).reduce((acc, f) => acc + (f.tracks?.length || 0), 0);
 
     return ReactDOM.createPortal(
-        <div style={{ zIndex: 99999 }} className="fixed inset-0 flex flex-col bg-[#070812] text-gray-200 animate-fadeIn select-none overflow-hidden font-sans">
+        <div style={{ zIndex: 999999, backgroundColor: '#070812' }} className="fixed inset-0 flex flex-col text-gray-200 animate-fadeIn select-none overflow-hidden font-sans">
             {/* Cabecera a Pantalla Completa */}
-            <div className="px-6 py-4 border-b border-djzinc-800 bg-[#0e0e1a] flex items-center justify-between shrink-0 shadow-lg">
+            <div style={{ backgroundColor: '#0d0f1e', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-6 py-4 flex items-center justify-between shrink-0 shadow-lg">
                 <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-2xl bg-djcyan-950/90 border border-djcyan-500/60 flex items-center justify-center text-djcyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black">
+                    <div className="w-10 h-10 rounded-2xl bg-cyan-950/90 border border-cyan-500/60 flex items-center justify-center text-cyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black">
                         <Icons.Knowledge size={20} />
                     </div>
                     <div>
                         <div className="flex items-center gap-2.5">
-                            <h3 className="text-base sm:text-lg font-syne font-black uppercase text-white tracking-wider">
+                            <h3 className="text-base sm:text-lg font-sans font-bold uppercase text-white tracking-wider">
                                 LIBRERÍA & BIBLIOTECAS PERSONALIZADAS
                             </h3>
-                            <span className="text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-black">
+                            <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-bold">
                                 {totalTracksInLib} PISTAS EN CATÁLOGO
                             </span>
                         </div>
-                        <p className="text-xs text-gray-400 font-mono mt-0.5">
+                        <p className="text-xs text-zinc-400 font-mono mt-0.5">
                             GESTOR AVANZADO DE CARPETAS VIRTUALES, AGRUPACIONES POR GÉNERO Y MATERIALIZACIÓN FÍSICA EN DISCO / USB
                         </p>
                     </div>
@@ -8830,7 +8830,7 @@ const CustomLibraryModal = ({
                     <button 
                         type="button" 
                         onClick={onClose}
-                        className="w-9 h-9 rounded-xl bg-djzinc-850 hover:bg-rose-950/80 text-gray-400 hover:text-rose-300 flex items-center justify-center font-mono text-sm border border-djzinc-700 hover:border-rose-700/60 transition-all cursor-pointer shadow-sm"
+                        className="w-9 h-9 rounded-xl bg-zinc-800 hover:bg-rose-950/80 text-gray-400 hover:text-rose-300 flex items-center justify-center font-mono text-sm border border-zinc-700 hover:border-rose-700/60 transition-all cursor-pointer shadow-sm"
                         title="Cerrar pantalla completa (ESC)"
                     >
                         <Icons.Close size={16} />
@@ -8839,7 +8839,7 @@ const CustomLibraryModal = ({
             </div>
 
                 {/* Barra de Selección y Nombre de Biblioteca */}
-                <div className="px-5 py-3 border-b border-djzinc-800 bg-[#070810] flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div style={{ backgroundColor: '#070810', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-5 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
                     <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
                         <span className="text-[11px] font-mono uppercase font-bold text-gray-400">Biblioteca:</span>
                         <select
@@ -8849,7 +8849,7 @@ const CustomLibraryModal = ({
                                 setActiveLibId(id);
                                 if (onSelectLibrary) onSelectLibrary(id);
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-white font-bold outline-none focus:border-djcyan-400"
+                            className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono text-white font-bold outline-none focus:border-cyan-400"
                         >
                             {libraries.map(lib => (
                                 <option key={lib.id} value={lib.id}>
@@ -8865,12 +8865,12 @@ const CustomLibraryModal = ({
                                 value={libNameInput}
                                 onChange={(e) => setLibNameInput(e.target.value)}
                                 placeholder="Nombre de la biblioteca"
-                                className="px-3 py-1 bg-djzinc-950 border border-djzinc-750 rounded-lg text-xs font-mono text-white outline-none focus:border-djcyan-400 w-44"
+                                className="px-3 py-1 bg-zinc-950 border border-zinc-700 rounded-lg text-xs font-mono text-white outline-none focus:border-cyan-400 w-44"
                             />
                             <button
                                 type="button"
                                 onClick={handleUpdateLibraryName}
-                                className="px-2.5 py-1 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 text-xs font-mono font-bold cursor-pointer transition-colors"
+                                className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-gray-200 text-xs font-mono font-bold cursor-pointer transition-colors"
                                 title="Guardar nombre"
                             >
                                 Guardar
@@ -8882,7 +8882,7 @@ const CustomLibraryModal = ({
                         <button
                             type="button"
                             onClick={handleCreateNewLibrary}
-                            className="px-3 py-1.5 rounded-xl bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
+                            className="px-3 py-1.5 rounded-xl bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
                             title="Crear una nueva biblioteca en blanco"
                         >
                             <Icons.Plus size={14} className="inline-block align-[-2px]" />
@@ -8892,12 +8892,12 @@ const CustomLibraryModal = ({
                 </div>
 
                 {/* Contenido Principal a Pantalla Completa: Carpetas a la izquierda y Pistas al centro/derecha */}
-                <div className="flex-1 min-h-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-djzinc-800 overflow-hidden">
+                <div style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, overflow: 'hidden' }} className="flex-1 min-h-0 flex flex-row overflow-hidden">
                     
                     {/* PANEL IZQUIERDO: Estructura de Carpetas */}
-                    <div className="w-full md:w-80 lg:w-96 p-4 flex flex-col gap-3 bg-[#080914] overflow-y-auto custom-scrollbar shrink-0">
+                    <div style={{ width: '380px', minWidth: '320px', maxWidth: '420px', backgroundColor: '#080914', borderRight: '1px solid rgba(255, 255, 255, 0.08)' }} className="p-4 flex flex-col gap-3 overflow-y-auto custom-scrollbar shrink-0">
                         <div className="flex items-center justify-between">
-                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-djcyan-400 flex items-center gap-1.5">
+                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
                                 <Icons.Folder size={14} className="inline-block align-[-2px]" />
                                 <span>Carpetas Creadas ({currentLib.folders?.length || 0})</span>
                             </h4>
@@ -8919,12 +8919,12 @@ const CustomLibraryModal = ({
                                 onChange={(e) => setNewFolderName(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddFolder(); }}
                                 placeholder="Nombre de nueva carpeta..."
-                                className="flex-1 px-3 py-1.5 bg-djzinc-950 border border-djzinc-750 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
+                                className="flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-cyan-400"
                             />
                             <button
                                 type="button"
                                 onClick={handleAddFolder}
-                                className="px-3 py-1.5 bg-gradient-to-r from-djcyan-400 to-djcyan-500 hover:from-djcyan-300 hover:to-djcyan-400 text-black font-mono font-black text-xs rounded-xl cursor-pointer active:scale-95 shadow-sm"
+                                className="px-3 py-1.5 bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-mono font-bold text-xs rounded-xl cursor-pointer active:scale-95 shadow-sm"
                             >
                                 + Crear
                             </button>
@@ -8933,7 +8933,7 @@ const CustomLibraryModal = ({
                         {/* Lista de Carpetas */}
                         <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
                             {(!currentLib.folders || currentLib.folders.length === 0) ? (
-                                <div className="p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-djzinc-800 rounded-xl">
+                                <div className="p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-zinc-800 rounded-xl">
                                     No hay carpetas creadas. Crea una arriba o pulsa "Auto por Género".
                                 </div>
                             ) : (
@@ -8944,10 +8944,14 @@ const CustomLibraryModal = ({
                                         <div
                                             key={f.id}
                                             onClick={() => setSelectedFolderId(f.id)}
+                                            style={{
+                                                backgroundColor: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'rgba(24, 24, 27, 0.6)',
+                                                borderColor: isSelected ? 'rgba(6, 182, 212, 0.8)' : 'rgba(255, 255, 255, 0.08)'
+                                            }}
                                             className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
                                                 isSelected 
-                                                    ? 'bg-djcyan-950/40 border-djcyan-500/80 text-white shadow-md' 
-                                                    : 'bg-djzinc-900/50 border-djzinc-800 text-gray-300 hover:bg-djzinc-900 hover:border-djzinc-750'
+                                                    ? 'text-white shadow-md' 
+                                                    : 'text-gray-300 hover:border-zinc-600'
                                             }`}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
@@ -8962,7 +8966,7 @@ const CustomLibraryModal = ({
                                                 <button
                                                     type="button"
                                                     onClick={() => handleAssignTracksToActiveFolder(f.id, false)}
-                                                    className="px-2 py-0.5 rounded bg-djzinc-800 hover:bg-djcyan-950 hover:text-djcyan-300 text-gray-300 text-[10px] font-mono border border-djzinc-700 cursor-pointer"
+                                                    className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-cyan-950 hover:text-cyan-300 text-gray-300 text-[10px] font-mono border border-zinc-700 cursor-pointer"
                                                     title={`Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`}
                                                 >
                                                     + Asignar ({currentTracks.length})
@@ -8984,12 +8988,12 @@ const CustomLibraryModal = ({
                     </div>
 
                     {/* PANEL DERECHO: Pistas Dentro de la Carpeta Seleccionada (Flex-1 Pantalla Completa) */}
-                    <div className="flex-1 p-5 flex flex-col gap-3.5 bg-[#0a0b18] overflow-hidden">
+                    <div style={{ flex: 1, backgroundColor: '#0a0b18', minWidth: 0, display: 'flex', flexDirection: 'column' }} className="flex-1 p-5 flex flex-col gap-3.5 overflow-hidden">
                         <div className="flex items-center justify-between shrink-0">
                             <div>
                                 <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
                                     <Icons.Music size={14} className="inline-block align-[-2px]" />
-                                    <span>Pistas en: <span className="text-djcyan-300">{activeFolder?.name || 'Ninguna carpeta'}</span></span>
+                                    <span>Pistas en: <span className="text-cyan-300">{activeFolder?.name || 'Ninguna carpeta'}</span></span>
                                 </h4>
                                 <span className="text-[10px] font-mono text-gray-400">
                                     {folderTracks.length} pista(s) en esta carpeta
@@ -9003,7 +9007,7 @@ const CustomLibraryModal = ({
                                         onClick={() => {
                                             if (onAuditarCrate) onAuditarCrate(activeFolder, currentLib);
                                         }}
-                                        className="px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-[11px] font-mono font-black shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                        className="px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-[11px] font-mono font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                                         title="Filtrar la mesa de auditoría principal mostrando exclusivamente esta carpeta/crate"
                                     >
                                         <Icons.Eye size={13} />
@@ -9022,7 +9026,8 @@ const CustomLibraryModal = ({
                                     <button
                                         type="button"
                                         onClick={() => handleAssignTracksToActiveFolder(activeFolder.id, false)}
-                                        className="px-2.5 py-1 rounded-lg bg-djcyan-950 hover:bg-djcyan-900 text-djcyan-300 border border-djcyan-600/70 text-[11px] font-mono font-bold cursor-pointer"
+                                        className="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-600/70 text-[11px] font-mono font-bold cursor-pointer"
+                                        title={`Añadir todas las pistas cargadas actualmente (${currentTracks.length})`}
                                     >
                                         + Añadir Todas ({currentTracks.length})
                                     </button>
@@ -9033,19 +9038,19 @@ const CustomLibraryModal = ({
                         {/* Buscador de pistas en la carpeta */}
                         {folderTracks.length > 5 && (
                             <div className="relative shrink-0">
-                                <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3 top-2  text-gray-500" />
+                                <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3 top-2 text-gray-500" />
                                 <input 
                                     type="text"
                                     value={searchTrack}
                                     onChange={(e) => setSearchTrack(e.target.value)}
                                     placeholder="Buscar en esta carpeta por título o artista..."
-                                    className="w-full pl-8 pr-3 py-1.5 bg-djzinc-950 border border-djzinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-djcyan-400"
+                                    className="w-full pl-8 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-cyan-400"
                                 />
                             </div>
                         )}
 
                         {/* Lista de pistas */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 border border-djzinc-800/80 rounded-xl bg-[#070810] p-2">
+                        <div style={{ backgroundColor: '#070810', borderColor: 'rgba(255, 255, 255, 0.08)' }} className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-zinc-850/60 border rounded-xl p-2">
                             {(!activeFolder || folderTracks.length === 0) ? (
                                 <div className="py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2">
                                     <Icons.Folder size={14} className="inline-block align-[-2px]" />
@@ -9058,7 +9063,7 @@ const CustomLibraryModal = ({
                                 filteredFolderTracks.map((tr, tIdx) => {
                                     const trKey = tr.id || tr.file_path || tIdx;
                                     return (
-                                        <div key={trKey} className="py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-djzinc-900/60 rounded-lg group">
+                                        <div key={trKey} className="py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-zinc-900/60 rounded-lg group">
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <span className="font-mono text-[10px] text-gray-500 w-5">{tIdx + 1}</span>
                                                 <div className="truncate">
@@ -9088,7 +9093,7 @@ const CustomLibraryModal = ({
                 </div>
 
                 {/* Pie: Acciones de Guardado y Crear en Disco */}
-                <div className="px-5 py-3.5 border-t border-djzinc-800 bg-[#07080e] flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div style={{ backgroundColor: '#07080e', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="text-[11px] font-mono text-gray-400">
                             <Icons.Lock size={14} className="inline-block align-[-2px]" /> Los cambios quedan guardados automáticamente para tu próxima sesión.
@@ -9101,7 +9106,7 @@ const CustomLibraryModal = ({
                             type="button"
                             onClick={() => onMaterializarEnDisco && onMaterializarEnDisco(currentLib)}
                             disabled={!currentLib.folders || currentLib.folders.length === 0}
-                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-black text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-bold text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
                             title="Selecciona una carpeta o USB en disco para crear una copia física de tus pistas organizadas por carpetas"
                         >
                             <Icons.Save size={14} className="inline-block align-[-2px]" />
@@ -9111,7 +9116,7 @@ const CustomLibraryModal = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-mono font-bold text-xs cursor-pointer transition-colors"
+                            className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-mono font-bold text-xs cursor-pointer transition-colors"
                         >
                             Listo
                         </button>

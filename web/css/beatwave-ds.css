@@ -5,7 +5,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
-    --font-mono: 'Nimbus Mono PS', 'JetBrains Mono', ui-monospace, monospace;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --bw-black: #09090b;
     --bw-surface-1: #0e0e11;
