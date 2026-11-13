@@ -23,7 +23,14 @@
     x: "M6 6l12 12M18 6L6 18",
     send: "M4 12l16-8-6 16-2-7z",
     refresh: "M20 11a8 8 0 0 0-14.9-3M4 4v4h4m-4 5a8 8 0 0 0 14.9 3M20 20v-4h-4",
-    external: "M14 4h6v6m0-6l-9 9M18 14v6H4V6h6"
+    external: "M14 4h6v6m0-6l-9 9M18 14v6H4V6h6",
+    code: "M8 8l-4 4 4 4m8-8l4 4-4 4M14 5l-4 14",
+    flow: "M5 4h6v5H5zM13 15h6v5h-6zM8 9v4a2 2 0 0 0 2 2h3",
+    share: "M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4",
+    pen: "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4",
+    play: "M7 5l12 7-12 7z",
+    up: "M12 19V5m-6 6l6-6 6 6",
+    down: "M12 5v14m-6-6l6 6 6-6"
   };
   function Icon({ name, size = 16, className = "" }) {
     return /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round", className, "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: ICON_PATHS[name] || "" }));
@@ -88,7 +95,7 @@
     const d = new Date(2026, 9, 12 + i);
     return `${d.getDate()}/${d.getMonth() + 1}`;
   });
-  var wave = (base, amp, seed) => DAYS.map((_, i) => Math.round(base + amp * Math.sin(i / 3 + seed) + i * (amp / 12) + (i * 7919 + seed * 31) % 13 * (amp / 20)));
+  var wave = (base, amp, seed2) => DAYS.map((_, i) => Math.round(base + amp * Math.sin(i / 3 + seed2) + i * (amp / 12) + (i * 7919 + seed2 * 31) % 13 * (amp / 20)));
   var REVENUE = wave(1800, 420, 1);
   var REVENUE_PREV = wave(1500, 300, 2.4);
   var ACTIVE_USERS = wave(3200, 600, 0.5);
@@ -294,8 +301,8 @@
   }
   function Seo({ toast }) {
     const [meta, setMeta] = useState4({ title: "BEATWAVE PRO \u2014 Precision Audio Intelligence", desc: "Analiza, organiza y mezcla tu m\xFAsica con IA: BPM, tonalidad, cues y un copiloto en directo para DJs." });
-    const avg = Math.round(SEO_PAGES.reduce((a, p) => a + p.score, 0) / SEO_PAGES.length);
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Insights", title: "SEO", desc: "Rendimiento org\xE1nico por p\xE1gina y edici\xF3n de metadatos con vista previa de Google." }, /* @__PURE__ */ React.createElement(Button, { icon: "refresh", onClick: () => toast("Auditor\xEDa SEO lanzada") }, "Auditar ahora")), /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(Card, { title: "P\xE1ginas indexadas", bodyClass: "" }, /* @__PURE__ */ React.createElement("div", { className: "tbl-wrap" }, /* @__PURE__ */ React.createElement("table", { className: "tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Ruta"), /* @__PURE__ */ React.createElement("th", null, "T\xEDtulo"), /* @__PURE__ */ React.createElement("th", { className: "num" }, "Clics"), /* @__PURE__ */ React.createElement("th", { className: "num" }, "Pos. media"), /* @__PURE__ */ React.createElement("th", { className: "num" }, "Score"))), /* @__PURE__ */ React.createElement("tbody", null, SEO_PAGES.map((p) => /* @__PURE__ */ React.createElement("tr", { key: p.path }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, p.path), /* @__PURE__ */ React.createElement("td", { className: "muted", style: { maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis" } }, p.title), /* @__PURE__ */ React.createElement("td", { className: "num" }, num(p.clicks)), /* @__PURE__ */ React.createElement("td", { className: "num" }, p.pos.toFixed(1)), /* @__PURE__ */ React.createElement("td", { className: "num" }, /* @__PURE__ */ React.createElement("span", { className: p.score < 70 ? "danger" : p.score >= 85 ? "cyan" : "" }, p.score)))))))), /* @__PURE__ */ React.createElement(Card, { title: "Salud global" }, /* @__PURE__ */ React.createElement("div", { className: "row", style: { gap: 16 } }, /* @__PURE__ */ React.createElement(ScoreRing, { value: avg }), /* @__PURE__ */ React.createElement("div", { className: "stack", style: { gap: 4, fontSize: 13 } }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "danger mono" }, "2"), " p\xE1ginas sin meta descripci\xF3n"), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "mono" }, "5"), " im\xE1genes sin texto alternativo"), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "cyan mono" }, "0"), " errores 404 activos"))))), /* @__PURE__ */ React.createElement(Card, { title: "Metadatos de la home" }, /* @__PURE__ */ React.createElement("div", { className: "grid g-2" }, /* @__PURE__ */ React.createElement("div", { className: "stack" }, /* @__PURE__ */ React.createElement(Field, { label: `T\xEDtulo (${meta.title.length}/60)`, id: "seo-t" }, /* @__PURE__ */ React.createElement("input", { id: "seo-t", className: "input", maxLength: 70, value: meta.title, onChange: (e) => setMeta({ ...meta, title: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: `Descripci\xF3n (${meta.desc.length}/160)`, id: "seo-d" }, /* @__PURE__ */ React.createElement("textarea", { id: "seo-d", className: "textarea", maxLength: 180, value: meta.desc, onChange: (e) => setMeta({ ...meta, desc: e.target.value }) })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Button, { variant: "primary", onClick: () => toast("Metadatos guardados") }, "Guardar metadatos"))), /* @__PURE__ */ React.createElement("div", { className: "serp", "aria-label": "Vista previa en Google" }, /* @__PURE__ */ React.createElement("div", { className: "serp-url" }, "beatwave.pro \u203A inicio"), /* @__PURE__ */ React.createElement("div", { className: "serp-title" }, meta.title.length > 60 ? meta.title.slice(0, 60) + "\u2026" : meta.title), /* @__PURE__ */ React.createElement("p", { className: "serp-desc" }, meta.desc.length > 160 ? meta.desc.slice(0, 160) + "\u2026" : meta.desc)))));
+    const avg2 = Math.round(SEO_PAGES.reduce((a, p) => a + p.score, 0) / SEO_PAGES.length);
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Insights", title: "SEO", desc: "Rendimiento org\xE1nico por p\xE1gina y edici\xF3n de metadatos con vista previa de Google." }, /* @__PURE__ */ React.createElement(Button, { icon: "refresh", onClick: () => toast("Auditor\xEDa SEO lanzada") }, "Auditar ahora")), /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(Card, { title: "P\xE1ginas indexadas", bodyClass: "" }, /* @__PURE__ */ React.createElement("div", { className: "tbl-wrap" }, /* @__PURE__ */ React.createElement("table", { className: "tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Ruta"), /* @__PURE__ */ React.createElement("th", null, "T\xEDtulo"), /* @__PURE__ */ React.createElement("th", { className: "num" }, "Clics"), /* @__PURE__ */ React.createElement("th", { className: "num" }, "Pos. media"), /* @__PURE__ */ React.createElement("th", { className: "num" }, "Score"))), /* @__PURE__ */ React.createElement("tbody", null, SEO_PAGES.map((p) => /* @__PURE__ */ React.createElement("tr", { key: p.path }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, p.path), /* @__PURE__ */ React.createElement("td", { className: "muted", style: { maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis" } }, p.title), /* @__PURE__ */ React.createElement("td", { className: "num" }, num(p.clicks)), /* @__PURE__ */ React.createElement("td", { className: "num" }, p.pos.toFixed(1)), /* @__PURE__ */ React.createElement("td", { className: "num" }, /* @__PURE__ */ React.createElement("span", { className: p.score < 70 ? "danger" : p.score >= 85 ? "cyan" : "" }, p.score)))))))), /* @__PURE__ */ React.createElement(Card, { title: "Salud global" }, /* @__PURE__ */ React.createElement("div", { className: "row", style: { gap: 16 } }, /* @__PURE__ */ React.createElement(ScoreRing, { value: avg2 }), /* @__PURE__ */ React.createElement("div", { className: "stack", style: { gap: 4, fontSize: 13 } }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "danger mono" }, "2"), " p\xE1ginas sin meta descripci\xF3n"), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "mono" }, "5"), " im\xE1genes sin texto alternativo"), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "cyan mono" }, "0"), " errores 404 activos"))))), /* @__PURE__ */ React.createElement(Card, { title: "Metadatos de la home" }, /* @__PURE__ */ React.createElement("div", { className: "grid g-2" }, /* @__PURE__ */ React.createElement("div", { className: "stack" }, /* @__PURE__ */ React.createElement(Field, { label: `T\xEDtulo (${meta.title.length}/60)`, id: "seo-t" }, /* @__PURE__ */ React.createElement("input", { id: "seo-t", className: "input", maxLength: 70, value: meta.title, onChange: (e) => setMeta({ ...meta, title: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: `Descripci\xF3n (${meta.desc.length}/160)`, id: "seo-d" }, /* @__PURE__ */ React.createElement("textarea", { id: "seo-d", className: "textarea", maxLength: 180, value: meta.desc, onChange: (e) => setMeta({ ...meta, desc: e.target.value }) })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Button, { variant: "primary", onClick: () => toast("Metadatos guardados") }, "Guardar metadatos"))), /* @__PURE__ */ React.createElement("div", { className: "serp", "aria-label": "Vista previa en Google" }, /* @__PURE__ */ React.createElement("div", { className: "serp-url" }, "beatwave.pro \u203A inicio"), /* @__PURE__ */ React.createElement("div", { className: "serp-title" }, meta.title.length > 60 ? meta.title.slice(0, 60) + "\u2026" : meta.title), /* @__PURE__ */ React.createElement("p", { className: "serp-desc" }, meta.desc.length > 160 ? meta.desc.slice(0, 160) + "\u2026" : meta.desc)))));
   }
   var invTone = { pagada: "on", fallida: "err", reembolsada: "off" };
   function Billing({ toast }) {
@@ -330,12 +337,461 @@
     } })))), /* @__PURE__ */ React.createElement(Card, { title: "Equipo", bodyClass: "list", action: /* @__PURE__ */ React.createElement(Button, { size: "sm", icon: "plus", onClick: () => toast("Invitaci\xF3n enviada") }, "Invitar") }, admins.map(([n, e, r]) => /* @__PURE__ */ React.createElement("div", { key: e, className: "list-item" }, /* @__PURE__ */ React.createElement("div", { className: "adm-avatar" }, n.split(" ").map((p) => p[0]).join("").slice(0, 2)), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 500 } }, n), /* @__PURE__ */ React.createElement("div", { className: "faint", style: { fontSize: 12 } }, e)), /* @__PURE__ */ React.createElement(Badge, { plain: true }, r))))));
   }
 
+  // web/js/admin/data-deep.js
+  var seed = 20261112;
+  var rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+  var pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+  var int = (a, b) => Math.floor(a + rnd() * (b - a + 1));
+  var SECTIONS = ["Copilot", "Sets", "Map", "Auditar", "Cues", "Academia", "Biblioteca", "Ajustes"];
+  var SECTION_WEIGHT = { Copilot: 1.6, Sets: 1.4, Map: 0.9, Auditar: 1.1, Cues: 1.2, Academia: 0.8, Biblioteca: 1.3, Ajustes: 0.2 };
+  var PLANS = ["FREE", "FREE", "FREE", "PRO", "PRO", "STUDIO"];
+  var COUNTRIES = ["ES", "ES", "MX", "AR", "DE", "FR", "CO", "US", "IT"];
+  var DEVICES = ["desktop", "desktop", "desktop", "tablet", "m\xF3vil"];
+  var KEYS = ["1A", "2A", "4A", "5A", "8A", "8B", "9B", "11A", "12A"];
+  var NAMES = ["marta", "kiko", "lena", "djnoir", "alex", "sara", "pablo", "iris", "teo", "nadia", "bruno", "vera", "omar", "luz", "hugo"];
+  var users = Array.from({ length: 60 }, (_, i) => {
+    const plan = pick(PLANS);
+    const boost = plan === "STUDIO" ? 3 : plan === "PRO" ? 2 : 1;
+    return {
+      id: `u_${1100 - i}`,
+      email: `${NAMES[i % NAMES.length]}${i}@mail.com`,
+      plan,
+      pais: pick(COUNTRIES),
+      alta: `2026-${String(int(6, 10)).padStart(2, "0")}-${String(int(1, 28)).padStart(2, "0")}`,
+      sesiones: int(2, 14) * boost,
+      minutos_totales: 0,
+      temas_procesados: Math.round(int(3, 40) * boost * (0.6 + rnd()))
+    };
+  });
+  var sesiones = [];
+  var eventos = [];
+  users.forEach((u) => {
+    for (let s = 0; s < u.sesiones; s++) {
+      const id = `ses_${9e3 + sesiones.length}`;
+      const fecha = `2026-11-${String(int(1, 11)).padStart(2, "0")}`;
+      const nSec = int(1, 5);
+      let total = 0;
+      for (let k = 0; k < nSec; k++) {
+        const seccion = pick(SECTIONS);
+        const segundos = Math.round(int(40, 600) * SECTION_WEIGHT[seccion]);
+        total += segundos;
+        eventos.push({ sesion_id: id, usuario_id: u.id, seccion, segundos, fecha });
+      }
+      const duracion_min = Math.round(total / 6) / 10;
+      u.minutos_totales += duracion_min;
+      sesiones.push({ id, usuario_id: u.id, fecha, duracion_min, secciones: nSec, dispositivo: pick(DEVICES) });
+    }
+    u.minutos_totales = Math.round(u.minutos_totales);
+  });
+  var temas = [];
+  users.forEach((u) => {
+    for (let t = 0; t < Math.min(u.temas_procesados, 12); t++) {
+      temas.push({
+        id: `t_${5e4 + temas.length}`,
+        usuario_id: u.id,
+        bpm: int(112, 140),
+        tonalidad: pick(KEYS),
+        estado: rnd() > 0.92 ? "error" : "completo",
+        fecha: `2026-11-${String(int(1, 11)).padStart(2, "0")}`
+      });
+    }
+  });
+  var toTable = (rows) => ({ columns: Object.keys(rows[0]), rows });
+  var SQL_TABLES = {
+    usuarios: toTable(users),
+    sesiones: toTable(sesiones),
+    eventos_seccion: toTable(eventos),
+    temas: toTable(temas)
+  };
+  var SAVED_QUERIES = [
+    { name: "Tiempo medio por secci\xF3n", sql: "SELECT seccion, AVG(segundos) AS media_seg, COUNT(*) AS visitas\nFROM eventos_seccion\nGROUP BY seccion\nORDER BY media_seg DESC" },
+    { name: "Top 10 por temas procesados", sql: "SELECT id, email, plan, temas_procesados\nFROM usuarios\nORDER BY temas_procesados DESC\nLIMIT 10" },
+    { name: "Usuarios por plan", sql: "SELECT plan, COUNT(*) AS usuarios, AVG(minutos_totales) AS min_medios\nFROM usuarios\nGROUP BY plan" },
+    { name: "Sesiones por dispositivo", sql: "SELECT dispositivo, COUNT(*) AS sesiones, AVG(duracion_min) AS duracion_media\nFROM sesiones\nGROUP BY dispositivo\nORDER BY sesiones DESC" },
+    { name: "Errores de an\xE1lisis", sql: "SELECT id, usuario_id, bpm, tonalidad, fecha\nFROM temas\nWHERE estado = 'error'\nORDER BY fecha DESC" }
+  ];
+  var avg = (arr) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
+  var TIME_BY_SECTION = SECTIONS.map((s) => {
+    const ev = eventos.filter((e) => e.seccion === s);
+    return { label: s, value: Math.round(avg(ev.map((e) => e.segundos))), visits: ev.length };
+  }).sort((a, b) => b.value - a.value);
+  var BEHAVIOR_KPIS = {
+    avgSessionMin: avg(sesiones.map((s) => s.duracion_min)),
+    sessionsPerUser: sesiones.length / users.length,
+    tracksPerUser: avg(users.map((u) => u.temas_procesados)),
+    sectionsPerSession: avg(sesiones.map((s) => s.secciones))
+  };
+  var AVG_SESSION_TREND = DAYS.map((_, i) => Math.round((14 + 3 * Math.sin(i / 4) + i * 0.12 + i % 5 * 0.4) * 10) / 10);
+  var BUCKETS = [[0, 5], [6, 15], [16, 30], [31, 60], [61, 100], [101, 999]];
+  var TRACKS_HISTOGRAM = BUCKETS.map(([a, b]) => ({
+    label: b === 999 ? `${a}+` : `${a}\u2013${b}`,
+    value: users.filter((u) => u.temas_procesados >= a && u.temas_procesados <= b).length
+  }));
+  var TOP_PROCESSORS = [...users].sort((a, b) => b.temas_procesados - a.temas_procesados).slice(0, 6);
+  var FLOW_SECTIONS = ["Copilot", "Sets", "Map", "Auditar", "Cues", "Academia"];
+  var TRANSITIONS = FLOW_SECTIONS.map((from, i) => {
+    const raw = FLOW_SECTIONS.map((to, j) => i === j ? 0 : int(2, 30) + (j === (i + 1) % FLOW_SECTIONS.length ? 25 : 0));
+    const sum = raw.reduce((a, b) => a + b, 0);
+    return { from, values: raw.map((v) => Math.round(v / sum * 100)) };
+  });
+  var TOP_PATHS = [
+    { path: ["Inicio", "Copilot", "Sets"], share: 23.4, conv: 41 },
+    { path: ["Inicio", "Biblioteca", "Auditar", "Cues"], share: 17.1, conv: 36 },
+    { path: ["Inicio", "Sets", "Map"], share: 12.8, conv: 29 },
+    { path: ["Inicio", "Academia", "Copilot"], share: 9.6, conv: 52 },
+    { path: ["Inicio", "Copilot", "Cues", "Sets"], share: 7.2, conv: 47 }
+  ];
+  var COHORTS = [
+    { cohort: "Jun 2026", size: 412, values: [100, 61, 48, 41, 37, 34] },
+    { cohort: "Jul 2026", size: 538, values: [100, 64, 51, 44, 39] },
+    { cohort: "Ago 2026", size: 497, values: [100, 58, 46, 40] },
+    { cohort: "Sep 2026", size: 621, values: [100, 66, 54] },
+    { cohort: "Oct 2026", size: 744, values: [100, 69] },
+    { cohort: "Nov 2026", size: 302, values: [100] }
+  ];
+  var DEVICE_SPLIT = ["desktop", "tablet", "m\xF3vil"].map((d) => ({ label: d, value: sesiones.filter((s) => s.dispositivo === d).length }));
+  var growth = (base, step) => DAYS.map((_, i) => Math.round(base + i * step + Math.sin(i / 2) * step * 3));
+  var SOCIAL_ACCOUNTS = [
+    { id: "ig", name: "Instagram", handle: "@beatwave.app", followers: 18420, growth: 4.2, engagement: 5.1, connected: true, series: growth(17200, 40), limit: 2200 },
+    { id: "tt", name: "TikTok", handle: "@beatwave", followers: 32950, growth: 9.8, engagement: 8.4, connected: true, series: growth(3e4, 98), limit: 2200 },
+    { id: "yt", name: "YouTube", handle: "BEATWAVE Academy", followers: 6120, growth: 2.7, engagement: 3.9, connected: true, series: growth(5960, 6), limit: 5e3 },
+    { id: "x", name: "X", handle: "@beatwaveapp", followers: 4210, growth: -0.6, engagement: 1.2, connected: true, series: growth(4240, -1), limit: 280 },
+    { id: "sc", name: "SoundCloud", handle: "beatwave-mixes", followers: 2890, growth: 1.9, engagement: 2.6, connected: false, series: growth(2830, 2), limit: 500 },
+    { id: "th", name: "Threads", handle: "@beatwave.app", followers: 1540, growth: 6.3, engagement: 4.4, connected: false, series: growth(1450, 3), limit: 500 }
+  ];
+  var SCHEDULED_POSTS = [
+    { id: "p1", when: "2026-11-13 18:00", networks: ["ig", "tt"], text: "C\xF3mo construir un set peak-time en 5 pasos con Copilot", status: "programado" },
+    { id: "p2", when: "2026-11-14 12:30", networks: ["yt"], text: "Clase gratis: armon\xEDa Camelot para principiantes", status: "programado" },
+    { id: "p3", when: "2026-11-15 20:00", networks: ["x", "th"], text: "Black Friday: STUDIO -40% solo 72h", status: "borrador" }
+  ];
+  var CONTENT_LIBRARY = [
+    { id: "c1", type: "Blog", title: "10 errores al mezclar en clave (y c\xF3mo evitarlos)", status: "publicado", author: "Carlos R.", date: "2026-11-08", views: 4820 },
+    { id: "c2", type: "Academia", title: "M\xF3dulo 3 \xB7 Transiciones por energ\xEDa", status: "publicado", author: "Equipo edu", date: "2026-11-05", views: 2310 },
+    { id: "c3", type: "Redes", title: "Reel: auditor\xEDa de un set en 30 s", status: "programado", author: "Luc\xEDa M.", date: "2026-11-13", views: 0 },
+    { id: "c4", type: "Blog", title: "Gu\xEDa de BPM por g\xE9nero 2026", status: "borrador", author: "Carlos R.", date: "2026-11-10", views: 0 },
+    { id: "c5", type: "Academia", title: "Lecci\xF3n \xB7 Cue points para warm-up", status: "revisi\xF3n", author: "Equipo edu", date: "2026-11-11", views: 0 }
+  ];
+  var ACADEMY_MODULES = ["Fundamentos de mezcla", "Armon\xEDa y Camelot", "Estructura de sets", "Uso del Copilot", "Cues y preparaci\xF3n", "Producci\xF3n para DJs"];
+
+  // web/js/admin/sql.js
+  var AGG = /^(count|sum|avg|min|max)\s*\(\s*(\*|[\w.]+)\s*\)$/i;
+  var WRITE = /^\s*(insert|update|delete|drop|alter|create|truncate|grant|revoke)\b/i;
+  var MAX_ROWS = 500;
+  function splitTop(s) {
+    const out = [];
+    let depth = 0, cur = "";
+    for (const ch of s) {
+      if (ch === "(") depth++;
+      if (ch === ")") depth--;
+      if (ch === "," && depth === 0) {
+        out.push(cur.trim());
+        cur = "";
+      } else cur += ch;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+  function resolver(columns) {
+    const map = Object.fromEntries(columns.map((c) => [c.toLowerCase(), c]));
+    return (name) => {
+      const key = name.toLowerCase().split(".").pop();
+      if (!map[key]) throw new Error(`Columna desconocida: ${name}`);
+      return map[key];
+    };
+  }
+  function parseValue(raw) {
+    const v = raw.trim();
+    if (/^'.*'$/.test(v)) return v.slice(1, -1).replace(/''/g, "'");
+    if (/^-?\d+(\.\d+)?$/.test(v)) return Number(v);
+    throw new Error(`Valor no v\xE1lido: ${v} (usa comillas simples para texto)`);
+  }
+  function parseWhere(str, col) {
+    return str.split(/\s+or\s+/i).map((group) => group.split(/\s+and\s+/i).map((atom) => {
+      const m = atom.trim().match(/^([\w.]+)\s*(not\s+like|like|>=|<=|!=|<>|=|>|<)\s*(.+)$/i);
+      if (!m) throw new Error(`Condici\xF3n no v\xE1lida: ${atom.trim()}`);
+      return { col: col(m[1]), op: m[2].toLowerCase().replace(/\s+/g, " "), value: parseValue(m[3]) };
+    }));
+  }
+  function test(row, { col, op, value }) {
+    const a = row[col];
+    if (op === "like" || op === "not like") {
+      const re = new RegExp(`^${String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*").replace(/_/g, ".")}$`, "i");
+      return op === "like" ? re.test(String(a)) : !re.test(String(a));
+    }
+    const [x, y] = typeof value === "number" ? [Number(a), value] : [String(a), value];
+    switch (op) {
+      case "=":
+        return x === y;
+      case "!=":
+      case "<>":
+        return x !== y;
+      case ">":
+        return x > y;
+      case "<":
+        return x < y;
+      case ">=":
+        return x >= y;
+      case "<=":
+        return x <= y;
+      default:
+        return false;
+    }
+  }
+  function aggregate(fn, field, rows) {
+    if (fn === "count") return field === "*" ? rows.length : rows.filter((r) => r[field] != null).length;
+    const vals = rows.map((r) => Number(r[field])).filter((n) => !Number.isNaN(n));
+    if (!vals.length) return null;
+    if (fn === "sum") return round(vals.reduce((a, b) => a + b, 0));
+    if (fn === "avg") return round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    if (fn === "min") return Math.min(...vals);
+    return Math.max(...vals);
+  }
+  var round = (n) => Math.round(n * 100) / 100;
+  var cmp = (a, b) => typeof a === "number" && typeof b === "number" ? a - b : String(a).localeCompare(String(b), "es");
+  function runSql(query, tables) {
+    const started = performance.now();
+    const q = query.replace(/--.*$/gm, "").replace(/\s+/g, " ").trim().replace(/;$/, "");
+    if (!q) throw new Error("Escribe una consulta.");
+    if (WRITE.test(q)) throw new Error("Modo solo lectura: las sentencias de escritura est\xE1n bloqueadas en la consola.");
+    const m = q.match(/^select\s+(.+?)\s+from\s+(\w+)(?:\s+where\s+(.+?))?(?:\s+group\s+by\s+(.+?))?(?:\s+order\s+by\s+(.+?))?(?:\s+limit\s+(\d+))?$/i);
+    if (!m) throw new Error("Sintaxis no soportada. Usa SELECT \u2026 FROM \u2026 [WHERE] [GROUP BY] [ORDER BY] [LIMIT].");
+    const [, selStr, tableName, whereStr, groupStr, orderStr, limitStr] = m;
+    const table = tables[tableName.toLowerCase()];
+    if (!table) throw new Error(`Tabla desconocida: ${tableName}. Disponibles: ${Object.keys(tables).join(", ")}`);
+    const col = resolver(table.columns);
+    let rows = table.rows;
+    if (whereStr) {
+      const groups = parseWhere(whereStr, col);
+      rows = rows.filter((r) => groups.some((g) => g.every((c) => test(r, c))));
+    }
+    const sel = splitTop(selStr).map((item) => {
+      const am = item.match(/^(.+?)\s+as\s+(\w+)$/i);
+      const expr = (am ? am[1] : item).trim();
+      const agg = expr.match(AGG);
+      if (expr === "*") return { star: true };
+      if (agg) return { agg: agg[1].toLowerCase(), field: agg[2] === "*" ? "*" : col(agg[2]), label: am ? am[2] : expr.toLowerCase() };
+      const c = col(expr);
+      return { field: c, label: am ? am[2] : c };
+    });
+    const groupCols = groupStr ? splitTop(groupStr).map(col) : [];
+    const isAgg = groupCols.length > 0 || sel.some((s) => s.agg);
+    let columns, out;
+    if (isAgg) {
+      if (sel.some((s) => s.star)) throw new Error("No se puede usar * junto a GROUP BY o agregados.");
+      sel.forEach((s) => {
+        if (!s.agg && !groupCols.includes(s.field)) throw new Error(`La columna ${s.field} debe aparecer en GROUP BY o en un agregado.`);
+      });
+      const groups = /* @__PURE__ */ new Map();
+      rows.forEach((r) => {
+        const key = groupCols.map((g) => r[g]).join("\0");
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(r);
+      });
+      if (!groupCols.length && !groups.size) groups.set("", []);
+      columns = sel.map((s) => s.label);
+      out = [...groups.values()].map((g) => sel.map((s) => s.agg ? aggregate(s.agg, s.field, g) : g[0][s.field]));
+    } else {
+      columns = sel.flatMap((s) => s.star ? table.columns : [s.label]);
+      out = rows.map((r) => sel.flatMap((s) => s.star ? table.columns.map((c) => r[c]) : [r[s.field]]));
+    }
+    if (orderStr) {
+      const keys = splitTop(orderStr).map((k) => {
+        const km = k.match(/^(.+?)(?:\s+(asc|desc))?$/i);
+        const name = km[1].trim().toLowerCase();
+        const idx = columns.findIndex((c) => c.toLowerCase() === name);
+        if (idx < 0) throw new Error(`ORDER BY debe usar una columna del resultado: ${km[1].trim()}`);
+        return { idx, dir: km[2] && km[2].toLowerCase() === "desc" ? -1 : 1 };
+      });
+      out = [...out].sort((a, b) => {
+        for (const k of keys) {
+          const d = cmp(a[k.idx], b[k.idx]) * k.dir;
+          if (d) return d;
+        }
+        return 0;
+      });
+    }
+    const total = out.length;
+    out = out.slice(0, Math.min(limitStr ? Number(limitStr) : MAX_ROWS, MAX_ROWS));
+    return { columns, rows: out, total, ms: Math.max(1, Math.round(performance.now() - started)) };
+  }
+  function toCsv(columns, rows) {
+    const esc = (v) => v == null ? "" : /[",\n;]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+    return [columns, ...rows].map((r) => r.map(esc).join(",")).join("\n");
+  }
+
+  // web/js/admin/sections-data.jsx
+  var { useState: useState5, useMemo: useMemo2 } = React;
+  var mmss = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+  function QueryConsole({ toast }) {
+    const [sql, setSql] = useState5(SAVED_QUERIES[0].sql);
+    const [result, setResult] = useState5(() => runSql(SAVED_QUERIES[0].sql, SQL_TABLES));
+    const [error, setError] = useState5(null);
+    const [view, setView] = useState5("Tabla");
+    const [history, setHistory] = useState5([]);
+    const [saved, setSaved] = useState5(SAVED_QUERIES);
+    const run = (q = sql) => {
+      try {
+        const r = runSql(q, SQL_TABLES);
+        setResult(r);
+        setError(null);
+        setHistory((h) => [{ sql: q, rows: r.total, ms: r.ms, at: (/* @__PURE__ */ new Date()).toLocaleTimeString("es-ES") }, ...h].slice(0, 8));
+      } catch (e) {
+        setError(e.message);
+        setResult(null);
+      }
+    };
+    const onKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        run();
+      }
+    };
+    const load = (q) => {
+      setSql(q);
+      run(q);
+    };
+    const insert = (text) => setSql((s) => `${s}${/\s$/.test(s) || !s ? "" : " "}${text}`);
+    const exportCsv = () => {
+      if (!result) return;
+      const blob = new Blob([toCsv(result.columns, result.rows)], { type: "text/csv;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "consulta-beatwave.csv";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+    const saveQuery = () => {
+      const name = window.prompt("Nombre de la consulta");
+      if (!name) return;
+      setSaved((s) => [{ name, sql }, ...s]);
+      toast("Consulta guardada");
+    };
+    const chartable = result && result.columns.length >= 2 && result.rows.length > 0 && result.rows.every((r) => typeof r[r.length - 1] === "number");
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Datos", title: "Consultas SQL", desc: "Lanza consultas de solo lectura contra la base de datos. Ctrl/\u2318 + Enter para ejecutar. Las sentencias de escritura est\xE1n bloqueadas." }, /* @__PURE__ */ React.createElement(Button, { icon: "download", onClick: exportCsv, disabled: !result }, "Exportar CSV"), /* @__PURE__ */ React.createElement(Button, { icon: "plus", onClick: saveQuery }, "Guardar consulta")), /* @__PURE__ */ React.createElement("div", { className: "grid q-layout" }, /* @__PURE__ */ React.createElement("aside", { className: "stack" }, /* @__PURE__ */ React.createElement(Card, { title: "Esquema", bodyClass: "schema" }, Object.entries(SQL_TABLES).map(([name, t]) => /* @__PURE__ */ React.createElement("details", { key: name, className: "schema-table", open: name === "eventos_seccion" }, /* @__PURE__ */ React.createElement("summary", null, /* @__PURE__ */ React.createElement(Icon, { name: "db", size: 14 }), /* @__PURE__ */ React.createElement("span", { className: "mono" }, name), /* @__PURE__ */ React.createElement("span", { className: "faint mono schema-count" }, num(t.rows.length))), /* @__PURE__ */ React.createElement("ul", null, /* @__PURE__ */ React.createElement("li", null, /* @__PURE__ */ React.createElement("button", { type: "button", className: "schema-col", onClick: () => insert(name) }, "insertar tabla")), t.columns.map((c) => /* @__PURE__ */ React.createElement("li", { key: c }, /* @__PURE__ */ React.createElement("button", { type: "button", className: "schema-col mono", onClick: () => insert(c) }, c, /* @__PURE__ */ React.createElement("span", { className: "faint" }, typeof t.rows[0][c] === "number" ? "num" : "text")))))))), /* @__PURE__ */ React.createElement(Card, { title: "Consultas guardadas", bodyClass: "list" }, saved.map((q) => /* @__PURE__ */ React.createElement("button", { key: q.name, type: "button", className: "list-item saved-q", onClick: () => load(q.sql) }, /* @__PURE__ */ React.createElement(Icon, { name: "play", size: 12 }), /* @__PURE__ */ React.createElement("span", null, q.name))))), /* @__PURE__ */ React.createElement("div", { className: "stack" }, /* @__PURE__ */ React.createElement("section", { className: "card" }, /* @__PURE__ */ React.createElement("div", { className: "card-head" }, /* @__PURE__ */ React.createElement("h2", { className: "card-title" }, "Editor"), /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement(Badge, { tone: "on" }, "read-only"), /* @__PURE__ */ React.createElement(Button, { variant: "primary", size: "sm", icon: "play", onClick: () => run() }, "Ejecutar"))), /* @__PURE__ */ React.createElement("label", { htmlFor: "sql-editor", className: "sr-only" }, "Consulta SQL"), /* @__PURE__ */ React.createElement("textarea", { id: "sql-editor", className: "sql-editor", spellCheck: "false", value: sql, onChange: (e) => setSql(e.target.value), onKeyDown, rows: 7 })), /* @__PURE__ */ React.createElement("section", { className: "card" }, /* @__PURE__ */ React.createElement("div", { className: "card-head" }, /* @__PURE__ */ React.createElement("h2", { className: "card-title" }, "Resultado", result && /* @__PURE__ */ React.createElement("span", { className: "faint mono q-meta" }, num(result.total), " filas \xB7 ", result.ms, " ms", result.total > result.rows.length ? ` \xB7 mostrando ${result.rows.length}` : "")), chartable && /* @__PURE__ */ React.createElement(Chips, { label: "Vista del resultado", options: ["Tabla", "Gr\xE1fica"], value: view, onChange: setView })), error && /* @__PURE__ */ React.createElement("p", { className: "q-error", role: "alert" }, /* @__PURE__ */ React.createElement(Icon, { name: "x", size: 14 }), error), result && (view === "Gr\xE1fica" && chartable ? /* @__PURE__ */ React.createElement("div", { className: "card-body" }, /* @__PURE__ */ React.createElement(Bars, { items: result.rows.slice(0, 15).map((r) => ({ label: String(r[0]), value: r[r.length - 1] })), format: (v) => num(v) })) : /* @__PURE__ */ React.createElement("div", { className: "tbl-wrap q-results" }, /* @__PURE__ */ React.createElement("table", { className: "tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, result.columns.map((c) => /* @__PURE__ */ React.createElement("th", { key: c, scope: "col" }, c)))), /* @__PURE__ */ React.createElement("tbody", null, result.rows.map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i }, r.map((v, j) => /* @__PURE__ */ React.createElement("td", { key: j, className: typeof v === "number" ? "num mono" : "mono" }, v == null ? /* @__PURE__ */ React.createElement("span", { className: "faint" }, "NULL") : typeof v === "number" ? num(v) : v)))))), !result.rows.length && /* @__PURE__ */ React.createElement("p", { className: "empty" }, "La consulta no devolvi\xF3 filas.")))), history.length > 0 && /* @__PURE__ */ React.createElement(Card, { title: "Historial de esta sesi\xF3n", bodyClass: "list" }, history.map((h, i) => /* @__PURE__ */ React.createElement("button", { key: i, type: "button", className: "list-item saved-q", onClick: () => load(h.sql) }, /* @__PURE__ */ React.createElement("span", { className: "mono faint" }, h.at), /* @__PURE__ */ React.createElement("span", { className: "mono q-hist" }, h.sql.replace(/\s+/g, " ")), /* @__PURE__ */ React.createElement("span", { className: "mono faint" }, h.rows, " f \xB7 ", h.ms, " ms")))))));
+  }
+  function VBars({ items, label }) {
+    const max = Math.max(...items.map((i) => i.value));
+    return /* @__PURE__ */ React.createElement("div", { className: "vbars", role: "img", "aria-label": label }, items.map((it) => /* @__PURE__ */ React.createElement("div", { key: it.label, className: "vbar" }, /* @__PURE__ */ React.createElement("span", { className: "mono vbar-val" }, it.value), /* @__PURE__ */ React.createElement("div", { className: "vbar-track" }, /* @__PURE__ */ React.createElement("div", { className: "vbar-fill", style: { height: `${it.value / max * 100}%` } })), /* @__PURE__ */ React.createElement("span", { className: "mono faint vbar-label" }, it.label))));
+  }
+  var heat = (v, max = 100) => ({ background: `rgba(34, 211, 238, ${(0.06 + v / max * 0.8).toFixed(2)})`, color: v / max > 0.55 ? "var(--bw-cyan-ink)" : "var(--bw-white)" });
+  function TransitionMatrix() {
+    const max = Math.max(...TRANSITIONS.flatMap((t) => t.values));
+    return /* @__PURE__ */ React.createElement("div", { className: "tbl-wrap" }, /* @__PURE__ */ React.createElement("table", { className: "heat" }, /* @__PURE__ */ React.createElement("caption", { className: "sr-only" }, "Porcentaje de usuarios que pasan de una secci\xF3n (fila) a otra (columna)"), /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { scope: "col" }, /* @__PURE__ */ React.createElement("span", { className: "faint" }, "desde \u2193 / hacia \u2192")), FLOW_SECTIONS.map((s) => /* @__PURE__ */ React.createElement("th", { key: s, scope: "col" }, s)))), /* @__PURE__ */ React.createElement("tbody", null, TRANSITIONS.map((t) => /* @__PURE__ */ React.createElement("tr", { key: t.from }, /* @__PURE__ */ React.createElement("th", { scope: "row" }, t.from), t.values.map((v, j) => /* @__PURE__ */ React.createElement("td", { key: j, style: v ? heat(v, max) : void 0, className: "mono" }, v ? `${v}%` : "\u2014")))))));
+  }
+  function Cohorts() {
+    return /* @__PURE__ */ React.createElement("div", { className: "tbl-wrap" }, /* @__PURE__ */ React.createElement("table", { className: "heat" }, /* @__PURE__ */ React.createElement("caption", { className: "sr-only" }, "Retenci\xF3n mensual por cohorte de alta"), /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Cohorte"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Usuarios"), [0, 1, 2, 3, 4, 5].map((m) => /* @__PURE__ */ React.createElement("th", { key: m, scope: "col" }, "M", m)))), /* @__PURE__ */ React.createElement("tbody", null, COHORTS.map((c) => /* @__PURE__ */ React.createElement("tr", { key: c.cohort }, /* @__PURE__ */ React.createElement("th", { scope: "row" }, c.cohort), /* @__PURE__ */ React.createElement("td", { className: "mono muted" }, num(c.size)), [0, 1, 2, 3, 4, 5].map((m) => c.values[m] != null ? /* @__PURE__ */ React.createElement("td", { key: m, className: "mono", style: heat(c.values[m]) }, c.values[m], "%") : /* @__PURE__ */ React.createElement("td", { key: m, className: "heat-empty" })))))));
+  }
+  function Behavior({ go }) {
+    const [range, setRange] = useState5("30 d\xEDas");
+    const k = BEHAVIOR_KPIS;
+    const totalSec = useMemo2(() => TIME_BY_SECTION.reduce((a, b) => a + b.value * b.visits, 0), []);
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Insights", title: "Comportamiento de usuarios", desc: "Tiempo de uso, navegaci\xF3n entre secciones, retenci\xF3n y volumen de temas procesados por usuario." }, /* @__PURE__ */ React.createElement(Chips, { label: "Rango", options: ["7 d\xEDas", "30 d\xEDas", "90 d\xEDas"], value: range, onChange: setRange }), /* @__PURE__ */ React.createElement(Button, { icon: "terminal", onClick: () => go("query") }, "Abrir en SQL")), /* @__PURE__ */ React.createElement("div", { className: "grid g-4" }, /* @__PURE__ */ React.createElement(Stat, { label: "Tiempo medio por sesi\xF3n", value: `${k.avgSessionMin.toFixed(1)} min`, delta: "6,2%" }), /* @__PURE__ */ React.createElement(Stat, { label: "Sesiones por usuario", value: k.sessionsPerUser.toFixed(1), delta: "3,1%" }), /* @__PURE__ */ React.createElement(Stat, { label: "Temas procesados / usuario", value: k.tracksPerUser.toFixed(1), delta: "11,4%" }), /* @__PURE__ */ React.createElement(Stat, { label: "Secciones por sesi\xF3n", value: k.sectionsPerSession.toFixed(1), delta: "-1,8%" })), /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(Card, { title: "Duraci\xF3n media de sesi\xF3n (min)", action: /* @__PURE__ */ React.createElement("span", { className: "faint mono" }, range) }, /* @__PURE__ */ React.createElement(LineChart, { data: AVG_SESSION_TREND, labels: DAYS })), /* @__PURE__ */ React.createElement(Card, { title: "Sesiones por dispositivo" }, /* @__PURE__ */ React.createElement(Bars, { items: DEVICE_SPLIT, format: num }))), /* @__PURE__ */ React.createElement("div", { className: "grid g-2" }, /* @__PURE__ */ React.createElement(Card, { title: "Tiempo medio por secci\xF3n (mm:ss)" }, /* @__PURE__ */ React.createElement(Bars, { items: TIME_BY_SECTION, format: mmss })), /* @__PURE__ */ React.createElement(Card, { title: "Reparto del tiempo total", bodyClass: "tbl-wrap" }, /* @__PURE__ */ React.createElement("table", { className: "tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Secci\xF3n"), /* @__PURE__ */ React.createElement("th", { scope: "col", className: "num" }, "Visitas"), /* @__PURE__ */ React.createElement("th", { scope: "col", className: "num" }, "Media"), /* @__PURE__ */ React.createElement("th", { scope: "col", className: "num" }, "% tiempo"))), /* @__PURE__ */ React.createElement("tbody", null, TIME_BY_SECTION.map((s) => /* @__PURE__ */ React.createElement("tr", { key: s.label }, /* @__PURE__ */ React.createElement("td", null, s.label), /* @__PURE__ */ React.createElement("td", { className: "num mono" }, num(s.visits)), /* @__PURE__ */ React.createElement("td", { className: "num mono" }, mmss(s.value)), /* @__PURE__ */ React.createElement("td", { className: "num mono" }, (s.value * s.visits * 100 / totalSec).toFixed(1), "%"))))))), /* @__PURE__ */ React.createElement(Card, { title: "Navegaci\xF3n entre secciones", action: /* @__PURE__ */ React.createElement("span", { className: "faint" }, "% de salidas desde cada secci\xF3n") }, /* @__PURE__ */ React.createElement(TransitionMatrix, null)), /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(Card, { title: "Recorridos m\xE1s frecuentes", bodyClass: "list" }, TOP_PATHS.map((p) => /* @__PURE__ */ React.createElement("div", { key: p.path.join(), className: "list-item path-row" }, /* @__PURE__ */ React.createElement("div", { className: "path" }, p.path.map((step, i) => /* @__PURE__ */ React.createElement(React.Fragment, { key: step + i }, i > 0 && /* @__PURE__ */ React.createElement("span", { className: "faint", "aria-hidden": "true" }, "\u2192"), /* @__PURE__ */ React.createElement("span", { className: "code-tag" }, step)))), /* @__PURE__ */ React.createElement("span", { className: "mono muted" }, p.share, "% sesiones"), /* @__PURE__ */ React.createElement("span", { className: "mono cyan" }, p.conv, "% conv.")))), /* @__PURE__ */ React.createElement(Card, { title: "Temas procesados por usuario" }, /* @__PURE__ */ React.createElement(VBars, { items: TRACKS_HISTOGRAM, label: "Distribuci\xF3n de usuarios por n\xFAmero de temas procesados" }), /* @__PURE__ */ React.createElement("p", { className: "faint vbars-cap" }, "N\xBA de usuarios por tramo de temas procesados"))), /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(Card, { title: "Retenci\xF3n por cohorte" }, /* @__PURE__ */ React.createElement(Cohorts, null)), /* @__PURE__ */ React.createElement(Card, { title: "Usuarios con m\xE1s temas", bodyClass: "tbl-wrap" }, /* @__PURE__ */ React.createElement("table", { className: "tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Usuario"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Plan"), /* @__PURE__ */ React.createElement("th", { scope: "col", className: "num" }, "Temas"), /* @__PURE__ */ React.createElement("th", { scope: "col", className: "num" }, "Min"))), /* @__PURE__ */ React.createElement("tbody", null, TOP_PROCESSORS.map((u) => /* @__PURE__ */ React.createElement("tr", { key: u.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, u.email), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(Badge, { tone: u.plan === "FREE" ? "off" : "on", plain: true }, u.plan)), /* @__PURE__ */ React.createElement("td", { className: "num mono" }, u.temas_procesados), /* @__PURE__ */ React.createElement("td", { className: "num mono" }, num(u.minutos_totales)))))))));
+  }
+
+  // web/js/admin/sections-content.jsx
+  var { useState: useState6 } = React;
+  var statusTone = { publicado: "on", programado: "on", borrador: "off", revisi\u00F3n: "off", error: "err" };
+  var netName = (id) => {
+    var _a;
+    return ((_a = SOCIAL_ACCOUNTS.find((a) => a.id === id)) == null ? void 0 : _a.name) || id;
+  };
+  var initials = (name) => name.slice(0, 2).toUpperCase();
+  function Social({ go, toast }) {
+    const [accounts, setAccounts] = useState6(SOCIAL_ACCOUNTS);
+    const [selected, setSelected] = useState6("tt");
+    const [posts, setPosts] = useState6(SCHEDULED_POSTS);
+    const current = accounts.find((a) => a.id === selected);
+    const connected = accounts.filter((a) => a.connected);
+    const totalFollowers = connected.reduce((s, a) => s + a.followers, 0);
+    const avgEng = connected.reduce((s, a) => s + a.engagement, 0) / (connected.length || 1);
+    const toggleConn = (id) => {
+      setAccounts((list) => list.map((a) => a.id === id ? { ...a, connected: !a.connected } : a));
+      const acc = accounts.find((a) => a.id === id);
+      toast(acc.connected ? `${acc.name} desconectada` : `${acc.name} conectada`);
+    };
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Contenido", title: "Redes sociales", desc: "Cuentas conectadas, crecimiento de audiencia y publicaciones programadas." }, /* @__PURE__ */ React.createElement(Button, { variant: "primary", icon: "pen", onClick: () => go("content") }, "Crear publicaci\xF3n")), /* @__PURE__ */ React.createElement("div", { className: "grid g-4" }, /* @__PURE__ */ React.createElement(Stat, { label: "Seguidores totales", value: num(totalFollowers), delta: "5,9%" }), /* @__PURE__ */ React.createElement(Stat, { label: "Engagement medio", value: `${avgEng.toFixed(1)}%`, delta: "0,8%" }), /* @__PURE__ */ React.createElement(Stat, { label: "Cuentas conectadas", value: `${connected.length}/${accounts.length}` }), /* @__PURE__ */ React.createElement(Stat, { label: "Publicaciones programadas", value: posts.filter((p) => p.status === "programado").length })), /* @__PURE__ */ React.createElement("div", { className: "grid g-3" }, accounts.map((a) => /* @__PURE__ */ React.createElement("section", { key: a.id, className: `card social-card ${selected === a.id ? "is-selected" : ""}` }, /* @__PURE__ */ React.createElement("button", { type: "button", className: "social-main", onClick: () => setSelected(a.id), "aria-pressed": selected === a.id }, /* @__PURE__ */ React.createElement("div", { className: "ico-box mono" }, initials(a.name)), /* @__PURE__ */ React.createElement("div", { className: "social-id" }, /* @__PURE__ */ React.createElement("span", { className: "social-name" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "faint mono" }, a.handle)), /* @__PURE__ */ React.createElement(Badge, { tone: a.connected ? "on" : "off" }, a.connected ? "Conectada" : "Sin conectar")), /* @__PURE__ */ React.createElement("div", { className: "social-metrics" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "faint" }, "Seguidores"), /* @__PURE__ */ React.createElement("span", { className: "mono" }, num(a.followers))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "faint" }, "30 d\xEDas"), /* @__PURE__ */ React.createElement("span", { className: `mono ${a.growth >= 0 ? "up" : "down"}` }, a.growth >= 0 ? "+" : "", a.growth, "%")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "faint" }, "Engagement"), /* @__PURE__ */ React.createElement("span", { className: "mono" }, a.engagement, "%"))), /* @__PURE__ */ React.createElement("div", { className: "social-foot" }, /* @__PURE__ */ React.createElement(Button, { size: "sm", variant: a.connected ? "ghost" : "", onClick: () => toggleConn(a.id) }, a.connected ? "Desconectar" : "Conectar cuenta"))))), /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(Card, { title: `Crecimiento de seguidores \xB7 ${current.name}`, action: /* @__PURE__ */ React.createElement("span", { className: "faint mono" }, "30 d\xEDas") }, /* @__PURE__ */ React.createElement(LineChart, { data: current.series, labels: DAYS })), /* @__PURE__ */ React.createElement(Card, { title: "Cola de publicaci\xF3n", bodyClass: "list" }, posts.map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, className: "list-item post-row" }, /* @__PURE__ */ React.createElement("div", { className: "stack-tight" }, /* @__PURE__ */ React.createElement("span", null, p.text), /* @__PURE__ */ React.createElement("span", { className: "faint mono" }, p.when, " \xB7 ", p.networks.map(netName).join(", "))), /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement(Badge, { tone: statusTone[p.status] }, p.status), /* @__PURE__ */ React.createElement(Button, { size: "sm", variant: "ghost", icon: "trash", "aria-label": `Eliminar publicaci\xF3n: ${p.text}`, onClick: () => {
+      setPosts((l) => l.filter((x) => x.id !== p.id));
+      toast("Publicaci\xF3n eliminada");
+    } })))), !posts.length && /* @__PURE__ */ React.createElement("p", { className: "empty" }, "No hay publicaciones en cola."))));
+  }
+  var HASHTAGS = ["#DJ", "#DJLife", "#Techno", "#HouseMusic", "#Camelot", "#BEATWAVE", "#MixingTips"];
+  function SocialComposer({ onCreate }) {
+    const connected = SOCIAL_ACCOUNTS.filter((a) => a.connected);
+    const [nets, setNets] = useState6(["ig", "tt"]);
+    const [text, setText] = useState6("");
+    const [when, setWhen] = useState6("2026-11-14T18:00");
+    const limit = Math.min(...nets.map((n) => SOCIAL_ACCOUNTS.find((a) => a.id === n).limit), 5e3);
+    const over = text.length > limit;
+    const toggleNet = (id) => setNets((l) => l.includes(id) ? l.filter((x) => x !== id) : [...l, id]);
+    const submit = (status) => {
+      if (!text.trim() || !nets.length || over) return;
+      onCreate({ type: "Redes", title: text.slice(0, 70), status, date: when.slice(0, 10) }, status === "programado" ? `Programado en ${nets.map(netName).join(", ")}` : "Borrador guardado");
+      setText("");
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(Card, { title: "Nueva publicaci\xF3n" }, /* @__PURE__ */ React.createElement("div", { className: "stack" }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("span", { className: "field-label", id: "nets-label" }, "Redes"), /* @__PURE__ */ React.createElement("div", { className: "chips", role: "group", "aria-labelledby": "nets-label" }, connected.map((a) => /* @__PURE__ */ React.createElement("button", { key: a.id, type: "button", className: "chip", "aria-pressed": nets.includes(a.id), onClick: () => toggleNet(a.id) }, a.name)))), /* @__PURE__ */ React.createElement(Field, { label: "Texto", id: "sc-text" }, /* @__PURE__ */ React.createElement("textarea", { id: "sc-text", className: "textarea", rows: 6, value: text, onChange: (e) => setText(e.target.value), placeholder: "Escribe el copy de la publicaci\xF3n\u2026" })), /* @__PURE__ */ React.createElement("div", { className: "row between wrap" }, /* @__PURE__ */ React.createElement("div", { className: "chips", role: "group", "aria-label": "A\xF1adir hashtag" }, HASHTAGS.map((h) => /* @__PURE__ */ React.createElement("button", { key: h, type: "button", className: "chip", onClick: () => setText((t) => `${t}${t && !/\s$/.test(t) ? " " : ""}${h}`) }, h))), /* @__PURE__ */ React.createElement("span", { className: `mono ${over ? "danger" : "faint"}` }, text.length, "/", limit)), /* @__PURE__ */ React.createElement(Field, { label: "Programar para", id: "sc-when" }, /* @__PURE__ */ React.createElement("input", { id: "sc-when", type: "datetime-local", className: "input", value: when, onChange: (e) => setWhen(e.target.value) })), /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement(Button, { variant: "primary", icon: "send", onClick: () => submit("programado"), disabled: !text.trim() || !nets.length || over }, "Programar"), /* @__PURE__ */ React.createElement(Button, { onClick: () => submit("borrador"), disabled: !text.trim() }, "Guardar borrador")))), /* @__PURE__ */ React.createElement(Card, { title: "Vista previa" }, /* @__PURE__ */ React.createElement("div", { className: "post-preview" }, /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement("div", { className: "adm-brand-mark" }, "BW"), /* @__PURE__ */ React.createElement("div", { className: "stack-tight" }, /* @__PURE__ */ React.createElement("span", { className: "social-name" }, "beatwave.app"), /* @__PURE__ */ React.createElement("span", { className: "faint" }, nets.map(netName).join(" \xB7 ") || "Selecciona una red"))), /* @__PURE__ */ React.createElement("p", { className: "post-text" }, text || /* @__PURE__ */ React.createElement("span", { className: "faint" }, "El texto aparecer\xE1 aqu\xED.")), /* @__PURE__ */ React.createElement("span", { className: "faint mono" }, when.replace("T", " ")))));
+  }
+  var slugify = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  function BlogEditor({ onCreate }) {
+    const [f, setF] = useState6({ title: "", excerpt: "", body: "", category: "T\xE9cnica", tags: "" });
+    const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+    const words = f.body.trim() ? f.body.trim().split(/\s+/).length : 0;
+    const slug = slugify(f.title) || "nuevo-articulo";
+    const submit = (status) => {
+      if (!f.title.trim()) return;
+      onCreate({ type: "Blog", title: f.title, status, date: "2026-11-12" }, status === "publicado" ? "Art\xEDculo publicado en el blog" : "Borrador guardado");
+      setF({ title: "", excerpt: "", body: "", category: "T\xE9cnica", tags: "" });
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(Card, { title: "Nuevo art\xEDculo" }, /* @__PURE__ */ React.createElement("div", { className: "stack" }, /* @__PURE__ */ React.createElement(Field, { label: "T\xEDtulo", id: "bl-title" }, /* @__PURE__ */ React.createElement("input", { id: "bl-title", className: "input", value: f.title, onChange: set("title"), placeholder: "Ej. C\xF3mo preparar un set de 2 horas" })), /* @__PURE__ */ React.createElement("div", { className: "grid g-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Categor\xEDa", id: "bl-cat" }, /* @__PURE__ */ React.createElement("select", { id: "bl-cat", className: "select", value: f.category, onChange: set("category") }, ["T\xE9cnica", "Armon\xEDa", "Producto", "Entrevistas", "Novedades"].map((c) => /* @__PURE__ */ React.createElement("option", { key: c }, c)))), /* @__PURE__ */ React.createElement(Field, { label: "Etiquetas", id: "bl-tags" }, /* @__PURE__ */ React.createElement("input", { id: "bl-tags", className: "input", value: f.tags, onChange: set("tags"), placeholder: "techno, bpm, mezcla" }))), /* @__PURE__ */ React.createElement(Field, { label: "Extracto / meta descripci\xF3n", id: "bl-ex" }, /* @__PURE__ */ React.createElement("textarea", { id: "bl-ex", className: "textarea", rows: 2, value: f.excerpt, onChange: set("excerpt") })), /* @__PURE__ */ React.createElement("span", { className: `mono ${f.excerpt.length > 160 ? "danger" : "faint"}` }, f.excerpt.length, "/160 caracteres"), /* @__PURE__ */ React.createElement(Field, { label: "Contenido (Markdown)", id: "bl-body" }, /* @__PURE__ */ React.createElement("textarea", { id: "bl-body", className: "textarea mono", rows: 10, value: f.body, onChange: set("body"), placeholder: "## Introducci\xF3n\n\nEscribe aqu\xED\u2026" })), /* @__PURE__ */ React.createElement("div", { className: "row between wrap" }, /* @__PURE__ */ React.createElement("span", { className: "faint mono" }, words, " palabras \xB7 ", Math.max(1, Math.round(words / 220)), " min de lectura"), /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement(Button, { onClick: () => submit("borrador"), disabled: !f.title.trim() }, "Guardar borrador"), /* @__PURE__ */ React.createElement(Button, { variant: "primary", icon: "send", onClick: () => submit("publicado"), disabled: !f.title.trim() }, "Publicar"))))), /* @__PURE__ */ React.createElement("div", { className: "stack" }, /* @__PURE__ */ React.createElement(Card, { title: "Vista previa en Google" }, /* @__PURE__ */ React.createElement("div", { className: "serp", "aria-label": "Vista previa en Google" }, /* @__PURE__ */ React.createElement("div", { className: "serp-url" }, "beatwave.pro \u203A blog \u203A ", slug), /* @__PURE__ */ React.createElement("div", { className: "serp-title" }, f.title || "T\xEDtulo del art\xEDculo", " \u2014 BEATWAVE"), /* @__PURE__ */ React.createElement("p", { className: "serp-desc" }, f.excerpt || "A\xF1ade un extracto para controlar c\xF3mo aparece el art\xEDculo en buscadores."))), /* @__PURE__ */ React.createElement(Card, { title: "Checklist SEO", bodyClass: "list" }, [
+      ["T\xEDtulo entre 30 y 60 caracteres", f.title.length >= 30 && f.title.length <= 60],
+      ["Meta descripci\xF3n de 70\u2013160", f.excerpt.length >= 70 && f.excerpt.length <= 160],
+      ["M\xE1s de 600 palabras", words > 600],
+      ["Incluye subt\xEDtulos (##)", /^##\s/m.test(f.body)],
+      ["Al menos una etiqueta", f.tags.trim().length > 0]
+    ].map(([label, ok]) => /* @__PURE__ */ React.createElement("div", { key: label, className: "list-item" }, /* @__PURE__ */ React.createElement(Badge, { tone: ok ? "on" : "off" }, ok ? "OK" : "Pendiente"), /* @__PURE__ */ React.createElement("span", { className: ok ? "" : "muted" }, label))))));
+  }
+  var BLOCK_TYPES = ["Texto", "V\xEDdeo", "Ejercicio", "Quiz"];
+  function LessonBuilder({ onCreate }) {
+    const [f, setF] = useState6({ module: ACADEMY_MODULES[0], title: "", level: "Inicial", minutes: 12, audience: "Todos" });
+    const [blocks, setBlocks] = useState6([{ id: 1, type: "Texto", content: "" }, { id: 2, type: "V\xEDdeo", content: "" }]);
+    const [featured, setFeatured] = useState6(false);
+    const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+    const addBlock = (type) => setBlocks((b) => [...b, { id: Date.now(), type, content: "" }]);
+    const updateBlock = (id, content) => setBlocks((b) => b.map((x) => x.id === id ? { ...x, content } : x));
+    const removeBlock = (id) => setBlocks((b) => b.filter((x) => x.id !== id));
+    const move = (i, d) => setBlocks((b) => {
+      const n = [...b];
+      const j = i + d;
+      if (j < 0 || j >= n.length) return b;
+      [n[i], n[j]] = [n[j], n[i]];
+      return n;
+    });
+    const submit = (status) => {
+      if (!f.title.trim()) return;
+      onCreate({ type: "Academia", title: `${f.module} \xB7 ${f.title}`, status, date: "2026-11-12" }, status === "publicado" ? "Lecci\xF3n publicada en Academia" : "Lecci\xF3n enviada a revisi\xF3n");
+      setF({ ...f, title: "" });
+    };
+    const placeholder = { Texto: "Explicaci\xF3n de la lecci\xF3n\u2026", V\u00EDdeo: "URL del v\xEDdeo (YouTube, Vimeo o CDN)", Ejercicio: "Instrucciones del ejercicio pr\xE1ctico en la app\u2026", Quiz: "Pregunta | respuesta correcta | opci\xF3n 2 | opci\xF3n 3" };
+    return /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(Card, { title: "Nueva lecci\xF3n de Academia" }, /* @__PURE__ */ React.createElement("div", { className: "stack" }, /* @__PURE__ */ React.createElement("div", { className: "grid g-2" }, /* @__PURE__ */ React.createElement(Field, { label: "M\xF3dulo", id: "ac-mod" }, /* @__PURE__ */ React.createElement("select", { id: "ac-mod", className: "select", value: f.module, onChange: set("module") }, ACADEMY_MODULES.map((m) => /* @__PURE__ */ React.createElement("option", { key: m }, m)))), /* @__PURE__ */ React.createElement(Field, { label: "T\xEDtulo de la lecci\xF3n", id: "ac-title" }, /* @__PURE__ */ React.createElement("input", { id: "ac-title", className: "input", value: f.title, onChange: set("title"), placeholder: "Ej. Mezclar en claves adyacentes" }))), /* @__PURE__ */ React.createElement("div", { className: "grid g-3" }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("span", { className: "field-label" }, "Nivel"), /* @__PURE__ */ React.createElement(Chips, { label: "Nivel", options: ["Inicial", "Medio", "Avanzado"], value: f.level, onChange: (level) => setF({ ...f, level }) })), /* @__PURE__ */ React.createElement(Field, { label: "Duraci\xF3n (min)", id: "ac-min" }, /* @__PURE__ */ React.createElement("input", { id: "ac-min", type: "number", min: "1", className: "input", value: f.minutes, onChange: set("minutes") })), /* @__PURE__ */ React.createElement(Field, { label: "Visible para", id: "ac-aud" }, /* @__PURE__ */ React.createElement("select", { id: "ac-aud", className: "select", value: f.audience, onChange: set("audience") }, ["Todos", "PRO y STUDIO", "Solo STUDIO"].map((a) => /* @__PURE__ */ React.createElement("option", { key: a }, a))))), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("span", { className: "field-label" }, "Bloques de contenido"), /* @__PURE__ */ React.createElement("ol", { className: "blocks" }, blocks.map((b, i) => /* @__PURE__ */ React.createElement("li", { key: b.id, className: "block" }, /* @__PURE__ */ React.createElement("div", { className: "row between" }, /* @__PURE__ */ React.createElement("span", { className: "code-tag" }, i + 1, " \xB7 ", b.type), /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement(Button, { size: "sm", variant: "ghost", icon: "up", "aria-label": "Subir bloque", onClick: () => move(i, -1), disabled: i === 0 }), /* @__PURE__ */ React.createElement(Button, { size: "sm", variant: "ghost", icon: "down", "aria-label": "Bajar bloque", onClick: () => move(i, 1), disabled: i === blocks.length - 1 }), /* @__PURE__ */ React.createElement(Button, { size: "sm", variant: "ghost", icon: "trash", "aria-label": "Eliminar bloque", onClick: () => removeBlock(b.id) }))), /* @__PURE__ */ React.createElement("label", { htmlFor: `blk-${b.id}`, className: "sr-only" }, "Contenido del bloque ", b.type), /* @__PURE__ */ React.createElement("textarea", { id: `blk-${b.id}`, className: "textarea", rows: b.type === "Texto" ? 4 : 2, value: b.content, onChange: (e) => updateBlock(b.id, e.target.value), placeholder: placeholder[b.type] })))), /* @__PURE__ */ React.createElement("div", { className: "row wrap" }, BLOCK_TYPES.map((t) => /* @__PURE__ */ React.createElement(Button, { key: t, size: "sm", icon: "plus", onClick: () => addBlock(t) }, t)))), /* @__PURE__ */ React.createElement("div", { className: "row between wrap" }, /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement(Toggle, { checked: featured, onChange: setFeatured, label: "Destacar en la portada de Academia" }), /* @__PURE__ */ React.createElement("span", { className: "muted" }, "Destacar en la portada de Academia")), /* @__PURE__ */ React.createElement("div", { className: "row" }, /* @__PURE__ */ React.createElement(Button, { onClick: () => submit("revisi\xF3n"), disabled: !f.title.trim() }, "Enviar a revisi\xF3n"), /* @__PURE__ */ React.createElement(Button, { variant: "primary", icon: "send", onClick: () => submit("publicado"), disabled: !f.title.trim() }, "Publicar"))))), /* @__PURE__ */ React.createElement(Card, { title: "Esquema de la lecci\xF3n" }, /* @__PURE__ */ React.createElement("div", { className: "stack" }, /* @__PURE__ */ React.createElement("div", { className: "stack-tight" }, /* @__PURE__ */ React.createElement("span", { className: "faint mono" }, f.module), /* @__PURE__ */ React.createElement("span", { className: "lesson-title" }, f.title || "T\xEDtulo de la lecci\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "muted" }, f.level, " \xB7 ", f.minutes, " min \xB7 ", f.audience, featured ? " \xB7 Destacada" : "")), /* @__PURE__ */ React.createElement("ol", { className: "outline" }, blocks.map((b) => /* @__PURE__ */ React.createElement("li", { key: b.id }, /* @__PURE__ */ React.createElement("span", { className: "code-tag" }, b.type), /* @__PURE__ */ React.createElement("span", { className: b.content ? "" : "faint" }, b.content ? b.content.slice(0, 60) : "Sin contenido")))))));
+  }
+  function ContentStudio({ toast }) {
+    const [tab, setTab] = useState6("Redes");
+    const [library, setLibrary] = useState6(CONTENT_LIBRARY);
+    const [filter, setFilter] = useState6("Todo");
+    const onCreate = (item, msg) => {
+      setLibrary((l) => [{ id: `c${Date.now()}`, author: "Carlos R.", views: 0, ...item }, ...l]);
+      toast(msg);
+    };
+    const rows = filter === "Todo" ? library : library.filter((c) => c.type === filter);
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Contenido", title: "Estudio de contenido", desc: "Crea publicaciones para redes, art\xEDculos para el blog y lecciones internas para las secciones de aprendizaje." }, /* @__PURE__ */ React.createElement(Chips, { label: "Tipo de contenido", options: ["Redes", "Blog", "Academia"], value: tab, onChange: setTab })), tab === "Redes" && /* @__PURE__ */ React.createElement(SocialComposer, { onCreate }), tab === "Blog" && /* @__PURE__ */ React.createElement(BlogEditor, { onCreate }), tab === "Academia" && /* @__PURE__ */ React.createElement(LessonBuilder, { onCreate }), /* @__PURE__ */ React.createElement(Card, { title: "Biblioteca de contenido", action: /* @__PURE__ */ React.createElement(Chips, { label: "Filtrar biblioteca", options: ["Todo", "Redes", "Blog", "Academia"], value: filter, onChange: setFilter }), bodyClass: "tbl-wrap" }, /* @__PURE__ */ React.createElement("table", { className: "tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { scope: "col" }, "T\xEDtulo"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Tipo"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Estado"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Autor"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Fecha"), /* @__PURE__ */ React.createElement("th", { scope: "col", className: "num" }, "Vistas"))), /* @__PURE__ */ React.createElement("tbody", null, rows.map((c) => /* @__PURE__ */ React.createElement("tr", { key: c.id }, /* @__PURE__ */ React.createElement("td", null, c.title), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("span", { className: "code-tag" }, c.type)), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(Badge, { tone: statusTone[c.status] }, c.status)), /* @__PURE__ */ React.createElement("td", { className: "muted" }, c.author), /* @__PURE__ */ React.createElement("td", { className: "mono muted" }, c.date), /* @__PURE__ */ React.createElement("td", { className: "num mono" }, c.views ? num(c.views) : "\u2014")))))));
+  }
+
   // web/js/admin.jsx
-  var { useState: useState5, useEffect } = React;
+  var { useState: useState7, useEffect } = React;
   var NAV = [
     { group: "Operaci\xF3n", items: [
       { id: "overview", label: "Resumen", icon: "home", C: Overview },
-      { id: "database", label: "Base de datos", icon: "db", C: Database }
+      { id: "database", label: "Base de datos", icon: "db", C: Database },
+      { id: "query", label: "Consultas SQL", icon: "code", C: QueryConsole }
     ] },
     { group: "Crecimiento", items: [
       { id: "promos", label: "Promociones", icon: "megaphone", C: Promotions, count: 2 },
@@ -345,7 +801,12 @@
     ] },
     { group: "Insights", items: [
       { id: "analytics", label: "Anal\xEDtica", icon: "chart", C: Analytics },
+      { id: "behavior", label: "Comportamiento", icon: "flow", C: Behavior },
       { id: "seo", label: "SEO", icon: "search", C: Seo }
+    ] },
+    { group: "Contenido", items: [
+      { id: "social", label: "Redes sociales", icon: "share", C: Social },
+      { id: "content", label: "Estudio de contenido", icon: "pen", C: ContentStudio }
     ] },
     { group: "Negocio", items: [
       { id: "billing", label: "Facturaci\xF3n", icon: "card", C: Billing }
@@ -359,8 +820,8 @@
   var ALL = NAV.flatMap((g) => g.items);
   var fromHash = () => ALL.some((i) => i.id === location.hash.slice(1)) ? location.hash.slice(1) : "overview";
   function AdminApp() {
-    const [active, setActive] = useState5(fromHash);
-    const [menuOpen, setMenuOpen] = useState5(false);
+    const [active, setActive] = useState7(fromHash);
+    const [menuOpen, setMenuOpen] = useState7(false);
     const [toastNode, toast] = useToast();
     useEffect(() => {
       const onHash = () => setActive(fromHash());
