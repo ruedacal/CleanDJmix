@@ -1597,8 +1597,14 @@ return folderPath'''
                         lang="es"
                     )
 
-                track_genre = str(info.get("genre") or "Tech House")
-                track_subgenre = str(info.get("subgenre") or track_genre)
+                track_genre = AudioProcessorService.normalizar_genero_canonico(
+                    info.get("genre") or info.get("subgenre") or "",
+                    bpm=bpm_num,
+                    filepath=full_path,
+                    title=title_str,
+                    artist=artist_str
+                )
+                track_subgenre = track_genre
                 v_type = TagSanitizerService.extraer_tipo_version(f"{title_str} {file}")
 
                 track_obj = {
@@ -1955,13 +1961,16 @@ return folderPath'''
         title = re.sub(r'\s+', ' ', str(title or title_fb)).strip()
         artist = re.sub(r'\s+', ' ', str(artist or artist_fb)).strip()
 
-        if " / " in genre_str:
-            parts = genre_str.split(" / ", 1)
-            genre_str = parts[0].strip()
-            if not subgenre_str:
-                subgenre_str = parts[1].strip()
-        genre_str = genre_str or "Tech House"
-        subgenre_str = subgenre_str or "Tech House"
+        b_calc = float(bpm_str) if bpm_str != "--" else 126.0
+        genre_clean = AudioProcessorService.normalizar_genero_canonico(
+            genre_str or subgenre_str or "",
+            bpm=b_calc,
+            filepath=full_path,
+            title=title,
+            artist=artist
+        )
+        genre_str = genre_clean
+        subgenre_str = genre_clean
 
         cues_frase = []
         if bpm_str != "--" and dur_str != "00:00":

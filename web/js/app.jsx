@@ -8611,7 +8611,9 @@ const LibraryWorkspace = ({
     selectedTrackIds = new Set(),
     onMaterializarEnDisco,
     onAuditarCrate,
-    onNavigateTab
+    onNavigateTab,
+    onLoadFolderFromDisk,
+    currentFolder = ''
 }) => {
     const [activeLibId, setActiveLibId] = useState(activeLibraryId || (libraries[0] && libraries[0].id) || 'lib_default');
     const [libNameInput, setLibNameInput] = useState('');
@@ -8880,6 +8882,17 @@ const LibraryWorkspace = ({
                         <span className="text-xs font-mono text-emerald-400 font-bold animate-pulse px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60">
                             {feedbackMsg}
                         </span>
+                    )}
+                    {onLoadFolderFromDisk && (
+                        <button
+                            type="button"
+                            onClick={() => onLoadFolderFromDisk()}
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                            title="Seleccionar y cargar una carpeta de música desde tu ordenador"
+                        >
+                            <Icons.Folder size={15} />
+                            <span>Cargar desde el ordenador</span>
+                        </button>
                     )}
                     {onNavigateTab && (
                         <button 
@@ -12947,8 +12960,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                         {/* SUBGÉNERO */}
                                         {visibleColumns.subgenre && (
                                             <td className="py-2 px-2 text-center">
-                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block" title={row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}>
-                                                    {row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block" title={(!row.subgenre || ['Pop', 'Electronic', 'Dance', 'Club', 'Other'].includes(row.subgenre)) ? (row.genre || 'Tech House') : row.subgenre}>
+                                                    {(!row.subgenre || ['Pop', 'Electronic', 'Dance', 'Club', 'Other'].includes(row.subgenre)) ? (row.genre || 'Tech House') : row.subgenre}
                                                 </span>
                                             </td>
                                         )}
@@ -13074,12 +13087,12 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                         {visibleColumns.beatgrid_status && (
                                             <td className="py-2 px-1.5 text-center">
                                                 {parseFloat(row.first_downbeat_ms || 0) > 0 ? (
-                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 text-blue-300 border border-blue-800/60 shadow-sm" title={`Beatgrid 1.0.0 anclado al primer bombo real a ${Number(row.first_downbeat_ms).toFixed(1)} ms`}>
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                                                        {`Grid ${Number(row.first_downbeat_ms).toFixed(0)}ms`}
+                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 text-blue-300 border border-blue-800/60 shadow-sm" title={`Beatgrid 1.0.0 bloqueado al transitorio del primer golpe de bombo real a ${Number(row.first_downbeat_ms).toFixed(1)} ms. Alineación de fase perfecta y cero deriva.`}>
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                                                        {`1.0.0 (${Number(row.first_downbeat_ms).toFixed(0)}ms)`}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-zinc-500 text-[10px] font-mono">--</span>
+                                                    <span className="text-zinc-500 text-[10px] font-mono" title="Beatgrid no auditado">⚪ Pendiente</span>
                                                 )}
                                             </td>
                                         )}
@@ -19300,8 +19313,8 @@ const SpotifyWorkspace = ({
                                         {/* SUBGÉNERO */}
                                         {poolVisibleColumns.subgenre !== false && (
                                             <td className="py-2 px-2 text-center">
-                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block" title={row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}>
-                                                    {row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Tech House')}
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-djzinc-850 text-gray-300 border border-djzinc-750 truncate max-w-[110px] inline-block" title={(!row.subgenre || ['Pop', 'Electronic', 'Dance', 'Club', 'Other'].includes(row.subgenre)) ? (row.genre || 'Tech House') : row.subgenre}>
+                                                    {(!row.subgenre || ['Pop', 'Electronic', 'Dance', 'Club', 'Other'].includes(row.subgenre)) ? (row.genre || 'Tech House') : row.subgenre}
                                                 </span>
                                             </td>
                                         )}
@@ -23784,10 +23797,10 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                                                 </div>
                                             </td>
                                             <td className="text-[var(--bw-text-2)] truncate max-w-xs">{row.artist}</td>
-                                            <td><span className="ws-tag">{row.genre || 'Electronic'}</span></td>
+                                            <td><span className="ws-tag">{row.genre || 'Tech House'}</span></td>
                                             <td>
                                                 <span className="ws-tag ws-tag-muted">
-                                                    {row.subgenre || (TAXONOMY_TREE[row.genre || 'Tech House'] ? TAXONOMY_TREE[row.genre || 'Tech House'][0] : 'Club')}
+                                                    {(!row.subgenre || ['Pop', 'Electronic', 'Dance', 'Club', 'Other'].includes(row.subgenre)) ? (row.genre || 'Tech House') : row.subgenre}
                                                 </span>
                                             </td>
                                             <td className="text-center ws-num">{row.year || '--'}</td>
@@ -27057,12 +27070,14 @@ const SetBuilderWorkspace = ({
                                                                     {track.format}
                                                                 </span>
                                                             )}
-                                                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-950/80 text-purple-300 border border-purple-800/60">
-                                                                {track.genre || 'House'}
+                                                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-950/80 text-purple-300 border border-purple-800/60 shadow-sm">
+                                                                {track.genre || 'Tech House'}
                                                             </span>
-                                                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-djzinc-850 text-gray-300 border border-djzinc-750">
-                                                                {track.subgenre || (TAXONOMY_TREE[track.genre || 'Tech House'] ? TAXONOMY_TREE[track.genre || 'Tech House'][0] : 'Tech House')}
-                                                            </span>
+                                                            {track.subgenre && track.subgenre !== track.genre && !['Pop', 'Electronic', 'Dance', 'Club', 'Other'].includes(track.subgenre) && (
+                                                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-djzinc-850 text-gray-300 border border-djzinc-750">
+                                                                    {track.subgenre}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <p className="text-[11px] text-gray-400 truncate font-sans">
                                                             {track.artist || track.a || 'Artista desconocido'}
@@ -35712,6 +35727,8 @@ const App = () => {
                             setActiveTab('audit');
                         }}
                         onNavigateTab={setActiveTab}
+                        onLoadFolderFromDisk={handleCargarDirectorioGlobal}
+                        currentFolder={currentFolder}
                     />
                 </div>
                 <div style={{ display: activeTab === 'audit' ? 'flex' : 'none' }} className="w-full h-full">
@@ -35792,6 +35809,8 @@ const App = () => {
                             setActiveTab('audit');
                         }}
                         onNavigateTab={setActiveTab}
+                        onLoadFolderFromDisk={handleCargarDirectorioGlobal}
+                        currentFolder={currentFolder}
                     />
                 </div>
                 <div style={{ display: activeTab === 'taxonomy' ? 'flex' : 'none' }} className="w-full h-full">

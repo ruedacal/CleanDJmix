@@ -98,6 +98,95 @@ class AudioProcessorService:
         return ext
 
     @staticmethod
+    def normalizar_genero_canonico(raw_genre: str = "", bpm: float = 126.0, filepath: str = "", title: str = "", artist: str = "") -> str:
+        """Normaliza cualquier tag, detección o texto a un ÚNICO género canónico de cabina DJ.
+        Erradica híbridos indeseados como 'POP/Tech House', 'Electronic Tech House' o etiquetas genéricas 'Pop'/'Electronic'.
+        Reglas:
+        1. Reconocimiento de artistas icónicos de club (Charlotte de Witte, Amelie Lens, Oscar Mulero, etc. -> Techno).
+        2. Prioridad semántica a géneros específicos de club.
+        3. Detección por BPM y contexto si el tag es genérico ('Pop', 'Electronic', 'Dance', 'Club', 'Other', vacíos).
+        4. Siempre retorna UN ÚNICO género limpio sin barras ni prefijos redundantes."""
+        raw = str(raw_genre or "").strip().lower()
+        search_ctx = f"{raw} {str(filepath or '').lower()} {str(title or '').lower()} {str(artist or '').lower()}"
+
+        # 0. Reconocimiento de artistas icónicos de Techno / Club para evitar falsos "Pop" / "Electronic"
+        techno_artists = [
+            "charlotte de witte", "amelie lens", "oscar mulero", "klangkuenstler", "adam beyer",
+            "enrico sangiuliano", "yellowheads", "truncate", "marco bailey", "reinier zonneveld",
+            "umek", "i hate models", "kobosil", "dax j", "paula temple", "richie hawtin",
+            "carl cox", "sam paganini", "alan fitzpatrick", "joseph capriati", "pan-pot",
+            "len faki", "chris liebing", "robert hood", "jeff mills", "lucas freire", "dany bpm",
+            "fiestah", "omx", "dany bpm"
+        ]
+        if any(art in search_ctx for art in techno_artists):
+            bpm_val = float(bpm) if bpm and float(bpm) > 0 else 132.0
+            return "Hard Techno" if bpm_val >= 145.0 else "Techno"
+
+        tech_house_artists = [
+            "fisher", "chris lake", "michael bibi", "cloonee", "pawsa", "james hype",
+            "john summit", "wade", "dom dolla", "solardo", "hot since 82", "dennis cruz",
+            "green velvet", "patrick topping", "jamie jones", "gorgon city", "camelphat"
+        ]
+        if any(art in search_ctx for art in tech_house_artists):
+            return "Tech House"
+
+        # 1. Búsqueda de Géneros Específicos por orden de especificidad (prioridad semántica)
+        if "tech house" in search_ctx or "tech-house" in search_ctx or "techhouse" in search_ctx:
+            return "Tech House"
+        if "hard techno" in search_ctx or "schranz" in search_ctx or "hardtechno" in search_ctx:
+            return "Hard Techno"
+        if "industrial techno" in search_ctx or "dark techno" in search_ctx:
+            return "Industrial Techno"
+        if "melodic techno" in search_ctx or "melodic house" in search_ctx:
+            return "Melodic Techno"
+        if "deep house" in search_ctx or "deep-house" in search_ctx:
+            return "Deep House"
+        if "afro house" in search_ctx or "afro-house" in search_ctx or "amapiano" in search_ctx:
+            return "Afro House"
+        if "progressive house" in search_ctx or "prog house" in search_ctx:
+            return "Progressive House"
+        if "minimal" in search_ctx and ("techno" in search_ctx or "tech" in search_ctx):
+            return "Minimal Techno"
+        if "techno" in search_ctx or "peak time" in search_ctx or "acid techno" in search_ctx or "raw techno" in search_ctx:
+            return "Techno"
+        if "drum & bass" in search_ctx or "drum and bass" in search_ctx or "dnb" in search_ctx or "jungle" in search_ctx:
+            return "Drum & Bass"
+        if "psy-trance" in search_ctx or "psytrance" in search_ctx or "psy trance" in search_ctx:
+            return "Psy-Trance"
+        if "trance" in search_ctx:
+            return "Trance"
+        if "bass house" in search_ctx:
+            return "Bass House"
+        if "electro house" in search_ctx or "electro" in search_ctx:
+            return "Electro House"
+        if "house" in search_ctx:
+            return "House"
+
+        # 2. Si el tag es genérico / ambiguo ("pop", "electronic", "dance", "club", "other", vacíos):
+        # Clasificador Acústico por BPM & Contexto de Club
+        try:
+            bpm_val = float(bpm) if bpm and float(bpm) > 0 else 126.0
+        except Exception:
+            bpm_val = 126.0
+
+        if bpm_val >= 165.0:
+            return "Drum & Bass"
+        elif bpm_val >= 145.0:
+            return "Hard Techno"
+        elif bpm_val >= 135.0:
+            return "Trance" if ("trance" in search_ctx or "psy" in search_ctx) else "Techno"
+        elif bpm_val >= 129.0:
+            return "Techno"
+        elif bpm_val >= 124.0:
+            return "Tech House"
+        elif bpm_val >= 121.0:
+            return "Deep House"
+        elif bpm_val >= 115.0:
+            return "Afro House"
+        else:
+            return "Tech House"
+
+    @staticmethod
     def _cargar_audio_head_resiliente(ruta: str, max_sec: float = 12.0) -> tuple:
         """Carga los primeros segundos de audio de forma resiliente con fallback multi-tier.
         Soporta FLAC, WAV, AIFF, MP3 (incluso con cabeceras ID3 gigantes > 64KB), M4A, AAC, OGG."""
@@ -142,13 +231,16 @@ class AudioProcessorService:
         return None, 44100
 
     @staticmethod
-    def detectar_trim_y_downbeat(ruta: str) -> tuple:
+    def detectar_trim_y_downbeat(ruta: str, bpm: float = 0.0, incluir_cola: bool = False) -> tuple:
         """Calcula de forma rigurosa y en dos fases consecutivas:
         1. Recorte bidireccional de silencio muerto (Zero-Crossing Auto-Trim a -48 dBFS en Cabecera y Cola).
-        2. Fijación matemática del Beatgrid 1.0.0 anclado al primer golpe de bombo real (downbeat >= trim_start).
-        Retorna: (trim_start_ms, trim_end_ms, first_downbeat_ms)"""
+        2. Fijación matemática del Beatgrid 1.0.0 anclado al primer golpe de bombo real (downbeat >= trim_start)
+           utilizando filtrado SOS de subgraves (40-115 Hz) y correlación de peine rítmico (Comb Filter).
+        Retorna:
+          Si incluir_cola=False: (trim_start_ms, first_downbeat_ms)
+          Si incluir_cola=True:  (trim_start_ms, first_downbeat_ms, trim_end_ms)"""
         if not ruta or not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
-            return 0.0, 0.0, 0.0
+            return (0.0, 0.0, 0.0) if incluir_cola else (0.0, 0.0)
         try:
             import soundfile as sf
             import numpy as np
@@ -162,7 +254,7 @@ class AudioProcessorService:
             # --- CABECERA (HEAD): Cargar los primeros 20 segundos para cubrir intros atmosféricas ---
             mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=20.0)
             if mono_head is None or len(mono_head) == 0:
-                return 0.0, dur_total_ms, 0.0
+                return (0.0, 0.0, dur_total_ms) if incluir_cola else (0.0, 0.0)
 
             # FASE 1A: Zero-Crossing Silence Trim en Cabecera
             hop_silence = max(1, int(sr_head * 0.005))  # bloques de 5ms
@@ -198,23 +290,20 @@ class AudioProcessorService:
                     trim_start_ms = round(float(zero_cross_idx) / sr_head * 1000.0, 1)
 
                     # FASE 1B: Detección estricta del primer golpe de bombo real (Beatgrid 1.0.0 & Hot Cue 1)
-                    # Aísla la pegada física del bombo (40 - 115 Hz) descartando pads, sweeps, risers y charles
+                    # Aísla la pegada física del bombo (40 - 115 Hz) mediante filtrado SOS numéricamente estable
                     max_search_samples = min(len(mono_head), zero_cross_idx + int(sr_head * 18.0))
                     sub_audio = mono_head[zero_cross_idx:max_search_samples]
 
                     if len(sub_audio) >= int(sr_head * 0.1):
                         try:
-                            from scipy.signal import butter, filtfilt
-                            nyq = 0.5 * sr_head
-                            low_f = max(20.0, min(40.0, nyq * 0.1))
-                            high_f = min(115.0, nyq * 0.45)
-                            b, a = butter(4, [low_f / nyq, high_f / nyq], btype='bandpass')
-                            sub_kick = filtfilt(b, a, sub_audio)
+                            from scipy.signal import butter, sosfilt
+                            sos = butter(2, [40.0, 115.0], btype='bandpass', fs=sr_head, output='sos')
+                            sub_kick = sosfilt(sos, sub_audio)
                         except Exception:
                             sub_kick = sub_audio
 
-                        frame_len = int(sr_head * 0.025)  # 25ms
-                        hop_len = int(sr_head * 0.003)    # 3ms
+                        frame_len = int(sr_head * 0.015)  # 15ms
+                        hop_len = int(sr_head * 0.002)    # 2ms
 
                         if len(sub_kick) > frame_len:
                             num_frames = (len(sub_kick) - frame_len) // hop_len
@@ -226,20 +315,35 @@ class AudioProcessorService:
                             energies = np.sqrt(np.mean(frames ** 2, axis=1))
                             energy_diff = np.maximum(0, np.diff(energies))
 
-                            max_diff = float(np.max(energy_diff)) if len(energy_diff) > 0 else 0.0
-                            if max_diff > 0.004:
-                                # Umbral estricto para bombo: al menos 50% de la máxima aceleración transitoria subgrave
-                                peaks = np.where(energy_diff > (max_diff * 0.50))[0]
-                                if len(peaks) > 0:
-                                    first_peak = int(peaks[0])
-                                    peak_sample = zero_cross_idx + (first_peak * hop_len)
-                                    local_window = mono_head[max(0, peak_sample - hop_len):min(len(mono_head), peak_sample + frame_len)]
-                                    local_max_idx = int(np.argmax(np.abs(local_window))) if len(local_window) > 0 else 0
-                                    final_sample = max(0, peak_sample - hop_len + local_max_idx)
-                                    downbeat_ms = round(float(final_sample) / sr_head * 1000.0, 1)
-                                else:
-                                    downbeat_ms = trim_start_ms
-                            else:
+                            # Sincronización rítmica por Peine (Comb Filter) si conocemos BPM
+                            b_est = float(bpm) if bpm and float(bpm) > 40.0 else 126.0
+                            beat_sec = 60.0 / b_est
+                            beat_frames = max(1, int(round(beat_sec * sr_head / hop_len)))
+
+                            max_k = min(16, max(1, (len(energy_diff) - beat_frames) // beat_frames))
+                            comb_scores = np.zeros(beat_frames)
+                            for phase in range(beat_frames):
+                                pts = [phase + k * beat_frames for k in range(max_k) if phase + k * beat_frames < len(energy_diff)]
+                                if pts:
+                                    comb_scores[phase] = np.mean([energy_diff[p] for p in pts])
+
+                            best_phase = int(np.argmax(comb_scores))
+                            
+                            # Buscar el primer beat k donde el transitorio de bombo sea real
+                            found_downbeat = False
+                            max_comb = np.max(comb_scores) if len(comb_scores) > 0 else 0.0
+                            for k in range(max_k):
+                                f_idx = best_phase + k * beat_frames
+                                if f_idx < len(energy_diff) and energy_diff[f_idx] >= (max_comb * 0.35):
+                                    sample_center = zero_cross_idx + (f_idx * hop_len)
+                                    w_start = max(0, sample_center - int(sr_head * 0.01))
+                                    w_end = min(len(mono_head), sample_center + int(sr_head * 0.015))
+                                    loc_peak = w_start + int(np.argmax(np.abs(mono_head[w_start:w_end])))
+                                    downbeat_ms = round(float(loc_peak) / sr_head * 1000.0, 1)
+                                    found_downbeat = True
+                                    break
+
+                            if not found_downbeat:
                                 downbeat_ms = trim_start_ms
                         else:
                             downbeat_ms = trim_start_ms
@@ -279,9 +383,11 @@ class AudioProcessorService:
                 except Exception:
                     trim_end_ms = dur_total_ms
 
-            return trim_start_ms, trim_end_ms, downbeat_ms
+            if incluir_cola:
+                return trim_start_ms, downbeat_ms, trim_end_ms
+            return trim_start_ms, downbeat_ms
         except Exception:
-            return 0.0, 0.0, 0.0
+            return (0.0, 0.0, 0.0) if incluir_cola else (0.0, 0.0)
 
     @staticmethod
     def analizar_track_avanzado(ruta: str) -> dict:
@@ -498,21 +604,7 @@ class AudioProcessorService:
             except Exception:
                 key = "8A"
 
-        trim_end_ms = 0.0
-        if trim_start_ms <= 0.0 or first_downbeat_ms <= 0.0:
-            det_res = AudioProcessorService.detectar_trim_y_downbeat(ruta)
-            if len(det_res) == 3:
-                det_trim, det_end, det_down = det_res
-            else:
-                det_trim, det_down = det_res
-                det_end = float(duration_sec * 1000)
-            if trim_start_ms <= 0.0:
-                trim_start_ms = det_trim
-            if first_downbeat_ms <= 0.0:
-                first_downbeat_ms = det_down
-            trim_end_ms = det_end
-        else:
-            trim_end_ms = float(duration_sec * 1000)
+        trim_start_ms, first_downbeat_ms, trim_end_ms = AudioProcessorService.detectar_trim_y_downbeat(ruta, bpm=bpm, incluir_cola=True)
 
         # El Downbeat siempre debe ser >= trim_start_ms
         if first_downbeat_ms < trim_start_ms:
@@ -569,11 +661,19 @@ class AudioProcessorService:
             subtag_val = f"{mood_val} / Driving"
             tactical_comment = f"[{bpm:.1f} BPM | {key}] Intro limpia 32b • Drop contundente • Outro 64b"
 
-        if " / " in genre_val:
-            parts = genre_val.split(" / ", 1)
-            genre_val = parts[0].strip()
-            if not subgenre_val:
-                subgenre_val = parts[1].strip()
+        genre_clean = AudioProcessorService.normalizar_genero_canonico(
+            genre_val or subgenre_val or "",
+            bpm=bpm,
+            filepath=ruta,
+            title=title,
+            artist=artist
+        )
+        # Si subgenre_val tiene un subestilo real de club (distinto de Pop, Electronic, Dance, etc.), preservarlo
+        if subgenre_val and subgenre_val.lower() not in ["pop", "electronic", "dance", "club", "other", "unknown", genre_clean.lower()]:
+            subgenre_val = subgenre_val.strip()
+        else:
+            subgenre_val = genre_clean
+        genre_val = genre_clean
 
         return {
             "title": title,
