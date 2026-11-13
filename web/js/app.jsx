@@ -33779,6 +33779,35 @@ const CleanLineKineticStudioStage = () => {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
+            <style dangerouslySetInnerHTML={{ __html: `
+                .hero-stage { perspective: 1200px; perspective-origin: 50% 50%; width: 100%; }
+                .hero-slide { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; text-align: center; will-change: transform, opacity, filter; margin: 0 auto; }
+                .hero-title { font-family: 'Inter', -apple-system, sans-serif !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.02em !important; line-height: 1.15 !important; color: #ffffff !important; white-space: nowrap !important; will-change: transform, opacity, filter; }
+                @media (max-width: 768px) { .hero-title { white-space: normal !important; } }
+                .glyph-scramble { font-family: 'JetBrains Mono', monospace !important; color: #00A3FF !important; text-shadow: 0 0 14px rgba(0, 163, 255, 0.8) !important; font-weight: 700 !important; }
+                .glyph-locked { color: #ffffff !important; text-shadow: 0 0 24px rgba(56, 189, 248, 0.16) !important; font-family: 'Inter', sans-serif !important; font-weight: 700 !important; }
+                .title-fly-in { animation: titleStreakFromRight 560ms cubic-bezier(0.08, 0.96, 0.18, 1.14) forwards; }
+                @keyframes titleStreakFromRight {
+                  0% { opacity: 0; transform: translateX(105vw) scaleX(2.1) skewX(-14deg); filter: blur(20px); }
+                  48% { opacity: 1; transform: translateX(-18px) scaleX(1.05) skewX(3deg); filter: blur(3px); }
+                  78% { transform: translateX(6px) scaleX(0.99) skewX(-1deg); filter: blur(0px); }
+                  100% { opacity: 1; transform: translateX(0px) scaleX(1) skewX(0deg); filter: blur(0px); }
+                }
+                .hero-subtitle { max-width: 760px; color: #cbd5e1 !important; font-weight: 400 !important; line-height: 1.55 !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 480ms cubic-bezier(0.16, 1, 0.3, 1), filter 480ms cubic-bezier(0.16, 1, 0.3, 1); }
+                .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 10px !important; padding: 8px 22px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(0, 163, 255, 0.14), inset 0 0 12px rgba(0, 163, 255, 0.08) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
+                .badge-shimmer-bar { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(0, 163, 255, 0.35) 50%, transparent 100%); transform: translateX(-100%); pointer-events: none; }
+                .badge-sweep-run .badge-shimmer-bar { animation: badgeLightPass 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+                @keyframes badgeLightPass { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+                .choreo-01-exit { animation: c01WarpOut 520ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important; }
+                @keyframes c01WarpOut { 0% { opacity: 1; transform: scale(1) translateZ(0px); filter: blur(0px); } 100% { opacity: 0; transform: scale(1.12) translateZ(80px); filter: blur(22px); } }
+                .page-dot { height: 8px !important; width: 8px !important; border-radius: 9999px !important; background-color: #475569 !important; transition: all 380ms cubic-bezier(0.16, 1, 0.3, 1) !important; cursor: pointer !important; border: none !important; outline: none !important; padding: 0 !important; margin: 0 !important; display: inline-block !important; }
+                .page-dot:hover { background-color: #94a3b8 !important; }
+                .page-dot.is-active { width: 34px !important; background: linear-gradient(90deg, #0066FF, #38BDF8) !important; box-shadow: 0 0 14px rgba(0, 163, 255, 0.75) !important; }
+                .laser-trail { position: absolute; height: 1px; background: linear-gradient(90deg, transparent 0%, #0066FF 40%, #38BDF8 85%, transparent 100%); box-shadow: 0 0 12px rgba(0, 163, 255, 0.65); opacity: 0; pointer-events: none; will-change: transform, opacity; }
+                .trail-active .laser-trail.t1 { top: calc(50% - 76px); width: 45vw; animation: trailShoot 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+                .trail-active .laser-trail.t2 { top: calc(50% - 22px); width: 34vw; animation: trailShoot 480ms cubic-bezier(0.16, 1, 0.3, 1) 40ms forwards; }
+                @keyframes trailShoot { 0% { opacity: 0; transform: translateX(100vw) scaleX(2.4); } 35% { opacity: 0.9; transform: translateX(5vw) scaleX(2.8); } 100% { opacity: 0; transform: translateX(-75vw) scaleX(0.4); } }
+            ` }} />
             {/* Estelas láser horizontales en azul corporativo */}
             <div ref={trailRef} className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="laser-trail t1" />
