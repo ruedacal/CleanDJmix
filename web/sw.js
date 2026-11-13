@@ -4,7 +4,7 @@
  * Estrategia: Cache-First para assets estáticos, Network-Only para APIs y streaming de audio local.
  */
 
-const CACHE_NAME = 'beatwave-pro-v2.9.1';
+const CACHE_NAME = 'beatwave-pro-v2.9.2';
 
 const PRECACHE_URLS = [
   './index.html',

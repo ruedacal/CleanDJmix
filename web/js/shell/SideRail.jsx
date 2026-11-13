@@ -60,13 +60,16 @@ export const SideRail = ({
                 {/* Sección de menú Librería debajo de Copilot */}
                 <button
                     type="button"
-                    onClick={onOpenLibrary}
-                    aria-current={isLibraryOpen ? 'page' : undefined}
+                    onClick={() => {
+                        if (onSelect) onSelect('library');
+                        else if (onOpenLibrary) onOpenLibrary();
+                    }}
+                    aria-current={activeTab === 'library' || isLibraryOpen ? 'page' : undefined}
                     title="Librería — Gestor y creador de bibliotecas persistentes"
-                    className={`bw-rail-item group ${isLibraryOpen ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
+                    className={`bw-rail-item group ${activeTab === 'library' || isLibraryOpen ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
                 >
                     <span className="bw-led" aria-hidden="true" />
-                    <ShellIcons.Library size={18} className={isLibraryOpen ? "text-cyan-400" : "text-gray-400 group-hover:text-white"} />
+                    <ShellIcons.Library size={18} className={activeTab === 'library' || isLibraryOpen ? "text-cyan-400" : "text-gray-400 group-hover:text-white"} />
                     <span className="bw-rail-label">Librería</span>
                     <span className="bw-rail-caption">Librería</span>
                     {libraryCount > 0 && <span className="bw-rail-badge">{libraryCount}</span>}

@@ -8600,9 +8600,7 @@ const LibraryFolderSidebar = ({
     );
 };
 
-const CustomLibraryModal = ({
-    isOpen,
-    onClose,
+const LibraryWorkspace = ({
     libraries = [],
     activeLibraryId,
     onSaveLibraries,
@@ -8610,16 +8608,54 @@ const CustomLibraryModal = ({
     currentTracks = [],
     selectedTrackIds = new Set(),
     onMaterializarEnDisco,
-    onAuditarCrate
+    onAuditarCrate,
+    onNavigateTab
 }) => {
-    if (!isOpen) return null;
-
     const [activeLibId, setActiveLibId] = useState(activeLibraryId || (libraries[0] && libraries[0].id) || 'lib_default');
     const [libNameInput, setLibNameInput] = useState('');
     const [newFolderName, setNewFolderName] = useState('');
     const [selectedFolderId, setSelectedFolderId] = useState(null);
     const [feedbackMsg, setFeedbackMsg] = useState('');
     const [searchTrack, setSearchTrack] = useState('');
+    const [dragOverFolderId, setDragOverFolderId] = useState(null);
+
+    // Ancho interactivo redimensionable de la columna de carpetas (con persistencia en localStorage)
+    const [leftColWidth, setLeftColWidth] = useState(() => {
+        try {
+            const saved = localStorage.getItem('bw_library_col_width');
+            return saved ? Math.max(260, Math.min(680, parseInt(saved, 10))) : 380;
+        } catch (e) {
+            return 380;
+        }
+    });
+    const [isResizing, setIsResizing] = useState(false);
+
+    const handleSplitterPointerDown = (e) => {
+        e.preventDefault();
+        setIsResizing(true);
+        const startX = e.clientX;
+        const startWidth = leftColWidth;
+
+        const onPointerMove = (moveEvt) => {
+            const deltaX = moveEvt.clientX - startX;
+            const newW = Math.max(260, Math.min(680, startWidth + deltaX));
+            setLeftColWidth(newW);
+        };
+
+        const onPointerUp = (upEvt) => {
+            setIsResizing(false);
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+            const finalDelta = upEvt.clientX - startX;
+            const finalW = Math.max(260, Math.min(680, startWidth + finalDelta));
+            try {
+                localStorage.setItem('bw_library_col_width', String(finalW));
+            } catch (err) {}
+        };
+
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+    };
 
     const currentLib = libraries.find(l => l.id === activeLibId) || libraries[0] || {
         id: 'lib_default',
@@ -8635,14 +8671,6 @@ const CustomLibraryModal = ({
             }
         }
     }, [currentLib?.id]);
-
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') onClose();
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose]);
 
     // Crear nueva biblioteca
     const handleCreateNewLibrary = () => {
@@ -8739,6 +8767,30 @@ const CustomLibraryModal = ({
         setTimeout(() => setFeedbackMsg(''), 3000);
     };
 
+    // Asignar pista individual arrastrada a una carpeta vía Drag & Drop
+    const handleDropTrackIntoFolder = (folderId, trackData) => {
+        if (!trackData) return;
+        const trackKey = trackData.id || trackData.file_path || trackData.filename;
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                const newFolders = (l.folders || []).map(f => {
+                    if (f.id === folderId) {
+                        const existingIds = new Set((f.tracks || []).map(t => t.id || t.file_path || t.filename));
+                        if (!existingIds.has(trackKey)) {
+                            return { ...f, tracks: [...(f.tracks || []), trackData] };
+                        }
+                    }
+                    return f;
+                });
+                return { ...l, folders: newFolders };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setFeedbackMsg(`✓ Pista "${trackData.title || trackData.filename || 'Pista'}" agregada a la carpeta`);
+        setTimeout(() => setFeedbackMsg(''), 2500);
+    };
+
     // Auto-organizar por Género (crea carpetas y reparte pistas automáticamente)
     const handleAutoGroupByGenre = () => {
         if (!currentTracks || currentTracks.length === 0) {
@@ -8798,9 +8850,9 @@ const CustomLibraryModal = ({
 
     const totalTracksInLib = (currentLib.folders || []).reduce((acc, f) => acc + (f.tracks?.length || 0), 0);
 
-    return ReactDOM.createPortal(
-        <div style={{ zIndex: 999999, backgroundColor: '#070812' }} className="fixed inset-0 flex flex-col text-gray-200 animate-fadeIn select-none overflow-hidden font-sans">
-            {/* Cabecera a Pantalla Completa */}
+    return (
+        <div style={{ backgroundColor: '#070812' }} className="w-full h-full flex flex-col text-gray-200 select-none overflow-hidden font-sans">
+            {/* Cabecera Principal de Página */}
             <div style={{ backgroundColor: '#0d0f1e', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-6 py-4 flex items-center justify-between shrink-0 shadow-lg">
                 <div className="flex items-center gap-3.5">
                     <div className="w-10 h-10 rounded-2xl bg-cyan-950/90 border border-cyan-500/60 flex items-center justify-center text-cyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black">
@@ -8823,309 +8875,377 @@ const CustomLibraryModal = ({
 
                 <div className="flex items-center gap-3">
                     {feedbackMsg && (
-                        <span className="text-xs font-mono text-emerald-400 font-bold animate-pulse hidden sm:inline px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60">
+                        <span className="text-xs font-mono text-emerald-400 font-bold animate-pulse px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60">
                             {feedbackMsg}
                         </span>
                     )}
-                    <button 
-                        type="button" 
-                        onClick={onClose}
-                        className="w-9 h-9 rounded-xl bg-zinc-800 hover:bg-rose-950/80 text-gray-400 hover:text-rose-300 flex items-center justify-center font-mono text-sm border border-zinc-700 hover:border-rose-700/60 transition-all cursor-pointer shadow-sm"
-                        title="Cerrar pantalla completa (ESC)"
+                    {onNavigateTab && (
+                        <button 
+                            type="button" 
+                            onClick={() => onNavigateTab('audit')}
+                            className="px-3.5 py-1.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/60 text-cyan-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                            title="Ir a la mesa de Auditoría & DSP"
+                        >
+                            <Icons.Eye size={15} />
+                            <span>Mesa de Auditoría</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Barra de Selección y Nombre de Biblioteca */}
+            <div style={{ backgroundColor: '#070810', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-5 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
+                    <span className="text-[11px] font-mono uppercase font-bold text-gray-400">Biblioteca:</span>
+                    <select
+                        value={activeLibId}
+                        onChange={(e) => {
+                            const id = e.target.value;
+                            setActiveLibId(id);
+                            if (onSelectLibrary) onSelectLibrary(id);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono text-white font-bold outline-none focus:border-cyan-400"
                     >
-                        <Icons.Close size={16} />
+                        {libraries.map(lib => (
+                            <option key={lib.id} value={lib.id}>
+                                {lib.name} ({lib.folders?.length || 0} carpetas)
+                            </option>
+                        ))}
+                    </select>
+
+                    {/* Input para renombrar biblioteca activa */}
+                    <div className="flex items-center gap-1">
+                        <input 
+                            type="text"
+                            value={libNameInput}
+                            onChange={(e) => setLibNameInput(e.target.value)}
+                            placeholder="Nombre de la biblioteca"
+                            className="px-3 py-1 bg-zinc-950 border border-zinc-700 rounded-lg text-xs font-mono text-white outline-none focus:border-cyan-400 w-44"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleUpdateLibraryName}
+                            className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-gray-200 text-xs font-mono font-bold cursor-pointer transition-colors"
+                            title="Guardar nombre"
+                        >
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={handleCreateNewLibrary}
+                        className="px-3 py-1.5 rounded-xl bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
+                        title="Crear una nueva biblioteca en blanco"
+                    >
+                        <Icons.Plus size={14} className="inline-block align-[-2px]" />
+                        <span>Nueva Biblioteca</span>
                     </button>
                 </div>
             </div>
 
-                {/* Barra de Selección y Nombre de Biblioteca */}
-                <div style={{ backgroundColor: '#070810', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-5 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
-                    <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
-                        <span className="text-[11px] font-mono uppercase font-bold text-gray-400">Biblioteca:</span>
-                        <select
-                            value={activeLibId}
-                            onChange={(e) => {
-                                const id = e.target.value;
-                                setActiveLibId(id);
-                                if (onSelectLibrary) onSelectLibrary(id);
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono text-white font-bold outline-none focus:border-cyan-400"
-                        >
-                            {libraries.map(lib => (
-                                <option key={lib.id} value={lib.id}>
-                                    {lib.name} ({lib.folders?.length || 0} carpetas)
-                                </option>
-                            ))}
-                        </select>
-
-                        {/* Input para renombrar biblioteca activa */}
-                        <div className="flex items-center gap-1">
-                            <input 
-                                type="text"
-                                value={libNameInput}
-                                onChange={(e) => setLibNameInput(e.target.value)}
-                                placeholder="Nombre de la biblioteca"
-                                className="px-3 py-1 bg-zinc-950 border border-zinc-700 rounded-lg text-xs font-mono text-white outline-none focus:border-cyan-400 w-44"
-                            />
-                            <button
-                                type="button"
-                                onClick={handleUpdateLibraryName}
-                                className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-gray-200 text-xs font-mono font-bold cursor-pointer transition-colors"
-                                title="Guardar nombre"
-                            >
-                                Guardar
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
+            {/* Contenido Principal: Carpetas a la izquierda, Separador Drag & Drop interactivo, y Pistas a la derecha */}
+            <div style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, overflow: 'hidden' }} className="flex-1 min-h-0 flex flex-row overflow-hidden relative">
+                
+                {/* PANEL IZQUIERDO: Estructura de Carpetas (Drop Target) */}
+                <div 
+                    style={{ 
+                        width: `${leftColWidth}px`, 
+                        minWidth: '260px', 
+                        maxWidth: '680px', 
+                        backgroundColor: '#080914', 
+                        borderRight: '1px solid rgba(255, 255, 255, 0.08)' 
+                    }} 
+                    className="p-4 flex flex-col gap-3 overflow-y-auto custom-scrollbar shrink-0 select-none"
+                >
+                    <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                            <Icons.Folder size={14} className="inline-block align-[-2px]" />
+                            <span>Carpetas Creadas ({currentLib.folders?.length || 0})</span>
+                        </h4>
                         <button
                             type="button"
-                            onClick={handleCreateNewLibrary}
-                            className="px-3 py-1.5 rounded-xl bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-600/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
-                            title="Crear una nueva biblioteca en blanco"
+                            onClick={handleAutoGroupByGenre}
+                            className="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/60 text-[10px] font-mono font-bold cursor-pointer transition-colors"
+                            title="Crea carpetas automáticamente a partir de los géneros musicales de tus pistas cargadas"
                         >
-                            <Icons.Plus size={14} className="inline-block align-[-2px]" />
-                            <span>Nueva Biblioteca</span>
+                            <Icons.Zap size={14} className="inline-block align-[-2px]" /> Auto por Género
                         </button>
                     </div>
-                </div>
 
-                {/* Contenido Principal a Pantalla Completa: Carpetas a la izquierda y Pistas al centro/derecha */}
-                <div style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, overflow: 'hidden' }} className="flex-1 min-h-0 flex flex-row overflow-hidden">
-                    
-                    {/* PANEL IZQUIERDO: Estructura de Carpetas */}
-                    <div style={{ width: '380px', minWidth: '320px', maxWidth: '420px', backgroundColor: '#080914', borderRight: '1px solid rgba(255, 255, 255, 0.08)' }} className="p-4 flex flex-col gap-3 overflow-y-auto custom-scrollbar shrink-0">
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-                                <Icons.Folder size={14} className="inline-block align-[-2px]" />
-                                <span>Carpetas Creadas ({currentLib.folders?.length || 0})</span>
-                            </h4>
-                            <button
-                                type="button"
-                                onClick={handleAutoGroupByGenre}
-                                className="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/60 text-[10px] font-mono font-bold cursor-pointer transition-colors"
-                                title="Crea carpetas automáticamente a partir de los géneros musicales de tus pistas cargadas"
-                            >
-                                <Icons.Zap size={14} className="inline-block align-[-2px]" /> Auto por Género
-                            </button>
-                        </div>
-
-                        {/* Input para añadir nueva carpeta */}
-                        <div className="flex items-center gap-1.5">
-                            <input 
-                                type="text"
-                                value={newFolderName}
-                                onChange={(e) => setNewFolderName(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') handleAddFolder(); }}
-                                placeholder="Nombre de nueva carpeta..."
-                                className="flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-cyan-400"
-                            />
-                            <button
-                                type="button"
-                                onClick={handleAddFolder}
-                                className="px-3 py-1.5 bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-mono font-bold text-xs rounded-xl cursor-pointer active:scale-95 shadow-sm"
-                            >
-                                + Crear
-                            </button>
-                        </div>
-
-                        {/* Lista de Carpetas */}
-                        <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
-                            {(!currentLib.folders || currentLib.folders.length === 0) ? (
-                                <div className="p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-zinc-800 rounded-xl">
-                                    No hay carpetas creadas. Crea una arriba o pulsa "Auto por Género".
-                                </div>
-                            ) : (
-                                currentLib.folders.map(f => {
-                                    const isSelected = selectedFolderId === f.id;
-                                    const trCount = f.tracks?.length || 0;
-                                    return (
-                                        <div
-                                            key={f.id}
-                                            onClick={() => setSelectedFolderId(f.id)}
-                                            style={{
-                                                backgroundColor: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'rgba(24, 24, 27, 0.6)',
-                                                borderColor: isSelected ? 'rgba(6, 182, 212, 0.8)' : 'rgba(255, 255, 255, 0.08)'
-                                            }}
-                                            className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
-                                                isSelected 
-                                                    ? 'text-white shadow-md' 
-                                                    : 'text-gray-300 hover:border-zinc-600'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <span className="text-base shrink-0">{isSelected ? '📂' : '📁'}</span>
-                                                <div className="truncate">
-                                                    <span className="text-xs font-mono font-bold block truncate">{f.name}</span>
-                                                    <span className="text-[10px] text-gray-400 font-mono">{trCount} pista(s) asignadas</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleAssignTracksToActiveFolder(f.id, false)}
-                                                    className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-cyan-950 hover:text-cyan-300 text-gray-300 text-[10px] font-mono border border-zinc-700 cursor-pointer"
-                                                    title={`Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`}
-                                                >
-                                                    + Asignar ({currentTracks.length})
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteFolder(f.id)}
-                                                    className="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer"
-                                                    title="Eliminar carpeta"
-                                                >
-                                                    <Icons.Close size={14} className="inline-block align-[-2px]" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
+                    {/* Input para añadir nueva carpeta */}
+                    <div className="flex items-center gap-1.5">
+                        <input 
+                            type="text"
+                            value={newFolderName}
+                            onChange={(e) => setNewFolderName(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddFolder(); }}
+                            placeholder="Nombre de nueva carpeta..."
+                            className="flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-cyan-400"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleAddFolder}
+                            className="px-3 py-1.5 bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-mono font-bold text-xs rounded-xl cursor-pointer active:scale-95 shadow-sm"
+                        >
+                            + Crear
+                        </button>
                     </div>
 
-                    {/* PANEL DERECHO: Pistas Dentro de la Carpeta Seleccionada (Flex-1 Pantalla Completa) */}
-                    <div style={{ flex: 1, backgroundColor: '#0a0b18', minWidth: 0, display: 'flex', flexDirection: 'column' }} className="flex-1 p-5 flex flex-col gap-3.5 overflow-hidden">
-                        <div className="flex items-center justify-between shrink-0">
-                            <div>
-                                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                                    <Icons.Music size={14} className="inline-block align-[-2px]" />
-                                    <span>Pistas en: <span className="text-cyan-300">{activeFolder?.name || 'Ninguna carpeta'}</span></span>
-                                </h4>
-                                <span className="text-[10px] font-mono text-gray-400">
-                                    {folderTracks.length} pista(s) en esta carpeta
-                                </span>
+                    {/* Lista de Carpetas */}
+                    <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
+                        {(!currentLib.folders || currentLib.folders.length === 0) ? (
+                            <div className="p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-zinc-800 rounded-xl">
+                                No hay carpetas creadas. Crea una arriba o pulsa "Auto por Género".
                             </div>
-
-                            {activeFolder && (
-                                <div className="flex items-center gap-1.5">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (onAuditarCrate) onAuditarCrate(activeFolder, currentLib);
+                        ) : (
+                            currentLib.folders.map(f => {
+                                const isSelected = selectedFolderId === f.id;
+                                const isDropOver = dragOverFolderId === f.id;
+                                const trCount = f.tracks?.length || 0;
+                                return (
+                                    <div
+                                        key={f.id}
+                                        onClick={() => setSelectedFolderId(f.id)}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.dataTransfer.dropEffect = 'copy';
+                                            if (dragOverFolderId !== f.id) setDragOverFolderId(f.id);
                                         }}
-                                        className="px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-[11px] font-mono font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
-                                        title="Filtrar la mesa de auditoría principal mostrando exclusivamente esta carpeta/crate"
+                                        onDragLeave={(e) => {
+                                            if (e.currentTarget.contains(e.relatedTarget)) return;
+                                            setDragOverFolderId(null);
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            setDragOverFolderId(null);
+                                            try {
+                                                const raw = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('application/json');
+                                                if (raw) {
+                                                    const trData = JSON.parse(raw);
+                                                    handleDropTrackIntoFolder(f.id, trData);
+                                                }
+                                            } catch (err) {}
+                                        }}
+                                        style={{
+                                            backgroundColor: isDropOver 
+                                                ? 'rgba(6, 182, 212, 0.25)' 
+                                                : (isSelected ? 'rgba(6, 182, 212, 0.15)' : 'rgba(24, 24, 27, 0.6)'),
+                                            borderColor: isDropOver 
+                                                ? '#06b6d4' 
+                                                : (isSelected ? 'rgba(6, 182, 212, 0.8)' : 'rgba(255, 255, 255, 0.08)'),
+                                            boxShadow: isDropOver ? '0 0 16px rgba(6, 182, 212, 0.45)' : undefined
+                                        }}
+                                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
+                                            isSelected 
+                                                ? 'text-white shadow-md' 
+                                                : 'text-gray-300 hover:border-zinc-600'
+                                        }`}
                                     >
-                                        <Icons.Eye size={13} />
-                                        <span>Auditar en Mesa</span>
-                                    </button>
-                                    {selectedTrackIds.size > 0 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAssignTracksToActiveFolder(activeFolder.id, true)}
-                                            className="px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/70 text-[11px] font-mono font-bold cursor-pointer"
-                                            title="Asignar solo las pistas seleccionadas con checkbox"
-                                        >
-                                            + Asignar Seleccionadas ({selectedTrackIds.size})
-                                        </button>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleAssignTracksToActiveFolder(activeFolder.id, false)}
-                                        className="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-600/70 text-[11px] font-mono font-bold cursor-pointer"
-                                        title={`Añadir todas las pistas cargadas actualmente (${currentTracks.length})`}
-                                    >
-                                        + Añadir Todas ({currentTracks.length})
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Buscador de pistas en la carpeta */}
-                        {folderTracks.length > 5 && (
-                            <div className="relative shrink-0">
-                                <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3 top-2 text-gray-500" />
-                                <input 
-                                    type="text"
-                                    value={searchTrack}
-                                    onChange={(e) => setSearchTrack(e.target.value)}
-                                    placeholder="Buscar en esta carpeta por título o artista..."
-                                    className="w-full pl-8 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-cyan-400"
-                                />
-                            </div>
-                        )}
-
-                        {/* Lista de pistas */}
-                        <div style={{ backgroundColor: '#070810', borderColor: 'rgba(255, 255, 255, 0.08)' }} className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-zinc-850/60 border rounded-xl p-2">
-                            {(!activeFolder || folderTracks.length === 0) ? (
-                                <div className="py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2">
-                                    <Icons.Folder size={14} className="inline-block align-[-2px]" />
-                                    <span>Esta carpeta está vacía.</span>
-                                    <span className="text-[11px] text-gray-600">
-                                        Pulsa "+ Añadir Todas" o "+ Asignar Seleccionadas" para organizar pistas aquí.
-                                    </span>
-                                </div>
-                            ) : (
-                                filteredFolderTracks.map((tr, tIdx) => {
-                                    const trKey = tr.id || tr.file_path || tIdx;
-                                    return (
-                                        <div key={trKey} className="py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-zinc-900/60 rounded-lg group">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <span className="font-mono text-[10px] text-gray-500 w-5">{tIdx + 1}</span>
-                                                <div className="truncate">
-                                                    <span className="text-xs font-mono font-bold text-white block truncate">
-                                                        {tr.title || tr.filename || tr.file_path?.split('/').pop() || 'Sin título'}
-                                                    </span>
-                                                    <span className="text-[10px] font-mono text-gray-400 block truncate">
-                                                        {tr.artist || 'Artista desconocido'} • {tr.genre || tr.subgenre || 'Electrónica'} • {tr.bpm ? `${Math.round(tr.bpm)} BPM` : ''} {tr.key || ''}
-                                                    </span>
-                                                </div>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className="text-base shrink-0">{isDropOver ? '📥' : (isSelected ? '📂' : '📁')}</span>
+                                            <div className="truncate">
+                                                <span className="text-xs font-mono font-bold block truncate">{f.name}</span>
+                                                <span className="text-[10px] text-gray-400 font-mono">{trCount} pista(s) asignadas</span>
                                             </div>
+                                        </div>
 
+                                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                                             <button
                                                 type="button"
-                                                onClick={() => handleRemoveTrackFromFolder(activeFolder.id, trKey)}
-                                                className="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 text-xs transition-opacity cursor-pointer"
-                                                title="Quitar de esta carpeta"
+                                                onClick={() => handleAssignTracksToActiveFolder(f.id, false)}
+                                                className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-cyan-950 hover:text-cyan-300 text-gray-300 text-[10px] font-mono border border-zinc-700 cursor-pointer"
+                                                title={`Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`}
+                                            >
+                                                + Asignar ({currentTracks.length})
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteFolder(f.id)}
+                                                className="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer"
+                                                title="Eliminar carpeta"
                                             >
                                                 <Icons.Close size={14} className="inline-block align-[-2px]" />
                                             </button>
                                         </div>
-                                    );
-                                })
-                            )}
-                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
 
-                {/* Pie: Acciones de Guardado y Crear en Disco */}
-                <div style={{ backgroundColor: '#07080e', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
-                    <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-mono text-gray-400">
-                            <Icons.Lock size={14} className="inline-block align-[-2px]" /> Los cambios quedan guardados automáticamente para tu próxima sesión.
-                        </span>
+                {/* SEPARADOR INTERACTIVO DRAG-AND-DROP RESIZABLE */}
+                <div
+                    role="separator"
+                    tabIndex={0}
+                    aria-orientation="vertical"
+                    aria-valuenow={leftColWidth}
+                    title="Arrastra para cambiar el ancho de la columna de carpetas"
+                    onPointerDown={handleSplitterPointerDown}
+                    className={`w-1.5 hover:w-2 transition-all cursor-col-resize shrink-0 relative flex items-center justify-center select-none z-20 group ${
+                        isResizing 
+                            ? 'bg-cyan-500 shadow-[0_0_12px_#06b6d4] w-2' 
+                            : 'bg-white/5 hover:bg-cyan-500/80 hover:shadow-[0_0_8px_rgba(6,182,212,0.6)]'
+                    }`}
+                >
+                    <div className="w-0.5 h-8 bg-zinc-600 rounded-full group-hover:bg-cyan-200 transition-colors"></div>
+                </div>
+
+                {/* PANEL DERECHO: Pistas Dentro de la Carpeta Seleccionada */}
+                <div style={{ flex: 1, backgroundColor: '#0a0b18', minWidth: 0, display: 'flex', flexDirection: 'column' }} className="flex-1 p-5 flex flex-col gap-3.5 overflow-hidden">
+                    <div className="flex items-center justify-between shrink-0">
+                        <div>
+                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                                <Icons.Music size={14} className="inline-block align-[-2px]" />
+                                <span>Pistas en: <span className="text-cyan-300">{activeFolder?.name || 'Ninguna carpeta'}</span></span>
+                            </h4>
+                            <span className="text-[10px] font-mono text-gray-400">
+                                {folderTracks.length} pista(s) en esta carpeta • Arrastra pistas a cualquier carpeta de la izquierda
+                            </span>
+                        </div>
+
+                        {activeFolder && (
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (onAuditarCrate) onAuditarCrate(activeFolder, currentLib);
+                                    }}
+                                    className="px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-[11px] font-mono font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                    title="Filtrar la mesa de auditoría principal mostrando exclusivamente esta carpeta/crate"
+                                >
+                                    <Icons.Eye size={13} />
+                                    <span>Auditar en Mesa</span>
+                                </button>
+                                {selectedTrackIds.size > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAssignTracksToActiveFolder(activeFolder.id, true)}
+                                        className="px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/70 text-[11px] font-mono font-bold cursor-pointer"
+                                        title="Asignar solo las pistas seleccionadas con checkbox"
+                                    >
+                                        + Asignar Seleccionadas ({selectedTrackIds.size})
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => handleAssignTracksToActiveFolder(activeFolder.id, false)}
+                                    className="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-600/70 text-[11px] font-mono font-bold cursor-pointer"
+                                    title={`Añadir todas las pistas cargadas actualmente (${currentTracks.length})`}
+                                >
+                                    + Añadir Todas ({currentTracks.length})
+                                </button>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="flex items-center gap-2.5">
-                        {/* Botón Principal: Crear en Disco (Materializar) */}
-                        <button
-                            type="button"
-                            onClick={() => onMaterializarEnDisco && onMaterializarEnDisco(currentLib)}
-                            disabled={!currentLib.folders || currentLib.folders.length === 0}
-                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-bold text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
-                            title="Selecciona una carpeta o USB en disco para crear una copia física de tus pistas organizadas por carpetas"
-                        >
-                            <Icons.Save size={14} className="inline-block align-[-2px]" />
-                            <span>Crear en Disco (Copia Física Estructurada)</span>
-                        </button>
+                    {/* Buscador de pistas en la carpeta */}
+                    {folderTracks.length > 5 && (
+                        <div className="relative shrink-0">
+                            <Icons.Search size={14} className="inline-block align-[-2px] absolute left-3 top-2 text-gray-500" />
+                            <input 
+                                type="text"
+                                value={searchTrack}
+                                onChange={(e) => setSearchTrack(e.target.value)}
+                                placeholder="Buscar en esta carpeta por título o artista..."
+                                className="w-full pl-8 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-cyan-400"
+                            />
+                        </div>
+                    )}
 
+                    {/* Lista de pistas */}
+                    <div style={{ backgroundColor: '#070810', borderColor: 'rgba(255, 255, 255, 0.08)' }} className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-zinc-850/60 border rounded-xl p-2">
+                        {(!activeFolder || folderTracks.length === 0) ? (
+                            <div className="py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2">
+                                <Icons.Folder size={14} className="inline-block align-[-2px]" />
+                                <span>Esta carpeta está vacía.</span>
+                                <span className="text-[11px] text-gray-600">
+                                    Pulsa "+ Añadir Todas" o arrastra pistas aquí para organizarlas.
+                                </span>
+                            </div>
+                        ) : (
+                            filteredFolderTracks.map((tr, tIdx) => {
+                                const trKey = tr.id || tr.file_path || tIdx;
+                                return (
+                                    <div 
+                                        key={trKey} 
+                                        draggable={true}
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.setData('text/plain', JSON.stringify(tr));
+                                            e.dataTransfer.effectAllowed = 'copy';
+                                        }}
+                                        className="py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-zinc-900/60 rounded-lg group cursor-grab active:cursor-grabbing border border-transparent hover:border-zinc-700/60 transition-all"
+                                        title="Arrastra esta pista hacia cualquier carpeta de la izquierda para reasignarla"
+                                    >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <span className="text-zinc-600 group-hover:text-cyan-400 select-none text-xs font-mono">⋮⋮</span>
+                                            <span className="font-mono text-[10px] text-gray-500 w-5">{tIdx + 1}</span>
+                                            <div className="truncate">
+                                                <span className="text-xs font-mono font-bold text-white block truncate">
+                                                    {tr.title || tr.filename || tr.file_path?.split('/').pop() || 'Sin título'}
+                                                </span>
+                                                <span className="text-[10px] font-mono text-gray-400 block truncate">
+                                                    {tr.artist || 'Artista desconocido'} • {tr.genre || tr.subgenre || 'Electrónica'} • {tr.bpm ? `${Math.round(tr.bpm)} BPM` : ''} {tr.key || ''}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveTrackFromFolder(activeFolder.id, trKey)}
+                                            className="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 text-xs transition-opacity cursor-pointer"
+                                            title="Quitar de esta carpeta"
+                                        >
+                                            <Icons.Close size={14} className="inline-block align-[-2px]" />
+                                        </button>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Pie: Acciones de Guardado y Crear en Disco */}
+            <div style={{ backgroundColor: '#07080e', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono text-gray-400">
+                        <Icons.Lock size={14} className="inline-block align-[-2px]" /> Los cambios quedan guardados automáticamente para tu próxima sesión.
+                    </span>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                    {/* Botón Principal: Crear en Disco (Materializar) */}
+                    <button
+                        type="button"
+                        onClick={() => onMaterializarEnDisco && onMaterializarEnDisco(currentLib)}
+                        disabled={!currentLib.folders || currentLib.folders.length === 0}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-bold text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                        title="Selecciona una carpeta o USB en disco para crear una copia física de tus pistas organizadas por carpetas"
+                    >
+                        <Icons.Save size={14} className="inline-block align-[-2px]" />
+                        <span>Crear en Disco (Copia Física Estructurada)</span>
+                    </button>
+
+                    {onNavigateTab && (
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={() => onNavigateTab('audit')}
                             className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-mono font-bold text-xs cursor-pointer transition-colors"
                         >
-                            Listo
+                            Ir a Auditoría
                         </button>
-                    </div>
+                    )}
                 </div>
-        </div>,
-        document.body
+            </div>
+        </div>
     );
 };
+
+const CustomLibraryModal = LibraryWorkspace;
 
 // Espacio de Trabajo: Auditoría & DSP
 
@@ -11574,23 +11694,6 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                             </div>
                         )}
 
-                        {/* Botón Alternar Panel Lateral de Carpetas & Crates */}
-                        <button
-                            type="button"
-                            onClick={() => setIsFolderSidebarOpen(prev => !prev)}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap ${
-                                isFolderSidebarOpen 
-                                    ? 'bg-cyan-950/90 border-cyan-500 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.3)]' 
-                                    : 'bg-djzinc-900 hover:bg-djzinc-850 border-djzinc-700 text-zinc-300 hover:text-white'
-                            }`}
-                            title="Mostrar u ocultar el gestor de carpetas y crates de la biblioteca"
-                        >
-                            <Icons.Folder size={14} className="inline-block align-[-2px] shrink-0 text-cyan-400" />
-                            <span>Carpetas</span>
-                            <span className="px-1.5 py-0.2 rounded bg-black/40 text-cyan-300 text-[10px] font-bold border border-cyan-500/30 shrink-0">
-                                {libraryFolders.length}
-                            </span>
-                        </button>
 
                         {/* Menú Desplegable Mover Selección a Carpeta */}
                         {selectedAuditIds.size > 0 && (
@@ -12177,26 +12280,6 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                 </div>
 
                 <div className="flex-1 min-h-0 flex overflow-hidden relative">
-                    {/* Panel Lateral de Carpetas & Crates */}
-                    {isFolderSidebarOpen && (
-                        <LibraryFolderSidebar
-                            folders={libraryFolders}
-                            selectedFolderId={selectedFolderId}
-                            onSelectFolder={(fId) => setSelectedFolderId(fId)}
-                            totalTracksCount={tracks.length}
-                            onAddFolder={handleAddFolder}
-                            onAddSubfolder={handleAddSubfolder}
-                            onRenameFolder={handleRenameFolder}
-                            onChangeFolderColor={handleChangeFolderColor}
-                            onDeleteFolder={handleDeleteFolder}
-                            onToggleCollapse={handleToggleFolderCollapse}
-                            onAssignTracks={handleAssignTracksToFolder}
-                            onAutoGroupByGenre={handleAutoGroupByGenre}
-                            onMaterializarEnDisco={handleMaterializarFoldersEnDisco}
-                            onClose={() => setIsFolderSidebarOpen(false)}
-                        />
-                    )}
-
                     <div ref={tableScrollRef} className="flex-1 min-w-0 overflow-auto bg-[#0f0f13] flex flex-col">
                         {/* Banner Informativo de Crate Virtual Activo procedente de Librería */}
                         {activeCrateFilter && (
@@ -35539,16 +35622,32 @@ const App = () => {
                         try { localStorage.setItem('bw_rail_expanded', '0'); } catch (e) {}
                     }}
                     onOpenLibrary={() => {
-                        setIsLibraryDrawerOpen(prev => !prev);
+                        setActiveTab('library');
                         setRailExpanded(false);
                     }}
                     libraryCount={customLibraries.length}
-                    isLibraryOpen={isLibraryDrawerOpen}
+                    isLibraryOpen={activeTab === 'library'}
                 />
                 <div className="flex flex-1 min-w-0 min-h-0 flex-col">
 
             {/* MAIN WORKSPACES: Persistencia Total de Estado Manteniendo Todo Montado */}
             <main className="flex-1 min-h-0 w-full overflow-hidden relative">
+                <div style={{ display: activeTab === 'library' ? 'flex' : 'none' }} className="w-full h-full flex flex-col">
+                    <LibraryWorkspace 
+                        libraries={customLibraries}
+                        activeLibraryId={activeCustomLibId}
+                        onSaveLibraries={(updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId)}
+                        onSelectLibrary={(id) => saveCustomLibraries(customLibraries, id)}
+                        currentTracks={auditTracks}
+                        selectedTrackIds={new Set((auditTracks || []).filter(t => t.selected).map(t => t.id))}
+                        onMaterializarEnDisco={handleMaterializarBibliotecaEnDisco}
+                        onAuditarCrate={(folder, lib) => {
+                            handleAuditarCrateDesdeModal(folder, lib);
+                            setActiveTab('audit');
+                        }}
+                        onNavigateTab={setActiveTab}
+                    />
+                </div>
                 <div style={{ display: activeTab === 'audit' ? 'flex' : 'none' }} className="w-full h-full">
                     <AuditWorkspace 
                         tracks={auditTracks}
@@ -35571,7 +35670,7 @@ const App = () => {
                         setCurrentFolder={setCurrentFolder}
                         audioRef={audioRef}
                         onAuditProgressChange={setGlobalAuditInfo}
-                        onOpenLibrary={() => setIsLibraryDrawerOpen(true)}
+                        onOpenLibrary={() => setActiveTab('library')}
                         isSimulationMode={isSimulationMode}
                         onToggleSimulation={handleToggleSimulation}
                         activeCrateFilter={activeCrateFilter}
@@ -35976,19 +36075,6 @@ const App = () => {
                 onClearEntries={handleClearBitacora}
             />
 
-            {/* GESTOR DE LIBRERÍAS Y BIBLIOTECAS (COLUMNA / DRAWER LATERAL DERECHO) */}
-            <CustomLibraryModal
-                isOpen={isLibraryDrawerOpen}
-                onClose={() => setIsLibraryDrawerOpen(false)}
-                libraries={customLibraries}
-                activeLibraryId={activeCustomLibId}
-                onSaveLibraries={(updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId)}
-                onSelectLibrary={(id) => saveCustomLibraries(customLibraries, id)}
-                currentTracks={auditTracks}
-                selectedTrackIds={new Set((auditTracks || []).filter(t => t.selected).map(t => t.id))}
-                onMaterializarEnDisco={handleMaterializarBibliotecaEnDisco}
-                onAuditarCrate={handleAuditarCrateDesdeModal}
-            />
 
             {/* PRESENTACIÓN CINEMÁTICA A PANTALLA COMPLETA CON VÍDEO DE FONDO */}
             <AppCinematicIntro
