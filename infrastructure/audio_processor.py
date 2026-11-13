@@ -159,8 +159,8 @@ class AudioProcessorService:
             total_frames = info.frames
             dur_total_ms = round((total_frames / sr) * 1000.0, 1)
 
-            # --- CABECERA (HEAD): Cargar los primeros 12 segundos ---
-            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=12.0)
+            # --- CABECERA (HEAD): Cargar los primeros 20 segundos para cubrir intros atmosféricas ---
+            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=20.0)
             if mono_head is None or len(mono_head) == 0:
                 return 0.0, dur_total_ms, 0.0
 
@@ -197,36 +197,39 @@ class AudioProcessorService:
 
                     trim_start_ms = round(float(zero_cross_idx) / sr_head * 1000.0, 1)
 
-                    # FASE 1B: Detección del Downbeat Beatgrid 1.0.0 (estrictamente POST-TRIM)
-                    max_search_samples = min(len(mono_head), zero_cross_idx + int(sr_head * 6.0))
+                    # FASE 1B: Detección estricta del primer golpe de bombo real (Beatgrid 1.0.0 & Hot Cue 1)
+                    # Aísla la pegada física del bombo (40 - 115 Hz) descartando pads, sweeps, risers y charles
+                    max_search_samples = min(len(mono_head), zero_cross_idx + int(sr_head * 18.0))
                     sub_audio = mono_head[zero_cross_idx:max_search_samples]
 
-                    if len(sub_audio) >= int(sr_head * 0.05):
+                    if len(sub_audio) >= int(sr_head * 0.1):
                         try:
                             from scipy.signal import butter, filtfilt
                             nyq = 0.5 * sr_head
-                            cutoff = min(180.0, nyq * 0.5)
-                            b, a = butter(2, cutoff / nyq, btype='low')
-                            sub_low = filtfilt(b, a, sub_audio)
+                            low_f = max(20.0, min(40.0, nyq * 0.1))
+                            high_f = min(115.0, nyq * 0.45)
+                            b, a = butter(4, [low_f / nyq, high_f / nyq], btype='bandpass')
+                            sub_kick = filtfilt(b, a, sub_audio)
                         except Exception:
-                            sub_low = sub_audio
+                            sub_kick = sub_audio
 
-                        frame_len = int(sr_head * 0.020)  # 20ms
-                        hop_len = int(sr_head * 0.004)    # 4ms
+                        frame_len = int(sr_head * 0.025)  # 25ms
+                        hop_len = int(sr_head * 0.003)    # 3ms
 
-                        if len(sub_low) > frame_len:
-                            num_frames = (len(sub_low) - frame_len) // hop_len
+                        if len(sub_kick) > frame_len:
+                            num_frames = (len(sub_kick) - frame_len) // hop_len
                             frames = np.lib.stride_tricks.as_strided(
-                                sub_low,
+                                sub_kick,
                                 shape=(num_frames, frame_len),
-                                strides=(sub_low.strides[0] * hop_len, sub_low.strides[0])
+                                strides=(sub_kick.strides[0] * hop_len, sub_kick.strides[0])
                             )
                             energies = np.sqrt(np.mean(frames ** 2, axis=1))
                             energy_diff = np.maximum(0, np.diff(energies))
 
                             max_diff = float(np.max(energy_diff)) if len(energy_diff) > 0 else 0.0
-                            if max_diff > 0.003:
-                                peaks = np.where(energy_diff > (max_diff * 0.25))[0]
+                            if max_diff > 0.004:
+                                # Umbral estricto para bombo: al menos 50% de la máxima aceleración transitoria subgrave
+                                peaks = np.where(energy_diff > (max_diff * 0.50))[0]
                                 if len(peaks) > 0:
                                     first_peak = int(peaks[0])
                                     peak_sample = zero_cross_idx + (first_peak * hop_len)
@@ -1165,6 +1168,9 @@ class AudioProcessorService:
         """
         try:
             bpm_val = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
+            nearest_int = round(bpm_val)
+            if abs(bpm_val - nearest_int) <= 0.08:
+                bpm_val = float(nearest_int)
         except Exception:
             bpm_val = 128.0
         try:

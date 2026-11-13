@@ -1309,7 +1309,11 @@ return folderPath'''
                 bpm_float *= 2.0
             elif bpm_float > 180:
                 bpm_float /= 2.0
-            bpm_res = round(bpm_float, 2)
+            nearest_int = round(bpm_float)
+            if abs(bpm_float - nearest_int) <= 0.08:
+                bpm_res = float(nearest_int)
+            else:
+                bpm_res = round(bpm_float, 2)
 
             # 2. Detección de Tonalidad Musical mediante Correlación Cromagrama Krumhansl-Schmuckler
             chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
@@ -1362,6 +1366,7 @@ return folderPath'''
         if not ruta_directorio:
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
+        t_audit_start = time.time()
         self.reiniciar_cancelacion()
         self.detener_auditoria_silenciosa()
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
@@ -1387,6 +1392,7 @@ return folderPath'''
         opt_trim_silences = bool(opts is None or opts_dict.get("trimSilences", True))
         opt_beatgrid = bool(opts is None or opts_dict.get("beatgrid", True))
         opt_hotcues8 = bool(opts is None or opts_dict.get("hotCues8", True))
+        opt_strip_whitespace = bool(opts is None or opts_dict.get("stripWhitespace", True))
 
         # 1. VERIFICACIÓN BATCH EN CACHÉ PERSISTENTE SQLITE WAL (Delta Audit)
         file_tuples = [(item[0], item[3], item[4]) for item in archivos_escaneados]
@@ -1572,6 +1578,9 @@ return folderPath'''
 
                 title_str = str(info.get("title") or os.path.splitext(file)[0])
                 artist_str = str(info.get("artist") or "Desconocido")
+                if opt_strip_whitespace:
+                    title_str = re.sub(r'\s+', ' ', title_str).strip()
+                    artist_str = re.sub(r'\s+', ' ', artist_str).strip()
                 has_title = bool(title_str and title_str.lower().strip() not in ("untitled", "desconocido", "unknown", "track", "pista"))
                 has_artist = bool(artist_str and artist_str.lower().strip() not in ("desconocido", "unknown", "various artists", "various", "artist"))
 
@@ -1721,8 +1730,16 @@ return folderPath'''
         dup_summary = self.detectar_duplicados_biblioteca(tracks_auditados, proteger_versiones_hermanas=True)
         dup_count = dup_summary.get("total_duplicados", 0)
 
+        t_audit_elapsed = time.time() - t_audit_start
+        audit_rate = (total / t_audit_elapsed) if t_audit_elapsed > 0 else 0.0
+        print(f"\n" + "="*62)
+        print(f"[CleanDJmix PRO] ⏱️ AUDITORÍA ACÚSTICA COMPLETADA EN: {t_audit_elapsed:.2f} s")
+        print(f"[CleanDJmix PRO] 🔬 {total} pistas procesadas ({audit_rate:.1f} pistas/segundo)")
+        print(f"[CleanDJmix PRO] 🛡️ Diagnóstico: {total - fake_count} Lossless OK | {fake_count} Fakes/Corruptos | {sin_meta_count} Sin Metadatos")
+        print("="*62 + "\n")
+
         if progreso_cb:
-            progreso_cb(100, f"Auditoría finalizada: {total} pistas procesadas.")
+            progreso_cb(100, f"Auditoría finalizada: {total} pistas procesadas en {t_audit_elapsed:.1f}s.")
 
         return {
             "total": total,
@@ -1935,10 +1952,8 @@ return folderPath'''
         except Exception:
             pass
 
-        if not title:
-            title = title_fb
-        if not artist:
-            artist = artist_fb
+        title = re.sub(r'\s+', ' ', str(title or title_fb)).strip()
+        artist = re.sub(r'\s+', ' ', str(artist or artist_fb)).strip()
 
         if " / " in genre_str:
             parts = genre_str.split(" / ", 1)
@@ -2080,6 +2095,7 @@ return folderPath'''
         if not ruta_directorio:
             return {"total": 0, "sin_meta": 0, "ready": 0, "errors": 0, "tracks": []}
 
+        t_load_start = time.time()
         self.reiniciar_cancelacion()
         extensiones = (".flac", ".mp3", ".wav", ".aiff", ".m4a", ".aac", ".ogg", ".wma", ".alac", ".opus")
 
@@ -2179,8 +2195,16 @@ return folderPath'''
         dup_summary = self.detectar_duplicados_biblioteca(tracks_cargados, proteger_versiones_hermanas=True)
         dup_count = dup_summary.get("total_duplicados", 0)
 
+        t_load_elapsed = time.time() - t_load_start
+        load_rate = (total / t_load_elapsed) if t_load_elapsed > 0 else 0.0
+        print(f"\n" + "="*62)
+        print(f"[CleanDJmix PRO] ⏱️ CARGA DE PISTAS COMPLETADA EN: {t_load_elapsed:.2f} s")
+        print(f"[CleanDJmix PRO] 📦 {total} pistas indexadas ({load_rate:.1f} pistas/segundo)")
+        print(f"[CleanDJmix PRO] 💾 {len(tracks_cargados) - total_pendientes} en caché SQLite WAL, {total_pendientes} leídas de disco.")
+        print("="*62 + "\n")
+
         if progreso_cb:
-            progreso_cb(100, f"Carga completada: {total} pistas listas.")
+            progreso_cb(100, f"Carga completada: {total} pistas listas en {t_load_elapsed:.1f}s.")
 
         # Iniciar auditoría acústica proactiva en segundo plano silencioso (Stealth Daemon)
         try:

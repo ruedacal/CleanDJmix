@@ -3827,6 +3827,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
         detectDuplicates: true,
         fixMissingNames: true,
         normalizeNames: true,
+        stripWhitespace: true,
         onlyIncomplete: false
     });
     if (!isOpen) return null;
@@ -3848,6 +3849,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
             items: [
                 { key: "fixMissingNames", title: "Auto-Completar Título / Artista", desc: "Deduce títulos y artistas faltantes desde la nomenclatura del archivo y metatags.", badge: "Tags Auto", badgeColor: "text-emerald-400 bg-emerald-950/80 border-emerald-800/60" },
                 { key: "normalizeNames", title: "Normalizar Nombres & Limpiar Feats", desc: "Higieniza títulos, limpia spam promocional y normaliza feats.", badge: "Higienizar", badgeColor: "text-purple-400 bg-purple-950/80 border-purple-800/60" },
+                { key: "stripWhitespace", title: "Saneamiento de Espacios al Inicio y Final (.strip())", desc: "Erradica espacios en blanco parásitos iniciales y finales en títulos, artistas y álbumes.", badge: "Anti-Whitespace", badgeColor: "text-djcyan-400 bg-djcyan-950/80 border-djcyan-800/60" },
                 { key: "bpmKey", title: "BPM Decimal & Notación Camelot", desc: "Calcula tempo con 2 decimales y mapea tono a notación Camelot estándar.", badge: "Key Wheel", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" },
                 { key: "injectCovers", title: "Inyección de Carátulas 1:1 (Artwork)", desc: "Detecta carátulas de carpeta o carátula oficial y las incrusta 600x600 en APIC/FLAC.", badge: "Cover 1:1", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" },
                 { key: "onlyIncomplete", title: "Auditar Solo Pistas Incompletas", desc: "Omite pistas que ya tengan todos los metadatos completos para acelerar auditorías.", badge: "Speed Fast", badgeColor: "text-purple-400 bg-purple-950/80 border-purple-800/60" }
@@ -9316,6 +9318,7 @@ const AuditWorkspace = ({
         detectDuplicates: true,
         fixMissingNames: true,
         normalizeNames: true,
+        stripWhitespace: true,
         onlyIncomplete: false
     });
     // 🔮 Mix Oracle (Radar de Mezcla Mágica)
@@ -10868,6 +10871,8 @@ const AuditWorkspace = ({
         duration: true,
         bpm: true,
         key: true,
+        beatgrid_status: true,
+        trim_silences: true,
         cues: true,
         e: true,
         dance: true,
@@ -10903,6 +10908,8 @@ const AuditWorkspace = ({
             columns: [
                 { key: 'bpm', label: 'Tempo Real (BPM)', desc: 'Velocidad con Zero-Crossing y Beatgrid' },
                 { key: 'key', label: 'Tonalidad Camelot', desc: 'Rueda armónica Camelot (ej. 8A = Am)' },
+                { key: 'beatgrid_status', label: 'Estado Beatgrid', desc: 'Alineación de downbeat y detección de drift rítmico' },
+                { key: 'trim_silences', label: 'Silencios / Auto-Trim', desc: 'Espacio muerto inicial y cola final recortados' },
                 { key: 'cues', label: 'Hot Cues 1-8', desc: '8 saltos tácticos (Intro, Drops, Breaks, Outro)' },
                 { key: 'fase_badge', label: 'Fase DJ / Mood', desc: 'Momento de sesión (Warm-Up, Peak, Cierre)' },
                 { key: 'acoustic_role', label: 'Rol Acústico', desc: 'Función en mezcla (Bass Driver, Lead, Perc.)' },
@@ -12437,6 +12444,16 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                         Key {renderSortArrowAudit('key')}
                                     </th>
                                 )}
+                                {visibleColumns.beatgrid_status && (
+                                    <th className="py-2.5 px-1.5 text-center text-blue-400 font-mono text-[11px]" title="Alineación del Beatgrid 1.0.0 al primer bombo real y detección de deriva de tempo (Grid Drift)">
+                                        Beatgrid
+                                    </th>
+                                )}
+                                {visibleColumns.trim_silences && (
+                                    <th className="py-2.5 px-1.5 text-center text-emerald-400 font-mono text-[11px]" title="Auto-Trim Zero-Crossing: Silencio inicial recortado y cola final descartada">
+                                        Auto-Trim
+                                    </th>
+                                )}
                                 {visibleColumns.cues && (
                                     <th className="py-2.5 px-1.5 text-center" title="8 Hot Cues fijados automáticamente en Beat 1.0.0, Drops, Breakdowns y Outro listos para Rekordbox, Serato y Traktor">
                                         {t('th_cues') || '8 Hot Cues'}
@@ -13052,6 +13069,29 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                         {visibleColumns.key && (
                                             <td className="py-2 px-1.5 text-center" title={getHarmonicKeyDisplay(row.k)}>
                                                 <CamelotKeyBadge value={row.k} />
+                                            </td>
+                                        )}
+                                        {visibleColumns.beatgrid_status && (
+                                            <td className="py-2 px-1.5 text-center">
+                                                {parseFloat(row.first_downbeat_ms || 0) > 0 ? (
+                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 text-blue-300 border border-blue-800/60 shadow-sm" title={`Beatgrid 1.0.0 anclado al primer bombo real a ${Number(row.first_downbeat_ms).toFixed(1)} ms`}>
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                                        {`Grid ${Number(row.first_downbeat_ms).toFixed(0)}ms`}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-zinc-500 text-[10px] font-mono">--</span>
+                                                )}
+                                            </td>
+                                        )}
+                                        {visibleColumns.trim_silences && (
+                                            <td className="py-2 px-1.5 text-center">
+                                                {parseFloat(row.trim_start_ms || 0) > 0 ? (
+                                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${parseFloat(row.trim_start_ms) > 150 ? 'bg-amber-950/80 text-amber-300 border border-amber-800/60' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'}`} title={parseFloat(row.trim_start_ms) > 150 ? `⚠ Silencio Inicial Alto: -${Number(row.trim_start_ms).toFixed(1)}ms` : `Silencio inicial recortado: -${Number(row.trim_start_ms).toFixed(1)}ms`}>
+                                                        {`-${Number(row.trim_start_ms).toFixed(0)}ms`}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-zinc-500 text-[10px] font-mono">0ms</span>
+                                                )}
                                             </td>
                                         )}
                                         {visibleColumns.cues && (
