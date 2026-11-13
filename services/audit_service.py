@@ -15,6 +15,7 @@ import eel
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
 from mutagen.id3 import ID3
 from infrastructure.audio_processor import AudioProcessorService
 from services.tag_sanitizer_service import TagSanitizerService
@@ -488,7 +489,8 @@ class AuditService:
     def extraer_info_tecnica_audio(filepath: str) -> dict:
         """Extrae de forma ultrarrápida formato, sample_rate (kHz), bit_depth y bitrate (kbps)."""
         ext = os.path.splitext(filepath)[1].lower() if filepath else ""
-        fmt = ext.replace(".", "").upper()
+        real_fmt = AudioProcessorService.detectar_formato_audio(filepath)
+        fmt = (real_fmt or ext.replace(".", "")).upper()
         samplerate = 44100
         bit_depth = 16
         bitrate_kbps = 0
@@ -496,7 +498,7 @@ class AuditService:
         duration_sec = 0.0
 
         try:
-            if ext in (".flac", ".wav", ".aiff", ".aif"):
+            if real_fmt == "flac":
                 try:
                     info_sf = sf.info(filepath)
                     samplerate = info_sf.samplerate
@@ -514,22 +516,39 @@ class AuditService:
                 except Exception:
                     pass
 
-                if ext == ".flac":
-                    try:
-                        f = FLAC(filepath)
-                        if f.info:
-                            samplerate = f.info.sample_rate
-                            bit_depth = f.info.bits_per_sample
-                            channels = f.info.channels
-                            duration_sec = f.info.length
-                            if getattr(f.info, "bitrate", 0):
-                                bitrate_kbps = round(f.info.bitrate / 1000)
-                    except Exception:
-                        pass
-                elif ext in (".wav", ".aiff", ".aif"):
-                    if samplerate > 0 and bit_depth > 0 and channels > 0:
-                        bitrate_kbps = round((samplerate * bit_depth * channels) / 1000)
-            elif ext == ".mp3":
+                try:
+                    f = FLAC(filepath)
+                    if f.info:
+                        samplerate = f.info.sample_rate
+                        bit_depth = f.info.bits_per_sample
+                        channels = f.info.channels
+                        duration_sec = f.info.length
+                        if getattr(f.info, "bitrate", 0):
+                            bitrate_kbps = round(f.info.bitrate / 1000)
+                except Exception:
+                    pass
+
+            elif real_fmt in ("wav", "aiff", "aif"):
+                try:
+                    info_sf = sf.info(filepath)
+                    samplerate = info_sf.samplerate
+                    channels = info_sf.channels
+                    duration_sec = info_sf.duration
+                    subtype = str(info_sf.subtype)
+                    if "24" in subtype:
+                        bit_depth = 24
+                    elif "32" in subtype:
+                        bit_depth = 32
+                    elif "16" in subtype:
+                        bit_depth = 16
+                    elif "8" in subtype:
+                        bit_depth = 8
+                except Exception:
+                    pass
+                if samplerate > 0 and bit_depth > 0 and channels > 0:
+                    bitrate_kbps = round((samplerate * bit_depth * channels) / 1000)
+
+            elif real_fmt == "mp3":
                 try:
                     mp = MP3(filepath)
                     if mp and mp.info:
@@ -545,6 +564,21 @@ class AuditService:
                         if bitrate_bps:
                             bitrate_kbps = round(bitrate_bps / 1000)
                         duration_sec = getattr(m.info, "length", 0.0)
+
+            elif real_fmt in ("m4a", "aac", "mp4"):
+                try:
+                    m4 = MP4(filepath)
+                    if m4 and m4.info:
+                        samplerate = getattr(m4.info, "sample_rate", 44100)
+                        bitrate_bps = getattr(m4.info, "bitrate", 0)
+                        bit_depth = getattr(m4.info, "bits_per_sample", 16)
+                        if bitrate_bps:
+                            bitrate_kbps = round(bitrate_bps / 1000)
+                        duration_sec = getattr(m4.info, "length", 0.0)
+                        channels = getattr(m4.info, "channels", 2)
+                except Exception:
+                    pass
+
             else:
                 try:
                     m = MutagenFile(filepath)
@@ -685,7 +719,26 @@ class AuditService:
         """Determina con rigor acústico y según Nyquist si el archivo es Lossless puro, Hi-Res,
         MP3 legítimo por tramos de bitrate/corte, o un FLAC FAKE (upscale de MP3 con frecuencias cortadas)."""
         ext = os.path.splitext(filepath)[1].lower() if filepath else ""
+        real_fmt = AudioProcessorService.detectar_formato_audio(filepath)
         format_clean = (fmt or ext.replace(".", "")).upper()
+
+        # Detección inmediata de contenedor fraudulento / extensión errónea (ej. MP3 o M4A renombrado como .flac)
+        if ext in (".flac", ".wav", ".aiff", ".aif") and real_fmt in ("mp3", "m4a", "aac", "ogg"):
+            return {
+                "calidad": f"Baja (Origen {real_fmt.upper()})",
+                "estado": f"{format_clean} FAKE ({real_fmt.upper()})",
+                "status": f"{format_clean} FAKE ({real_fmt.upper()})",
+                "es_fake": True,
+                "perdida": f"Falso Lossless (Audio {real_fmt.upper()})",
+                "perdida_pct": 35.0,
+                "compresion": f"Contenedor {real_fmt.upper()} renombrado a .{format_clean.lower()}",
+                "cutoff_khz": cutoff_khz if cutoff_khz > 0 else (20.5 if bitrate_kbps >= 310 else 18.5),
+                "samplerate_khz": round(samplerate / 1000.0, 1) if samplerate else 44.1,
+                "bitrate_kbps": bitrate_kbps or 320,
+                "bit_depth": bit_depth or 16,
+                "badge_color": "red"
+            }
+
         is_lossless = format_clean in ("FLAC", "WAV", "AIFF", "AIF", "ALAC")
         sr_khz = round(samplerate / 1000.0, 1) if samplerate else 44.1
         nyquist_khz = round(samplerate / 2000.0, 2) if samplerate else 22.05
@@ -1758,8 +1811,10 @@ return folderPath'''
         tech_kbps = 0
         tech_channels = 2
 
+        real_fmt = AudioProcessorService.detectar_formato_audio(full_path)
+
         try:
-            if ext == ".flac":
+            if real_fmt == "flac":
                 try:
                     f = FLAC(full_path)
                     title = f.get("TITLE", [""])[0]
@@ -1803,19 +1858,32 @@ return folderPath'''
                     if getattr(f, "pictures", None):
                         has_cover = True
                 except Exception:
-                    m = MutagenFile(full_path, easy=True)
-                    if m:
-                        title = str(m.get("title", [""])[0])
-                        artist = str(m.get("artist", [""])[0])
-                        genre_str = str(m.get("genre", [""])[0])
-                        if m.info and hasattr(m.info, "length"):
-                            dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
-                            tech_sr = getattr(m.info, "sample_rate", 44100)
-                            tech_depth = getattr(m.info, "bits_per_sample", 16)
-                            tech_kbps = round(getattr(m.info, "bitrate", 0) / 1000)
-            else:
-                m = MutagenFile(full_path)
+                    real_fmt = "mp3"  # Fallback a extracción genérica / ID3
+
+            if real_fmt in ("mp3", "m4a", "aac", "mp4", "aiff", "aif", "wav"):
+                m = None
+                if real_fmt == "mp3":
+                    try:
+                        m = MP3(full_path)
+                    except Exception:
+                        pass
+                elif real_fmt in ("m4a", "aac", "mp4"):
+                    try:
+                        m = MP4(full_path)
+                    except Exception:
+                        pass
+                if m is None:
+                    try:
+                        m = MutagenFile(full_path)
+                    except Exception:
+                        pass
+
                 if m is not None:
+                    if m.info and hasattr(m.info, "length") and m.info.length:
+                        dur_str = f"{int(m.info.length)//60}:{int(m.info.length)%60:02d}"
+                        tech_sr = getattr(m.info, "sample_rate", 44100)
+                        tech_depth = getattr(m.info, "bits_per_sample", 16)
+                        tech_kbps = round(getattr(m.info, "bitrate", 0) / 1000)
                     tags = getattr(m, "tags", None)
                     if tags is not None and hasattr(tags, "get"):
                         def _get_tag_val(keys):

@@ -4,6 +4,7 @@ import struct
 import base64
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC, FLACNoHeaderError, Picture
+from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, TIT1, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, APIC, TPE4, TCOM, TYER, TPUB, ID3NoHeaderError
 from mutagen.aiff import AIFF
 from mutagen.mp4 import MP4, MP4Cover
@@ -35,6 +36,66 @@ class AudioProcessorService:
             partes = base.split(" - ", 1)
             return partes[0].strip(), partes[1].strip()
         return "Desconocido", base.strip()
+
+    @staticmethod
+    def detectar_formato_audio(ruta: str) -> str:
+        """Determina de forma ultrarrápida y precisa el formato real del contenedor de audio
+        analizando sus magic bytes iniciales en lugar de fiarse a ciegas de la extensión de archivo.
+        Resuelve archivos con extensión alterada (ej. MP3 o M4A guardados como .flac).
+        Retorna: 'flac', 'mp3', 'm4a', 'aiff', 'wav', 'ogg' o la extensión normalizada."""
+        if not ruta or not os.path.exists(ruta):
+            return ""
+        try:
+            with open(ruta, "rb") as fp:
+                head = fp.read(128)
+            
+            # 1. FLAC nativo canónico
+            if head.startswith(b"fLaC"):
+                return "flac"
+            
+            # 2. Cabecera ID3v2 (puede ser MP3 legítimo o un stream FLAC con tag ID3 previo)
+            if head.startswith(b"ID3"):
+                if len(head) >= 10:
+                    tag_size = (head[6] << 21) | (head[7] << 14) | (head[8] << 7) | head[9]
+                    total_id3 = 10 + tag_size
+                    try:
+                        with open(ruta, "rb") as fp2:
+                            fp2.seek(total_id3)
+                            if fp2.read(4) == b"fLaC":
+                                return "flac"
+                    except Exception:
+                        pass
+                return "mp3"
+            
+            # 3. Frames de sincronización MPEG ADTS / MP3 sin ID3 (0xFF 0xEx / 0xFx)
+            if len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0:
+                return "mp3"
+            
+            # 4. Contenedores MP4 / M4A / AAC (ftyp o moov atom en los primeros 32 bytes)
+            if b"ftyp" in head[:32] or b"moov" in head[:32]:
+                return "m4a"
+            
+            # 5. AIFF / AIF (FORM + AIFF o AIFC)
+            if head.startswith(b"FORM") and (b"AIFF" in head[:16] or b"AIFC" in head[:16]):
+                return "aiff"
+            
+            # 6. WAV (RIFF + WAVE)
+            if head.startswith(b"RIFF") and b"WAVE" in head[:16]:
+                return "wav"
+            
+            # 7. Ogg Vorbis / Opus (OggS)
+            if head.startswith(b"OggS"):
+                return "ogg"
+        except Exception:
+            pass
+
+        # Fallback a la extensión de archivo normalizada
+        ext = os.path.splitext(ruta)[1].lower().replace(".", "")
+        if ext in ("aif", "aiff"):
+            return "aiff"
+        if ext in ("mp4", "m4a", "aac", "alac"):
+            return "m4a"
+        return ext
 
     @staticmethod
     def _cargar_audio_head_resiliente(ruta: str, max_sec: float = 12.0) -> tuple:
@@ -237,9 +298,11 @@ class AudioProcessorService:
         genre_val = "Tech House"
         subgenre_val = ""
 
-        # Intento de lectura específico para FLAC con fallback universal
+        real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
+
+        # Intento de lectura inteligente basado en el contenedor real del archivo
         try:
-            if ext == ".flac":
+            if real_fmt == "flac":
                 try:
                     f = FLAC(ruta)
                     title = f.get("TITLE", [""])[0]
@@ -276,14 +339,16 @@ class AudioProcessorService:
                             pass
                     if mood_raw:
                         mood_val = str(mood_raw)
-                except (FLACNoHeaderError, Exception):
-                    m = MutagenFile(ruta, easy=True)
-                    if m and m.info:
-                        duration_sec = int(getattr(m.info, "length", 0))
-                        title = str(m.get("title", [""])[0])
-                        artist = str(m.get("artist", [""])[0])
-                        genre_val = str(m.get("genre", ["Tech House"])[0])
-            else:
+                except Exception:
+                    real_fmt = "mp3"  # Fallback a inspección ID3/MP3 si falla FLAC
+
+            if real_fmt == "mp3":
+                try:
+                    mp = MP3(ruta)
+                    if mp and mp.info:
+                        duration_sec = int(getattr(mp.info, "length", 0))
+                except Exception:
+                    pass
                 try:
                     id3_tags = ID3(ruta)
                     t_frame = id3_tags.get("TXXX:TRIM_START_MS")
@@ -292,6 +357,21 @@ class AudioProcessorService:
                     mood_frame = id3_tags.get("TXXX:MOOD")
                     tcon_frame = id3_tags.get("TCON")
                     subg_frame = id3_tags.get("TXXX:SUBGENRE")
+                    tit2 = id3_tags.get("TIT2")
+                    tpe1 = id3_tags.get("TPE1")
+                    tbpm = id3_tags.get("TBPM")
+                    tkey = id3_tags.get("TKEY") or id3_tags.get("TXXX:INITIALKEY") or id3_tags.get("TXXX:KEY")
+                    if tit2 and tit2.text:
+                        title = str(tit2.text[0])
+                    if tpe1 and tpe1.text:
+                        artist = str(tpe1.text[0])
+                    if tbpm and tbpm.text:
+                        try:
+                            bpm = float(str(tbpm.text[0]).replace(",", "."))
+                        except Exception:
+                            pass
+                    if tkey and tkey.text:
+                        key = AudioProcessorService.normalizar_key(str(tkey.text[0]))
                     if tcon_frame and tcon_frame.text:
                         genre_val = str(tcon_frame.text[0])
                     if subg_frame and subg_frame.text:
@@ -310,21 +390,76 @@ class AudioProcessorService:
                 except Exception:
                     pass
 
+            elif real_fmt in ("m4a", "aac", "mp4"):
+                try:
+                    mp4 = MP4(ruta)
+                    if mp4.info:
+                        duration_sec = int(getattr(mp4.info, "length", 0))
+                    title = str(mp4.get("\xa9nam", [""])[0])
+                    artist = str(mp4.get("\xa9ART", [""])[0])
+                    bpm_raw = mp4.get("tmpo", [""])[0]
+                    if bpm_raw:
+                        try:
+                            bpm = float(bpm_raw)
+                        except Exception:
+                            pass
+                    key_raw = mp4.get("----:com.apple.iTunes:initialkey", [b""])[0]
+                    if key_raw:
+                        key = AudioProcessorService.normalizar_key(key_raw.decode("utf-8", "ignore") if isinstance(key_raw, bytes) else str(key_raw))
+                    genre_raw = mp4.get("\xa9gen", [""])[0]
+                    if genre_raw:
+                        genre_val = str(genre_raw)
+                    sub_raw = mp4.get("----:com.apple.iTunes:SUBGENRE", [b""])[0]
+                    if sub_raw:
+                        subgenre_val = sub_raw.decode("utf-8", "ignore") if isinstance(sub_raw, bytes) else str(sub_raw)
+                except Exception:
+                    pass
+
+            elif real_fmt in ("aiff", "aif"):
+                try:
+                    aif = AIFF(ruta)
+                    if aif.info:
+                        duration_sec = int(getattr(aif.info, "length", 0))
+                    if aif.tags:
+                        tit2 = aif.tags.get("TIT2")
+                        tpe1 = aif.tags.get("TPE1")
+                        tbpm = aif.tags.get("TBPM")
+                        tkey = aif.tags.get("TKEY")
+                        if tit2 and tit2.text:
+                            title = str(tit2.text[0])
+                        if tpe1 and tpe1.text:
+                            artist = str(tpe1.text[0])
+                        if tbpm and tbpm.text:
+                            try:
+                                bpm = float(str(tbpm.text[0]).replace(",", "."))
+                            except Exception:
+                                pass
+                        if tkey and tkey.text:
+                            key = AudioProcessorService.normalizar_key(str(tkey.text[0]))
+                except Exception:
+                    pass
+
+            # Fallback genérico si no se extrajo información
+            if not title or duration_sec <= 0:
                 m = MutagenFile(ruta, easy=True)
                 if m:
-                    if m.info:
+                    if duration_sec <= 0 and m.info:
                         duration_sec = int(getattr(m.info, "length", 0))
-                    title = str(m.get("title", [""])[0])
-                    artist = str(m.get("artist", [""])[0])
-                    raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
-                    if raw_bpm:
-                        try:
-                            bpm = float(raw_bpm)
-                        except ValueError:
-                            pass
-                    raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
-                    if raw_key:
-                        key = AudioProcessorService.normalizar_key(raw_key)
+                    if not title:
+                        title = str(m.get("title", [""])[0])
+                    if not artist:
+                        artist = str(m.get("artist", [""])[0])
+                    if bpm <= 0:
+                        raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
+                        if raw_bpm:
+                            try:
+                                bpm = float(raw_bpm)
+                            except ValueError:
+                                pass
+                    if not key:
+                        raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
+                        if raw_key:
+                            key = AudioProcessorService.normalizar_key(raw_key)
                     if not genre_val or genre_val == "Tech House":
                         m_genre = str(m.get("genre", [""])[0])
                         if m_genre:
@@ -1110,20 +1245,23 @@ class AudioProcessorService:
         """Determina de forma ultrarrápida si el archivo contiene carátula incrustada o en su carpeta."""
         if not ruta or not os.path.exists(ruta):
             return False
-        ext = os.path.splitext(ruta)[1].lower()
+        real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
         try:
-            if ext == ".flac":
-                f = FLAC(ruta)
-                if f.pictures and len(f.pictures) > 0:
-                    return True
-            elif ext in (".mp3", ".aiff", ".aif"):
+            if real_fmt == "flac":
+                try:
+                    f = FLAC(ruta)
+                    if f.pictures and len(f.pictures) > 0:
+                        return True
+                except Exception:
+                    pass
+            elif real_fmt in ("mp3", "aiff", "aif", "wav"):
                 try:
                     id3 = ID3(ruta)
                     if id3.getall("APIC"):
                         return True
                 except Exception:
                     pass
-            elif ext in (".m4a", ".aac"):
+            elif real_fmt in ("m4a", "aac", "mp4"):
                 try:
                     m = MP4(ruta)
                     if m.tags and "covr" in m.tags and m.tags["covr"]:
@@ -1351,13 +1489,28 @@ class AudioProcessorService:
             cover_source = AudioProcessorService.resolver_caratula_local_o_remota(ruta, artist, title)
         cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
 
+        real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
+        file_ext = ext.replace(".", "").lower()
+        if file_ext and real_fmt and file_ext != real_fmt and not (file_ext in ("aif", "aiff") and real_fmt in ("aif", "aiff")):
+            print(f"[AUDITORÍA AUDIO] Discrepancia de contenedor en '{os.path.basename(ruta)}': extensión .{file_ext} pero formato real '{real_fmt.upper()}'. Inyectando tags nativos {real_fmt.upper()}.")
+
         try:
-            if ext == ".flac":
-                with open(ruta, "rb") as f_check:
-                    if f_check.read(4) != b"fLaC":
-                        print(f"[META ERROR] Cabecera fLaC no válida en: {ruta}")
+            if real_fmt == "flac":
+                try:
+                    audio = FLAC(ruta)
+                except (FLACNoHeaderError, Exception) as flac_err:
+                    # Fallback si el parser FLAC falla por cabecera id3 o ftyp discrepante
+                    with open(ruta, "rb") as f_head:
+                        h = f_head.read(32)
+                    if h.startswith(b"ID3") or (len(h) >= 2 and h[0] == 0xFF):
+                        real_fmt = "mp3"
+                    elif b"ftyp" in h or b"moov" in h:
+                        real_fmt = "m4a"
+                    else:
+                        print(f"[META ERROR] Cabecera FLAC no válida en: {ruta} ({flac_err})")
                         return False
 
+            if real_fmt == "flac":
                 audio = FLAC(ruta)
                 audio["TITLE"] = [title]
                 audio["ARTIST"] = [artist]
@@ -1419,7 +1572,7 @@ class AudioProcessorService:
                 audio.save()
                 return True
 
-            elif ext == ".mp3":
+            elif real_fmt == "mp3":
                 try:
                     id3 = ID3(ruta)
                 except ID3NoHeaderError:
@@ -1517,7 +1670,7 @@ class AudioProcessorService:
                 id3.save(ruta, v2_version=3)
                 return True
 
-            elif ext in (".aiff", ".aif"):
+            elif real_fmt in ("aiff", "aif", ".aiff", ".aif"):
                 audio = AIFF(ruta)
                 if audio.tags is None:
                     audio.add_tags()
@@ -1572,7 +1725,7 @@ class AudioProcessorService:
                 audio.save()
                 return True
 
-            elif ext in (".m4a", ".aac"):
+            elif real_fmt in ("m4a", "aac", "mp4", ".m4a", ".aac"):
                 audio = MP4(ruta)
                 audio["\xa9nam"] = [title]
                 audio["\xa9ART"] = [artist]
