@@ -113,6 +113,7 @@ class CopilotService:
         self._last_live_state_time: float = 0.0
         self._cached_live_state: Optional[Dict[str, Any]] = None
         self.manual_master_deck: Optional[str] = None  # None = auto, '1' = Deck 1, '2' = Deck 2
+        self.manual_play_state: Dict[str, Optional[bool]] = {"1": None, "2": None}
         self.anti_muddy_mode: str = "club"  # 'club' (40% estricto festival/club), 'standard' (44%), 'studio' (48%)
         self.anti_muddy_threshold: float = 40.0
 
@@ -410,29 +411,77 @@ class CopilotService:
         except Exception:
             return None
 
-    def _query_serato_history(self) -> List[Dict[str, Any]]:
-        """Lee las últimas pistas reproducidas desde Serato master.sqlite con reactividad por inodo WAL (<0.5ms)."""
+    def _parse_serato_row(self, r) -> Dict[str, Any]:
+        raw_path = r[6] or ""
+        fp = f"/{raw_path}" if raw_path and not raw_path.startswith("/") else raw_path
+        length_ms = r[10] or 0
+        dur_str = "06:00"
+        if length_ms > 0:
+            tot_sec = int(length_ms // 1000)
+            dur_str = f"{tot_sec // 60:02d}:{tot_sec % 60:02d}"
+
+        return {
+            "id": r[0],
+            "deck": str(r[1]).strip() if r[1] else "1",
+            "artist": r[2] or "Unknown Artist",
+            "name": r[3] or "Unknown Title",
+            "bpm": round(float(r[4]), 2) if r[4] else 130.0,
+            "raw_key": r[5] or "",
+            "camelot": self.to_camelot(r[5] or ""),
+            "file_path": fp,
+            "start_time": r[7] or int(time.time()),
+            "played": bool(r[8]),
+            "end_time": r[9] if r[9] is not None else -1,
+            "length_ms": length_ms,
+            "duration": dur_str,
+            "genre": r[11] or "Tech House",
+            "year": str(r[12] or ""),
+            "phase": r[13] or ""
+        }
+
+    def _query_serato_decks(self):
+        """Consulta el estado real de cada deck de Serato de forma independiente sin cruzar pistas."""
         if not self.serato_db_path or not os.path.exists(self.serato_db_path):
-            return []
-
-        wal_path = self.serato_db_path + "-wal"
-        target_path = wal_path if os.path.exists(wal_path) else self.serato_db_path
-        try:
-            current_mtime_ns = os.stat(target_path).st_mtime_ns
-        except Exception:
-            current_mtime_ns = 0
-
-        # Si el inodo no ha cambiado y tenemos entradas en caché, retorno ultra rápido (<0.01ms)
-        if current_mtime_ns == self._serato_last_wal_mtime_ns and self._serato_cached_entries:
-            return self._serato_cached_entries
+            return None, None, []
 
         conn = self._get_serato_conn()
         if not conn:
-            return self._serato_cached_entries or []
+            return None, None, []
 
+        d1 = None
+        d2 = None
         entries = []
         try:
             cursor = conn.cursor()
+            # Deck 1 específico (el más reciente)
+            cursor.execute(
+                """
+                SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
+                FROM history_entry
+                WHERE deck IN ('1', 'A')
+                ORDER BY id DESC
+                LIMIT 1
+                """
+            )
+            r1 = cursor.fetchone()
+            if r1:
+                d1 = self._parse_serato_row(r1)
+
+            # Deck 2 específico (el más reciente)
+            cursor.execute(
+                """
+                SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
+                FROM history_entry
+                WHERE deck IN ('2', 'B')
+                ORDER BY id DESC
+                LIMIT 1
+                """
+            )
+            r2 = cursor.fetchone()
+            if r2:
+                d2 = self._parse_serato_row(r2)
+
+            # Historial general de 15 pistas
             cursor.execute(
                 """
                 SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
@@ -441,42 +490,19 @@ class CopilotService:
                 LIMIT 15
                 """
             )
-            rows = cursor.fetchall()
-            for r in rows:
-                raw_path = r[6] or ""
-                fp = f"/{raw_path}" if raw_path and not raw_path.startswith("/") else raw_path
-                length_ms = r[10] or 0
-                dur_str = "06:00"
-                if length_ms > 0:
-                    tot_sec = int(length_ms // 1000)
-                    dur_str = f"{tot_sec // 60:02d}:{tot_sec % 60:02d}"
-
-                entries.append({
-                    "id": r[0],
-                    "deck": str(r[1]).strip() if r[1] else "1",
-                    "artist": r[2] or "Unknown Artist",
-                    "name": r[3] or "Unknown Title",
-                    "bpm": round(float(r[4]), 2) if r[4] else 130.0,
-                    "raw_key": r[5] or "",
-                    "camelot": self.to_camelot(r[5] or ""),
-                    "file_path": fp,
-                    "start_time": r[7] or int(time.time()),
-                    "played": bool(r[8]),
-                    "end_time": r[9] if r[9] is not None else -1,
-                    "length_ms": length_ms,
-                    "duration": dur_str,
-                    "genre": r[11] or "Tech House",
-                    "year": str(r[12] or ""),
-                    "phase": r[13] or ""
-                })
-            self._serato_last_wal_mtime_ns = current_mtime_ns
-            self._serato_cached_entries = entries
+            for row in cursor.fetchall():
+                entries.append(self._parse_serato_row(row))
         except sqlite3.OperationalError:
             self._serato_conn = None
         except Exception:
             pass
 
-        return entries or self._serato_cached_entries
+        return d1, d2, entries
+
+    def _query_serato_history(self) -> List[Dict[str, Any]]:
+        """Lee las últimas pistas reproducidas desde Serato master.sqlite con reactividad por inodo WAL (<0.5ms)."""
+        _, _, entries = self._query_serato_decks()
+        return entries
 
     def _query_virtualdj_history(self) -> List[Dict[str, Any]]:
         """Lee el historial reciente de VirtualDJ con reverse seek sobre .m3u (<1ms)."""
@@ -1136,10 +1162,10 @@ class CopilotService:
             }
         ]
 
-        for c in candidates:
+        for c in candidates[:3]:
             c["camelot_color"] = self.CAMELOT_COLORS.get(c["camelot"], "#06b6d4")
 
-        return candidates
+        return candidates[:3]
 
     # =========================================================================
     # ESTADO SIMULADO Y CONSOLIDADO
@@ -1419,8 +1445,11 @@ class CopilotService:
 
         # Ingesta según la plataforma activa
         entries = []
+        deck_1_raw = None
+        deck_2_raw = None
+
         if active_plat == "serato":
-            entries = self._query_serato_history()
+            deck_1_raw, deck_2_raw, entries = self._query_serato_decks()
         elif active_plat == "virtualdj":
             entries = self._query_virtualdj_history()
         elif active_plat == "rekordbox":
@@ -1428,9 +1457,33 @@ class CopilotService:
         elif active_plat == "traktor":
             entries = self._query_traktor_history()
 
+        # Para plataformas no-serato, agrupar las pistas por Deck (1 y 2) de forma segura
+        if active_plat != "serato":
+            for entry in entries:
+                if entry.get("end_time") == -1:
+                    d = str(entry.get("deck", "1")).strip()
+                    if d in ("1", "A") and deck_1_raw is None:
+                        deck_1_raw = entry
+                    elif d in ("2", "B") and deck_2_raw is None:
+                        deck_2_raw = entry
+
+            for entry in entries:
+                d = str(entry.get("deck", "1")).strip()
+                if d in ("1", "A") and deck_1_raw is None:
+                    deck_1_raw = entry
+                elif d in ("2", "B") and deck_2_raw is None:
+                    deck_2_raw = entry
+                if deck_1_raw and deck_2_raw:
+                    break
+
+            if not deck_1_raw and entries:
+                deck_1_raw = entries[0]
+            if not deck_2_raw and len(entries) > 1 and str(entries[1].get("deck", "")).strip() in ("2", "B"):
+                deck_2_raw = entries[1]
+
         is_installed = self._is_platform_installed(active_plat)
 
-        if not entries:
+        if not entries and not deck_1_raw and not deck_2_raw:
             # Standby inteligente con perfil de la plataforma
             state = self.get_simulation_state(active_plat)
             state["source"] = f"{active_plat.upper()}_STANDBY"
@@ -1440,82 +1493,80 @@ class CopilotService:
             self._cached_live_state = state
             return state
 
-        # Agrupar las pistas por Deck (1 y 2)
-        deck_1_raw = None
-        deck_2_raw = None
-
-        # 1. Priorizar pistas activas actualmente en cabina (end_time == -1)
-        for entry in entries:
-            if entry.get("end_time") == -1:
-                d = str(entry.get("deck", "1")).strip()
-                if d in ("1", "A") and deck_1_raw is None:
-                    deck_1_raw = entry
-                elif d in ("2", "B") and deck_2_raw is None:
-                    deck_2_raw = entry
-
-        # 2. Fallback general para decks no cubiertos
-        for entry in entries:
-            d = str(entry.get("deck", "1")).strip()
-            if d in ("1", "A") and deck_1_raw is None:
-                deck_1_raw = entry
-            elif d in ("2", "B") and deck_2_raw is None:
-                deck_2_raw = entry
-            if deck_1_raw and deck_2_raw:
-                break
-
-        if not deck_1_raw and entries:
-            deck_1_raw = entries[0]
-        if not deck_2_raw and len(entries) > 1:
-            deck_2_raw = entries[1]
-        elif not deck_2_raw:
-            deck_2_raw = deck_1_raw
+        # Determinar si el proceso DJ está activo en memoria
+        dj_proc = self._get_running_dj_process()
+        is_dj_running = bool(dj_proc)
 
         # Enriquecer con DSP
-        dsp_1 = self._fetch_audit_dsp(deck_1_raw.get("file_path", ""))
-        dsp_2 = self._fetch_audit_dsp(deck_2_raw.get("file_path", ""))
+        dsp_1 = self._fetch_audit_dsp(deck_1_raw.get("file_path", "")) if deck_1_raw else self._fetch_audit_dsp("")
+        dsp_2 = self._fetch_audit_dsp(deck_2_raw.get("file_path", "")) if deck_2_raw else self._fetch_audit_dsp("")
 
-        c1 = deck_1_raw.get("camelot") or "8A"
-        c2 = deck_2_raw.get("camelot") or "8A"
+        c1 = (deck_1_raw.get("camelot") if deck_1_raw else "8A") or "8A"
+        c2 = (deck_2_raw.get("camelot") if deck_2_raw else "8A") or "8A"
 
-        t1_start = deck_1_raw.get("start_time", 0)
-        t2_start = deck_2_raw.get("start_time", 0)
+        dur_1_sec = self._parse_duration_sec(deck_1_raw.get("duration") or "06:34") if deck_1_raw else 390.0
+        dur_2_sec = self._parse_duration_sec(deck_2_raw.get("duration") or "06:03") if deck_2_raw else 360.0
+
+        t1_start = deck_1_raw.get("start_time", 0) if deck_1_raw else 0
+        t1_end = deck_1_raw.get("end_time", -1) if deck_1_raw else 0
+        t2_start = deck_2_raw.get("start_time", 0) if deck_2_raw else 0
+        t2_end = deck_2_raw.get("end_time", -1) if deck_2_raw else 0
+
+        # CÁLCULO PRECISO DEL ESTADO DE REPRODUCCIÓN (IS_PLAYING)
+        # Deck 1:
+        if self.manual_play_state.get("1") is not None:
+            d1_is_playing = bool(self.manual_play_state["1"])
+            elapsed_1 = round(max(0.0, now - t1_start) % (dur_1_sec or 1), 2) if (d1_is_playing and t1_start) else 0.0
+            prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
+        elif is_dj_running and t1_end == -1 and deck_1_raw:
+            # Solo si Serato está abierto y el track está cargado en curso
+            time_since_1 = now - t1_start if t1_start else 0.0
+            if 0.0 <= time_since_1 <= dur_1_sec:
+                d1_is_playing = True
+                elapsed_1 = round(time_since_1, 2)
+                prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
+            else:
+                d1_is_playing = False
+                elapsed_1 = dur_1_sec
+                prog_1 = 1.0
+        else:
+            d1_is_playing = False
+            elapsed_1 = 0.0
+            prog_1 = 0.0
+
+        # Deck 2:
+        if self.manual_play_state.get("2") is not None:
+            d2_is_playing = bool(self.manual_play_state["2"])
+            elapsed_2 = round(max(0.0, now - t2_start) % (dur_2_sec or 1), 2) if (d2_is_playing and t2_start) else 0.0
+            prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
+        elif is_dj_running and t2_end == -1 and deck_2_raw:
+            time_since_2 = now - t2_start if t2_start else 0.0
+            if 0.0 <= time_since_2 <= dur_2_sec:
+                d2_is_playing = True
+                elapsed_2 = round(time_since_2, 2)
+                prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
+            else:
+                d2_is_playing = False
+                elapsed_2 = dur_2_sec
+                prog_2 = 1.0
+        else:
+            d2_is_playing = False
+            elapsed_2 = 0.0
+            prog_2 = 0.0
 
         # DETERMINACIÓN DE MASTER (ON AIR) VS CUE (PREPARADO)
         if self.manual_master_deck in ("1", "2"):
             deck_1_is_master = (self.manual_master_deck == "1")
         else:
-            # Heurística automática de cabina:
-            # La pista iniciada primero (menor start_time) es la que está en aire sonando en el club.
-            # La pista cargada después (mayor start_time) es la que el DJ acaba de cargar en CUE para mezclar.
-            if t1_start and t2_start:
-                deck_1_is_master = (t1_start <= t2_start)
-            elif t1_start:
+            if d1_is_playing and not d2_is_playing:
                 deck_1_is_master = True
-            elif t2_start:
+            elif d2_is_playing and not d1_is_playing:
                 deck_1_is_master = False
             else:
-                deck_1_is_master = True
+                # Si ambos están parados o ambos reproduciéndose: el que se cargó más recientemente
+                deck_1_is_master = (t1_start >= t2_start) if (t1_start and t2_start) else True
 
-        dur_1_sec = self._parse_duration_sec(deck_1_raw.get("duration") or "06:34")
-        dur_2_sec = self._parse_duration_sec(deck_2_raw.get("duration") or "06:03")
-
-        # CÁLCULO DE PROGRESIÓN Y TIEMPO TRANSCURRIDO (SOLO EL DECK MASTER AVANZA; CUE SE MANTIENE EN PARADA/CUE)
-        if deck_1_is_master:
-            t1_st = float(t1_start) if t1_start else (now - 60.0)
-            elapsed_1 = round(max(0.0, now - t1_st) % (dur_1_sec or 1), 2)
-            prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
-            # Deck 2 en CUE detenido
-            elapsed_2 = 0.0
-            prog_2 = 0.0
-        else:
-            t2_st = float(t2_start) if t2_start else (now - 60.0)
-            elapsed_2 = round(max(0.0, now - t2_st) % (dur_2_sec or 1), 2)
-            prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
-            # Deck 1 en CUE detenido
-            elapsed_1 = 0.0
-            prog_1 = 0.0
-
-        deck_1_cues_list = deck_1_raw.get("cues") or [
+        deck_1_cues_list = (deck_1_raw.get("cues") if deck_1_raw else None) or [
             {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.04, "time": "00:00.25"},
             {"id": 2, "name": "Intro Perc", "color": "#f97316", "pct": 0.16, "time": "01:04.00"},
             {"id": 3, "name": "Bassline In", "color": "#eab308", "pct": 0.32, "time": "02:08.00"},
@@ -1526,7 +1577,7 @@ class CopilotService:
             {"id": 8, "name": "Cut / Fade", "color": "#ec4899", "pct": 0.96, "time": "07:15.00"}
         ]
 
-        deck_2_cues_list = deck_2_raw.get("cues") or [
+        deck_2_cues_list = (deck_2_raw.get("cues") if deck_2_raw else None) or [
             {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.05, "time": "00:00.30"},
             {"id": 2, "name": "Vocal Hook", "color": "#f97316", "pct": 0.19, "time": "01:08.00"},
             {"id": 3, "name": "Build-Up 16b", "color": "#eab308", "pct": 0.35, "time": "02:16.00"},
@@ -1537,30 +1588,33 @@ class CopilotService:
             {"id": 8, "name": "Fade Out", "color": "#ec4899", "pct": 0.97, "time": "06:45.00"}
         ]
 
+        deck_1_status = "ON AIR (MASTER)" if (d1_is_playing and deck_1_is_master) else ("REPRODUCIENDO" if d1_is_playing else ("MASTER (PAUSADO)" if deck_1_is_master else "CUE (DETENIDO)"))
+        deck_2_status = "ON AIR (MASTER)" if (d2_is_playing and not deck_1_is_master) else ("REPRODUCIENDO" if d2_is_playing else ("MASTER (PAUSADO)" if not deck_1_is_master else "CUE (DETENIDO)"))
+
         deck_1 = {
             "deck_num": "1",
-            "status": "ON AIR (MASTER)" if deck_1_is_master else "CUE / PREPARADO",
+            "status": deck_1_status,
             "is_master": deck_1_is_master,
-            "is_playing": deck_1_is_master,
-            "artist": deck_1_raw.get("artist", "Desconocido"),
-            "title": deck_1_raw.get("name", "Pista 1"),
-            "bpm": deck_1_raw.get("bpm", 130.0),
+            "is_playing": d1_is_playing,
+            "artist": deck_1_raw.get("artist", "Desconocido") if deck_1_raw else "Deck 1 Vacío",
+            "title": deck_1_raw.get("name", "Pista 1") if deck_1_raw else "Sin pista cargada en Deck 1",
+            "bpm": deck_1_raw.get("bpm", 130.0) if deck_1_raw else 130.0,
             "camelot": c1,
             "camelot_color": self.CAMELOT_COLORS.get(c1, "#06b6d4"),
-            "raw_key": deck_1_raw.get("raw_key", ""),
-            "file_path": deck_1_raw.get("file_path", ""),
-            "genre": deck_1_raw.get("genre") or "Melodic Techno",
-            "subgenre": deck_1_raw.get("subgenre") or "Club Master",
-            "energy": deck_1_raw.get("energy", 92),
-            "danceability": deck_1_raw.get("danceability", 88),
-            "format": deck_1_raw.get("format") or ("FLAC 24-bit" if str(deck_1_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k"),
-            "duration": deck_1_raw.get("duration") or "06:30",
+            "raw_key": deck_1_raw.get("raw_key", "") if deck_1_raw else "",
+            "file_path": deck_1_raw.get("file_path", "") if deck_1_raw else "",
+            "genre": (deck_1_raw.get("genre") if deck_1_raw else "Melodic Techno") or "Melodic Techno",
+            "subgenre": (deck_1_raw.get("subgenre") if deck_1_raw else "Club Master") or "Club Master",
+            "energy": deck_1_raw.get("energy", 92) if deck_1_raw else 85,
+            "danceability": deck_1_raw.get("danceability", 88) if deck_1_raw else 85,
+            "format": (deck_1_raw.get("format") if deck_1_raw else ("FLAC 24-bit" if str(deck_1_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k")) if deck_1_raw else "FLAC",
+            "duration": (deck_1_raw.get("duration") if deck_1_raw else "06:30") or "06:30",
             "duration_sec": dur_1_sec,
             "elapsed_sec": elapsed_1,
             "play_progress": prog_1,
-            "phase": deck_1_raw.get("phase") or "Peak Time",
-            "year": deck_1_raw.get("year") or "2024",
-            "cover": deck_1_raw.get("cover") or (f"/cover?path={deck_1_raw['file_path']}" if deck_1_raw.get("file_path") else ""),
+            "phase": (deck_1_raw.get("phase") if deck_1_raw else "Peak Time") or "Peak Time",
+            "year": (deck_1_raw.get("year") if deck_1_raw else "2024") or "2024",
+            "cover": deck_1_raw.get("cover") or (f"/cover?path={deck_1_raw['file_path']}" if (deck_1_raw and deck_1_raw.get("file_path")) else "") if deck_1_raw else "",
             "cues": deck_1_cues_list,
             "structural_phases": self._generate_structural_phases(deck_1_cues_list, dur_1_sec),
             "lufs": dsp_1["lufs"],
@@ -1569,45 +1623,82 @@ class CopilotService:
             "high_ratio": dsp_1["high_ratio"],
             "acoustic_role": dsp_1["acoustic_role"],
             "is_audited": dsp_1["is_audited"],
-            "comment": dsp_1.get("comment") or f"[{deck_1_raw.get('bpm', 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
-            "tactical_comment": dsp_1.get("comment") or f"[{deck_1_raw.get('bpm', 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b"
+            "comment": dsp_1.get("comment") or f"[{(deck_1_raw.get('bpm', 130.0) if deck_1_raw else 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
+            "tactical_comment": dsp_1.get("comment") or f"[{(deck_1_raw.get('bpm', 130.0) if deck_1_raw else 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b"
         }
 
-        deck_2 = {
-            "deck_num": "2",
-            "status": "ON AIR (MASTER)" if not deck_1_is_master else "CUE / PREPARADO",
-            "is_master": not deck_1_is_master,
-            "is_playing": not deck_1_is_master,
-            "artist": deck_2_raw.get("artist", "Desconocido"),
-            "title": deck_2_raw.get("name", "Pista 2"),
-            "bpm": deck_2_raw.get("bpm", 130.0),
-            "camelot": c2,
-            "camelot_color": self.CAMELOT_COLORS.get(c2, "#06b6d4"),
-            "raw_key": deck_2_raw.get("raw_key", ""),
-            "file_path": deck_2_raw.get("file_path", ""),
-            "genre": deck_2_raw.get("genre") or "Raw / Deep Techno",
-            "subgenre": deck_2_raw.get("subgenre") or "Drumcode Core",
-            "energy": deck_2_raw.get("energy", 91),
-            "danceability": deck_2_raw.get("danceability", 95),
-            "format": deck_2_raw.get("format") or ("FLAC 16-bit" if str(deck_2_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k"),
-            "duration": deck_2_raw.get("duration") or "05:48",
-            "duration_sec": dur_2_sec,
-            "elapsed_sec": elapsed_2,
-            "play_progress": prog_2,
-            "phase": deck_2_raw.get("phase") or "Hypnotic Groove",
-            "year": deck_2_raw.get("year") or "2023",
-            "cover": deck_2_raw.get("cover") or (f"/cover?path={deck_2_raw['file_path']}" if deck_2_raw.get("file_path") else ""),
-            "cues": deck_2_cues_list,
-            "structural_phases": self._generate_structural_phases(deck_2_cues_list, dur_2_sec),
-            "lufs": dsp_2["lufs"],
-            "low_ratio": dsp_2["low_ratio"],
-            "mid_ratio": dsp_2["mid_ratio"],
-            "high_ratio": dsp_2["high_ratio"],
-            "acoustic_role": dsp_2["acoustic_role"],
-            "is_audited": dsp_2["is_audited"],
-            "comment": dsp_2.get("comment") or f"[{deck_2_raw.get('bpm', 130.0)} BPM | {c2}] Entrada armónica limpia • Outro extendido",
-            "tactical_comment": dsp_2.get("comment") or f"[{deck_2_raw.get('bpm', 130.0)} BPM | {c2}] Entrada armónica limpia • Outro extendido"
-        }
+        if deck_2_raw:
+            deck_2 = {
+                "deck_num": "2",
+                "status": deck_2_status,
+                "is_master": not deck_1_is_master,
+                "is_playing": d2_is_playing,
+                "artist": deck_2_raw.get("artist", "Desconocido"),
+                "title": deck_2_raw.get("name", "Pista 2"),
+                "bpm": deck_2_raw.get("bpm", 130.0),
+                "camelot": c2,
+                "camelot_color": self.CAMELOT_COLORS.get(c2, "#06b6d4"),
+                "raw_key": deck_2_raw.get("raw_key", ""),
+                "file_path": deck_2_raw.get("file_path", ""),
+                "genre": deck_2_raw.get("genre") or "Raw / Deep Techno",
+                "subgenre": deck_2_raw.get("subgenre") or "Drumcode Core",
+                "energy": deck_2_raw.get("energy", 91),
+                "danceability": deck_2_raw.get("danceability", 95),
+                "format": deck_2_raw.get("format") or ("FLAC 16-bit" if str(deck_2_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k"),
+                "duration": deck_2_raw.get("duration") or "05:48",
+                "duration_sec": dur_2_sec,
+                "elapsed_sec": elapsed_2,
+                "play_progress": prog_2,
+                "phase": deck_2_raw.get("phase") or "Hypnotic Groove",
+                "year": deck_2_raw.get("year") or "2023",
+                "cover": deck_2_raw.get("cover") or (f"/cover?path={deck_2_raw['file_path']}" if deck_2_raw.get("file_path") else ""),
+                "cues": deck_2_cues_list,
+                "structural_phases": self._generate_structural_phases(deck_2_cues_list, dur_2_sec),
+                "lufs": dsp_2["lufs"],
+                "low_ratio": dsp_2["low_ratio"],
+                "mid_ratio": dsp_2["mid_ratio"],
+                "high_ratio": dsp_2["high_ratio"],
+                "acoustic_role": dsp_2["acoustic_role"],
+                "is_audited": dsp_2["is_audited"],
+                "comment": dsp_2.get("comment") or f"[{deck_2_raw.get('bpm', 130.0)} BPM | {c2}] Entrada armónica limpia • Outro extendido",
+                "tactical_comment": dsp_2.get("comment") or f"[{deck_2_raw.get('bpm', 130.0)} BPM | {c2}] Entrada armónica limpia • Outro extendido"
+            }
+        else:
+            deck_2 = {
+                "deck_num": "2",
+                "status": "STANDBY / VACÍO",
+                "is_master": False,
+                "is_playing": False,
+                "artist": "Deck 2 Vacío",
+                "title": "Carga un track en Serato Deck 2",
+                "bpm": deck_1["bpm"],
+                "camelot": deck_1["camelot"],
+                "camelot_color": deck_1["camelot_color"],
+                "raw_key": "",
+                "file_path": "",
+                "genre": "Standby",
+                "subgenre": "En espera",
+                "energy": 0,
+                "danceability": 0,
+                "format": "--",
+                "duration": "00:00",
+                "duration_sec": 0.0,
+                "elapsed_sec": 0.0,
+                "play_progress": 0.0,
+                "phase": "Standby",
+                "year": "",
+                "cover": "",
+                "cues": [],
+                "structural_phases": [],
+                "lufs": -14.0,
+                "low_ratio": 33.0,
+                "mid_ratio": 33.0,
+                "high_ratio": 34.0,
+                "acoustic_role": "Standby",
+                "is_audited": False,
+                "comment": "Deck 2 en espera de carga en Serato",
+                "tactical_comment": "Carga un track en Deck 2 para ver análisis Anti-Muddy"
+            }
 
         master_deck = deck_1 if deck_1_is_master else deck_2
         incoming_deck = deck_2 if deck_1_is_master else deck_1
@@ -1665,6 +1756,24 @@ class CopilotService:
             self.manual_master_deck = "2"
         elif d_str in ("auto", "none", ""):
             self.manual_master_deck = None
+        self._last_live_state_time = 0.0
+        self._cached_live_state = None
+        return self.get_live_state()
+
+    def toggle_play(self, deck: str = "master") -> Dict[str, Any]:
+        """Conmuta manualmente Play/Pausa de un deck ('1', '2', o 'master')."""
+        state = self.get_live_state()
+        if deck == "master":
+            target = "1" if state.get("deck_1", {}).get("is_master", True) else "2"
+        elif str(deck).strip().lower() in ("1", "a", "deck1"):
+            target = "1"
+        elif str(deck).strip().lower() in ("2", "b", "deck2"):
+            target = "2"
+        else:
+            target = "1"
+        
+        current_playing = state.get(f"deck_{target}", {}).get("is_playing", False)
+        self.manual_play_state[target] = not current_playing
         self._last_live_state_time = 0.0
         self._cached_live_state = None
         return self.get_live_state()

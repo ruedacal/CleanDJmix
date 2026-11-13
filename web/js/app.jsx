@@ -15439,6 +15439,8 @@ const HotCuesWorkspace = ({
     const beatMs = 60000.0 / bpm;
     const barMs = beatMs * 4.0;
     const downbeatMs = currentTrack && currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
+    const trimMs = currentTrack && currentTrack.trim_start_ms ? parseFloat(currentTrack.trim_start_ms) : 0;
+    const trimEndMs = currentTrack && currentTrack.trim_end_ms ? parseFloat(currentTrack.trim_end_ms) : durMs;
 
     const CLUB_CUE_RATIOS = [0.005, 0.12, 0.25, 0.40, 0.55, 0.70, 0.85, 0.94];
     const CLUB_CUE_NAMES = [

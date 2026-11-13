@@ -1167,6 +1167,46 @@ def api_download_manual_pdf():
     root_dir = os.path.dirname(os.path.abspath(__file__))
     return bottle.static_file(pdf_filename, root=root_dir, download=pdf_filename, mimetype='application/pdf')
 
+@bottle.route('/api/warmup/status', method=['GET', 'OPTIONS'])
+def api_warmup_status():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    from services.audit_service import AuditCacheDB
+    db = AuditCacheDB()
+    return json.dumps({
+        "ready": db.is_warm_ready(),
+        "total_cached": len(db.get_warm_cache())
+    })
+
+@bottle.route('/api/audit/pause', method=['POST', 'OPTIONS'])
+def api_audit_pause():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    audit_svc.pausar_proceso()
+    return json.dumps({"status": "ok", "paused": True})
+
+@bottle.route('/api/audit/resume', method=['POST', 'OPTIONS'])
+def api_audit_resume():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    audit_svc.reanudar_proceso()
+    return json.dumps({"status": "ok", "paused": False})
+
 # ==========================================
 # RUTAS Y EEL EXPOSURES: BEATWAVE LIVE COPILOT
 # ==========================================
@@ -1252,6 +1292,22 @@ def api_copilot_set_master():
     master_val = data.get('master') or bottle.request.params.get('master', 'toggle')
     import json
     return json.dumps(copilot_service.set_manual_master(master_val))
+
+@bottle.route('/api/copilot/toggle_play', method=['POST', 'OPTIONS'])
+def api_copilot_toggle_play():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    try:
+        data = bottle.request.json or {}
+    except Exception:
+        data = {}
+    deck_val = data.get('deck') or bottle.request.params.get('deck', 'master')
+    import json
+    return json.dumps(copilot_service.toggle_play(deck_val))
 
 @bottle.route('/api/copilot/toggle_simulation', method=['POST', 'OPTIONS'])
 def api_copilot_toggle_simulation():

@@ -2195,9 +2195,9 @@
     }
     const durMs = track ? parseDurationMs(track.duration || "05:00") : 3e5;
     const curMs = xNorm * durMs;
-    const trimMs2 = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    if (trimMs2 > 0 && curMs < trimMs2) {
+    if (trimMs > 0 && curMs < trimMs) {
       return { bass: 5e-3, drums: 5e-3, vocals: 5e-3, treble: 5e-3, isBreak: false, isSilence: true };
     }
     const bpm = track ? parseFloat(track.bpm || track.b) || 124 : 124;
@@ -2548,10 +2548,10 @@
     const beatMs = 6e4 / bpm;
     const barMs = beatMs * 4;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    const trimMs2 = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
-    const trimEndMs2 = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
+    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
     const downbeatPct = downbeatMs > 0 ? Math.max(0.4, Math.min(99, downbeatMs / durMs * 100)) : null;
-    const trimPct = trimMs2 > 0 ? Math.max(0.2, Math.min(99, trimMs2 / durMs * 100)) : null;
+    const trimPct = trimMs > 0 ? Math.max(0.2, Math.min(99, trimMs / durMs * 100)) : null;
     const activeCues = Array.from({ length: 8 }, (_, idx) => {
       const padNum = idx + 1;
       const existing = cues && cues[idx] ? cues[idx] : null;
@@ -2676,7 +2676,7 @@
           if (bx < 0 || bx > width) continue;
           const bIdx = Math.round((t - downbeatMs) / beatMs);
           const isBar = bIdx % 4 === 0;
-          const isSilent = trimMs2 > 0 && t < trimMs2;
+          const isSilent = trimMs > 0 && t < trimMs;
           ctx.beginPath();
           ctx.strokeStyle = isSilent ? "rgba(255, 255, 255, 0.02)" : isBar ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.05)";
           ctx.lineWidth = isBar ? 1 : 0.75;
@@ -2685,8 +2685,8 @@
           ctx.stroke();
         }
       }
-      if (trimMs2 > 0 && durMs > 0) {
-        const trimX = trimMs2 / durMs * width;
+      if (trimMs > 0 && durMs > 0) {
+        const trimX = trimMs / durMs * width;
         if (trimX > 0) {
           ctx.fillStyle = "rgba(239, 68, 68, 0.06)";
           ctx.fillRect(0, 0, trimX, height);
@@ -2901,8 +2901,8 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const beatMs = 6e4 / bpm;
     const barMs = beatMs * 4;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    const trimMs2 = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
-    const trimEndMs2 = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
+    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
     const activeCues = Array.from({ length: 8 }, (_, idx) => {
       const padNum = idx + 1;
       const existing = cues && cues[idx] ? cues[idx] : null;
@@ -3124,7 +3124,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
           if (bx < 0 || bx > totalWidth) continue;
           const bIdx = Math.round((t - downbeatMs) / beatMs);
           const isBar = bIdx % 4 === 0;
-          const isSilent = trimMs2 > 0 && t < trimMs2;
+          const isSilent = trimMs > 0 && t < trimMs;
           ctx.beginPath();
           ctx.strokeStyle = isSilent ? "rgba(255, 255, 255, 0.02)" : isBar ? "rgba(255, 255, 255, 0.20)" : "rgba(255, 255, 255, 0.08)";
           ctx.lineWidth = isBar ? 1 : 0.75;
@@ -3133,8 +3133,8 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
           ctx.stroke();
         }
       }
-      if (trimMs2 > 0 && durMs > 0) {
-        const trimX = trimMs2 / durMs * totalWidth;
+      if (trimMs > 0 && durMs > 0) {
+        const trimX = trimMs / durMs * totalWidth;
         if (trimX > 0) {
           ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
           ctx.fillRect(0, 0, trimX, height);
@@ -3146,11 +3146,11 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
           ctx.stroke();
           ctx.fillStyle = "#ef4444";
           ctx.font = "bold 9px monospace";
-          ctx.fillText(`TRIM IN -${Math.round(trimMs2)}ms`, Math.max(2, trimX - 70), 10);
+          ctx.fillText(`TRIM IN -${Math.round(trimMs)}ms`, Math.max(2, trimX - 70), 10);
         }
       }
-      if (trimEndMs2 > 0 && trimEndMs2 < durMs && durMs > 0) {
-        const trimEndX = trimEndMs2 / durMs * totalWidth;
+      if (trimEndMs > 0 && trimEndMs < durMs && durMs > 0) {
+        const trimEndX = trimEndMs / durMs * totalWidth;
         if (trimEndX < totalWidth) {
           ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
           ctx.fillRect(trimEndX, 0, totalWidth - trimEndX, height);
@@ -3400,8 +3400,8 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const beatMs = 6e4 / bpm;
     const barMs = beatMs * 4;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    const trimMs2 = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
-    const trimEndMs2 = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
+    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
     const [snapToGrid, setSnapToGrid] = useState5(true);
     const [showBeatgrid, setShowBeatgrid] = useState5(true);
     const [timeInputValue, setTimeInputValue] = useState5(currentCue.time || "00:00.00");
@@ -12356,6 +12356,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     const beatMs = 6e4 / bpm;
     const barMs = beatMs * 4;
     const downbeatMs = currentTrack && currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
+    const trimMs = currentTrack && currentTrack.trim_start_ms ? parseFloat(currentTrack.trim_start_ms) : 0;
+    const trimEndMs = currentTrack && currentTrack.trim_end_ms ? parseFloat(currentTrack.trim_end_ms) : durMs;
     const CLUB_CUE_RATIOS = [5e-3, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85, 0.94];
     const CLUB_CUE_NAMES = [
       "Intro / Downbeat",
